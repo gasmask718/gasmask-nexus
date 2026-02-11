@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Handshake } from 'lucide-react';
 import {
@@ -8,7 +7,6 @@ import {
   BRAND_DISPLAY,
   StoreBrandId,
   PaymentType,
-  SamplingStatus,
   RelationshipHealth,
   StoreBrandRelationship,
 } from '@/hooks/useStoreBrandRelationships';
@@ -20,13 +18,6 @@ const PAYMENT_OPTIONS: { value: PaymentType; label: string }[] = [
   { value: 'net7', label: 'Net 7' },
   { value: 'net14', label: 'Net 14' },
   { value: 'cod', label: 'COD' },
-];
-
-const SAMPLING_OPTIONS: { value: SamplingStatus; label: string }[] = [
-  { value: 'none', label: 'None' },
-  { value: 'samples_given', label: 'Samples Given' },
-  { value: 'trialing', label: 'Trialing' },
-  { value: 'converted', label: 'Converted' },
 ];
 
 const HEALTH_OPTIONS: { value: RelationshipHealth; label: string; variant: string }[] = [
@@ -113,7 +104,7 @@ function BrandRow({
       </div>
 
       {/* Controls row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label className="text-xs text-muted-foreground">Payment</label>
           <Select
@@ -127,27 +118,6 @@ function BrandRow({
             </SelectTrigger>
             <SelectContent>
               {PAYMENT_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value} className="text-xs">
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Sampling</label>
-          <Select
-            value={rel.sampling_status}
-            onValueChange={(v) =>
-              onUpdate({ id: rel.id, updates: { sampling_status: v as SamplingStatus } })
-            }
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {SAMPLING_OPTIONS.map((o) => (
                 <SelectItem key={o.value} value={o.value} className="text-xs">
                   {o.label}
                 </SelectItem>
@@ -175,25 +145,6 @@ function BrandRow({
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-1">
-          <label className="text-xs text-muted-foreground">Starter Kit</label>
-          <div className="flex items-center gap-1.5 h-8">
-            <Switch
-              checked={rel.needs_starter_kit}
-              onCheckedChange={(v) =>
-                onUpdate({ id: rel.id, updates: { needs_starter_kit: v } })
-              }
-            />
-            <span className="text-xs text-muted-foreground">
-              {rel.needs_starter_kit
-                ? rel.starter_kit_sent
-                  ? '✅ Sent'
-                  : '⚠️ Needed'
-                : 'N/A'}
-            </span>
-          </div>
         </div>
       </div>
     </div>
