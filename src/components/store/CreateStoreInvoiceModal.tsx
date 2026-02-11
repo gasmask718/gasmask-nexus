@@ -471,19 +471,8 @@ export function CreateStoreInvoiceModal({
           toast.error(`Line items failed: ${lineItemsError.message}`);
         }
 
-        // Phase 1B: Auto-finalize the invoice (writes ledger entries via RPC)
-        try {
-          const { error: finalizeError } = await supabase.rpc('finalize_invoice', {
-            p_invoice_id: invoice.id,
-            p_user_id: user?.id || 'manual',
-          });
-          if (finalizeError) {
-            console.error('Failed to finalize invoice:', finalizeError);
-            toast.error(`Invoice created but finalization failed: ${finalizeError.message}`);
-          }
-        } catch (err) {
-          console.error('Error finalizing invoice:', err);
-        }
+        // Phase 1B: Invoice stays as DRAFT — finalize explicitly from Invoice Detail
+        // No auto-finalize. Draft allows review, corrections, and manager approval.
         }
 
         // Create contact interaction for Recent Interactions

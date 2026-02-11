@@ -8,13 +8,14 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import {
   FileText, DollarSign, Clock, CheckCircle, Store,
   Calendar, User, CreditCard, Package, AlertCircle,
 } from 'lucide-react';
+import { InvoiceActions } from '@/components/store/InvoiceActions';
 
 interface InvoiceDetailModalProps {
   open: boolean;
@@ -58,6 +59,7 @@ interface InvoiceDetail {
   receipt_status: string | null;
   receipt_sent_at: string | null;
   created_at: string;
+  status: string | null;
   store: { name: string } | null;
   line_items: InvoiceLineItem[];
 }
@@ -74,7 +76,7 @@ function useInvoiceDetail(invoiceId: string | null) {
           id, invoice_number, store_id, subtotal, tax, total, total_amount,
           payment_status, payment_method, paid_at, due_date, notes, brand,
           created_by, received_by, partial_amount, is_historical,
-          receipt_status, receipt_sent_at, created_at,
+          receipt_status, receipt_sent_at, created_at, status,
           store:stores!store_id(name),
           line_items:invoice_line_items(id, product_name, brand, quantity, unit_price, total, sale_channel, sale_unit, quantity_boxes, quantity_tubes, computed_tubes_total, units_per_box_snapshot)
         `)
@@ -132,6 +134,7 @@ const getChannelLabel = (channel: string | null) => {
 
 export function InvoiceDetailModal({ open, onOpenChange, invoiceId }: InvoiceDetailModalProps) {
   const { data: invoice, isLoading, isError } = useInvoiceDetail(invoiceId);
+  const queryClient = useQueryClient();
 
   const totalAmount = invoice?.total ?? invoice?.total_amount ?? 0;
 
@@ -334,6 +337,16 @@ export function InvoiceDetailModal({ open, onOpenChange, invoiceId }: InvoiceDet
                   </div>
                 </>
               )}
+
+              {/* Invoice Lifecycle Actions */}
+              <Separator />
+              <InvoiceActions
+                invoiceId={invoice.id}
+                status={invoice.status}
+                onStatusChange={() => {
+                  queryClient.invalidateQueries({ queryKey: ['invoice-detail', invoiceId] });
+                }}
+              />
             </div>
           </ScrollArea>
         )}
