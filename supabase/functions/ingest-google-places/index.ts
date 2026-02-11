@@ -118,7 +118,11 @@ serve(async (req) => {
 
         if (bbox) {
           const center = bboxToCenter(bbox);
-          targets.push({ id: hood.id, name: hood.name, ...center });
+          if (center.radius <= 0 || center.radius > 50000) {
+            targets.push({ id: hood.id, name: hood.name, lat: 0, lng: 0, radius: 0 });
+          } else {
+            targets.push({ id: hood.id, name: hood.name, ...center });
+          }
         } else {
           targets.push({ id: hood.id, name: hood.name, lat: 0, lng: 0, radius: 0 });
         }
@@ -134,7 +138,11 @@ serve(async (req) => {
         const bbox = await resolveNeighborhoodBBox(hood, city, state, country);
         if (bbox) {
           const center = bboxToCenter(bbox);
-          targets.push({ id: '', name: hood, ...center });
+          if (center.radius <= 0 || center.radius > 50000) {
+            targets.push({ id: '', name: hood, lat: 0, lng: 0, radius: 0 });
+          } else {
+            targets.push({ id: '', name: hood, ...center });
+          }
         } else {
           targets.push({ id: '', name: hood, lat: 0, lng: 0, radius: 0 });
         }
@@ -166,9 +174,11 @@ serve(async (req) => {
           total: 0,
         };
 
-        if (target.lat === 0 && target.lng === 0) {
+        if (target.lat === 0 && target.lng === 0 || target.radius <= 0) {
           result.status = 'failed';
-          result.error = 'Could not resolve bounding box via Nominatim';
+          result.error = target.radius <= 0 && target.lat !== 0
+            ? 'Invalid radius computed from bounding box'
+            : 'Could not resolve bounding box via Nominatim';
           neighborhoodResults.push(result);
           if (target.id) {
             const { error: upErr } = await supabase.from('neighborhoods').update({
@@ -189,16 +199,38 @@ serve(async (req) => {
             const res = await fetch(url);
             const data = await res.json();
 
+            // Normalize Google API-level failures (HTTP 200 but logically failed)
+            const gStatus = data.status as string;
+            if (gStatus === 'OVER_QUERY_LIMIT' || gStatus === 'REQUEST_DENIED' || gStatus === 'INVALID_REQUEST') {
+              console.warn(`Google Places API status=${gStatus} for "${typeLabel}" in ${target.name}: ${data.error_message || ''}`);
+              result.status = 'failed';
+              result.error = `Google API: ${gStatus}${data.error_message ? ' — ' + data.error_message : ''}`;
+              break; // stop querying more types for this neighborhood
+            }
+
+            if (gStatus === 'ZERO_RESULTS') {
+              // Not a failure, but nothing found for this type — continue to next type
+              continue;
+            }
+
             if (data.results && data.results.length > 0) {
               allPlaces.push(...data.results);
 
               // Follow next_page_token (up to 2 pages)
               let nextToken = data.next_page_token;
               for (let page = 0; page < 2 && nextToken; page++) {
-                await new Promise(r => setTimeout(r, 2000)); // Google requires delay before next_page_token works
+                await new Promise(r => setTimeout(r, 2000));
                 const nextUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${nextToken}&key=${GOOGLE_MAPS_API_KEY}`;
                 const nextRes = await fetch(nextUrl);
                 const nextData = await nextRes.json();
+
+                const nextStatus = nextData.status as string;
+                if (nextStatus === 'OVER_QUERY_LIMIT' || nextStatus === 'REQUEST_DENIED') {
+                  result.status = 'partial';
+                  result.error = `Google API: ${nextStatus} during pagination`;
+                  break;
+                }
+
                 if (nextData.results) allPlaces.push(...nextData.results);
                 nextToken = nextData.next_page_token;
               }
@@ -207,10 +239,19 @@ serve(async (req) => {
               const textUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(`${typeLabel} in ${target.name}, ${city}, ${state}`)}&key=${GOOGLE_MAPS_API_KEY}`;
               const textRes = await fetch(textUrl);
               const textData = await textRes.json();
-              if (textData.results) allPlaces.push(...textData.results);
+
+              const tStatus = textData.status as string;
+              if (tStatus === 'OVER_QUERY_LIMIT' || tStatus === 'REQUEST_DENIED' || tStatus === 'INVALID_REQUEST') {
+                result.status = 'partial';
+                result.error = `Google API fallback: ${tStatus}`;
+              } else if (textData.results) {
+                allPlaces.push(...textData.results);
+              }
             }
           } catch (err) {
             console.error(`Google Places search failed for "${typeLabel}" in ${target.name}:`, err);
+            result.status = 'partial';
+            result.error = `Fetch error for "${typeLabel}": ${err}`;
           }
         }
 
