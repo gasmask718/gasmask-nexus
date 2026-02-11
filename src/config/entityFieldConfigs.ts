@@ -256,7 +256,7 @@ export const wholesaleItemFields: FieldConfig[] = [
 
 // CRM Contact Fields
 export const crmContactFields: FieldConfig[] = [
-  { name: 'contact_name', label: 'Contact Name', type: 'text', required: true, placeholder: 'Full name' },
+  { name: 'contact_name', label: 'Contact Name', type: 'text', required: false, placeholder: 'Full name' },
   { name: 'contact_phone', label: 'Phone', type: 'phone', placeholder: '(555) 123-4567' },
   { name: 'contact_email', label: 'Email', type: 'email', placeholder: 'contact@example.com' },
   { name: 'role', label: 'Role', type: 'text', placeholder: 'e.g., Owner, Manager' },
