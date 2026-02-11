@@ -31,6 +31,10 @@ interface InvoiceLineItem {
   total: number;
   sale_channel: string | null;
   sale_unit: string | null;
+  quantity_boxes: number | null;
+  quantity_tubes: number | null;
+  computed_tubes_total: number | null;
+  units_per_box_snapshot: number | null;
 }
 
 interface InvoiceDetail {
@@ -72,7 +76,7 @@ function useInvoiceDetail(invoiceId: string | null) {
           created_by, received_by, partial_amount, is_historical,
           receipt_status, receipt_sent_at, created_at,
           store:stores!store_id(name),
-          line_items:invoice_line_items(id, product_name, brand, quantity, unit_price, total, sale_channel, sale_unit)
+          line_items:invoice_line_items(id, product_name, brand, quantity, unit_price, total, sale_channel, sale_unit, quantity_boxes, quantity_tubes, computed_tubes_total, units_per_box_snapshot)
         `)
         .eq('id', invoiceId)
         .maybeSingle();
@@ -249,6 +253,7 @@ export function InvoiceDetailModal({ open, onOpenChange, invoiceId }: InvoiceDet
                           <TableHead>Brand</TableHead>
                           <TableHead>Channel</TableHead>
                           <TableHead className="text-center">Qty</TableHead>
+                          <TableHead className="text-center">Tubes</TableHead>
                           <TableHead className="text-right">Price</TableHead>
                           <TableHead className="text-right">Total</TableHead>
                         </TableRow>
@@ -261,7 +266,15 @@ export function InvoiceDetailModal({ open, onOpenChange, invoiceId }: InvoiceDet
                             <TableCell>
                               <Badge variant="outline" className="text-xs">{getChannelLabel(item.sale_channel)}</Badge>
                             </TableCell>
-                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-center">
+                              {item.quantity}
+                              <span className="text-xs text-muted-foreground ml-1">
+                                {item.sale_unit === 'box' ? 'box' : 'tube'}
+                              </span>
+                            </TableCell>
+                            <TableCell className="text-center font-mono text-primary font-semibold">
+                              {item.computed_tubes_total || '—'}
+                            </TableCell>
                             <TableCell className="text-right">${Number(item.unit_price).toFixed(2)}</TableCell>
                             <TableCell className="text-right font-semibold">${Number(item.total).toFixed(2)}</TableCell>
                           </TableRow>
@@ -273,6 +286,16 @@ export function InvoiceDetailModal({ open, onOpenChange, invoiceId }: InvoiceDet
                   <p className="text-sm text-muted-foreground py-4 text-center">No line items recorded</p>
                 )}
               </div>
+
+              {/* Tube Intelligence Summary */}
+              {invoice.line_items.some(li => li.computed_tubes_total && li.computed_tubes_total > 0) && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <span className="text-sm font-medium">📦 Total Tubes Sold</span>
+                  <span className="font-mono font-bold text-primary text-lg">
+                    {invoice.line_items.reduce((sum, li) => sum + (li.computed_tubes_total || 0), 0)}
+                  </span>
+                </div>
+              )}
 
               <Separator />
 

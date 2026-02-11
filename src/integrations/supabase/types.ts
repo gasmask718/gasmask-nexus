@@ -26199,6 +26199,7 @@ export type Database = {
         Row: {
           brand: string | null
           brand_id: string | null
+          computed_tubes_total: number
           cost_per_unit_at_sale: number | null
           created_at: string
           id: string
@@ -26207,6 +26208,8 @@ export type Database = {
           product_name: string | null
           profit_at_sale: number | null
           quantity: number
+          quantity_boxes: number | null
+          quantity_tubes: number | null
           sale_channel: string | null
           sale_unit: string | null
           total: number
@@ -26219,6 +26222,7 @@ export type Database = {
         Insert: {
           brand?: string | null
           brand_id?: string | null
+          computed_tubes_total?: number
           cost_per_unit_at_sale?: number | null
           created_at?: string
           id?: string
@@ -26227,6 +26231,8 @@ export type Database = {
           product_name?: string | null
           profit_at_sale?: number | null
           quantity?: number
+          quantity_boxes?: number | null
+          quantity_tubes?: number | null
           sale_channel?: string | null
           sale_unit?: string | null
           total: number
@@ -26239,6 +26245,7 @@ export type Database = {
         Update: {
           brand?: string | null
           brand_id?: string | null
+          computed_tubes_total?: number
           cost_per_unit_at_sale?: number | null
           created_at?: string
           id?: string
@@ -26247,6 +26254,8 @@ export type Database = {
           product_name?: string | null
           profit_at_sale?: number | null
           quantity?: number
+          quantity_boxes?: number | null
+          quantity_tubes?: number | null
           sale_channel?: string | null
           sale_unit?: string | null
           total?: number
@@ -26433,6 +26442,8 @@ export type Database = {
           tax: number | null
           total: number | null
           total_amount: number | null
+          total_boxes_sold: number
+          total_tubes_sold: number
         }
         Insert: {
           amount_paid?: number
@@ -26468,6 +26479,8 @@ export type Database = {
           tax?: number | null
           total?: number | null
           total_amount?: number | null
+          total_boxes_sold?: number
+          total_tubes_sold?: number
         }
         Update: {
           amount_paid?: number
@@ -26503,6 +26516,8 @@ export type Database = {
           tax?: number | null
           total?: number | null
           total_amount?: number | null
+          total_boxes_sold?: number
+          total_tubes_sold?: number
         }
         Relationships: [
           {
@@ -36801,6 +36816,7 @@ export type Database = {
           min_order_qty: number | null
           moq: number | null
           name: string
+          price_per_tube: number | null
           reorder_point: number | null
           reorder_qty: number | null
           requires_license: boolean | null
@@ -36858,6 +36874,7 @@ export type Database = {
           min_order_qty?: number | null
           moq?: number | null
           name: string
+          price_per_tube?: number | null
           reorder_point?: number | null
           reorder_qty?: number | null
           requires_license?: boolean | null
@@ -36915,6 +36932,7 @@ export type Database = {
           min_order_qty?: number | null
           moq?: number | null
           name?: string
+          price_per_tube?: number | null
           reorder_point?: number | null
           reorder_qty?: number | null
           requires_license?: boolean | null
@@ -46374,6 +46392,98 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      tube_sale_ledger: {
+        Row: {
+          brand: string | null
+          brand_id: string | null
+          created_at: string
+          id: string
+          invoice_id: string
+          line_item_id: string
+          product_name: string | null
+          recorded_by: string | null
+          source: string
+          store_id: string | null
+          tubes_delta: number
+        }
+        Insert: {
+          brand?: string | null
+          brand_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id: string
+          line_item_id: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source?: string
+          store_id?: string | null
+          tubes_delta: number
+        }
+        Update: {
+          brand?: string | null
+          brand_id?: string | null
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          line_item_id?: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source?: string
+          store_id?: string | null
+          tubes_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_line_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_line_items_safe"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
           },
         ]
       }

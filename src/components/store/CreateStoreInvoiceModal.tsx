@@ -77,6 +77,10 @@ interface LineItem {
   cost_per_unit: number;
   profit: number;
   units_per_box: number;
+  // Tube-native fields
+  quantity_boxes: number | null;
+  quantity_tubes: number | null;
+  computed_tubes_total: number;
 }
 
 export function CreateStoreInvoiceModal({
@@ -185,20 +189,43 @@ export function CreateStoreInvoiceModal({
     const profitPerUnit = unitPrice - costPerUnit;
     const totalProfit = profitPerUnit * quantity;
 
+    // Tube-native computation
+    let quantityBoxes: number | null = null;
+    let quantityTubes: number | null = null;
+    let computedTubesTotal: number;
+
+    if (saleUnit === 'box') {
+      quantityBoxes = quantity;
+      quantityTubes = null;
+      computedTubesTotal = quantity * unitsPerBox;
+    } else {
+      // Unit/tube sale
+      quantityBoxes = null;
+      quantityTubes = quantity;
+      computedTubesTotal = quantity;
+    }
+
     // Check if same product with same channel already added
     const existingIndex = lineItems.findIndex(
-      item => item.product_id === selectedProductId && item.sale_channel === saleChannel
+      item => item.product_id === selectedProductId && item.sale_channel === saleChannel && item.sale_unit === saleUnit
     );
     
     if (existingIndex >= 0) {
-      // Update quantity and recalculate totals
       const updated = [...lineItems];
-      updated[existingIndex].quantity += quantity;
-      updated[existingIndex].total = updated[existingIndex].quantity * updated[existingIndex].unit_price;
-      updated[existingIndex].profit = (updated[existingIndex].unit_price - updated[existingIndex].cost_per_unit) * updated[existingIndex].quantity;
+      const existing = updated[existingIndex];
+      existing.quantity += quantity;
+      existing.total = existing.quantity * existing.unit_price;
+      existing.profit = (existing.unit_price - existing.cost_per_unit) * existing.quantity;
+      // Recompute tubes
+      if (existing.sale_unit === 'box') {
+        existing.quantity_boxes = existing.quantity;
+        existing.computed_tubes_total = existing.quantity * existing.units_per_box;
+      } else {
+        existing.quantity_tubes = existing.quantity;
+        existing.computed_tubes_total = existing.quantity;
+      }
       setLineItems(updated);
     } else {
-      // Add new line item with channel and profit data
       setLineItems([
         ...lineItems,
         {
@@ -215,6 +242,9 @@ export function CreateStoreInvoiceModal({
           cost_per_unit: costPerUnit,
           profit: totalProfit,
           units_per_box: unitsPerBox,
+          quantity_boxes: quantityBoxes,
+          quantity_tubes: quantityTubes,
+          computed_tubes_total: computedTubesTotal,
         },
       ]);
     }
@@ -231,16 +261,24 @@ export function CreateStoreInvoiceModal({
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity <= 0) return;
     setLineItems(
-      lineItems.map(item =>
-        item.id === id
-          ? { 
-              ...item, 
-              quantity: newQuantity, 
-              total: newQuantity * item.unit_price,
-              profit: (item.unit_price - item.cost_per_unit) * newQuantity,
-            }
-          : item
-      )
+      lineItems.map(item => {
+        if (item.id !== id) return item;
+        const updatedItem = { 
+          ...item, 
+          quantity: newQuantity, 
+          total: newQuantity * item.unit_price,
+          profit: (item.unit_price - item.cost_per_unit) * newQuantity,
+        };
+        // Recompute tube totals
+        if (updatedItem.sale_unit === 'box') {
+          updatedItem.quantity_boxes = newQuantity;
+          updatedItem.computed_tubes_total = newQuantity * updatedItem.units_per_box;
+        } else {
+          updatedItem.quantity_tubes = newQuantity;
+          updatedItem.computed_tubes_total = newQuantity;
+        }
+        return updatedItem;
+      })
     );
   };
 
@@ -331,7 +369,7 @@ export function CreateStoreInvoiceModal({
         if (invoiceError) throw invoiceError;
         if (invoice) createdInvoices.push(invoice);
 
-        // Create invoice line items
+        // Create invoice line items with tube-native fields
         if (invoice && lineItems.length > 0) {
         const lineItemsData = lineItems.map(item => ({
           invoice_id: invoice.id,
@@ -341,21 +379,50 @@ export function CreateStoreInvoiceModal({
           quantity: item.quantity,
           unit_price: item.unit_price,
           total: item.total,
-          // NEW: Multi-channel pricing fields
           sale_channel: item.sale_channel,
           sale_unit: item.sale_unit,
           cost_per_unit_at_sale: item.cost_per_unit,
           profit_at_sale: item.profit,
           units_per_box_snapshot: item.units_per_box,
+          // TUBE-NATIVE fields
+          quantity_boxes: item.quantity_boxes,
+          quantity_tubes: item.quantity_tubes,
+          // computed_tubes_total is auto-computed by DB trigger, but we send it too
+          computed_tubes_total: item.computed_tubes_total,
         }));
 
-        const { error: lineItemsError } = await supabase
+        const { data: insertedLineItems, error: lineItemsError } = await supabase
           .from('invoice_line_items')
-          .insert(lineItemsData);
+          .insert(lineItemsData)
+          .select('id, brand_id, brand, product_name, computed_tubes_total');
         
         if (lineItemsError) {
           console.error('Failed to create invoice line items:', lineItemsError);
           toast.error(`Line items failed: ${lineItemsError.message}`);
+        }
+
+        // Write immutable tube_sale_ledger entries
+        if (insertedLineItems && insertedLineItems.length > 0) {
+          const ledgerEntries = insertedLineItems.map((li, idx) => ({
+            invoice_id: invoice.id,
+            line_item_id: li.id,
+            store_id: targetStoreId,
+            brand_id: li.brand_id,
+            brand: li.brand,
+            product_name: li.product_name,
+            tubes_delta: -(li.computed_tubes_total || lineItems[idx].computed_tubes_total), // negative = sale
+            source: 'invoice',
+            recorded_by: user?.id || 'manual',
+          }));
+
+          const { error: ledgerError } = await supabase
+            .from('tube_sale_ledger')
+            .insert(ledgerEntries);
+          
+          if (ledgerError) {
+            console.error('Failed to write tube ledger:', ledgerError);
+            // Don't fail invoice creation
+          }
         }
         }
 
@@ -464,6 +531,8 @@ export function CreateStoreInvoiceModal({
       queryClient.invalidateQueries({ queryKey: ['ambassador-dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['ambassador-quick-stats'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-detail'] });
+      queryClient.invalidateQueries({ queryKey: ['tube-sale-ledger'] });
+      queryClient.invalidateQueries({ queryKey: ['store-tube-inventory'] });
       
       resetForm();
       onOpenChange(false);
@@ -643,10 +712,53 @@ export function CreateStoreInvoiceModal({
               </div>
             )}
 
+            {/* Sale Unit (Box vs Tube) */}
+            {selectedProductId && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Selling As</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant={saleUnit === 'box' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSaleUnit('box')}
+                    className="text-xs"
+                  >
+                    📦 Box
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={saleUnit === 'unit' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSaleUnit('unit')}
+                    className="text-xs"
+                  >
+                    🔧 Loose Tubes
+                  </Button>
+                </div>
+                {/* Show tube computation preview */}
+                {(() => {
+                  const product = products.find(p => p.id === selectedProductId);
+                  const unitsPerBox = product?.units_per_box || 1;
+                  const tubesPreview = saleUnit === 'box' 
+                    ? quantity * unitsPerBox 
+                    : quantity;
+                  return (
+                    <p className="text-xs text-muted-foreground">
+                      = <span className="font-mono font-semibold text-foreground">{tubesPreview}</span> tubes
+                      {saleUnit === 'box' && ` (${quantity} × ${unitsPerBox} tubes/box)`}
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* Quantity */}
             {selectedProductId && (
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Quantity</Label>
+                <Label className="text-xs text-muted-foreground">
+                  Quantity ({saleUnit === 'box' ? 'Boxes' : 'Tubes'})
+                </Label>
                 <Input
                   type="number"
                   min="1"
@@ -688,13 +800,16 @@ export function CreateStoreInvoiceModal({
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{item.product_name}</p>
-                        <div className="flex items-center gap-2">
+                         <div className="flex items-center gap-2">
                           <p className="text-xs text-muted-foreground">{item.brand_name}</p>
                           <Badge 
                             variant={item.sale_channel === 'street' ? 'default' : 'outline'} 
                             className="text-[10px] px-1.5 py-0"
                           >
                             {item.sale_channel}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-mono">
+                            {item.computed_tubes_total} tubes
                           </Badge>
                         </div>
                       </div>
@@ -749,6 +864,13 @@ export function CreateStoreInvoiceModal({
               <div className="flex items-center justify-between pt-2 border-t border-primary/20">
                 <span className="font-medium">Total</span>
                 <span className="text-xl font-bold font-mono">${total.toFixed(2)}</span>
+              </div>
+              {/* TUBE INTELLIGENCE */}
+              <div className="flex items-center justify-between pt-2 border-t border-primary/20">
+                <span className="text-sm font-medium text-muted-foreground">📦 Total Tubes</span>
+                <span className="font-mono font-bold text-primary">
+                  {lineItems.reduce((sum, item) => sum + item.computed_tubes_total, 0)}
+                </span>
               </div>
             </div>
           )}
