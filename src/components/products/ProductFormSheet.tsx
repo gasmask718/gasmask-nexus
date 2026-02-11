@@ -745,17 +745,16 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>{form.track_by === 'tubes' ? 'Tubes' : form.track_by === 'bags' ? 'Items' : 'Units'} Per Box</Label>
+                        <Label>{form.track_by === 'tubes' ? 'Tubes' : form.track_by === 'bags' ? 'Bags' : 'Units'} Per Box</Label>
                         <Input
                           type="number"
                           value={form.units_per_box}
                           onChange={(e) => updateField('units_per_box', parseInt(e.target.value) || 1)}
+                          placeholder={form.track_by === 'bags' ? 'e.g. 100' : 'e.g. 50'}
                         />
+                        <p className="text-xs text-muted-foreground">Bulk packaging: how many items bundled per box</p>
                         {form.track_by === 'tubes' && form.units_per_box <= 0 && (
                           <p className="text-xs text-destructive">Must be {'>'} 0 for tube-tracked products</p>
-                        )}
-                        {form.track_by === 'bags' && (
-                          <p className="text-xs text-muted-foreground">Not applicable for bag-tracked products</p>
                         )}
                       </div>
                       <div className="space-y-2">

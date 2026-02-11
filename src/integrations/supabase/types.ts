@@ -52700,6 +52700,43 @@ export type Database = {
           },
         ]
       }
+      v_bags_sold_finalized: {
+        Row: {
+          bags_sold: number | null
+          product_id: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_sale_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       v_bags_sold_per_brand_per_day: {
         Row: {
           brand_id: string | null
@@ -53926,6 +53963,19 @@ export type Database = {
           tubes_per_bag_ratio: number | null
           tubes_sold: number | null
         }
+        Relationships: []
+      }
+      v_tube_reorder_alerts: {
+        Row: {
+          alert_level: string | null
+          brand_id: string | null
+          min_quantity: number | null
+          product_id: string | null
+          product_name: string | null
+          reorder_quantity: number | null
+          store_id: string | null
+          tubes_on_hand: number | null
+        }
         Relationships: [
           {
             foreignKeyName: "tube_sale_ledger_store_id_fkey"
@@ -53943,16 +53993,11 @@ export type Database = {
           },
         ]
       }
-      v_tube_reorder_alerts: {
+      v_tubes_sold_finalized: {
         Row: {
-          alert_level: string | null
-          brand_id: string | null
-          min_quantity: number | null
           product_id: string | null
-          product_name: string | null
-          reorder_quantity: number | null
           store_id: string | null
-          tubes_on_hand: number | null
+          tubes_sold: number | null
         }
         Relationships: [
           {
