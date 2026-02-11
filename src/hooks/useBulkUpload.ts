@@ -499,14 +499,13 @@ export function useBulkUpload() {
               }
             }
 
-            // Skip all rows except the first (merged) one
+            // Skip all secondary rows, keep the merged primary
             dup.fileRows.slice(1).forEach((r) => skipRows.add(r));
+            // Ensure the primary merged row is never skipped
+            skipRows.delete(primaryRowNum);
 
-            // If there's an existing store in DB, append/update the merged row
-            if (dup.existingStore) {
-              appendRows.add(primaryRowNum);
-            }
-            // If no existing store, the merged row goes through normal insert
+            // Mark merged row for append (update existing or insert new)
+            appendRows.add(primaryRowNum);
           }
 
           if (action === "append" && dup.existingStore) {
