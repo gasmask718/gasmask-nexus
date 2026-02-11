@@ -797,8 +797,8 @@ async function importStores(
             { field: 'notes', brand_scope: null },
             { field: 'gasmask_notes', brand_scope: 'gasmask' },
             { field: 'hotmama_notes', brand_scope: 'hotmama' },
-            { field: 'hotscolatti_notes', brand_scope: 'scalati' },
-            { field: 'grabba_notes', brand_scope: 'grabba' },
+             { field: 'hotscolatti_notes', brand_scope: 'hotscolatti' },
+            { field: 'grabba_notes', brand_scope: 'grabba_r_us' },
           ];
 
           const noteInserts: { store_id: string; note_text: string; brand_scope: string | null; created_at: string }[] = [];

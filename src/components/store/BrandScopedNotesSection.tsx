@@ -228,7 +228,7 @@ export function BrandScopedNotesSection({ storeId, storeName }: BrandScopedNotes
             </TabsList>
 
             {/* All tab and brand-specific tabs share the same renderer */}
-            {['all', 'general', 'gasmask', 'hotmama', 'scalati', 'grabba'].map((tabKey) => (
+            {['all', 'general', ...CANONICAL_BRAND_IDS].map((tabKey) => (
               <TabsContent key={tabKey} value={tabKey}>
                 <NotesList
                   notes={filteredNotes}
