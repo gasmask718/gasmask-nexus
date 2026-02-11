@@ -118,6 +118,11 @@ interface ProductForm {
   age_restricted: boolean;
   requires_license: boolean;
   internal_notes: string;
+  // Phase 1B: Tube-native pricing
+  track_by: string;
+  sale_unit_default: string;
+  price_per_box: number | null;
+  price_per_unit: number;
 }
 
 const defaultForm: ProductForm = {
@@ -157,6 +162,11 @@ const defaultForm: ProductForm = {
   age_restricted: true,
   requires_license: true,
   internal_notes: '',
+  // Phase 1B
+  track_by: 'tubes',
+  sale_unit_default: 'box',
+  price_per_box: null,
+  price_per_unit: 0,
 };
 
 export function ProductFormSheet({ open, onClose, productId, onSuccess }: ProductFormSheetProps) {
@@ -248,6 +258,11 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
         age_restricted: existingProduct.age_restricted ?? true,
         requires_license: existingProduct.requires_license ?? true,
         internal_notes: existingProduct.internal_notes || '',
+        // Phase 1B
+        track_by: (existingProduct as any).track_by || 'tubes',
+        sale_unit_default: (existingProduct as any).sale_unit_default || 'box',
+        price_per_box: (existingProduct as any).price_per_box ?? null,
+        price_per_unit: (existingProduct as any).price_per_unit ?? 0,
       });
     } else if (!isEditMode && open) {
       setForm(defaultForm);
@@ -645,6 +660,73 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                     </div>
                   </AccordionTrigger>
                   <AccordionContent className="pt-4 space-y-4">
+                    {/* Phase 1B: Track By + Sale Unit Default */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Track By</Label>
+                        <Select
+                          value={form.track_by}
+                          onValueChange={(v) => updateField('track_by', v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="tubes">Tubes (ledger-tracked)</SelectItem>
+                            <SelectItem value="units">Units (generic)</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground">
+                          {form.track_by === 'tubes' ? 'Tube movements written to ledger' : 
+                           form.track_by === 'units' ? 'Per-item sales, no ledger' : 'No unit tracking'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Default Sale Unit</Label>
+                        <Select
+                          value={form.sale_unit_default}
+                          onValueChange={(v) => updateField('sale_unit_default', v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="box">📦 Box</SelectItem>
+                            <SelectItem value="unit">🔧 Unit / Tube</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    {/* Phase 1B: Default Pricing Per Box & Per Unit */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Default Price Per Box ($)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={form.price_per_box ?? ''}
+                          onChange={(e) => updateField('price_per_box', e.target.value ? parseFloat(e.target.value) : null)}
+                          placeholder="0.00"
+                        />
+                        <p className="text-xs text-muted-foreground">Used when selling as box</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Default Price Per {form.track_by === 'tubes' ? 'Tube' : 'Unit'} ($)</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={form.price_per_unit}
+                          onChange={(e) => updateField('price_per_unit', parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                        />
+                        <p className="text-xs text-muted-foreground">Used when selling loose</p>
+                      </div>
+                    </div>
+
+                    <Separator />
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Unit Type</Label>
@@ -663,12 +745,15 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         </Select>
                       </div>
                       <div className="space-y-2">
-                        <Label>Units Per Box</Label>
+                        <Label>{form.track_by === 'tubes' ? 'Tubes' : 'Units'} Per Box</Label>
                         <Input
                           type="number"
                           value={form.units_per_box}
                           onChange={(e) => updateField('units_per_box', parseInt(e.target.value) || 1)}
                         />
+                        {form.track_by === 'tubes' && form.units_per_box <= 0 && (
+                          <p className="text-xs text-destructive">Must be {'>'} 0 for tube-tracked products</p>
+                        )}
                       </div>
                       <div className="space-y-2">
                         <Label>Units Per Pack</Label>
