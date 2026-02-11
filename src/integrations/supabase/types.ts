@@ -7267,6 +7267,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_line_units"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bag_sale_ledger_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -26402,6 +26409,7 @@ export type Database = {
           brand_id: string | null
           brand_name_snapshot: string | null
           computed_tubes_total: number
+          computed_units_total: number | null
           cost_per_unit_at_sale: number | null
           created_at: string
           discount_reason: string | null
@@ -26434,6 +26442,7 @@ export type Database = {
           brand_id?: string | null
           brand_name_snapshot?: string | null
           computed_tubes_total?: number
+          computed_units_total?: number | null
           cost_per_unit_at_sale?: number | null
           created_at?: string
           discount_reason?: string | null
@@ -26466,6 +26475,7 @@ export type Database = {
           brand_id?: string | null
           brand_name_snapshot?: string | null
           computed_tubes_total?: number
+          computed_units_total?: number | null
           cost_per_unit_at_sale?: number | null
           created_at?: string
           discount_reason?: string | null
@@ -46745,6 +46755,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_line_units"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tube_sale_ledger_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -52712,91 +52729,14 @@ export type Database = {
         }
         Relationships: []
       }
-      v_bag_reorder_alerts: {
-        Row: {
-          alert_level: string | null
-          bags_on_hand: number | null
-          brand_id: string | null
-          min_quantity: number | null
-          product_id: string | null
-          product_name: string | null
-          reorder_quantity: number | null
-          store_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "bag_sale_ledger_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "v_product_profit_summary"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_master"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_commission_performance"
-            referencedColumns: ["store_id"]
-          },
-        ]
-      }
       v_bags_sold_finalized: {
         Row: {
           bags_sold: number | null
           product_id: string | null
+          product_name: string | null
           store_id: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "bag_sale_ledger_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "v_product_profit_summary"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_master"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_commission_performance"
-            referencedColumns: ["store_id"]
-          },
-        ]
+        Relationships: []
       }
       v_bags_sold_per_brand_per_day: {
         Row: {
@@ -53263,6 +53203,34 @@ export type Database = {
           },
         ]
       }
+      v_inventory_movements: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          invoice_id: string | null
+          product_id: string | null
+          recorded_by: string | null
+          source: string | null
+          store_id: string | null
+          track_by: string | null
+          units_delta: number | null
+        }
+        Relationships: []
+      }
+      v_inventory_movements_with_repairs: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          invoice_id: string | null
+          product_id: string | null
+          recorded_by: string | null
+          source: string | null
+          store_id: string | null
+          track_by: string | null
+          units_delta: number | null
+        }
+        Relationships: []
+      }
       v_invoice_line_items_safe: {
         Row: {
           brand: string | null
@@ -53329,6 +53297,65 @@ export type Database = {
             referencedRelation: "brands"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      v_invoice_line_units: {
+        Row: {
+          computed_tubes_total: number | null
+          computed_units_total: number | null
+          created_at: string | null
+          discount_reason: string | null
+          discount_type: string | null
+          discount_value: number | null
+          id: string | null
+          invoice_id: string | null
+          list_unit_price: number | null
+          price_override_reason: string | null
+          product_id: string | null
+          quantity_boxes: number | null
+          quantity_tubes: number | null
+          sale_unit: string | null
+          track_by: string | null
+          unit_label: string | null
+          unit_price_used: number | null
+          units_per_box_snapshot: number | null
+        }
+        Relationships: [
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -53643,48 +53670,12 @@ export type Database = {
       v_store_bags_on_hand: {
         Row: {
           bags_on_hand: number | null
-          brand_id: string | null
           product_id: string | null
           product_name: string | null
           store_id: string | null
+          track_by: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "bag_sale_ledger_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "v_product_profit_summary"
-            referencedColumns: ["product_id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_master"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "bag_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_commission_performance"
-            referencedColumns: ["store_id"]
-          },
-        ]
+        Relationships: []
       }
       v_store_brand_order_events: {
         Row: {
@@ -53925,28 +53916,13 @@ export type Database = {
       }
       v_store_tubes_on_hand: {
         Row: {
-          brand_id: string | null
           product_id: string | null
           product_name: string | null
           store_id: string | null
+          track_by: string | null
           tubes_on_hand: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tube_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_master"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tube_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_commission_performance"
-            referencedColumns: ["store_id"]
-          },
-        ]
+        Relationships: []
       }
       v_territory_address_status_summary: {
         Row: {
@@ -54017,65 +53993,14 @@ export type Database = {
         }
         Relationships: []
       }
-      v_tube_bag_ratio_per_store: {
-        Row: {
-          bags_sold: number | null
-          store_id: string | null
-          tubes_per_bag_ratio: number | null
-          tubes_sold: number | null
-        }
-        Relationships: []
-      }
-      v_tube_reorder_alerts: {
-        Row: {
-          alert_level: string | null
-          brand_id: string | null
-          min_quantity: number | null
-          product_id: string | null
-          product_name: string | null
-          reorder_quantity: number | null
-          store_id: string | null
-          tubes_on_hand: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tube_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_master"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tube_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_commission_performance"
-            referencedColumns: ["store_id"]
-          },
-        ]
-      }
       v_tubes_sold_finalized: {
         Row: {
           product_id: string | null
+          product_name: string | null
           store_id: string | null
           tubes_sold: number | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "tube_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "store_master"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tube_sale_ledger_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "v_store_commission_performance"
-            referencedColumns: ["store_id"]
-          },
-        ]
+        Relationships: []
       }
       v_tubes_sold_per_invoice: {
         Row: {
