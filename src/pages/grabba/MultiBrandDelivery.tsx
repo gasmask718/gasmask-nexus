@@ -14,8 +14,8 @@ import { useCall } from '@/components/communication/CallProvider';
 const brandColors = {
   GasMask: GRABBA_BRAND_CONFIG.gasmask.primary, // Red
   HotMama: GRABBA_BRAND_CONFIG.hotmama.primary, // Rose-gold pink
-  GrabbaRUs: GRABBA_BRAND_CONFIG.grabba.primary, // Purple
-  HotScalati: GRABBA_BRAND_CONFIG.scalati.primary // Orange
+  GrabbaRUs: GRABBA_BRAND_CONFIG.grabba_r_us.primary, // Purple
+  HotScalati: GRABBA_BRAND_CONFIG.hotscolatti.primary // Orange
 };
 
 export default function MultiBrandDelivery() {

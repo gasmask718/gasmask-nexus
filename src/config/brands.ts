@@ -4,7 +4,7 @@
 // No component may hardcode brand names or colors.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export type CanonicalBrandId = 'gasmask' | 'hotmama' | 'scalati' | 'grabba';
+export type CanonicalBrandId = 'gasmask' | 'hotmama' | 'hotscolatti' | 'grabba_r_us';
 
 export interface BrandIdentity {
   id: CanonicalBrandId;
@@ -59,8 +59,8 @@ export const CANONICAL_BRANDS: Record<CanonicalBrandId, BrandIdentity> = {
     icon: '💖',
     aliases: ['hot mama', 'hotmama', 'hot mama grabba'],
   },
-  scalati: {
-    id: 'scalati',
+  hotscolatti: {
+    id: 'hotscolatti',
     displayName: 'Hot Scolatti',
     shortName: 'Scolatti',
     primaryColor: '#FF7A00',
@@ -70,10 +70,10 @@ export const CANONICAL_BRANDS: Record<CanonicalBrandId, BrandIdentity> = {
     pillClass: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
     gradient: 'from-orange-500 to-amber-600',
     icon: '🟠',
-    aliases: ['scalati', 'scolatti', 'hot scolatti', 'hot scalati', 'hotscolati', 'hotscalati', 'hotscolatti'],
+    aliases: ['scalati', 'scolatti', 'hot scolatti', 'hot scalati', 'hotscolati', 'hotscalati', 'hotscolatti', 'hotscolatti'],
   },
-  grabba: {
-    id: 'grabba',
+  grabba_r_us: {
+    id: 'grabba_r_us',
     displayName: 'Grabba R Us',
     shortName: 'Grabba',
     primaryColor: '#A020F0',
@@ -88,7 +88,7 @@ export const CANONICAL_BRANDS: Record<CanonicalBrandId, BrandIdentity> = {
 };
 
 /** Ordered list of all canonical brand IDs */
-export const CANONICAL_BRAND_IDS: CanonicalBrandId[] = ['gasmask', 'hotmama', 'scalati', 'grabba'];
+export const CANONICAL_BRAND_IDS: CanonicalBrandId[] = ['gasmask', 'hotmama', 'hotscolatti', 'grabba_r_us'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // HELPERS — Import these instead of hardcoding anything

@@ -40938,6 +40938,7 @@ export type Database = {
       }
       store_brand_relationships: {
         Row: {
+          brand_activated_at: string | null
           brand_id: string
           created_at: string
           id: string
@@ -40952,6 +40953,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          brand_activated_at?: string | null
           brand_id: string
           created_at?: string
           id?: string
@@ -40966,6 +40968,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          brand_activated_at?: string | null
           brand_id?: string
           created_at?: string
           id?: string
@@ -54440,7 +54443,12 @@ export type Database = {
         | "commercial"
         | "warehouse"
         | "mixed_use"
-      relationship_health_enum: "healthy" | "at_risk" | "paused" | "terminated"
+      relationship_health_enum:
+        | "healthy"
+        | "at_risk"
+        | "paused"
+        | "terminated"
+        | "trialing"
       reporting_mode:
         | "live"
         | "daily_summary"
@@ -54991,7 +54999,13 @@ export const Constants = {
         "warehouse",
         "mixed_use",
       ],
-      relationship_health_enum: ["healthy", "at_risk", "paused", "terminated"],
+      relationship_health_enum: [
+        "healthy",
+        "at_risk",
+        "paused",
+        "terminated",
+        "trialing",
+      ],
       reporting_mode: [
         "live",
         "daily_summary",

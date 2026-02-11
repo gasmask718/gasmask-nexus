@@ -4,7 +4,7 @@
 // This file adds tube-inventory-specific product variants (Bags/Tubes, Light/Dark)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { CANONICAL_BRANDS, getBrandIdentity } from '@/config/brands';
+import { CANONICAL_BRANDS } from '@/config/brands';
 
 export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; name: string }> = {
   // ── Canonical brands (derived from registry) ──
@@ -23,10 +23,16 @@ export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; 
     tailwind: 'text-pink-500',
     name: CANONICAL_BRANDS.hotmama.displayName,
   },
-  grabba: {
-    hex: CANONICAL_BRANDS.grabba.primaryColor,
+  grabba_r_us: {
+    hex: CANONICAL_BRANDS.grabba_r_us.primaryColor,
     tailwind: 'text-purple-500',
-    name: CANONICAL_BRANDS.grabba.displayName,
+    name: CANONICAL_BRANDS.grabba_r_us.displayName,
+  },
+  // Legacy alias — tube inventory may still reference 'grabba'
+  grabba: {
+    hex: CANONICAL_BRANDS.grabba_r_us.primaryColor,
+    tailwind: 'text-purple-500',
+    name: CANONICAL_BRANDS.grabba_r_us.displayName,
   },
   'hotscolatti-light': {
     hex: '#FBBF24',

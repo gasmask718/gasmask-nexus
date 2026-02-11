@@ -11,7 +11,7 @@ export const TUBE_BRANDS = [
   { id: 'gasmask', name: 'GasMask Bags', color: '#EF4444' },
   { id: 'gasmasktubes', name: 'GasMask Tubes', color: '#3B82F6' },
   { id: 'hotmama', name: 'HotMama', color: '#EC4899' },
-  { id: 'grabba', name: 'Grabba R Us', color: '#A855F7' },
+  { id: 'grabba_r_us', name: 'Grabba R Us', color: '#A855F7' },
   { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: '#FBBF24' },
   { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: '#92400E' },
 ] as const;

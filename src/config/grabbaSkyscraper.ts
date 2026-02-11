@@ -93,24 +93,24 @@ export const GRABBA_BRAND_CONFIG: Record<GrabbaBrand, {
   hotmama: {
     ...buildBrandConfig('hotmama', { secondary: '#FFC2D6', bgLight: 'bg-pink-50', roseGoldGradient: ['#FF4F9D', '#FFC2D6', '#FFE5EF'] }),
   },
-  scalati: buildBrandConfig('scalati', { secondary: '#5A3A2E', bgLight: 'bg-orange-50' }),
-  grabba: buildBrandConfig('grabba', { secondary: '#7B68EE', bgLight: 'bg-purple-50' }),
+  hotscolatti: buildBrandConfig('hotscolatti', { secondary: '#5A3A2E', bgLight: 'bg-orange-50' }),
+  grabba_r_us: buildBrandConfig('grabba_r_us', { secondary: '#7B68EE', bgLight: 'bg-purple-50' }),
 };
 
 // Map frontend brand keys to database enum values (store_brand_accounts)
 export const BRAND_KEY_TO_ENUM_MAP: Record<GrabbaBrand, string> = {
   gasmask: 'GasMask',
   hotmama: 'HotMama',
-  scalati: 'HotScalati',
-  grabba: 'GrabbaRUs',
+  hotscolatti: 'HotScalati',
+  grabba_r_us: 'GrabbaRUs',
 };
 
 // Map frontend brand keys to wholesale_orders brand values (snake_case)
 export const BRAND_KEY_TO_ORDER_BRAND: Record<GrabbaBrand, string> = {
   gasmask: 'gasmask',
   hotmama: 'hotmama',
-  scalati: 'hotscolati',
-  grabba: 'grabba_r_us',
+  hotscolatti: 'hotscolati',
+  grabba_r_us: 'grabba_r_us',
 };
 
 // Helper to get the database enum value from a brand key

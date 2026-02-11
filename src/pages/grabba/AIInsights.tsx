@@ -9,8 +9,8 @@ import { CANONICAL_BRANDS } from '@/config/brands';
 const brandColors: Record<string, { primary: string; name: string }> = {
   GasMask: { primary: CANONICAL_BRANDS.gasmask.primaryColor, name: CANONICAL_BRANDS.gasmask.displayName },
   HotMama: { primary: CANONICAL_BRANDS.hotmama.primaryColor, name: CANONICAL_BRANDS.hotmama.displayName },
-  GrabbaRUs: { primary: CANONICAL_BRANDS.grabba.primaryColor, name: CANONICAL_BRANDS.grabba.displayName },
-  HotScalati: { primary: CANONICAL_BRANDS.scalati.primaryColor, name: CANONICAL_BRANDS.scalati.displayName },
+  GrabbaRUs: { primary: CANONICAL_BRANDS.grabba_r_us.primaryColor, name: CANONICAL_BRANDS.grabba_r_us.displayName },
+  HotScalati: { primary: CANONICAL_BRANDS.hotscolatti.primaryColor, name: CANONICAL_BRANDS.hotscolatti.displayName },
 };
 
 export default function AIInsights() {

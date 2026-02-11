@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Handshake } from 'lucide-react';
 import {
@@ -12,6 +12,7 @@ import {
   RelationshipHealth,
   StoreBrandRelationship,
 } from '@/hooks/useStoreBrandRelationships';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const PAYMENT_OPTIONS: { value: PaymentType; label: string }[] = [
   { value: 'pay_upfront', label: 'Pay Upfront' },
@@ -31,6 +32,7 @@ const SAMPLING_OPTIONS: { value: SamplingStatus; label: string }[] = [
 const HEALTH_OPTIONS: { value: RelationshipHealth; label: string; variant: string }[] = [
   { value: 'healthy', label: 'Healthy', variant: 'text-green-400' },
   { value: 'at_risk', label: 'At Risk', variant: 'text-amber-400' },
+  { value: 'trialing', label: 'Trialing', variant: 'text-blue-400' },
   { value: 'paused', label: 'Paused', variant: 'text-orange-400' },
   { value: 'terminated', label: 'Terminated', variant: 'text-red-400' },
 ];
@@ -83,6 +85,7 @@ function BrandRow({
   if (!brand) return null;
 
   const healthInfo = HEALTH_OPTIONS.find((h) => h.value === rel.relationship_health);
+  const isActive = !['paused', 'terminated'].includes(rel.relationship_health);
 
   return (
     <div className="rounded-lg border border-border/30 bg-background/50 p-3 space-y-2">
@@ -96,14 +99,17 @@ function BrandRow({
               • {healthInfo.label}
             </span>
           )}
+          {!isActive && (
+            <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
+              Inactive
+            </Badge>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Active</span>
-          <Switch
-            checked={rel.is_active}
-            onCheckedChange={(v) => onUpdate({ id: rel.id, updates: { is_active: v } })}
-          />
-        </div>
+        {rel.brand_activated_at && (
+          <span className="text-xs text-muted-foreground">
+            Active since {formatDistanceToNow(new Date(rel.brand_activated_at), { addSuffix: true })}
+          </span>
+        )}
       </div>
 
       {/* Controls row */}
