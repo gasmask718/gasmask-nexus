@@ -5265,6 +5265,54 @@ export type Database = {
           },
         ]
       }
+      ambassador_invite_requests: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string
+          generated_invite_id: string | null
+          id: string
+          justification: string
+          requested_by: string
+          requested_by_ambassador_id: string | null
+          review_notes: string | null
+          reviewed_by: string | null
+          status: string
+          territory: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name: string
+          generated_invite_id?: string | null
+          id?: string
+          justification: string
+          requested_by: string
+          requested_by_ambassador_id?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          territory?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string
+          generated_invite_id?: string | null
+          id?: string
+          justification?: string
+          requested_by?: string
+          requested_by_ambassador_id?: string | null
+          review_notes?: string | null
+          reviewed_by?: string | null
+          status?: string
+          territory?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ambassador_invites: {
         Row: {
           created_at: string

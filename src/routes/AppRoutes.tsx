@@ -73,6 +73,8 @@ import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';
 import Ambassadors from '@/pages/Ambassadors';
 import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail, AmbassadorPurchases, AmbassadorSellThrough, AmbassadorProfitDashboard, AmbassadorInvites, AmbassadorRecruitmentLeads } from '@/pages/ambassador';
+import AmbassadorRequestAmbassador from '@/pages/ambassador/AmbassadorRequestAmbassador';
+import AmbassadorRequests from '@/pages/security/AmbassadorRequests';
 import AmbassadorInviteAccept from '@/pages/invite/AmbassadorInviteAccept';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
@@ -583,6 +585,7 @@ export default function AppRoutes() {
         <Route path="/security/invitations" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><UserInvitations /></RequireRole>} />
         <Route path="/security/roles" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><RolesPermissionsPage /></RequireRole>} />
         <Route path="/security/audit" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><SecurityConsole /></RequireRole>} />
+        <Route path="/security/ambassador-requests" element={<RequireRole allowedRoles={['owner', 'admin']} showLocked><AmbassadorRequests /></RequireRole>} />
 
         {/* Territory Control Center (Floor 0-2 visibility — read-only) */}
         <Route path="/territory" element={<RequireRole allowedRoles={['owner', 'admin', 'staff']} showLocked><TerritoryOverview /></RequireRole>} />
@@ -2082,6 +2085,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'ambassador']}>
             <Layout><AmbassadorRecruitmentLeads /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/ambassador/request-ambassador" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'ambassador']}>
+            <Layout><AmbassadorRequestAmbassador /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
