@@ -568,7 +568,7 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                           </div>
                         </div>
                       </div>
-                      <ScrollArea className="max-h-[250px] w-full">
+                      <ScrollArea className="h-[300px] w-full overflow-y-auto">
                         <div className="p-3 space-y-2">
                           {state.duplicates.map((dup) => {
                             const action = state.duplicateActions[dup.key] || "skip";
