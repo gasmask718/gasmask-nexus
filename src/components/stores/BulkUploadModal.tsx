@@ -762,10 +762,10 @@ export default function BulkUploadModal({ open, onOpenChange, onSuccess, canUplo
                   <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
                     <p className="font-medium mb-1">Review your records before uploading</p>
                     <p className="text-xs text-muted-foreground">
-                      Records tagged as <span className="font-semibold text-amber-600">Append</span> will update
-                      existing stores. Records tagged as <span className="font-semibold text-green-600">New</span> will
-                      be created fresh. Records tagged as <span className="text-muted-foreground">Skip</span> will be
-                      ignored.
+                      Records tagged as <span className="font-semibold text-purple-600">Merged</span> have been combined from duplicates and will be uploaded.
+                      {' '}<span className="font-semibold text-amber-600">Append</span> will update existing stores.
+                      {' '}<span className="font-semibold text-green-600">New</span> will be created fresh.
+                      Skipped records are hidden from this view.
                     </p>
                   </div>
 
