@@ -465,6 +465,7 @@ export function useBulkUpload() {
         const skipRows = new Set<number>();
         const appendRows = new Set<number>();
         const updateRows = new Set<number>();
+        const mergedPrimaryRows = new Set<number>(); // Track merged rows to ensure they're never skipped
 
         // Merge data from combined duplicate rows into the surviving (first) row
         for (const dup of state.duplicates) {
@@ -501,11 +502,15 @@ export function useBulkUpload() {
 
             // Skip all secondary rows, keep the merged primary
             dup.fileRows.slice(1).forEach((r) => skipRows.add(r));
-            // Ensure the primary merged row is never skipped
-            skipRows.delete(primaryRowNum);
+            // Track the primary row so it's guaranteed to never be skipped
+            mergedPrimaryRows.add(primaryRowNum);
 
-            // Mark merged row for append (update existing or insert new)
-            appendRows.add(primaryRowNum);
+            // Mark merged row for append/update
+            if (dup.existingStore) {
+              appendRows.add(primaryRowNum);
+            } else {
+              appendRows.add(primaryRowNum);
+            }
           }
 
           if (action === "append" && dup.existingStore) {
@@ -514,6 +519,12 @@ export function useBulkUpload() {
           if (action === "update" && dup.existingStore) {
             dup.fileRows.forEach((r) => updateRows.add(r));
           }
+        }
+
+        // CRITICAL: Remove all merged primary rows from skipRows AFTER the loop
+        // This prevents a later duplicate group from re-skipping a merged row
+        for (const rowNum of mergedPrimaryRows) {
+          skipRows.delete(rowNum);
         }
 
         const filteredRows = validRows.filter((r) => !skipRows.has(r.rowNumber));
