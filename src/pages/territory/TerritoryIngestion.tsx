@@ -284,6 +284,25 @@ export default function TerritoryIngestion() {
     (n: NeighborhoodResult) => n.status === 'failed'
   ) || [];
 
+  const partialNeighborhoods = (apiResults?.neighborhoods as NeighborhoodResult[] | undefined)?.filter(
+    (n: NeighborhoodResult) => n.status === 'partial'
+  ) || [];
+
+  const retryPartial = () => {
+    const partialIds = partialNeighborhoods.map(n => n.neighborhood_id).filter(Boolean);
+    if (partialIds.length > 0) {
+      setSelectedNeighborhoodIds(partialIds);
+      setLegacyNeighborhoods([]);
+    } else {
+      setLegacyNeighborhoods(partialNeighborhoods.map(n => n.neighborhood));
+      setSelectedNeighborhoodIds([]);
+    }
+    setStep('scope');
+    setApiProgress(0);
+    setProgressLabel('');
+    setApiResults(null);
+  };
+
   const retryFailed = () => {
     const failedIds = failedNeighborhoods.map(n => n.neighborhood_id).filter(Boolean);
     if (failedIds.length > 0) {
@@ -711,10 +730,11 @@ export default function TerritoryIngestion() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Neighborhood</TableHead>
-                        <TableHead>Status</TableHead>
+                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Found</TableHead>
                         <TableHead className="text-right">Inserted</TableHead>
                         <TableHead className="text-right">Skipped</TableHead>
+                        <TableHead className="text-right">Error</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -722,13 +742,24 @@ export default function TerritoryIngestion() {
                         <TableRow key={i}>
                           <TableCell className="font-medium">{n.neighborhood}</TableCell>
                           <TableCell>
-                            <Badge variant={n.status === 'success' ? 'default' : n.status === 'partial' ? 'secondary' : 'destructive'}>
-                              {n.status}
+                            <Badge
+                              variant={n.status === 'success' ? 'default' : n.status === 'partial' ? 'secondary' : 'destructive'}
+                              title={n.error || undefined}
+                              className="cursor-help"
+                            >
+                              {n.status === 'success' ? '✓ success' : n.status === 'partial' ? '⚠ partial' : '✗ failed'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">{n.total}</TableCell>
                           <TableCell className="text-right text-emerald-500">{n.inserted}</TableCell>
                           <TableCell className="text-right text-muted-foreground">{n.skipped}</TableCell>
+                          <TableCell className="text-right">
+                            {n.error && (
+                              <span className="text-xs text-destructive truncate max-w-[200px] inline-block" title={n.error}>
+                                {n.error}
+                              </span>
+                            )}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -757,9 +788,15 @@ export default function TerritoryIngestion() {
             <div className="flex gap-2">
               <Button onClick={resetAll}>Import More Data</Button>
               {failedNeighborhoods.length > 0 && (
-                <Button variant="outline" onClick={retryFailed}>
+                <Button variant="destructive" onClick={retryFailed}>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry {failedNeighborhoods.length} Failed Neighborhood(s)
+                  Retry {failedNeighborhoods.length} Failed
+                </Button>
+              )}
+              {partialNeighborhoods.length > 0 && (
+                <Button variant="outline" className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10" onClick={retryPartial}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry {partialNeighborhoods.length} Partial
                 </Button>
               )}
             </div>

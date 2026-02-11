@@ -135,7 +135,11 @@ serve(async (req) => {
 
         if (bbox) {
           const center = bboxToCenter(bbox);
-          targets.push({ id: hood.id, name: hood.name, ...center });
+          if (center.radius <= 0 || center.radius > 40000) {
+            targets.push({ id: hood.id, name: hood.name, lat: 0, lng: 0, radius: 0 });
+          } else {
+            targets.push({ id: hood.id, name: hood.name, ...center });
+          }
         } else {
           targets.push({ id: hood.id, name: hood.name, lat: 0, lng: 0, radius: 0 });
         }
@@ -151,7 +155,11 @@ serve(async (req) => {
         const bbox = await resolveNeighborhoodBBox(hood, city, state, country);
         if (bbox) {
           const center = bboxToCenter(bbox);
-          targets.push({ id: '', name: hood, ...center });
+          if (center.radius <= 0 || center.radius > 40000) {
+            targets.push({ id: '', name: hood, lat: 0, lng: 0, radius: 0 });
+          } else {
+            targets.push({ id: '', name: hood, ...center });
+          }
         } else {
           targets.push({ id: '', name: hood, lat: 0, lng: 0, radius: 0 });
         }
@@ -178,9 +186,11 @@ serve(async (req) => {
           total: 0,
         };
 
-        if (target.lat === 0 && target.lng === 0) {
+        if (target.lat === 0 && target.lng === 0 || target.radius <= 0) {
           result.status = 'failed';
-          result.error = 'Could not resolve bounding box via Nominatim';
+          result.error = target.radius <= 0 && target.lat !== 0
+            ? 'Invalid radius computed from bounding box'
+            : 'Could not resolve bounding box via Nominatim';
           neighborhoodResults.push(result);
           if (target.id) {
             const { error: upErr } = await supabase.from('neighborhoods').update({
