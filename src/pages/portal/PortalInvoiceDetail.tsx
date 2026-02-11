@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, ArrowLeft, Download, CreditCard } from 'lucide-react';
 import { ReceiptStatusIndicator, InvoiceReceiptPanel, InvoiceActivityTimeline } from '@/components/invoice';
 import type { ReceiptStatus } from '@/components/invoice/ReceiptStatusIndicator';
+import { InvoiceRepairBanner } from '@/components/inventory/InvoiceRepairBanner';
 
 const PortalInvoiceDetail = () => {
   const { id } = useParams();
@@ -94,6 +95,11 @@ const PortalInvoiceDetail = () => {
 
       <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
         <Card className="p-8">
+          <InvoiceRepairBanner
+            repairStatus={(invoice as any).repair_status}
+            repairNotes={(invoice as any).repair_notes}
+            repairedAt={(invoice as any).repaired_at}
+          />
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-bold">{invoice.invoice_number}</h2>

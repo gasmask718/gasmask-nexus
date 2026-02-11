@@ -2,6 +2,7 @@ import { StoreInventoryOnHand } from '@/components/inventory/StoreInventoryOnHan
 import { ReorderAlerts } from '@/components/inventory/ReorderAlerts';
 import { TubeBagRatioCard } from '@/components/inventory/TubeBagRatioCard';
 import { InvoiceRepairStatus } from '@/components/inventory/InvoiceRepairStatus';
+import { HistoricalRepairPanel } from '@/components/inventory/HistoricalRepairPanel';
 
 export function InventoryIntelligenceTab() {
   return (
@@ -23,6 +24,9 @@ export function InventoryIntelligenceTab() {
         <TubeBagRatioCard />
         <InvoiceRepairStatus />
       </div>
+
+      {/* Historical Invoice Repair */}
+      <HistoricalRepairPanel />
     </div>
   );
 }
