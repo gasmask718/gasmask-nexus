@@ -336,9 +336,16 @@ export function StoreContactInfoCard({ store, onUpdate }: StoreContactInfoCardPr
             <p className="text-sm font-medium text-muted-foreground">Address</p>
             <div className="flex items-start gap-2">
               <MapPin className="h-4 w-4 text-primary mt-0.5" />
-              <div className="text-sm">
+              <div className="text-sm space-y-0.5">
                 <p>{store.address_street || 'No street address'}</p>
-                <p>{[store.address_city, store.address_state, store.address_zip].filter(Boolean).join(', ') || 'No city/state'}</p>
+                {(store.address_city || store.address_state || store.address_zip) ? (
+                  <p className="text-muted-foreground">
+                    {[store.address_city, store.address_state].filter(Boolean).join(', ')}
+                    {store.address_zip ? ` ${store.address_zip}` : ''}
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">No city/state</p>
+                )}
               </div>
             </div>
           </div>
