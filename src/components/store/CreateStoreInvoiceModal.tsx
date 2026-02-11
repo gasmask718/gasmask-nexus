@@ -127,31 +127,19 @@ export function CreateStoreInvoiceModal({
     },
   });
 
-  // Fetch products by brand with all pricing fields from products_all (has street_price)
+  // Fetch products by brand from canonical products table
   const { data: products = [], isLoading: productsLoading } = useQuery({
-    queryKey: ['invoice-products-all', selectedBrandId],
+    queryKey: ['invoice-products', selectedBrandId],
     queryFn: async () => {
       if (!selectedBrandId) return [];
       const { data, error } = await supabase
-        .from('products_all')
-        .select('id, product_name, store_price, wholesale_price, retail_price, street_price, unit_type')
+        .from('products')
+        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type')
         .eq('brand_id', selectedBrandId)
-        .eq('status', 'active')
-        .order('product_name');
+        .eq('is_active', true)
+        .order('name');
       if (error) throw error;
-      // Map to expected Product interface
-      return (data || []).map(p => ({
-        id: p.id,
-        name: p.product_name,
-        sku: null, // Not available in products_all
-        store_price: p.store_price,
-        wholesale_price: p.wholesale_price,
-        suggested_retail_price: p.retail_price,
-        street_price: p.street_price,
-        cost: 0, // Will be looked up separately if needed
-        units_per_box: 1, // Default
-        unit_type: p.unit_type,
-      })) as Product[];
+      return (data || []) as Product[];
     },
     enabled: !!selectedBrandId,
   });
