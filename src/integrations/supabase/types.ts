@@ -52729,11 +52729,14 @@ export type Database = {
         }
         Relationships: []
       }
-      v_bags_sold_finalized: {
+      v_bag_reorder_alerts: {
         Row: {
-          bags_sold: number | null
+          alert_level: string | null
+          bags_on_hand: number | null
+          min_quantity: number | null
           product_id: string | null
           product_name: string | null
+          reorder_quantity: number | null
           store_id: string | null
         }
         Relationships: []
@@ -53206,24 +53209,7 @@ export type Database = {
       v_inventory_movements: {
         Row: {
           created_at: string | null
-          id: string | null
-          invoice_id: string | null
           product_id: string | null
-          recorded_by: string | null
-          source: string | null
-          store_id: string | null
-          track_by: string | null
-          units_delta: number | null
-        }
-        Relationships: []
-      }
-      v_inventory_movements_with_repairs: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          invoice_id: string | null
-          product_id: string | null
-          recorded_by: string | null
           source: string | null
           store_id: string | null
           track_by: string | null
@@ -53336,26 +53322,48 @@ export type Database = {
       }
       v_invoice_line_units: {
         Row: {
+          brand: string | null
+          brand_id: string | null
+          brand_name_snapshot: string | null
           computed_tubes_total: number | null
           computed_units_total: number | null
+          cost_per_unit_at_sale: number | null
           created_at: string | null
           discount_reason: string | null
           discount_type: string | null
           discount_value: number | null
           id: string | null
           invoice_id: string | null
+          line_subtotal: number | null
           list_unit_price: number | null
           price_override_reason: string | null
           product_id: string | null
+          product_name: string | null
+          product_name_snapshot: string | null
+          profit_at_sale: number | null
+          quantity: number | null
           quantity_boxes: number | null
           quantity_tubes: number | null
+          sale_channel: string | null
           sale_unit: string | null
+          total: number | null
           track_by: string | null
+          tubes_equivalent: number | null
+          tubes_per_unit: number | null
           unit_label: string | null
+          unit_price: number | null
           unit_price_used: number | null
+          unit_type: string | null
           units_per_box_snapshot: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
@@ -53667,16 +53675,6 @@ export type Database = {
         }
         Relationships: []
       }
-      v_store_bags_on_hand: {
-        Row: {
-          bags_on_hand: number | null
-          product_id: string | null
-          product_name: string | null
-          store_id: string | null
-          track_by: string | null
-        }
-        Relationships: []
-      }
       v_store_brand_order_events: {
         Row: {
           brand_name: string | null
@@ -53914,16 +53912,6 @@ export type Database = {
         }
         Relationships: []
       }
-      v_store_tubes_on_hand: {
-        Row: {
-          product_id: string | null
-          product_name: string | null
-          store_id: string | null
-          track_by: string | null
-          tubes_on_hand: number | null
-        }
-        Relationships: []
-      }
       v_territory_address_status_summary: {
         Row: {
           candidates: number | null
@@ -53993,12 +53981,24 @@ export type Database = {
         }
         Relationships: []
       }
-      v_tubes_sold_finalized: {
+      v_tube_bag_ratio_per_store: {
         Row: {
+          bags_to_tubes_ratio_percent: number | null
+          store_id: string | null
+          total_bags_sold: number | null
+          total_tubes_sold: number | null
+        }
+        Relationships: []
+      }
+      v_tube_reorder_alerts: {
+        Row: {
+          alert_level: string | null
+          min_quantity: number | null
           product_id: string | null
           product_name: string | null
+          reorder_quantity: number | null
           store_id: string | null
-          tubes_sold: number | null
+          tubes_on_hand: number | null
         }
         Relationships: []
       }
