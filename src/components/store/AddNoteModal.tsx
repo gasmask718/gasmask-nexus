@@ -21,13 +21,15 @@ interface StoreNote {
   brand_scope?: string | null;
 }
 
-// Brand scope options for the selector
+// Brand scope options — derived from canonical registry
+import { CANONICAL_BRANDS, CANONICAL_BRAND_IDS } from '@/config/brands';
+
 const BRAND_OPTIONS = [
   { value: '', label: '📋 General (Store-Wide)' },
-  { value: 'gasmask', label: '🟢 GasMask' },
-  { value: 'hotmama', label: '🔴 Hot Mama' },
-  { value: 'scalati', label: '🔵 Hot Scolatti' },
-  { value: 'grabba', label: '🟣 Grabba' },
+  ...CANONICAL_BRAND_IDS.map(id => ({
+    value: id,
+    label: `${CANONICAL_BRANDS[id].icon} ${CANONICAL_BRANDS[id].displayName}`,
+  })),
 ] as const;
 
 interface AddNoteModalProps {
