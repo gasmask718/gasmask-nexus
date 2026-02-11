@@ -27,7 +27,7 @@ const AMBASSADOR_NAV_ITEMS = [
   { id: 'routes', label: 'Routes', path: '/ambassador/routes', icon: MapPin },
   { id: 'communications', label: 'Messages', path: '/ambassador/communications', icon: MessageSquare },
   { id: 'recruitment', label: 'Recruitment', path: '/ambassador/recruitment', icon: Users },
-  { id: 'invites', label: 'Invites', path: '/ambassador/invites', icon: UserPlus },
+  { id: 'request-ambassador', label: 'Team Expansion', path: '/ambassador/request-ambassador', icon: UserPlus },
 ] as const;
 
 export function AmbassadorPortalNav() {
