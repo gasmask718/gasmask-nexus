@@ -1,3 +1,11 @@
+/**
+ * WholesalerProfile — Dual-Engine Control Panel
+ * 
+ * Engine 1: GasMask Supply Relationship (B2B Ledger)
+ * Engine 2: Wholesale Marketplace Portal (Platform Revenue)
+ * 
+ * Separated data. Separated reporting. Shared identity.
+ */
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -13,10 +21,13 @@ import { format } from 'date-fns';
 import { 
   ArrowLeft, Warehouse, Phone, Mail, MapPin, Edit, 
   Instagram, MessageCircle, Tag, Building2, Globe,
-  AlertTriangle, StickyNote, DollarSign
+  AlertTriangle, StickyNote, DollarSign, ShoppingBag,
+  Package, CreditCard
 } from 'lucide-react';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { useCall } from '@/components/communication/CallProvider';
+import { WholesalerSupplyTab } from '@/components/wholesaler/WholesalerSupplyTab';
+import { WholesalerMarketplaceTab } from '@/components/wholesaler/WholesalerMarketplaceTab';
 
 const WholesalerProfile: React.FC = () => {
   const { wholesalerId } = useParams();
@@ -25,7 +36,7 @@ const WholesalerProfile: React.FC = () => {
   const { initiateCall } = useCall();
   const [editOpen, setEditOpen] = useState(false);
 
-  // Fetch wholesaler details
+  // Fetch wholesaler identity
   const { data: wholesaler, isLoading } = useQuery({
     queryKey: ['wholesaler', wholesalerId],
     queryFn: async () => {
@@ -38,6 +49,49 @@ const WholesalerProfile: React.FC = () => {
       return data as any;
     },
     enabled: !!wholesalerId
+  });
+
+  // Fetch supply-side data: orders, payments, disputes
+  const { data: orders = [] } = useQuery({
+    queryKey: ['wholesaler-orders', wholesalerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesaler_orders')
+        .select('*')
+        .eq('wholesaler_id', wholesalerId!)
+        .order('order_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!wholesalerId,
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ['wholesaler-payments', wholesalerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesaler_payments')
+        .select('*')
+        .eq('wholesaler_id', wholesalerId!)
+        .order('payment_date', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!wholesalerId,
+  });
+
+  const { data: disputes = [] } = useQuery({
+    queryKey: ['wholesaler-disputes', wholesalerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesaler_disputes')
+        .select('*')
+        .eq('wholesaler_id', wholesalerId!)
+        .order('opened_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!wholesalerId,
   });
 
   // Update wholesaler
@@ -76,9 +130,16 @@ const WholesalerProfile: React.FC = () => {
   const territory = wholesaler.neighborhood || '';
   const tags = wholesaler.tags ? (typeof wholesaler.tags === 'string' ? wholesaler.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : wholesaler.tags) : [];
 
+  // Determine tier
+  const lifetimeSpend = orders.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0);
+  const tier = lifetimeSpend >= 50000 ? 'Platinum' : lifetimeSpend >= 20000 ? 'Gold' : 'Silver';
+  const tierColor = tier === 'Platinum' ? 'bg-purple-500/15 text-purple-400 border-purple-500/30' :
+                    tier === 'Gold' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                    'bg-muted text-muted-foreground';
+
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      {/* ===== HEADER: Identity + Status + Tier ===== */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/grabba/store-master')}>
           <ArrowLeft className="h-5 w-5" />
@@ -89,7 +150,10 @@ const WholesalerProfile: React.FC = () => {
               <Warehouse className="h-6 w-6 text-orange-500" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{wholesalerName}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-bold">{wholesalerName}</h1>
+                <Badge className={tierColor}>{tier}</Badge>
+              </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 {territory && (
                   <span className="flex items-center gap-1">
@@ -122,21 +186,41 @@ const WholesalerProfile: React.FC = () => {
         </Dialog>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">
-            <Warehouse className="h-4 w-4 mr-2" /> Overview
+      {/* ===== DUAL-ENGINE TABS ===== */}
+      <Tabs defaultValue="supply" className="w-full">
+        <TabsList className="grid grid-cols-3 w-full max-w-lg">
+          <TabsTrigger value="supply" className="flex items-center gap-2">
+            <CreditCard className="h-4 w-4" />
+            <span>Supply Relationship</span>
           </TabsTrigger>
-          <TabsTrigger value="notes">
-            <StickyNote className="h-4 w-4 mr-2" /> Notes
+          <TabsTrigger value="marketplace" className="flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4" />
+            <span>Marketplace Portal</span>
           </TabsTrigger>
-          <TabsTrigger value="orders">
-            <DollarSign className="h-4 w-4 mr-2" /> Orders
+          <TabsTrigger value="overview" className="flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            <span>Identity</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="mt-4">
+        {/* ===== ENGINE 1: SUPPLY RELATIONSHIP ===== */}
+        <TabsContent value="supply" className="mt-6">
+          <WholesalerSupplyTab
+            wholesalerId={wholesalerId!}
+            orders={orders}
+            payments={payments}
+            disputes={disputes}
+            profile={wholesaler}
+          />
+        </TabsContent>
+
+        {/* ===== ENGINE 2: MARKETPLACE PORTAL ===== */}
+        <TabsContent value="marketplace" className="mt-6">
+          <WholesalerMarketplaceTab wholesalerId={wholesalerId!} />
+        </TabsContent>
+
+        {/* ===== IDENTITY & CONTACT ===== */}
+        <TabsContent value="overview" className="mt-6">
           <div className="grid md:grid-cols-2 gap-6">
             {/* Contact Info */}
             <Card>
@@ -241,23 +325,16 @@ const WholesalerProfile: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Notes */}
+            <div className="md:col-span-2">
+              <EntityNotesSection
+                entityType="wholesaler"
+                entityId={wholesalerId}
+                entityName={wholesalerName}
+              />
+            </div>
           </div>
-        </TabsContent>
-
-        <TabsContent value="notes" className="mt-4">
-          <EntityNotesSection
-            entityType="wholesaler"
-            entityId={wholesalerId}
-            entityName={wholesalerName}
-          />
-        </TabsContent>
-
-        <TabsContent value="orders" className="mt-4">
-          <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">
-              Order history coming soon
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
