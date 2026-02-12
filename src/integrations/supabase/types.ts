@@ -7293,6 +7293,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -22631,6 +22638,161 @@ export type Database = {
         }
         Relationships: []
       }
+      historical_invoice_line_repairs: {
+        Row: {
+          confidence_level: string | null
+          created_at: string
+          derived_quantity: number
+          derived_units_total: number
+          id: string
+          invoice_id: string
+          price_source: string | null
+          price_used: number | null
+          product_id: string
+          unit_type: string
+        }
+        Insert: {
+          confidence_level?: string | null
+          created_at?: string
+          derived_quantity?: number
+          derived_units_total?: number
+          id?: string
+          invoice_id: string
+          price_source?: string | null
+          price_used?: number | null
+          product_id: string
+          unit_type: string
+        }
+        Update: {
+          confidence_level?: string | null
+          created_at?: string
+          derived_quantity?: number
+          derived_units_total?: number
+          id?: string
+          invoice_id?: string
+          price_source?: string | null
+          price_used?: number | null
+          product_id?: string
+          unit_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_invoice_line_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_line_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_line_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_line_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_line_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_line_repairs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_line_repairs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      historical_invoice_repairs: {
+        Row: {
+          confidence_level: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          invoice_id: string
+          reason: string
+          repair_type: string
+        }
+        Insert: {
+          confidence_level?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id: string
+          reason: string
+          repair_type: string
+        }
+        Update: {
+          confidence_level?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          invoice_id?: string
+          reason?: string
+          repair_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_invoice_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+        ]
+      }
       holdings_airbnb_units: {
         Row: {
           asset_id: string
@@ -26051,6 +26213,13 @@ export type Database = {
             foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -26724,6 +26893,13 @@ export type Database = {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -26823,6 +26999,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
@@ -43151,6 +43334,13 @@ export type Database = {
             foreignKeyName: "store_payments_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "store_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -44003,6 +44193,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "store_transactions_invoice_id_fkey"
@@ -47179,6 +47376,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
@@ -53249,6 +53453,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -53688,6 +53899,34 @@ export type Database = {
           },
         ]
       }
+      v_historical_invoice_audit: {
+        Row: {
+          bucket: string | null
+          created_at: string | null
+          due_date: string | null
+          has_historical_repair: boolean | null
+          has_null_qty: boolean | null
+          has_null_track_by: boolean | null
+          invoice_id: string | null
+          invoice_number: string | null
+          line_count: number | null
+          repair_confidence: string | null
+          repair_id: string | null
+          repair_type: string | null
+          status: string | null
+          store_id: string | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_inventory_movements: {
         Row: {
           created_at: string | null
@@ -53776,6 +54015,13 @@ export type Database = {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -53837,6 +54083,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
@@ -54001,6 +54254,13 @@ export type Database = {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_totals"
             referencedColumns: ["invoice_id"]
           },
@@ -54156,6 +54416,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
@@ -55198,6 +55465,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
