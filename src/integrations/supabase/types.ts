@@ -54332,6 +54332,20 @@ export type Database = {
           },
         ]
       }
+      v_legacy_invoice_price_clusters: {
+        Row: {
+          avg_total: number | null
+          distinct_brands: number | null
+          distinct_stores: number | null
+          first_seen: string | null
+          invoice_count: number | null
+          last_seen: string | null
+          max_total: number | null
+          min_total: number | null
+          total: number | null
+        }
+        Relationships: []
+      }
       v_margin_per_brand: {
         Row: {
           brand_id: string | null
