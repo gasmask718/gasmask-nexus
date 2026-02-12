@@ -75,3 +75,80 @@ export function useSupplierDecisionMatrix() {
     },
   });
 }
+
+export function useNegotiationQueue() {
+  return useQuery({
+    queryKey: ['supplier-negotiation-queue'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supplier_negotiation_queue' as any)
+        .select('*')
+        .order('priority_rank');
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useContractRiskIndex(supplier?: string) {
+  return useQuery({
+    queryKey: ['supplier-contract-risk-index', supplier],
+    queryFn: async () => {
+      let q = supabase
+        .from('v_supplier_contract_risk_index' as any)
+        .select('*')
+        .order('contract_risk_index', { ascending: false });
+      if (supplier) q = q.eq('supplier_name', supplier);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useCostTrendProjection(supplier?: string) {
+  return useQuery({
+    queryKey: ['supplier-cost-trend-projection', supplier],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supplier_cost_trend_projection' as any)
+        .select('*')
+        .eq('supplier_name', supplier)
+        .order('projected_unit_cost_60d', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useForecastDecisionOverlay(supplier?: string) {
+  return useQuery({
+    queryKey: ['supplier-forecast-overlay', supplier],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supplier_forecast_decision_overlay' as any)
+        .select('*')
+        .eq('supplier_name', supplier)
+        .order('combined_risk_score', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useRenegotiationWindow(supplier?: string) {
+  return useQuery({
+    queryKey: ['supplier-renegotiation-window', supplier],
+    enabled: !!supplier,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supplier_renegotiation_window' as any)
+        .select('*')
+        .eq('supplier_name', supplier);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
