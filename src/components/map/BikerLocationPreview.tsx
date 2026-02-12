@@ -33,30 +33,44 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
   // Fetch latest location, orders, and profile for this biker
   useEffect(() => {
     async function fetchData() {
-      // Resolve user_id
+      // Resolve user_id: bikerId could be a bikers.id OR a user_id directly
       let userId = bikerId;
-      const { data: biker } = await supabase
+      
+      // First try: look up bikers table by id
+      const { data: bikerById } = await supabase
         .from('bikers')
         .select('user_id, phone, email, territory, status')
         .eq('id', bikerId)
         .maybeSingle();
 
-      if (biker?.user_id) {
-        userId = biker.user_id;
-        setBikerProfile({ phone: biker.phone, email: biker.email, territory: biker.territory, status: biker.status });
+      if (bikerById?.user_id) {
+        userId = bikerById.user_id;
+        setBikerProfile({ phone: bikerById.phone, email: bikerById.email, territory: bikerById.territory, status: bikerById.status });
       } else {
-        // Fallback to profiles
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('phone, email')
-          .eq('id', bikerId)
+        // Second try: bikerId might already be a user_id — check bikers table by user_id
+        const { data: bikerByUserId } = await supabase
+          .from('bikers')
+          .select('user_id, phone, email, territory, status')
+          .eq('user_id', bikerId)
           .maybeSingle();
-        if (profile) {
-          setBikerProfile({ phone: profile.phone, email: profile.email, status: 'active' });
+
+        if (bikerByUserId) {
+          userId = bikerByUserId.user_id!;
+          setBikerProfile({ phone: bikerByUserId.phone, email: bikerByUserId.email, territory: bikerByUserId.territory, status: bikerByUserId.status });
+        } else {
+          // Fallback: profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('phone, email')
+            .eq('id', bikerId)
+            .maybeSingle();
+          if (profile) {
+            setBikerProfile({ phone: profile.phone, email: profile.email, status: 'active' });
+          }
         }
       }
 
-      // Get latest location event
+      // Get latest location event for this user
       const { data: locEvent } = await supabase
         .from('location_events')
         .select('lat, lng, created_at')
