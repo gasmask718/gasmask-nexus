@@ -20,6 +20,7 @@ import { useBikerIssues } from '@/hooks/useBikerIssues';
 import BikerPerformanceTab from '@/components/biker/BikerPerformanceTab';
 import BikerIssuesTab from '@/components/biker/BikerIssuesTab';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
+import { BikerLocationPreview } from '@/components/map/BikerLocationPreview';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -236,6 +237,13 @@ const BikerProfile: React.FC = () => {
             </Card>
           </div>
         </div>
+
+        {/* Biker Location Map */}
+        <BikerLocationPreview 
+          bikerId={bikerId || ''} 
+          bikerName={biker.full_name} 
+          height="300px"
+        />
 
         {/* Tabs for Tasks, Issues, Performance & Payouts */}
         <Tabs defaultValue="tasks">
