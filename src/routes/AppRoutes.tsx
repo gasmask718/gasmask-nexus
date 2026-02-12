@@ -67,7 +67,7 @@ import Templates from '@/pages/Templates';
 import Reminders from '@/pages/Reminders';
 import InfluencerDetail from '@/pages/InfluencerDetail';
 import InfluencerAnalyticsCenter from '@/pages/InfluencerAnalyticsCenter';
-import WholesalerDetail from '@/pages/WholesalerDetail';
+import WholesalerDetail from '@/pages/grabba/WholesalerProfile';
 import WorkerHome from '@/pages/WorkerHome';
 import AutomationSettings from '@/pages/AutomationSettings';
 import Training from '@/pages/Training';

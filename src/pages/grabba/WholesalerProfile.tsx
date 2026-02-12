@@ -32,7 +32,8 @@ import { WholesalerSupplyTab } from '@/components/wholesaler/WholesalerSupplyTab
 import { WholesalerMarketplaceTab } from '@/components/wholesaler/WholesalerMarketplaceTab';
 
 const WholesalerProfile: React.FC = () => {
-  const { wholesalerId } = useParams();
+  const { wholesalerId, id } = useParams();
+  const resolvedId = wholesalerId || id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { initiateCall } = useCall();
@@ -40,81 +41,81 @@ const WholesalerProfile: React.FC = () => {
 
   // Fetch wholesaler identity
   const { data: wholesaler, isLoading } = useQuery({
-    queryKey: ['wholesaler', wholesalerId],
+    queryKey: ['wholesaler', resolvedId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('wholesalers')
         .select('*')
-        .eq('id', wholesalerId)
+        .eq('id', resolvedId)
         .single();
       if (error) throw error;
       return data as any;
     },
-    enabled: !!wholesalerId
+    enabled: !!resolvedId
   });
 
   // Fetch supply-side data
   const { data: orders = [] } = useQuery({
-    queryKey: ['wholesaler-orders', wholesalerId],
+    queryKey: ['wholesaler-orders', resolvedId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('wholesaler_orders').select('*').eq('wholesaler_id', wholesalerId!).order('order_date', { ascending: false });
+      const { data, error } = await supabase.from('wholesaler_orders').select('*').eq('wholesaler_id', resolvedId!).order('order_date', { ascending: false });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!wholesalerId,
+    enabled: !!resolvedId,
   });
 
   const { data: payments = [] } = useQuery({
-    queryKey: ['wholesaler-payments', wholesalerId],
+    queryKey: ['wholesaler-payments', resolvedId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('wholesaler_payments').select('*').eq('wholesaler_id', wholesalerId!).order('payment_date', { ascending: false });
+      const { data, error } = await supabase.from('wholesaler_payments').select('*').eq('wholesaler_id', resolvedId!).order('payment_date', { ascending: false });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!wholesalerId,
+    enabled: !!resolvedId,
   });
 
   const { data: disputes = [] } = useQuery({
-    queryKey: ['wholesaler-disputes', wholesalerId],
+    queryKey: ['wholesaler-disputes', resolvedId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('wholesaler_disputes').select('*').eq('wholesaler_id', wholesalerId!).order('opened_at', { ascending: false });
+      const { data, error } = await supabase.from('wholesaler_disputes').select('*').eq('wholesaler_id', resolvedId!).order('opened_at', { ascending: false });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!wholesalerId,
+    enabled: !!resolvedId,
   });
 
   // Supply summary from view
   const { data: supplySummary } = useQuery({
-    queryKey: ['wholesaler-supply-summary', wholesalerId],
+    queryKey: ['wholesaler-supply-summary', resolvedId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('wholesaler_supply_summary').select('*').eq('wholesaler_id', wholesalerId!).maybeSingle();
+      const { data, error } = await supabase.from('wholesaler_supply_summary').select('*').eq('wholesaler_id', resolvedId!).maybeSingle();
       if (error) throw error;
       return data as any;
     },
-    enabled: !!wholesalerId,
+    enabled: !!resolvedId,
   });
 
   // Marketplace summary from view
   const { data: marketplaceSummary } = useQuery({
-    queryKey: ['wholesaler-marketplace-summary', wholesalerId],
+    queryKey: ['wholesaler-marketplace-summary', resolvedId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('wholesaler_marketplace_summary').select('*').eq('wholesaler_id', wholesalerId!).maybeSingle();
+      const { data, error } = await supabase.from('wholesaler_marketplace_summary').select('*').eq('wholesaler_id', resolvedId!).maybeSingle();
       if (error) throw error;
       return data as any;
     },
-    enabled: !!wholesalerId,
+    enabled: !!resolvedId,
   });
 
   // Update wholesaler
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase.from('wholesalers').update(data).eq('id', wholesalerId);
+      const { error } = await supabase.from('wholesalers').update(data).eq('id', resolvedId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wholesaler', wholesalerId] });
-      queryClient.invalidateQueries({ queryKey: ['wholesaler-supply-summary', wholesalerId] });
+      queryClient.invalidateQueries({ queryKey: ['wholesaler', resolvedId] });
+      queryClient.invalidateQueries({ queryKey: ['wholesaler-supply-summary', resolvedId] });
       toast.success('Wholesaler updated');
       setEditOpen(false);
     },
@@ -226,11 +227,11 @@ const WholesalerProfile: React.FC = () => {
         </TabsList>
 
         <TabsContent value="supply" className="mt-6">
-          <WholesalerSupplyTab wholesalerId={wholesalerId!} orders={orders} payments={payments} disputes={disputes} profile={wholesaler} />
+          <WholesalerSupplyTab wholesalerId={resolvedId!} orders={orders} payments={payments} disputes={disputes} profile={wholesaler} />
         </TabsContent>
 
         <TabsContent value="marketplace" className="mt-6">
-          <WholesalerMarketplaceTab wholesalerId={wholesalerId!} />
+          <WholesalerMarketplaceTab wholesalerId={resolvedId!} />
         </TabsContent>
 
         <TabsContent value="overview" className="mt-6">
@@ -291,7 +292,7 @@ const WholesalerProfile: React.FC = () => {
             </Card>
 
             <div className="md:col-span-2">
-              <EntityNotesSection entityType="wholesaler" entityId={wholesalerId} entityName={wholesalerName} />
+              <EntityNotesSection entityType="wholesaler" entityId={resolvedId} entityName={wholesalerName} />
             </div>
           </div>
         </TabsContent>
