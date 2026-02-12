@@ -12,14 +12,30 @@ import { SupplierProductRiskTable } from '@/components/suppliers/SupplierProduct
 import { SupplierActionQueue } from '@/components/suppliers/SupplierActionQueue';
 import { SupplierPriceAlertsPanel } from '@/components/suppliers/SupplierPriceAlertsPanel';
 import { SupplierProductBreakdown } from '@/components/suppliers/SupplierProductBreakdown';
+import { SupplierActionInbox } from '@/components/suppliers/SupplierActionInbox';
+import { SupplierActionDetailPanel } from '@/components/suppliers/SupplierActionDetailPanel';
 
 export function InventoryIntelligenceTab() {
   const [selectedSupplier, setSelectedSupplier] = useState<string | null>(null);
+  const [actionSupplier, setActionSupplier] = useState<string | null>(null);
 
   return (
     <div className="space-y-6">
-      {/* Supplier Intelligence */}
+      {/* Supplier Action Inbox — Phase 6.7 */}
       <div>
+        <h2 className="text-2xl font-bold mb-4">Supplier Action Inbox</h2>
+      </div>
+      <SupplierActionInbox onSelectSupplier={setActionSupplier} />
+
+      {actionSupplier && (
+        <SupplierActionDetailPanel
+          supplier={actionSupplier}
+          onClose={() => setActionSupplier(null)}
+        />
+      )}
+
+      {/* Supplier Intelligence */}
+      <div className="border-t pt-6">
         <h2 className="text-2xl font-bold mb-4">Supplier Intelligence</h2>
       </div>
 
