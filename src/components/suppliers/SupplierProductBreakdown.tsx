@@ -27,8 +27,9 @@ export function SupplierProductBreakdown({ supplier }: { supplier: string }) {
                 <div>
                   <p className="font-medium text-sm">{p.product_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Drift: {p.pct_change}% · Volatility: {p.volatility_pct}%
+                    Drift: {p.pct_change}% · Volatility: {p.volatility_pct}% · {p.risk_band}
                   </p>
+                  <p className="text-xs text-muted-foreground italic">{p.recommended_action?.replace(/_/g, ' ')}</p>
                 </div>
                 <p className="font-bold text-sm">{Number(p.overall_score).toFixed(1)}</p>
               </div>
