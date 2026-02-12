@@ -132,7 +132,12 @@ export function CreateStoreInvoiceModal({
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
 
-  // Only show the 4 canonical brands
+  // Sync due date when invoice date changes (Net 30)
+  const invoiceDateMs = invoiceDate?.getTime();
+  const computedDueDate = invoiceDate
+    ? new Date(invoiceDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+    : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
   const CANONICAL_BRAND_IDS = [
     'fb52b0e6-39b2-4e13-bea9-cd016f51efb0', // GasMask
     '4b1c1255-b7b1-43ea-9ad9-a257c6582094', // Grabba R Us
@@ -452,7 +457,7 @@ export function CreateStoreInvoiceModal({
             payment_status: paymentStatus,
             due_date: dueDate
               ? dueDate.toISOString().split('T')[0]
-              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              : computedDueDate.toISOString().split('T')[0],
             paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? invoiceDateToUse : null,
             partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
             received_by: receivedByName || null,
@@ -643,7 +648,7 @@ export function CreateStoreInvoiceModal({
     setSaleChannel('retail');
     setSaleUnit('box');
     setPaymentMethod('');
-    setDueDate(undefined);
+    setDueDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
     setInvoiceDate(new Date()); // Reset to today
     setNotes('');
     setPaymentStatus('unpaid');

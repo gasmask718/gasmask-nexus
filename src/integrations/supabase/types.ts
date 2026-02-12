@@ -7293,6 +7293,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -26044,6 +26051,13 @@ export type Database = {
             foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -26710,6 +26724,13 @@ export type Database = {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -26802,6 +26823,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
@@ -43123,6 +43151,13 @@ export type Database = {
             foreignKeyName: "store_payments_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "store_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -43968,6 +44003,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "store_transactions_invoice_id_fkey"
@@ -47137,6 +47179,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
@@ -53200,6 +53249,13 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -53720,6 +53776,13 @@ export type Database = {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -53774,6 +53837,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
@@ -53931,6 +54001,13 @@ export type Database = {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
             columns: ["invoice_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
             referencedRelation: "v_store_brand_order_events"
             referencedColumns: ["order_id"]
           },
@@ -53968,6 +54045,32 @@ export type Database = {
           total_units_sold: number | null
         }
         Relationships: []
+      }
+      v_invoice_totals: {
+        Row: {
+          computed_subtotal: number | null
+          computed_total: number | null
+          header_subtotal: number | null
+          header_total: number | null
+          invoice_id: string | null
+          invoice_number: string | null
+          line_count: number | null
+          status: string | null
+          store_id: string | null
+          tax_total: number | null
+          total_drift: number | null
+          tubes_total: number | null
+          units_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_margin_per_brand: {
         Row: {
@@ -54053,6 +54156,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_invoice_id_fkey"
@@ -55088,6 +55198,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "invoices"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_invoice_id_fkey"

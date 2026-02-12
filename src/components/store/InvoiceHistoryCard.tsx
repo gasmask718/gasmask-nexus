@@ -186,6 +186,10 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   };
 
   const handleEdit = (invoice: Invoice) => {
+    if ((invoice as any).status === 'finalized') {
+      toast.error('Cannot edit a finalized invoice. Void it first to make corrections.');
+      return;
+    }
     setInvoiceToEdit(invoice);
     setEditModalOpen(true);
   };
