@@ -70,16 +70,25 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
         }
       }
 
-      // Get latest location event for this user
-      const { data: locEvent } = await supabase
-        .from('location_events')
-        .select('lat, lng, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Try to find location using resolved userId first, then fall back to bikerId
+      const userIdsToTry = userId !== bikerId ? [userId, bikerId] : [userId];
+      let locEvent = null;
 
-      if (locEvent && locEvent.lat && locEvent.lng) {
+      for (const uid of userIdsToTry) {
+        const { data } = await supabase
+          .from('location_events')
+          .select('lat, lng, created_at')
+          .eq('user_id', uid)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data?.lat && data?.lng) {
+          locEvent = data;
+          break;
+        }
+      }
+
+      if (locEvent) {
         setLastLocation({
           lat: Number(locEvent.lat),
           lng: Number(locEvent.lng),
