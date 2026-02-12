@@ -30,3 +30,4 @@ export { default as MyRouteToday } from './MyRouteToday';
 export { default as RouteOptimizerPage } from './RouteOptimizerPage';
 export { default as AutonomyConsole } from './AutonomyConsole';
 export { default as DeliveryCapacityCommand } from './DeliveryCapacityCommand';
+export { default as DeliveryDispatchPage } from './DeliveryDispatchPage';

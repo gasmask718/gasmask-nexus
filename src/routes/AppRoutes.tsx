@@ -457,7 +457,8 @@ import {
   LiveMapCommandCenter,
   RouteOpsCenter as DeliveryRouteOpsCenter,
   MyRouteToday,
-  AutonomyConsole
+  AutonomyConsole,
+  DeliveryDispatchPage
 } from '@/pages/delivery';
 import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
 import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
@@ -1149,6 +1150,7 @@ export default function AppRoutes() {
         <Route path="/delivery/my-route" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route/:deliveryId" element={<DeliveryMyRoute />} />
         <Route path="/delivery/my-route-today" element={<MyRouteToday />} />
+        <Route path="/delivery/dispatch" element={<DeliveryDispatchPage />} />
         <Route path="/delivery/store/:storeId" element={<DeliveryStoreProfile />} />
         <Route path="/delivery/routes/:routeId" element={<DeliveryRouteDetailPage />} />
         <Route path="/delivery/heatmap" element={<DeliveryHeatmapPage />} />
