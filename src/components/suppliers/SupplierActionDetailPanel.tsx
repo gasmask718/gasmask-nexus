@@ -11,6 +11,11 @@ import {
   useRenegotiationWindow,
 } from '@/hooks/useSupplierIntelligence';
 import { SupplierDecisionTimeline } from './SupplierDecisionTimeline';
+import { SupplierPlaybookPanel } from './SupplierPlaybookPanel';
+import { SupplierNegotiationScripts } from './SupplierNegotiationScripts';
+import { SupplierLeverageSummary } from './SupplierLeverageSummary';
+import { SupplierFallbackChecklist } from './SupplierFallbackChecklist';
+import { SupplierOperatorTools } from './SupplierOperatorTools';
 
 interface SupplierActionDetailPanelProps {
   supplier: string;
@@ -18,10 +23,10 @@ interface SupplierActionDetailPanelProps {
 }
 
 const riskBandColors: Record<string, string> = {
-  critical: 'bg-red-100 text-red-800',
-  risk: 'bg-orange-100 text-orange-800',
-  watch: 'bg-yellow-100 text-yellow-800',
-  healthy: 'bg-green-100 text-green-800',
+  critical: "bg-destructive/10 text-destructive",
+  risk: "bg-orange-500/10 text-orange-700",
+  watch: "bg-yellow-500/10 text-yellow-700",
+  healthy: "bg-emerald-500/10 text-emerald-700",
 };
 
 function TrendIcon({ slope }: { slope: number }) {
@@ -66,6 +71,7 @@ export function SupplierActionDetailPanel({ supplier, onClose }: SupplierActionD
             <TabsTrigger value="overview" className="flex-1">Overview</TabsTrigger>
             <TabsTrigger value="risk" className="flex-1">Risk</TabsTrigger>
             <TabsTrigger value="forecast" className="flex-1">Forecast</TabsTrigger>
+            <TabsTrigger value="playbook" className="flex-1">Playbook</TabsTrigger>
             <TabsTrigger value="history" className="flex-1">History</TabsTrigger>
           </TabsList>
 
@@ -77,15 +83,15 @@ export function SupplierActionDetailPanel({ supplier, onClose }: SupplierActionD
                 {(windows.data || []).map((w: any, i: number) => (
                   <div key={i} className="p-3 rounded-lg border space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{w.product_name}</span>
-                      <Badge className={w.recommended_contact_window === 'immediate' ? 'bg-red-100 text-red-800' : 'bg-orange-100 text-orange-800'}>
-                        {w.recommended_contact_window?.replace(/_/g, ' ')}
+                      <span className="font-medium text-sm">{(w as any).product_name}</span>
+                      <Badge className={(w as any).recommended_contact_window === "immediate" ? "bg-destructive/10 text-destructive" : "bg-orange-500/10 text-orange-700"}>
+                        {(w as any).recommended_contact_window?.replace(/_/g, " ")}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">{w.reason}</p>
+                    <p className="text-xs text-muted-foreground">{(w as any).reason}</p>
                     <div className="flex gap-2 text-xs">
-                      <Badge variant="outline">{w.recommended_action?.replace(/_/g, ' ')}</Badge>
-                      <span className="text-muted-foreground">Risk: {Number(w.current_risk_score || 0).toFixed(1)}</span>
+                      <Badge variant="outline">{(w as any).recommended_action?.replace(/_/g, " ")}</Badge>
+                      <span className="text-muted-foreground">Risk: {Number((w as any).current_risk_score || 0).toFixed(1)}</span>
                     </div>
                   </div>
                 ))}
@@ -100,14 +106,14 @@ export function SupplierActionDetailPanel({ supplier, onClose }: SupplierActionD
             {(scorecard.data || []).map((s: any, i: number) => (
               <div key={i} className="mb-3 p-3 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium text-sm">{s.product_name}</span>
-                  <Badge className={riskBandColors[s.risk_band] || riskBandColors.healthy}>{s.risk_band}</Badge>
+                  <span className="font-medium text-sm">{(s as any).product_name}</span>
+                  <Badge className={riskBandColors[(s as any).risk_band] || riskBandColors.healthy}>{(s as any).risk_band}</Badge>
                 </div>
-                <MetricRow label="Overall Score" value={Number(s.overall_score || 0).toFixed(1)} />
-                <MetricRow label="Cost Score" value={Number(s.cost_score || 0).toFixed(1)} />
-                <MetricRow label="Trend Score" value={Number(s.trend_score || 0).toFixed(1)} />
-                <MetricRow label="Stability Score" value={Number(s.stability_score || 0).toFixed(1)} />
-                <MetricRow label="Reliability Score" value={Number(s.reliability_score || 0).toFixed(1)} />
+                <MetricRow label="Overall Score" value={Number((s as any).overall_score || 0).toFixed(1)} />
+                <MetricRow label="Cost Score" value={Number((s as any).cost_score || 0).toFixed(1)} />
+                <MetricRow label="Trend Score" value={Number((s as any).trend_score || 0).toFixed(1)} />
+                <MetricRow label="Stability Score" value={Number((s as any).stability_score || 0).toFixed(1)} />
+                <MetricRow label="Reliability Score" value={Number((s as any).reliability_score || 0).toFixed(1)} />
               </div>
             ))}
             {!scorecard.data?.length && (
@@ -119,14 +125,14 @@ export function SupplierActionDetailPanel({ supplier, onClose }: SupplierActionD
             {(projection.data || []).map((p: any, i: number) => (
               <div key={i} className="mb-3 p-3 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium text-sm">{p.product_name}</span>
-                  <TrendIcon slope={Number(p.recent_cost_slope || 0)} />
+                  <span className="font-medium text-sm">{(p as any).product_name}</span>
+                  <TrendIcon slope={Number((p as any).recent_cost_slope || 0)} />
                 </div>
-                <MetricRow label="Recent Avg Cost" value={`$${Number(p.recent_avg_unit_cost || 0).toFixed(2)}`} />
-                <MetricRow label="Slope (per receipt)" value={Number(p.recent_cost_slope || 0).toFixed(4)} />
-                <MetricRow label="Projected 30d" value={`$${Number(p.projected_unit_cost_30d || 0).toFixed(2)}`} />
-                <MetricRow label="Projected 60d" value={`$${Number(p.projected_unit_cost_60d || 0).toFixed(2)}`} />
-                <MetricRow label="Receipts Used" value={p.receipts_used || 0} />
+                <MetricRow label="Recent Avg Cost" value={`$${Number((p as any).recent_avg_unit_cost || 0).toFixed(2)}`} />
+                <MetricRow label="Slope (per receipt)" value={Number((p as any).recent_cost_slope || 0).toFixed(4)} />
+                <MetricRow label="Projected 30d" value={`$${Number((p as any).projected_unit_cost_30d || 0).toFixed(2)}`} />
+                <MetricRow label="Projected 60d" value={`$${Number((p as any).projected_unit_cost_60d || 0).toFixed(2)}`} />
+                <MetricRow label="Receipts Used" value={(p as any).receipts_used || 0} />
               </div>
             ))}
             {!projection.data?.length && (
@@ -134,21 +140,79 @@ export function SupplierActionDetailPanel({ supplier, onClose }: SupplierActionD
             )}
           </TabsContent>
 
+          <TabsContent value="playbook" className="mt-3 space-y-4">
+            {(windows.data || []).length > 0 ? (
+              <>
+                {(windows.data || []).map((w: any, i: number) => {
+                  const overlay_item = (overlay.data || []).find(
+                    (o: any) => (o as any).product_id === (w as any).product_id
+                  );
+                  const projection_item = (projection.data || []).find(
+                    (p: any) => (p as any).product_id === (w as any).product_id
+                  );
+                  return (
+                    <div key={i} className="space-y-4">
+                      <SupplierPlaybookPanel
+                        riskBand={(overlay_item as any)?.risk_band}
+                        recommendedAction={(w as any).recommended_action}
+                        forecastSeverity={(overlay_item as any)?.forecast_severity}
+                        primaryRiskDriver={(overlay_item as any)?.primary_risk_driver}
+                      />
+                      <SupplierNegotiationScripts
+                        supplierName={supplier}
+                        productName={(w as any).product_name}
+                        currentCost={(projection_item as any)?.recent_avg_unit_cost || 0}
+                        projectedCost60d={(projection_item as any)?.projected_unit_cost_60d || 0}
+                        forecast_pct_increase={(overlay_item as any)?.forecast_pct_increase}
+                        recommended_action={(w as any).recommended_action}
+                      />
+                      <SupplierLeverageSummary
+                        primaryRiskDriver={(overlay_item as any)?.primary_risk_driver}
+                        volatility={(overlay_item as any)?.volatility}
+                        forecast_pct_increase={(overlay_item as any)?.forecast_pct_increase}
+                        reliability={(overlay_item as any)?.reliability_score}
+                      />
+                      <SupplierFallbackChecklist
+                        recommendedAction={(w as any).recommended_action}
+                        riskTier={(overlay_item as any)?.risk_band}
+                        supplierName={supplier}
+                      />
+                      <div className="p-3 rounded-lg border space-y-2">
+                        <p className="text-xs font-semibold text-muted-foreground">QUICK ACTIONS</p>
+                        <SupplierOperatorTools
+                          supplierName={supplier}
+                          productName={(w as any).product_name}
+                          currentCost={(projection_item as any)?.recent_avg_unit_cost || 0}
+                          projectedCost60d={(projection_item as any)?.projected_unit_cost_60d || 0}
+                          contractRiskIndex={(w as any).current_risk_score || 0}
+                          recommendedAction={(w as any).recommended_action || ""}
+                          forecast_pct_increase={(overlay_item as any)?.forecast_pct_increase}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">No negotiation playbook available.</p>
+            )}
+          </TabsContent>
+
           <TabsContent value="history" className="mt-3">
             {(overlay.data || []).map((o: any, i: number) => (
               <div key={i} className="mb-3 p-3 rounded-lg border">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium text-sm">{o.product_name}</span>
-                  {o.forecast_severity && (
-                    <Badge className={o.forecast_severity === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}>
-                      {o.forecast_severity}
+                  <span className="font-medium text-sm">{(o as any).product_name}</span>
+                  {(o as any).forecast_severity && (
+                    <Badge className={(o as any).forecast_severity === "critical" ? "bg-destructive/10 text-destructive" : "bg-yellow-500/10 text-yellow-700"}>
+                      {(o as any).forecast_severity}
                     </Badge>
                   )}
                 </div>
-                <MetricRow label="Combined Risk" value={Number(o.combined_risk_score || 0).toFixed(1)} />
-                <MetricRow label="Base Risk" value={Number(o.risk_score || 0).toFixed(1)} />
-                <MetricRow label="Forecast Uplift %" value={`${Number(o.forecast_pct_increase || 0).toFixed(1)}%`} />
-                <MetricRow label="Action" value={o.updated_recommended_action?.replace(/_/g, ' ') || '—'} />
+                <MetricRow label="Combined Risk" value={Number((o as any).combined_risk_score || 0).toFixed(1)} />
+                <MetricRow label="Base Risk" value={Number((o as any).risk_score || 0).toFixed(1)} />
+                <MetricRow label="Forecast Uplift %" value={`${Number((o as any).forecast_pct_increase || 0).toFixed(1)}%`} />
+                <MetricRow label="Action" value={(o as any).updated_recommended_action?.replace(/_/g, " ") || "—"} />
               </div>
             ))}
             {!overlay.data?.length && (
