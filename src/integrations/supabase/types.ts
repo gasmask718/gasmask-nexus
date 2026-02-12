@@ -26906,6 +26906,7 @@ export type Database = {
           price_override_reason: string | null
           price_per_box_snapshot: number | null
           price_per_tube_snapshot: number | null
+          pricing_mode: string | null
           product_id: string | null
           product_name: string | null
           product_name_snapshot: string | null
@@ -26943,6 +26944,7 @@ export type Database = {
           price_override_reason?: string | null
           price_per_box_snapshot?: number | null
           price_per_tube_snapshot?: number | null
+          pricing_mode?: string | null
           product_id?: string | null
           product_name?: string | null
           product_name_snapshot?: string | null
@@ -26980,6 +26982,7 @@ export type Database = {
           price_override_reason?: string | null
           price_per_box_snapshot?: number | null
           price_per_tube_snapshot?: number | null
+          pricing_mode?: string | null
           product_id?: string | null
           product_name?: string | null
           product_name_snapshot?: string | null
@@ -27180,6 +27183,8 @@ export type Database = {
           deleted_by: string | null
           delivery_photos: string[] | null
           due_date: string | null
+          entity_id: string | null
+          entity_type: string | null
           finalized_at: string | null
           finalized_by: string | null
           id: string
@@ -27192,6 +27197,7 @@ export type Database = {
           partial_amount: number | null
           payment_method: string | null
           payment_status: string
+          pricing_mode: string | null
           receipt_delivered_at: string | null
           receipt_failure_reason: string | null
           receipt_message_sid: string | null
@@ -27227,6 +27233,8 @@ export type Database = {
           deleted_by?: string | null
           delivery_photos?: string[] | null
           due_date?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           finalized_at?: string | null
           finalized_by?: string | null
           id?: string
@@ -27239,6 +27247,7 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          pricing_mode?: string | null
           receipt_delivered_at?: string | null
           receipt_failure_reason?: string | null
           receipt_message_sid?: string | null
@@ -27274,6 +27283,8 @@ export type Database = {
           deleted_by?: string | null
           delivery_photos?: string[] | null
           due_date?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           finalized_at?: string | null
           finalized_by?: string | null
           id?: string
@@ -27286,6 +27297,7 @@ export type Database = {
           partial_amount?: number | null
           payment_method?: string | null
           payment_status?: string
+          pricing_mode?: string | null
           receipt_delivered_at?: string | null
           receipt_failure_reason?: string | null
           receipt_message_sid?: string | null
