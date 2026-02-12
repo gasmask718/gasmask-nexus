@@ -69,10 +69,11 @@ const BikersManagement: React.FC = () => {
         .order("full_name", { ascending: true });
       if (bikersError) throw bikersError;
 
-      // Fetch users with biker role from user_roles
-      const [rolesRes, profilesRes] = await Promise.all([
+      // Fetch users with biker role from user_roles, profiles, and invited bikers
+      const [rolesRes, profilesRes, invitesRes] = await Promise.all([
         supabase.from("user_roles").select("user_id").eq("role", "biker"),
         supabase.from("profiles").select("id, full_name:name, phone, email, created_at"),
+        supabase.from("user_invitations").select("id, email, phone, role, invite_status, accepted_user_id, created_at").eq("role", "biker"),
       ]);
 
       // Collect names already present in bikers table for name-based dedup
@@ -107,7 +108,54 @@ const BikersManagement: React.FC = () => {
           };
         });
 
-      return [...(bikersTable || []), ...roleBikersMapped] as Biker[];
+      // Collect all known names/emails to avoid invite duplicates
+      const allNames = new Set([
+        ...existingNames,
+        ...roleBikersMapped.map(b => b.full_name.toLowerCase()),
+      ]);
+      const allEmails = new Set([
+        ...(bikersTable || []).map(b => b.email?.toLowerCase()).filter(Boolean),
+        ...roleBikersMapped.map(b => b.email?.toLowerCase()).filter(Boolean),
+      ]);
+
+      // Merge invited bikers that haven't been matched yet
+      const invitedBikersMapped: Biker[] = (invitesRes.data || [])
+        .filter((inv: any) => {
+          // If accepted and user already appears via roles/bikers table, skip
+          if (inv.accepted_user_id) {
+            const profile = profileMap.get(inv.accepted_user_id);
+            const name = (profile?.full_name || '').toLowerCase();
+            if (name && allNames.has(name)) return false;
+          }
+          // If email already in the list, skip
+          if (inv.email && allEmails.has(inv.email.toLowerCase())) return false;
+          return true;
+        })
+        .map((inv: any) => {
+          // If accepted, try to pull profile data
+          const profile = inv.accepted_user_id ? profileMap.get(inv.accepted_user_id) : null;
+          const statusMap: Record<string, string> = {
+            sent: 'invited',
+            accepted: 'active',
+            expired: 'invited',
+            revoked: 'offboarded',
+          };
+          return {
+            id: inv.id,
+            business_id: '',
+            user_id: inv.accepted_user_id || null,
+            full_name: profile?.full_name || inv.email || inv.phone || 'Invited Biker',
+            phone: profile?.phone || inv.phone || '',
+            email: profile?.email || inv.email || null,
+            territory: null,
+            status: statusMap[inv.invite_status] || 'invited',
+            payout_method: null,
+            payout_handle: null,
+            created_at: inv.created_at || new Date().toISOString(),
+          };
+        });
+
+      return [...(bikersTable || []), ...roleBikersMapped, ...invitedBikersMapped] as Biker[];
     },
   });
 
@@ -341,6 +389,7 @@ const BikersManagement: React.FC = () => {
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="invited">Invited</SelectItem>
                   <SelectItem value="offboarded">Offboarded</SelectItem>
                 </SelectContent>
               </Select>
@@ -377,8 +426,8 @@ const BikersManagement: React.FC = () => {
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
-                            <Badge variant={biker.status === "active" ? "default" : "secondary"}>
-                              {biker.status}
+                            <Badge variant={biker.status === "active" ? "default" : biker.status === "invited" ? "outline" : "secondary"} className={biker.status === "invited" ? "border-amber-500 text-amber-600" : ""}>
+                              {biker.status === "invited" ? "📧 Invited" : biker.status}
                             </Badge>
                             {perf && (
                               <Badge
