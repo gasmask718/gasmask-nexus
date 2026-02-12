@@ -1,12 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin } from 'lucide-react';
+import { MapPin, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || 'pk.eyJ1IjoiZ2FzbWFza2FwcHJvdmVkbGxjIiwiYSI6ImNtaTlkYjJ4czBtOWsycXBqMmh4dDlqaGMifQ.OVfGs2Bp6VLc0SBfMDrWpA';
+
+// Default center (NYC) when no location data
+const DEFAULT_CENTER: [number, number] = [-73.9855, 40.7580];
+const DEFAULT_ZOOM = 10;
+const LOCATED_ZOOM = 15;
 
 interface BikerLocationPreviewProps {
   bikerId: string;
@@ -29,100 +34,101 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; time: string } | null>(null);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [bikerProfile, setBikerProfile] = useState<{ phone?: string; email?: string; territory?: string; status?: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [mapReady, setMapReady] = useState(false);
 
-  // Fetch latest location, orders, and profile for this biker
-  useEffect(() => {
-    async function fetchData() {
-      // Resolve user_id: bikerId could be a bikers.id OR a user_id directly
-      let userId = bikerId;
-      
-      // First try: look up bikers table by id
-      const { data: bikerById } = await supabase
+  const fetchData = useCallback(async () => {
+    let userId = bikerId;
+
+    // Resolve user_id through multiple fallbacks
+    const { data: bikerById } = await supabase
+      .from('bikers')
+      .select('user_id, phone, email, territory, status')
+      .eq('id', bikerId)
+      .maybeSingle();
+
+    if (bikerById?.user_id) {
+      userId = bikerById.user_id;
+      setBikerProfile({ phone: bikerById.phone, email: bikerById.email, territory: bikerById.territory, status: bikerById.status });
+    } else {
+      const { data: bikerByUserId } = await supabase
         .from('bikers')
         .select('user_id, phone, email, territory, status')
-        .eq('id', bikerId)
+        .eq('user_id', bikerId)
         .maybeSingle();
 
-      if (bikerById?.user_id) {
-        userId = bikerById.user_id;
-        setBikerProfile({ phone: bikerById.phone, email: bikerById.email, territory: bikerById.territory, status: bikerById.status });
+      if (bikerByUserId) {
+        userId = bikerByUserId.user_id!;
+        setBikerProfile({ phone: bikerByUserId.phone, email: bikerByUserId.email, territory: bikerByUserId.territory, status: bikerByUserId.status });
       } else {
-        // Second try: bikerId might already be a user_id — check bikers table by user_id
-        const { data: bikerByUserId } = await supabase
-          .from('bikers')
-          .select('user_id, phone, email, territory, status')
-          .eq('user_id', bikerId)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone, email')
+          .eq('id', bikerId)
           .maybeSingle();
-
-        if (bikerByUserId) {
-          userId = bikerByUserId.user_id!;
-          setBikerProfile({ phone: bikerByUserId.phone, email: bikerByUserId.email, territory: bikerByUserId.territory, status: bikerByUserId.status });
-        } else {
-          // Fallback: profiles table
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('phone, email')
-            .eq('id', bikerId)
-            .maybeSingle();
-          if (profile) {
-            setBikerProfile({ phone: profile.phone, email: profile.email, status: 'active' });
-          }
+        if (profile) {
+          setBikerProfile({ phone: profile.phone, email: profile.email, status: 'active' });
         }
-      }
-
-      // Try to find location using resolved userId first, then fall back to bikerId
-      const userIdsToTry = userId !== bikerId ? [userId, bikerId] : [userId];
-      let locEvent = null;
-
-      for (const uid of userIdsToTry) {
-        const { data } = await supabase
-          .from('location_events')
-          .select('lat, lng, created_at')
-          .eq('user_id', uid)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (data?.lat && data?.lng) {
-          locEvent = data;
-          break;
-        }
-      }
-
-      if (locEvent) {
-        setLastLocation({
-          lat: Number(locEvent.lat),
-          lng: Number(locEvent.lng),
-          time: locEvent.created_at,
-        });
-      }
-
-      // Get active visits for this user
-      const today = new Date().toISOString().split('T')[0];
-      const { data: visits } = await supabase
-        .from('store_visits')
-        .select(`status, visit_type, created_at, store_master:store_id (store_name)`)
-        .eq('visited_by', userId)
-        .gte('created_at', today)
-        .in('status', ['pending', 'in_progress'])
-        .limit(5);
-
-      if (visits) {
-        setActiveOrders(visits.map((v: any) => ({
-          store_name: v.store_master?.store_name || 'Unknown',
-          status: v.status,
-          visit_type: v.visit_type,
-          created_at: v.created_at,
-        })));
       }
     }
 
+    // Try to find location
+    const userIdsToTry = userId !== bikerId ? [userId, bikerId] : [userId];
+    let locEvent = null;
+
+    for (const uid of userIdsToTry) {
+      const { data } = await supabase
+        .from('location_events')
+        .select('lat, lng, created_at')
+        .eq('user_id', uid)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data?.lat && data?.lng) {
+        locEvent = data;
+        break;
+      }
+    }
+
+    if (locEvent) {
+      setLastLocation(prev => ({
+        lat: Number(locEvent.lat),
+        lng: Number(locEvent.lng),
+        time: locEvent.created_at,
+      }));
+    }
+
+    // Get active visits
+    const today = new Date().toISOString().split('T')[0];
+    const { data: visits } = await supabase
+      .from('store_visits')
+      .select(`status, visit_type, created_at, store_master:store_id (store_name)`)
+      .eq('visited_by', userId)
+      .gte('created_at', today)
+      .in('status', ['pending', 'in_progress'])
+      .limit(5);
+
+    if (visits) {
+      setActiveOrders(visits.map((v: any) => ({
+        store_name: v.store_master?.store_name || 'Unknown',
+        status: v.status,
+        visit_type: v.visit_type,
+        created_at: v.created_at,
+      })));
+    }
+
+    setIsLoading(false);
+  }, [bikerId]);
+
+  // Fetch data on mount + every 30s
+  useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [bikerId]);
+  }, [fetchData]);
 
   // Build popup HTML
-  const buildPopupHTML = () => {
+  const buildPopupHTML = useCallback(() => {
     const lastSeenStr = lastLocation
       ? new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : 'N/A';
@@ -159,61 +165,72 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
         ${orderRows}
       </div>
     `;
-  };
+  }, [lastLocation, bikerName, activeOrders, bikerProfile]);
 
-  // Initialize / update map
+  // Initialize map immediately (even without location data)
   useEffect(() => {
-    if (!mapContainer.current || !lastLocation) return;
-
-    if (map.current) {
-      if (marker.current) {
-        marker.current.setLngLat([lastLocation.lng, lastLocation.lat]);
-        const existingPopup = marker.current.getPopup();
-        if (existingPopup) existingPopup.setHTML(buildPopupHTML());
-      }
-      map.current.easeTo({ center: [lastLocation.lng, lastLocation.lat] });
-      return;
-    }
+    if (!mapContainer.current || map.current) return;
 
     mapboxgl.accessToken = MAPBOX_TOKEN;
+    const center: [number, number] = lastLocation
+      ? [lastLocation.lng, lastLocation.lat]
+      : DEFAULT_CENTER;
+    const zoom = lastLocation ? LOCATED_ZOOM : DEFAULT_ZOOM;
+
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [lastLocation.lng, lastLocation.lat],
-      zoom: 15,
+      center,
+      zoom,
       interactive: true,
     });
 
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-    const el = document.createElement('div');
-    el.innerHTML = `
-      <div style="
-        width: 18px; height: 18px;
-        background: hsl(142, 71%, 45%);
-        border: 3px solid white;
-        border-radius: 50%;
-        box-shadow: 0 0 0 3px hsla(142, 71%, 45%, 0.3), 0 2px 6px rgba(0,0,0,0.3);
-        cursor: pointer;
-      "></div>
-    `;
-
-    const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(buildPopupHTML());
-
-    marker.current = new mapboxgl.Marker({ element: el })
-      .setLngLat([lastLocation.lng, lastLocation.lat])
-      .setPopup(popup)
-      .addTo(map.current);
-
-    // Auto-open popup
-    marker.current.togglePopup();
+    map.current.on('load', () => setMapReady(true));
 
     return () => {
       map.current?.remove();
       map.current = null;
       marker.current = null;
+      setMapReady(false);
     };
-  }, [lastLocation, bikerName, activeOrders, bikerProfile]);
+  }, []); // Initialize once
+
+  // Update marker when location changes
+  useEffect(() => {
+    if (!map.current || !mapReady || !lastLocation) return;
+
+    const lngLat: [number, number] = [lastLocation.lng, lastLocation.lat];
+
+    if (marker.current) {
+      marker.current.setLngLat(lngLat);
+      const existingPopup = marker.current.getPopup();
+      if (existingPopup) existingPopup.setHTML(buildPopupHTML());
+    } else {
+      const el = document.createElement('div');
+      el.innerHTML = `
+        <div style="
+          width: 18px; height: 18px;
+          background: hsl(142, 71%, 45%);
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 0 3px hsla(142, 71%, 45%, 0.3), 0 2px 6px rgba(0,0,0,0.3);
+          cursor: pointer;
+        "></div>
+      `;
+
+      const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(buildPopupHTML());
+
+      marker.current = new mapboxgl.Marker({ element: el })
+        .setLngLat(lngLat)
+        .setPopup(popup)
+        .addTo(map.current);
+
+      marker.current.togglePopup();
+    }
+
+    map.current.easeTo({ center: lngLat, zoom: LOCATED_ZOOM });
+  }, [lastLocation, mapReady, buildPopupHTML]);
 
   return (
     <Card className={className}>
@@ -223,22 +240,25 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
             <MapPin className="h-4 w-4 text-primary" />
             {bikerName}'s Location
           </CardTitle>
-          {lastLocation && (
-            <Badge variant="outline" className="text-xs">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse" />
-              {new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {isLoading && (
+              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+            )}
+            {lastLocation ? (
+              <Badge variant="outline" className="text-xs">
+                <span className="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse" />
+                {new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Badge>
+            ) : !isLoading ? (
+              <Badge variant="secondary" className="text-xs">
+                No GPS data yet
+              </Badge>
+            ) : null}
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0 overflow-hidden rounded-b-lg">
-        {!lastLocation ? (
-          <div className="flex items-center justify-center text-muted-foreground text-sm" style={{ height }}>
-            No location data available
-          </div>
-        ) : (
-          <div ref={mapContainer} style={{ height, width: '100%' }} />
-        )}
+        <div ref={mapContainer} style={{ height, width: '100%' }} />
       </CardContent>
     </Card>
   );
