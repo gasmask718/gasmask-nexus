@@ -45,3 +45,33 @@ export function useSupplierProductScorecard(supplier: string) {
     },
   });
 }
+
+export function useSupplierScorecard() {
+  return useQuery({
+    queryKey: ['supplier-scorecard'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supplier_scorecard' as any)
+        .select('*')
+        .order('overall_score', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
+export function useSupplierDecisionMatrix() {
+  return useQuery({
+    queryKey: ['supplier-decision-matrix'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('v_supplier_decision_matrix' as any)
+        .select('*')
+        .lte('action_priority', 3)
+        .order('action_priority')
+        .order('risk_score', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
