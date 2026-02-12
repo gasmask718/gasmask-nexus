@@ -7183,6 +7183,57 @@ export type Database = {
         }
         Relationships: []
       }
+      bag_inventory_ledger: {
+        Row: {
+          bags_delta: number
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string | null
+          recorded_by: string | null
+          source: string
+          source_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          bags_delta: number
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source: string
+          source_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          bags_delta?: number
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source?: string
+          source_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_inventory_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_inventory_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       bag_sale_ledger: {
         Row: {
           bags_delta: number
@@ -33385,6 +33436,115 @@ export type Database = {
           },
         ]
       }
+      po_receipt_items: {
+        Row: {
+          computed_units_total: number
+          created_at: string | null
+          id: string
+          pack_size_snapshot: number | null
+          packs_per_box_snapshot: number | null
+          po_item_id: string | null
+          po_receipt_id: string
+          product_id: string
+          product_name_snapshot: string | null
+          quantity: number
+          receive_unit: string
+          track_by_snapshot: string | null
+          units_per_box_snapshot: number | null
+        }
+        Insert: {
+          computed_units_total: number
+          created_at?: string | null
+          id?: string
+          pack_size_snapshot?: number | null
+          packs_per_box_snapshot?: number | null
+          po_item_id?: string | null
+          po_receipt_id: string
+          product_id: string
+          product_name_snapshot?: string | null
+          quantity: number
+          receive_unit?: string
+          track_by_snapshot?: string | null
+          units_per_box_snapshot?: number | null
+        }
+        Update: {
+          computed_units_total?: number
+          created_at?: string | null
+          id?: string
+          pack_size_snapshot?: number | null
+          packs_per_box_snapshot?: number | null
+          po_item_id?: string | null
+          po_receipt_id?: string
+          product_id?: string
+          product_name_snapshot?: string | null
+          quantity?: number
+          receive_unit?: string
+          track_by_snapshot?: string | null
+          units_per_box_snapshot?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_receipt_items_po_item_id_fkey"
+            columns: ["po_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_receipt_items_po_receipt_id_fkey"
+            columns: ["po_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "po_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_receipt_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_receipt_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      po_receipts: {
+        Row: {
+          id: string
+          notes: string | null
+          purchase_order_id: string
+          received_at: string
+          received_by: string | null
+        }
+        Insert: {
+          id?: string
+          notes?: string | null
+          purchase_order_id: string
+          received_at?: string
+          received_by?: string | null
+        }
+        Update: {
+          id?: string
+          notes?: string | null
+          purchase_order_id?: string
+          received_at?: string
+          received_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "po_receipts_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pod_ai_logs: {
         Row: {
           action: string
@@ -37837,33 +37997,54 @@ export type Database = {
       }
       purchase_order_items: {
         Row: {
+          computed_units_total: number | null
           created_at: string | null
           id: string
+          order_unit: string | null
+          pack_size_snapshot: number | null
+          packs_per_box_snapshot: number | null
           product_id: string | null
+          product_name_snapshot: string | null
           purchase_order_id: string | null
           quantity_ordered: number
           quantity_received: number | null
+          track_by_snapshot: string | null
           unit_cost: number | null
+          units_per_box_snapshot: number | null
           updated_at: string | null
         }
         Insert: {
+          computed_units_total?: number | null
           created_at?: string | null
           id?: string
+          order_unit?: string | null
+          pack_size_snapshot?: number | null
+          packs_per_box_snapshot?: number | null
           product_id?: string | null
+          product_name_snapshot?: string | null
           purchase_order_id?: string | null
           quantity_ordered?: number
           quantity_received?: number | null
+          track_by_snapshot?: string | null
           unit_cost?: number | null
+          units_per_box_snapshot?: number | null
           updated_at?: string | null
         }
         Update: {
+          computed_units_total?: number | null
           created_at?: string | null
           id?: string
+          order_unit?: string | null
+          pack_size_snapshot?: number | null
+          packs_per_box_snapshot?: number | null
           product_id?: string | null
+          product_name_snapshot?: string | null
           purchase_order_id?: string | null
           quantity_ordered?: number
           quantity_received?: number | null
+          track_by_snapshot?: string | null
           unit_cost?: number | null
+          units_per_box_snapshot?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -37884,10 +38065,12 @@ export type Database = {
           estimated_arrival: string | null
           id: string
           notes: string | null
+          po_number: string | null
           products: Json
           shipping_cost: number | null
           status: string | null
           supplier_id: string | null
+          supplier_name: string | null
           target_warehouse_id: string | null
           total_cost: number | null
           tracking_number: string | null
@@ -37901,10 +38084,12 @@ export type Database = {
           estimated_arrival?: string | null
           id?: string
           notes?: string | null
+          po_number?: string | null
           products?: Json
           shipping_cost?: number | null
           status?: string | null
           supplier_id?: string | null
+          supplier_name?: string | null
           target_warehouse_id?: string | null
           total_cost?: number | null
           tracking_number?: string | null
@@ -37918,10 +38103,12 @@ export type Database = {
           estimated_arrival?: string | null
           id?: string
           notes?: string | null
+          po_number?: string | null
           products?: Json
           shipping_cost?: number | null
           status?: string | null
           supplier_id?: string | null
+          supplier_name?: string | null
           target_warehouse_id?: string | null
           total_cost?: number | null
           tracking_number?: string | null
@@ -46690,6 +46877,57 @@ export type Database = {
           },
         ]
       }
+      tube_inventory_ledger: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string | null
+          recorded_by: string | null
+          source: string
+          source_id: string | null
+          store_id: string | null
+          tubes_delta: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source: string
+          source_id?: string | null
+          store_id?: string | null
+          tubes_delta: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string | null
+          recorded_by?: string | null
+          source?: string
+          source_id?: string | null
+          store_id?: string | null
+          tubes_delta?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tube_inventory_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_inventory_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       tube_sale_ledger: {
         Row: {
           brand: string | null
@@ -53754,6 +53992,24 @@ export type Database = {
         }
         Relationships: []
       }
+      v_store_bags_on_hand: {
+        Row: {
+          bags_on_hand: number | null
+          brand_id: string | null
+          product_id: string | null
+          product_name: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bag_sale_ledger_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_store_brand_order_events: {
         Row: {
           brand_name: string | null
@@ -53988,6 +54244,16 @@ export type Database = {
           owner_interested: boolean | null
           store_id: string | null
           tube_count: number | null
+        }
+        Relationships: []
+      }
+      v_store_tubes_on_hand: {
+        Row: {
+          brand_id: string | null
+          product_id: string | null
+          product_name: string | null
+          store_id: string | null
+          tubes_on_hand: number | null
         }
         Relationships: []
       }
@@ -54850,6 +55116,15 @@ export type Database = {
       recalculate_worker_skill_profiles: {
         Args: { p_for_date?: string; p_office_id: string }
         Returns: undefined
+      }
+      receive_purchase_order: {
+        Args: {
+          p_items: Json
+          p_notes?: string
+          p_po_id: string
+          p_user_id?: string
+        }
+        Returns: Json
       }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
       reject_store_promotion: {
