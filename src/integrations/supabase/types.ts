@@ -54652,6 +54652,35 @@ export type Database = {
           },
         ]
       }
+      v_supplier_cost_trend_projection: {
+        Row: {
+          last_received_at: string | null
+          product_id: string | null
+          product_name: string | null
+          projected_unit_cost_30d: number | null
+          projected_unit_cost_60d: number | null
+          receipts_used: number | null
+          recent_avg_unit_cost: number | null
+          recent_cost_slope: number | null
+          supplier_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       v_supplier_cost_volatility: {
         Row: {
           avg_unit_cost: number | null
@@ -54695,6 +54724,67 @@ export type Database = {
           risk_score: number | null
           supplier_name: string | null
           volatility_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      v_supplier_forecast_alerts: {
+        Row: {
+          alert_type: string | null
+          current_unit_cost: number | null
+          last_received_at: string | null
+          pct_increase_projected: number | null
+          product_id: string | null
+          product_name: string | null
+          projected_unit_cost_60d: number | null
+          receipts_used: number | null
+          severity: string | null
+          supplier_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      v_supplier_forecast_decision_overlay: {
+        Row: {
+          combined_risk_score: number | null
+          forecast_alert_type: string | null
+          forecast_pct_increase: number | null
+          forecast_severity: string | null
+          product_id: string | null
+          product_name: string | null
+          recommended_action: string | null
+          risk_band: string | null
+          risk_score: number | null
+          supplier_name: string | null
+          updated_recommended_action: string | null
         }
         Relationships: [
           {
