@@ -173,6 +173,7 @@ export function CreateStoreInvoiceModal({
         .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type, track_by, sale_unit_default, price_per_box, price_per_unit, price_per_tube, pack_size, packs_per_box')
         .eq('brand_id', selectedBrandId)
         .eq('is_active', true)
+        .is('deleted_at', null)
         .order('name');
       if (error) throw error;
       return (data || []) as Product[];

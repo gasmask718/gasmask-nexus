@@ -73,7 +73,7 @@ export interface StoreVisitData {
   storeName: string;
   storeAddress: string;
   // Billing
-  billTo: 'bill' | 'pay_upfront';
+  billTo: 'bill_to_bill' | 'pay_upfront';
   // Field orders created during visit
   fieldOrders: FieldOrder[];
   // Legacy - stickers now handled directly by BrandStickersCard (persisted to DB immediately)
@@ -126,7 +126,7 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
     storeId: storeId || '',
     storeName: '',
     storeAddress: '',
-    billTo: 'bill',
+    billTo: 'bill_to_bill',
     fieldOrders: [],
     stickers: {}, // Deprecated - stickers now saved directly via BrandStickersCard
     inventory: {},
