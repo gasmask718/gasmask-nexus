@@ -62,8 +62,9 @@ export function ViewAsProvider({ children }: { children: ReactNode }) {
         .select('id, name, user_id')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .single();
-      return data;
+        .order('created_at', { ascending: false })
+        .limit(1);
+      return data?.[0] || null;
     },
     enabled: !!user?.id && !viewAsAmbassador,
   });
