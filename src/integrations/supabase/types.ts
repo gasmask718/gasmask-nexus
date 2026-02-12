@@ -54728,6 +54728,71 @@ export type Database = {
           },
         ]
       }
+      v_supplier_product_scorecard: {
+        Row: {
+          avg_unit_cost: number | null
+          cost_score: number | null
+          first_received_at: string | null
+          latest_received_at: string | null
+          max_unit_cost: number | null
+          min_unit_cost: number | null
+          overall_score: number | null
+          pct_change: number | null
+          product_id: string | null
+          product_name: string | null
+          receipts_count: number | null
+          reliability_score: number | null
+          stability_score: number | null
+          supplier_name: string | null
+          trend_score: number | null
+          volatility_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      v_supplier_rankings: {
+        Row: {
+          cost_score: number | null
+          overall_score: number | null
+          products_count: number | null
+          rank_overall: number | null
+          reliability_score: number | null
+          stability_score: number | null
+          supplier_name: string | null
+          total_receipts_count: number | null
+          total_units_in: number | null
+          trend_score: number | null
+        }
+        Relationships: []
+      }
+      v_supplier_scorecard: {
+        Row: {
+          cost_score: number | null
+          overall_score: number | null
+          products_count: number | null
+          reliability_score: number | null
+          stability_score: number | null
+          supplier_name: string | null
+          total_receipts_count: number | null
+          total_units_in: number | null
+          trend_score: number | null
+        }
+        Relationships: []
+      }
       v_territory_address_status_summary: {
         Row: {
           candidates: number | null
