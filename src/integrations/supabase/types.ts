@@ -22640,6 +22640,7 @@ export type Database = {
       }
       historical_invoice_line_repairs: {
         Row: {
+          attribution_method: string | null
           confidence_level: string | null
           created_at: string
           derived_quantity: number
@@ -22649,9 +22650,11 @@ export type Database = {
           price_source: string | null
           price_used: number | null
           product_id: string
+          unit_count: number | null
           unit_type: string
         }
         Insert: {
+          attribution_method?: string | null
           confidence_level?: string | null
           created_at?: string
           derived_quantity?: number
@@ -22661,9 +22664,11 @@ export type Database = {
           price_source?: string | null
           price_used?: number | null
           product_id: string
+          unit_count?: number | null
           unit_type: string
         }
         Update: {
+          attribution_method?: string | null
           confidence_level?: string | null
           created_at?: string
           derived_quantity?: number
@@ -22673,6 +22678,7 @@ export type Database = {
           price_source?: string | null
           price_used?: number | null
           product_id?: string
+          unit_count?: number | null
           unit_type?: string
         }
         Relationships: [
@@ -22736,6 +22742,7 @@ export type Database = {
           invoice_id: string
           reason: string
           repair_type: string
+          source: string | null
         }
         Insert: {
           confidence_level?: string | null
@@ -22745,6 +22752,7 @@ export type Database = {
           invoice_id: string
           reason: string
           repair_type: string
+          source?: string | null
         }
         Update: {
           confidence_level?: string | null
@@ -22754,6 +22762,7 @@ export type Database = {
           invoice_id?: string
           reason?: string
           repair_type?: string
+          source?: string | null
         }
         Relationships: [
           {
@@ -53974,6 +53983,18 @@ export type Database = {
           store_id: string | null
           track_by: string | null
           units_delta: number | null
+        }
+        Relationships: []
+      }
+      v_invoice_effective_tubes: {
+        Row: {
+          confidence_level: string | null
+          invoice_date: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          source: string | null
+          total: number | null
+          tube_count: number | null
         }
         Relationships: []
       }
