@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Brain, Shield, Phone, Target, Award,
   Wallet, Calendar, CheckSquare, Clipboard, Store,
   Bike, Car, TrendingUp, Bell, Receipt, ClipboardList,
-  UserCircle, Eye, ShoppingBag, MapPin, type LucideIcon
+  UserCircle, Eye, ShoppingBag, MapPin, AlertCircle, type LucideIcon
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -133,6 +133,7 @@ export const OWNER_PORTAL: PortalConfig = {
       items: [
         { id: 'finance-dashboard', label: 'Finance Dashboard', path: '/floor5', icon: DollarSign, emoji: '📊' },
         { id: 'invoices', label: 'Invoices', path: '/billing/invoices', icon: FileText, emoji: '🧾' },
+        { id: 'legacy-invoice-repair', label: 'Legacy Invoice Repair (Read-Only)', path: '/admin/legacy-invoice-repair', icon: AlertCircle, emoji: '⚠️', description: 'One-time historical invoice tube attribution. Does not affect revenue, payments, or inventory.' },
         { id: 'unpaid', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, emoji: '⚠️' },
         { id: 'payroll', label: 'Payroll', path: '/payroll', icon: Wallet, emoji: '💵' },
       ],
@@ -226,6 +227,7 @@ export const ADMIN_PORTAL: PortalConfig = {
       emoji: '💰',
       items: [
         { id: 'invoices', label: 'Invoices', path: '/billing/invoices', icon: FileText, emoji: '🧾' },
+        { id: 'legacy-invoice-repair', label: 'Legacy Invoice Repair (Read-Only)', path: '/admin/legacy-invoice-repair', icon: AlertCircle, emoji: '⚠️', description: 'One-time historical invoice tube attribution. Does not affect revenue, payments, or inventory.' },
         { id: 'unpaid', label: 'Unpaid Accounts', path: '/unpaid-accounts', icon: Bell, emoji: '⚠️' },
       ],
     },
