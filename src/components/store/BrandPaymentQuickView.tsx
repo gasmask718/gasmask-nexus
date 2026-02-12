@@ -8,15 +8,15 @@ const PAYMENT_LABELS: Record<PaymentType, string> = {
 };
 
 const PAYMENT_STYLES: Record<PaymentType, string> = {
-  pay_upfront: 'bg-green-500/15 text-green-400 border-green-500/30',
-  bill_to_bill: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  pay_upfront: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25',
+  bill_to_bill: 'bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25',
 };
 
 interface Props {
   storeId: string;
 }
 
-export function BrandPaymentQuickStats({ storeId }: Props) {
+export function BrandPaymentQuickView({ storeId }: Props) {
   const { relationships, isLoading } = useStoreBrandRelationships(storeId);
 
   if (isLoading) {
@@ -25,8 +25,13 @@ export function BrandPaymentQuickStats({ storeId }: Props) {
 
   if (!relationships.length) return null;
 
+  const handleScrollToPanel = () => {
+    const el = document.querySelector('[data-section="brand-relationships"]');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1.5 mt-1">
       {relationships.map((rel) => {
         const brand = BRAND_DISPLAY[rel.brand_id as StoreBrandId];
         if (!brand) return null;
@@ -37,11 +42,12 @@ export function BrandPaymentQuickStats({ storeId }: Props) {
           <Badge
             key={rel.id}
             variant="outline"
-            className={`text-xs font-medium ${
+            className={`text-xs font-medium cursor-pointer transition-colors ${
               isActive
                 ? PAYMENT_STYLES[rel.payment_type]
                 : 'bg-muted/50 text-muted-foreground/60 border-border/30 line-through'
             }`}
+            onClick={handleScrollToPanel}
           >
             <span className="mr-1">{brand.icon}</span>
             {brand.name} — {isActive ? PAYMENT_LABELS[rel.payment_type] : 'Inactive'}

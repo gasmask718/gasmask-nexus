@@ -46,6 +46,7 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // Adding a section to these components propagates to ALL store profile pages.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
 import { PinnedNotesSection } from "@/components/store/PinnedNotesSection";
 import { EscalationFlagsPanel } from "@/components/delivery/EscalationFlagsPanel";
@@ -625,6 +626,8 @@ const StoreDetail = () => {
               </div>
               {/* Primary Responsive Contact — subtle header badge */}
               <PrimaryContactHeaderBadge storeId={id} />
+              {/* Brand Payment Quick View — executive intelligence */}
+              <BrandPaymentQuickView storeId={id || ''} />
             </div>
             <div className="flex gap-2">
               <Button
