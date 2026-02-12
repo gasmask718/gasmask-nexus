@@ -26796,6 +26796,8 @@ export type Database = {
           pack_size_snapshot: number
           packs_per_box_snapshot: number | null
           price_override_reason: string | null
+          price_per_box_snapshot: number | null
+          price_per_tube_snapshot: number | null
           product_id: string | null
           product_name: string | null
           product_name_snapshot: string | null
@@ -26831,6 +26833,8 @@ export type Database = {
           pack_size_snapshot?: number
           packs_per_box_snapshot?: number | null
           price_override_reason?: string | null
+          price_per_box_snapshot?: number | null
+          price_per_tube_snapshot?: number | null
           product_id?: string | null
           product_name?: string | null
           product_name_snapshot?: string | null
@@ -26866,6 +26870,8 @@ export type Database = {
           pack_size_snapshot?: number
           packs_per_box_snapshot?: number | null
           price_override_reason?: string | null
+          price_per_box_snapshot?: number | null
+          price_per_tube_snapshot?: number | null
           product_id?: string | null
           product_name?: string | null
           product_name_snapshot?: string | null
