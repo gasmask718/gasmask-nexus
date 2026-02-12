@@ -69,30 +69,38 @@ const BikersManagement: React.FC = () => {
         .order("full_name", { ascending: true });
       if (bikersError) throw bikersError;
 
-      // Also fetch users with biker role from user_roles + profiles
-      const { data: roleBikers, error: roleError } = await supabase
-        .from("user_roles")
-        .select("user_id, profiles!inner(id, full_name, phone, email, created_at)")
-        .eq("role", "biker");
-      
+      // Fetch users with biker role from user_roles
+      const [rolesRes, profilesRes] = await Promise.all([
+        supabase.from("user_roles").select("user_id").eq("role", "biker"),
+        supabase.from("profiles").select("id, full_name:name, phone, email, created_at"),
+      ]);
+
       const existingUserIds = new Set((bikersTable || []).map(b => b.user_id).filter(Boolean));
-      
+
+      const profileMap = new Map<string, any>();
+      for (const p of profilesRes.data || []) {
+        profileMap.set(p.id, p);
+      }
+
       // Merge role-based bikers that aren't already in the bikers table
-      const roleBikersMapped: Biker[] = (roleBikers || [])
-        .filter((rb: any) => rb.profiles && !existingUserIds.has(rb.user_id))
-        .map((rb: any) => ({
-          id: rb.user_id,
-          business_id: '',
-          user_id: rb.user_id,
-          full_name: rb.profiles.full_name || 'Unknown',
-          phone: rb.profiles.phone || '',
-          email: rb.profiles.email || null,
-          territory: null,
-          status: 'active',
-          payout_method: null,
-          payout_handle: null,
-          created_at: rb.profiles.created_at || new Date().toISOString(),
-        }));
+      const roleBikersMapped: Biker[] = (rolesRes.data || [])
+        .filter((rb: any) => !existingUserIds.has(rb.user_id))
+        .map((rb: any) => {
+          const profile = profileMap.get(rb.user_id);
+          return {
+            id: rb.user_id,
+            business_id: '',
+            user_id: rb.user_id,
+            full_name: profile?.full_name || 'Unknown',
+            phone: profile?.phone || '',
+            email: profile?.email || null,
+            territory: null,
+            status: 'active',
+            payout_method: null,
+            payout_handle: null,
+            created_at: profile?.created_at || new Date().toISOString(),
+          };
+        });
 
       return [...(bikersTable || []), ...roleBikersMapped] as Biker[];
     },
