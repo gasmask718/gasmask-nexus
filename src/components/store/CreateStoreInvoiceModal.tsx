@@ -42,7 +42,7 @@ const PAYMENT_METHODS = [
 ];
 
 export type SaleChannel = 'retail' | 'wholesale' | 'street';
-export type SaleUnit = 'box' | 'unit';
+export type SaleUnit = 'box' | 'unit' | 'pack';
 
 interface Brand {
   id: string;
@@ -66,6 +66,9 @@ interface Product {
   sale_unit_default: string | null;
   price_per_box: number | null;
   price_per_unit: number | null;
+  // Phase 3: Packs
+  pack_size: number | null;
+  packs_per_box: number | null;
 }
 
 export type DiscountType = 'none' | 'percent' | 'amount';
@@ -97,6 +100,9 @@ interface LineItem {
   price_override_reason: string;
   line_subtotal: number;
   track_by: string;
+  // Phase 3: Pack snapshots
+  pack_size_snapshot: number;
+  packs_per_box_snapshot: number | null;
 }
 
 export function CreateStoreInvoiceModal({
@@ -154,7 +160,7 @@ export function CreateStoreInvoiceModal({
       if (!selectedBrandId) return [];
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type, track_by, sale_unit_default, price_per_box, price_per_unit')
+        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type, track_by, sale_unit_default, price_per_box, price_per_unit, pack_size, packs_per_box')
         .eq('brand_id', selectedBrandId)
         .eq('is_active', true)
         .order('name');
@@ -205,26 +211,35 @@ export function CreateStoreInvoiceModal({
     const costPerUnit = product.cost || 0;
     const unitsPerBox = product.units_per_box || 1;
     const trackBy = product.track_by || 'tubes';
+    const packSize = product.pack_size || 1;
+    const packsPerBox = product.packs_per_box || null;
     
     // Calculate profit (INTERNAL ONLY - never shown on invoice)
     const profitPerUnit = unitPrice - costPerUnit;
     const totalProfit = profitPerUnit * quantity;
 
-    // Unit computation: bags are always sold individually (no box math)
+    // Canonical units computation (Phase 3: pack-aware)
     let quantityBoxes: number | null = null;
     let quantityTubes: number | null = null;
     let computedTubesTotal: number;
 
-    if (trackBy === 'bags') {
-      // Bags: always per-bag, no boxes
+    if (saleUnit === 'pack') {
+      // Pack: quantity packs × pack_size = canonical units
       quantityBoxes = null;
-      quantityTubes = quantity; // stored in quantity_tubes column
-      computedTubesTotal = quantity;
+      quantityTubes = quantity * packSize;
+      computedTubesTotal = quantity * packSize;
     } else if (saleUnit === 'box') {
       quantityBoxes = quantity;
       quantityTubes = null;
-      computedTubesTotal = quantity * unitsPerBox;
+      if (packsPerBox && packSize > 1) {
+        // New path: boxes × packs_per_box × pack_size
+        computedTubesTotal = quantity * packsPerBox * packSize;
+      } else {
+        // Legacy path: boxes × units_per_box
+        computedTubesTotal = quantity * unitsPerBox;
+      }
     } else {
+      // Unit: 1:1 canonical
       quantityBoxes = null;
       quantityTubes = quantity;
       computedTubesTotal = quantity;
@@ -244,9 +259,17 @@ export function CreateStoreInvoiceModal({
       existing.total = existing.quantity * existing.unit_price_used;
       existing.line_subtotal = existing.total;
       existing.profit = (existing.unit_price_used - existing.cost_per_unit) * existing.quantity;
-      if (existing.sale_unit === 'box') {
+      // Recompute canonical units for updated quantity
+      if (existing.sale_unit === 'pack') {
+        existing.quantity_tubes = existing.quantity * existing.pack_size_snapshot;
+        existing.computed_tubes_total = existing.quantity * existing.pack_size_snapshot;
+      } else if (existing.sale_unit === 'box') {
         existing.quantity_boxes = existing.quantity;
-        existing.computed_tubes_total = existing.quantity * existing.units_per_box;
+        if (existing.packs_per_box_snapshot && existing.pack_size_snapshot > 1) {
+          existing.computed_tubes_total = existing.quantity * existing.packs_per_box_snapshot * existing.pack_size_snapshot;
+        } else {
+          existing.computed_tubes_total = existing.quantity * existing.units_per_box;
+        }
       } else {
         existing.quantity_tubes = existing.quantity;
         existing.computed_tubes_total = existing.quantity;
@@ -281,6 +304,9 @@ export function CreateStoreInvoiceModal({
           price_override_reason: '',
           line_subtotal: lineSubtotal,
           track_by: trackBy,
+          // Phase 3: Pack snapshots
+          pack_size_snapshot: packSize,
+          packs_per_box_snapshot: packsPerBox,
         },
       ]);
     }
@@ -306,9 +332,16 @@ export function CreateStoreInvoiceModal({
           line_subtotal: newQuantity * item.unit_price_used,
           profit: (item.unit_price_used - item.cost_per_unit) * newQuantity,
         };
-        if (updatedItem.sale_unit === 'box') {
+        if (updatedItem.sale_unit === 'pack') {
+          updatedItem.quantity_tubes = newQuantity * updatedItem.pack_size_snapshot;
+          updatedItem.computed_tubes_total = newQuantity * updatedItem.pack_size_snapshot;
+        } else if (updatedItem.sale_unit === 'box') {
           updatedItem.quantity_boxes = newQuantity;
-          updatedItem.computed_tubes_total = newQuantity * updatedItem.units_per_box;
+          if (updatedItem.packs_per_box_snapshot && updatedItem.pack_size_snapshot > 1) {
+            updatedItem.computed_tubes_total = newQuantity * updatedItem.packs_per_box_snapshot * updatedItem.pack_size_snapshot;
+          } else {
+            updatedItem.computed_tubes_total = newQuantity * updatedItem.units_per_box;
+          }
         } else {
           updatedItem.quantity_tubes = newQuantity;
           updatedItem.computed_tubes_total = newQuantity;
@@ -465,6 +498,9 @@ export function CreateStoreInvoiceModal({
           discount_reason: item.discount_reason || null,
           price_override_reason: item.price_override_reason || null,
           line_subtotal: item.line_subtotal,
+          // Phase 3: Pack snapshots
+          pack_size_snapshot: item.pack_size_snapshot,
+          packs_per_box_snapshot: item.packs_per_box_snapshot,
         }));
 
         const { error: lineItemsError } = await supabase
@@ -766,58 +802,57 @@ export function CreateStoreInvoiceModal({
               </div>
             )}
 
-            {/* Sale Unit (Box vs Tube) */}
+            {/* Sale Unit (Box / Pack / Unit) */}
             {selectedProductId && (
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Selling As</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant={saleUnit === 'box' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSaleUnit('box')}
-                    className="text-xs"
-                  >
-                    📦 Box
-                  </Button>
-                   <Button
-                    type="button"
-                    variant={saleUnit === 'unit' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setSaleUnit('unit')}
-                    className="text-xs"
-                  >
-                    {(() => {
-                      const product = products.find(p => p.id === selectedProductId);
-                      const trackBy = product?.track_by || 'tubes';
-                      return trackBy === 'bags' ? '👜 Bags' : '🧪 Loose Tubes';
-                    })()}
-                  </Button>
-                </div>
-                {/* Show unit computation preview */}
                 {(() => {
-                   const product = products.find(p => p.id === selectedProductId);
-                   const trackBy = product?.track_by || 'tubes';
-                   const unitsPerBox = product?.units_per_box || 1;
-                   const unitLabel = trackBy === 'bags' ? 'bags' : 'tubes';
-                   if (trackBy === 'bags') {
-                     // Bags are sold individually, no box math
-                     return (
-                       <p className="text-xs text-muted-foreground">
-                         = <span className="font-mono font-semibold text-foreground">{quantity}</span> {unitLabel}
-                       </p>
-                     );
-                   }
-                   const tubesPreview = saleUnit === 'box' 
-                     ? quantity * unitsPerBox 
-                     : quantity;
-                   return (
-                     <p className="text-xs text-muted-foreground">
-                       = <span className="font-mono font-semibold text-foreground">{tubesPreview}</span> {unitLabel}
-                       {saleUnit === 'box' && ` (${quantity} × ${unitsPerBox} tubes/box)`}
-                     </p>
-                   );
-                 })()}
+                  const product = products.find(p => p.id === selectedProductId);
+                  const trackBy = product?.track_by || 'tubes';
+                  const packSize = product?.pack_size || 1;
+                  const packsPerBox = product?.packs_per_box;
+                  const unitsPerBox = product?.units_per_box || 1;
+                  const unitLabel = trackBy === 'bags' ? 'bags' : 'tubes';
+                  const showPack = packSize > 1;
+                  const showBox = !!packsPerBox || !!unitsPerBox;
+                  const cols = 1 + (showPack ? 1 : 0) + (showBox ? 1 : 0);
+                  return (
+                    <>
+                      <div className={`grid grid-cols-${cols} gap-2`}>
+                        {showBox && (
+                          <Button type="button" variant={saleUnit === 'box' ? 'default' : 'outline'} size="sm" onClick={() => setSaleUnit('box')} className="text-xs">
+                            📦 Box
+                          </Button>
+                        )}
+                        {showPack && (
+                          <Button type="button" variant={saleUnit === 'pack' ? 'default' : 'outline'} size="sm" onClick={() => setSaleUnit('pack')} className="text-xs">
+                            📦 Pack ({packSize})
+                          </Button>
+                        )}
+                        <Button type="button" variant={saleUnit === 'unit' ? 'default' : 'outline'} size="sm" onClick={() => setSaleUnit('unit')} className="text-xs">
+                          {trackBy === 'bags' ? '👜 Bag' : '🧪 Tube'}
+                        </Button>
+                      </div>
+                      {/* Canonical units preview */}
+                      <p className="text-xs text-muted-foreground">
+                        {'= '}
+                        <span className="font-mono font-semibold text-foreground">
+                          {saleUnit === 'box'
+                            ? (packsPerBox && packSize > 1
+                                ? quantity * packsPerBox * packSize
+                                : quantity * unitsPerBox)
+                            : saleUnit === 'pack'
+                              ? quantity * packSize
+                              : quantity}
+                        </span>
+                        {' '}{unitLabel}
+                        {saleUnit === 'box' && packsPerBox && packSize > 1 && ` (${quantity} × ${packsPerBox} packs × ${packSize})`}
+                        {saleUnit === 'box' && !(packsPerBox && packSize > 1) && ` (${quantity} × ${unitsPerBox}/${unitLabel === 'bags' ? 'bag' : 'tube'}s per box)`}
+                        {saleUnit === 'pack' && ` (${quantity} × ${packSize} per pack)`}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
             )}
 
@@ -827,6 +862,7 @@ export function CreateStoreInvoiceModal({
                 <Label className="text-xs text-muted-foreground">
                   Quantity ({(() => {
                     if (saleUnit === 'box') return 'Boxes';
+                    if (saleUnit === 'pack') return 'Packs';
                     const product = products.find(p => p.id === selectedProductId);
                     return (product?.track_by || 'tubes') === 'bags' ? 'Bags' : 'Tubes';
                   })()})

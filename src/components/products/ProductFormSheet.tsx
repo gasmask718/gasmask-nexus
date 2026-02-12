@@ -123,6 +123,9 @@ interface ProductForm {
   sale_unit_default: string;
   price_per_box: number | null;
   price_per_unit: number;
+  // Phase 3: Packs & Bundles
+  pack_size: number;
+  packs_per_box: number | null;
 }
 
 const defaultForm: ProductForm = {
@@ -167,6 +170,9 @@ const defaultForm: ProductForm = {
   sale_unit_default: 'box',
   price_per_box: null,
   price_per_unit: 0,
+  // Phase 3
+  pack_size: 1,
+  packs_per_box: null,
 };
 
 export function ProductFormSheet({ open, onClose, productId, onSuccess }: ProductFormSheetProps) {
@@ -263,6 +269,9 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
         sale_unit_default: (existingProduct as any).sale_unit_default || 'box',
         price_per_box: (existingProduct as any).price_per_box ?? null,
         price_per_unit: (existingProduct as any).price_per_unit ?? 0,
+        // Phase 3
+        pack_size: (existingProduct as any).pack_size ?? 1,
+        packs_per_box: (existingProduct as any).packs_per_box ?? null,
       });
     } else if (!isEditMode && open) {
       setForm(defaultForm);
@@ -691,8 +700,9 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                           <SelectContent>
                             <SelectItem value="box">📦 Box</SelectItem>
+                            {form.pack_size > 1 && <SelectItem value="pack">📦 Pack</SelectItem>}
                             <SelectItem value="unit">{form.track_by === 'tubes' ? '🧪 Loose Tube' : form.track_by === 'bags' ? '👜 Bag' : '🔧 Unit'}</SelectItem>
                           </SelectContent>
                         </Select>
@@ -758,12 +768,33 @@ export function ProductFormSheet({ open, onClose, productId, onSuccess }: Produc
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label>Units Per Pack</Label>
+                        <Label>Pack Size (units per pack)</Label>
                         <Input
                           type="number"
-                          value={form.units_per_pack}
-                          onChange={(e) => updateField('units_per_pack', parseInt(e.target.value) || 1)}
+                          min="1"
+                          value={form.pack_size}
+                          onChange={(e) => updateField('pack_size', parseInt(e.target.value) || 1)}
                         />
+                        <p className="text-xs text-muted-foreground">
+                          {form.pack_size > 1 
+                            ? `Each pack contains ${form.pack_size} ${form.track_by === 'tubes' ? 'tubes' : form.track_by === 'bags' ? 'bags' : 'units'}`
+                            : 'Set > 1 to enable pack selling'}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Packs Per Box</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={form.packs_per_box ?? ''}
+                          onChange={(e) => updateField('packs_per_box', e.target.value ? parseInt(e.target.value) || null : null)}
+                          placeholder="Optional"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {form.packs_per_box && form.pack_size > 1
+                            ? `1 box = ${form.packs_per_box} packs × ${form.pack_size} = ${form.packs_per_box * form.pack_size} ${form.track_by === 'tubes' ? 'tubes' : 'bags'}`
+                            : 'How many packs fit in a box (leave empty if not boxed)'}
+                        </p>
                       </div>
                       <div className="space-y-2">
                         <Label>Low Stock Alert Threshold</Label>

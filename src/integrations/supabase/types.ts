@@ -26419,6 +26419,8 @@ export type Database = {
           invoice_id: string
           line_subtotal: number
           list_unit_price: number
+          pack_size_snapshot: number
+          packs_per_box_snapshot: number | null
           price_override_reason: string | null
           product_id: string | null
           product_name: string | null
@@ -26452,6 +26454,8 @@ export type Database = {
           invoice_id: string
           line_subtotal?: number
           list_unit_price?: number
+          pack_size_snapshot?: number
+          packs_per_box_snapshot?: number | null
           price_override_reason?: string | null
           product_id?: string | null
           product_name?: string | null
@@ -26485,6 +26489,8 @@ export type Database = {
           invoice_id?: string
           line_subtotal?: number
           list_unit_price?: number
+          pack_size_snapshot?: number
+          packs_per_box_snapshot?: number | null
           price_override_reason?: string | null
           product_id?: string | null
           product_name?: string | null
@@ -37084,6 +37090,8 @@ export type Database = {
           min_order_qty: number | null
           moq: number | null
           name: string
+          pack_size: number
+          packs_per_box: number | null
           price_per_box: number | null
           price_per_tube: number | null
           price_per_unit: number
@@ -37146,6 +37154,8 @@ export type Database = {
           min_order_qty?: number | null
           moq?: number | null
           name: string
+          pack_size?: number
+          packs_per_box?: number | null
           price_per_box?: number | null
           price_per_tube?: number | null
           price_per_unit?: number
@@ -37208,6 +37218,8 @@ export type Database = {
           min_order_qty?: number | null
           moq?: number | null
           name?: string
+          pack_size?: number
+          packs_per_box?: number | null
           price_per_box?: number | null
           price_per_tube?: number | null
           price_per_unit?: number
