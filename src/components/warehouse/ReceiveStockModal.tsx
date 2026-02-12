@@ -102,6 +102,7 @@ export function ReceiveStockModal({ open, onClose, poId, poNumber }: { open: boo
         pack_size: l.po_item.pack_size_snapshot || 1,
         packs_per_box: l.po_item.packs_per_box_snapshot,
         units_per_box: l.po_item.units_per_box_snapshot,
+        unit_cost: (l.po_item as any).unit_cost || 0,
       }));
 
       const { data, error } = await supabase.rpc('receive_purchase_order', {
