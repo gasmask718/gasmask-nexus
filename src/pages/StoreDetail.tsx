@@ -47,6 +47,7 @@ import { useStoreMasterResolver } from "@/hooks/useStoreMasterResolver";
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
 import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
+import { QuickStatsBrandPaymentMatrix } from "@/components/store/QuickStatsBrandPaymentMatrix";
 import { CanonicalStoreDataProvider } from "@/components/store/CanonicalStoreDataProvider";
 import { PinnedNotesSection } from "@/components/store/PinnedNotesSection";
 import { EscalationFlagsPanel } from "@/components/delivery/EscalationFlagsPanel";
@@ -213,7 +214,7 @@ const StoreDetail = () => {
   const [geocoding, setGeocoding] = useState(false);
   const [isEditingQuickStats, setIsEditingQuickStats] = useState(false);
   const [quickStatsResponsiveness, setQuickStatsResponsiveness] = useState<"call" | "text" | "both" | "none">("none");
-  const [quickStatsPaymentType, setQuickStatsPaymentType] = useState<"pays_upfront" | "bill_to_bill" | null>(null);
+  const [quickStatsPaymentType, setQuickStatsPaymentType] = useState<"pays_upfront" | "bill_to_bill" | null>(null); // legacy — kept for responsiveness save
   const [savingQuickStats, setSavingQuickStats] = useState(false);
 
   // Resolve store_master ID for GDS operations
@@ -1212,36 +1213,8 @@ const StoreDetail = () => {
               {id && <QuickStatsStickersSummary storeId={id} />}
               <Separator />
               
-              {/* Payment Type */}
-              <div className="space-y-2">
-                <p className="text-sm text-muted-foreground">Payment Type</p>
-                {isEditingQuickStats ? (
-                  <Select 
-                    value={quickStatsPaymentType || ""} 
-                    onValueChange={(value) => setQuickStatsPaymentType(value === "" ? null : value as "pays_upfront" | "bill_to_bill")}
-                    disabled={savingQuickStats}
-                  >
-                    <SelectTrigger className="w-full bg-background">
-                      <SelectValue placeholder="Select payment type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pays_upfront">Pays Upfront</SelectItem>
-                      <SelectItem value="bill_to_bill">Bill to Bill</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="flex items-center gap-2 text-sm">
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">
-                      {store.payment_type === "pays_upfront" 
-                        ? "Pays Upfront" 
-                        : store.payment_type === "bill_to_bill"
-                        ? "Bill to Bill"
-                        : "Not set"}
-                    </span>
-                  </div>
-                )}
-              </div>
+              {/* Brand Payment Status — 4-brand matrix from store_brand_relationships */}
+              <QuickStatsBrandPaymentMatrix storeId={id || ''} />
               <Separator />
               
               <MemberSinceDisplay storeId={id || ""} />
