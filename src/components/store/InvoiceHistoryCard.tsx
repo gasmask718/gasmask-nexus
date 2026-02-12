@@ -57,9 +57,13 @@ interface InvoiceHistoryCardProps {
   storeId: string;
   storeName?: string;
   onCreateInvoice?: () => void;
+  /** Polymorphic entity type for unified invoice system */
+  entityType?: 'store' | 'wholesaler' | 'company';
+  /** Polymorphic entity ID — defaults to storeId if not provided */
+  entityId?: string;
 }
 
-export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoice }: InvoiceHistoryCardProps) {
+export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoice, entityType, entityId }: InvoiceHistoryCardProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -71,19 +75,30 @@ export function InvoiceHistoryCard({ storeId, storeName = 'Store', onCreateInvoi
   const [invoiceToEdit, setInvoiceToEdit] = useState<Invoice | null>(null);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
 
+  // Resolve entity for polymorphic queries
+  const resolvedEntityType = entityType || 'store';
+  const resolvedEntityId = entityId || storeId;
+
   const { data: invoices = [], isLoading } = useQuery({
-    queryKey: ['store-invoices', storeId],
+    queryKey: ['store-invoices', resolvedEntityType, resolvedEntityId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('invoices')
         .select('*')
-        .eq('store_id', storeId)
         .order('created_at', { ascending: false });
 
+      // Use polymorphic entity_type + entity_id if available, fallback to store_id
+      if (entityType) {
+        query = query.eq('entity_type', resolvedEntityType).eq('entity_id', resolvedEntityId);
+      } else {
+        query = query.eq('store_id', storeId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as Invoice[];
     },
-    enabled: !!storeId,
+    enabled: !!resolvedEntityId,
   });
 
   const togglePaymentStatusMutation = useMutation({

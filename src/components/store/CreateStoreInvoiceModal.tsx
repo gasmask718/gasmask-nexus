@@ -24,12 +24,20 @@ import { BulkStoreSelector } from './BulkStoreSelector';
 import { GRABBA_COMPANY_IDS } from '@/hooks/useVisitProducts';
 import { InvoiceModeSelector, InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
+export type InvoiceEntityType = 'store' | 'wholesaler' | 'company';
+
 interface CreateStoreInvoiceModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   storeId: string;
   storeName: string;
   onSuccess?: (invoiceId: string) => void;
+  /** Polymorphic entity type for unified invoice system */
+  entityType?: InvoiceEntityType;
+  /** Polymorphic entity ID — defaults to storeId if not provided */
+  entityId?: string;
+  /** Default pricing mode — 'retail' for stores, 'wholesale' for wholesalers */
+  defaultPricingMode?: SaleChannel;
 }
 
 const PAYMENT_METHODS = [
@@ -115,6 +123,9 @@ export function CreateStoreInvoiceModal({
   storeId,
   storeName,
   onSuccess,
+  entityType = 'store',
+  entityId,
+  defaultPricingMode,
 }: CreateStoreInvoiceModalProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -122,7 +133,7 @@ export function CreateStoreInvoiceModal({
   const [selectedBrandId, setSelectedBrandId] = useState<string>('');
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
-  const [saleChannel, setSaleChannel] = useState<SaleChannel>('retail');
+  const [saleChannel, setSaleChannel] = useState<SaleChannel>(defaultPricingMode || 'retail');
   const [saleUnit, setSaleUnit] = useState<SaleUnit>('box');
   const [paymentMethod, setPaymentMethod] = useState('');
   const [dueDate, setDueDate] = useState<Date | undefined>(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
@@ -455,10 +466,14 @@ export function CreateStoreInvoiceModal({
       const createdInvoices = [];
       for (const targetStoreId of storesToProcess) {
         // Create invoice
+        const resolvedEntityId = entityId || targetStoreId;
         const { data: invoice, error: invoiceError } = await supabase
           .from('invoices')
           .insert({
-            store_id: targetStoreId,
+            store_id: entityType === 'store' ? targetStoreId : null,
+            entity_type: entityType,
+            entity_id: resolvedEntityId,
+            pricing_mode: saleChannel,
             invoice_number: invoiceNumber,
             subtotal,
             tax,
@@ -478,7 +493,7 @@ export function CreateStoreInvoiceModal({
             created_by: user?.id || 'manual',
             created_at: invoiceDateToUse,
             is_historical: invoiceMode === 'historical',
-            status: 'draft', // Phase 1B: Start as draft
+            status: 'draft',
           })
           .select('id')
           .single();
@@ -522,6 +537,8 @@ export function CreateStoreInvoiceModal({
           // Pricing snapshots
           price_per_box_snapshot: item.price_per_box_snapshot,
           price_per_tube_snapshot: item.price_per_tube_snapshot,
+          // Unified pricing mode
+          pricing_mode: saleChannel,
         }));
 
         const { error: lineItemsError } = await supabase
@@ -659,7 +676,7 @@ export function CreateStoreInvoiceModal({
     setSelectedBrandId('');
     setSelectedProductId('');
     setQuantity(1);
-    setSaleChannel('retail');
+    setSaleChannel(defaultPricingMode || 'retail');
     setSaleUnit('box');
     setPaymentMethod('');
     setDueDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));

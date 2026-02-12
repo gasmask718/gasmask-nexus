@@ -7,7 +7,7 @@
  *             wholesaler_supply_invoices, wholesaler_supply_returns
  */
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { 
@@ -25,6 +24,8 @@ import {
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useWholesalerFinancials } from '@/hooks/useWholesalerFinancials';
+import { InvoiceHistoryCard } from '@/components/store/InvoiceHistoryCard';
+import { CreateStoreInvoiceModal } from '@/components/store/CreateStoreInvoiceModal';
 
 interface WholesalerSupplyTabProps {
   wholesalerId: string;
@@ -45,69 +46,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
 }) => {
   const queryClient = useQueryClient();
   const financials = useWholesalerFinancials(orders);
-  const [invoiceOpen, setInvoiceOpen] = useState(false);
-  const [invoiceForm, setInvoiceForm] = useState({
-    invoice_number: '',
-    total_due: '',
-    due_date: '',
-    notes: '',
-  });
-
-  // Create invoice mutation
-  const createInvoice = useMutation({
-    mutationFn: async (payload: any) => {
-      const { data, error } = await supabase
-        .from('wholesaler_supply_invoices')
-        .insert([payload])
-        .select();
-      if (error) {
-        console.error('Create Invoice Error:', error);
-        throw error;
-      }
-      return data;
-    },
-    onSuccess: () => {
-      toast.success('Invoice created');
-      setInvoiceOpen(false);
-      setInvoiceForm({ invoice_number: '', total_due: '', due_date: '', notes: '' });
-      queryClient.invalidateQueries({ queryKey: ['wholesaler-supply-invoices', wholesalerId] });
-      queryClient.invalidateQueries({ queryKey: ['wholesaler-supply-summary'] });
-    },
-    onError: (error: any) => {
-      console.error('Create Invoice Error:', error);
-      toast.error(`Failed to create invoice: ${error?.message || 'Unknown error'}`);
-    },
-  });
-
-  const handleCreateInvoice = () => {
-    if (!invoiceForm.invoice_number || !invoiceForm.total_due) {
-      toast.error('Invoice number and amount are required');
-      return;
-    }
-    createInvoice.mutate({
-      wholesaler_id: wholesalerId,
-      invoice_number: invoiceForm.invoice_number,
-      total_due: parseFloat(invoiceForm.total_due) || 0,
-      due_date: invoiceForm.due_date || null,
-      notes: invoiceForm.notes || null,
-      status: 'unpaid',
-    });
-  };
-
-  // Fetch invoices
-  const { data: invoices = [] } = useQuery({
-    queryKey: ['wholesaler-supply-invoices', wholesalerId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('wholesaler_supply_invoices')
-        .select('*')
-        .eq('wholesaler_id', wholesalerId)
-        .order('issued_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!wholesalerId,
-  });
+  const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
 
   // Fetch returns
   const { data: returns = [] } = useQuery({
@@ -133,8 +72,6 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
     : 0;
 
   const openDisputes = disputes.filter((d: any) => d.status !== 'resolved');
-  const unpaidInvoices = invoices.filter((i: any) => i.status === 'unpaid' || i.status === 'overdue');
-  const totalUnpaid = unpaidInvoices.reduce((s: number, i: any) => s + ((i.total_due || 0) - (i.total_paid || 0)), 0);
   const pendingReturns = returns.filter((r: any) => r.status === 'pending');
 
   return (
@@ -146,9 +83,6 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
           </TabsTrigger>
           <TabsTrigger value="invoices" className="text-xs">
             <FileText className="h-3.5 w-3.5 mr-1" /> Invoices
-            {unpaidInvoices.length > 0 && (
-              <Badge className="ml-1 h-4 px-1 text-[10px] bg-red-500/15 text-red-400">{unpaidInvoices.length}</Badge>
-            )}
           </TabsTrigger>
           <TabsTrigger value="sku" className="text-xs">
             <Package className="h-3.5 w-3.5 mr-1" /> SKU
@@ -167,7 +101,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
             <KPICard label="Lifetime Purchases" value={`$${financials.lifetimeSpend.toLocaleString()}`} icon={DollarSign} accent="text-emerald-400" />
             <KPICard label="30-Day Spend" value={`$${financials.spend30.toLocaleString()}`} trend={financials.trendPercent} icon={TrendingUp} accent="text-blue-400" />
             <KPICard label="Avg Order Size" value={`$${Math.round(financials.avgOrderValue).toLocaleString()}`} icon={CreditCard} accent="text-purple-400" />
-            <KPICard label="Unpaid Balance" value={`$${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} open invoices`} icon={FileText} accent="text-red-400" />
+            <KPICard label="Open Balance" value="—" sub="See Invoices tab" icon={FileText} accent="text-red-400" />
           </div>
 
           {/* Spend Breakdown */}
@@ -233,97 +167,15 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
           </Card>
         </TabsContent>
 
-        {/* === INVOICES === */}
+        {/* === INVOICES (Unified System) === */}
         <TabsContent value="invoices" className="mt-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
-              <KPICard label="Total Invoices" value={invoices.length.toString()} icon={FileText} accent="text-blue-400" />
-              <KPICard label="Unpaid Balance" value={`$${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} unpaid`} icon={DollarSign} accent="text-red-400" />
-              <KPICard label="Total Collected" value={`$${invoices.reduce((s: number, i: any) => s + (i.total_paid || 0), 0).toLocaleString()}`} icon={CreditCard} accent="text-emerald-400" />
-            </div>
-          </div>
-          
-          <Dialog open={invoiceOpen} onOpenChange={setInvoiceOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1">
-                <Plus className="h-4 w-4" /> Create Invoice
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Supply Invoice</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div>
-                  <Label>Invoice Number *</Label>
-                  <Input 
-                    placeholder="INV-001" 
-                    value={invoiceForm.invoice_number}
-                    onChange={e => setInvoiceForm(f => ({ ...f, invoice_number: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>Total Due ($) *</Label>
-                  <Input 
-                    type="number" 
-                    placeholder="0.00" 
-                    value={invoiceForm.total_due}
-                    onChange={e => setInvoiceForm(f => ({ ...f, total_due: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>Due Date</Label>
-                  <Input 
-                    type="date" 
-                    value={invoiceForm.due_date}
-                    onChange={e => setInvoiceForm(f => ({ ...f, due_date: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label>Notes</Label>
-                  <Textarea 
-                    placeholder="Optional notes..." 
-                    value={invoiceForm.notes}
-                    onChange={e => setInvoiceForm(f => ({ ...f, notes: e.target.value }))}
-                  />
-                </div>
-                <Button className="w-full" onClick={handleCreateInvoice} disabled={createInvoice.isPending}>
-                  {createInvoice.isPending ? 'Creating...' : 'Create Invoice'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Card className="bg-card/50 border-border/50">
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Invoice Ledger</CardTitle></CardHeader>
-            <CardContent>
-              {invoices.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-6">No invoices recorded</p>
-              ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {invoices.map((inv: any) => (
-                    <div key={inv.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
-                      <div>
-                        <p className="text-sm font-medium">#{inv.invoice_number}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Issued {inv.issued_at ? format(new Date(inv.issued_at), 'MMM d, yyyy') : 'N/A'}
-                          {inv.due_date && ` • Due ${format(new Date(inv.due_date), 'MMM d')}`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold">${(inv.total_due || 0).toLocaleString()}</p>
-                        <Badge className={`text-xs ${
-                          inv.status === 'paid' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
-                          inv.status === 'overdue' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
-                          inv.status === 'partial' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
-                          'bg-muted text-muted-foreground'
-                        }`}>{inv.status}</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <InvoiceHistoryCard
+            storeId={wholesalerId}
+            storeName={profile?.company_name || 'Wholesaler'}
+            entityType="wholesaler"
+            entityId={wholesalerId}
+            onCreateInvoice={() => setCreateInvoiceModalOpen(true)}
+          />
         </TabsContent>
 
         {/* === SKU BREAKDOWN === */}
@@ -377,6 +229,17 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
           />
         </TabsContent>
       </Tabs>
+
+      {/* Unified Invoice Creation Modal */}
+      <CreateStoreInvoiceModal
+        open={createInvoiceModalOpen}
+        onOpenChange={setCreateInvoiceModalOpen}
+        storeId={wholesalerId}
+        storeName={profile?.company_name || 'Wholesaler'}
+        entityType="wholesaler"
+        entityId={wholesalerId}
+        defaultPricingMode="wholesale"
+      />
     </div>
   );
 };
