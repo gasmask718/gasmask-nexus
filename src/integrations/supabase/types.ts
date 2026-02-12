@@ -7321,8 +7321,22 @@ export type Database = {
             foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
             columns: ["line_item_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_line_margin"
+            referencedColumns: ["line_item_id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_line_units"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_negative_margin_alerts"
+            referencedColumns: ["line_item_id"]
           },
           {
             foreignKeyName: "bag_sale_ledger_product_id_fkey"
@@ -13469,6 +13483,59 @@ export type Database = {
           snapshot_data?: Json
         }
         Relationships: []
+      }
+      cogs_ledger: {
+        Row: {
+          cost_layer_id: string | null
+          id: string
+          invoice_id: string
+          line_item_id: string
+          product_id: string
+          product_name: string | null
+          recorded_at: string
+          recorded_by: string | null
+          source: string
+          total_cost: number
+          unit_cost: number
+          units_consumed: number
+        }
+        Insert: {
+          cost_layer_id?: string | null
+          id?: string
+          invoice_id: string
+          line_item_id: string
+          product_id: string
+          product_name?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          source?: string
+          total_cost: number
+          unit_cost: number
+          units_consumed: number
+        }
+        Update: {
+          cost_layer_id?: string | null
+          id?: string
+          invoice_id?: string
+          line_item_id?: string
+          product_id?: string
+          product_name?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          source?: string
+          total_cost?: number
+          unit_cost?: number
+          units_consumed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cogs_ledger_cost_layer_id_fkey"
+            columns: ["cost_layer_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_cost_ledger"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       collection_accounts: {
         Row: {
@@ -25560,6 +25627,63 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "warehouses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_cost_ledger: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          product_name: string | null
+          received_at: string
+          recorded_by: string | null
+          source: string
+          source_id: string
+          unit_cost: number
+          units_consumed: number
+          units_in: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          product_name?: string | null
+          received_at?: string
+          recorded_by?: string | null
+          source: string
+          source_id: string
+          unit_cost: number
+          units_consumed?: number
+          units_in: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          product_name?: string | null
+          received_at?: string
+          recorded_by?: string | null
+          source?: string
+          source_id?: string
+          unit_cost?: number
+          units_consumed?: number
+          units_in?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
           },
         ]
       }
@@ -47011,8 +47135,22 @@ export type Database = {
             foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
             columns: ["line_item_id"]
             isOneToOne: false
+            referencedRelation: "v_invoice_line_margin"
+            referencedColumns: ["line_item_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
             referencedRelation: "v_invoice_line_units"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "v_negative_margin_alerts"
+            referencedColumns: ["line_item_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_store_id_fkey"
@@ -53573,6 +53711,72 @@ export type Database = {
           },
         ]
       }
+      v_invoice_line_margin: {
+        Row: {
+          brand: string | null
+          brand_id: string | null
+          cogs: number | null
+          gross_profit: number | null
+          invoice_id: string | null
+          line_item_id: string | null
+          margin_pct: number | null
+          product_id: string | null
+          product_name: string | null
+          revenue: number | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_invoice_line_units: {
         Row: {
           brand: string | null
@@ -53729,6 +53933,128 @@ export type Database = {
           total_units_sold: number | null
         }
         Relationships: []
+      }
+      v_margin_per_brand: {
+        Row: {
+          brand_id: string | null
+          brand_name: string | null
+          margin_pct: number | null
+          total_cogs: number | null
+          total_profit: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_margin_per_product: {
+        Row: {
+          margin_pct: number | null
+          product_id: string | null
+          product_name: string | null
+          total_cogs: number | null
+          total_profit: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      v_margin_per_store: {
+        Row: {
+          margin_pct: number | null
+          store_id: string | null
+          total_cogs: number | null
+          total_profit: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_negative_margin_alerts: {
+        Row: {
+          alert_type: string | null
+          brand: string | null
+          cogs: number | null
+          gross_profit: number | null
+          invoice_id: string | null
+          line_item_id: string | null
+          margin_pct: number | null
+          product_id: string | null
+          product_name: string | null
+          revenue: number | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "invoices_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_payout_batch_export: {
         Row: {
