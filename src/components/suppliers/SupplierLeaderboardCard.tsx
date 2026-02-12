@@ -30,7 +30,7 @@ export function SupplierLeaderboardCard({ onSelect }: { onSelect: (s: string) =>
                 <div>
                   <p className="font-medium text-sm">{s.supplier_name}</p>
                   <p className="text-xs text-muted-foreground">
-                    Products: {s.products_count} · Receipts: {s.total_receipts_count}
+                    Products: {s.products_count} · Receipts: {s.total_receipts_count} · {s.dominant_risk_band}
                   </p>
                 </div>
                 <Badge variant={s.overall_score >= 80 ? 'default' : s.overall_score >= 60 ? 'secondary' : 'destructive'}>
