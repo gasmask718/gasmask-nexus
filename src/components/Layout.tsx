@@ -228,6 +228,7 @@ const DYNASTY_NAVIGATION = {
       items: [
         { path: '/floor5', label: 'Finance Dashboard', icon: DollarSign },
         { path: '/billing/invoices', label: 'Invoices', icon: FileText },
+        { path: '/admin/legacy-invoice-repair', label: 'Legacy Invoice Repair ⚠️', icon: AlertTriangle },
         { path: '/billing/center', label: 'Billing Center', icon: CreditCard },
         { path: '/unpaid-accounts', label: 'Unpaid Accounts', icon: AlertTriangle },
         { path: '/wholesale/fulfillment', label: 'Wholesale Fulfillment', icon: Package },
