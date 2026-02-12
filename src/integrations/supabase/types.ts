@@ -27727,6 +27727,45 @@ export type Database = {
         }
         Relationships: []
       }
+      legacy_invoice_price_map: {
+        Row: {
+          confidence_level: string
+          created_at: string
+          created_by: string
+          effective_from: string
+          effective_to: string | null
+          inferred_units: number | null
+          notes: string | null
+          price_per_unit: number | null
+          total_amount: number
+          unit_type: string | null
+        }
+        Insert: {
+          confidence_level: string
+          created_at?: string
+          created_by: string
+          effective_from: string
+          effective_to?: string | null
+          inferred_units?: number | null
+          notes?: string | null
+          price_per_unit?: number | null
+          total_amount: number
+          unit_type?: string | null
+        }
+        Update: {
+          confidence_level?: string
+          created_at?: string
+          created_by?: string
+          effective_from?: string
+          effective_to?: string | null
+          inferred_units?: number | null
+          notes?: string | null
+          price_per_unit?: number | null
+          total_amount?: number
+          unit_type?: string | null
+        }
+        Relationships: []
+      }
       lender_applications: {
         Row: {
           acquisition_id: string | null
@@ -54343,6 +54382,26 @@ export type Database = {
           max_total: number | null
           min_total: number | null
           total: number | null
+        }
+        Relationships: []
+      }
+      v_legacy_invoice_price_mapping_status: {
+        Row: {
+          confidence_level: string | null
+          created_by: string | null
+          distinct_brands: number | null
+          distinct_stores: number | null
+          effective_from: string | null
+          effective_to: string | null
+          first_seen: string | null
+          invoice_count: number | null
+          last_seen: string | null
+          mapped_units: number | null
+          mapping_created_at: string | null
+          mapping_notes: string | null
+          mapping_present: boolean | null
+          total: number | null
+          unit_type: string | null
         }
         Relationships: []
       }
