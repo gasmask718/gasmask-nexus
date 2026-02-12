@@ -75,16 +75,21 @@ const BikersManagement: React.FC = () => {
         supabase.from("profiles").select("id, full_name:name, phone, email, created_at"),
       ]);
 
-      const existingUserIds = new Set((bikersTable || []).map(b => b.user_id).filter(Boolean));
+      // Collect names already present in bikers table for name-based dedup
+      const existingNames = new Set((bikersTable || []).map(b => b.full_name?.toLowerCase()).filter(Boolean));
 
       const profileMap = new Map<string, any>();
       for (const p of profilesRes.data || []) {
         profileMap.set(p.id, p);
       }
 
-      // Merge role-based bikers that aren't already in the bikers table
+      // Merge role-based bikers — only skip if exact same name already exists
       const roleBikersMapped: Biker[] = (rolesRes.data || [])
-        .filter((rb: any) => !existingUserIds.has(rb.user_id))
+        .filter((rb: any) => {
+          const profile = profileMap.get(rb.user_id);
+          const name = (profile?.full_name || '').toLowerCase();
+          return !name || !existingNames.has(name);
+        })
         .map((rb: any) => {
           const profile = profileMap.get(rb.user_id);
           return {
