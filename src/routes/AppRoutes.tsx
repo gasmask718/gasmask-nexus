@@ -360,6 +360,7 @@ import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, Suppli
 import { WarehouseDashboard } from '@/pages/os/warehouse';
 import { InventoryDashboard, ProductsPage, ProductDetailPage, ProductInventoryPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
 import ProductConversions from '@/pages/os/ProductConversions';
+import LegacyInvoiceRepair from '@/pages/admin/LegacyInvoiceRepair';
 import OSLayout from '@/pages/os/OSLayout';
 import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
 import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
@@ -1041,6 +1042,16 @@ export default function AppRoutes() {
             }
           />
         </Route>
+
+        {/* Legacy Invoice Repair - Admin Only, One-Time Tool */}
+        <Route
+          path="/admin/legacy-invoice-repair"
+          element={
+            <RequireRole allowedRoles={['admin']} showLocked>
+              <LegacyInvoiceRepair />
+            </RequireRole>
+          }
+        />
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
