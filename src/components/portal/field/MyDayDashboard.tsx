@@ -28,6 +28,7 @@ import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveCo
 import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
 import { PredictiveIntelCompact } from '@/components/contact/PredictiveIntelCompact';
 import { LiveLocationMap } from '@/components/map/LiveLocationMap';
+import { BikerDeliveryTasks } from './BikerDeliveryTasks';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -435,6 +436,9 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
 
       {/* Live Location Map */}
       <LiveLocationMap height="280px" />
+
+      {/* Delivery Tasks (Biker only) */}
+      {portalType === 'biker' && <BikerDeliveryTasks />}
 
       {/* Today's Stops */}
       <Card className="overflow-hidden">

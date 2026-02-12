@@ -8,3 +8,4 @@ export { HistoryPage } from './HistoryPage';
 export { MakeDeliveryPage } from './MakeDeliveryPage';
 export { MessagesPage } from './MessagesPage';
 export { ProfilePage } from './ProfilePage';
+export { BikerDeliveryTasks } from './BikerDeliveryTasks';
