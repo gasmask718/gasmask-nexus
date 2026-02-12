@@ -73,7 +73,7 @@ const BikerProfile: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_checks')
-        .select(`*, location:delivery_locations(*)`)
+        .select(`*, location:locations(*)`)
         .eq('assigned_biker_id', bikerId)
         .order('created_at', { ascending: false })
         .limit(20);
