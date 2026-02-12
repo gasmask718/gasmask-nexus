@@ -224,10 +224,13 @@ export function CreateStoreInvoiceModal({
 
     if (!brand || !product) return;
 
-    // Phase 1B: Determine list price based on sale unit
+    // Phase 1B: Determine list price based on sale unit — channel-aware
+    const channelPrice = getPriceForChannel(product, saleChannel);
     const listUnitPrice = saleUnit === 'box'
-      ? (product.price_per_box ?? getPriceForChannel(product, saleChannel))
-      : (product.price_per_unit ?? getPriceForChannel(product, saleChannel));
+      ? (saleChannel === 'wholesale'
+          ? (product.wholesale_price ?? product.price_per_box ?? channelPrice)
+          : (product.price_per_box ?? channelPrice))
+      : (product.price_per_unit ?? channelPrice);
 
     const unitPrice = listUnitPrice;
     const costPerUnit = product.cost || 0;
@@ -235,7 +238,10 @@ export function CreateStoreInvoiceModal({
     const trackBy = product.track_by || 'tubes';
     const packSize = product.pack_size || 1;
     const packsPerBox = product.packs_per_box || null;
-    const pricePerBox = product.price_per_box ?? (product.store_price || 0);
+    // Channel-aware box/tube price snapshots
+    const pricePerBox = saleChannel === 'wholesale'
+      ? (product.wholesale_price ?? product.price_per_box ?? 0)
+      : (product.price_per_box ?? product.store_price ?? 0);
     const pricePerTube = product.price_per_tube ?? (pricePerBox > 0 && unitsPerBox > 0 ? Math.round((pricePerBox / unitsPerBox) * 100) / 100 : 0);
     
     // Calculate profit (INTERNAL ONLY - never shown on invoice)
