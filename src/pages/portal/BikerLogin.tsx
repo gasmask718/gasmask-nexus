@@ -112,24 +112,23 @@ export default function BikerLogin() {
         return;
       }
 
-      // Step 2: Check for portal role or elevated access
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role, primary_role')
-        .eq('id', authData.user.id)
-        .single();
+      // Step 2: Check for biker role in user_roles table (canonical source)
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', authData.user.id);
 
-      const userRole = (profile as any)?.role || (profile as any)?.primary_role;
-      const elevatedRoles = ['owner', 'admin', 'ceo', 'va'];
-      const isElevated = elevatedRoles.includes(userRole);
-      const isBiker = userRole === 'biker';
+      const roles = (userRoles || []).map((r: any) => r.role as string);
+      const elevatedRoles = ['owner', 'admin', 'ceo', 'va', 'super_admin', 'dynasty_owner'];
+      const hasBikerRole = roles.includes('biker');
+      const hasElevatedRole = roles.some(r => elevatedRoles.includes(r));
 
-      if (!isBiker && !isElevated) {
+      if (!hasBikerRole && !hasElevatedRole) {
         await supabase.from('portal_audit_log').insert([{
           user_id: authData.user.id,
           portal_type: 'biker',
           action_type: 'login_denied',
-          metadata: { reason: 'role_mismatch', attempted_role: userRole }
+          metadata: { reason: 'role_mismatch', roles }
         }]);
 
         await supabase.auth.signOut();
@@ -153,7 +152,7 @@ export default function BikerLogin() {
         user_id: authData.user.id,
         portal_type: 'biker',
         action_type: 'login',
-        metadata: { success: true, role: userRole }
+        metadata: { success: true, roles }
       }]);
 
       toast.success('Welcome to the Biker Portal');
