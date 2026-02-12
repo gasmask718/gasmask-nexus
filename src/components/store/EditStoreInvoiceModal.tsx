@@ -265,7 +265,9 @@ export function EditStoreInvoiceModal({
           total_amount: total,
           payment_method: paymentMethod || null,
           payment_status: paymentStatus,
-          due_date: dueDate ? dueDate.toISOString().split('T')[0] : null,
+          due_date: dueDate
+            ? dueDate.toISOString().split('T')[0]
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? new Date().toISOString() : null,
           partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
           received_by: receivedByName || null,

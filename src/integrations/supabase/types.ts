@@ -26845,7 +26845,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           delivery_photos: string[] | null
-          due_date: string
+          due_date: string | null
           finalized_at: string | null
           finalized_by: string | null
           id: string
@@ -26892,7 +26892,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           delivery_photos?: string[] | null
-          due_date: string
+          due_date?: string | null
           finalized_at?: string | null
           finalized_by?: string | null
           id?: string
@@ -26939,7 +26939,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           delivery_photos?: string[] | null
-          due_date?: string
+          due_date?: string | null
           finalized_at?: string | null
           finalized_by?: string | null
           id?: string
