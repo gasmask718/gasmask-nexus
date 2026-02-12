@@ -54652,6 +54652,82 @@ export type Database = {
           },
         ]
       }
+      v_supplier_cost_volatility: {
+        Row: {
+          avg_unit_cost: number | null
+          max_unit_cost: number | null
+          min_unit_cost: number | null
+          product_id: string | null
+          product_name: string | null
+          receipts_count: number | null
+          stddev_unit_cost: number | null
+          supplier_name: string | null
+          volatility_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      v_supplier_price_alerts: {
+        Row: {
+          alert_type: string | null
+          baseline_unit_cost: number | null
+          first_received_at: string | null
+          latest_received_at: string | null
+          latest_unit_cost: number | null
+          pct_change: number | null
+          product_id: string | null
+          product_name: string | null
+          receipts_count: number | null
+          severity: string | null
+          supplier_name: string | null
+          volatility_pct: number | null
+        }
+        Relationships: []
+      }
+      v_supplier_price_drift: {
+        Row: {
+          absolute_change: number | null
+          first_received_at: string | null
+          first_unit_cost: number | null
+          latest_received_at: string | null
+          latest_unit_cost: number | null
+          pct_change: number | null
+          product_id: string | null
+          product_name: string | null
+          receipts_count: number | null
+          supplier_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       v_territory_address_status_summary: {
         Row: {
           candidates: number | null
