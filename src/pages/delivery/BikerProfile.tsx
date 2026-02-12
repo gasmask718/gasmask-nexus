@@ -32,13 +32,37 @@ const BikerProfile: React.FC = () => {
   const { data: biker, isLoading } = useQuery({
     queryKey: ['biker', bikerId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Try bikers table first
+      const { data } = await supabase
         .from('bikers')
         .select('*')
         .eq('id', bikerId)
-        .single();
-      if (error) throw error;
-      return data;
+        .maybeSingle();
+      if (data) return data;
+
+      // Fallback: biker exists only via user_roles — build from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, name, phone, email, created_at')
+        .eq('id', bikerId)
+        .maybeSingle();
+
+      if (profile) {
+        return {
+          id: profile.id,
+          user_id: profile.id,
+          business_id: '',
+          full_name: profile.name || 'Unknown',
+          phone: profile.phone || '',
+          email: profile.email || null,
+          territory: null,
+          status: 'active',
+          payout_method: null,
+          payout_handle: null,
+          created_at: profile.created_at,
+        };
+      }
+      return null;
     },
     enabled: !!bikerId
   });

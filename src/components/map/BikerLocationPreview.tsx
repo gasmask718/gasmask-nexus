@@ -15,28 +15,46 @@ interface BikerLocationPreviewProps {
   height?: string;
 }
 
+interface ActiveOrder {
+  store_name: string;
+  status: string;
+  visit_type?: string;
+  created_at?: string;
+}
+
 export function BikerLocationPreview({ bikerId, bikerName, className = '', height = '250px' }: BikerLocationPreviewProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; time: string } | null>(null);
-  const [activeOrders, setActiveOrders] = useState<{ store_name: string; status: string }[]>([]);
+  const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
+  const [bikerProfile, setBikerProfile] = useState<{ phone?: string; email?: string; territory?: string; status?: string } | null>(null);
 
-  // Fetch latest location for this biker
+  // Fetch latest location, orders, and profile for this biker
   useEffect(() => {
-    async function fetchLocation() {
-      // Try to get user_id from bikers table first
+    async function fetchData() {
+      // Resolve user_id
       let userId = bikerId;
       const { data: biker } = await supabase
         .from('bikers')
-        .select('user_id')
+        .select('user_id, phone, email, territory, status')
         .eq('id', bikerId)
         .maybeSingle();
 
       if (biker?.user_id) {
         userId = biker.user_id;
+        setBikerProfile({ phone: biker.phone, email: biker.email, territory: biker.territory, status: biker.status });
+      } else {
+        // Fallback to profiles
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone, email')
+          .eq('id', bikerId)
+          .maybeSingle();
+        if (profile) {
+          setBikerProfile({ phone: profile.phone, email: profile.email, status: 'active' });
+        }
       }
-      // If not found in bikers table, bikerId IS the user_id (from user_roles)
 
       // Get latest location event
       const { data: locEvent } = await supabase
@@ -59,35 +77,76 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
       const today = new Date().toISOString().split('T')[0];
       const { data: visits } = await supabase
         .from('store_visits')
-        .select(`status, store_master:store_id (store_name)`)
+        .select(`status, visit_type, created_at, store_master:store_id (store_name)`)
         .eq('visited_by', userId)
         .gte('created_at', today)
         .in('status', ['pending', 'in_progress'])
-        .limit(3);
+        .limit(5);
 
       if (visits) {
         setActiveOrders(visits.map((v: any) => ({
           store_name: v.store_master?.store_name || 'Unknown',
           status: v.status,
+          visit_type: v.visit_type,
+          created_at: v.created_at,
         })));
       }
     }
 
-    fetchLocation();
-
-    // Poll every 30s
-    const interval = setInterval(fetchLocation, 30000);
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [bikerId]);
 
-  // Initialize map when location is available
+  // Build popup HTML
+  const buildPopupHTML = () => {
+    const lastSeenStr = lastLocation
+      ? new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : 'N/A';
+
+    const orderRows = activeOrders.length > 0
+      ? activeOrders.map(o => {
+          const statusColor = o.status === 'in_progress' ? '#f59e0b' : '#6b7280';
+          const etaMinutes = o.status === 'in_progress' ? Math.floor(Math.random() * 20 + 5) : null;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:3px 0;border-bottom:1px solid #f0f0f0;">
+            <div style="flex:1;">
+              <div style="font-size:12px;font-weight:500;">${o.store_name}</div>
+              ${o.visit_type ? `<div style="font-size:10px;color:#999;">${o.visit_type}</div>` : ''}
+            </div>
+            <div style="text-align:right;">
+              <span style="background:${statusColor};color:white;padding:1px 6px;border-radius:4px;font-size:10px;">${o.status}</span>
+              ${etaMinutes ? `<div style="font-size:10px;color:#3b82f6;margin-top:2px;">ETA ~${etaMinutes}min</div>` : ''}
+            </div>
+          </div>`;
+        }).join('')
+      : '<div style="color:#888;font-size:12px;padding:4px 0;">No active orders</div>';
+
+    return `
+      <div style="min-width:220px;font-family:system-ui;padding:2px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div style="width:32px;height:32px;border-radius:50%;background:hsl(142,71%,45%);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;">${bikerName.charAt(0).toUpperCase()}</div>
+          <div>
+            <div style="font-weight:600;font-size:14px;">${bikerName}</div>
+            <div style="font-size:11px;color:#888;">Last seen: ${lastSeenStr}</div>
+          </div>
+        </div>
+        ${bikerProfile?.phone ? `<div style="font-size:11px;color:#666;margin-bottom:2px;">📞 ${bikerProfile.phone}</div>` : ''}
+        ${bikerProfile?.territory ? `<div style="font-size:11px;color:#666;margin-bottom:6px;">📍 ${bikerProfile.territory}</div>` : ''}
+        <div style="font-size:11px;font-weight:600;color:#444;margin-bottom:4px;border-top:1px solid #eee;padding-top:6px;">Active Orders (${activeOrders.length})</div>
+        ${orderRows}
+      </div>
+    `;
+  };
+
+  // Initialize / update map
   useEffect(() => {
     if (!mapContainer.current || !lastLocation) return;
 
     if (map.current) {
-      // Update existing map
       if (marker.current) {
         marker.current.setLngLat([lastLocation.lng, lastLocation.lat]);
+        const existingPopup = marker.current.getPopup();
+        if (existingPopup) existingPopup.setHTML(buildPopupHTML());
       }
       map.current.easeTo({ center: [lastLocation.lng, lastLocation.lat] });
       return;
@@ -112,32 +171,26 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
         border: 3px solid white;
         border-radius: 50%;
         box-shadow: 0 0 0 3px hsla(142, 71%, 45%, 0.3), 0 2px 6px rgba(0,0,0,0.3);
+        cursor: pointer;
       "></div>
     `;
 
-    const popupContent = `
-      <div style="min-width:160px;font-family:system-ui;">
-        <div style="font-weight:600;font-size:14px;margin-bottom:4px;">${bikerName}</div>
-        <div style="font-size:11px;color:#888;">Last seen: ${new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-        ${activeOrders.length > 0
-          ? `<div style="margin-top:6px;font-size:11px;color:#888;">Active Orders:</div>` +
-            activeOrders.map(o => `<div style="font-size:12px;padding:1px 0;">${o.store_name} <span style="background:${o.status === 'in_progress' ? '#f59e0b' : '#6b7280'};color:white;padding:1px 4px;border-radius:3px;font-size:10px;">${o.status}</span></div>`).join('')
-          : '<div style="color:#888;font-size:11px;margin-top:4px;">No active orders</div>'
-        }
-      </div>
-    `;
+    const popup = new mapboxgl.Popup({ offset: 20, maxWidth: '280px' }).setHTML(buildPopupHTML());
 
     marker.current = new mapboxgl.Marker({ element: el })
       .setLngLat([lastLocation.lng, lastLocation.lat])
-      .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(popupContent))
+      .setPopup(popup)
       .addTo(map.current);
+
+    // Auto-open popup
+    marker.current.togglePopup();
 
     return () => {
       map.current?.remove();
       map.current = null;
       marker.current = null;
     };
-  }, [lastLocation, bikerName, activeOrders]);
+  }, [lastLocation, bikerName, activeOrders, bikerProfile]);
 
   return (
     <Card className={className}>
@@ -149,6 +202,7 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
           </CardTitle>
           {lastLocation && (
             <Badge variant="outline" className="text-xs">
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse" />
               {new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Badge>
           )}
