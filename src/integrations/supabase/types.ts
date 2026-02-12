@@ -41906,7 +41906,7 @@ export type Database = {
           id: string
           is_active: boolean
           needs_starter_kit: boolean
-          payment_type: Database["public"]["Enums"]["payment_type_enum"]
+          payment_type: Database["public"]["Enums"]["payment_type_enum"] | null
           relationship_health: Database["public"]["Enums"]["relationship_health_enum"]
           sampling_status: Database["public"]["Enums"]["sampling_status_enum"]
           starter_kit_date: string | null
@@ -41921,7 +41921,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           needs_starter_kit?: boolean
-          payment_type?: Database["public"]["Enums"]["payment_type_enum"]
+          payment_type?: Database["public"]["Enums"]["payment_type_enum"] | null
           relationship_health?: Database["public"]["Enums"]["relationship_health_enum"]
           sampling_status?: Database["public"]["Enums"]["sampling_status_enum"]
           starter_kit_date?: string | null
@@ -41936,7 +41936,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           needs_starter_kit?: boolean
-          payment_type?: Database["public"]["Enums"]["payment_type_enum"]
+          payment_type?: Database["public"]["Enums"]["payment_type_enum"] | null
           relationship_health?: Database["public"]["Enums"]["relationship_health_enum"]
           sampling_status?: Database["public"]["Enums"]["sampling_status_enum"]
           starter_kit_date?: string | null
@@ -56766,12 +56766,7 @@ export type Database = {
       payment_method: "cash" | "zelle" | "cashapp" | "venmo" | "other"
       payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
       payment_type: "pays_upfront" | "bill_to_bill"
-      payment_type_enum:
-        | "pay_upfront"
-        | "bill_to_bill"
-        | "net7"
-        | "net14"
-        | "cod"
+      payment_type_enum: "pay_upfront" | "bill_to_bill"
       promise_status: "active" | "kept" | "broken" | "cancelled"
       property_type:
         | "single_family"
@@ -57320,13 +57315,7 @@ export const Constants = {
       payment_method: ["cash", "zelle", "cashapp", "venmo", "other"],
       payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
       payment_type: ["pays_upfront", "bill_to_bill"],
-      payment_type_enum: [
-        "pay_upfront",
-        "bill_to_bill",
-        "net7",
-        "net14",
-        "cod",
-      ],
+      payment_type_enum: ["pay_upfront", "bill_to_bill"],
       promise_status: ["active", "kept", "broken", "cancelled"],
       property_type: [
         "single_family",

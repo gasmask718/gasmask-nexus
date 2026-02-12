@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CANONICAL_BRAND_IDS, CANONICAL_BRANDS, type CanonicalBrandId } from '@/config/brands';
 
-export type PaymentType = 'pay_upfront' | 'bill_to_bill' | 'net7' | 'net14' | 'cod';
+export type PaymentType = 'pay_upfront' | 'bill_to_bill';
 export type SamplingStatus = 'none' | 'samples_given' | 'trialing' | 'converted';
 export type RelationshipHealth = 'healthy' | 'at_risk' | 'paused' | 'terminated' | 'trialing';
 

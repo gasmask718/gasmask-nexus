@@ -5,17 +5,11 @@ import { Loader2 } from 'lucide-react';
 const PAYMENT_LABELS: Record<PaymentType, string> = {
   pay_upfront: 'Pay Upfront',
   bill_to_bill: 'Bill to Bill',
-  net7: 'Net 7',
-  net14: 'Net 14',
-  cod: 'COD',
 };
 
 const PAYMENT_STYLES: Record<PaymentType, string> = {
   pay_upfront: 'bg-green-500/15 text-green-400 border-green-500/30',
   bill_to_bill: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
-  net7: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  net14: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
-  cod: 'bg-muted text-muted-foreground border-border',
 };
 
 interface Props {

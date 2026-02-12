@@ -14,9 +14,6 @@ import {
 const PAYMENT_OPTIONS: { value: PaymentType; label: string }[] = [
   { value: 'pay_upfront', label: 'Pay Upfront' },
   { value: 'bill_to_bill', label: 'Bill to Bill' },
-  { value: 'net7', label: 'Net 7' },
-  { value: 'net14', label: 'Net 14' },
-  { value: 'cod', label: 'COD' },
 ];
 
 const HEALTH_OPTIONS: { value: RelationshipHealth; label: string; variant: string }[] = [

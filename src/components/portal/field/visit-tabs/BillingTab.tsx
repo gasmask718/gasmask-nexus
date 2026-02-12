@@ -12,8 +12,8 @@ import { InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
 
 interface BillingTabProps {
   storeId: string;
-  billTo: 'bill' | 'pay_upfront';
-  onBillToChange: (value: 'bill' | 'pay_upfront') => void;
+  billTo: 'bill_to_bill' | 'pay_upfront';
+  onBillToChange: (value: 'bill_to_bill' | 'pay_upfront') => void;
   fieldOrders: FieldOrder[];
   onFieldOrdersChange: (orders: FieldOrder[]) => void;
   invoiceMode: InvoiceMode;
@@ -98,12 +98,12 @@ export function BillingTab({
         <CardContent>
           <RadioGroup
             value={billTo}
-            onValueChange={(value) => onBillToChange(value as 'bill' | 'pay_upfront')}
+            onValueChange={(value) => onBillToChange(value as 'bill_to_bill' | 'pay_upfront')}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="bill" id="bill" />
-              <Label htmlFor="bill">Bill (Net Terms)</Label>
+              <RadioGroupItem value="bill_to_bill" id="bill_to_bill" />
+              <Label htmlFor="bill_to_bill">Bill to Bill</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pay_upfront" id="pay_upfront" />
