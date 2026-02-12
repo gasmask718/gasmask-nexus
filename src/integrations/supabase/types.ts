@@ -54618,6 +54618,32 @@ export type Database = {
         }
         Relationships: []
       }
+      v_supplier_contract_risk_index: {
+        Row: {
+          contract_risk_index: number | null
+          primary_risk_driver: string | null
+          product_id: string | null
+          product_name: string | null
+          risk_tier: string | null
+          supplier_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
       v_supplier_cost_history: {
         Row: {
           cost_layer_id: string | null
@@ -54803,6 +54829,18 @@ export type Database = {
           },
         ]
       }
+      v_supplier_negotiation_queue: {
+        Row: {
+          contract_risk_index: number | null
+          priority_rank: number | null
+          product_name: string | null
+          recommended_action: string | null
+          recommended_contact_window: string | null
+          summary_reason: string | null
+          supplier_name: string | null
+        }
+        Relationships: []
+      }
       v_supplier_price_alerts: {
         Row: {
           alert_type: string | null
@@ -54900,6 +54938,34 @@ export type Database = {
           total_receipts_count: number | null
         }
         Relationships: []
+      }
+      v_supplier_renegotiation_window: {
+        Row: {
+          current_risk_score: number | null
+          forecast_severity: string | null
+          product_id: string | null
+          product_name: string | null
+          reason: string | null
+          recommended_action: string | null
+          recommended_contact_window: string | null
+          supplier_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
       }
       v_supplier_scorecard: {
         Row: {
