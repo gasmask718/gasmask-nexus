@@ -6,15 +6,22 @@
  * Data Source: wholesaler_orders, wholesaler_payments, wholesaler_disputes,
  *             wholesaler_supply_invoices, wholesaler_supply_returns
  */
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
 import { 
   DollarSign, Package, AlertTriangle, TrendingUp, TrendingDown,
-  CreditCard, FileText, RotateCcw
+  CreditCard, FileText, RotateCcw, Plus
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useWholesalerFinancials } from '@/hooks/useWholesalerFinancials';
@@ -36,7 +43,56 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
   profile,
   onCreateOrder,
 }) => {
+  const queryClient = useQueryClient();
   const financials = useWholesalerFinancials(orders);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState({
+    invoice_number: '',
+    total_due: '',
+    due_date: '',
+    notes: '',
+  });
+
+  // Create invoice mutation
+  const createInvoice = useMutation({
+    mutationFn: async (payload: any) => {
+      const { data, error } = await supabase
+        .from('wholesaler_supply_invoices')
+        .insert([payload])
+        .select();
+      if (error) {
+        console.error('Create Invoice Error:', error);
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Invoice created');
+      setInvoiceOpen(false);
+      setInvoiceForm({ invoice_number: '', total_due: '', due_date: '', notes: '' });
+      queryClient.invalidateQueries({ queryKey: ['wholesaler-supply-invoices', wholesalerId] });
+      queryClient.invalidateQueries({ queryKey: ['wholesaler-supply-summary'] });
+    },
+    onError: (error: any) => {
+      console.error('Create Invoice Error:', error);
+      toast.error(`Failed to create invoice: ${error?.message || 'Unknown error'}`);
+    },
+  });
+
+  const handleCreateInvoice = () => {
+    if (!invoiceForm.invoice_number || !invoiceForm.total_due) {
+      toast.error('Invoice number and amount are required');
+      return;
+    }
+    createInvoice.mutate({
+      wholesaler_id: wholesalerId,
+      invoice_number: invoiceForm.invoice_number,
+      total_due: parseFloat(invoiceForm.total_due) || 0,
+      due_date: invoiceForm.due_date || null,
+      notes: invoiceForm.notes || null,
+      status: 'unpaid',
+    });
+  };
 
   // Fetch invoices
   const { data: invoices = [] } = useQuery({
@@ -179,11 +235,64 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
 
         {/* === INVOICES === */}
         <TabsContent value="invoices" className="mt-4 space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-            <KPICard label="Total Invoices" value={invoices.length.toString()} icon={FileText} accent="text-blue-400" />
-            <KPICard label="Unpaid Balance" value={`$${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} unpaid`} icon={DollarSign} accent="text-red-400" />
-            <KPICard label="Total Collected" value={`$${invoices.reduce((s: number, i: any) => s + (i.total_paid || 0), 0).toLocaleString()}`} icon={CreditCard} accent="text-emerald-400" />
+          <div className="flex items-center justify-between">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 flex-1">
+              <KPICard label="Total Invoices" value={invoices.length.toString()} icon={FileText} accent="text-blue-400" />
+              <KPICard label="Unpaid Balance" value={`$${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} unpaid`} icon={DollarSign} accent="text-red-400" />
+              <KPICard label="Total Collected" value={`$${invoices.reduce((s: number, i: any) => s + (i.total_paid || 0), 0).toLocaleString()}`} icon={CreditCard} accent="text-emerald-400" />
+            </div>
           </div>
+          
+          <Dialog open={invoiceOpen} onOpenChange={setInvoiceOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-1">
+                <Plus className="h-4 w-4" /> Create Invoice
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Supply Invoice</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div>
+                  <Label>Invoice Number *</Label>
+                  <Input 
+                    placeholder="INV-001" 
+                    value={invoiceForm.invoice_number}
+                    onChange={e => setInvoiceForm(f => ({ ...f, invoice_number: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Total Due ($) *</Label>
+                  <Input 
+                    type="number" 
+                    placeholder="0.00" 
+                    value={invoiceForm.total_due}
+                    onChange={e => setInvoiceForm(f => ({ ...f, total_due: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Due Date</Label>
+                  <Input 
+                    type="date" 
+                    value={invoiceForm.due_date}
+                    onChange={e => setInvoiceForm(f => ({ ...f, due_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label>Notes</Label>
+                  <Textarea 
+                    placeholder="Optional notes..." 
+                    value={invoiceForm.notes}
+                    onChange={e => setInvoiceForm(f => ({ ...f, notes: e.target.value }))}
+                  />
+                </div>
+                <Button className="w-full" onClick={handleCreateInvoice} disabled={createInvoice.isPending}>
+                  {createInvoice.isPending ? 'Creating...' : 'Create Invoice'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Invoice Ledger</CardTitle></CardHeader>
             <CardContent>
