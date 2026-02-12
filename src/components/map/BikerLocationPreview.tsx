@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || 'pk.eyJ1IjoiZ2FzbWFza2FwcHJvdmVkbGxjIiwiYSI6ImNtaTlkYjJ4czBtOWsycXBqMmh4dDlqaGMifQ.OVfGs2Bp6VLc0SBfMDrWpA';
 
 interface BikerLocationPreviewProps {
   bikerId: string;
@@ -25,23 +25,27 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
   // Fetch latest location for this biker
   useEffect(() => {
     async function fetchLocation() {
-      // Get biker's user_id from bikers table
+      // Try to get user_id from bikers table first
+      let userId = bikerId;
       const { data: biker } = await supabase
         .from('bikers')
         .select('user_id')
         .eq('id', bikerId)
-        .single();
+        .maybeSingle();
 
-      if (!biker?.user_id) return;
+      if (biker?.user_id) {
+        userId = biker.user_id;
+      }
+      // If not found in bikers table, bikerId IS the user_id (from user_roles)
 
       // Get latest location event
       const { data: locEvent } = await supabase
         .from('location_events')
         .select('lat, lng, created_at')
-        .eq('user_id', biker.user_id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (locEvent && locEvent.lat && locEvent.lng) {
         setLastLocation({
@@ -56,7 +60,7 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
       const { data: visits } = await supabase
         .from('store_visits')
         .select(`status, store_master:store_id (store_name)`)
-        .eq('visited_by', biker.user_id)
+        .eq('visited_by', userId)
         .gte('created_at', today)
         .in('status', ['pending', 'in_progress'])
         .limit(3);
