@@ -119,7 +119,10 @@ const WholesalerProfile: React.FC = () => {
       toast.success('Wholesaler updated');
       setEditOpen(false);
     },
-    onError: () => toast.error('Failed to update wholesaler')
+    onError: (error: any) => {
+      console.error('Update Wholesaler Error:', error);
+      toast.error(`Failed to update wholesaler: ${error?.message || 'Unknown error'}`);
+    }
   });
 
   if (isLoading) {
@@ -365,7 +368,14 @@ const EditWholesalerForm: React.FC<{ wholesaler: any; onSubmit: (data: any) => v
           </Select>
         </div>
       </div>
-      <Button className="w-full" onClick={() => onSubmit({ ...formData, credit_limit: parseFloat(formData.credit_limit) || 0 })} disabled={isLoading}>
+      <Button className="w-full" onClick={() => {
+        const payload: Record<string, any> = { ...formData, credit_limit: parseFloat(formData.credit_limit) || 0 };
+        // Convert empty strings to null to avoid DB constraint issues
+        Object.keys(payload).forEach(key => {
+          if (payload[key] === '') payload[key] = null;
+        });
+        onSubmit(payload);
+      }} disabled={isLoading}>
         {isLoading ? 'Saving...' : 'Save Changes'}
       </Button>
     </div>
