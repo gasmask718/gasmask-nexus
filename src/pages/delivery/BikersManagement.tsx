@@ -129,10 +129,11 @@ const BikersManagement: React.FC = () => {
   });
 
   const filteredBikers = bikers.filter((biker) => {
+    const term = searchTerm.toLowerCase();
     const matchesSearch =
-      biker.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      biker.phone.includes(searchTerm) ||
-      biker.territory?.toLowerCase().includes(searchTerm.toLowerCase());
+      biker.full_name?.toLowerCase().includes(term) ||
+      biker.phone?.includes(searchTerm) ||
+      (biker.territory?.toLowerCase().includes(term) ?? false);
     const matchesStatus = statusFilter === "all" || biker.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
