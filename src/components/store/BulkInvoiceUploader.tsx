@@ -414,7 +414,7 @@ export function BulkInvoiceUploader({ storeId, storeName, onClose }: BulkInvoice
               payment_status: invoice.status,
               partial_amount: invoice.status === 'partial' ? invoice.amount_paid : null,
               paid_at: invoice.status === 'paid' || invoice.status === 'partial' ? createdAt : null,
-              due_date: invoice.due_date,
+              due_date: invoice.due_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
               notes: invoice.description || null,
               created_at: createdAt,
             });

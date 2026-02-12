@@ -121,7 +121,7 @@ export function CreateStoreInvoiceModal({
   const [saleChannel, setSaleChannel] = useState<SaleChannel>('retail');
   const [saleUnit, setSaleUnit] = useState<SaleUnit>('box');
   const [paymentMethod, setPaymentMethod] = useState('');
-  const [dueDate, setDueDate] = useState<Date | undefined>(undefined);
+  const [dueDate, setDueDate] = useState<Date | undefined>(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
   const [invoiceDate, setInvoiceDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState('');
   const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'partial' | 'paid'>('unpaid');
@@ -450,7 +450,9 @@ export function CreateStoreInvoiceModal({
             total_amount: total,
             payment_method: paymentMethod || null,
             payment_status: paymentStatus,
-            due_date: dueDate ? dueDate.toISOString().split('T')[0] : null,
+            due_date: dueDate
+              ? dueDate.toISOString().split('T')[0]
+              : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
             paid_at: paymentStatus === 'paid' || paymentStatus === 'partial' ? invoiceDateToUse : null,
             partial_amount: paymentStatus === 'partial' ? partialAmountNum : null,
             received_by: receivedByName || null,
