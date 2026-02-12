@@ -19408,6 +19408,114 @@ export type Database = {
           },
         ]
       }
+      delivery_tasks: {
+        Row: {
+          assigned_by: string | null
+          biker_id: string | null
+          created_at: string
+          delivered_at: string | null
+          delivery_address: string
+          delivery_lat: number | null
+          delivery_lng: number | null
+          delivery_notes: string | null
+          id: string
+          invoice_id: string | null
+          picked_up_at: string | null
+          status: string
+          store_order_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          biker_id?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_address: string
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_notes?: string | null
+          id?: string
+          invoice_id?: string | null
+          picked_up_at?: string | null
+          status?: string
+          store_order_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_by?: string | null
+          biker_id?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          delivery_address?: string
+          delivery_lat?: number | null
+          delivery_lng?: number | null
+          delivery_notes?: string | null
+          id?: string
+          invoice_id?: string | null
+          picked_up_at?: string | null
+          status?: string
+          store_order_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_tasks_biker_id_fkey"
+            columns: ["biker_id"]
+            isOneToOne: false
+            referencedRelation: "bikers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_historical_invoice_audit"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_invoice_totals"
+            referencedColumns: ["invoice_id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_events"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_brand_order_gaps"
+            referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_store_order_id_fkey"
+            columns: ["store_order_id"]
+            isOneToOne: false
+            referencedRelation: "store_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_store_order_id_fkey"
+            columns: ["store_order_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_orders_with_profit"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       direct_customers: {
         Row: {
           auth_user_id: string | null
