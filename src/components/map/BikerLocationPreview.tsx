@@ -46,31 +46,6 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
       if (bikerById?.user_id) {
         userId = bikerById.user_id;
         setBikerProfile({ phone: bikerById.phone, email: bikerById.email, territory: bikerById.territory, status: bikerById.status });
-      } else if (bikerById) {
-        // Biker record found but user_id is null — try to find auth user via email/phone
-        setBikerProfile({ phone: bikerById.phone, email: bikerById.email, territory: bikerById.territory, status: bikerById.status });
-        
-        if (bikerById.email) {
-          const { data: profileByEmail } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', bikerById.email)
-            .maybeSingle();
-          if (profileByEmail) {
-            userId = profileByEmail.id;
-          }
-        }
-        
-        if (userId === bikerId && bikerById.phone) {
-          const { data: profileByPhone } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('phone', bikerById.phone)
-            .maybeSingle();
-          if (profileByPhone) {
-            userId = profileByPhone.id;
-          }
-        }
       } else {
         // Second try: bikerId might already be a user_id — check bikers table by user_id
         const { data: bikerByUserId } = await supabase

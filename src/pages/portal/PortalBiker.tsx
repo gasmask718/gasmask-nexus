@@ -43,9 +43,6 @@ export default function PortalBiker() {
       setProfile(profileData);
       setAssignments([]);
 
-      // Auto-link: ensure bikers table has user_id set for this auth user
-      await linkBikerRecord(user.id, profileData);
-
       // Auto-start tracking
       startTracking();
     } catch (error) {
@@ -57,70 +54,6 @@ export default function PortalBiker() {
       });
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function linkBikerRecord(authUserId: string, profile: any) {
-    try {
-      // Check if already linked
-      const { data: existing } = await supabase
-        .from('bikers')
-        .select('id')
-        .eq('user_id', authUserId)
-        .maybeSingle();
-
-      if (existing) return; // Already linked
-
-      // Try to match by email or phone from profile
-      const email = profile?.email;
-      const phone = profile?.phone;
-
-      let matchQuery = supabase
-        .from('bikers')
-        .select('id')
-        .is('user_id', null);
-
-      if (email) {
-        const { data: emailMatch } = await supabase
-          .from('bikers')
-          .select('id')
-          .is('user_id', null)
-          .eq('email', email)
-          .limit(1)
-          .maybeSingle();
-
-        if (emailMatch) {
-          await supabase
-            .from('bikers')
-            .update({ user_id: authUserId })
-            .eq('id', emailMatch.id);
-          console.log('[BIKER LINK] Linked via email match:', emailMatch.id);
-          return;
-        }
-      }
-
-      if (phone) {
-        const { data: phoneMatch } = await supabase
-          .from('bikers')
-          .select('id')
-          .is('user_id', null)
-          .eq('phone', phone)
-          .limit(1)
-          .maybeSingle();
-
-        if (phoneMatch) {
-          await supabase
-            .from('bikers')
-            .update({ user_id: authUserId })
-            .eq('id', phoneMatch.id);
-          console.log('[BIKER LINK] Linked via phone match:', phoneMatch.id);
-          return;
-        }
-      }
-
-      console.log('[BIKER LINK] No matching biker record found for user:', authUserId);
-    } catch (err) {
-      console.error('[BIKER LINK] Error linking biker record:', err);
     }
   }
 
