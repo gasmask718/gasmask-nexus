@@ -1,26 +1,37 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Camera, Package, MessageSquare, DollarSign, Award } from 'lucide-react';
+import { MapPin, Camera, Package, MessageSquare, DollarSign, Award, Navigation, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+const GPS_INTERVAL_MS = 30_000; // 30 seconds
 
 export default function PortalBiker() {
   const [profile, setProfile] = useState<any>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trackingActive, setTrackingActive] = useState(false);
+  const [lastPing, setLastPing] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
+  const userIdRef = useRef<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchBikerData();
+    return () => stopTracking();
   }, []);
 
   async function fetchBikerData() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      userIdRef.current = user.id;
 
       const { data: profileData, error } = await supabase
         .from('profiles')
@@ -30,9 +41,10 @@ export default function PortalBiker() {
 
       if (error) throw error;
       setProfile(profileData);
-
-      // Fetch today's assignments
       setAssignments([]);
+
+      // Auto-start tracking
+      startTracking();
     } catch (error) {
       console.error('Error fetching biker data:', error);
       toast({
@@ -43,6 +55,87 @@ export default function PortalBiker() {
     } finally {
       setLoading(false);
     }
+  }
+
+  const sendLocationPing = useCallback(async (lat: number, lng: number) => {
+    const userId = userIdRef.current;
+    if (!userId) return;
+
+    try {
+      const { error } = await supabase.from('location_events').insert({
+        user_id: userId,
+        event_type: 'gps_ping',
+        lat,
+        lng,
+      });
+      if (error) throw error;
+      setLastPing(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setLocationError(null);
+    } catch (err) {
+      console.error('Failed to send location ping:', err);
+    }
+  }, []);
+
+  function startTracking() {
+    if (trackingActive) return;
+    if (!navigator.geolocation) {
+      setLocationError('Geolocation not supported on this device');
+      return;
+    }
+
+    setTrackingActive(true);
+    setLocationError(null);
+
+    // Watch position for continuous updates
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        lastCoordsRef.current = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+      },
+      (err) => {
+        console.error('Geolocation error:', err);
+        setLocationError(
+          err.code === 1 ? 'Location permission denied. Please enable location access.'
+          : err.code === 2 ? 'Location unavailable. Check GPS settings.'
+          : 'Location request timed out.'
+        );
+      },
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 }
+    );
+
+    // Send initial ping
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        lastCoordsRef.current = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        sendLocationPing(position.coords.latitude, position.coords.longitude);
+      },
+      () => {},
+      { enableHighAccuracy: true, timeout: 15_000 }
+    );
+
+    // Send pings every 30s
+    intervalRef.current = setInterval(() => {
+      if (lastCoordsRef.current) {
+        sendLocationPing(lastCoordsRef.current.lat, lastCoordsRef.current.lng);
+      }
+    }, GPS_INTERVAL_MS);
+  }
+
+  function stopTracking() {
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    setTrackingActive(false);
   }
 
   if (loading) {
@@ -63,12 +156,58 @@ export default function PortalBiker() {
               <h1 className="text-2xl font-bold">{profile?.name || 'Biker Portal'}</h1>
               <p className="text-muted-foreground">GasMask Street Team</p>
             </div>
-            <Badge variant="default">Active</Badge>
+            <div className="flex items-center gap-2">
+              {/* GPS Status Indicator */}
+              <Badge 
+                variant={trackingActive ? 'default' : 'secondary'}
+                className={trackingActive ? 'bg-green-600 hover:bg-green-700' : ''}
+              >
+                {trackingActive ? (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-white inline-block mr-1.5 animate-pulse" />
+                    GPS Active
+                  </>
+                ) : (
+                  'GPS Off'
+                )}
+              </Badge>
+              <Badge variant="default">Active</Badge>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-6 py-8">
+        {/* Location Status Card */}
+        <Card className="p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Navigation className={`h-5 w-5 ${trackingActive ? 'text-green-500' : 'text-muted-foreground'}`} />
+              <div>
+                <p className="text-sm font-medium">Location Tracking</p>
+                {locationError ? (
+                  <p className="text-xs text-destructive">{locationError}</p>
+                ) : lastPing ? (
+                  <p className="text-xs text-muted-foreground">Last ping: {lastPing}</p>
+                ) : trackingActive ? (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Acquiring location...
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Not tracking</p>
+                )}
+              </div>
+            </div>
+            <Button
+              size="sm"
+              variant={trackingActive ? 'destructive' : 'default'}
+              onClick={() => trackingActive ? stopTracking() : startTracking()}
+            >
+              {trackingActive ? 'Stop' : 'Start'} Tracking
+            </Button>
+          </div>
+        </Card>
+
         <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList>
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>

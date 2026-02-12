@@ -1,0 +1,2 @@
+ALTER TABLE public.location_events DROP CONSTRAINT location_events_event_type_check;
+ALTER TABLE public.location_events ADD CONSTRAINT location_events_event_type_check CHECK (event_type = ANY (ARRAY['arrival','departure','idle','gps_ping']));
