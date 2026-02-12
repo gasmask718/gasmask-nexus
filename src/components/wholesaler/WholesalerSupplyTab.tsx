@@ -2,17 +2,19 @@
  * WholesalerSupplyTab — Engine 1: B2B Supply Relationship
  * "What has this wholesaler bought from GasMask?"
  * 
- * Surfaces: Financial Ledger, SKU Breakdown, Risk Signals
- * Data Source: wholesaler_orders, wholesaler_payments, wholesaler_disputes
+ * Surfaces: Financial Ledger, SKU Breakdown, Risk Signals, Invoices, Returns
+ * Data Source: wholesaler_orders, wholesaler_payments, wholesaler_disputes,
+ *             wholesaler_supply_invoices, wholesaler_supply_returns
  */
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { 
   DollarSign, Package, AlertTriangle, TrendingUp, TrendingDown,
-  Calendar, CreditCard, Clock, Plus
+  CreditCard, FileText, RotateCcw
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useWholesalerFinancials } from '@/hooks/useWholesalerFinancials';
@@ -36,110 +38,103 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
 }) => {
   const financials = useWholesalerFinancials(orders);
 
+  // Fetch invoices
+  const { data: invoices = [] } = useQuery({
+    queryKey: ['wholesaler-supply-invoices', wholesalerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesaler_supply_invoices')
+        .select('*')
+        .eq('wholesaler_id', wholesalerId)
+        .order('issued_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!wholesalerId,
+  });
+
+  // Fetch returns
+  const { data: returns = [] } = useQuery({
+    queryKey: ['wholesaler-supply-returns', wholesalerId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesaler_supply_returns')
+        .select('*')
+        .eq('wholesaler_id', wholesalerId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!wholesalerId,
+  });
+
   const latePayments = payments.filter(p => !p.on_time);
-  const avgDaysToPayment = payments.length > 0 
-    ? Math.round(payments.reduce((a, p) => a + (p.days_from_invoice || 0), 0) / payments.length) 
-    : 0;
   const punctualityRate = payments.length > 0 
     ? Math.round((payments.filter(p => p.on_time).length / payments.length) * 100) 
     : 100;
+  const avgDaysToPayment = payments.length > 0 
+    ? Math.round(payments.reduce((a: number, p: any) => a + (p.days_from_invoice || 0), 0) / payments.length) 
+    : 0;
 
-  const openDisputes = disputes.filter(d => d.status !== 'resolved');
+  const openDisputes = disputes.filter((d: any) => d.status !== 'resolved');
+  const unpaidInvoices = invoices.filter((i: any) => i.status === 'unpaid' || i.status === 'overdue');
+  const totalUnpaid = unpaidInvoices.reduce((s: number, i: any) => s + ((i.total_due || 0) - (i.total_paid || 0)), 0);
+  const pendingReturns = returns.filter((r: any) => r.status === 'pending');
 
   return (
     <div className="space-y-6">
-      {/* Financial Ledger */}
       <Tabs defaultValue="ledger">
-        <TabsList className="grid grid-cols-3 w-full max-w-md">
+        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
           <TabsTrigger value="ledger" className="text-xs">
-            <DollarSign className="h-3.5 w-3.5 mr-1" /> Financial Ledger
+            <DollarSign className="h-3.5 w-3.5 mr-1" /> Ledger
+          </TabsTrigger>
+          <TabsTrigger value="invoices" className="text-xs">
+            <FileText className="h-3.5 w-3.5 mr-1" /> Invoices
+            {unpaidInvoices.length > 0 && (
+              <Badge className="ml-1 h-4 px-1 text-[10px] bg-red-500/15 text-red-400">{unpaidInvoices.length}</Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="sku" className="text-xs">
-            <Package className="h-3.5 w-3.5 mr-1" /> SKU Breakdown
+            <Package className="h-3.5 w-3.5 mr-1" /> SKU
+          </TabsTrigger>
+          <TabsTrigger value="returns" className="text-xs">
+            <RotateCcw className="h-3.5 w-3.5 mr-1" /> Returns
           </TabsTrigger>
           <TabsTrigger value="risk" className="text-xs">
-            <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Risk Signals
+            <AlertTriangle className="h-3.5 w-3.5 mr-1" /> Risk
           </TabsTrigger>
         </TabsList>
 
         {/* === FINANCIAL LEDGER === */}
         <TabsContent value="ledger" className="mt-4 space-y-4">
-          {/* KPI Row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KPICard 
-              label="Lifetime Purchases" 
-              value={`$${financials.lifetimeSpend.toLocaleString()}`}
-              icon={DollarSign}
-              accent="text-emerald-400"
-            />
-            <KPICard 
-              label="30-Day Spend" 
-              value={`$${financials.spend30.toLocaleString()}`}
-              trend={financials.trendPercent}
-              icon={TrendingUp}
-              accent="text-blue-400"
-            />
-            <KPICard 
-              label="Avg Order Size" 
-              value={`$${Math.round(financials.avgOrderValue).toLocaleString()}`}
-              icon={CreditCard}
-              accent="text-purple-400"
-            />
-            <KPICard 
-              label="Total Orders" 
-              value={financials.orderCount.toString()}
-              sub={financials.ordersLast30 > 0 ? `${financials.ordersLast30} in last 30d` : undefined}
-              icon={Package}
-              accent="text-amber-400"
-            />
+            <KPICard label="Lifetime Purchases" value={`$${financials.lifetimeSpend.toLocaleString()}`} icon={DollarSign} accent="text-emerald-400" />
+            <KPICard label="30-Day Spend" value={`$${financials.spend30.toLocaleString()}`} trend={financials.trendPercent} icon={TrendingUp} accent="text-blue-400" />
+            <KPICard label="Avg Order Size" value={`$${Math.round(financials.avgOrderValue).toLocaleString()}`} icon={CreditCard} accent="text-purple-400" />
+            <KPICard label="Unpaid Balance" value={`$${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} open invoices`} icon={FileText} accent="text-red-400" />
           </div>
 
           {/* Spend Breakdown */}
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Spend Breakdown</CardTitle>
-                {onCreateOrder && (
-                  <Button size="sm" variant="outline" onClick={onCreateOrder}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> New Order
-                  </Button>
-                )}
-              </div>
+              <CardTitle className="text-sm">Spend Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground">30 Days</p>
-                  <p className="text-lg font-bold">${financials.spend30.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">60 Days</p>
-                  <p className="text-lg font-bold">${financials.spend60.toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">90 Days</p>
-                  <p className="text-lg font-bold">${financials.spend90.toLocaleString()}</p>
-                </div>
+                <div><p className="text-xs text-muted-foreground">30 Days</p><p className="text-lg font-bold">${financials.spend30.toLocaleString()}</p></div>
+                <div><p className="text-xs text-muted-foreground">60 Days</p><p className="text-lg font-bold">${financials.spend60.toLocaleString()}</p></div>
+                <div><p className="text-xs text-muted-foreground">90 Days</p><p className="text-lg font-bold">${financials.spend90.toLocaleString()}</p></div>
               </div>
             </CardContent>
           </Card>
 
           {/* Payment Reliability */}
           <Card className="bg-card/50 border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Payment Reliability</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Payment Reliability</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Punctuality Rate</span>
-                <Badge className={punctualityRate >= 80 
-                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' 
-                  : punctualityRate >= 50 
-                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                    : 'bg-red-500/15 text-red-400 border-red-500/30'
-                }>
-                  {punctualityRate}%
-                </Badge>
+                <Badge className={punctualityRate >= 80 ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' : punctualityRate >= 50 ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' : 'bg-red-500/15 text-red-400 border-red-500/30'}>{punctualityRate}%</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Avg Days to Payment</span>
@@ -158,9 +153,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
 
           {/* Recent Orders */}
           <Card className="bg-card/50 border-border/50">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Recent Orders</CardTitle>
-            </CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Recent Orders</CardTitle></CardHeader>
             <CardContent>
               {orders.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No orders yet</p>
@@ -168,21 +161,53 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {orders.slice(0, 10).map((order) => (
                     <div key={order.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="text-sm font-medium">
-                            {order.order_number || format(new Date(order.order_date || order.created_at), 'MMM d, yyyy')}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {order.items_count || 0} items
-                          </p>
-                        </div>
+                      <div>
+                        <p className="text-sm font-medium">{order.order_number || format(new Date(order.order_date || order.created_at), 'MMM d, yyyy')}</p>
+                        <p className="text-xs text-muted-foreground">{order.items_count || 0} items</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold">${(order.total_amount || 0).toLocaleString()}</p>
-                        <Badge variant="outline" className="text-xs">
-                          {order.status || 'pending'}
-                        </Badge>
+                        <Badge variant="outline" className="text-xs">{order.status || 'pending'}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === INVOICES === */}
+        <TabsContent value="invoices" className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <KPICard label="Total Invoices" value={invoices.length.toString()} icon={FileText} accent="text-blue-400" />
+            <KPICard label="Unpaid Balance" value={`$${totalUnpaid.toLocaleString()}`} sub={`${unpaidInvoices.length} unpaid`} icon={DollarSign} accent="text-red-400" />
+            <KPICard label="Total Collected" value={`$${invoices.reduce((s: number, i: any) => s + (i.total_paid || 0), 0).toLocaleString()}`} icon={CreditCard} accent="text-emerald-400" />
+          </div>
+          <Card className="bg-card/50 border-border/50">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Invoice Ledger</CardTitle></CardHeader>
+            <CardContent>
+              {invoices.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No invoices recorded</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {invoices.map((inv: any) => (
+                    <div key={inv.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium">#{inv.invoice_number}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Issued {inv.issued_at ? format(new Date(inv.issued_at), 'MMM d, yyyy') : 'N/A'}
+                          {inv.due_date && ` • Due ${format(new Date(inv.due_date), 'MMM d')}`}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold">${(inv.total_due || 0).toLocaleString()}</p>
+                        <Badge className={`text-xs ${
+                          inv.status === 'paid' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+                          inv.status === 'overdue' ? 'bg-red-500/15 text-red-400 border-red-500/30' :
+                          inv.status === 'partial' ? 'bg-amber-500/15 text-amber-400 border-amber-500/30' :
+                          'bg-muted text-muted-foreground'
+                        }`}>{inv.status}</Badge>
                       </div>
                     </div>
                   ))}
@@ -197,16 +222,49 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
           <SKUBreakdownView orders={orders} />
         </TabsContent>
 
+        {/* === RETURNS === */}
+        <TabsContent value="returns" className="mt-4 space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+            <KPICard label="Total Returns" value={returns.length.toString()} icon={RotateCcw} accent="text-amber-400" />
+            <KPICard label="Pending" value={pendingReturns.length.toString()} icon={AlertTriangle} accent="text-red-400" />
+            <KPICard label="Total Adjusted" value={`$${returns.reduce((s: number, r: any) => s + (r.amount_adjusted || 0), 0).toLocaleString()}`} icon={DollarSign} accent="text-purple-400" />
+          </div>
+          <Card className="bg-card/50 border-border/50">
+            <CardHeader className="pb-2"><CardTitle className="text-sm">Return History</CardTitle></CardHeader>
+            <CardContent>
+              {returns.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-6">No returns recorded</p>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {returns.map((ret: any) => (
+                    <div key={ret.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
+                      <div>
+                        <p className="text-sm font-medium">{ret.reason}</p>
+                        <p className="text-xs text-muted-foreground">{ret.created_at ? format(new Date(ret.created_at), 'MMM d, yyyy') : 'N/A'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold">${(ret.amount_adjusted || 0).toLocaleString()}</p>
+                        <Badge className={`text-xs ${
+                          ret.status === 'credited' ? 'bg-emerald-500/15 text-emerald-400' :
+                          ret.status === 'approved' ? 'bg-blue-500/15 text-blue-400' :
+                          ret.status === 'rejected' ? 'bg-red-500/15 text-red-400' :
+                          'bg-amber-500/15 text-amber-400'
+                        }`}>{ret.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         {/* === RISK SIGNALS === */}
         <TabsContent value="risk" className="mt-4 space-y-4">
           <RiskSignalsView 
-            payments={payments}
-            disputes={disputes}
-            orders={orders}
-            profile={profile}
-            punctualityRate={punctualityRate}
-            latePayments={latePayments}
-            openDisputes={openDisputes}
+            payments={payments} disputes={disputes} orders={orders}
+            profile={profile} punctualityRate={punctualityRate}
+            latePayments={latePayments} openDisputes={openDisputes}
           />
         </TabsContent>
       </Tabs>
@@ -217,12 +275,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
 // === Sub-components ===
 
 function KPICard({ label, value, trend, sub, icon: Icon, accent }: {
-  label: string;
-  value: string;
-  trend?: number;
-  sub?: string;
-  icon: any;
-  accent: string;
+  label: string; value: string; trend?: number; sub?: string; icon: any; accent: string;
 }) {
   return (
     <Card className="bg-card/50 border-border/50">
@@ -245,7 +298,6 @@ function KPICard({ label, value, trend, sub, icon: Icon, accent }: {
 }
 
 function SKUBreakdownView({ orders }: { orders: any[] }) {
-  // Aggregate SKUs from orders
   const BRANDS = [
     { key: 'grabba', name: 'Grabba', color: 'text-purple-400' },
     { key: 'hot grabba', name: 'Hot Grabba', color: 'text-red-400' },
@@ -257,25 +309,18 @@ function SKUBreakdownView({ orders }: { orders: any[] }) {
   ];
 
   const brandTotals: Record<string, { amount: number; count: number; lastOrder: string | null }> = {};
-  
   orders.forEach(order => {
     const brand = (order.brand || '').toLowerCase();
-    if (!brandTotals[brand]) {
-      brandTotals[brand] = { amount: 0, count: 0, lastOrder: null };
-    }
+    if (!brandTotals[brand]) brandTotals[brand] = { amount: 0, count: 0, lastOrder: null };
     brandTotals[brand].amount += order.total_amount || 0;
     brandTotals[brand].count += 1;
     const orderDate = order.order_date || order.created_at;
-    if (!brandTotals[brand].lastOrder || orderDate > brandTotals[brand].lastOrder!) {
-      brandTotals[brand].lastOrder = orderDate;
-    }
+    if (!brandTotals[brand].lastOrder || orderDate > brandTotals[brand].lastOrder!) brandTotals[brand].lastOrder = orderDate;
   });
 
   return (
     <Card className="bg-card/50 border-border/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Purchases by Brand</CardTitle>
-      </CardHeader>
+      <CardHeader className="pb-2"><CardTitle className="text-sm">Purchases by Brand</CardTitle></CardHeader>
       <CardContent>
         <div className="space-y-3">
           {BRANDS.map(brand => {
@@ -308,71 +353,28 @@ function SKUBreakdownView({ orders }: { orders: any[] }) {
 }
 
 function RiskSignalsView({ payments, disputes, orders, profile, punctualityRate, latePayments, openDisputes }: {
-  payments: any[];
-  disputes: any[];
-  orders: any[];
-  profile: any;
-  punctualityRate: number;
-  latePayments: any[];
-  openDisputes: any[];
+  payments: any[]; disputes: any[]; orders: any[]; profile: any;
+  punctualityRate: number; latePayments: any[]; openDisputes: any[];
 }) {
-  // Calculate risk signals
   const signals: { type: 'critical' | 'warning' | 'info'; label: string; detail: string }[] = [];
 
-  if (punctualityRate < 50) {
-    signals.push({ type: 'critical', label: 'Low Payment Reliability', detail: `Only ${punctualityRate}% on-time payment rate` });
-  } else if (punctualityRate < 80) {
-    signals.push({ type: 'warning', label: 'Payment Reliability Declining', detail: `${punctualityRate}% on-time rate — watch closely` });
-  }
+  if (punctualityRate < 50) signals.push({ type: 'critical', label: 'Low Payment Reliability', detail: `Only ${punctualityRate}% on-time payment rate` });
+  else if (punctualityRate < 80) signals.push({ type: 'warning', label: 'Payment Reliability Declining', detail: `${punctualityRate}% on-time rate — watch closely` });
 
-  if (openDisputes.length > 0) {
-    signals.push({ type: 'critical', label: `${openDisputes.length} Open Dispute(s)`, detail: openDisputes.map(d => d.dispute_type).join(', ') });
-  }
+  if (openDisputes.length > 0) signals.push({ type: 'critical', label: `${openDisputes.length} Open Dispute(s)`, detail: openDisputes.map((d: any) => d.dispute_type).join(', ') });
+  if (latePayments.length > 3) signals.push({ type: 'warning', label: 'Repeat Late Payer', detail: `${latePayments.length} late payments on record` });
 
-  if (latePayments.length > 3) {
-    signals.push({ type: 'warning', label: 'Repeat Late Payer', detail: `${latePayments.length} late payments on record` });
-  }
-
-  // Declining order volume
-  const recentOrders = orders.filter(o => {
-    const d = new Date(o.order_date || o.created_at);
-    return d > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  });
+  const recentOrders = orders.filter(o => new Date(o.order_date || o.created_at) > new Date(Date.now() - 30 * 86400000));
   const prevOrders = orders.filter(o => {
     const d = new Date(o.order_date || o.created_at);
-    return d > new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) && d <= new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    return d > new Date(Date.now() - 60 * 86400000) && d <= new Date(Date.now() - 30 * 86400000);
   });
-  if (prevOrders.length > 0 && recentOrders.length < prevOrders.length * 0.5) {
-    signals.push({ type: 'warning', label: 'Declining Order Volume', detail: `${recentOrders.length} orders in 30d vs ${prevOrders.length} previous period` });
-  }
-
-  if (orders.length > 0 && recentOrders.length === 0) {
-    signals.push({ type: 'warning', label: 'No Recent Orders', detail: 'No orders in the last 30 days' });
-  }
-
-  if (signals.length === 0) {
-    signals.push({ type: 'info', label: 'All Clear', detail: 'No risk signals detected for this wholesaler' });
-  }
-
-  const getSignalStyle = (type: string) => {
-    switch (type) {
-      case 'critical': return 'border-red-500/30 bg-red-500/5';
-      case 'warning': return 'border-amber-500/30 bg-amber-500/5';
-      default: return 'border-emerald-500/30 bg-emerald-500/5';
-    }
-  };
-
-  const getSignalIcon = (type: string) => {
-    switch (type) {
-      case 'critical': return '🚨';
-      case 'warning': return '⚠️';
-      default: return '✅';
-    }
-  };
+  if (prevOrders.length > 0 && recentOrders.length < prevOrders.length * 0.5) signals.push({ type: 'warning', label: 'Declining Order Volume', detail: `${recentOrders.length} orders in 30d vs ${prevOrders.length} previous period` });
+  if (orders.length > 0 && recentOrders.length === 0) signals.push({ type: 'warning', label: 'No Recent Orders', detail: 'No orders in the last 30 days' });
+  if (signals.length === 0) signals.push({ type: 'info', label: 'All Clear', detail: 'No risk signals detected for this wholesaler' });
 
   return (
     <div className="space-y-3">
-      {/* Risk Score Header */}
       <Card className="bg-card/50 border-border/50">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
@@ -384,18 +386,14 @@ function RiskSignalsView({ payments, disputes, orders, profile, punctualityRate,
               profile?.risk_level === 'high' ? 'bg-red-500/15 text-red-400' :
               profile?.risk_level === 'medium' ? 'bg-amber-500/15 text-amber-400' :
               'bg-emerald-500/15 text-emerald-400'
-            }>
-              {profile?.relationship_health_score || 50}/100 Health
-            </Badge>
+            }>{profile?.relationship_health_score || 50}/100 Health</Badge>
           </div>
         </CardContent>
       </Card>
-
-      {/* Signals */}
       {signals.map((signal, i) => (
-        <Card key={i} className={`border ${getSignalStyle(signal.type)}`}>
+        <Card key={i} className={`border ${signal.type === 'critical' ? 'border-red-500/30 bg-red-500/5' : signal.type === 'warning' ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/30 bg-emerald-500/5'}`}>
           <CardContent className="p-3 flex items-start gap-3">
-            <span className="text-lg">{getSignalIcon(signal.type)}</span>
+            <span className="text-lg">{signal.type === 'critical' ? '🚨' : signal.type === 'warning' ? '⚠️' : '✅'}</span>
             <div>
               <p className="text-sm font-medium">{signal.label}</p>
               <p className="text-xs text-muted-foreground">{signal.detail}</p>

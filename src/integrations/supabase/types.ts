@@ -28857,6 +28857,127 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_commissions: {
+        Row: {
+          commission_amount: number
+          commission_rate: number
+          created_at: string | null
+          gross_amount: number
+          id: string
+          order_id: string | null
+          wholesaler_id: string
+          wholesaler_net: number
+        }
+        Insert: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string | null
+          gross_amount?: number
+          id?: string
+          order_id?: string | null
+          wholesaler_id: string
+          wholesaler_net?: number
+        }
+        Update: {
+          commission_amount?: number
+          commission_rate?: number
+          created_at?: string | null
+          gross_amount?: number
+          id?: string
+          order_id?: string | null
+          wholesaler_id?: string
+          wholesaler_net?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_commissions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_orders_platform"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "marketplace_commissions_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketplace_inventory: {
+        Row: {
+          id: string
+          product_id: string
+          quantity_available: number
+          reorder_point: number | null
+          reserved_quantity: number
+          updated_at: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          quantity_available?: number
+          reorder_point?: number | null
+          reserved_quantity?: number
+          updated_at?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          quantity_available?: number
+          reorder_point?: number | null
+          reserved_quantity?: number
+          updated_at?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_inventory_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "wholesale_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "marketplace_inventory_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_order_items: {
         Row: {
           created_at: string | null
@@ -44852,6 +44973,20 @@ export type Database = {
             foreignKeyName: "store_wholesaler_associations_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "store_wholesaler_associations_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -50640,6 +50775,20 @@ export type Database = {
             foreignKeyName: "wholesale_orders_platform_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_platform_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesale_orders_platform_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -50828,6 +50977,20 @@ export type Database = {
             foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_ai_signals_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -50943,6 +51106,20 @@ export type Database = {
             foreignKeyName: "wholesaler_assignments_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_assignments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -51001,6 +51178,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_communications_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_communications_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
           },
           {
             foreignKeyName: "wholesaler_communications_wholesaler_id_fkey"
@@ -51076,6 +51267,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_contracts_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_contracts_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
           },
           {
             foreignKeyName: "wholesaler_contracts_wholesaler_id_fkey"
@@ -51158,6 +51363,20 @@ export type Database = {
             foreignKeyName: "wholesaler_disputes_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_disputes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_disputes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -51214,6 +51433,20 @@ export type Database = {
             foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_health_snapshots_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -51254,6 +51487,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_notes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_notes_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
           },
           {
             foreignKeyName: "wholesaler_notes_wholesaler_id_fkey"
@@ -51321,6 +51568,20 @@ export type Database = {
             foreignKeyName: "wholesaler_orders_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_orders_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -51370,6 +51631,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "wholesaler_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_payments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_payments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
           },
           {
             foreignKeyName: "wholesaler_payments_wholesaler_id_fkey"
@@ -51493,6 +51768,20 @@ export type Database = {
             foreignKeyName: "wholesaler_product_performance_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_product_performance_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_product_performance_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -51604,6 +51893,189 @@ export type Database = {
           },
         ]
       }
+      wholesaler_supply_invoices: {
+        Row: {
+          created_at: string | null
+          due_date: string | null
+          id: string
+          invoice_number: string
+          issued_at: string | null
+          notes: string | null
+          order_id: string | null
+          paid_at: string | null
+          status: string
+          total_due: number
+          total_paid: number
+          updated_at: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          issued_at?: string | null
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          total_due?: number
+          total_paid?: number
+          updated_at?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          issued_at?: string | null
+          notes?: string | null
+          order_id?: string | null
+          paid_at?: string | null
+          status?: string
+          total_due?: number
+          total_paid?: number
+          updated_at?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_supply_invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_invoices_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_invoices_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_invoices_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_supply_order_items: {
+        Row: {
+          brand: string | null
+          created_at: string | null
+          id: string
+          order_id: string
+          product_name: string
+          quantity: number
+          total_line: number | null
+          unit_price: number
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string | null
+          id?: string
+          order_id: string
+          product_name: string
+          quantity?: number
+          total_line?: number | null
+          unit_price?: number
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string | null
+          id?: string
+          order_id?: string
+          product_name?: string
+          quantity?: number
+          total_line?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_supply_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wholesaler_supply_returns: {
+        Row: {
+          amount_adjusted: number
+          created_at: string | null
+          created_by: string | null
+          id: string
+          order_id: string | null
+          reason: string
+          status: string
+          updated_at: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          amount_adjusted?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          reason: string
+          status?: string
+          updated_at?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          amount_adjusted?: number
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          order_id?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wholesaler_supply_returns_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_returns_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_returns_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_supply_returns_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesalers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wholesaler_territory_coverage: {
         Row: {
           borough: string | null
@@ -51645,6 +52117,20 @@ export type Database = {
           wholesaler_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesaler_territory_coverage_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_territory_coverage_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
           {
             foreignKeyName: "wholesaler_territory_coverage_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
@@ -51718,6 +52204,20 @@ export type Database = {
             foreignKeyName: "wholesaler_visits_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
+            referencedRelation: "wholesaler_marketplace_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_visits_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_supply_summary"
+            referencedColumns: ["wholesaler_id"]
+          },
+          {
+            foreignKeyName: "wholesaler_visits_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
             referencedRelation: "wholesalers"
             referencedColumns: ["id"]
           },
@@ -51728,6 +52228,7 @@ export type Database = {
           address: string | null
           address_line_1: string | null
           address_line_2: string | null
+          ai_score: number | null
           assigned_rep_id: string | null
           authorized_brands: string[] | null
           backup_contact_name: string | null
@@ -51742,6 +52243,7 @@ export type Database = {
           country: string
           created_at: string | null
           created_by: string | null
+          credit_limit: number | null
           dba_name: string | null
           deleted_at: string | null
           email: string | null
@@ -51783,6 +52285,7 @@ export type Database = {
           tags: string | null
           tax_id: string | null
           territories: string[] | null
+          tier: string | null
           visit_frequency_days: number | null
           zip_code: string | null
         }
@@ -51790,6 +52293,7 @@ export type Database = {
           address?: string | null
           address_line_1?: string | null
           address_line_2?: string | null
+          ai_score?: number | null
           assigned_rep_id?: string | null
           authorized_brands?: string[] | null
           backup_contact_name?: string | null
@@ -51804,6 +52308,7 @@ export type Database = {
           country?: string
           created_at?: string | null
           created_by?: string | null
+          credit_limit?: number | null
           dba_name?: string | null
           deleted_at?: string | null
           email?: string | null
@@ -51845,6 +52350,7 @@ export type Database = {
           tags?: string | null
           tax_id?: string | null
           territories?: string[] | null
+          tier?: string | null
           visit_frequency_days?: number | null
           zip_code?: string | null
         }
@@ -51852,6 +52358,7 @@ export type Database = {
           address?: string | null
           address_line_1?: string | null
           address_line_2?: string | null
+          ai_score?: number | null
           assigned_rep_id?: string | null
           authorized_brands?: string[] | null
           backup_contact_name?: string | null
@@ -51866,6 +52373,7 @@ export type Database = {
           country?: string
           created_at?: string | null
           created_by?: string | null
+          credit_limit?: number | null
           dba_name?: string | null
           deleted_at?: string | null
           email?: string | null
@@ -51907,6 +52415,7 @@ export type Database = {
           tags?: string | null
           tax_id?: string | null
           territories?: string[] | null
+          tier?: string | null
           visit_frequency_days?: number | null
           zip_code?: string | null
         }
@@ -55730,6 +56239,38 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      wholesaler_marketplace_summary: {
+        Row: {
+          active_products: number | null
+          marketplace_ai_score: number | null
+          name: string | null
+          total_commission_earned: number | null
+          total_payouts_sent: number | null
+          total_platform_orders: number | null
+          total_products_uploaded: number | null
+          total_revenue_generated: number | null
+          wholesaler_id: string | null
+        }
+        Relationships: []
+      }
+      wholesaler_supply_summary: {
+        Row: {
+          ai_score: number | null
+          avg_order_value: number | null
+          credit_limit: number | null
+          health_score: number | null
+          last_order_date: string | null
+          lifetime_purchase_total: number | null
+          name: string | null
+          payment_terms: string | null
+          risk_level: string | null
+          tier: string | null
+          total_orders: number | null
+          unpaid_balance: number | null
+          wholesaler_id: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
