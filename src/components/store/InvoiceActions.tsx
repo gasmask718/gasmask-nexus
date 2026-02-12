@@ -45,10 +45,14 @@ export function InvoiceActions({ invoiceId, status, onStatusChange }: InvoiceAct
       return data;
     },
     onSuccess: (data: any) => {
-      const parts = [];
-      if (data?.total_tubes) parts.push(`${data.total_tubes} tubes`);
-      if (data?.total_bags) parts.push(`${data.total_bags} bags`);
-      toast.success(`Invoice finalized — ${parts.length ? parts.join(' + ') : '0 units'} posted to ledger`);
+      if (data?.already_finalized) {
+        toast.info('Invoice was already finalized. No duplicate entries created.');
+      } else {
+        const parts = [];
+        if (data?.total_tubes) parts.push(`${data.total_tubes} tubes`);
+        if (data?.total_bags) parts.push(`${data.total_bags} bags`);
+        toast.success(`Invoice finalized — ${parts.length ? parts.join(' + ') : '0 units'} posted to ledger`);
+      }
       queryClient.invalidateQueries({ queryKey: ['invoice-detail', invoiceId] });
       queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
