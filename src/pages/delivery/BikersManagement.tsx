@@ -62,9 +62,39 @@ const BikersManagement: React.FC = () => {
   const { data: dbBikers = [], isLoading } = useQuery({
     queryKey: ["bikers"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("bikers").select("*").order("full_name", { ascending: true });
-      if (error) throw error;
-      return data as Biker[];
+      // Fetch from bikers table
+      const { data: bikersTable, error: bikersError } = await supabase
+        .from("bikers")
+        .select("*")
+        .order("full_name", { ascending: true });
+      if (bikersError) throw bikersError;
+
+      // Also fetch users with biker role from user_roles + profiles
+      const { data: roleBikers, error: roleError } = await supabase
+        .from("user_roles")
+        .select("user_id, profiles!inner(id, full_name, phone, email, created_at)")
+        .eq("role", "biker");
+      
+      const existingUserIds = new Set((bikersTable || []).map(b => b.user_id).filter(Boolean));
+      
+      // Merge role-based bikers that aren't already in the bikers table
+      const roleBikersMapped: Biker[] = (roleBikers || [])
+        .filter((rb: any) => rb.profiles && !existingUserIds.has(rb.user_id))
+        .map((rb: any) => ({
+          id: rb.user_id,
+          business_id: '',
+          user_id: rb.user_id,
+          full_name: rb.profiles.full_name || 'Unknown',
+          phone: rb.profiles.phone || '',
+          email: rb.profiles.email || null,
+          territory: null,
+          status: 'active',
+          payout_method: null,
+          payout_handle: null,
+          created_at: rb.profiles.created_at || new Date().toISOString(),
+        }));
+
+      return [...(bikersTable || []), ...roleBikersMapped] as Biker[];
     },
   });
 
