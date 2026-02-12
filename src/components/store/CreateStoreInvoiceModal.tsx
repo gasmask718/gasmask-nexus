@@ -66,6 +66,7 @@ interface Product {
   sale_unit_default: string | null;
   price_per_box: number | null;
   price_per_unit: number | null;
+  price_per_tube: number | null;
   // Phase 3: Packs
   pack_size: number | null;
   packs_per_box: number | null;
@@ -103,6 +104,9 @@ interface LineItem {
   // Phase 3: Pack snapshots
   pack_size_snapshot: number;
   packs_per_box_snapshot: number | null;
+  // Pricing snapshots
+  price_per_box_snapshot: number;
+  price_per_tube_snapshot: number;
 }
 
 export function CreateStoreInvoiceModal({
@@ -131,6 +135,7 @@ export function CreateStoreInvoiceModal({
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
+  const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
 
   // Sync due date when invoice date changes (Net 30)
   const invoiceDateMs = invoiceDate?.getTime();
@@ -165,7 +170,7 @@ export function CreateStoreInvoiceModal({
       if (!selectedBrandId) return [];
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type, track_by, sale_unit_default, price_per_box, price_per_unit, pack_size, packs_per_box')
+        .select('id, name, sku, store_price, wholesale_price, suggested_retail_price, street_price, cost, units_per_box, unit_type, track_by, sale_unit_default, price_per_box, price_per_unit, price_per_tube, pack_size, packs_per_box')
         .eq('brand_id', selectedBrandId)
         .eq('is_active', true)
         .order('name');
@@ -218,6 +223,8 @@ export function CreateStoreInvoiceModal({
     const trackBy = product.track_by || 'tubes';
     const packSize = product.pack_size || 1;
     const packsPerBox = product.packs_per_box || null;
+    const pricePerBox = product.price_per_box ?? (product.store_price || 0);
+    const pricePerTube = product.price_per_tube ?? (pricePerBox > 0 && unitsPerBox > 0 ? Math.round((pricePerBox / unitsPerBox) * 100) / 100 : 0);
     
     // Calculate profit (INTERNAL ONLY - never shown on invoice)
     const profitPerUnit = unitPrice - costPerUnit;
@@ -312,6 +319,9 @@ export function CreateStoreInvoiceModal({
           // Phase 3: Pack snapshots
           pack_size_snapshot: packSize,
           packs_per_box_snapshot: packsPerBox,
+          // Pricing snapshots
+          price_per_box_snapshot: pricePerBox,
+          price_per_tube_snapshot: pricePerTube,
         },
       ]);
     }
@@ -508,6 +518,9 @@ export function CreateStoreInvoiceModal({
           // Phase 3: Pack snapshots
           pack_size_snapshot: item.pack_size_snapshot,
           packs_per_box_snapshot: item.packs_per_box_snapshot,
+          // Pricing snapshots
+          price_per_box_snapshot: item.price_per_box_snapshot,
+          price_per_tube_snapshot: item.price_per_tube_snapshot,
         }));
 
         const { error: lineItemsError } = await supabase
@@ -657,7 +670,8 @@ export function CreateStoreInvoiceModal({
     setPhotos([]);
     setBulkMode(false);
     setSelectedStoreIds([]);
-    setInvoiceMode('live'); // Reset to live mode
+    setInvoiceMode('live');
+    setPriceOverrideEnabled(false);
   };
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.line_subtotal, 0);
@@ -795,15 +809,35 @@ export function CreateStoreInvoiceModal({
                     Street
                   </Button>
                 </div>
-                {/* Show selected channel price */}
+                {/* Show pricing breakdown */}
                 {(() => {
                   const product = products.find(p => p.id === selectedProductId);
                   if (!product) return null;
-                  const price = getPriceForChannel(product, saleChannel);
+                  const unitsPerBox = product.units_per_box || 1;
+                  const ppb = product.price_per_box ?? (product.store_price || 0);
+                  const ppt = product.price_per_tube ?? (ppb > 0 && unitsPerBox > 0 ? Math.round((ppb / unitsPerBox) * 100) / 100 : 0);
+                  const channelPrice = getPriceForChannel(product, saleChannel);
                   return (
-                    <p className="text-xs text-muted-foreground">
-                      {saleChannel.charAt(0).toUpperCase() + saleChannel.slice(1)} price: <span className="font-mono font-medium text-foreground">${price.toFixed(2)}</span>
-                    </p>
+                    <div className="rounded-md bg-muted/50 p-2 space-y-1">
+                      <p className="text-xs font-medium text-foreground">Auto-Loaded Pricing</p>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">{product.track_by === 'bags' ? 'Units' : 'Tubes'}/Box:</span>
+                          <span className="font-mono font-medium ml-1">{unitsPerBox}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Per Box:</span>
+                          <span className="font-mono font-medium ml-1">${ppb.toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Per {product.track_by === 'bags' ? 'Bag' : 'Tube'}:</span>
+                          <span className="font-mono font-medium ml-1">${ppt.toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {saleChannel.charAt(0).toUpperCase() + saleChannel.slice(1)} unit price: <span className="font-mono font-semibold text-foreground">${channelPrice.toFixed(2)}</span>
+                      </p>
+                    </div>
                   );
                 })()}
               </div>
@@ -901,7 +935,18 @@ export function CreateStoreInvoiceModal({
           {/* Line Items */}
           {lineItems.length > 0 && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Invoice Items</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Invoice Items</Label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs text-muted-foreground">Override Pricing</span>
+                  <input
+                    type="checkbox"
+                    checked={priceOverrideEnabled}
+                    onChange={(e) => setPriceOverrideEnabled(e.target.checked)}
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                </label>
+              </div>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {lineItems.map((item) => (
                   <div
@@ -932,6 +977,12 @@ export function CreateStoreInvoiceModal({
                         </div>
                       </div>
                     </div>
+                    {/* Pricing info row */}
+                    <div className="text-[10px] text-muted-foreground flex gap-3">
+                      <span>📦 ${item.price_per_box_snapshot.toFixed(2)}/box</span>
+                      <span>🧪 ${item.price_per_tube_snapshot.toFixed(2)}/{item.track_by === 'bags' ? 'bag' : 'tube'}</span>
+                      <span>{item.units_per_box} per box</span>
+                    </div>
                     {/* Qty × Price row */}
                     <div className="flex items-center gap-2">
                       <Input
@@ -942,14 +993,20 @@ export function CreateStoreInvoiceModal({
                         className="w-16 h-8 text-sm"
                       />
                       <span className="text-xs text-muted-foreground">×</span>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.unit_price_used}
-                        onChange={(e) => handleUpdatePrice(item.id, parseFloat(e.target.value) || 0)}
-                        className="w-20 h-8 text-sm font-mono"
-                      />
+                      {priceOverrideEnabled ? (
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unit_price_used}
+                          onChange={(e) => handleUpdatePrice(item.id, parseFloat(e.target.value) || 0)}
+                          className="w-20 h-8 text-sm font-mono border-destructive/50"
+                        />
+                      ) : (
+                        <span className="w-20 h-8 flex items-center text-sm font-mono text-foreground bg-muted rounded-md px-2">
+                          ${item.unit_price_used.toFixed(2)}
+                        </span>
+                      )}
                       <span className="text-sm font-mono font-medium flex-1 text-right">
                         ${item.line_subtotal.toFixed(2)}
                       </span>
@@ -974,54 +1031,58 @@ export function CreateStoreInvoiceModal({
                         )}
                       </p>
                     )}
-                    {/* Discount controls */}
-                    <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-                      <Select
-                        value={item.discount_type}
-                        onValueChange={(v) => handleUpdateDiscount(item.id, v as DiscountType, item.discount_value, item.discount_reason)}
-                      >
-                        <SelectTrigger className="w-24 h-7 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Disc.</SelectItem>
-                          <SelectItem value="percent">% Off</SelectItem>
-                          <SelectItem value="amount">$ Off</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {item.discount_type !== 'none' && (
-                        <>
+                    {/* Discount controls - only visible when override is enabled */}
+                    {priceOverrideEnabled && (
+                      <>
+                        <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                          <Select
+                            value={item.discount_type}
+                            onValueChange={(v) => handleUpdateDiscount(item.id, v as DiscountType, item.discount_value, item.discount_reason)}
+                          >
+                            <SelectTrigger className="w-24 h-7 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No Disc.</SelectItem>
+                              <SelectItem value="percent">% Off</SelectItem>
+                              <SelectItem value="amount">$ Off</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {item.discount_type !== 'none' && (
+                            <>
+                              <Input
+                                type="number"
+                                min="0"
+                                step={item.discount_type === 'percent' ? '1' : '0.01'}
+                                max={item.discount_type === 'percent' ? 100 : undefined}
+                                value={item.discount_value}
+                                onChange={(e) => handleUpdateDiscount(item.id, item.discount_type, parseFloat(e.target.value) || 0, item.discount_reason)}
+                                className="w-16 h-7 text-xs font-mono"
+                                placeholder={item.discount_type === 'percent' ? '%' : '$'}
+                              />
+                              <Input
+                                value={item.discount_reason}
+                                onChange={(e) => handleUpdateDiscount(item.id, item.discount_type, item.discount_value, e.target.value)}
+                                className="flex-1 h-7 text-xs"
+                                placeholder="Reason..."
+                              />
+                            </>
+                          )}
+                        </div>
+                        {/* Override reason if price manually changed without discount */}
+                        {item.discount_type === 'none' && item.unit_price_used !== item.list_unit_price && (
                           <Input
-                            type="number"
-                            min="0"
-                            step={item.discount_type === 'percent' ? '1' : '0.01'}
-                            max={item.discount_type === 'percent' ? 100 : undefined}
-                            value={item.discount_value}
-                            onChange={(e) => handleUpdateDiscount(item.id, item.discount_type, parseFloat(e.target.value) || 0, item.discount_reason)}
-                            className="w-16 h-7 text-xs font-mono"
-                            placeholder={item.discount_type === 'percent' ? '%' : '$'}
+                            value={item.price_override_reason}
+                            onChange={(e) => {
+                              setLineItems(lineItems.map(li => 
+                                li.id === item.id ? { ...li, price_override_reason: e.target.value } : li
+                              ));
+                            }}
+                            className="h-7 text-xs"
+                            placeholder="Override reason (required)..."
                           />
-                          <Input
-                            value={item.discount_reason}
-                            onChange={(e) => handleUpdateDiscount(item.id, item.discount_type, item.discount_value, e.target.value)}
-                            className="flex-1 h-7 text-xs"
-                            placeholder="Reason..."
-                          />
-                        </>
-                      )}
-                    </div>
-                    {/* Override reason if price manually changed without discount */}
-                    {item.discount_type === 'none' && item.unit_price_used !== item.list_unit_price && (
-                      <Input
-                        value={item.price_override_reason}
-                        onChange={(e) => {
-                          setLineItems(lineItems.map(li => 
-                            li.id === item.id ? { ...li, price_override_reason: e.target.value } : li
-                          ));
-                        }}
-                        className="h-7 text-xs"
-                        placeholder="Override reason (required)..."
-                      />
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
