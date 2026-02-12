@@ -12,3 +12,5 @@ export { WholesalerActionBar } from './WholesalerActionBar';
 export { WholesalerTags, WholesalerTagsBadges, WHOLESALER_TAG_PRESETS, getTagColor } from './WholesalerTags';
 export { WholesalerFinancialSummary } from './WholesalerFinancialSummary';
 export { WholesalerProductOrderSelector } from './WholesalerProductOrderSelector';
+export { WholesalerSupplyTab } from './WholesalerSupplyTab';
+export { WholesalerMarketplaceTab } from './WholesalerMarketplaceTab';
