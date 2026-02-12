@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { Save, Check } from 'lucide-react';
+import { Save, Check, CheckSquare, AlertTriangle } from 'lucide-react';
 
 interface Props {
   selectedPrice: number;
@@ -33,11 +36,15 @@ interface PendingEdit {
 export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
   const queryClient = useQueryClient();
   const [edits, setEdits] = useState<Record<string, PendingEdit>>({});
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkUnitCount, setBulkUnitCount] = useState('');
+  const [bulkConfidence, setBulkConfidence] = useState('high');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   const { data: invoices, isLoading } = useQuery({
     queryKey: ['legacy-invoices-by-price', selectedPrice],
     queryFn: async () => {
-      // Get invoices at this price
       const { data: invData, error: invErr } = await supabase
         .from('invoices')
         .select('id, invoice_number, total, created_at, store_id, status')
@@ -47,7 +54,6 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
         .order('created_at');
       if (invErr) throw invErr;
 
-      // Get store names
       const storeIds = [...new Set(invData.filter(i => i.store_id).map(i => i.store_id!))];
       let storeMap: Record<string, string> = {};
       if (storeIds.length > 0) {
@@ -60,7 +66,6 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
         }
       }
 
-      // Get existing repairs
       const invoiceIds = invData.map(i => i.id);
       const { data: repairs } = await supabase
         .from('historical_invoice_line_repairs')
@@ -72,7 +77,6 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
         repairMap[r.invoice_id] = { unit_count: r.unit_count, confidence_level: r.confidence_level };
       });
 
-      // Check which invoices have live line items
       const { data: liveLines } = await supabase
         .from('invoice_line_items')
         .select('invoice_id')
@@ -94,8 +98,6 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
 
   const saveMutation = useMutation({
     mutationFn: async ({ invoiceId, unitCount, confidence }: { invoiceId: string; unitCount: number; confidence: string }) => {
-      // We need a product_id. Use a placeholder since this is legacy repair.
-      // First try to get an existing product or use a known one
       const { data: existingRepair } = await supabase
         .from('historical_invoice_line_repairs')
         .select('id')
@@ -104,7 +106,6 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
         .maybeSingle();
 
       if (existingRepair) {
-        // Update existing
         const { error } = await supabase
           .from('historical_invoice_line_repairs')
           .update({
@@ -114,7 +115,6 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
           .eq('id', existingRepair.id);
         if (error) throw error;
       } else {
-        // Get first product as placeholder (required column)
         const { data: product } = await supabase
           .from('products')
           .select('id')
@@ -143,16 +143,13 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
         delete next[variables.invoiceId];
         return next;
       });
-      queryClient.invalidateQueries({ queryKey: ['legacy-invoices-by-price', selectedPrice] });
-      queryClient.invalidateQueries({ queryKey: ['legacy-repair-progress'] });
-      queryClient.invalidateQueries({ queryKey: ['effective-tube-preview'] });
-      toast({ title: 'Saved', description: 'Tube count attributed successfully.' });
     },
     onError: (err: any) => {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     },
   });
 
+  // --- Individual row save ---
   const handleSave = (invoiceId: string) => {
     const edit = edits[invoiceId];
     if (!edit || !edit.unit_count) return;
@@ -179,6 +176,71 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
     }));
   };
 
+  // --- Bulk selection ---
+  const unrepairedInvoices = invoices?.filter(i => !i.has_live_lines && i.unit_count === null) ?? [];
+  const allRepaired = invoices ? unrepairedInvoices.length === 0 : false;
+
+  const selectAllUnrepaired = () => {
+    setSelectedIds(new Set(unrepairedInvoices.map(i => i.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelected = (id: string, checked: boolean) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  // --- Bulk preview & save ---
+  const applyBulkPreview = () => {
+    const count = parseInt(bulkUnitCount, 10);
+    if (isNaN(count) || count <= 0) {
+      toast({ title: 'Invalid', description: 'Enter a valid tube count.', variant: 'destructive' });
+      return;
+    }
+    setPreviewOpen(true);
+  };
+
+  const confirmBulkSave = async () => {
+    setBulkSaving(true);
+    const count = parseInt(bulkUnitCount, 10);
+    let saved = 0;
+    let failed = 0;
+
+    for (const invoiceId of selectedIds) {
+      try {
+        await saveMutation.mutateAsync({
+          invoiceId,
+          unitCount: count,
+          confidence: bulkConfidence,
+        });
+        saved++;
+      } catch {
+        failed++;
+      }
+    }
+
+    setBulkSaving(false);
+    setPreviewOpen(false);
+    setSelectedIds(new Set());
+    setBulkUnitCount('');
+
+    queryClient.invalidateQueries({ queryKey: ['legacy-invoices-by-price', selectedPrice] });
+    queryClient.invalidateQueries({ queryKey: ['legacy-repair-progress'] });
+    queryClient.invalidateQueries({ queryKey: ['effective-tube-preview'] });
+
+    toast({
+      title: 'Bulk attribution complete',
+      description: `${saved} saved${failed > 0 ? `, ${failed} failed` : ''}`,
+    });
+  };
+
   const repairedCount = invoices?.filter(i => i.unit_count !== null).length ?? 0;
   const totalCount = invoices?.length ?? 0;
 
@@ -192,7 +254,66 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
+      <CardContent className="space-y-3 p-4 pt-0">
+        {/* Cluster complete banner */}
+        {allRepaired && invoices && invoices.length > 0 && (
+          <Alert className="border-green-500/30 bg-green-500/10">
+            <Check className="h-4 w-4 text-green-500" />
+            <AlertDescription className="text-green-400">
+              ✅ All invoices for this price point have been fully attributed.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Bulk Action Bar */}
+        {!allRepaired && (
+          <div className="flex flex-wrap items-center gap-3 p-3 border rounded-md bg-muted/30">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={selectAllUnrepaired}
+              disabled={unrepairedInvoices.length === 0}
+            >
+              <CheckSquare className="h-3.5 w-3.5 mr-1.5" />
+              Select All Unrepaired ({unrepairedInvoices.length})
+            </Button>
+
+            {selectedIds.size > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearSelection}>
+                Clear ({selectedIds.size})
+              </Button>
+            )}
+
+            <Input
+              type="number"
+              min={1}
+              placeholder="Tube count (e.g. 100)"
+              value={bulkUnitCount}
+              onChange={e => setBulkUnitCount(e.target.value)}
+              className="w-44 h-8 text-sm"
+            />
+
+            <Select value={bulkConfidence} onValueChange={setBulkConfidence}>
+              <SelectTrigger className="w-32 h-8 text-sm">
+                <SelectValue placeholder="Confidence" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              size="sm"
+              onClick={applyBulkPreview}
+              disabled={!bulkUnitCount || selectedIds.size === 0}
+            >
+              Apply to {selectedIds.size} Selected
+            </Button>
+          </div>
+        )}
+
+        {/* Invoice Table */}
         {isLoading ? (
           <div className="p-4 text-center text-muted-foreground text-sm">Loading…</div>
         ) : (
@@ -200,6 +321,7 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="text-xs w-10"></TableHead>
                   <TableHead className="text-xs">Invoice #</TableHead>
                   <TableHead className="text-xs">Store</TableHead>
                   <TableHead className="text-xs">Date</TableHead>
@@ -214,9 +336,17 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
                   const isSaved = inv.unit_count !== null && !edits[inv.id];
                   const hasEdit = !!edits[inv.id]?.unit_count;
                   const disabled = inv.has_live_lines;
+                  const isSelectable = !disabled && inv.unit_count === null;
 
                   return (
                     <TableRow key={inv.id} className={disabled ? 'opacity-50' : ''}>
+                      <TableCell className="pr-0">
+                        <Checkbox
+                          checked={selectedIds.has(inv.id)}
+                          disabled={!isSelectable}
+                          onCheckedChange={(checked) => toggleSelected(inv.id, !!checked)}
+                        />
+                      </TableCell>
                       <TableCell className="font-mono text-xs">{inv.invoice_number}</TableCell>
                       <TableCell className="text-xs truncate max-w-[120px]">{inv.store_name ?? '—'}</TableCell>
                       <TableCell className="text-xs">
@@ -279,6 +409,36 @@ export const LegacyInvoiceRepairTable = ({ selectedPrice }: Props) => {
           </div>
         )}
       </CardContent>
+
+      {/* Bulk Confirmation Dialog */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Bulk Tube Attribution</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">You are about to apply:</p>
+          <ul className="text-sm list-disc ml-5 space-y-1">
+            <li><strong>{bulkUnitCount}</strong> tubes per invoice</li>
+            <li>Confidence: <strong>{bulkConfidence}</strong></li>
+            <li>Invoices affected: <strong>{selectedIds.size}</strong></li>
+            <li>Price cluster: <strong>${selectedPrice.toLocaleString()}</strong></li>
+          </ul>
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-400 text-xs">
+              This does NOT affect totals, payments, or inventory. This action is auditable and reversible.
+            </AlertDescription>
+          </Alert>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewOpen(false)} disabled={bulkSaving}>
+              Cancel
+            </Button>
+            <Button onClick={confirmBulkSave} disabled={bulkSaving}>
+              {bulkSaving ? 'Saving…' : `Confirm & Save (${selectedIds.size})`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
