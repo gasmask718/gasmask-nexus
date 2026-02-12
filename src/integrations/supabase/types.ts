@@ -13535,6 +13535,13 @@ export type Database = {
             referencedRelation: "inventory_cost_ledger"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cogs_ledger_cost_layer_id_fkey"
+            columns: ["cost_layer_id"]
+            isOneToOne: false
+            referencedRelation: "v_supplier_cost_history"
+            referencedColumns: ["cost_layer_id"]
+          },
         ]
       }
       collection_accounts: {
@@ -33622,6 +33629,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "po_receipt_items_po_receipt_id_fkey"
+            columns: ["po_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "v_supplier_cost_history"
+            referencedColumns: ["receipt_id"]
+          },
+          {
             foreignKeyName: "po_receipt_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -33666,6 +33680,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "po_receipts_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "v_supplier_cost_history"
+            referencedColumns: ["purchase_order_id"]
           },
         ]
       }
@@ -38178,6 +38199,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "v_supplier_cost_history"
+            referencedColumns: ["purchase_order_id"]
           },
         ]
       }
@@ -45183,6 +45211,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "purchase_orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supply_chain_inflow_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "v_supplier_cost_history"
+            referencedColumns: ["purchase_order_id"]
           },
         ]
       }
@@ -54582,6 +54617,40 @@ export type Database = {
           tubes_on_hand: number | null
         }
         Relationships: []
+      }
+      v_supplier_cost_history: {
+        Row: {
+          cost_layer_id: string | null
+          cost_ledger_created_at: string | null
+          po_number: string | null
+          product_id: string | null
+          product_name: string | null
+          purchase_order_created_at: string | null
+          purchase_order_id: string | null
+          receipt_id: string | null
+          receipt_received_at: string | null
+          received_at: string | null
+          supplier_name: string | null
+          total_cost: number | null
+          unit_cost: number | null
+          units_in: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_cost_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
       }
       v_territory_address_status_summary: {
         Row: {
