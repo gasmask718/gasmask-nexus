@@ -52286,6 +52286,7 @@ export type Database = {
           tax_id: string | null
           territories: string[] | null
           tier: string | null
+          updated_at: string | null
           visit_frequency_days: number | null
           zip_code: string | null
         }
@@ -52351,6 +52352,7 @@ export type Database = {
           tax_id?: string | null
           territories?: string[] | null
           tier?: string | null
+          updated_at?: string | null
           visit_frequency_days?: number | null
           zip_code?: string | null
         }
@@ -52416,6 +52418,7 @@ export type Database = {
           tax_id?: string | null
           territories?: string[] | null
           tier?: string | null
+          updated_at?: string | null
           visit_frequency_days?: number | null
           zip_code?: string | null
         }
