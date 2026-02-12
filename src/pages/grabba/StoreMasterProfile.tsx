@@ -50,6 +50,7 @@ import { StoreRoleSection } from "@/components/store/StoreRoleSection";
 // Adding a section to these components propagates to ALL store profile pages.
 // ═══════════════════════════════════════════════════════════════════════════════
 import { SharedStoreCoreIntelligence } from "@/components/store/SharedStoreCoreIntelligence";
+import { BrandPaymentQuickView } from "@/components/store/BrandPaymentQuickView";
 import { SharedStorePerformanceTabs } from "@/components/store/SharedStorePerformanceTabs";
 
 // Components still used directly in page-specific layout
@@ -282,6 +283,8 @@ function StoreMasterProfileInner({ storeId }: { storeId: string | undefined }) {
             Floor 1 CRM
             {store.owner_name && <span className="ml-2">• Owner: {store.owner_name}</span>}
           </p>
+          {/* Brand Payment Quick View — executive intelligence */}
+          <BrandPaymentQuickView storeId={id} />
         </div>
 
         {/* Action Buttons */}

@@ -42,7 +42,7 @@ export function BrandRelationshipsPanel({ storeId }: Props) {
   }
 
   return (
-    <Card className="border-border/40 bg-card/50">
+    <Card className="border-border/40 bg-card/50" data-section="brand-relationships">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Handshake className="h-4 w-4 text-primary" />
