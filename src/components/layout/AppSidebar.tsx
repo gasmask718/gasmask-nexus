@@ -316,6 +316,7 @@ export default function AppSidebar() {
             {/* Floor 4 - Delivery & Drivers */}
             {renderSection('floor-4', 'Floor 4: Delivery & Drivers', '🚴', [
               { path: '/grabba/deliveries', label: 'Deliveries', emoji: '📬' },
+              { path: '/grabba/assignments', label: 'Order Assignments', emoji: '📋' },
               { path: '/driver', label: 'Driver Management', emoji: '🚗' },
               { path: '/biker', label: 'Biker Management', emoji: '🚴' },
               { path: '/routes', label: 'Route Plans', emoji: '🗺️' },

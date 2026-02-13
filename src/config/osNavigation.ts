@@ -165,6 +165,7 @@ export const FLOOR_4_DELIVERY: OSFloor = {
   roles: ['ceo', 'admin', 'va', 'driver', 'biker'],
   items: [
     { id: 'deliveries', label: 'Deliveries', path: '/grabba/deliveries', icon: Truck, roles: ['ceo', 'admin', 'va'] },
+    { id: 'assignments', label: 'Order Assignments', path: '/grabba/assignments', icon: ClipboardList, roles: ['ceo', 'admin', 'va'] },
     { id: 'driver-management', label: 'Driver Management', path: '/driver', icon: Car, roles: ['ceo', 'admin', 'va'] },
     { id: 'biker-management', label: 'Biker Management', path: '/biker', icon: Bike, roles: ['ceo', 'admin', 'va'] },
     { id: 'routes', label: 'Route Plans', path: '/routes', icon: Map, roles: ['ceo', 'admin', 'va', 'driver'] },

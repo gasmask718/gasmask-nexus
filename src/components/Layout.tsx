@@ -213,6 +213,7 @@ const DYNASTY_NAVIGATION = {
       name: '🚚 Floor 4 — Delivery & Routing',
       items: [
         { path: '/grabba/deliveries', label: 'Deliveries Dashboard', icon: Truck },
+        { path: '/grabba/assignments', label: 'Order Assignments', icon: ClipboardList },
         { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', icon: Layers },
         { path: '/grabba/routes', label: 'Route Manager', icon: Route },
         { path: '/routes', label: 'All Routes', icon: Map },

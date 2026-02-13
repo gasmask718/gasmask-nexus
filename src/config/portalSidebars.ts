@@ -121,6 +121,7 @@ export const OWNER_PORTAL: PortalConfig = {
       emoji: '🚴',
       items: [
         { id: 'deliveries', label: 'Deliveries', path: '/grabba/deliveries', icon: Truck, emoji: '📬' },
+        { id: 'assignments', label: 'Order Assignments', path: '/grabba/assignments', icon: ClipboardList, emoji: '📋' },
         { id: 'drivers', label: 'Driver Management', path: '/driver', icon: Car, emoji: '🚗' },
         { id: 'bikers', label: 'Biker Management', path: '/biker', icon: Bike, emoji: '🚴' },
         { id: 'routes', label: 'Route Plans', path: '/routes', icon: Map, emoji: '🗺️' },
@@ -216,6 +217,7 @@ export const ADMIN_PORTAL: PortalConfig = {
       emoji: '🚴',
       items: [
         { id: 'deliveries', label: 'Deliveries', path: '/grabba/deliveries', icon: Truck, emoji: '📬' },
+        { id: 'assignments', label: 'Order Assignments', path: '/grabba/assignments', icon: ClipboardList, emoji: '📋' },
         { id: 'drivers', label: 'Driver Management', path: '/driver', icon: Car, emoji: '🚗' },
         { id: 'bikers', label: 'Biker Management', path: '/biker', icon: Bike, emoji: '🚴' },
         { id: 'routes', label: 'Route Plans', path: '/routes', icon: Map, emoji: '🗺️' },
