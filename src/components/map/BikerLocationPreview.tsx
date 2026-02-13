@@ -32,6 +32,7 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
   const map = useRef<mapboxgl.Map | null>(null);
   const marker = useRef<mapboxgl.Marker | null>(null);
   const [lastLocation, setLastLocation] = useState<{ lat: number; lng: number; time: string } | null>(null);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
   const [activeOrders, setActiveOrders] = useState<ActiveOrder[]>([]);
   const [bikerProfile, setBikerProfile] = useState<{ phone?: string; email?: string; territory?: string; status?: string } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -72,9 +73,10 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
       }
     }
 
-    // Try to find location
+    // Try to find location + last-seen (even if coords are missing)
     const userIdsToTry = userId !== bikerId ? [userId, bikerId] : [userId];
-    let locEvent = null;
+    let latestEvent: { lat: any; lng: any; created_at: string } | null = null;
+    let coordsEvent: { lat: number; lng: number; created_at: string } | null = null;
 
     for (const uid of userIdsToTry) {
       const { data } = await supabase
@@ -84,18 +86,33 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (data?.lat && data?.lng) {
-        locEvent = data;
-        break;
+
+      if (data?.created_at) {
+        if (!latestEvent || data.created_at > latestEvent.created_at) {
+          latestEvent = data as any;
+        }
+
+        const latNum = data.lat !== null && data.lat !== undefined ? Number(data.lat) : null;
+        const lngNum = data.lng !== null && data.lng !== undefined ? Number(data.lng) : null;
+        const hasCoords = latNum !== null && lngNum !== null && !(latNum === 0 && lngNum === 0);
+
+        if (hasCoords) {
+          coordsEvent = { lat: latNum, lng: lngNum, created_at: data.created_at };
+          break;
+        }
       }
     }
 
-    if (locEvent) {
-      setLastLocation(prev => ({
-        lat: Number(locEvent.lat),
-        lng: Number(locEvent.lng),
-        time: locEvent.created_at,
-      }));
+    if (latestEvent?.created_at) {
+      setLastSeenAt(latestEvent.created_at);
+    }
+
+    if (coordsEvent) {
+      setLastLocation({
+        lat: coordsEvent.lat,
+        lng: coordsEvent.lng,
+        time: coordsEvent.created_at,
+      });
     }
 
     // Get active visits
@@ -129,8 +146,9 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
 
   // Build popup HTML
   const buildPopupHTML = useCallback(() => {
-    const lastSeenStr = lastLocation
-      ? new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    const lastSeenTime = lastSeenAt ?? lastLocation?.time;
+    const lastSeenStr = lastSeenTime
+      ? new Date(lastSeenTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : 'N/A';
 
     const orderRows = activeOrders.length > 0
@@ -165,7 +183,7 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
         ${orderRows}
       </div>
     `;
-  }, [lastLocation, bikerName, activeOrders, bikerProfile]);
+  }, [lastSeenAt, lastLocation, bikerName, activeOrders, bikerProfile]);
 
   // Initialize map immediately (even without location data)
   useEffect(() => {
@@ -244,22 +262,26 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
             {isLoading && (
               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             )}
-            {lastLocation ? (() => {
-              const ageMs = Date.now() - new Date(lastLocation.time).getTime();
+            {(() => {
+              const seenTime = lastSeenAt ?? lastLocation?.time;
+              if (!seenTime) return null;
+
+              const ageMs = Date.now() - new Date(seenTime).getTime();
               const ageMin = Math.floor(ageMs / 60000);
               const freshnessColor = ageMin < 5 ? 'bg-green-500' : ageMin < 30 ? 'bg-yellow-500' : 'bg-gray-400';
               const freshnessLabel = ageMin < 1 ? 'Just now' : ageMin < 60 ? `${ageMin}m ago` : `${Math.floor(ageMin/60)}h ago`;
+
               return (
                 <Badge variant="outline" className="text-xs">
                   <span className={`w-2 h-2 rounded-full ${freshnessColor} inline-block mr-1.5 ${ageMin < 5 ? 'animate-pulse' : ''}`} />
                   {freshnessLabel}
                 </Badge>
               );
-            })() : !isLoading ? (
+            })() || (!isLoading ? (
               <Badge variant="secondary" className="text-xs">
                 No GPS data yet
               </Badge>
-            ) : null}
+            ) : null)}
           </div>
         </div>
       </CardHeader>
