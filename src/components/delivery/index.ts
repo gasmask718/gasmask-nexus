@@ -19,3 +19,4 @@ export { TodayIntelligenceSummary } from './TodayIntelligenceSummary';
 export { RouteTemplateManager } from './RouteTemplateManager';
 export { RouteAssignmentDialog } from './RouteAssignmentDialog';
 export { RouteProfitabilityCard } from './RouteProfitabilityCard';
+export { RouteDetailDrawer } from './RouteDetailDrawer';
