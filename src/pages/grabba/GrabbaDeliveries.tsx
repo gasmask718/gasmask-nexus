@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -14,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { 
   Truck, MapPin, DollarSign, CheckCircle, Clock, Plus, User, 
   Search, Route, Zap, TrendingUp, AlertTriangle, Bike, Star,
-  Phone, Navigation, Package, BarChart3, Edit, Trash2
+  Phone, Navigation, Package, BarChart3, Edit, Trash2, Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { useGrabbaBrand } from "@/contexts/GrabbaBrandContext";
@@ -110,6 +111,7 @@ function CreateRouteForm({ drivers, onSubmit }: CreateRouteFormProps) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export default function GrabbaDeliveries() {
+  const navigate = useNavigate();
   const { selectedBrand, setSelectedBrand, getBrandQuery } = useGrabbaBrand();
   const [search, setSearch] = useState("");
   const queryClient = useQueryClient();
@@ -449,6 +451,11 @@ export default function GrabbaDeliveries() {
                                   )}
                                 </div>
                               </div>
+                              {route.driver_id && (
+                                <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 ml-2" onClick={() => navigate(`/delivery/drivers/${route.driver_id}`)}>
+                                  <Eye className="h-3 w-3" /> Profile
+                                </Button>
+                              )}
                             </div>
                             <div className="flex items-center gap-2">
                               <Badge variant={route.status === 'completed' ? 'default' : 'secondary'}>
@@ -651,8 +658,10 @@ export default function GrabbaDeliveries() {
                               <Badge variant="outline" className="mt-2">{driver.region}</Badge>
                             )}
                             <div className="flex items-center gap-2 mt-3">
+                              <Button size="sm" variant="outline" className="text-xs" onClick={() => navigate(`/delivery/drivers/${driver.id}`)}>
+                                <Eye className="h-3 w-3 mr-1" /> View Profile
+                              </Button>
                               <Button size="sm" variant="outline" className="text-xs">View Routes</Button>
-                              <Button size="sm" variant="outline" className="text-xs">Edit</Button>
                             </div>
                           </div>
                         </div>
