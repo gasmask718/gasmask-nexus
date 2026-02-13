@@ -19,6 +19,7 @@ import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { ConversationInbox } from '@/components/communication/ConversationInbox';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 
 const DriverProfile: React.FC = () => {
   const { driverId } = useParams();
@@ -247,6 +248,14 @@ const DriverProfile: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {/* Active Routes with Live Status */}
+      <ActiveRouteStatus
+        workerId={driverId || ''}
+        workerName={driver.full_name}
+        workerType="driver"
+        workerUserId={driver.user_id}
+      />
 
       {/* Tabs */}
       <Tabs defaultValue="routes">
