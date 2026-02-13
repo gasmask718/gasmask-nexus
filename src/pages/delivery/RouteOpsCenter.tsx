@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useDeliveryExceptions } from "@/hooks/useDeliveryExecution";
+import { RouteTemplateManager } from "@/components/delivery/RouteTemplateManager";
 
 export default function RouteOpsCenter() {
   const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
@@ -291,6 +292,11 @@ export default function RouteOpsCenter() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Route Templates Section */}
+        <div className="mt-6">
+          <RouteTemplateManager />
         </div>
       </div>
     </Layout>

@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Route, MapPin, Calendar, Search, Users, Plus, X } from 'lucide-react';
+import { Route, MapPin, Calendar, Search, Users, Plus, X, FileStack } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 
 interface RouteAssignmentDialogProps {
@@ -46,6 +46,36 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   const [selectedAssignees, setSelectedAssignees] = useState<{ id: string; name: string; userId?: string | null }[]>([
     { id: assigneeId, name: assigneeName, userId: assigneeUserId },
   ]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('none');
+
+  // Fetch route templates
+  const { data: templates = [] } = useQuery({
+    queryKey: ['route-templates-active', assigneeType],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('route_templates')
+        .select('*, route_template_stops(id, store_id, default_order)')
+        .eq('is_active', true)
+        .eq('worker_type', assigneeType)
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  const applyTemplate = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    if (templateId === 'none') return;
+    const template = templates.find((t: any) => t.id === templateId);
+    if (!template) return;
+    const stops = (template.route_template_stops || [])
+      .sort((a: any, b: any) => a.default_order - b.default_order)
+      .map((s: any) => s.store_id);
+    setSelectedStores(stops);
+    if (template.default_territory) setTerritory(template.default_territory);
+    toast.success(`Template "${template.name}" applied — ${stops.length} stops loaded`);
+  };
 
   // Fetch available stores
   const { data: stores = [] } = useQuery({
@@ -266,6 +296,26 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
               <Button size="sm" variant="outline" onClick={addBulkDate} className="w-full">
                 <Plus className="h-4 w-4 mr-1" /> Add Date
               </Button>
+            </div>
+          )}
+
+          {/* Template selector */}
+          {templates.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><FileStack className="h-4 w-4" /> Load from Template</Label>
+              <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— No Template —</SelectItem>
+                  {templates.map((t: any) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} ({t.route_template_stops?.length || 0} stops)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           )}
 

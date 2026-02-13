@@ -40079,6 +40079,74 @@ export type Database = {
           },
         ]
       }
+      route_template_stops: {
+        Row: {
+          created_at: string
+          default_order: number
+          id: string
+          store_id: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_order?: number
+          id?: string
+          store_id: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          default_order?: number
+          id?: string
+          store_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_template_stops_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "route_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      route_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_territory: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+          worker_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_territory?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+          worker_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_territory?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+          worker_type?: string
+        }
+        Relationships: []
+      }
       routes: {
         Row: {
           actual_distance_km: number | null
