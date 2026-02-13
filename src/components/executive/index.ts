@@ -8,3 +8,4 @@ export { SimulationBoard } from './SimulationBoard';
 export { PowersMatrixPanel } from './PowersMatrixPanel';
 export { AIDispatchAnalytics } from './AIDispatchAnalytics';
 export { AILearningPanel } from './AILearningPanel';
+export { AIConfidenceCalibration } from './AIConfidenceCalibration';
