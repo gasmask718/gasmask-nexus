@@ -304,7 +304,7 @@ export default function DriversManagement() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDrivers.map((driver) => (
-            <Card key={driver.id} className="hover:shadow-md transition-shadow">
+            <Card key={driver.id} className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/delivery/drivers/${driver.id}`)}>
               <CardContent className="pt-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">

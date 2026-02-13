@@ -14,13 +14,16 @@ import { format } from 'date-fns';
 import { 
   ArrowLeft, Bike, Phone, Mail, MapPin, Edit, 
   DollarSign, CheckCircle2, Clock, Calendar, 
-  ClipboardCheck, AlertTriangle, TrendingUp, AlertCircle
+  ClipboardCheck, AlertTriangle, TrendingUp, AlertCircle,
+  MessageCircle, StickyNote
 } from 'lucide-react';
 import { useBikerIssues } from '@/hooks/useBikerIssues';
 import BikerPerformanceTab from '@/components/biker/BikerPerformanceTab';
 import BikerIssuesTab from '@/components/biker/BikerIssuesTab';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { BikerLocationPreview } from '@/components/map/BikerLocationPreview';
+import { ConversationInbox } from '@/components/communication/ConversationInbox';
+import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -271,7 +274,7 @@ const BikerProfile: React.FC = () => {
 
         {/* Tabs for Tasks, Issues, Performance & Payouts */}
         <Tabs defaultValue="tasks">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="tasks">
               <ClipboardCheck className="h-4 w-4 mr-2" /> Tasks
             </TabsTrigger>
@@ -283,6 +286,12 @@ const BikerProfile: React.FC = () => {
             </TabsTrigger>
             <TabsTrigger value="payouts">
               <DollarSign className="h-4 w-4 mr-2" /> Payouts
+            </TabsTrigger>
+            <TabsTrigger value="communication">
+              <MessageCircle className="h-4 w-4 mr-2" /> Communication
+            </TabsTrigger>
+            <TabsTrigger value="notes">
+              <StickyNote className="h-4 w-4 mr-2" /> Notes
             </TabsTrigger>
           </TabsList>
 
@@ -361,6 +370,21 @@ const BikerProfile: React.FC = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+          <TabsContent value="communication" className="mt-4">
+            <ConversationInbox
+              entityType="biker"
+              entityId={bikerId || ''}
+              entityName={biker.full_name}
+            />
+          </TabsContent>
+
+          <TabsContent value="notes" className="mt-4">
+            <EntityNotesSection
+              entityType="biker"
+              entityId={bikerId}
+              entityName={biker.full_name}
+            />
           </TabsContent>
         </Tabs>
 

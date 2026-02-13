@@ -33,7 +33,7 @@ import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { cn } from "@/lib/utils";
 
 interface ConversationInboxProps {
-  entityType: 'influencer' | 'ambassador' | 'store' | 'wholesaler';
+  entityType: 'influencer' | 'ambassador' | 'store' | 'wholesaler' | 'driver' | 'biker';
   entityId: string;
   entityName: string;
   isEditable?: boolean;
