@@ -5,6 +5,8 @@
 
 import { useMemo, useState } from 'react';
 import { useDispatchIntakeView, type DispatchSignal } from '@/hooks/useDispatchIntakeView';
+import { useSLAAlerts } from '@/hooks/useSLAAlerts';
+import { SLAAlertBadges } from '@/components/delivery/SLAAlertBadges';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -42,6 +44,11 @@ export function DispatchIntakePanel({ onStoresSelected }: DispatchIntakePanelPro
     hasFollowUp: filterFollowUp || undefined,
   });
 
+  // SLA alerts for all signal stores
+  const storeIdsForSLA = useMemo(() => signals.map(s => s.store_id), [signals]);
+  const { data: slaAlerts = [] } = useSLAAlerts(storeIdsForSLA.length > 0 ? storeIdsForSLA : undefined);
+  const slaMap = useMemo(() => new Map(slaAlerts.map(a => [a.store_id, a])), [slaAlerts]);
+
   const filteredSignals = useMemo(() => {
     let result = signals;
 
@@ -56,8 +63,16 @@ export function DispatchIntakePanel({ onStoresSelected }: DispatchIntakePanelPro
       });
     }
 
-    return result;
-  }, [signals, filterOrder, filterSamples, filterStarterKit, filterOpportunity, filterFollowUp]);
+    // Sort: SLA severity first, then urgency_score
+    const severityOrder = { red: 0, amber: 1, none: 2 };
+    return [...result].sort((a, b) => {
+      const aSev = slaMap.get(a.store_id)?.severity || 'none';
+      const bSev = slaMap.get(b.store_id)?.severity || 'none';
+      const sevDiff = severityOrder[aSev] - severityOrder[bSev];
+      if (sevDiff !== 0) return sevDiff;
+      return b.urgency_score - a.urgency_score;
+    });
+  }, [signals, filterOrder, filterSamples, filterStarterKit, filterOpportunity, filterFollowUp, slaMap]);
 
   const selectedSignals = useMemo(() => {
     return filteredSignals.filter(s => selectedStoreIds.has(s.store_id));
@@ -260,6 +275,9 @@ export function DispatchIntakePanel({ onStoresSelected }: DispatchIntakePanelPro
                             </Badge>
                           )}
                         </div>
+
+                        {/* SLA Alerts */}
+                        <SLAAlertBadges alert={slaMap.get(signal.store_id)} className="mb-1" />
 
                         {/* Recommended Actions */}
                         <div className="text-xs text-muted-foreground mb-1">

@@ -3,7 +3,7 @@
 // Read-only except dispatch controls. Never creates parallel state.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -24,6 +24,8 @@ import { format } from 'date-fns';
 import { useRouteDetail } from '@/hooks/useRouteManager';
 import { useDispatchActions } from '@/hooks/useDispatchInterventions';
 import { RouteReassignDialog } from './RouteReassignDialog';
+import { SLAAlertBadges, RouteSLASummary } from './SLAAlertBadges';
+import { useSLAAlerts } from '@/hooks/useSLAAlerts';
 
 interface RouteDetailDrawerProps {
   routeId: string | null;
@@ -66,6 +68,11 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
   const profit = data?.profit;
   const payout = data?.payout;
   const interventions = data?.interventions || [];
+
+  // SLA alerts for all stores in this route
+  const stopStoreIds = useMemo(() => stops.map((s: any) => s.store_id).filter(Boolean), [stops]);
+  const { data: slaAlerts = [] } = useSLAAlerts(stopStoreIds.length > 0 ? stopStoreIds : undefined);
+  const slaMap = useMemo(() => new Map(slaAlerts.map(a => [a.store_id, a])), [slaAlerts]);
 
   const completedStops = stops.filter(s => s.status === 'completed' || s.status === 'visited').length;
   const progress = stops.length > 0 ? Math.round((completedStops / stops.length) * 100) : 0;
@@ -189,9 +196,14 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
 
                 {/* Stops */}
                 <div>
-                  <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
                     <Package className="h-4 w-4" /> Stops ({stops.length})
                   </h4>
+                  {slaAlerts.length > 0 && (
+                    <div className="mb-3">
+                      <RouteSLASummary alerts={slaAlerts} />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {stops.map((stop: any, idx: number) => (
                       <div key={stop.id} className="flex items-start gap-3 p-3 rounded-lg border bg-card/50">
@@ -216,6 +228,7 @@ export const RouteDetailDrawer: React.FC<RouteDetailDrawerProps> = ({
                               <span className="text-[10px] text-muted-foreground">{stop.order_ids.length} order(s)</span>
                             )}
                           </div>
+                          <SLAAlertBadges alert={slaMap.get(stop.store_id)} compact className="mt-1" />
                         </div>
                       </div>
                     ))}
