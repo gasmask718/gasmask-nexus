@@ -13,17 +13,19 @@ import { format } from 'date-fns';
 import { 
   ArrowLeft, User, Phone, Mail, MapPin, Edit, Car,
   DollarSign, CheckCircle2, Clock, TrendingUp,
-  Route, MessageCircle, StickyNote, AlertTriangle
+  Route as RouteIcon, MessageCircle, StickyNote, AlertTriangle
 } from 'lucide-react';
 import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { ConversationInbox } from '@/components/communication/ConversationInbox';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 const DriverProfile: React.FC = () => {
   const { driverId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [showRouteAssign, setShowRouteAssign] = useState(false);
 
   // Fetch driver details
   const { data: driver, isLoading } = useQuery({
@@ -224,7 +226,7 @@ const DriverProfile: React.FC = () => {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <Route className="h-8 w-8 text-muted-foreground" />
+                <RouteIcon className="h-8 w-8 text-muted-foreground" />
                 <div>
                   <div className="text-2xl font-bold">{routes.length}</div>
                   <p className="text-sm text-muted-foreground">Total Routes</p>
@@ -249,7 +251,7 @@ const DriverProfile: React.FC = () => {
       {/* Tabs */}
       <Tabs defaultValue="routes">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="routes"><Route className="h-4 w-4 mr-2" /> Routes</TabsTrigger>
+          <TabsTrigger value="routes"><RouteIcon className="h-4 w-4 mr-2" /> Routes</TabsTrigger>
           <TabsTrigger value="payouts"><DollarSign className="h-4 w-4 mr-2" /> Payouts</TabsTrigger>
           <TabsTrigger value="communication"><MessageCircle className="h-4 w-4 mr-2" /> Communication</TabsTrigger>
           <TabsTrigger value="notes"><StickyNote className="h-4 w-4 mr-2" /> Notes</TabsTrigger>
@@ -265,7 +267,7 @@ const DriverProfile: React.FC = () => {
                   <CardContent className="py-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <Route className="h-5 w-5 text-muted-foreground" />
+                        <RouteIcon className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <p className="font-medium">{route.route_name || `Route ${route.id.slice(0, 8)}`}</p>
                           <p className="text-sm text-muted-foreground">
@@ -325,6 +327,33 @@ const DriverProfile: React.FC = () => {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Quick Actions */}
+      <div className="flex gap-4">
+        <Button 
+          variant="outline" 
+          className="flex-1"
+          onClick={() => setShowRouteAssign(true)}
+        >
+          <RouteIcon className="h-4 w-4 mr-2" /> Assign Route
+        </Button>
+        <Button 
+          variant="outline" 
+          className="flex-1"
+          onClick={() => navigate('/delivery/payouts')}
+        >
+          <DollarSign className="h-4 w-4 mr-2" /> View Payouts
+        </Button>
+      </div>
+
+      <RouteAssignmentDialog
+        open={showRouteAssign}
+        onOpenChange={setShowRouteAssign}
+        assigneeId={driverId || ''}
+        assigneeName={driver.full_name}
+        assigneeType="driver"
+        assigneeUserId={driver.user_id}
+      />
     </div>
   );
 };
