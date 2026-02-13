@@ -437,6 +437,7 @@ import {
   DriversManagement, 
   BikersManagement, 
   BikerProfile,
+  DriverProfile,
   BikerTasks, 
   LocationsManagement, 
   WorkerPayouts, 
@@ -1136,6 +1137,7 @@ export default function AppRoutes() {
         <Route path="/delivery/capacity" element={<DeliveryCapacityCommand />} />
         <Route path="/delivery-capacity" element={<Navigate to="/delivery/capacity" replace />} />
         <Route path="/delivery/drivers" element={<DriversManagement />} />
+        <Route path="/delivery/drivers/:driverId" element={<DriverProfile />} />
         <Route path="/delivery/bikers" element={<BikersManagement />} />
         <Route path="/delivery/bikers/:bikerId" element={<BikerProfile />} />
         <Route path="/delivery/biker-tasks" element={<BikerTasks />} />

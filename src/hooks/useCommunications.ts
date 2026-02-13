@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 export interface Communication {
   id: string;
-  entity_type: 'influencer' | 'ambassador' | 'store' | 'wholesaler';
+  entity_type: 'influencer' | 'ambassador' | 'store' | 'wholesaler' | 'driver' | 'biker';
   entity_id: string;
   channel: string;
   direction: 'inbound' | 'outbound';
@@ -22,7 +22,7 @@ export interface Communication {
 }
 
 export interface NewCommunication {
-  entity_type: 'influencer' | 'ambassador' | 'store' | 'wholesaler';
+  entity_type: 'influencer' | 'ambassador' | 'store' | 'wholesaler' | 'driver' | 'biker';
   entity_id: string;
   channel: string;
   direction: 'inbound' | 'outbound';

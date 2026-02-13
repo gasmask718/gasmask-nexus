@@ -3,6 +3,7 @@ export { default as DeliveriesBoard } from './DeliveriesBoard';
 export { default as DriversManagement } from './DriversManagement';
 export { default as BikersManagement } from './BikersManagement';
 export { default as BikerProfile } from './BikerProfile';
+export { default as DriverProfile } from './DriverProfile';
 export { default as BikerTasks } from './BikerTasks';
 export { default as LocationsManagement } from './LocationsManagement';
 export { default as WorkerPayouts } from './WorkerPayouts';
