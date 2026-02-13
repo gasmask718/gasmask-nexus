@@ -56680,6 +56680,69 @@ export type Database = {
         }[]
       }
       get_ambassador_id: { Args: { _user_id: string }; Returns: string }
+      get_ambassador_profit_breakdown: {
+        Args: {
+          p_ambassador_id: string
+          p_brand?: string
+          p_sale_channel?: string
+          p_store_id?: string
+        }
+        Returns: {
+          ambassador_id: string | null
+          ambassador_user_id: string | null
+          attribution_method: string | null
+          attribution_valid: boolean | null
+          brand: string | null
+          brand_id: string | null
+          first_sale_at: string | null
+          last_sale_at: string | null
+          margin_pct: number | null
+          net_profit: number | null
+          product_id: string | null
+          product_name: string | null
+          profit_confidence_score: number | null
+          profit_status: string | null
+          retail_revenue: number | null
+          sale_channel: string | null
+          sale_month: string | null
+          store_id: string | null
+          store_name: string | null
+          units_sold: number | null
+          wholesale_cost: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "v_ambassador_profit_breakdown"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_ambassador_profit_dashboard: {
+        Args: { p_ambassador_id: string }
+        Returns: {
+          ambassador_id: string | null
+          ambassador_name: string | null
+          ambassador_user_id: string | null
+          avg_confidence_score: number | null
+          avg_margin_pct: number | null
+          brands_sold: number | null
+          confirmed_row_count: number | null
+          estimated_row_count: number | null
+          products_sold: number | null
+          stores_served: number | null
+          total_invoices: number | null
+          total_profit: number | null
+          total_revenue: number | null
+          total_units_sold: number | null
+          total_wholesale_cost: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "v_ambassador_profit_dashboard"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_audit_integrity: {
         Args: never
         Returns: {

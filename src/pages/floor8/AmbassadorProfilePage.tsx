@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import {
   ArrowLeft, User, MapPin, Phone, Mail, Store, DollarSign,
   TrendingUp, TrendingDown, Minus, MessageSquare,
-  AlertTriangle, Wallet, Star, ShoppingBag
+  AlertTriangle, Wallet, Star, ShoppingBag, TrendingUp as TrendingUpIcon2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/Layout';
@@ -25,6 +25,7 @@ import { AmbassadorStoresTab } from '@/components/floor8/AmbassadorStoresTab';
 import { useAmbassadorStoreData } from '@/hooks/useAmbassadorStoreData';
 import { cn } from '@/lib/utils';
 import { AmbassadorPurchasesSection } from '@/components/ambassador/purchases/AmbassadorPurchasesSection';
+import { AmbassadorProfitTab } from '@/components/floor8/AmbassadorProfitTab';
 
 export default function AmbassadorProfilePage() {
   const { ambassadorId } = useParams<{ ambassadorId: string }>();
@@ -248,6 +249,10 @@ export default function AmbassadorProfilePage() {
               <ShoppingBag className="h-4 w-4 mr-1" />
               Purchases
             </TabsTrigger>
+            <TabsTrigger value="wholesale-profit">
+              <TrendingUpIcon2 className="h-4 w-4 mr-1" />
+              Wholesale Profit
+            </TabsTrigger>
             <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts">Payouts</TabsTrigger>
             <TabsTrigger value="communication">Communication</TabsTrigger>
@@ -346,6 +351,10 @@ export default function AmbassadorProfilePage() {
               ambassadorId={ambassadorId}
               ambassadorName={displayName}
             />
+          </TabsContent>
+
+          <TabsContent value="wholesale-profit" className="mt-4">
+            <AmbassadorProfitTab ambassadorId={ambassadorId!} />
           </TabsContent>
 
           <TabsContent value="commissions" className="mt-4">
