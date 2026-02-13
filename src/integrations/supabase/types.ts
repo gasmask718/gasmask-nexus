@@ -2499,6 +2499,63 @@ export type Database = {
           },
         ]
       }
+      ai_dispatch_feedback: {
+        Row: {
+          confidence: number
+          contributing_factors: Json | null
+          created_at: string | null
+          decision_latency_seconds: number | null
+          event_type: string
+          id: string
+          recommendation_hash: string
+          recommended_action: string
+          risk_level: string
+          sla_severity: string | null
+          store_id: string
+          store_name: string
+          territory: string | null
+          urgency_score: number | null
+          user_id: string | null
+          user_role: string | null
+        }
+        Insert: {
+          confidence: number
+          contributing_factors?: Json | null
+          created_at?: string | null
+          decision_latency_seconds?: number | null
+          event_type: string
+          id?: string
+          recommendation_hash: string
+          recommended_action: string
+          risk_level: string
+          sla_severity?: string | null
+          store_id: string
+          store_name: string
+          territory?: string | null
+          urgency_score?: number | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          confidence?: number
+          contributing_factors?: Json | null
+          created_at?: string | null
+          decision_latency_seconds?: number | null
+          event_type?: string
+          id?: string
+          recommendation_hash?: string
+          recommended_action?: string
+          risk_level?: string
+          sla_severity?: string | null
+          store_id?: string
+          store_name?: string
+          territory?: string | null
+          urgency_score?: number | null
+          user_id?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
       ai_drift_alerts: {
         Row: {
           acknowledged_at: string | null
