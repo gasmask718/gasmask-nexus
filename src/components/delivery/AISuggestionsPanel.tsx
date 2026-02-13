@@ -2,13 +2,15 @@
 // AI SUGGESTIONS PANEL — Phase 4: Advisory Intelligence (Visual Only)
 // ═══════════════════════════════════════════════════════════════════════════════
 // No auto-dispatch. No mutations. Human-in-the-loop only.
+// Phase 5A: Telemetry tracking for learning analytics.
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   useAIDispatchSuggestions,
   type AIRecommendation,
   type AIDispatchSettings,
 } from '@/hooks/useAIDispatchSuggestions';
+import { useAIDispatchTelemetry } from '@/hooks/useAIDispatchTelemetry';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -71,8 +73,10 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [requireDoubleConfirm, setRequireDoubleConfirm] = useState(false);
   const [pendingApply, setPendingApply] = useState<string | null>(null);
+  const [visibilityTimestamps, setVisibilityTimestamps] = useState<Map<string, number>>(new Map());
 
   const { recommendations, isLoading, totalSignals } = useAIDispatchSuggestions(settings);
+  const { trackShown, trackApplied, trackDismissed, startIgnoreTimer, cancelIgnoreTimer } = useAIDispatchTelemetry();
 
   const visibleRecs = useMemo(
     () => recommendations.filter(r => !dismissedIds.has(r.store_id)),
@@ -93,11 +97,27 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
       setPendingApply(rec.store_id);
       return;
     }
+    
+    // Cancel ignore timer and record "applied" event
+    cancelIgnoreTimer(rec.store_id);
+    const latencySeconds = visibilityTimestamps.get(rec.store_id)
+      ? Math.round((Date.now() - visibilityTimestamps.get(rec.store_id)!) / 1000)
+      : 0;
+    trackApplied(rec, latencySeconds);
+    
     setPendingApply(null);
     onApplySuggestion(rec);
   };
 
   const handleDismiss = (storeId: string) => {
+    const rec = recommendations.find(r => r.store_id === storeId);
+    if (rec) {
+      cancelIgnoreTimer(storeId);
+      const latencySeconds = visibilityTimestamps.get(storeId)
+        ? Math.round((Date.now() - visibilityTimestamps.get(storeId)!) / 1000)
+        : 0;
+      trackDismissed(rec, latencySeconds);
+    }
     setDismissedIds(prev => new Set(prev).add(storeId));
   };
 
@@ -246,6 +266,17 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
                 const ActionIcon = actionMeta.icon;
                 const isExpanded = expandedIds.has(rec.store_id);
                 const isPendingConfirm = pendingApply === rec.store_id;
+
+                // Track visibility on mount
+                useEffect(() => {
+                  if (!visibilityTimestamps.has(rec.store_id)) {
+                    const timestamp = Date.now();
+                    setVisibilityTimestamps(prev => new Map(prev).set(rec.store_id, timestamp));
+                    trackShown(rec);
+                    // Start ignore timer (10 min default)
+                    startIgnoreTimer(rec, 10 * 60 * 1000);
+                  }
+                }, [rec, visibilityTimestamps, trackShown, startIgnoreTimer]);
 
                 return (
                   <Card
