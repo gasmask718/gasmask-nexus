@@ -26,7 +26,8 @@ import {
   Wrench,
   MoreVertical,
   Trash2,
-  ArrowLeft
+  ArrowLeft,
+  Eye
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Link } from 'react-router-dom';
@@ -368,13 +369,22 @@ function StaffGrid({ staff, roleIcon, onUpdateRole, onRemove, isLoading }: Staff
               </DropdownMenu>
             </div>
             
-            <div className="mt-4 flex items-center gap-2">
-              <Badge className={cn('text-xs', getRoleBadgeColor(member.role))}>
-                {getRoleDisplayName(member.role)}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                Since {new Date(member.assigned_at).toLocaleDateString()}
-              </span>
+            <div className="mt-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Badge className={cn('text-xs', getRoleBadgeColor(member.role))}>
+                  {getRoleDisplayName(member.role)}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Since {new Date(member.assigned_at).toLocaleDateString()}
+                </span>
+              </div>
+              {member.user_id && (
+                <Link to={`/portals/production/staff/${member.user_id}`}>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs gap-1">
+                    <Eye className="h-3 w-3" /> Profile
+                  </Button>
+                </Link>
+              )}
             </div>
           </CardContent>
         </Card>
