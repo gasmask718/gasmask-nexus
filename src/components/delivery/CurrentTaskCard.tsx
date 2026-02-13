@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Package, MapPin, User, Phone, Clock, Navigation } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const MAPBOX_TOKEN = 'pk.eyJ1IjoiZHluYXN0eW9zIiwiYSI6ImNtOTdvYnQ3czA2NWQya3E0NWp4MTU3M3cifQ.raqjnGWYiIYClkdCRMoyaA';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
 
 interface CurrentTaskCardProps {
   workerId: string;
