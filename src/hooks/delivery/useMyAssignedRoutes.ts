@@ -12,6 +12,7 @@ export interface CanonicalRouteStop {
   status: string;
   brand_id: string | null;
   order_ids: string[] | null;
+  opportunity_ids: string[] | null;
   store: {
     id: string;
     store_name: string;

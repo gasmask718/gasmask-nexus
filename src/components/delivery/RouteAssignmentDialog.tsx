@@ -209,6 +209,7 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
               notes_to_worker: notes || null,
               brand_id: brandCtx?.brand_id || null,
               order_ids: brandCtx?.order_ids || [],
+              opportunity_ids: (brandCtx as any)?.opportunity_ids || [],
             };
           });
 

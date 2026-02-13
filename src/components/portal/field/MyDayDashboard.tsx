@@ -26,6 +26,7 @@ import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveCo
 import { LiveLocationMap } from '@/components/map/LiveLocationMap';
 import { BikerDeliveryTasks } from './BikerDeliveryTasks';
 import { useMyAssignedRoutes } from '@/hooks/delivery/useMyAssignedRoutes';
+import { DispatchContextBadges } from '@/components/delivery/DispatchContextBadges';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -479,6 +480,12 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
                       {stop.notes_to_worker && (
                         <p className="text-xs text-muted-foreground mt-1 italic">💬 {stop.notes_to_worker}</p>
                       )}
+                      <DispatchContextBadges
+                        notesToWorker={stop.notes_to_worker}
+                        brandId={stop.brand_id}
+                        opportunityIds={stop.opportunity_ids}
+                        orderIds={stop.order_ids}
+                      />
                     </div>
                     <Badge variant={isCompleted ? 'secondary' : 'outline'} className="shrink-0">
                       {isCompleted ? 'Done' : isInProgress ? 'In Progress' : 'Pending'}
