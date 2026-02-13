@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import { DispatchIntakePanel } from "@/components/delivery/DispatchIntakePanel";
+import { AISuggestionsPanel } from "@/components/delivery/AISuggestionsPanel";
+import type { AIRecommendation } from "@/hooks/useAIDispatchSuggestions";
 import type { DispatchSignal } from "@/hooks/useDispatchIntakeView";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -462,6 +464,15 @@ export default function MultiBrandDeliveryPage() {
   };
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [aiPreselectedStores, setAiPreselectedStores] = useState<string[]>([]);
+  const [aiBrandContext, setAiBrandContext] = useState<any[]>([]);
+
+  const handleAISuggestionApply = (rec: AIRecommendation) => {
+    // Pre-fill the RouteAssignmentDialog with AI recommendation
+    setAiPreselectedStores([rec.store_id]);
+    setAiBrandContext([{ store_id: rec.store_id }]);
+    setAssignDialogOpen(true);
+  };
 
   const handleDispatchSignalsSelected = (signals: DispatchSignal[]) => {
     // Pre-populate the existing assignmentContext with dispatch signals
@@ -648,6 +659,13 @@ export default function MultiBrandDeliveryPage() {
           <TabsTrigger value="matrix">Brand Matrix</TabsTrigger>
           <TabsTrigger value="opportunities">Opportunities ({intelligence.piggybackOpportunities.length})</TabsTrigger>
           <TabsTrigger value="dispatch">Dispatch Intake</TabsTrigger>
+          <TabsTrigger value="ai-suggestions" className="flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+            AI Suggestions
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="deliveries" className="space-y-4">
@@ -937,6 +955,10 @@ export default function MultiBrandDeliveryPage() {
 
         <TabsContent value="dispatch">
           <DispatchIntakePanel onStoresSelected={handleDispatchSignalsSelected} />
+        </TabsContent>
+
+        <TabsContent value="ai-suggestions">
+          <AISuggestionsPanel onApplySuggestion={handleAISuggestionApply} />
         </TabsContent>
       </Tabs>
 
