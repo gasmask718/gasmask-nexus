@@ -361,6 +361,7 @@ export const FLOOR_ROUTE_MAP: Record<string, string[]> = {
   ],
   'floor-4-delivery': [
     '/grabba/deliveries',
+    '/grabba/assignments',
     '/grabba/delivery-runs',
     '/routes',
     '/driver-debt-collection',

@@ -480,6 +480,7 @@ import GrabbaCommunication from '@/pages/grabba/GrabbaCommunication';
 import GrabbaInventory from '@/pages/grabba/GrabbaInventory';
 import GrabbaProduction from '@/pages/grabba/GrabbaProduction';
 import GrabbaDeliveries from '@/pages/grabba/GrabbaDeliveries';
+import GrabbaAssignments from '@/pages/grabba/GrabbaAssignments';
 import GrabbaAmbassadors from '@/pages/grabba/GrabbaAmbassadors';
 import AmbassadorProfile from '@/pages/grabba/AmbassadorProfile';
 import GrabbaWholesalePlatform from '@/pages/grabba/GrabbaWholesalePlatform';
@@ -1803,6 +1804,13 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin', 'employee', 'driver', 'biker']}>
             <Layout><GrabbaLayout><MultiBrandDelivery /></GrabbaLayout></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+      <Route path="/grabba/assignments" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'employee', 'driver', 'biker', 'warehouse', 'csr']}>
+            <Layout><GrabbaLayout><GrabbaAssignments /></GrabbaLayout></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { FieldPortalLayout, MyDayDashboard, StoreListPage, StoreVisitEngine, ChangeListsPage, HistoryPage, MakeDeliveryPage, MessagesPage, ProfilePage, DriverDeliveryTasks } from '@/components/portal/field';
+import { AssignedOrdersPage } from '@/components/portal/field/AssignedOrdersPage';
 import { PortalAuthGuard } from '@/components/portal/PortalAuthGuard';
 
 export default function DriverPortal() {
@@ -14,6 +15,7 @@ export default function DriverPortal() {
         <Route path="delivery" element={<MakeDeliveryPage portalType="driver" />} />
         <Route path="delivery/:deliveryId" element={<MakeDeliveryPage portalType="driver" />} />
         <Route path="delivery-tasks" element={<DriverDeliveryTasks />} />
+        <Route path="assigned-orders" element={<AssignedOrdersPage portalType="driver" />} />
         <Route path="changes" element={<ChangeListsPage portalType="driver" />} />
         <Route path="history" element={<HistoryPage portalType="driver" />} />
         <Route path="messages" element={<MessagesPage portalType="driver" />} />

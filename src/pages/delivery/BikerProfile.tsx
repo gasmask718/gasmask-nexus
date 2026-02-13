@@ -26,6 +26,7 @@ import { ConversationInbox } from '@/components/communication/ConversationInbox'
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
+import { CurrentTaskCard } from '@/components/delivery/CurrentTaskCard';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -187,6 +188,9 @@ const BikerProfile: React.FC = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Current Delivery Task */}
+        <CurrentTaskCard workerId={bikerId!} workerType="biker" />
 
         {/* Contact & Stats */}
         <div className="grid md:grid-cols-2 gap-6">

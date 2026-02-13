@@ -10,7 +10,8 @@ import {
   MessageSquare, 
   User,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
     ...(portalType === 'driver' ? [
       { label: t('portal.nav.make_delivery'), path: `${basePath}/delivery`, icon: <Truck className="h-5 w-5" /> },
     ] : []),
+    { label: 'Assigned Orders', path: `${basePath}/assigned-orders`, icon: <Package className="h-5 w-5" /> },
     { label: t('portal.nav.changes'), path: `${basePath}/changes`, icon: <FileText className="h-5 w-5" /> },
     { label: t('portal.nav.history'), path: `${basePath}/history`, icon: <History className="h-5 w-5" /> },
     { label: t('portal.nav.messages'), path: `${basePath}/messages`, icon: <MessageSquare className="h-5 w-5" /> },
