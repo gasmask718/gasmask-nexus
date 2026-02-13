@@ -39872,6 +39872,71 @@ export type Database = {
           },
         ]
       }
+      route_profit_metrics: {
+        Row: {
+          completed_stops: number
+          created_at: string
+          date: string
+          id: string
+          net_profit: number
+          profit_per_minute: number | null
+          profit_per_stop: number | null
+          profit_score: number
+          route_duration_minutes: number | null
+          route_id: string
+          stop_count: number
+          territory: string | null
+          total_payout: number
+          total_revenue: number
+          unpaid_amount: number
+          worker_type: string
+        }
+        Insert: {
+          completed_stops?: number
+          created_at?: string
+          date: string
+          id?: string
+          net_profit?: number
+          profit_per_minute?: number | null
+          profit_per_stop?: number | null
+          profit_score?: number
+          route_duration_minutes?: number | null
+          route_id: string
+          stop_count?: number
+          territory?: string | null
+          total_payout?: number
+          total_revenue?: number
+          unpaid_amount?: number
+          worker_type: string
+        }
+        Update: {
+          completed_stops?: number
+          created_at?: string
+          date?: string
+          id?: string
+          net_profit?: number
+          profit_per_minute?: number | null
+          profit_per_stop?: number | null
+          profit_score?: number
+          route_duration_minutes?: number | null
+          route_id?: string
+          stop_count?: number
+          territory?: string | null
+          total_payout?: number
+          total_revenue?: number
+          unpaid_amount?: number
+          worker_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_profit_metrics_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: true
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       route_stops: {
         Row: {
           actual_arrival: string | null
