@@ -19561,9 +19561,12 @@ export type Database = {
           delivery_lat: number | null
           delivery_lng: number | null
           delivery_notes: string | null
+          driver_id: string | null
           id: string
           invoice_id: string | null
           picked_up_at: string | null
+          recipient_name: string | null
+          recipient_phone: string | null
           status: string
           store_order_id: string | null
           updated_at: string
@@ -19577,9 +19580,12 @@ export type Database = {
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_notes?: string | null
+          driver_id?: string | null
           id?: string
           invoice_id?: string | null
           picked_up_at?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
           status?: string
           store_order_id?: string | null
           updated_at?: string
@@ -19593,9 +19599,12 @@ export type Database = {
           delivery_lat?: number | null
           delivery_lng?: number | null
           delivery_notes?: string | null
+          driver_id?: string | null
           id?: string
           invoice_id?: string | null
           picked_up_at?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string | null
           status?: string
           store_order_id?: string | null
           updated_at?: string
@@ -19606,6 +19615,13 @@ export type Database = {
             columns: ["biker_id"]
             isOneToOne: false
             referencedRelation: "bikers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_tasks_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
             referencedColumns: ["id"]
           },
           {
@@ -43771,7 +43787,10 @@ export type Database = {
         Row: {
           created_at: string
           delivered_at: string | null
+          delivery_address: string | null
           delivery_fee: number
+          delivery_lat: number | null
+          delivery_lng: number | null
           driver_id: string | null
           estimated_delivery: string | null
           generated_by_ai: boolean | null
@@ -43781,6 +43800,8 @@ export type Database = {
           order_number: string
           payment_method: string | null
           payment_status: string
+          recipient_name: string | null
+          recipient_phone: string | null
           status: string
           store_id: string
           subtotal: number
@@ -43791,7 +43812,10 @@ export type Database = {
         Insert: {
           created_at?: string
           delivered_at?: string | null
+          delivery_address?: string | null
           delivery_fee?: number
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           driver_id?: string | null
           estimated_delivery?: string | null
           generated_by_ai?: boolean | null
@@ -43801,6 +43825,8 @@ export type Database = {
           order_number: string
           payment_method?: string | null
           payment_status?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           status?: string
           store_id: string
           subtotal?: number
@@ -43811,7 +43837,10 @@ export type Database = {
         Update: {
           created_at?: string
           delivered_at?: string | null
+          delivery_address?: string | null
           delivery_fee?: number
+          delivery_lat?: number | null
+          delivery_lng?: number | null
           driver_id?: string | null
           estimated_delivery?: string | null
           generated_by_ai?: boolean | null
@@ -43821,6 +43850,8 @@ export type Database = {
           order_number?: string
           payment_method?: string | null
           payment_status?: string
+          recipient_name?: string | null
+          recipient_phone?: string | null
           status?: string
           store_id?: string
           subtotal?: number
