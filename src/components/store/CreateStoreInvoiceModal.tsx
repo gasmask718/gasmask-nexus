@@ -650,6 +650,7 @@ export function CreateStoreInvoiceModal({
       
       // Invalidate ALL invoice and order-related queries for full system coherence
       queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-ledger'] });
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
       // CRITICAL: Invalidate unified feed to sync Floor 5
       queryClient.invalidateQueries({ queryKey: ['unified-invoice-feed'] });

@@ -23,7 +23,7 @@ import {
   CreditCard, FileText, RotateCcw, Plus
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { useWholesalerFinancials } from '@/hooks/useWholesalerFinancials';
+import { useInvoiceLedger } from '@/hooks/useInvoiceLedger';
 import { InvoiceHistoryCard } from '@/components/store/InvoiceHistoryCard';
 import { CreateStoreInvoiceModal } from '@/components/store/CreateStoreInvoiceModal';
 
@@ -45,7 +45,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
   onCreateOrder,
 }) => {
   const queryClient = useQueryClient();
-  const financials = useWholesalerFinancials(orders);
+  const { metrics: financials } = useInvoiceLedger('wholesaler', wholesalerId);
   const [createInvoiceModalOpen, setCreateInvoiceModalOpen] = useState(false);
 
   // Fetch returns
@@ -63,13 +63,9 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
     enabled: !!wholesalerId,
   });
 
-  const latePayments = payments.filter(p => !p.on_time);
-  const punctualityRate = payments.length > 0 
-    ? Math.round((payments.filter(p => p.on_time).length / payments.length) * 100) 
-    : 100;
-  const avgDaysToPayment = payments.length > 0 
-    ? Math.round(payments.reduce((a: number, p: any) => a + (p.days_from_invoice || 0), 0) / payments.length) 
-    : 0;
+  // Payment reliability now derived from invoices via useInvoiceLedger
+  const punctualityRate = financials.punctualityRate;
+  const avgDaysToPayment = financials.avgDaysToPayment;
 
   const openDisputes = disputes.filter((d: any) => d.status !== 'resolved');
   const pendingReturns = returns.filter((r: any) => r.status === 'pending');
@@ -101,7 +97,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
             <KPICard label="Lifetime Purchases" value={`$${financials.lifetimeSpend.toLocaleString()}`} icon={DollarSign} accent="text-emerald-400" />
             <KPICard label="30-Day Spend" value={`$${financials.spend30.toLocaleString()}`} trend={financials.trendPercent} icon={TrendingUp} accent="text-blue-400" />
             <KPICard label="Avg Order Size" value={`$${Math.round(financials.avgOrderValue).toLocaleString()}`} icon={CreditCard} accent="text-purple-400" />
-            <KPICard label="Open Balance" value="—" sub="See Invoices tab" icon={FileText} accent="text-red-400" />
+            <KPICard label="Open Balance" value={`$${financials.openBalance.toLocaleString()}`} icon={FileText} accent="text-red-400" />
           </div>
 
           {/* Spend Breakdown */}
@@ -132,7 +128,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Late Payments</span>
-                <span className="text-sm font-medium text-red-400">{latePayments.length}</span>
+                <span className="text-sm font-medium text-red-400">{financials.latePayments}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Payment Terms</span>
@@ -141,23 +137,23 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
             </CardContent>
           </Card>
 
-          {/* Recent Orders */}
+          {/* Recent Orders — driven by invoices */}
           <Card className="bg-card/50 border-border/50">
             <CardHeader className="pb-2"><CardTitle className="text-sm">Recent Orders</CardTitle></CardHeader>
             <CardContent>
-              {orders.length === 0 ? (
+              {financials.recentInvoices.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">No orders yet</p>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {orders.slice(0, 10).map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
+                  {financials.recentInvoices.map((inv) => (
+                    <div key={inv.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
                       <div>
-                        <p className="text-sm font-medium">{order.order_number || format(new Date(order.order_date || order.created_at), 'MMM d, yyyy')}</p>
-                        <p className="text-xs text-muted-foreground">{order.items_count || 0} items</p>
+                        <p className="text-sm font-medium">{inv.invoice_number || format(new Date(inv.created_at), 'MMM d, yyyy')}</p>
+                        <p className="text-xs text-muted-foreground">{format(new Date(inv.created_at), 'MMM d, yyyy')}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold">${(order.total_amount || 0).toLocaleString()}</p>
-                        <Badge variant="outline" className="text-xs">{order.status || 'pending'}</Badge>
+                        <p className="text-sm font-bold">${inv.total_amount.toLocaleString()}</p>
+                        <Badge variant="outline" className="text-xs capitalize">{inv.payment_status || 'draft'}</Badge>
                       </div>
                     </div>
                   ))}
@@ -225,7 +221,7 @@ export const WholesalerSupplyTab: React.FC<WholesalerSupplyTabProps> = ({
           <RiskSignalsView 
             payments={payments} disputes={disputes} orders={orders}
             profile={profile} punctualityRate={punctualityRate}
-            latePayments={latePayments} openDisputes={openDisputes}
+            latePaymentsCount={financials.latePayments} openDisputes={openDisputes}
           />
         </TabsContent>
       </Tabs>
@@ -324,9 +320,9 @@ function SKUBreakdownView({ orders }: { orders: any[] }) {
   );
 }
 
-function RiskSignalsView({ payments, disputes, orders, profile, punctualityRate, latePayments, openDisputes }: {
+function RiskSignalsView({ payments, disputes, orders, profile, punctualityRate, latePaymentsCount, openDisputes }: {
   payments: any[]; disputes: any[]; orders: any[]; profile: any;
-  punctualityRate: number; latePayments: any[]; openDisputes: any[];
+  punctualityRate: number; latePaymentsCount: number; openDisputes: any[];
 }) {
   const signals: { type: 'critical' | 'warning' | 'info'; label: string; detail: string }[] = [];
 
@@ -334,7 +330,7 @@ function RiskSignalsView({ payments, disputes, orders, profile, punctualityRate,
   else if (punctualityRate < 80) signals.push({ type: 'warning', label: 'Payment Reliability Declining', detail: `${punctualityRate}% on-time rate — watch closely` });
 
   if (openDisputes.length > 0) signals.push({ type: 'critical', label: `${openDisputes.length} Open Dispute(s)`, detail: openDisputes.map((d: any) => d.dispute_type).join(', ') });
-  if (latePayments.length > 3) signals.push({ type: 'warning', label: 'Repeat Late Payer', detail: `${latePayments.length} late payments on record` });
+  if (latePaymentsCount > 3) signals.push({ type: 'warning', label: 'Repeat Late Payer', detail: `${latePaymentsCount} late payments on record` });
 
   const recentOrders = orders.filter(o => new Date(o.order_date || o.created_at) > new Date(Date.now() - 30 * 86400000));
   const prevOrders = orders.filter(o => {
