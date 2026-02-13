@@ -13,6 +13,7 @@ import Shop from '@/pages/Shop';
 import Cart from '@/pages/Cart';
 import Checkout from '@/pages/Checkout';
 import NotFound from '@/pages/NotFound';
+import TWLLanding from '@/pages/TWLLanding';
 import PortalLogin from '@/pages/portal/PortalLogin';
 import PortalRegister from '@/pages/portal/PortalRegister';
 import DriverLogin from '@/pages/portal/DriverLogin';
@@ -555,6 +556,7 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PUBLIC ROUTES (No authentication required)                                   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/shop" element={<Shop />} />
       <Route path="/cart" element={<Cart />} />
