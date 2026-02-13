@@ -1,113 +1,86 @@
 
 
-# Phase 2.5 -- Layer 3: Read-Only Escalation Flags
+# Phase: Fix Biker Portal Location Pipeline
 
-## Overview
+## Problems Found
 
-This layer adds computed, read-only warning signals derived from existing data (delivery_checklists.outcome_summary, invoices, store_contacts). Flags are never stored, never trigger actions, and disappear naturally when conditions clear. They surface in three locations: the Delivery Memory Snapshot, the field Store List, and the Store Profile.
+### Problem 1: Location writes from the Biker Portal SILENTLY FAIL
+The `LiveLocationMap` component (used in the biker portal's MyDayDashboard) inserts location events with `event_type: 'live_tracking'`. But the database constraint only allows: `'arrival', 'departure', 'idle', 'gps_ping'`. Every GPS write from the portal is rejected and the error is swallowed silently.
 
-## Step 0: UI Verification Gate
+### Problem 2: Admin cannot read biker location data (RLS blocks it)
+The `BikerLocationPreview` on `/delivery/bikers/:id` queries `location_events` for the biker's `user_id`. But the RLS policy only allows `auth.uid() = user_id` -- meaning only the biker themselves can see their own location. An admin viewing the profile page gets zero results.
 
-Before any new code, we confirm all existing layers render:
-- **Delivery Memory Snapshot** -- rendered in `DeliveryTaskCard.tsx` line 100
-- **Pinned Notes** -- rendered inside the snapshot via `PinnedNotesSnapshotPanel` (line 50 of `DeliveryMemorySnapshot.tsx`) and in `StoreDetail.tsx` via `PinnedNotesSection`
-- **Quick Capture Enforcement** -- gated via `FieldOutcomeCaptureModal` (lines 225-232 of `DeliveryTaskCard.tsx`), "Complete Visit" button disabled until modal submitted
+### Problem 3: Biker-to-User ID linkage is often missing
+Many bikers in the `bikers` table have `user_id = NULL`. The `ensureBikerRecord` in `PortalAuthGuard` tries to auto-heal this on portal login, but the `BikerLocationPreview` needs the `user_id` to query `location_events`. If the linkage doesn't exist, no location is found.
 
-All three are structurally in place. Any rendering issues will be fixed before proceeding.
+### Problem 4: No portal login detection signal
+There's no explicit "biker is online" signal. The only indicator is whether recent `location_events` exist, but since those writes fail (Problem 1), the admin side never sees the biker as active.
 
 ---
 
-## Step 1: New Hook -- `useEscalationFlags`
+## Fix Plan
 
-**File**: `src/hooks/useEscalationFlags.ts`
+### Fix 1: Update the DB constraint to allow 'live_tracking'
+Add a migration that drops and re-creates the `event_type_check` constraint to include `'live_tracking'` alongside the existing allowed values.
 
-A single hook that accepts a `storeId` and derives flags at query time from existing tables. No new database tables or views needed.
+### Fix 2: Add an admin-readable RLS policy on `location_events`
+Add a SELECT policy that allows users with admin/owner/va/ceo roles (looked up from `user_profiles` or `user_roles`) to read all location events. This keeps the existing self-read policy intact.
 
-**Data sources queried (parallel fetch)**:
-1. `delivery_checklists` where `store_id = X` and `completed_at >= 30 days ago` -- extract `outcome_summary->>'outcome_type'` values
-2. `invoices` where `store_id = X` and `payment_status != 'paid'` and `deleted_at IS NULL` -- for overdue payment duration
+### Fix 3: Fix the `LiveLocationMap` to log on first position (not just every 30s)
+Currently the first GPS log only happens after 30 seconds. Change it to also log immediately on first position acquisition so the admin sees data right away.
 
-**Flag definitions (constants, easily tunable)**:
+### Fix 4: Add a `portal_session_active` event on portal login
+When a biker logs into the portal, insert a location event with `event_type: 'gps_ping'` (or a new allowed type) so the admin side can detect the biker is online even before GPS coordinates arrive.
 
-| Flag | Condition | Severity |
-|------|-----------|----------|
-| Repeated Payment Refusal | >= 2 `payment_refused` outcomes in 30 days | high |
-| Unresponsive Store | >= 3 `not_available` outcomes in 30 days | medium |
-| High Visits / Low Orders | >= 3 visits with no `order_placed` outcome | medium |
-| Dispute Pattern | >= 2 `issue_conflict` outcomes in 30 days | high |
+---
 
-**Output shape**:
-```typescript
-interface EscalationFlag {
-  flag_type: string;
-  label: string;
-  severity: 'low' | 'medium' | 'high';
-  occurrences: number;
-}
+## Technical Details
+
+### Migration SQL
+```sql
+-- Allow 'live_tracking' in event_type
+ALTER TABLE public.location_events DROP CONSTRAINT location_events_event_type_check;
+ALTER TABLE public.location_events ADD CONSTRAINT location_events_event_type_check
+  CHECK (event_type = ANY (ARRAY['arrival','departure','idle','gps_ping','live_tracking']));
+
+-- Admin can read all location events
+CREATE POLICY "Admins can view all location events"
+ON location_events FOR SELECT
+USING (
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE user_profiles.user_id = auth.uid()
+    AND user_profiles.primary_role IN ('admin','owner','ceo','va')
+  )
+  OR
+  EXISTS (
+    SELECT 1 FROM user_roles
+    WHERE user_roles.user_id = auth.uid()
+    AND user_roles.role IN ('admin','owner','dynasty_owner','super_admin')
+  )
+);
 ```
 
-Cached with 60s staleTime. No writes. Pure derivation.
+### Code Changes
 
-**Batch variant**: `useEscalationFlagsBatch(storeIds: string[])` for directory-level rendering -- single query, grouped by store_id.
+**`src/components/map/LiveLocationMap.tsx`**
+- Log location immediately on first GPS fix (not just every 30 seconds)
+- Change `event_type` from `'live_tracking'` to `'gps_ping'` as a fallback-safe option (or keep `'live_tracking'` since the constraint will be updated)
 
----
+**`src/components/portal/PortalAuthGuard.tsx`**
+- After successful auth guard pass, fire an initial `location_events` insert with `event_type: 'gps_ping'` and null lat/lng as a "session start" signal, so the admin side knows the biker is online
 
-## Step 2: Escalation Flag Badge Component
+**`src/components/map/BikerLocationPreview.tsx`**
+- Add `'live_tracking'` to the event types it looks for (already queries all types, so this works automatically once data flows)
+- Add a "Last seen" freshness indicator (e.g., green = <5min ago, yellow = <30min, gray = older)
 
-**File**: `src/components/delivery/EscalationFlagBadge.tsx`
+### Files to modify
+1. New migration SQL (constraint + RLS policy)
+2. `src/components/map/LiveLocationMap.tsx` -- immediate first log
+3. `src/components/portal/PortalAuthGuard.tsx` -- session start signal
+4. `src/components/map/BikerLocationPreview.tsx` -- freshness indicator
 
-A small, reusable visual component that renders a single flag as an icon + text badge. Severity maps to color (high = red, medium = amber, low = muted). Read-only, no click actions.
-
-**File**: `src/components/delivery/EscalationFlagsPanel.tsx`
-
-A panel component that renders all active flags for a store. Used inside the Delivery Memory Snapshot as a warning strip below pinned notes but above payment recall.
-
----
-
-## Step 3: Surface in Delivery Memory Snapshot
-
-**File modified**: `src/components/delivery/DeliveryMemorySnapshot.tsx`
-
-Add `EscalationFlagsPanel` between the Pinned Notes panel and the Last Visit line. Only renders if flags exist. Visual style: subtle warning strip with icons, not blocking.
-
----
-
-## Step 4: Surface in Field Store List
-
-**File modified**: `src/components/portal/field/StoreListPage.tsx`
-
-Use `useEscalationFlagsBatch` for all visible store IDs. For each store card row, render a compact `EscalationFlagBadge` (highest-severity flag only) next to existing badges. Tooltip shows full flag list on hover/tap.
-
----
-
-## Step 5: Surface in Store Profile
-
-**File modified**: `src/pages/StoreDetail.tsx`
-
-Add `EscalationFlagsPanel` near the top of the store profile page, after pinned notes. Read-only, same visual treatment as the snapshot version.
-
----
-
-## What This Does NOT Do
-
-- No new database tables or migrations
-- No stored flags or judgments
-- No status changes to stores
-- No blocking of any workflow
-- No notifications or automation
-- No AI decisions
-- Flags disappear automatically when the pattern clears (rolling 30-day window)
-
-## Files Summary
-
-| Action | File |
-|--------|------|
-| Create | `src/hooks/useEscalationFlags.ts` |
-| Create | `src/components/delivery/EscalationFlagBadge.tsx` |
-| Create | `src/components/delivery/EscalationFlagsPanel.tsx` |
-| Modify | `src/components/delivery/DeliveryMemorySnapshot.tsx` |
-| Modify | `src/components/portal/field/StoreListPage.tsx` |
-| Modify | `src/pages/StoreDetail.tsx` |
-
-No database migrations required. All data is derived from existing `delivery_checklists.outcome_summary` JSONB and `invoices` tables.
-
+### No breaking changes
+- Existing location reads/writes unaffected
+- Existing RLS self-read policy preserved
+- BikerLocationPreview already handles missing data gracefully
