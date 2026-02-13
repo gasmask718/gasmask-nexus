@@ -104,12 +104,19 @@ export function LiveLocationMap({ className = '', height = '300px' }: LiveLocati
 
     let logInterval: ReturnType<typeof setInterval> | null = null;
     let lastLoggedPos: { lat: number; lng: number } | null = null;
+    let hasLoggedFirst = false;
 
     watchId.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         setPosition({ lat, lng });
         lastLoggedPos = { lat, lng };
+
+        // Log immediately on first GPS fix
+        if (!hasLoggedFirst) {
+          hasLoggedFirst = true;
+          logLocation(lat, lng);
+        }
 
         // Update marker position
         if (map.current) {

@@ -244,12 +244,18 @@ export function BikerLocationPreview({ bikerId, bikerName, className = '', heigh
             {isLoading && (
               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
             )}
-            {lastLocation ? (
-              <Badge variant="outline" className="text-xs">
-                <span className="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse" />
-                {new Date(lastLocation.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Badge>
-            ) : !isLoading ? (
+            {lastLocation ? (() => {
+              const ageMs = Date.now() - new Date(lastLocation.time).getTime();
+              const ageMin = Math.floor(ageMs / 60000);
+              const freshnessColor = ageMin < 5 ? 'bg-green-500' : ageMin < 30 ? 'bg-yellow-500' : 'bg-gray-400';
+              const freshnessLabel = ageMin < 1 ? 'Just now' : ageMin < 60 ? `${ageMin}m ago` : `${Math.floor(ageMin/60)}h ago`;
+              return (
+                <Badge variant="outline" className="text-xs">
+                  <span className={`w-2 h-2 rounded-full ${freshnessColor} inline-block mr-1.5 ${ageMin < 5 ? 'animate-pulse' : ''}`} />
+                  {freshnessLabel}
+                </Badge>
+              );
+            })() : !isLoading ? (
               <Badge variant="secondary" className="text-xs">
                 No GPS data yet
               </Badge>
