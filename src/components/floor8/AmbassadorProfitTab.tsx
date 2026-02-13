@@ -46,7 +46,7 @@ interface AmbassadorProfitTabProps {
 }
 
 export function AmbassadorProfitTab({ ambassadorId }: AmbassadorProfitTabProps) {
-  const { data: summary, isLoading: summaryLoading } = useAdminAmbassadorProfitDashboard(ambassadorId);
+  const { data: summary, isLoading: summaryLoading, isError: summaryError, error: summaryErr } = useAdminAmbassadorProfitDashboard(ambassadorId);
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [storeFilter, setStoreFilter] = useState<string>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
@@ -58,7 +58,7 @@ export function AmbassadorProfitTab({ ambassadorId }: AmbassadorProfitTabProps) 
     sale_channel: channelFilter !== 'all' ? channelFilter : undefined,
   }), [brandFilter, storeFilter, channelFilter]);
 
-  const { data: breakdown, isLoading: breakdownLoading } = useAdminAmbassadorProfitBreakdown(ambassadorId, filters);
+  const { data: breakdown, isLoading: breakdownLoading, isError: breakdownError } = useAdminAmbassadorProfitBreakdown(ambassadorId, filters);
   const { data: allBreakdown } = useAdminAmbassadorProfitBreakdown(ambassadorId);
 
   const brands = useMemo(() => [...new Set((allBreakdown || []).map(r => r.brand).filter(Boolean))], [allBreakdown]);
@@ -113,6 +113,26 @@ export function AmbassadorProfitTab({ ambassadorId }: AmbassadorProfitTabProps) 
         </div>
         <Skeleton className="h-96" />
       </div>
+    );
+  }
+
+  if (summaryError || breakdownError) {
+    const errMsg = (summaryErr as any)?.message || 'Unknown error';
+    return (
+      <Card className="border-destructive/30">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-destructive">Wholesale Profit Ledger Error</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Failed to load profit data for ambassador <code className="text-xs bg-muted px-1 py-0.5 rounded">{ambassadorId}</code>
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 font-mono">{errMsg}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 

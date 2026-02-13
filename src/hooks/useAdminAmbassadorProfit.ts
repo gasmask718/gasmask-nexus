@@ -18,10 +18,13 @@ export function useAdminAmbassadorProfitDashboard(ambassadorId?: string) {
       });
 
       if (error) {
-        console.error('Admin profit dashboard error:', error);
+        console.error('[Admin Wholesale Profit] Dashboard RPC error:', { ambassadorId, error: error.message, code: error.code });
         throw error;
       }
-      if (!data || data.length === 0) return null;
+      if (!data || data.length === 0) {
+        console.warn('[Admin Wholesale Profit] No dashboard data returned', { ambassadorId });
+        return null;
+      }
 
       const d = data[0];
       return {
@@ -63,8 +66,11 @@ export function useAdminAmbassadorProfitBreakdown(
       });
 
       if (error) {
-        console.error('Admin profit breakdown error:', error);
+        console.error('[Admin Wholesale Profit] Breakdown RPC error:', { ambassadorId, error: error.message, code: error.code });
         throw error;
+      }
+      if (!data || data.length === 0) {
+        console.warn('[Admin Wholesale Profit] No breakdown data returned', { ambassadorId, filters });
       }
 
       return (data || []).map((row: any): ProfitBreakdownRow => ({
