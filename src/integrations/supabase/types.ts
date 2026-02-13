@@ -2556,6 +2556,41 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_dispatch_feedback_reasons: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          feedback_id: string | null
+          id: string
+          reason_code: string
+          reason_text: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          feedback_id?: string | null
+          id?: string
+          reason_code: string
+          reason_text?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          feedback_id?: string | null
+          id?: string
+          reason_code?: string
+          reason_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_dispatch_feedback_reasons_feedback_id_fkey"
+            columns: ["feedback_id"]
+            isOneToOne: false
+            referencedRelation: "ai_dispatch_feedback"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_drift_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -3432,6 +3467,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_learning_runs: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          completed_at: string | null
+          data_window_end: string | null
+          data_window_start: string | null
+          id: string
+          initiated_by: string
+          proposed_diff: Json | null
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          started_at: string | null
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          data_window_end?: string | null
+          data_window_start?: string | null
+          id?: string
+          initiated_by: string
+          proposed_diff?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          completed_at?: string | null
+          data_window_end?: string | null
+          data_window_start?: string | null
+          id?: string
+          initiated_by?: string
+          proposed_diff?: Json | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          started_at?: string | null
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: []
       }
       ai_live_authorizations: {
         Row: {

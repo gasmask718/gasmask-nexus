@@ -4,13 +4,16 @@
 // No auto-dispatch. No mutations. Human-in-the-loop only.
 // Phase 5A: Telemetry tracking for learning analytics.
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   useAIDispatchSuggestions,
   type AIRecommendation,
   type AIDispatchSettings,
 } from '@/hooks/useAIDispatchSuggestions';
 import { useAIDispatchTelemetry } from '@/hooks/useAIDispatchTelemetry';
+import { FeedbackReasonModal } from './FeedbackReasonModal';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -74,6 +77,8 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
   const [requireDoubleConfirm, setRequireDoubleConfirm] = useState(false);
   const [pendingApply, setPendingApply] = useState<string | null>(null);
   const [visibilityTimestamps, setVisibilityTimestamps] = useState<Map<string, number>>(new Map());
+  const [feedbackModal, setFeedbackModal] = useState<{ open: boolean; feedbackId: string | null; eventType: 'applied' | 'dismissed' }>({ open: false, feedbackId: null, eventType: 'applied' });
+  const { user } = useAuth();
 
   const { recommendations, isLoading, totalSignals } = useAIDispatchSuggestions(settings);
   const { trackShown, trackApplied, trackDismissed, startIgnoreTimer, cancelIgnoreTimer } = useAIDispatchTelemetry();
@@ -105,9 +110,29 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
       : 0;
     trackApplied(rec, latencySeconds);
     
+    // Find the feedback ID for the reason modal
+    findFeedbackId(rec.store_id, 'applied');
+    
     setPendingApply(null);
     onApplySuggestion(rec);
   };
+
+  const findFeedbackId = useCallback(async (storeId: string, eventType: 'applied' | 'dismissed') => {
+    try {
+      const { data } = await supabase
+        .from('ai_dispatch_feedback')
+        .select('id')
+        .eq('store_id', storeId)
+        .eq('event_type', eventType)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (data?.[0]) {
+        setFeedbackModal({ open: true, feedbackId: data[0].id, eventType });
+      }
+    } catch {
+      // Silent — modal is optional
+    }
+  }, []);
 
   const handleDismiss = (storeId: string) => {
     const rec = recommendations.find(r => r.store_id === storeId);
@@ -117,6 +142,7 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
         ? Math.round((Date.now() - visibilityTimestamps.get(storeId)!) / 1000)
         : 0;
       trackDismissed(rec, latencySeconds);
+      findFeedbackId(storeId, 'dismissed');
     }
     setDismissedIds(prev => new Set(prev).add(storeId));
   };
@@ -436,6 +462,14 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
           </ScrollArea>
         )}
       </CardContent>
+
+      {/* Phase 5B: Optional Feedback Reason Modal */}
+      <FeedbackReasonModal
+        open={feedbackModal.open}
+        onClose={() => setFeedbackModal({ open: false, feedbackId: null, eventType: 'applied' })}
+        feedbackId={feedbackModal.feedbackId}
+        eventType={feedbackModal.eventType}
+      />
     </Card>
   );
 }

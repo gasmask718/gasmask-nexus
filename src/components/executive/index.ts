@@ -6,3 +6,5 @@ export { DirectiveBuilder } from './DirectiveBuilder';
 export { DirectivesPanel } from './DirectivesPanel';
 export { SimulationBoard } from './SimulationBoard';
 export { PowersMatrixPanel } from './PowersMatrixPanel';
+export { AIDispatchAnalytics } from './AIDispatchAnalytics';
+export { AILearningPanel } from './AILearningPanel';
