@@ -45,7 +45,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function ProfitContent() {
-  const { data: summary, isLoading: summaryLoading } = useAmbassadorProfitDashboard();
+  const { data: summary, isLoading: summaryLoading, profitDataStatus, isError: summaryError, error: summaryErr } = useAmbassadorProfitDashboard();
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [storeFilter, setStoreFilter] = useState<string>('all');
   const [channelFilter, setChannelFilter] = useState<string>('all');
@@ -115,6 +115,35 @@ function ProfitContent() {
           {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-28" />)}
         </div>
         <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  if (summaryError) {
+    const errMsg = (summaryErr as any)?.message || 'Unknown error';
+    return (
+      <div className="flex items-start gap-3 p-6 rounded-lg border border-destructive/30 bg-destructive/5">
+        <AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
+        <div>
+          <p className="font-semibold text-destructive">Wholesale Profit Ledger Error</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Could not load your wholesale profit data. This may be a permissions or mapping issue.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1 font-mono">{errMsg}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (profitDataStatus === 'empty') {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <DollarSign className="h-16 w-16 mx-auto mb-4 opacity-30" />
+        <p className="text-lg font-medium">No wholesale profit data available</p>
+        <p className="text-sm mt-2 max-w-md mx-auto">
+          This ambassador has not yet generated profit from wholesale box purchases,
+          or profit data has not been attributed yet.
+        </p>
       </div>
     );
   }

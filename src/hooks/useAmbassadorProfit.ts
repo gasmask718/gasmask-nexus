@@ -48,10 +48,12 @@ export interface ProfitBreakdownRow {
   profit_status: 'confirmed' | 'estimated';
 }
 
+export type ProfitDataStatus = 'loading' | 'empty' | 'loaded' | 'error';
+
 export function useAmbassadorProfitDashboard() {
   const { user } = useAuth();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: ['ambassador-profit-dashboard', user?.id],
     queryFn: async (): Promise<ProfitSummary | null> => {
       if (!user?.id) return null;
@@ -59,10 +61,13 @@ export function useAmbassadorProfitDashboard() {
       const { data, error } = await (supabase as any).rpc('get_my_profit_dashboard');
 
       if (error) {
-        console.error('Profit dashboard error:', error);
+        console.error('[Wholesale Profit Ledger] Dashboard RPC error:', { userId: user.id, error: error.message, code: error.code });
         throw error;
       }
-      if (!data || data.length === 0) return null;
+      if (!data || data.length === 0) {
+        console.warn('[Wholesale Profit Ledger] No dashboard data returned', { ambassadorUserId: user.id });
+        return null;
+      }
 
       const d = data[0];
       return {
@@ -85,6 +90,16 @@ export function useAmbassadorProfitDashboard() {
     },
     enabled: !!user?.id,
   });
+
+  const profitDataStatus: ProfitDataStatus = query.isLoading
+    ? 'loading'
+    : query.isError
+    ? 'error'
+    : query.data
+    ? 'loaded'
+    : 'empty';
+
+  return { ...query, profitDataStatus };
 }
 
 export function useAmbassadorProfitBreakdown(filters?: {
@@ -106,8 +121,11 @@ export function useAmbassadorProfitBreakdown(filters?: {
       });
 
       if (error) {
-        console.error('Profit breakdown error:', error);
+        console.error('[Wholesale Profit Ledger] Breakdown RPC error:', { userId: user.id, error: error.message, code: error.code });
         throw error;
+      }
+      if (!data || data.length === 0) {
+        console.warn('[Wholesale Profit Ledger] No breakdown data returned', { ambassadorUserId: user.id, filters });
       }
 
       return (data || []).map((row: any): ProfitBreakdownRow => ({
