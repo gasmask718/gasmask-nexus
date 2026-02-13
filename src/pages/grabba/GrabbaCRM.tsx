@@ -924,12 +924,7 @@ export default function GrabbaCRM() {
 
   const DriverCard = ({ driver }: { driver: any }) => (
     <Card 
-      className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg cursor-pointer"
-      onClick={() => {
-        setSelectedProfileEntity(driver);
-        setSelectedProfileType('driver');
-        setProfileModalOpen(true);
-      }}
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-blue-500/30 transition-all hover:shadow-lg"
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
@@ -978,6 +973,24 @@ export default function GrabbaCRM() {
                   <Button
                     size="icon"
                     variant="ghost"
+                    className="h-8 w-8 text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/delivery/drivers/${driver.id}`);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Profile</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
                     className="h-8 w-8"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1016,12 +1029,7 @@ export default function GrabbaCRM() {
 
   const BikerCard = ({ biker }: { biker: any }) => (
     <Card 
-      className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg cursor-pointer"
-      onClick={() => {
-        setSelectedProfileEntity(biker);
-        setSelectedProfileType('biker');
-        setProfileModalOpen(true);
-      }}
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-green-500/30 transition-all hover:shadow-lg"
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
@@ -1058,24 +1066,62 @@ export default function GrabbaCRM() {
             </div>
           </div>
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/delivery/bikers`);
-                  }}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>View Biker</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <div className="flex items-center gap-1">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/delivery/bikers/${biker.id}`);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View Profile</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(biker);
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Edit Biker</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteModal(biker);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Delete Biker</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -1083,12 +1129,7 @@ export default function GrabbaCRM() {
 
   const ProductionCard = ({ worker }: { worker: any }) => (
     <Card 
-      className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg cursor-pointer"
-      onClick={() => {
-        setSelectedProfileEntity(worker);
-        setSelectedProfileType('production' as EntityProfileType);
-        setProfileModalOpen(true);
-      }}
+      className="bg-card/50 backdrop-blur border-border/50 hover:border-purple-500/30 transition-all hover:shadow-lg"
     >
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
@@ -1124,18 +1165,16 @@ export default function GrabbaCRM() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8"
+                    className="h-8 w-8 text-primary"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedProfileEntity(worker);
-                      setSelectedProfileType('production' as EntityProfileType);
-                      setProfileModalOpen(true);
+                      navigate(`/portals/production/staff/${worker.user_id}`);
                     }}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>View Details</TooltipContent>
+                <TooltipContent>View Profile</TooltipContent>
               </Tooltip>
             </TooltipProvider>
             <TooltipProvider>
