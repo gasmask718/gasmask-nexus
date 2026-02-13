@@ -23,3 +23,4 @@ export { RouteDetailDrawer } from './RouteDetailDrawer';
 export { DispatchIntakePanel } from './DispatchIntakePanel';
 export { DispatchContextBadges } from './DispatchContextBadges';
 export { StopResolutionDialog } from './StopResolutionDialog';
+export { AISuggestionsPanel } from './AISuggestionsPanel';
