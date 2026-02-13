@@ -15,6 +15,12 @@ import { toast } from 'sonner';
 import { Route, MapPin, Calendar, Search, Users, Plus, X, FileStack } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 
+interface BrandStopContext {
+  store_id: string;
+  brand_id?: string;
+  order_ids?: string[];
+}
+
 interface RouteAssignmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -24,6 +30,14 @@ interface RouteAssignmentDialogProps {
   assigneeUserId?: string | null;
   /** Enable bulk mode with multi-assignee / multi-date */
   bulkMode?: boolean;
+  /** Pre-selected stores (e.g. from Floor 4 multi-brand board) */
+  preselectedStores?: string[];
+  /** Brand context per stop for multi-brand routes */
+  brandStopContext?: BrandStopContext[];
+  /** Brand IDs to tag on the route */
+  brandIds?: string[];
+  /** Pre-filled territory */
+  prefilledTerritory?: string;
 }
 
 export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
@@ -34,14 +48,18 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   assigneeType,
   assigneeUserId,
   bulkMode: initialBulkMode = false,
+  preselectedStores,
+  brandStopContext,
+  brandIds,
+  prefilledTerritory,
 }) => {
   const queryClient = useQueryClient();
   const [isBulkMode, setIsBulkMode] = useState(initialBulkMode);
   const [routeDate, setRouteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [bulkDates, setBulkDates] = useState<string[]>([format(new Date(), 'yyyy-MM-dd')]);
-  const [territory, setTerritory] = useState('');
+  const [territory, setTerritory] = useState(prefilledTerritory || '');
   const [notes, setNotes] = useState('');
-  const [selectedStores, setSelectedStores] = useState<string[]>([]);
+  const [selectedStores, setSelectedStores] = useState<string[]>(preselectedStores || []);
   const [storeSearch, setStoreSearch] = useState('');
   const [selectedAssignees, setSelectedAssignees] = useState<{ id: string; name: string; userId?: string | null }[]>([
     { id: assigneeId, name: assigneeName, userId: assigneeUserId },
@@ -174,19 +192,25 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
               date,
               status: 'pending',
               territory: territory || null,
+              brand_ids: brandIds || [],
             })
             .select('id')
             .single();
 
           if (routeError) throw routeError;
 
-          const stops = selectedStores.map((storeId, index) => ({
-            route_id: route.id,
-            store_id: storeId,
-            planned_order: index + 1,
-            status: 'pending',
-            notes_to_worker: notes || null,
-          }));
+          const stops = selectedStores.map((storeId, index) => {
+            const brandCtx = brandStopContext?.find(b => b.store_id === storeId);
+            return {
+              route_id: route.id,
+              store_id: storeId,
+              planned_order: index + 1,
+              status: 'pending',
+              notes_to_worker: notes || null,
+              brand_id: brandCtx?.brand_id || null,
+              order_ids: brandCtx?.order_ids || [],
+            };
+          });
 
           const { error: stopsError } = await supabase.from('route_stops').insert(stops);
           if (stopsError) throw stopsError;
@@ -208,9 +232,9 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   });
 
   const resetForm = () => {
-    setSelectedStores([]);
+    setSelectedStores(preselectedStores || []);
     setNotes('');
-    setTerritory('');
+    setTerritory(prefilledTerritory || '');
     setStoreSearch('');
     setBulkDates([format(new Date(), 'yyyy-MM-dd')]);
     setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId }]);

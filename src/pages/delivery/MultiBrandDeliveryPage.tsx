@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +19,7 @@ import {
   Truck, 
   Merge, 
   Split, 
-  Send,
+  Send,  // kept for future use
   Filter,
   Building2,
   TrendingUp,
@@ -458,20 +459,30 @@ export default function MultiBrandDeliveryPage() {
     setSelectedItems([]);
   };
 
-  const handleSendToRouter = () => {
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+
+  // Compute selected stores + brand context for assignment
+  const assignmentContext = useMemo(() => {
+    const selectedDeliveries = deliveryItems.filter((i) => selectedItems.includes(i.id));
+    const storeIds = [...new Set(selectedDeliveries.map((i) => i.store_id))];
+    const brands = [...new Set(selectedDeliveries.map((i) => i.brand))];
+    const brandStopContext = storeIds.map(storeId => {
+      const storeDeliveries = selectedDeliveries.filter(d => d.store_id === storeId);
+      return {
+        store_id: storeId,
+        brand_id: storeDeliveries[0]?.brand,
+        order_ids: storeDeliveries.map(d => d.invoice_id).filter(Boolean) as string[],
+      };
+    });
+    return { storeIds, brands, brandStopContext };
+  }, [selectedItems, deliveryItems]);
+
+  const handleAssignRoute = () => {
     if (selectedItems.length === 0) {
       toast.error("Please select at least one delivery item");
       return;
     }
-    
-    const selectedStores = [...new Set(
-      deliveryItems
-        .filter((i) => selectedItems.includes(i.id))
-        .map((i) => i.store_id)
-    )];
-    
-    toast.success(`Sending ${selectedStores.length} stores to Route Optimizer`);
-    navigate("/delivery/route-optimizer");
+    setAssignDialogOpen(true);
   };
 
   const getPriorityBadge = (priority: string) => {
@@ -560,9 +571,9 @@ export default function MultiBrandDeliveryPage() {
               <Merge className="h-4 w-4 mr-2" />
               Merge Deliveries
             </Button>
-            <Button onClick={handleSendToRouter} disabled={selectedItems.length === 0}>
-              <Send className="h-4 w-4 mr-2" />
-              Send to Router
+            <Button onClick={handleAssignRoute} disabled={selectedItems.length === 0}>
+              <Truck className="h-4 w-4 mr-2" />
+              Assign Route
             </Button>
           </div>
         </div>
@@ -906,6 +917,19 @@ export default function MultiBrandDeliveryPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Route Assignment Dialog — integrated with dispatch circuit */}
+      <RouteAssignmentDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        bulkMode={true}
+        preselectedStores={assignmentContext.storeIds}
+        brandStopContext={assignmentContext.brandStopContext}
+        brandIds={assignmentContext.brands}
+      />
     </div>
   );
 }

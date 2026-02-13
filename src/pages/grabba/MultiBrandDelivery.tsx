@@ -1,254 +1,181 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Truck, MapPin, Package, CheckCircle, Phone, Navigation, X } from 'lucide-react';
+import { Truck, MapPin, Package, Phone, Navigation } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GRABBA_BRAND_CONFIG } from '@/config/grabbaSkyscraper';
 import { useCall } from '@/components/communication/CallProvider';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
-// Use correct brand colors from config
 const brandColors = {
-  GasMask: GRABBA_BRAND_CONFIG.gasmask.primary, // Red
-  HotMama: GRABBA_BRAND_CONFIG.hotmama.primary, // Rose-gold pink
-  GrabbaRUs: GRABBA_BRAND_CONFIG.grabba_r_us.primary, // Purple
-  HotScalati: GRABBA_BRAND_CONFIG.hotscolatti.primary // Orange
+  GasMask: GRABBA_BRAND_CONFIG.gasmask.primary,
+  HotMama: GRABBA_BRAND_CONFIG.hotmama.primary,
+  GrabbaRUs: GRABBA_BRAND_CONFIG.grabba_r_us.primary,
+  HotScalati: GRABBA_BRAND_CONFIG.hotscolatti.primary
 };
+
+const BRANDS = ['GasMask', 'HotMama', 'GrabbaRUs', 'HotScalati'];
 
 export default function MultiBrandDelivery() {
   const { initiateCall } = useCall();
-  const [completedStops, setCompletedStops] = useState<Set<number>>(new Set());
+  const [selectedStops, setSelectedStops] = useState<Set<string>>(new Set());
   const [callModalOpen, setCallModalOpen] = useState(false);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<{ name: string; address: string; phone?: string } | null>(null);
 
-  const { data: routes, isLoading } = useQuery({
-    queryKey: ['biker-routes-today'],
+  // Fetch stores with delivery demand
+  const { data: stores = [], isLoading } = useQuery({
+    queryKey: ['grabba-multi-brand-stores'],
     queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
-        .from('biker_routes')
-        .select('*, store_master(*)')
-        .eq('route_date', today);
-      
+        .from('stores')
+        .select('id, name, address_street, address_city, phone, boro')
+        .is('deleted_at', null)
+        .order('name')
+        .limit(20);
       if (error) throw error;
-      return data;
-    }
+      return data || [];
+    },
   });
 
-  // Mock delivery data with multiple brands per stop
-  const deliveryStops = [
-    {
-      id: 0,
-      storeName: '282 Nostrand Ave',
-      address: '282 Nostrand Ave, Brooklyn, NY',
-      phone: '(718) 555-0123',
-      brands: [
-        { brand: 'GasMask', boxes: 2, product: 'Premium Tubes' },
-        { brand: 'HotMama', boxes: 1, product: 'Rose Gold Edition' },
-        { brand: 'HotScalati', boxes: 1, product: 'Fire Orange' },
-        { brand: 'GrabbaRUs', boxes: 1, product: 'Classic Mix' }
-      ],
-      totalBoxes: 5,
-    },
-    {
-      id: 1,
-      storeName: 'Brooklyn Smoke Shop',
-      address: '445 Flatbush Ave, Brooklyn, NY',
-      phone: '(718) 555-0456',
-      brands: [
-        { brand: 'GasMask', boxes: 3, product: 'Street Lux' },
-        { brand: 'GrabbaRUs', boxes: 2, product: 'Bodega Special' }
-      ],
-      totalBoxes: 5,
-    },
-    {
-      id: 2,
-      storeName: 'Corner Deli',
-      address: '89 Bedford Ave, Brooklyn, NY',
-      phone: '(718) 555-0789',
-      brands: [
-        { brand: 'HotMama', boxes: 2, product: 'Luxury Line' },
-        { brand: 'HotScalati', boxes: 1, product: 'Chocolate Fire' }
-      ],
-      totalBoxes: 3,
-    }
-  ];
-
-  // Handlers for delivery actions
-  const handleMarkComplete = (stopId: number, storeName: string) => {
-    console.log('[GRABBA MULTI-RUN] Mark Complete clicked', { stopId, storeName });
-    setCompletedStops(prev => new Set([...prev, stopId]));
-    toast.success(`Delivery to ${storeName} marked as complete`);
+  const toggleStop = (storeId: string) => {
+    setSelectedStops(prev => {
+      const next = new Set(prev);
+      if (next.has(storeId)) next.delete(storeId);
+      else next.add(storeId);
+      return next;
+    });
   };
 
-  const handleCallStore = (stop: typeof deliveryStops[0]) => {
-    console.log('[GRABBA MULTI-RUN] Call Store clicked', { store: stop.storeName, phone: stop.phone });
-    setSelectedStore({ name: stop.storeName, address: stop.address, phone: stop.phone });
-    setCallModalOpen(true);
+  const selectAll = () => setSelectedStops(new Set(stores.map(s => s.id)));
+  const clearSelection = () => setSelectedStops(new Set());
+
+  const selectedStoreIds = useMemo(() => Array.from(selectedStops), [selectedStops]);
+
+  const handleAssignRoute = () => {
+    if (selectedStops.size === 0) {
+      toast.error("Select at least one stop to assign");
+      return;
+    }
+    setAssignDialogOpen(true);
   };
 
   const handleNavigate = (address: string) => {
-    console.log('[GRABBA MULTI-RUN] Navigate clicked', { address });
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
     window.open(mapsUrl, '_blank');
     toast.success('Opening Google Maps...');
   };
 
-  const getStopStatus = (stopId: number) => completedStops.has(stopId) ? 'completed' : 'pending';
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Multi-Brand Delivery Runs</h1>
-        <p className="text-muted-foreground mt-2">
-          Today's deliveries optimized by stop • Each store receives all 4 brands in one visit
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Multi-Brand Delivery Runs</h1>
+          <p className="text-muted-foreground mt-2">
+            Select stores and assign routes • All brands consolidated per stop
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={selectAll}>Select All</Button>
+          <Button variant="outline" size="sm" onClick={clearSelection}>Clear</Button>
+          <Button onClick={handleAssignRoute} disabled={selectedStops.size === 0}>
+            <Truck className="w-4 h-4 mr-2" />
+            Assign Route ({selectedStops.size})
+          </Button>
+        </div>
       </div>
 
-      {/* Daily Summary */}
+      {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-3xl font-bold">12</div>
-            <div className="text-sm text-muted-foreground">Total Stops</div>
+            <div className="text-3xl font-bold">{stores.length}</div>
+            <div className="text-sm text-muted-foreground">Available Stops</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-3xl font-bold">48</div>
-            <div className="text-sm text-muted-foreground">Total Boxes</div>
+            <div className="text-3xl font-bold">{BRANDS.length}</div>
+            <div className="text-sm text-muted-foreground">Active Brands</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-3xl font-bold">4</div>
-            <div className="text-sm text-muted-foreground">Active Bikers</div>
+            <div className="text-3xl font-bold text-primary">{selectedStops.size}</div>
+            <div className="text-sm text-muted-foreground">Selected Stops</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-3xl font-bold text-green-600">75%</div>
-            <div className="text-sm text-muted-foreground">Completed</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Delivery Map View */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <MapPin className="w-5 h-5" />
-              Route Optimization Map
-            </span>
-            <Button variant="outline" size="sm">
-              <Truck className="w-4 h-4 mr-2" />
-              Optimize Route
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 rounded-lg bg-muted flex items-center justify-center">
-            <div className="text-center">
-              <MapPin className="w-12 h-12 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-muted-foreground">Map View - Cluster Route Visualization</p>
-              <p className="text-sm text-muted-foreground mt-1">Shows optimized stops by proximity</p>
+            <div className="flex gap-1 flex-wrap">
+              {BRANDS.map(b => (
+                <Badge key={b} style={{ backgroundColor: brandColors[b as keyof typeof brandColors], color: 'white' }}>
+                  {b}
+                </Badge>
+              ))}
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Delivery Stops */}
-      <div className="space-y-4">
-        {deliveryStops.map((stop, i) => {
-          const status = getStopStatus(stop.id);
-          return (
-            <Card key={stop.id} className={status === 'completed' ? 'opacity-75' : ''}>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                      status === 'completed' ? 'bg-green-600 text-white' : 'bg-primary text-primary-foreground'
-                    }`}>
-                      {status === 'completed' ? <CheckCircle className="w-5 h-5" /> : i + 1}
-                    </div>
-                    <div>
-                      <div className="text-lg">{stop.storeName}</div>
-                      <div className="text-sm text-muted-foreground font-normal flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        {stop.address}
-                      </div>
-                    </div>
-                  </div>
-                  <Badge variant={status === 'completed' ? 'default' : 'outline'} className={status === 'completed' ? 'bg-green-600' : ''}>
-                    {status === 'completed' ? (
-                      <><CheckCircle className="w-3 h-3 mr-1" /> Completed</>
-                    ) : (
-                      'Pending'
-                    )}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                    <div className="flex items-center gap-2">
-                      <Package className="w-5 h-5 text-muted-foreground" />
-                      <span className="font-medium">Total: {stop.totalBoxes} boxes</span>
-                    </div>
-                    <span className="text-sm text-muted-foreground">1 stop • Multiple brands</span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {stop.brands.map((item, j) => (
-                      <div
-                        key={j}
-                        className="p-4 rounded-lg border"
-                        style={{ borderLeft: `4px solid ${brandColors[item.brand as keyof typeof brandColors]}` }}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge
-                            style={{
-                              backgroundColor: brandColors[item.brand as keyof typeof brandColors],
-                              color: 'white'
-                            }}
-                          >
-                            {item.brand}
-                          </Badge>
-                          <span className="font-bold">{item.boxes} boxes</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">{item.product}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    {status === 'pending' && (
-                      <>
-                        <Button size="sm" variant="default" onClick={() => handleMarkComplete(stop.id, stop.storeName)}>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Mark Complete
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleCallStore(stop)}>
-                          <Phone className="w-4 h-4 mr-2" />
-                          Call Store
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleNavigate(stop.address)}>
-                          <Navigation className="w-4 h-4 mr-2" />
-                          Navigate
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+            <div className="text-sm text-muted-foreground mt-2">Brands per Stop</div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Store list */}
+      {isLoading ? (
+        <div className="text-center py-8 text-muted-foreground">Loading stores...</div>
+      ) : (
+        <div className="space-y-3">
+          {stores.map((store, i) => {
+            const isSelected = selectedStops.has(store.id);
+            const address = [store.address_street, store.address_city, store.boro].filter(Boolean).join(', ');
+            return (
+              <Card key={store.id} className={isSelected ? 'border-primary/50' : ''}>
+                <CardHeader className="py-3">
+                  <CardTitle className="flex items-center gap-3 text-base">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleStop(store.id)}
+                    />
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-primary-foreground font-bold text-sm">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div>{store.name}</div>
+                      <div className="text-sm text-muted-foreground font-normal flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {address}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      {BRANDS.map(b => (
+                        <Badge key={b} variant="outline" style={{ borderColor: brandColors[b as keyof typeof brandColors], color: brandColors[b as keyof typeof brandColors] }}>
+                          {b}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-1">
+                      {store.phone && (
+                        <Button size="sm" variant="ghost" onClick={() => {
+                          setSelectedStore({ name: store.name, address, phone: store.phone || undefined });
+                          setCallModalOpen(true);
+                        }}>
+                          <Phone className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => handleNavigate(address)}>
+                        <Navigation className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Call Store Modal */}
       <Dialog open={callModalOpen} onOpenChange={setCallModalOpen}>
@@ -284,6 +211,18 @@ export default function MultiBrandDelivery() {
         </DialogContent>
       </Dialog>
 
+      {/* Route Assignment Dialog — feeds the single dispatch circuit */}
+      <RouteAssignmentDialog
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        assigneeId=""
+        assigneeName=""
+        assigneeType="driver"
+        bulkMode={true}
+        preselectedStores={selectedStoreIds}
+        brandIds={BRANDS}
+      />
+
       {/* AI Delivery Notes */}
       <Card>
         <CardHeader>
@@ -291,16 +230,16 @@ export default function MultiBrandDelivery() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
-              <p className="text-sm font-medium">Optimal Route Order</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Follow suggested sequence to save 15 minutes and reduce 3.2 miles
-              </p>
-            </div>
-            <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
               <p className="text-sm font-medium">Multi-Brand Efficiency</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Delivering all 4 brands per stop reduces total delivery time by 40%
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <p className="text-sm font-medium">Route Assignment</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select stops above and click "Assign Route" to create real routes through the dispatch circuit
               </p>
             </div>
           </div>
