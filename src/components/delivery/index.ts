@@ -20,3 +20,6 @@ export { RouteTemplateManager } from './RouteTemplateManager';
 export { RouteAssignmentDialog } from './RouteAssignmentDialog';
 export { RouteProfitabilityCard } from './RouteProfitabilityCard';
 export { RouteDetailDrawer } from './RouteDetailDrawer';
+export { DispatchIntakePanel } from './DispatchIntakePanel';
+export { DispatchContextBadges } from './DispatchContextBadges';
+export { StopResolutionDialog } from './StopResolutionDialog';

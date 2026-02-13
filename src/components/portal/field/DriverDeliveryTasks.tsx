@@ -11,10 +11,13 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useMyAssignedRoutes } from "@/hooks/delivery/useMyAssignedRoutes";
+import { DispatchContextBadges } from "@/components/delivery/DispatchContextBadges";
+import { StopResolutionDialog } from "@/components/delivery/StopResolutionDialog";
 
 export function DriverDeliveryTasks() {
   const navigate = useNavigate();
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [resolutionStop, setResolutionStop] = useState<any>(null);
 
   // CANONICAL: Use assigned routes instead of delivery_tasks
   const { flatStops: tasks, isLoading } = useMyAssignedRoutes();
@@ -74,17 +77,23 @@ export function DriverDeliveryTasks() {
                       {stop.notes_to_worker}
                     </p>
                   )}
+                  <DispatchContextBadges
+                    notesToWorker={stop.notes_to_worker}
+                    brandId={stop.brand_id}
+                    opportunityIds={stop.opportunity_ids}
+                    orderIds={stop.order_ids}
+                  />
                 </div>
                 <Badge
                   variant="outline"
                   className={
                     stop.status === "pending"
-                      ? "bg-blue-500/10 text-blue-700"
+                      ? "bg-primary/10 text-primary"
                       : stop.status === "arrived"
-                      ? "bg-yellow-500/10 text-yellow-700"
+                      ? "bg-muted text-muted-foreground"
                       : stop.status === "in_progress"
-                      ? "bg-purple-500/10 text-purple-700"
-                      : "bg-green-500/10 text-green-700"
+                      ? "bg-secondary text-secondary-foreground"
+                      : "bg-accent text-accent-foreground"
                   }
                 >
                   {stop.status.replace("_", " ")}
@@ -117,6 +126,18 @@ export function DriverDeliveryTasks() {
           </Card>
         );
       })}
+
+      {/* Post-Completion Resolution Dialog */}
+      {resolutionStop && (
+        <StopResolutionDialog
+          open={!!resolutionStop}
+          onOpenChange={(open) => !open && setResolutionStop(null)}
+          stopId={resolutionStop.id}
+          storeId={resolutionStop.store_id}
+          storeName={resolutionStop.store?.store_name || 'Store'}
+          opportunityIds={resolutionStop.opportunity_ids || []}
+        />
+      )}
     </div>
   );
 }
