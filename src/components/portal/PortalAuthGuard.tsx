@@ -46,7 +46,7 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
     }
   }, [user, profileData, portalType]);
 
-  // Log portal access for audit
+  // Log portal access for audit + fire session-start location signal
   useEffect(() => {
     if (user && profileData?.profile) {
       const roleValue = (profileData.profile as any).role || profileData.profile.primary_role;
@@ -56,6 +56,16 @@ export function PortalAuthGuard({ children, allowedRoles, portalType }: PortalAu
         action_type: 'portal_access',
         metadata: { role: String(roleValue || 'unknown') }
       }]).then(() => {});
+
+      // Fire a gps_ping with null coords as "session start" signal
+      if (portalType === 'biker' || portalType === 'driver') {
+        supabase.from('location_events').insert({
+          user_id: user.id,
+          event_type: 'gps_ping' as any,
+          lat: 0,
+          lng: 0,
+        }).then(() => {});
+      }
     }
   }, [user, profileData, portalType]);
 
