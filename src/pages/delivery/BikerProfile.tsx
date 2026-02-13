@@ -15,7 +15,7 @@ import {
   ArrowLeft, Bike, Phone, Mail, MapPin, Edit, 
   DollarSign, CheckCircle2, Clock, Calendar, 
   ClipboardCheck, AlertTriangle, TrendingUp, AlertCircle,
-  MessageCircle, StickyNote
+  MessageCircle, StickyNote, Route as RouteIcon
 } from 'lucide-react';
 import { useBikerIssues } from '@/hooks/useBikerIssues';
 import BikerPerformanceTab from '@/components/biker/BikerPerformanceTab';
@@ -24,12 +24,14 @@ import { ClickablePhone } from '@/components/communication/ClickablePhone';
 import { BikerLocationPreview } from '@/components/map/BikerLocationPreview';
 import { ConversationInbox } from '@/components/communication/ConversationInbox';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
+import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const [showRouteAssign, setShowRouteAssign] = useState(false);
 
   // Fetch biker details
   const { data: biker, isLoading } = useQuery({
@@ -393,9 +395,9 @@ const BikerProfile: React.FC = () => {
           <Button 
             variant="outline" 
             className="flex-1"
-            onClick={() => navigate('/delivery/biker-tasks')}
+            onClick={() => setShowRouteAssign(true)}
           >
-            <ClipboardCheck className="h-4 w-4 mr-2" /> Assign New Task
+            <RouteIcon className="h-4 w-4 mr-2" /> Assign Route
           </Button>
           <Button 
             variant="outline" 
@@ -405,6 +407,15 @@ const BikerProfile: React.FC = () => {
             <DollarSign className="h-4 w-4 mr-2" /> View Payouts
           </Button>
       </div>
+
+      <RouteAssignmentDialog
+        open={showRouteAssign}
+        onOpenChange={setShowRouteAssign}
+        assigneeId={bikerId || ''}
+        assigneeName={biker.full_name}
+        assigneeType="biker"
+        assigneeUserId={biker.user_id}
+      />
     </div>
   );
 };
