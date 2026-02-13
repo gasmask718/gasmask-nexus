@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -272,6 +273,7 @@ interface OrderAssignmentDialogProps {
 }
 
 function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, existingTask, onAssigned }: OrderAssignmentDialogProps) {
+  const { user } = useAuth();
   const [assigneeType, setAssigneeType] = useState<'biker' | 'driver'>(existingTask?.biker_id ? 'biker' : existingTask?.driver_id ? 'driver' : 'biker');
   const [assigneeId, setAssigneeId] = useState(existingTask?.biker_id || existingTask?.driver_id || '');
   const [deliveryAddress, setDeliveryAddress] = useState(
@@ -293,6 +295,7 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, existing
     try {
       const taskData: any = {
         store_order_id: order.id,
+        assigned_by: user?.id || null,
         delivery_address: deliveryAddress || null,
         delivery_lat: order.delivery_lat || order.store?.lat || null,
         delivery_lng: order.delivery_lng || order.store?.lng || null,
