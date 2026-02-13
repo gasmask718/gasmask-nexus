@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import { useMyAssignedRoutes } from "@/hooks/delivery/useMyAssignedRoutes";
 import { DispatchContextBadges } from "@/components/delivery/DispatchContextBadges";
+import { SLAAlertBadges } from "@/components/delivery/SLAAlertBadges";
+import { useSLAAlertForStore } from "@/hooks/useSLAAlerts";
 import { StopResolutionDialog } from "@/components/delivery/StopResolutionDialog";
 
 export function DriverDeliveryTasks() {
@@ -83,6 +85,7 @@ export function DriverDeliveryTasks() {
                     opportunityIds={stop.opportunity_ids}
                     orderIds={stop.order_ids}
                   />
+                  <StopSLAWarnings storeId={stop.store_id} />
                 </div>
                 <Badge
                   variant="outline"
@@ -140,4 +143,10 @@ export function DriverDeliveryTasks() {
       )}
     </div>
   );
+}
+
+/** Inline SLA warning for a single store stop */
+function StopSLAWarnings({ storeId }: { storeId: string }) {
+  const { data: alert } = useSLAAlertForStore(storeId);
+  return <SLAAlertBadges alert={alert} compact className="mt-0.5" />;
 }

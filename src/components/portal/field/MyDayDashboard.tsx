@@ -27,6 +27,8 @@ import { LiveLocationMap } from '@/components/map/LiveLocationMap';
 import { BikerDeliveryTasks } from './BikerDeliveryTasks';
 import { useMyAssignedRoutes } from '@/hooks/delivery/useMyAssignedRoutes';
 import { DispatchContextBadges } from '@/components/delivery/DispatchContextBadges';
+import { SLAAlertBadges } from '@/components/delivery/SLAAlertBadges';
+import { useSLAAlertForStore } from '@/hooks/useSLAAlerts';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -486,6 +488,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
                         opportunityIds={stop.opportunity_ids}
                         orderIds={stop.order_ids}
                       />
+                      <MyDayStopSLAWarnings storeId={stop.store_id} />
                     </div>
                     <Badge variant={isCompleted ? 'secondary' : 'outline'} className="shrink-0">
                       {isCompleted ? 'Done' : isInProgress ? 'In Progress' : 'Pending'}
@@ -499,4 +502,10 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
       </Card>
     </div>
   );
+}
+
+/** Inline SLA warning for a single store stop */
+function MyDayStopSLAWarnings({ storeId }: { storeId: string }) {
+  const { data: alert } = useSLAAlertForStore(storeId);
+  return <SLAAlertBadges alert={alert} compact className="mt-0.5" />;
 }
