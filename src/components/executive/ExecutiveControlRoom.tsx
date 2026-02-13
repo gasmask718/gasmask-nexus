@@ -36,6 +36,8 @@ import { PolicyViolationsLog } from './PolicyViolationsLog';
 import { DirectivesPanel } from './DirectivesPanel';
 import { SimulationBoard } from './SimulationBoard';
 import { PowersMatrixPanel } from './PowersMatrixPanel';
+import { AIDispatchAnalytics } from './AIDispatchAnalytics';
+import { AILearningPanel } from './AILearningPanel';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -253,6 +255,14 @@ export function ExecutiveControlRoom() {
             <AlertTriangle className="h-4 w-4" />
             Violations
           </TabsTrigger>
+          <TabsTrigger value="ai-analytics" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            AI Analytics
+          </TabsTrigger>
+          <TabsTrigger value="ai-learning" className="flex items-center gap-2">
+            <FlaskConical className="h-4 w-4" />
+            AI Learning
+          </TabsTrigger>
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Performance
@@ -425,6 +435,16 @@ export function ExecutiveControlRoom() {
         {/* Violations Tab */}
         <TabsContent value="violations">
           <PolicyViolationsLog businessId={businessId} />
+        </TabsContent>
+
+        {/* AI Analytics Tab (Read-Only) */}
+        <TabsContent value="ai-analytics">
+          <AIDispatchAnalytics />
+        </TabsContent>
+
+        {/* AI Learning Tab (Opt-In, Gated) */}
+        <TabsContent value="ai-learning">
+          <AILearningPanel />
         </TabsContent>
 
         {/* Performance Tab */}
