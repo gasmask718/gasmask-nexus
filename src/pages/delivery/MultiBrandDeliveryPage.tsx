@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
+import { DispatchIntakePanel } from "@/components/delivery/DispatchIntakePanel";
+import type { DispatchSignal } from "@/hooks/useDispatchIntakeView";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -461,6 +463,21 @@ export default function MultiBrandDeliveryPage() {
 
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
 
+  const handleDispatchSignalsSelected = (signals: DispatchSignal[]) => {
+    // Pre-populate the existing assignmentContext with dispatch signals
+    // This will be used when assigning routes
+    const context = {
+      storeIds: signals.map(s => s.store_id),
+      brandStopContext: signals.map(s => ({
+        store_id: s.store_id,
+        opportunity_ids: s.sources.opportunity_ids,
+      })),
+      brands: [],
+    };
+    // We'll pass these signals into the route assignment dialog via props
+    setAssignDialogOpen(true);
+  };
+
   // Compute selected stores + brand context for assignment
   const assignmentContext = useMemo(() => {
     const selectedDeliveries = deliveryItems.filter((i) => selectedItems.includes(i.id));
@@ -630,6 +647,7 @@ export default function MultiBrandDeliveryPage() {
           <TabsTrigger value="deliveries">Deliveries</TabsTrigger>
           <TabsTrigger value="matrix">Brand Matrix</TabsTrigger>
           <TabsTrigger value="opportunities">Opportunities ({intelligence.piggybackOpportunities.length})</TabsTrigger>
+          <TabsTrigger value="dispatch">Dispatch Intake</TabsTrigger>
         </TabsList>
 
         <TabsContent value="deliveries" className="space-y-4">
@@ -915,6 +933,10 @@ export default function MultiBrandDeliveryPage() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="dispatch">
+          <DispatchIntakePanel onStoresSelected={handleDispatchSignalsSelected} />
         </TabsContent>
       </Tabs>
 
