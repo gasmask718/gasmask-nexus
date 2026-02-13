@@ -39947,6 +39947,7 @@ export type Database = {
           id: string
           notes: string | null
           notes_to_worker: string | null
+          opportunity_ids: string[] | null
           order_ids: string[] | null
           planned_arrival_time: string | null
           planned_order: number
@@ -39965,6 +39966,7 @@ export type Database = {
           id?: string
           notes?: string | null
           notes_to_worker?: string | null
+          opportunity_ids?: string[] | null
           order_ids?: string[] | null
           planned_arrival_time?: string | null
           planned_order: number
@@ -39983,6 +39985,7 @@ export type Database = {
           id?: string
           notes?: string | null
           notes_to_worker?: string | null
+          opportunity_ids?: string[] | null
           order_ids?: string[] | null
           planned_arrival_time?: string | null
           planned_order?: number
