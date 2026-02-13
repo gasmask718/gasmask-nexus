@@ -8,8 +8,6 @@ import {
   Store, 
   Truck, 
   ClipboardCheck, 
-  AlertTriangle, 
-  Phone, 
   FileText, 
   Calendar,
   MapPin,
@@ -25,22 +23,12 @@ import { useTranslation } from '@/hooks/useTranslation';
 import { useToast } from '@/hooks/use-toast';
 import { PagePurpose, CardHelper } from '@/components/portal/guidance';
 import { usePrimaryResponsiveContactBatch } from '@/hooks/usePrimaryResponsiveContact';
-import { StoreContactIntelBadge } from '@/components/contact/StoreContactIntelBadge';
-import { PredictiveIntelCompact } from '@/components/contact/PredictiveIntelCompact';
 import { LiveLocationMap } from '@/components/map/LiveLocationMap';
 import { BikerDeliveryTasks } from './BikerDeliveryTasks';
+import { useMyAssignedRoutes } from '@/hooks/delivery/useMyAssignedRoutes';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
-}
-
-interface AssignedStop {
-  id: string;
-  store_id: string;
-  store_name: string;
-  address: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  visit_type: string;
 }
 
 interface PendingChange {
@@ -52,17 +40,25 @@ interface PendingChange {
 
 type ShiftStatus = 'not_started' | 'active' | 'ended';
 
+function getTimeOfDay() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Morning';
+  if (hour < 18) return 'Afternoon';
+  return 'Evening';
+}
+
 export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profileData } = useCurrentUserProfile();
   const { t, isRTL } = useTranslation();
-  const [assignedStops, setAssignedStops] = useState<AssignedStop[]>([]);
   const [pendingChanges, setPendingChanges] = useState<PendingChange[]>([]);
-  const [loading, setLoading] = useState(true);
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('not_started');
   const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // CANONICAL HOOK: Get assigned routes + route_stops for this worker
+  const { flatStops: assignedStops, isLoading: loading } = useMyAssignedRoutes();
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -72,7 +68,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
 
         const today = new Date().toISOString().split('T')[0];
 
-        // Check if shift is active today using driver_sessions
+        // Check if shift is active today
         const { data: sessionData } = await supabase
           .from('driver_sessions')
           .select('*')
@@ -89,32 +85,6 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
             setShiftStatus('active');
             setShiftStartTime(session.started_at ? new Date(session.started_at) : null);
           }
-        }
-
-        // Fetch today's assigned stops (from routes or assignments)
-        const { data: recentVisits } = await supabase
-          .from('store_visits')
-          .select(`
-            id,
-            store_id,
-            status,
-            visit_type,
-            store_master:store_id (store_name, address)
-          `)
-          .eq('visited_by', user.id)
-          .gte('created_at', today)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        if (recentVisits) {
-          setAssignedStops(recentVisits.map((v: any) => ({
-            id: v.id,
-            store_id: v.store_id,
-            store_name: v.store_master?.store_name || 'Unknown Store',
-            address: v.store_master?.address || '',
-            status: v.status || 'pending',
-            visit_type: v.visit_type,
-          })));
         }
 
         // Fetch pending field submissions (governance pipeline)
@@ -145,8 +115,6 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
         setUnreadMessages(Math.floor(Math.random() * 3));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
-      } finally {
-        setLoading(false);
       }
     }
 
@@ -185,7 +153,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   };
 
   const handleEndShift = async () => {
-    // Check if there are active deliveries
+    // Check if there are active stops
     const activeStops = assignedStops.filter(s => s.status === 'in_progress');
     if (activeStops.length > 0) {
       toast({
@@ -280,6 +248,7 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
         config={dashboardPurpose}
         variant="default"
       />
+
       {/* Shift Control Card */}
       <Card className={shiftStatus === 'active' ? 'border-success/50 bg-success/5' : shiftStatus === 'ended' ? 'border-muted' : 'border-warning/50 bg-warning/5'}>
         <CardContent className="py-4">
@@ -466,103 +435,61 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
           </div>
         </CardHeader>
         <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-            </div>
-          ) : assignedStops.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>{t('page.dashboard.no_stops')}</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => navigate(`${basePath}/stores`)}
+           {loading ? (
+             <div className="flex items-center justify-center py-8">
+               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+             </div>
+           ) : assignedStops.length === 0 ? (
+             <div className="text-center py-8 text-muted-foreground">
+               <Store className="h-12 w-12 mx-auto mb-2 opacity-50" />
+               <p>No routes assigned today.</p>
+               <Button 
+                 variant="outline" 
+                 className="mt-4"
+                 onClick={() => navigate(`${basePath}/stores`)}
               >
-                {t('action.browse_stores')}
+                Browse Stores
               </Button>
             </div>
           ) : (
             <div className="space-y-3">
-              {assignedStops.slice(0, 5).map((stop) => (
-                <div 
-                  key={stop.id} 
-                   className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors ${
-                     stop.status === 'completed' ? 'border-success/30 bg-success/5' : ''
-                   }`}
-                  onClick={() => navigate(`${basePath}/visit/${stop.id}`)}
-                >
-                   <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                     stop.status === 'completed' 
-                       ? 'bg-success/20 text-success' 
-                       : accentBg + ' ' + accentClass
-                   }`}>
-                    {stop.status === 'completed' ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <Store className="h-5 w-5" />
+              {assignedStops.slice(0, 5).map((stop) => {
+                const isCompleted = stop.status === 'completed';
+                const isInProgress = stop.status === 'in_progress';
+
+                return (
+                  <div 
+                    key={stop.id} 
+                    className={cn(
+                      'flex items-start justify-between gap-3 p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md',
+                      isCompleted ? 'bg-success/5 border-success/20' : 'bg-card hover:border-primary/50',
+                      isInProgress && 'border-warning/50 bg-warning/5'
                     )}
+                    onClick={() => navigate(`${basePath}/visit/${stop.store_id}`)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium truncate">{stop.store.store_name}</p>
+                        {isCompleted && <CheckCircle2 className="h-4 w-4 text-success shrink-0" />}
+                      </div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{stop.store.address || ''}</span>
+                      </p>
+                      {stop.notes_to_worker && (
+                        <p className="text-xs text-muted-foreground mt-1 italic">💬 {stop.notes_to_worker}</p>
+                      )}
+                    </div>
+                    <Badge variant={isCompleted ? 'secondary' : 'outline'} className="shrink-0">
+                      {isCompleted ? 'Done' : isInProgress ? 'In Progress' : 'Pending'}
+                    </Badge>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{stop.store_name}</p>
-                    <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {stop.address || 'No address'}
-                    </p>
-                    <StoreContactIntelBadge 
-                      contact={contactsByStore[stop.store_id]} 
-                      compact 
-                      className="mt-0.5" 
-                    />
-                    <PredictiveIntelCompact storeId={stop.store_id} className="mt-0.5" />
-                  </div>
-                  <Badge variant={stop.status === 'completed' ? 'default' : 'secondary'}>
-                    {stop.status}
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
       </Card>
-
-      {/* Pending Changes */}
-      {pendingChanges.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 text-amber-500" />
-              Pending Submissions
-            </CardTitle>
-            <CardDescription>Your changes awaiting review</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pendingChanges.map((change) => (
-                <div 
-                  key={change.id}
-                  className="flex items-center justify-between p-3 rounded-lg border"
-                >
-                  <div>
-                    <p className="font-medium">{change.store_name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Submitted {new Date(change.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge variant="secondary">{change.status}</Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
-}
-
-function getTimeOfDay(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Morning';
-  if (hour < 17) return 'Afternoon';
-  return 'Evening';
 }
