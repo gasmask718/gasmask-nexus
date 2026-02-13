@@ -9,9 +9,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Route, MapPin, Calendar, Search } from 'lucide-react';
-import { format } from 'date-fns';
+import { Route, MapPin, Calendar, Search, Users, Plus, X } from 'lucide-react';
+import { format, addDays } from 'date-fns';
 
 interface RouteAssignmentDialogProps {
   open: boolean;
@@ -20,6 +22,8 @@ interface RouteAssignmentDialogProps {
   assigneeName: string;
   assigneeType: 'driver' | 'biker';
   assigneeUserId?: string | null;
+  /** Enable bulk mode with multi-assignee / multi-date */
+  bulkMode?: boolean;
 }
 
 export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
@@ -29,15 +33,21 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
   assigneeName,
   assigneeType,
   assigneeUserId,
+  bulkMode: initialBulkMode = false,
 }) => {
   const queryClient = useQueryClient();
+  const [isBulkMode, setIsBulkMode] = useState(initialBulkMode);
   const [routeDate, setRouteDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [bulkDates, setBulkDates] = useState<string[]>([format(new Date(), 'yyyy-MM-dd')]);
   const [territory, setTerritory] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [storeSearch, setStoreSearch] = useState('');
+  const [selectedAssignees, setSelectedAssignees] = useState<{ id: string; name: string; userId?: string | null }[]>([
+    { id: assigneeId, name: assigneeName, userId: assigneeUserId },
+  ]);
 
-  // Fetch available stores for stops
+  // Fetch available stores
   const { data: stores = [] } = useQuery({
     queryKey: ['stores-for-route', storeSearch],
     queryFn: async () => {
@@ -47,14 +57,28 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
         .is('deleted_at', null)
         .order('name')
         .limit(50);
-      if (storeSearch) {
-        query = query.ilike('name', `%${storeSearch}%`);
-      }
+      if (storeSearch) query = query.ilike('name', `%${storeSearch}%`);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
     enabled: open,
+  });
+
+  // Fetch all workers of same type for bulk assignee selection
+  const { data: allWorkers = [] } = useQuery({
+    queryKey: ['all-workers-for-bulk', assigneeType],
+    queryFn: async () => {
+      const table = assigneeType === 'driver' ? 'drivers' : 'bikers';
+      const { data, error } = await supabase
+        .from(table)
+        .select('id, full_name, user_id')
+        .eq('status', 'active')
+        .order('full_name');
+      if (error) throw error;
+      return data;
+    },
+    enabled: open && isBulkMode,
   });
 
   const toggleStore = (storeId: string) => {
@@ -63,59 +87,93 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     );
   };
 
+  const addBulkDate = () => {
+    const lastDate = bulkDates[bulkDates.length - 1];
+    const next = format(addDays(new Date(lastDate), 1), 'yyyy-MM-dd');
+    setBulkDates((prev) => [...prev, next]);
+  };
+
+  const removeBulkDate = (index: number) => {
+    if (bulkDates.length <= 1) return;
+    setBulkDates((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleAssignee = (worker: { id: string; full_name: string; user_id?: string | null }) => {
+    setSelectedAssignees((prev) => {
+      const exists = prev.find((a) => a.id === worker.id);
+      if (exists) return prev.filter((a) => a.id !== worker.id);
+      return [...prev, { id: worker.id, name: worker.full_name, userId: worker.user_id }];
+    });
+  };
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['routes'] });
+    queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
+    queryClient.invalidateQueries({ queryKey: ['biker-routes'] });
+    queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
+    queryClient.invalidateQueries({ queryKey: ['biker-profile'] });
+    queryClient.invalidateQueries({ queryKey: ['driver-crm'] });
+    queryClient.invalidateQueries({ queryKey: ['biker-crm'] });
+    queryClient.invalidateQueries({ queryKey: ['deliveries'] });
+    queryClient.invalidateQueries({ queryKey: ['dispatch'] });
+    queryClient.invalidateQueries({ queryKey: ['store-checks'] });
+    queryClient.invalidateQueries({ queryKey: ['worker_payouts'] });
+  };
+
   const createRouteMutation = useMutation({
     mutationFn: async () => {
       if (selectedStores.length === 0) throw new Error('Select at least one stop');
 
-      // Use user_id for the FK to profiles, fallback to entity id
-      const assignedTo = assigneeUserId || assigneeId;
+      const dates = isBulkMode ? bulkDates : [routeDate];
+      const assignees = isBulkMode ? selectedAssignees : [{ id: assigneeId, name: assigneeName, userId: assigneeUserId }];
 
-      // Create the route
-      const { data: route, error: routeError } = await supabase
-        .from('routes')
-        .insert({
-          type: assigneeType,
-          assigned_to: assignedTo,
-          date: routeDate,
-          status: 'pending',
-          territory: territory || null,
-        })
-        .select('id')
-        .single();
+      if (assignees.length === 0) throw new Error('Select at least one assignee');
 
-      if (routeError) throw routeError;
+      let totalCreated = 0;
 
-      // Create route stops
-      const stops = selectedStores.map((storeId, index) => ({
-        route_id: route.id,
-        store_id: storeId,
-        planned_order: index + 1,
-        status: 'pending',
-        notes_to_worker: notes || null,
-      }));
+      // One route per assignee per date
+      for (const assignee of assignees) {
+        for (const date of dates) {
+          const assignedTo = assignee.userId || assignee.id;
 
-      const { error: stopsError } = await supabase.from('route_stops').insert(stops);
-      if (stopsError) throw stopsError;
+          const { data: route, error: routeError } = await supabase
+            .from('routes')
+            .insert({
+              type: assigneeType,
+              assigned_to: assignedTo,
+              date,
+              status: 'pending',
+              territory: territory || null,
+            })
+            .select('id')
+            .single();
+
+          if (routeError) throw routeError;
+
+          const stops = selectedStores.map((storeId, index) => ({
+            route_id: route.id,
+            store_id: storeId,
+            planned_order: index + 1,
+            status: 'pending',
+            notes_to_worker: notes || null,
+          }));
+
+          const { error: stopsError } = await supabase.from('route_stops').insert(stops);
+          if (stopsError) throw stopsError;
+          totalCreated++;
+        }
+      }
+
+      return totalCreated;
     },
-    onSuccess: () => {
-      // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['routes'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-routes'] });
-      queryClient.invalidateQueries({ queryKey: ['biker-routes'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-profile'] });
-      queryClient.invalidateQueries({ queryKey: ['biker-profile'] });
-      queryClient.invalidateQueries({ queryKey: ['driver-crm'] });
-      queryClient.invalidateQueries({ queryKey: ['biker-crm'] });
-      queryClient.invalidateQueries({ queryKey: ['deliveries'] });
-      queryClient.invalidateQueries({ queryKey: ['dispatch'] });
-      queryClient.invalidateQueries({ queryKey: ['store-checks'] });
-
-      toast.success(`Route assigned to ${assigneeName} for ${routeDate}`);
+    onSuccess: (count) => {
+      invalidateAll();
+      toast.success(`${count} route${count > 1 ? 's' : ''} assigned successfully`);
       onOpenChange(false);
       resetForm();
     },
     onError: (err: any) => {
-      toast.error(err.message || 'Failed to create route');
+      toast.error(err.message || 'Failed to create route(s)');
     },
   });
 
@@ -124,122 +182,149 @@ export const RouteAssignmentDialog: React.FC<RouteAssignmentDialogProps> = ({
     setNotes('');
     setTerritory('');
     setStoreSearch('');
+    setBulkDates([format(new Date(), 'yyyy-MM-dd')]);
+    setSelectedAssignees([{ id: assigneeId, name: assigneeName, userId: assigneeUserId }]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Route className="h-5 w-5 text-primary" />
-            Assign Route
+            {isBulkMode ? 'Bulk Assign Routes' : 'Assign Route'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {/* Assignee info */}
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <div>
-              <p className="font-medium">{assigneeName}</p>
-              <Badge variant="outline" className="text-xs capitalize">
-                {assigneeType}
-              </Badge>
+          {/* Bulk mode toggle */}
+          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Bulk Assignment</span>
             </div>
+            <Switch checked={isBulkMode} onCheckedChange={setIsBulkMode} />
           </div>
 
-          {/* Route date */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Route Date
-            </Label>
-            <Input
-              type="date"
-              value={routeDate}
-              onChange={(e) => setRouteDate(e.target.value)}
-            />
-          </div>
+          {/* Single assignee info */}
+          {!isBulkMode && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">{assigneeName}</p>
+                <Badge variant="outline" className="text-xs capitalize">{assigneeType}</Badge>
+              </div>
+            </div>
+          )}
+
+          {/* Bulk assignee selection */}
+          {isBulkMode && (
+            <div className="space-y-2">
+              <Label>Assignees ({selectedAssignees.length} selected)</Label>
+              <div className="flex flex-wrap gap-1 mb-2">
+                {selectedAssignees.map((a) => (
+                  <Badge key={a.id} variant="secondary" className="gap-1">
+                    {a.name}
+                    <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedAssignees((prev) => prev.filter((x) => x.id !== a.id))} />
+                  </Badge>
+                ))}
+              </div>
+              <ScrollArea className="h-32 rounded-md border p-2">
+                {allWorkers.map((worker) => (
+                  <div
+                    key={worker.id}
+                    className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer"
+                    onClick={() => toggleAssignee(worker)}
+                  >
+                    <Checkbox checked={!!selectedAssignees.find((a) => a.id === worker.id)} />
+                    <span className="text-sm">{worker.full_name}</span>
+                  </div>
+                ))}
+              </ScrollArea>
+            </div>
+          )}
+
+          {/* Date(s) */}
+          {!isBulkMode ? (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Calendar className="h-4 w-4" /> Route Date</Label>
+              <Input type="date" value={routeDate} onChange={(e) => setRouteDate(e.target.value)} />
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Calendar className="h-4 w-4" /> Route Dates</Label>
+              {bulkDates.map((date, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input type="date" value={date} onChange={(e) => setBulkDates((prev) => prev.map((d, j) => (j === i ? e.target.value : d)))} className="flex-1" />
+                  {bulkDates.length > 1 && (
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => removeBulkDate(i)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button size="sm" variant="outline" onClick={addBulkDate} className="w-full">
+                <Plus className="h-4 w-4 mr-1" /> Add Date
+              </Button>
+            </div>
+          )}
 
           {/* Territory */}
           <div className="space-y-2">
             <Label>Territory (Optional)</Label>
-            <Input
-              placeholder="e.g. Brooklyn, Manhattan..."
-              value={territory}
-              onChange={(e) => setTerritory(e.target.value)}
-            />
+            <Input placeholder="e.g. Brooklyn, Manhattan..." value={territory} onChange={(e) => setTerritory(e.target.value)} />
           </div>
 
           {/* Store selection */}
           <div className="space-y-2">
-            <Label>
-              Stops ({selectedStores.length} selected)
-            </Label>
+            <Label>Stops ({selectedStores.length} selected)</Label>
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search stores..."
-                value={storeSearch}
-                onChange={(e) => setStoreSearch(e.target.value)}
-                className="pl-9"
-              />
+              <Input placeholder="Search stores..." value={storeSearch} onChange={(e) => setStoreSearch(e.target.value)} className="pl-9" />
             </div>
             <ScrollArea className="h-48 rounded-md border p-2">
               {stores.map((store) => (
-                <div
-                  key={store.id}
-                  className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer"
-                  onClick={() => toggleStore(store.id)}
-                >
-                  <Checkbox
-                    checked={selectedStores.includes(store.id)}
-                    onCheckedChange={() => toggleStore(store.id)}
-                  />
+                <div key={store.id} className="flex items-center gap-2 py-1.5 px-1 hover:bg-muted/50 rounded cursor-pointer" onClick={() => toggleStore(store.id)}>
+                  <Checkbox checked={selectedStores.includes(store.id)} onCheckedChange={() => toggleStore(store.id)} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{store.name}</p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {[store.address_street, store.address_city, store.boro]
-                        .filter(Boolean)
-                        .join(', ')}
+                      {[store.address_street, store.address_city, store.boro].filter(Boolean).join(', ')}
                     </p>
                   </div>
                 </div>
               ))}
-              {stores.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No stores found
-                </p>
-              )}
+              {stores.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No stores found</p>}
             </ScrollArea>
           </div>
 
           {/* Notes */}
           <div className="space-y-2">
             <Label>Notes to Worker (Optional)</Label>
-            <Textarea
-              placeholder="Special instructions for this route..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-            />
+            <Textarea placeholder="Special instructions for this route..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
           </div>
+
+          {/* Summary for bulk */}
+          {isBulkMode && selectedAssignees.length > 0 && (
+            <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+              <p className="font-medium text-primary">
+                Will create {selectedAssignees.length * bulkDates.length} route{selectedAssignees.length * bulkDates.length > 1 ? 's' : ''}
+              </p>
+              <p className="text-muted-foreground">
+                {selectedAssignees.length} assignee{selectedAssignees.length > 1 ? 's' : ''} × {bulkDates.length} date{bulkDates.length > 1 ? 's' : ''} × {selectedStores.length} stop{selectedStores.length !== 1 ? 's' : ''} each
+              </p>
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="flex-1">Cancel</Button>
             <Button
               onClick={() => createRouteMutation.mutate()}
-              disabled={selectedStores.length === 0 || createRouteMutation.isPending}
+              disabled={selectedStores.length === 0 || createRouteMutation.isPending || (isBulkMode && selectedAssignees.length === 0)}
               className="flex-1"
             >
-              {createRouteMutation.isPending ? 'Assigning...' : 'Assign Route'}
+              {createRouteMutation.isPending ? 'Assigning...' : isBulkMode ? 'Assign All Routes' : 'Assign Route'}
             </Button>
           </div>
         </div>

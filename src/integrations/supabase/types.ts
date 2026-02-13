@@ -52502,6 +52502,7 @@ export type Database = {
           payout_reference: string | null
           period_end: string
           period_start: string
+          route_id: string | null
           status: string
           total_earned: number
           total_to_pay: number
@@ -52521,6 +52522,7 @@ export type Database = {
           payout_reference?: string | null
           period_end: string
           period_start: string
+          route_id?: string | null
           status?: string
           total_earned?: number
           total_to_pay?: number
@@ -52540,6 +52542,7 @@ export type Database = {
           payout_reference?: string | null
           period_end?: string
           period_start?: string
+          route_id?: string | null
           status?: string
           total_earned?: number
           total_to_pay?: number
@@ -52560,6 +52563,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "worker_payouts_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
             referencedColumns: ["id"]
           },
         ]

@@ -25,6 +25,7 @@ import { BikerLocationPreview } from '@/components/map/BikerLocationPreview';
 import { ConversationInbox } from '@/components/communication/ConversationInbox';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
+import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -266,6 +267,14 @@ const BikerProfile: React.FC = () => {
             </Card>
           </div>
         </div>
+
+        {/* Active Routes with Live Status */}
+        <ActiveRouteStatus
+          workerId={bikerId || ''}
+          workerName={biker.full_name}
+          workerType="biker"
+          workerUserId={biker.user_id}
+        />
 
         {/* Biker Location Map */}
         <BikerLocationPreview 
