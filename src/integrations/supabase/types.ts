@@ -39942,10 +39942,12 @@ export type Database = {
           actual_arrival: string | null
           actual_departure: string | null
           actual_duration_minutes: number | null
+          brand_id: string | null
           created_at: string | null
           id: string
           notes: string | null
           notes_to_worker: string | null
+          order_ids: string[] | null
           planned_arrival_time: string | null
           planned_order: number
           route_id: string | null
@@ -39958,10 +39960,12 @@ export type Database = {
           actual_arrival?: string | null
           actual_departure?: string | null
           actual_duration_minutes?: number | null
+          brand_id?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
           notes_to_worker?: string | null
+          order_ids?: string[] | null
           planned_arrival_time?: string | null
           planned_order: number
           route_id?: string | null
@@ -39974,10 +39978,12 @@ export type Database = {
           actual_arrival?: string | null
           actual_departure?: string | null
           actual_duration_minutes?: number | null
+          brand_id?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
           notes_to_worker?: string | null
+          order_ids?: string[] | null
           planned_arrival_time?: string | null
           planned_order?: number
           route_id?: string | null
@@ -40217,6 +40223,7 @@ export type Database = {
           actual_distance_km: number | null
           actual_duration_minutes: number | null
           assigned_to: string | null
+          brand_ids: string[] | null
           completed_at: string | null
           created_at: string | null
           date: string
@@ -40239,6 +40246,7 @@ export type Database = {
           actual_distance_km?: number | null
           actual_duration_minutes?: number | null
           assigned_to?: string | null
+          brand_ids?: string[] | null
           completed_at?: string | null
           created_at?: string | null
           date: string
@@ -40261,6 +40269,7 @@ export type Database = {
           actual_distance_km?: number | null
           actual_duration_minutes?: number | null
           assigned_to?: string | null
+          brand_ids?: string[] | null
           completed_at?: string | null
           created_at?: string | null
           date?: string
