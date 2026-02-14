@@ -10,3 +10,4 @@ export { AIDispatchAnalytics } from './AIDispatchAnalytics';
 export { AILearningPanel } from './AILearningPanel';
 export { AIConfidenceCalibration } from './AIConfidenceCalibration';
 export { AIConfidenceCorrections } from './AIConfidenceCorrections';
+export { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
