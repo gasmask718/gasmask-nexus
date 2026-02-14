@@ -9,3 +9,4 @@ export { PowersMatrixPanel } from './PowersMatrixPanel';
 export { AIDispatchAnalytics } from './AIDispatchAnalytics';
 export { AILearningPanel } from './AILearningPanel';
 export { AIConfidenceCalibration } from './AIConfidenceCalibration';
+export { AIConfidenceCorrections } from './AIConfidenceCorrections';
