@@ -25,7 +25,8 @@ import {
   Target,
   Compass,
   FlaskConical,
-  ShieldCheck
+  ShieldCheck,
+  BarChart3
 } from 'lucide-react';
 import { useExecutiveAI } from '@/hooks/useExecutiveAI';
 import { useExecutiveDirectives } from '@/hooks/useExecutiveDirectives';
@@ -40,6 +41,7 @@ import { AIDispatchAnalytics } from './AIDispatchAnalytics';
 import { AILearningPanel } from './AILearningPanel';
 import { AIConfidenceCalibration } from './AIConfidenceCalibration';
 import { AIConfidenceCorrections } from './AIConfidenceCorrections';
+import { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -273,6 +275,10 @@ export function ExecutiveControlRoom() {
             <Activity className="h-4 w-4" />
             Corrections
           </TabsTrigger>
+          <TabsTrigger value="attribution" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Attribution
+          </TabsTrigger>
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Performance
@@ -465,6 +471,11 @@ export function ExecutiveControlRoom() {
         {/* Confidence Corrections Tab (Human-Approved, Phase 8) */}
         <TabsContent value="corrections">
           <AIConfidenceCorrections />
+        </TabsContent>
+
+        {/* Action Outcome Attribution Tab (Read-Only, Phase 9) */}
+        <TabsContent value="attribution">
+          <AIActionOutcomeAttribution />
         </TabsContent>
 
         {/* Performance Tab */}
