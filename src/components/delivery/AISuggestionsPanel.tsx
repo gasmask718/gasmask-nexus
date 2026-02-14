@@ -11,6 +11,7 @@ import {
   type AIDispatchSettings,
 } from '@/hooks/useAIDispatchSuggestions';
 import { useAIDispatchTelemetry } from '@/hooks/useAIDispatchTelemetry';
+import { useConfidenceCorrections } from '@/hooks/useConfidenceCorrections';
 import { FeedbackReasonModal } from './FeedbackReasonModal';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -82,6 +83,7 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
 
   const { recommendations, isLoading, totalSignals } = useAIDispatchSuggestions(settings);
   const { trackShown, trackApplied, trackDismissed, startIgnoreTimer, cancelIgnoreTimer } = useAIDispatchTelemetry();
+  const { approvedCorrections, translateConfidence } = useConfidenceCorrections();
 
   const visibleRecs = useMemo(
     () => recommendations.filter(r => !dismissedIds.has(r.store_id)),
@@ -339,9 +341,27 @@ export function AISuggestionsPanel({ onApplySuggestion }: AISuggestionsPanelProp
                               {rec.risk_level === 'high' && <AlertTriangle className="h-3 w-3 mr-1" />}
                               {rec.risk_level}
                             </Badge>
-                            <span className="text-xs font-mono text-muted-foreground">
-                              {rec.confidence}% conf.
-                            </span>
+                            {(() => {
+                              const translated = translateConfidence(rec.confidence, {
+                                sla: rec.contributing_factors.sla_severity,
+                                risk: rec.risk_level,
+                              });
+                              return (
+                                <>
+                                  <span className="text-xs font-mono text-muted-foreground">
+                                    {translated.corrected ? (
+                                      <span title={`Raw: ${translated.raw}%`}>
+                                        {translated.displayed}% conf.
+                                        {' '}
+                                        <Badge variant="secondary" className="text-xs">Adjusted</Badge>
+                                      </span>
+                                    ) : (
+                                      `${rec.confidence}% conf.`
+                                    )}
+                                  </span>
+                                </>
+                              );
+                            })()}
                           </div>
                         </div>
 

@@ -2259,6 +2259,63 @@ export type Database = {
           },
         ]
       }
+      ai_confidence_corrections: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          confidence_max: number
+          confidence_min: number
+          created_at: string
+          created_by: string | null
+          display_offset: number
+          id: string
+          notes: string | null
+          rejected_at: string | null
+          rejected_by: string | null
+          rolled_back_at: string | null
+          rolled_back_by: string | null
+          scope_type: string
+          scope_value: string | null
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_max: number
+          confidence_min: number
+          created_at?: string
+          created_by?: string | null
+          display_offset: number
+          id?: string
+          notes?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          scope_type: string
+          scope_value?: string | null
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_max?: number
+          confidence_min?: number
+          created_at?: string
+          created_by?: string | null
+          display_offset?: number
+          id?: string
+          notes?: string | null
+          rejected_at?: string | null
+          rejected_by?: string | null
+          rolled_back_at?: string | null
+          rolled_back_by?: string | null
+          scope_type?: string
+          scope_value?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       ai_confidence_recalibrations: {
         Row: {
           adjustment_delta: number | null

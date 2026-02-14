@@ -39,6 +39,7 @@ import { PowersMatrixPanel } from './PowersMatrixPanel';
 import { AIDispatchAnalytics } from './AIDispatchAnalytics';
 import { AILearningPanel } from './AILearningPanel';
 import { AIConfidenceCalibration } from './AIConfidenceCalibration';
+import { AIConfidenceCorrections } from './AIConfidenceCorrections';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -268,6 +269,10 @@ export function ExecutiveControlRoom() {
             <Activity className="h-4 w-4" />
             Confidence
           </TabsTrigger>
+          <TabsTrigger value="corrections" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Corrections
+          </TabsTrigger>
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Performance
@@ -455,6 +460,11 @@ export function ExecutiveControlRoom() {
         {/* Confidence Calibration Tab (Read-Only, Phase 7) */}
         <TabsContent value="confidence">
           <AIConfidenceCalibration />
+        </TabsContent>
+
+        {/* Confidence Corrections Tab (Human-Approved, Phase 8) */}
+        <TabsContent value="corrections">
+          <AIConfidenceCorrections />
         </TabsContent>
 
         {/* Performance Tab */}
