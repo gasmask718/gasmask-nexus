@@ -45,6 +45,7 @@ import { AIConfidenceCorrections } from './AIConfidenceCorrections';
 import { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
 import { AISLABreachPostMortems } from './AISLABreachPostMortems';
 import { AICounterfactualSimulation } from './AICounterfactualSimulation';
+import { AIDecisionQualityIndex } from './AIDecisionQualityIndex';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -290,6 +291,10 @@ export function ExecutiveControlRoom() {
             <GitBranch className="h-4 w-4" />
             What-If
           </TabsTrigger>
+          <TabsTrigger value="dqi" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            DQI
+          </TabsTrigger>
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Performance
@@ -497,6 +502,11 @@ export function ExecutiveControlRoom() {
         {/* Counterfactual Simulation Tab (Read-Only, Phase 11) */}
         <TabsContent value="counterfactual">
           <AICounterfactualSimulation />
+        </TabsContent>
+
+        {/* Decision Quality Index Tab (Read-Only, Phase 12) */}
+        <TabsContent value="dqi">
+          <AIDecisionQualityIndex />
         </TabsContent>
 
 
