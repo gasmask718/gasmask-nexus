@@ -42,6 +42,7 @@ import { AILearningPanel } from './AILearningPanel';
 import { AIConfidenceCalibration } from './AIConfidenceCalibration';
 import { AIConfidenceCorrections } from './AIConfidenceCorrections';
 import { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
+import { AISLABreachPostMortems } from './AISLABreachPostMortems';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -279,6 +280,10 @@ export function ExecutiveControlRoom() {
             <BarChart3 className="h-4 w-4" />
             Attribution
           </TabsTrigger>
+          <TabsTrigger value="post-mortems" className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            Post-Mortems
+          </TabsTrigger>
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Performance
@@ -476,6 +481,11 @@ export function ExecutiveControlRoom() {
         {/* Action Outcome Attribution Tab (Read-Only, Phase 9) */}
         <TabsContent value="attribution">
           <AIActionOutcomeAttribution />
+        </TabsContent>
+
+        {/* SLA Breach Post-Mortems Tab (Read-Only, Phase 10) */}
+        <TabsContent value="post-mortems">
+          <AISLABreachPostMortems />
         </TabsContent>
 
         {/* Performance Tab */}
