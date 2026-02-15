@@ -11,3 +11,4 @@ export { AILearningPanel } from './AILearningPanel';
 export { AIConfidenceCalibration } from './AIConfidenceCalibration';
 export { AIConfidenceCorrections } from './AIConfidenceCorrections';
 export { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
+export { AISLABreachPostMortems } from './AISLABreachPostMortems';
