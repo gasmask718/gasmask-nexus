@@ -26,7 +26,8 @@ import {
   Compass,
   FlaskConical,
   ShieldCheck,
-  BarChart3
+  BarChart3,
+  GitBranch
 } from 'lucide-react';
 import { useExecutiveAI } from '@/hooks/useExecutiveAI';
 import { useExecutiveDirectives } from '@/hooks/useExecutiveDirectives';
@@ -43,6 +44,7 @@ import { AIConfidenceCalibration } from './AIConfidenceCalibration';
 import { AIConfidenceCorrections } from './AIConfidenceCorrections';
 import { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
 import { AISLABreachPostMortems } from './AISLABreachPostMortems';
+import { AICounterfactualSimulation } from './AICounterfactualSimulation';
 
 export function ExecutiveControlRoom() {
   const { currentBusiness } = useBusiness();
@@ -284,6 +286,10 @@ export function ExecutiveControlRoom() {
             <AlertTriangle className="h-4 w-4" />
             Post-Mortems
           </TabsTrigger>
+          <TabsTrigger value="counterfactual" className="flex items-center gap-2">
+            <GitBranch className="h-4 w-4" />
+            What-If
+          </TabsTrigger>
           <TabsTrigger value="metrics" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Performance
@@ -487,6 +493,12 @@ export function ExecutiveControlRoom() {
         <TabsContent value="post-mortems">
           <AISLABreachPostMortems />
         </TabsContent>
+
+        {/* Counterfactual Simulation Tab (Read-Only, Phase 11) */}
+        <TabsContent value="counterfactual">
+          <AICounterfactualSimulation />
+        </TabsContent>
+
 
         {/* Performance Tab */}
         <TabsContent value="metrics">
