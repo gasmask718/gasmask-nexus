@@ -25350,8 +25350,10 @@ export type Database = {
         Row: {
           ambassador_id: string | null
           city: string | null
+          country: string | null
           created_at: string | null
           created_by: string | null
+          date_of_birth: string | null
           email: string | null
           engagement_rate: number
           facebook_handle: string | null
@@ -25359,15 +25361,24 @@ export type Database = {
           id: string
           influencer_health_score: number | null
           instagram_handle: string | null
+          last_contacted_at: string | null
+          legal_name: string | null
           name: string
+          neighborhood: string | null
           niche: string | null
+          onboarding_status: string
+          payment_method_on_file: boolean
           phone: string | null
           platform: string
+          preferred_contact_method: string | null
           primary_region_id: string | null
           score: number | null
+          state: string | null
           status: string
           supported_regions: string[] | null
+          tax_form_status: string
           tiktok_handle: string | null
+          timezone: string | null
           twitter_handle: string | null
           updated_at: string | null
           username: string
@@ -25376,8 +25387,10 @@ export type Database = {
         Insert: {
           ambassador_id?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string | null
           created_by?: string | null
+          date_of_birth?: string | null
           email?: string | null
           engagement_rate?: number
           facebook_handle?: string | null
@@ -25385,15 +25398,24 @@ export type Database = {
           id?: string
           influencer_health_score?: number | null
           instagram_handle?: string | null
+          last_contacted_at?: string | null
+          legal_name?: string | null
           name: string
+          neighborhood?: string | null
           niche?: string | null
+          onboarding_status?: string
+          payment_method_on_file?: boolean
           phone?: string | null
           platform: string
+          preferred_contact_method?: string | null
           primary_region_id?: string | null
           score?: number | null
+          state?: string | null
           status?: string
           supported_regions?: string[] | null
+          tax_form_status?: string
           tiktok_handle?: string | null
+          timezone?: string | null
           twitter_handle?: string | null
           updated_at?: string | null
           username: string
@@ -25402,8 +25424,10 @@ export type Database = {
         Update: {
           ambassador_id?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string | null
           created_by?: string | null
+          date_of_birth?: string | null
           email?: string | null
           engagement_rate?: number
           facebook_handle?: string | null
@@ -25411,15 +25435,24 @@ export type Database = {
           id?: string
           influencer_health_score?: number | null
           instagram_handle?: string | null
+          last_contacted_at?: string | null
+          legal_name?: string | null
           name?: string
+          neighborhood?: string | null
           niche?: string | null
+          onboarding_status?: string
+          payment_method_on_file?: boolean
           phone?: string | null
           platform?: string
+          preferred_contact_method?: string | null
           primary_region_id?: string | null
           score?: number | null
+          state?: string | null
           status?: string
           supported_regions?: string[] | null
+          tax_form_status?: string
           tiktok_handle?: string | null
+          timezone?: string | null
           twitter_handle?: string | null
           updated_at?: string | null
           username?: string
