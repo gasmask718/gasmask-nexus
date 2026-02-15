@@ -12,3 +12,4 @@ export { AIConfidenceCalibration } from './AIConfidenceCalibration';
 export { AIConfidenceCorrections } from './AIConfidenceCorrections';
 export { AIActionOutcomeAttribution } from './AIActionOutcomeAttribution';
 export { AISLABreachPostMortems } from './AISLABreachPostMortems';
+export { AICounterfactualSimulation } from './AICounterfactualSimulation';
