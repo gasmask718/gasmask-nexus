@@ -6,16 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { 
-  ArrowLeft, Bike, Phone, Mail, MapPin, Edit, 
-  DollarSign, CheckCircle2, Clock, Calendar, 
-  ClipboardCheck, AlertTriangle, TrendingUp, AlertCircle,
-  MessageCircle, StickyNote, Route as RouteIcon
+  Bike, Phone, Mail, MapPin, Edit,
+  DollarSign, CheckCircle2, Clock, TrendingUp, Shield,
+  ClipboardCheck, AlertCircle, AlertTriangle, Calendar,
+  MessageCircle, StickyNote, Route as RouteIcon,
+  Gauge, Target, Activity
 } from 'lucide-react';
 import { useBikerIssues } from '@/hooks/useBikerIssues';
 import BikerPerformanceTab from '@/components/biker/BikerPerformanceTab';
@@ -27,6 +26,7 @@ import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 import { CurrentTaskCard } from '@/components/delivery/CurrentTaskCard';
+import { ProfileLayout, ProfileTab } from '@/components/profile/ProfileLayout';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -39,7 +39,6 @@ const BikerProfile: React.FC = () => {
   const { data: biker, isLoading } = useQuery({
     queryKey: ['biker', bikerId],
     queryFn: async () => {
-      // Try bikers table first
       const { data } = await supabase
         .from('bikers')
         .select('*')
@@ -47,7 +46,6 @@ const BikerProfile: React.FC = () => {
         .maybeSingle();
       if (data) return data;
 
-      // Fallback: biker exists only via user_roles — build from profile
       const { data: profile } = await supabase
         .from('profiles')
         .select('id, name, phone, email, created_at')
@@ -74,7 +72,40 @@ const BikerProfile: React.FC = () => {
     enabled: !!bikerId
   });
 
-  // Fetch biker tasks (store checks)
+  // Fetch canonical routes (portal parity)
+  const { data: canonicalRoutes = [] } = useQuery({
+    queryKey: ['biker-canonical-routes', bikerId],
+    queryFn: async () => {
+      const userId = biker?.user_id || bikerId;
+      const { data, error } = await supabase
+        .from('routes')
+        .select('*')
+        .eq('assigned_to', userId)
+        .order('date', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!biker
+  });
+
+  // Fetch route stops for analytics
+  const { data: routeStops = [] } = useQuery({
+    queryKey: ['biker-route-stops', bikerId],
+    queryFn: async () => {
+      const routeIds = canonicalRoutes.map(r => r.id);
+      if (routeIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('route_stops')
+        .select('*')
+        .in('route_id', routeIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: canonicalRoutes.length > 0
+  });
+
+  // Fetch store checks (legacy tasks)
   const { data: tasks = [] } = useQuery({
     queryKey: ['biker-tasks', bikerId],
     queryFn: async () => {
@@ -100,9 +131,9 @@ const BikerProfile: React.FC = () => {
         .eq('worker_id', bikerId)
         .eq('worker_type', 'biker')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!bikerId
   });
@@ -121,96 +152,67 @@ const BikerProfile: React.FC = () => {
     onError: () => toast.error('Failed to update biker')
   });
 
-  if (isLoading) {
+  if (isLoading || !biker) {
     return (
-      <div className="p-6 text-center text-muted-foreground">Loading...</div>
+      <ProfileLayout
+        isLoading={true}
+        header={{ icon: <Bike />, title: '' }}
+        tabs={[]}
+        backPath="/delivery/bikers"
+      />
     );
   }
 
-  if (!biker) {
-    return (
-      <div className="p-6 text-center">
-        <AlertTriangle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <p className="text-muted-foreground">Biker not found</p>
-        <Button className="mt-4" onClick={() => navigate('/delivery/bikers')}>
-          Back to Bikers
-        </Button>
-      </div>
-    );
-  }
-
+  // ─── Performance Metrics ───
   const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
   const pendingTasks = tasks.filter((t: any) => t.status === 'pending' || t.status === 'assigned').length;
   const totalEarnings = payouts.reduce((sum: number, p: any) => sum + (p.total_to_pay || 0), 0);
+  const paidOut = payouts.filter((p: any) => p.status === 'paid').reduce((sum: number, p: any) => sum + (p.total_to_pay || 0), 0);
+  const pendingPay = totalEarnings - paidOut;
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/delivery/bikers')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Bike className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">{biker.full_name}</h1>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  {biker.territory && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" /> {biker.territory}
-                    </span>
-                  )}
-                  <Badge variant={biker.status === 'active' ? 'default' : 'secondary'}>
-                    {biker.status}
-                  </Badge>
-                </div>
-              </div>
-            </div>
-          </div>
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Edit className="h-4 w-4 mr-2" /> Edit
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Biker</DialogTitle>
-              </DialogHeader>
-              <EditBikerForm 
-                biker={biker}
-                onSubmit={(data) => updateMutation.mutate(data)}
-                isLoading={updateMutation.isPending}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+  const completedRoutes = canonicalRoutes.filter(r => r.status === 'completed').length;
+  const totalRoutes = canonicalRoutes.length;
+  const completedStops = routeStops.filter((s: any) => s.status === 'completed').length;
+  const totalStops = routeStops.length;
+  const completionRate = totalRoutes > 0 ? Math.round((completedRoutes / totalRoutes) * 100) : (tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0);
 
-        {/* Current Delivery Task */}
-        <CurrentTaskCard workerId={bikerId!} workerType="biker" />
+  // ─── Tabs ───
+  const tabs: ProfileTab[] = [
+    {
+      id: 'overview',
+      label: 'Overview',
+      content: (
+        <div className="space-y-6">
+          {/* Governance Banner */}
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="py-3 px-4">
+              <p className="text-sm text-muted-foreground">
+                <Shield className="h-4 w-4 inline mr-1 text-amber-500" />
+                This profile is an operational mirror of portal activity. Metrics are observational and do not trigger discipline, automation, or ranking. All dispatch and payout logic remains unchanged.
+              </p>
+            </CardContent>
+          </Card>
 
-        {/* Contact & Stats */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Contact Info */}
+          {/* Current Delivery Task */}
+          <CurrentTaskCard workerId={bikerId!} workerType="biker" />
+
+          {/* Active Routes */}
+          <ActiveRouteStatus
+            workerId={bikerId || ''}
+            workerName={biker.full_name}
+            workerType="biker"
+            workerUserId={biker.user_id}
+          />
+
+          {/* Contact Card */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Contact Information</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-lg">Contact Details</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                 <Phone className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <ClickablePhone 
-                    phone={biker.phone} 
-                    entityType="other" 
-                    entityId={biker.id} 
-                    entityName={biker.full_name}
-                    className="font-medium"
-                  />
+                  <ClickablePhone phone={biker.phone} entityType="other" entityId={biker.id} entityName={biker.full_name} className="font-medium" />
                 </div>
               </div>
               {biker.email && (
@@ -222,9 +224,18 @@ const BikerProfile: React.FC = () => {
                   </div>
                 </a>
               )}
+              {biker.territory && (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Territory</p>
+                    <p className="font-medium">{biker.territory}</p>
+                  </div>
+                </div>
+              )}
               {biker.payout_method && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+                  <DollarSign className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm text-muted-foreground">Payout Method</p>
                     <p className="font-medium">{biker.payout_method} {biker.payout_handle && `(${biker.payout_handle})`}</p>
@@ -234,192 +245,252 @@ const BikerProfile: React.FC = () => {
             </CardContent>
           </Card>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Location Map */}
+          <BikerLocationPreview 
+            bikerId={bikerId || ''} 
+            bikerName={biker.full_name} 
+            height="300px"
+          />
+        </div>
+      ),
+    },
+    {
+      id: 'performance',
+      label: 'Performance',
+      content: (
+        <div className="space-y-6">
+          {/* Performance Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
-                  <div>
-                    <div className="text-2xl font-bold">{completedTasks}</div>
-                    <p className="text-sm text-muted-foreground">Tasks Completed</p>
-                  </div>
-                </div>
+              <CardContent className="p-4 text-center">
+                <Gauge className="h-6 w-6 mx-auto text-primary mb-1" />
+                <div className="text-2xl font-bold">{completionRate}%</div>
+                <p className="text-xs text-muted-foreground">Completion Rate</p>
               </CardContent>
             </Card>
             <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-8 w-8 text-yellow-600" />
-                  <div>
-                    <div className="text-2xl font-bold">{pendingTasks}</div>
-                    <p className="text-sm text-muted-foreground">Pending Tasks</p>
-                  </div>
-                </div>
+              <CardContent className="p-4 text-center">
+                <CheckCircle2 className="h-6 w-6 mx-auto text-primary mb-1" />
+                <div className="text-2xl font-bold">{completedTasks}</div>
+                <p className="text-xs text-muted-foreground">Tasks Done</p>
               </CardContent>
             </Card>
-            <Card className="col-span-2">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="h-8 w-8 text-primary" />
-                  <div>
-                    <div className="text-2xl font-bold">${totalEarnings.toFixed(2)}</div>
-                    <p className="text-sm text-muted-foreground">Total Earnings</p>
-                  </div>
-                </div>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Activity className="h-6 w-6 mx-auto text-primary mb-1" />
+                <div className="text-2xl font-bold">{completedStops}</div>
+                <p className="text-xs text-muted-foreground">Route Stops</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <TrendingUp className="h-6 w-6 mx-auto text-primary mb-1" />
+                <div className="text-2xl font-bold">{completedRoutes}</div>
+                <p className="text-xs text-muted-foreground">Routes Done</p>
               </CardContent>
             </Card>
           </div>
+
+          {/* Biker Performance Tab (existing component) */}
+          <BikerPerformanceTab bikerId={bikerId || ''} />
         </div>
-
-        {/* Active Routes with Live Status */}
-        <ActiveRouteStatus
-          workerId={bikerId || ''}
-          workerName={biker.full_name}
-          workerType="biker"
-          workerUserId={biker.user_id}
-        />
-
-        {/* Biker Location Map */}
-        <BikerLocationPreview 
-          bikerId={bikerId || ''} 
-          bikerName={biker.full_name} 
-          height="300px"
-        />
-
-        {/* Tabs for Tasks, Issues, Performance & Payouts */}
-        <Tabs defaultValue="tasks">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="tasks">
-              <ClipboardCheck className="h-4 w-4 mr-2" /> Tasks
-            </TabsTrigger>
-            <TabsTrigger value="issues">
-              <AlertCircle className="h-4 w-4 mr-2" /> Issues
-            </TabsTrigger>
-            <TabsTrigger value="performance">
-              <TrendingUp className="h-4 w-4 mr-2" /> Performance
-            </TabsTrigger>
-            <TabsTrigger value="payouts">
-              <DollarSign className="h-4 w-4 mr-2" /> Payouts
-            </TabsTrigger>
-            <TabsTrigger value="communication">
-              <MessageCircle className="h-4 w-4 mr-2" /> Communication
-            </TabsTrigger>
-            <TabsTrigger value="notes">
-              <StickyNote className="h-4 w-4 mr-2" /> Notes
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tasks" className="mt-4">
+      ),
+    },
+    {
+      id: 'tasks',
+      label: 'Tasks',
+      count: tasks.length,
+      content: (
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Store Checks & Tasks</CardTitle></CardHeader>
+          <CardContent>
             {tasks.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  No tasks assigned yet
-                </CardContent>
-              </Card>
+              <p className="text-center text-muted-foreground py-6">No tasks assigned yet</p>
             ) : (
               <div className="space-y-3">
                 {tasks.map((task: any) => (
-                  <Card key={task.id}>
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium">{task.location?.name || 'Unknown Location'}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {task.task_type} • {format(new Date(task.created_at), 'MMM d, yyyy')}
-                            </p>
-                          </div>
-                        </div>
-                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
-                          {task.status}
-                        </Badge>
+                  <div key={task.id} className="flex items-center justify-between p-3 rounded-lg border">
+                    <div className="flex items-center gap-3">
+                      <ClipboardCheck className="h-5 w-5 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{task.location?.name || 'Unknown Location'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {task.task_type} • {format(new Date(task.created_at), 'MMM d, yyyy')}
+                        </p>
                       </div>
-                      {task.notes && (
-                        <p className="text-sm text-muted-foreground mt-2">{task.notes}</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                    </div>
+                    <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                      {task.status}
+                    </Badge>
+                  </div>
                 ))}
               </div>
             )}
-          </TabsContent>
-
-          <TabsContent value="issues" className="mt-4">
-            <BikerIssuesTab bikerId={bikerId || ''} />
-          </TabsContent>
-
-          <TabsContent value="performance" className="mt-4">
-            <BikerPerformanceTab bikerId={bikerId || ''} />
-          </TabsContent>
-
-          <TabsContent value="payouts" className="mt-4">
-            {payouts.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center text-muted-foreground">
-                  No payouts yet
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {payouts.map((payout: any) => (
-                  <Card key={payout.id}>
-                    <CardContent className="py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <DollarSign className="h-5 w-5 text-green-600" />
-                          <div>
-                            <p className="font-medium">${payout.total_to_pay?.toFixed(2)}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {payout.period_start} to {payout.period_end}
-                            </p>
-                          </div>
+          </CardContent>
+        </Card>
+      ),
+    },
+    {
+      id: 'issues',
+      label: 'Issues',
+      content: <BikerIssuesTab bikerId={bikerId || ''} />,
+    },
+    {
+      id: 'payouts',
+      label: 'Payouts',
+      count: payouts.length,
+      content: (
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-primary">${totalEarnings.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Total Earned</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">${paidOut.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Paid Out</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-amber-600">${pendingPay.toFixed(2)}</div>
+                <p className="text-xs text-muted-foreground">Pending</p>
+              </CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader><CardTitle className="text-lg">Payout Ledger</CardTitle></CardHeader>
+            <CardContent>
+              {payouts.length === 0 ? (
+                <p className="text-center text-muted-foreground py-6">No payouts yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {payouts.map((payout: any) => (
+                    <div key={payout.id} className="flex items-center justify-between p-3 rounded-lg border">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium">${payout.total_to_pay?.toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">{payout.period_start} to {payout.period_end}</p>
                         </div>
-                        <Badge variant={payout.status === 'paid' ? 'default' : 'secondary'}>
-                          {payout.status}
-                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-          <TabsContent value="communication" className="mt-4">
-            <ConversationInbox
-              entityType="biker"
-              entityId={bikerId || ''}
-              entityName={biker.full_name}
-            />
-          </TabsContent>
+                      <Badge variant={payout.status === 'paid' ? 'default' : 'secondary'}>{payout.status}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ),
+    },
+    {
+      id: 'communication',
+      label: 'Comms',
+      content: (
+        <ConversationInbox
+          entityType="biker"
+          entityId={bikerId || ''}
+          entityName={biker.full_name}
+        />
+      ),
+    },
+    {
+      id: 'notes',
+      label: 'Notes',
+      content: (
+        <EntityNotesSection
+          entityType="biker"
+          entityId={bikerId}
+          entityName={biker.full_name}
+        />
+      ),
+    },
+  ];
 
-          <TabsContent value="notes" className="mt-4">
-            <EntityNotesSection
-              entityType="biker"
-              entityId={bikerId}
-              entityName={biker.full_name}
-            />
-          </TabsContent>
-        </Tabs>
+  const statsRow = (
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <Card>
+        <CardContent className="p-4 text-center">
+          <CheckCircle2 className="h-5 w-5 mx-auto text-primary mb-1" />
+          <div className="text-xl font-bold">{completedTasks}</div>
+          <p className="text-xs text-muted-foreground">Tasks Done</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4 text-center">
+          <Clock className="h-5 w-5 mx-auto text-amber-500 mb-1" />
+          <div className="text-xl font-bold">{pendingTasks}</div>
+          <p className="text-xs text-muted-foreground">Pending</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4 text-center">
+          <RouteIcon className="h-5 w-5 mx-auto text-primary mb-1" />
+          <div className="text-xl font-bold">{completedRoutes}</div>
+          <p className="text-xs text-muted-foreground">Routes Done</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4 text-center">
+          <DollarSign className="h-5 w-5 mx-auto text-primary mb-1" />
+          <div className="text-xl font-bold">${totalEarnings.toFixed(2)}</div>
+          <p className="text-xs text-muted-foreground">Earnings</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4 text-center">
+          <Gauge className="h-5 w-5 mx-auto text-primary mb-1" />
+          <div className="text-xl font-bold">{completionRate}%</div>
+          <p className="text-xs text-muted-foreground">Completion</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
-        {/* Quick Actions */}
-        <div className="flex gap-4">
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => setShowRouteAssign(true)}
-          >
-            <RouteIcon className="h-4 w-4 mr-2" /> Assign Route
-          </Button>
-          <Button 
-            variant="outline" 
-            className="flex-1"
-            onClick={() => navigate('/delivery/payouts')}
-          >
-            <DollarSign className="h-4 w-4 mr-2" /> View Payouts
-          </Button>
-      </div>
+  return (
+    <>
+      <ProfileLayout
+        header={{
+          icon: <Bike className="h-6 w-6" />,
+          title: biker.full_name,
+          subtitle: biker.territory ? `Territory: ${biker.territory}` : 'Biker',
+          status: {
+            label: biker.status || 'active',
+            variant: biker.status === 'active' ? 'default' : 'secondary',
+          },
+          metadata: [
+            ...(biker.phone ? [{ icon: <Phone className="h-3.5 w-3.5" />, label: biker.phone }] : []),
+            ...(biker.created_at ? [{ icon: <Calendar className="h-3.5 w-3.5" />, label: `Since ${format(new Date(biker.created_at), 'MMM yyyy')}` }] : []),
+          ],
+        }}
+        stats={statsRow}
+        tabs={tabs}
+        defaultTab="overview"
+        backPath="/delivery/bikers"
+        backLabel="Back to Bikers"
+        onCall={() => navigate('/communications-center', { state: { activeModule: 'va-call', contactPhone: biker.phone, contactName: biker.full_name } })}
+        onMessage={() => navigate('/communications-center', { state: { activeModule: 'text', contactPhone: biker.phone } })}
+        actions={
+          <>
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline"><Edit className="mr-1 h-4 w-4" /> Edit</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Edit Biker</DialogTitle></DialogHeader>
+                <EditBikerForm biker={biker} onSubmit={(data) => updateMutation.mutate(data)} isLoading={updateMutation.isPending} />
+              </DialogContent>
+            </Dialog>
+            <Button size="sm" variant="outline" onClick={() => setShowRouteAssign(true)}>
+              <RouteIcon className="mr-1 h-4 w-4" /> Assign Route
+            </Button>
+          </>
+        }
+      />
 
       <RouteAssignmentDialog
         open={showRouteAssign}
@@ -429,7 +500,7 @@ const BikerProfile: React.FC = () => {
         assigneeType="biker"
         assigneeUserId={biker.user_id}
       />
-    </div>
+    </>
   );
 };
 
@@ -452,54 +523,31 @@ const EditBikerForm: React.FC<{
     <div className="space-y-4 mt-4">
       <div>
         <label className="text-sm font-medium">Full Name</label>
-        <Input 
-          value={formData.full_name}
-          onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
-        />
+        <Input value={formData.full_name} onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))} />
       </div>
       <div>
         <label className="text-sm font-medium">Phone</label>
-        <Input 
-          value={formData.phone}
-          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-        />
+        <Input value={formData.phone} onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))} />
       </div>
       <div>
         <label className="text-sm font-medium">Email</label>
-        <Input 
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-        />
+        <Input type="email" value={formData.email} onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))} />
       </div>
       <div>
         <label className="text-sm font-medium">Territory</label>
-        <Input 
-          value={formData.territory}
-          onChange={(e) => setFormData(prev => ({ ...prev, territory: e.target.value }))}
-        />
+        <Input value={formData.territory} onChange={(e) => setFormData(prev => ({ ...prev, territory: e.target.value }))} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium">Payout Method</label>
-          <Input 
-            value={formData.payout_method}
-            onChange={(e) => setFormData(prev => ({ ...prev, payout_method: e.target.value }))}
-          />
+          <Input value={formData.payout_method} onChange={(e) => setFormData(prev => ({ ...prev, payout_method: e.target.value }))} />
         </div>
         <div>
           <label className="text-sm font-medium">Payout Handle</label>
-          <Input 
-            value={formData.payout_handle}
-            onChange={(e) => setFormData(prev => ({ ...prev, payout_handle: e.target.value }))}
-          />
+          <Input value={formData.payout_handle} onChange={(e) => setFormData(prev => ({ ...prev, payout_handle: e.target.value }))} />
         </div>
       </div>
-      <Button 
-        className="w-full" 
-        onClick={() => onSubmit(formData)}
-        disabled={isLoading}
-      >
+      <Button className="w-full" onClick={() => onSubmit(formData)} disabled={isLoading}>
         {isLoading ? 'Saving...' : 'Save Changes'}
       </Button>
     </div>
