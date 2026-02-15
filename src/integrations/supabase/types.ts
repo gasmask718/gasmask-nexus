@@ -8313,15 +8313,21 @@ export type Database = {
       bikers: {
         Row: {
           business_id: string
+          city: string | null
           created_at: string
           created_by: string | null
           email: string | null
           full_name: string
+          geo_id: string | null
           id: string
           is_simulation: boolean | null
+          lat: number | null
+          lng: number | null
+          neighborhood: string | null
           payout_handle: string | null
           payout_method: string | null
           phone: string | null
+          state: string | null
           status: string
           territory: string | null
           updated_at: string
@@ -8329,15 +8335,21 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          city?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
           full_name: string
+          geo_id?: string | null
           id?: string
           is_simulation?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string | null
           payout_handle?: string | null
           payout_method?: string | null
           phone?: string | null
+          state?: string | null
           status?: string
           territory?: string | null
           updated_at?: string
@@ -8345,15 +8357,21 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          city?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
           full_name?: string
+          geo_id?: string | null
           id?: string
           is_simulation?: boolean | null
+          lat?: number | null
+          lng?: number | null
+          neighborhood?: string | null
           payout_handle?: string | null
           payout_method?: string | null
           phone?: string | null
+          state?: string | null
           status?: string
           territory?: string | null
           updated_at?: string
@@ -8365,6 +8383,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bikers_geo_id_fkey"
+            columns: ["geo_id"]
+            isOneToOne: false
+            referencedRelation: "geo_identities"
             referencedColumns: ["id"]
           },
           {
@@ -20635,17 +20660,23 @@ export type Database = {
       drivers: {
         Row: {
           business_id: string
+          city: string | null
           created_at: string
           created_by: string | null
           email: string | null
           full_name: string
+          geo_id: string | null
           home_base: string | null
           id: string
           is_simulation: boolean | null
+          lat: number | null
           license_number: string | null
+          lng: number | null
+          neighborhood: string | null
           payout_handle: string | null
           payout_method: string | null
           phone: string | null
+          state: string | null
           status: string
           updated_at: string
           user_id: string | null
@@ -20653,17 +20684,23 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          city?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
           full_name: string
+          geo_id?: string | null
           home_base?: string | null
           id?: string
           is_simulation?: boolean | null
+          lat?: number | null
           license_number?: string | null
+          lng?: number | null
+          neighborhood?: string | null
           payout_handle?: string | null
           payout_method?: string | null
           phone?: string | null
+          state?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -20671,17 +20708,23 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          city?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
           full_name?: string
+          geo_id?: string | null
           home_base?: string | null
           id?: string
           is_simulation?: boolean | null
+          lat?: number | null
           license_number?: string | null
+          lng?: number | null
+          neighborhood?: string | null
           payout_handle?: string | null
           payout_method?: string | null
           phone?: string | null
+          state?: string | null
           status?: string
           updated_at?: string
           user_id?: string | null
@@ -20693,6 +20736,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drivers_geo_id_fkey"
+            columns: ["geo_id"]
+            isOneToOne: false
+            referencedRelation: "geo_identities"
             referencedColumns: ["id"]
           },
           {
@@ -22793,6 +22843,77 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      geo_identities: {
+        Row: {
+          borough: string | null
+          city: string | null
+          created_at: string
+          formatted_address: string
+          id: string
+          last_geo_check: string | null
+          latitude: number
+          longitude: number
+          neighborhood: string | null
+          postal_code: string | null
+          raw_input: string | null
+          region_id: string | null
+          region_name: string | null
+          source: string
+          state: string | null
+          street: string | null
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          borough?: string | null
+          city?: string | null
+          created_at?: string
+          formatted_address: string
+          id?: string
+          last_geo_check?: string | null
+          latitude: number
+          longitude: number
+          neighborhood?: string | null
+          postal_code?: string | null
+          raw_input?: string | null
+          region_id?: string | null
+          region_name?: string | null
+          source?: string
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          borough?: string | null
+          city?: string | null
+          created_at?: string
+          formatted_address?: string
+          id?: string
+          last_geo_check?: string | null
+          latitude?: number
+          longitude?: number
+          neighborhood?: string | null
+          postal_code?: string | null
+          raw_input?: string | null
+          region_id?: string | null
+          region_name?: string | null
+          source?: string
+          state?: string | null
+          street?: string | null
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "geo_identities_region_id_fkey"
+            columns: ["region_id"]
+            isOneToOne: false
+            referencedRelation: "regions"
             referencedColumns: ["id"]
           },
         ]
@@ -25358,11 +25479,14 @@ export type Database = {
           engagement_rate: number
           facebook_handle: string | null
           followers: number
+          geo_id: string | null
           id: string
           influencer_health_score: number | null
           instagram_handle: string | null
           last_contacted_at: string | null
+          lat: number | null
           legal_name: string | null
+          lng: number | null
           name: string
           neighborhood: string | null
           niche: string | null
@@ -25395,11 +25519,14 @@ export type Database = {
           engagement_rate?: number
           facebook_handle?: string | null
           followers?: number
+          geo_id?: string | null
           id?: string
           influencer_health_score?: number | null
           instagram_handle?: string | null
           last_contacted_at?: string | null
+          lat?: number | null
           legal_name?: string | null
+          lng?: number | null
           name: string
           neighborhood?: string | null
           niche?: string | null
@@ -25432,11 +25559,14 @@ export type Database = {
           engagement_rate?: number
           facebook_handle?: string | null
           followers?: number
+          geo_id?: string | null
           id?: string
           influencer_health_score?: number | null
           instagram_handle?: string | null
           last_contacted_at?: string | null
+          lat?: number | null
           legal_name?: string | null
+          lng?: number | null
           name?: string
           neighborhood?: string | null
           niche?: string | null
@@ -25486,6 +25616,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "influencers_geo_id_fkey"
+            columns: ["geo_id"]
+            isOneToOne: false
+            referencedRelation: "geo_identities"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "influencers_primary_region_id_fkey"
@@ -45479,6 +45616,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           email: string | null
+          geo_id: string | null
           health_score: number | null
           id: string
           is_simulation: boolean | null
@@ -45549,6 +45687,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           email?: string | null
+          geo_id?: string | null
           health_score?: number | null
           id?: string
           is_simulation?: boolean | null
@@ -45619,6 +45758,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           email?: string | null
+          geo_id?: string | null
           health_score?: number | null
           id?: string
           is_simulation?: boolean | null
@@ -45681,6 +45821,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_geo_id_fkey"
+            columns: ["geo_id"]
+            isOneToOne: false
+            referencedRelation: "geo_identities"
             referencedColumns: ["id"]
           },
           {
@@ -56673,6 +56820,20 @@ export type Database = {
             referencedColumns: ["store_id"]
           },
         ]
+      }
+      v_unresolved_geo_entities: {
+        Row: {
+          city: string | null
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string | null
+          geo_id: string | null
+          lat: number | null
+          lng: number | null
+          raw_address: string | null
+          state: string | null
+        }
+        Relationships: []
       }
       wholesaler_marketplace_summary: {
         Row: {
