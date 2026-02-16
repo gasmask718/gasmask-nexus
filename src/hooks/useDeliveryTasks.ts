@@ -150,7 +150,7 @@ export function useCreateDeliveryTask() {
         .insert({
           ...task,
           assigned_by: user?.id || null,
-          status: "assigned",
+          status: "pending_acceptance",
         })
         .select()
         .single();
@@ -204,6 +204,9 @@ export function useUpdateDeliveryTaskStatus() {
       queryClient.invalidateQueries({ queryKey: ["my-assigned-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["dispatchable-orders"] });
       queryClient.invalidateQueries({ queryKey: ["my-assigned-routes"] });
+      queryClient.invalidateQueries({ queryKey: ["assignment-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["all-bikers"] });
+      queryClient.invalidateQueries({ queryKey: ["all-drivers"] });
       toast.success("Task updated");
     },
     onError: (err: any) => {

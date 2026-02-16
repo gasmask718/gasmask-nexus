@@ -353,7 +353,7 @@ export function useLiveDeliveryTasks() {
           recipient_name, recipient_phone, delivery_notes, status, created_at,
           store_order:store_orders(order_number, total_amount)
         `)
-        .in('status', ['assigned', 'picked_up', 'in_transit', 'delivering']);
+        .in('status', ['pending_acceptance', 'assigned', 'picked_up', 'in_transit', 'delivering']);
 
       if (error) throw error;
       if (!data || data.length === 0) return [] as LiveDeliveryTask[];

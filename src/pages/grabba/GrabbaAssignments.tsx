@@ -22,7 +22,9 @@ import {
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { BrandFilterBar } from '@/components/grabba/BrandFilterBar';
 
-type DeliveryStatus = 'pending' | 'delivering' | 'delivered';
+type DeliveryStatus = 'pending' | 'delivering' | 'delivered' | 'declined';
+
+const ACTIVE_TASK_STATUSES = ['pending_acceptance', 'assigned', 'picked_up', 'in_transit'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // FLOOR 4 — ORDER ASSIGNMENT PAGE
@@ -47,7 +49,6 @@ export default function GrabbaAssignments() {
         .order('created_at', { ascending: false });
       if (error) throw error;
       
-      // Fetch related stores
       const storeIds = [...new Set((ordersRaw || []).map((o: any) => o.store_id).filter(Boolean))];
       let storesMap: Record<string, any> = {};
       if (storeIds.length > 0) {
@@ -76,7 +77,7 @@ export default function GrabbaAssignments() {
     },
   });
 
-  // ── Fetch bikers & drivers ─────────────────────────────────────────────────
+  // ── Fetch bikers & drivers (active only) ───────────────────────────────────
   const { data: bikers = [] } = useQuery({
     queryKey: ['all-bikers'],
     queryFn: async () => {
@@ -93,12 +94,24 @@ export default function GrabbaAssignments() {
     },
   });
 
+  // ── Compute busy worker IDs (have an active delivery task) ─────────────────
+  const busyBikerIds = new Set(
+    tasks.filter((t: any) => ACTIVE_TASK_STATUSES.includes(t.status) && t.biker_id).map((t: any) => t.biker_id)
+  );
+  const busyDriverIds = new Set(
+    tasks.filter((t: any) => ACTIVE_TASK_STATUSES.includes(t.status) && t.driver_id).map((t: any) => t.driver_id)
+  );
+
+  const availableBikers = bikers.filter((b: any) => !busyBikerIds.has(b.id));
+  const availableDrivers = drivers.filter((d: any) => !busyDriverIds.has(d.id));
+
   // ── Derive delivery status from tasks ──────────────────────────────────────
   const getDeliveryStatus = (orderId: string): DeliveryStatus => {
     const task = tasks.find((t: any) => t.store_order_id === orderId);
     if (!task) return 'pending';
     if (task.status === 'delivered' || task.delivered_at) return 'delivered';
-    if (['picked_up', 'in_transit', 'assigned'].includes(task.status)) return 'delivering';
+    if (task.status === 'declined') return 'declined';
+    if (['pending_acceptance', 'picked_up', 'in_transit', 'assigned'].includes(task.status)) return 'delivering';
     return 'pending';
   };
 
@@ -132,6 +145,7 @@ export default function GrabbaAssignments() {
     pending: 'bg-amber-500/10 text-amber-600 border-amber-500/30',
     delivering: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
     delivered: 'bg-green-500/10 text-green-600 border-green-500/30',
+    declined: 'bg-red-500/10 text-red-600 border-red-500/30',
   };
 
   return (
@@ -227,7 +241,9 @@ export default function GrabbaAssignments() {
                             {task.biker?.full_name || task.driver?.full_name || 'Unassigned'}
                           </div>
                         )}
-                        <Badge variant="outline" className={statusColor[ds]}>{ds}</Badge>
+                        <Badge variant="outline" className={statusColor[ds]}>
+                          {ds === 'declined' ? '⚠ Declined – Reassign' : ds}
+                        </Badge>
                         <div className="text-sm font-semibold">${(order.total_amount || 0).toFixed(2)}</div>
                         <Eye className="h-4 w-4 text-muted-foreground" />
                       </div>
@@ -246,8 +262,10 @@ export default function GrabbaAssignments() {
           order={selectedOrder}
           open={assignDialogOpen}
           onClose={() => { setAssignDialogOpen(false); setSelectedOrder(null); }}
-          bikers={bikers}
-          drivers={drivers}
+          bikers={availableBikers}
+          drivers={availableDrivers}
+          allBikers={bikers}
+          allDrivers={drivers}
           existingTask={getTaskForOrder(selectedOrder.id)}
           onAssigned={() => {
             queryClient.invalidateQueries({ queryKey: ['assignment-tasks'] });
@@ -268,11 +286,13 @@ interface OrderAssignmentDialogProps {
   onClose: () => void;
   bikers: any[];
   drivers: any[];
+  allBikers: any[];
+  allDrivers: any[];
   existingTask: any;
   onAssigned: () => void;
 }
 
-function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, existingTask, onAssigned }: OrderAssignmentDialogProps) {
+function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, allBikers, allDrivers, existingTask, onAssigned }: OrderAssignmentDialogProps) {
   const { user } = useAuth();
   const [assigneeType, setAssigneeType] = useState<'biker' | 'driver'>(existingTask?.biker_id ? 'biker' : existingTask?.driver_id ? 'driver' : 'biker');
   const [assigneeId, setAssigneeId] = useState(existingTask?.biker_id || existingTask?.driver_id || '');
@@ -302,7 +322,7 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, existing
         delivery_notes: deliveryNotes || null,
         recipient_name: recipientName || null,
         recipient_phone: recipientPhone || null,
-        status: 'assigned',
+        status: 'pending_acceptance',
         biker_id: assigneeType === 'biker' ? assigneeId : null,
         driver_id: assigneeType === 'driver' ? assigneeId : null,
       };
@@ -406,13 +426,24 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, existing
                   <SelectValue placeholder={`Select a ${assigneeType}`} />
                 </SelectTrigger>
                 <SelectContent>
+                  {assignees.length === 0 && (
+                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                      No available {assigneeType}s — all are on active deliveries
+                    </div>
+                  )}
                   {assignees.map((a: any) => (
                     <SelectItem key={a.id} value={a.id}>
-                      {a.full_name} {a.phone ? `(${a.phone})` : ''}
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-green-500" />
+                        {a.full_name} {a.phone ? `(${a.phone})` : ''}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {assignees.length === 0 && (
+                <p className="text-xs text-amber-600">All {assigneeType}s are currently on deliveries. Wait for one to become available or check the other worker type.</p>
+              )}
             </div>
 
             {/* Submit */}
