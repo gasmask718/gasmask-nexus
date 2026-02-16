@@ -462,54 +462,65 @@ export function MapCanvas({
 
       deliveryTasks.forEach(task => {
         const workerUserId = task.biker_user_id || task.driver_user_id;
-        if (!workerUserId) return;
 
-        // Find the worker on the map
-        const worker = workers.find(w => w.worker_id === workerUserId);
-        if (!worker) return;
+        // Find the worker on the map (may be null if no GPS)
+        const worker = workerUserId ? workers.find(w => w.worker_id === workerUserId) : null;
 
-        // Skip if this worker already has a route trajectory line
-        const hasRouteTrajectory = routes.some(
+        // Skip trajectory line if this worker already has a route trajectory
+        const hasRouteTrajectory = worker && routes.some(
           r => r.assigned_to === worker.worker_id && (r.status === 'active' || r.status === 'in_progress')
         );
-        if (hasRouteTrajectory) return;
 
-        const sourceId = `delivery-line-${task.id}`;
-        const layerId = `delivery-line-layer-${task.id}`;
+        // Determine origin for trajectory line: worker GPS > store pickup > none
+        const origin = worker
+          ? [worker.lng, worker.lat]
+          : (task.pickup_lat && task.pickup_lng ? [task.pickup_lng, task.pickup_lat] : null);
 
-        try {
-          // Draw dashed line from worker to delivery destination
-          map.current!.addSource(sourceId, {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: [
-                  [worker.lng, worker.lat],
-                  [task.delivery_lng, task.delivery_lat],
-                ],
+        // Determine pin color: use worker role color if available, else a default delivery color
+        const pinColor = worker ? getRoleColor(worker.role) : '#f97316';
+
+        // Draw trajectory line if we have an origin and no route trajectory already exists
+        if (origin && !hasRouteTrajectory) {
+          const sourceId = `delivery-line-${task.id}`;
+          const layerId = `delivery-line-layer-${task.id}`;
+
+          try {
+            map.current!.addSource(sourceId, {
+              type: 'geojson',
+              data: {
+                type: 'Feature',
+                properties: {},
+                geometry: {
+                  type: 'LineString',
+                  coordinates: [
+                    origin,
+                    [task.delivery_lng, task.delivery_lat],
+                  ],
+                },
               },
-            },
-          });
+            });
 
-          map.current!.addLayer({
-            id: layerId,
-            type: 'line',
-            source: sourceId,
-            layout: { 'line-join': 'round', 'line-cap': 'round' },
-            paint: {
-              'line-color': getRoleColor(worker.role),
-              'line-width': 2.5,
-              'line-opacity': 0.7,
-              'line-dasharray': [4, 3],
-            },
-          });
+            map.current!.addLayer({
+              id: layerId,
+              type: 'line',
+              source: sourceId,
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: {
+                'line-color': pinColor,
+                'line-width': 2.5,
+                'line-opacity': 0.7,
+                'line-dasharray': [4, 3],
+              },
+            });
 
-          deliveryLineLayersRef.current.push(sourceId, layerId);
+            deliveryLineLayersRef.current.push(sourceId, layerId);
+          } catch (e) {
+            console.warn('Error adding delivery trajectory:', e);
+          }
+        }
 
-          // Add destination pin marker with click popup
+        // ALWAYS render destination pin marker (even without worker/origin)
+        try {
           const el = document.createElement('div');
           el.style.cssText = `
             width: 28px;
@@ -518,7 +529,7 @@ export function MapCanvas({
           `;
           el.innerHTML = `
             <svg viewBox="0 0 24 24" width="28" height="28">
-              <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" fill="${getRoleColor(worker.role)}" stroke="white" stroke-width="1.5"/>
+              <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" fill="${pinColor}" stroke="white" stroke-width="1.5"/>
               <circle cx="12" cy="8" r="3" fill="white"/>
             </svg>
           `;
@@ -529,6 +540,7 @@ export function MapCanvas({
           el.addEventListener('click', (e) => {
             e.stopPropagation();
             storePopupRef.current?.remove();
+            const originLabel = worker ? `🚚 ${task.worker_name || 'Worker'} (live GPS)` : (origin ? '🏪 Store pickup location' : '⚠️ No origin available');
             const html = `<div style="min-width:220px;max-width:280px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                 <div style="flex:1;font-size:14px;font-weight:700;color:#111827;line-height:1.2;">📦 ${task.order_number || 'Delivery Task'}</div>
@@ -537,7 +549,7 @@ export function MapCanvas({
               ${task.recipient_name ? `<div style="font-size:12px;color:#374151;margin-bottom:2px;">👤 ${task.recipient_name}</div>` : ''}
               ${task.recipient_phone ? `<div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📞 ${task.recipient_phone}</div>` : ''}
               <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📍 ${task.delivery_address}</div>
-              ${task.worker_name ? `<div style="font-size:11px;color:#6b7280;margin-bottom:2px;">🚚 ${task.worker_name}</div>` : ''}
+              <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">${originLabel}</div>
               ${task.total_amount ? `<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;">💰 $${Number(task.total_amount).toFixed(2)}</div>` : ''}
               ${task.delivery_notes ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">"${task.delivery_notes}"</div>` : ''}
             </div>`;
@@ -554,7 +566,7 @@ export function MapCanvas({
 
           markersRef.current[`delivery-dest-${task.id}`] = marker;
         } catch (e) {
-          console.warn('Error adding delivery trajectory:', e);
+          console.warn('Error adding delivery destination pin:', e);
         }
       });
     };
