@@ -68,6 +68,17 @@ export interface LiveStop {
   } | null;
 }
 
+export interface LiveDeliveryTask {
+  id: string;
+  biker_user_id: string | null;
+  driver_user_id: string | null;
+  delivery_lat: number;
+  delivery_lng: number;
+  delivery_address: string;
+  recipient_name: string | null;
+  status: string;
+}
+
 export interface LiveAlert {
   id: string;
   route_id: string | null;
@@ -319,6 +330,54 @@ export function useLiveExceptions() {
 
       if (error) throw error;
       return data || [];
+    },
+    refetchInterval: 15000,
+  });
+}
+
+// Fetch active delivery tasks with destination coordinates
+export function useLiveDeliveryTasks() {
+  return useQuery({
+    queryKey: ['live-map-delivery-tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('delivery_tasks')
+        .select(`
+          id, biker_id, driver_id, delivery_lat, delivery_lng, delivery_address, recipient_name, status
+        `)
+        .in('status', ['assigned', 'picked_up', 'in_transit', 'delivering']);
+
+      if (error) throw error;
+      if (!data || data.length === 0) return [] as LiveDeliveryTask[];
+
+      // Resolve user_ids from biker/driver record IDs
+      const bikerIds = [...new Set(data.map(t => t.biker_id).filter(Boolean))];
+      const driverIds = [...new Set(data.map(t => t.driver_id).filter(Boolean))];
+
+      const [{ data: bikers }, { data: drivers }] = await Promise.all([
+        bikerIds.length > 0
+          ? supabase.from('bikers').select('id, user_id').in('id', bikerIds)
+          : Promise.resolve({ data: [] as any[] }),
+        driverIds.length > 0
+          ? supabase.from('drivers').select('id, user_id').in('id', driverIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
+
+      const bikerUserMap = Object.fromEntries((bikers || []).map(b => [b.id, b.user_id]));
+      const driverUserMap = Object.fromEntries((drivers || []).map(d => [d.id, d.user_id]));
+
+      return data
+        .filter(t => t.delivery_lat && t.delivery_lng)
+        .map(t => ({
+          id: t.id,
+          biker_user_id: t.biker_id ? bikerUserMap[t.biker_id] || null : null,
+          driver_user_id: t.driver_id ? driverUserMap[t.driver_id] || null : null,
+          delivery_lat: Number(t.delivery_lat),
+          delivery_lng: Number(t.delivery_lng),
+          delivery_address: t.delivery_address,
+          recipient_name: t.recipient_name,
+          status: t.status,
+        })) as LiveDeliveryTask[];
     },
     refetchInterval: 15000,
   });

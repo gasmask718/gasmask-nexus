@@ -13,6 +13,7 @@ import {
   useLiveRoutes,
   useLiveWorkers,
   useLiveAlerts,
+  useLiveDeliveryTasks,
   useMapState,
   useLiveMapSubscription,
 } from "@/hooks/useLiveMapData";
@@ -51,6 +52,7 @@ export default function LiveMapCommandCenter() {
   const { data: routes = [], isLoading: routesLoading, refetch: refetchRoutes } = useLiveRoutes();
   const { data: workers = [], isLoading: workersLoading, refetch: refetchWorkers } = useLiveWorkers();
   const { data: alerts = [], refetch: refetchAlerts } = useLiveAlerts();
+  const { data: deliveryTasks = [] } = useLiveDeliveryTasks();
   
   // Enable real-time subscriptions
   useLiveMapSubscription();
@@ -302,6 +304,7 @@ export default function LiveMapCommandCenter() {
             routes={enrichedRoutes}
             workers={filteredWorkers}
             alerts={filteredAlerts}
+            deliveryTasks={deliveryTasks}
             stores={mapStores}
             showStores={filters.showStores}
             selectedRouteId={mapState.selectedRoute}
