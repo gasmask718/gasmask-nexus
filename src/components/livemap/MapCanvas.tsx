@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { LiveRoute, WorkerLocation, LiveAlert, LiveStop } from "@/hooks/useLiveMapData";
@@ -32,43 +32,14 @@ interface MapCanvasProps {
   onSelectAlert: (alertId: string) => void;
 }
 
-// Classic teardrop pin SVG
-const STORE_PIN_SVG = `
-<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#f59e0b" stroke="#b45309" stroke-width="1"/>
-  <circle cx="12" cy="11" r="4.5" fill="white"/>
-</svg>`;
+// Store pin rendered as Mapbox image (created once)
+const STORE_PIN_SIZE = 24;
+const STORE_LAYER_SOURCE = 'stores-source';
+const STORE_LAYER_CLUSTERS = 'store-clusters';
+const STORE_LAYER_CLUSTER_COUNT = 'store-cluster-count';
+const STORE_LAYER_PINS = 'store-pins';
+const STORE_MIN_ZOOM = 10; // Only show individual pins at zoom >= 10
 
-function buildStorePopupHTML(store: MapStore): string {
-  const statusColor = store.status === 'active' ? '#22c55e' : store.status === 'churned' ? '#ef4444' : '#6b7280';
-  const statusLabel = store.status || 'unknown';
-  const addressLine1 = store.address_street || '';
-  const addressLine2 = [store.address_city, store.address_state].filter(Boolean).join(', ');
-  const healthBar = store.health_score != null
-    ? `<div style="margin-top:8px;">
-         <div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-bottom:2px;">
-           <span>Health</span><span>${store.health_score}/100</span>
-         </div>
-         <div style="height:4px;background:#374151;border-radius:2px;overflow:hidden;">
-           <div style="height:100%;width:${store.health_score}%;background:${store.health_score >= 70 ? '#22c55e' : store.health_score >= 40 ? '#eab308' : '#ef4444'};border-radius:2px;"></div>
-         </div>
-       </div>`
-    : '';
-
-  return `
-    <div style="min-width:200px;max-width:260px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div style="flex:1;font-size:14px;font-weight:700;color:#f3f4f6;line-height:1.2;">${store.name}</div>
-        <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;text-transform:capitalize;">${statusLabel}</span>
-      </div>
-      ${store.type ? `<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${store.type}</div>` : ''}
-      <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${addressLine1}</div>
-      <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${addressLine2}</div>
-      ${store.phone ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;">📞 ${store.phone}</div>` : ''}
-      ${healthBar}
-      <a href="/stores/${store.id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Profile →</a>
-    </div>`;
-}
 
 export function MapCanvas({
   routes,
@@ -88,9 +59,32 @@ export function MapCanvas({
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const routeLayersRef = useRef<string[]>([]);
-  const storeMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const targetLineLayersRef = useRef<string[]>([]);
+  const storePopupRef = useRef<mapboxgl.Popup | null>(null);
+  const storeSourceAddedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Build GeoJSON from stores array (memoized)
+  const storeGeoJSON = useMemo(() => ({
+    type: 'FeatureCollection' as const,
+    features: stores
+      .filter(s => s.lat && s.lng)
+      .map(store => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: [store.lng, store.lat] },
+        properties: {
+          id: store.id,
+          name: store.name,
+          address_street: store.address_street || '',
+          address_city: store.address_city || '',
+          address_state: store.address_state || '',
+          phone: store.phone || '',
+          status: store.status || 'unknown',
+          health_score: store.health_score ?? -1,
+          type: store.type || '',
+        },
+      })),
+  }), [stores]);
 
   // Initialize map
   useEffect(() => {
@@ -166,67 +160,170 @@ export function MapCanvas({
     }
   }, []);
 
-  // Render store markers with teardrop pin (viewport culled)
-  const renderStoreMarkers = useCallback(() => {
-    if (!map.current || !showStores) {
-      storeMarkersRef.current.forEach(m => m.remove());
-      storeMarkersRef.current = [];
-      return;
-    }
-
-    const bounds = map.current.getBounds();
-    if (!bounds) return;
-
-    storeMarkersRef.current.forEach(m => m.remove());
-    storeMarkersRef.current = [];
-
-    const visibleStores = stores
-      .filter(s => s.lat && s.lng && bounds.contains([s.lng, s.lat]))
-      .slice(0, 500);
-
-    visibleStores.forEach(store => {
-      const el = document.createElement('div');
-      el.style.cssText = 'width:24px;height:32px;cursor:pointer;';
-      el.innerHTML = STORE_PIN_SVG;
-
-      const popup = new mapboxgl.Popup({
-        offset: [0, -32],
-        closeButton: true,
-        maxWidth: '280px',
-        className: 'store-popup-dark',
-      }).setHTML(buildStorePopupHTML(store));
-
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([store.lng, store.lat])
-        .setPopup(popup)
-        .addTo(map.current!);
-
-      storeMarkersRef.current.push(marker);
-    });
-  }, [stores, showStores]);
-
-  // Viewport-based store rendering with debounce
+  // Setup store GeoJSON source + layers (once on map load)
   useEffect(() => {
     if (!map.current) return;
 
-    const handler = () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(renderStoreMarkers, 300);
+    const setupStoreLayers = () => {
+      const m = map.current!;
+      if (storeSourceAddedRef.current) return;
+
+      // Create a teardrop pin image for use in symbol layer
+      const canvas = document.createElement('canvas');
+      canvas.width = 48;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d')!;
+      // Teardrop path scaled 2x
+      ctx.beginPath();
+      ctx.moveTo(24, 0);
+      ctx.bezierCurveTo(10.8, 0, 0, 10.8, 0, 24);
+      ctx.bezierCurveTo(0, 42, 24, 64, 24, 64);
+      ctx.bezierCurveTo(24, 64, 48, 42, 48, 24);
+      ctx.bezierCurveTo(48, 10.8, 37.2, 0, 24, 0);
+      ctx.closePath();
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
+      ctx.strokeStyle = '#b45309';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // White center circle
+      ctx.beginPath();
+      ctx.arc(24, 22, 9, 0, Math.PI * 2);
+      ctx.fillStyle = 'white';
+      ctx.fill();
+
+      m.addImage('store-pin', { width: 48, height: 64, data: ctx.getImageData(0, 0, 48, 64).data } as any);
+
+      m.addSource(STORE_LAYER_SOURCE, {
+        type: 'geojson',
+        data: storeGeoJSON as any,
+        cluster: true,
+        clusterMaxZoom: 13,
+        clusterRadius: 50,
+      });
+
+      // Cluster circles
+      m.addLayer({
+        id: STORE_LAYER_CLUSTERS,
+        type: 'circle',
+        source: STORE_LAYER_SOURCE,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], '#f59e0b', 50, '#f97316', 200, '#ef4444'],
+          'circle-radius': ['step', ['get', 'point_count'], 18, 50, 24, 200, 30],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#b45309',
+        },
+      });
+
+      // Cluster count labels
+      m.addLayer({
+        id: STORE_LAYER_CLUSTER_COUNT,
+        type: 'symbol',
+        source: STORE_LAYER_SOURCE,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 13,
+        },
+        paint: { 'text-color': '#ffffff' },
+      });
+
+      // Individual pin icons
+      m.addLayer({
+        id: STORE_LAYER_PINS,
+        type: 'symbol',
+        source: STORE_LAYER_SOURCE,
+        filter: ['!', ['has', 'point_count']],
+        layout: {
+          'icon-image': 'store-pin',
+          'icon-size': 0.5,
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': false,
+        },
+      });
+
+      // Click on cluster → zoom in
+      m.on('click', STORE_LAYER_CLUSTERS, (e) => {
+        const features = m.queryRenderedFeatures(e.point, { layers: [STORE_LAYER_CLUSTERS] });
+        if (!features.length) return;
+        const clusterId = features[0].properties?.cluster_id;
+        (m.getSource(STORE_LAYER_SOURCE) as mapboxgl.GeoJSONSource).getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || zoom == null) return;
+          m.easeTo({ center: (features[0].geometry as any).coordinates, zoom });
+        });
+      });
+
+      // Click on pin → show popup
+      m.on('click', STORE_LAYER_PINS, (e) => {
+        const features = m.queryRenderedFeatures(e.point, { layers: [STORE_LAYER_PINS] });
+        if (!features.length) return;
+        const f = features[0];
+        const coords = (f.geometry as any).coordinates.slice() as [number, number];
+        const p = f.properties!;
+        const statusColor = p.status === 'active' ? '#22c55e' : p.status === 'churned' ? '#ef4444' : '#6b7280';
+        const healthScore = p.health_score >= 0 ? p.health_score : null;
+        const healthBar = healthScore != null
+          ? `<div style="margin-top:8px;"><div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-bottom:2px;"><span>Health</span><span>${healthScore}/100</span></div><div style="height:4px;background:#374151;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${healthScore}%;background:${healthScore >= 70 ? '#22c55e' : healthScore >= 40 ? '#eab308' : '#ef4444'};border-radius:2px;"></div></div></div>`
+          : '';
+        const addressLine2 = [p.address_city, p.address_state].filter(Boolean).join(', ');
+
+        const html = `<div style="min-width:200px;max-width:260px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div style="flex:1;font-size:14px;font-weight:700;color:#f3f4f6;line-height:1.2;">${p.name}</div>
+            <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;text-transform:capitalize;">${p.status}</span>
+          </div>
+          ${p.type ? `<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${p.type}</div>` : ''}
+          <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${p.address_street}</div>
+          <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${addressLine2}</div>
+          ${p.phone ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;">📞 ${p.phone}</div>` : ''}
+          ${healthBar}
+          <a href="/stores/${p.id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Profile →</a>
+        </div>`;
+
+        storePopupRef.current?.remove();
+        storePopupRef.current = new mapboxgl.Popup({ offset: [0, -20], closeButton: true, maxWidth: '280px', className: 'store-popup-dark' })
+          .setLngLat(coords)
+          .setHTML(html)
+          .addTo(m);
+      });
+
+      // Cursor pointer on hover
+      m.on('mouseenter', STORE_LAYER_PINS, () => { m.getCanvas().style.cursor = 'pointer'; });
+      m.on('mouseleave', STORE_LAYER_PINS, () => { m.getCanvas().style.cursor = ''; });
+      m.on('mouseenter', STORE_LAYER_CLUSTERS, () => { m.getCanvas().style.cursor = 'pointer'; });
+      m.on('mouseleave', STORE_LAYER_CLUSTERS, () => { m.getCanvas().style.cursor = ''; });
+
+      storeSourceAddedRef.current = true;
     };
 
     if (map.current.isStyleLoaded()) {
-      renderStoreMarkers();
+      setupStoreLayers();
     } else {
-      map.current.on('load', renderStoreMarkers);
+      map.current.on('load', setupStoreLayers);
     }
+  }, []); // Run once on mount
 
-    map.current.on('moveend', handler);
+  // Update store GeoJSON data when stores change
+  useEffect(() => {
+    if (!map.current || !storeSourceAddedRef.current) return;
+    const source = map.current.getSource(STORE_LAYER_SOURCE) as mapboxgl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(storeGeoJSON as any);
+    }
+  }, [storeGeoJSON]);
 
-    return () => {
-      map.current?.off('moveend', handler);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [renderStoreMarkers]);
+  // Toggle store layer visibility
+  useEffect(() => {
+    if (!map.current || !storeSourceAddedRef.current) return;
+    const vis = showStores ? 'visible' : 'none';
+    [STORE_LAYER_CLUSTERS, STORE_LAYER_CLUSTER_COUNT, STORE_LAYER_PINS].forEach(layer => {
+      if (map.current?.getLayer(layer)) {
+        map.current.setLayoutProperty(layer, 'visibility', vis);
+      }
+    });
+  }, [showStores]);
 
   // Update worker markers
   useEffect(() => {
