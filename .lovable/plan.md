@@ -1,87 +1,80 @@
 
-# Live Map Upgrade: Store Pins + Delivery Assignment Details
 
-## Current State
-- `/live-map` route renders `LiveMapCommandCenter` which shows active routes, worker locations, and alerts
-- The `stores` table has `lat`/`lng` columns but **zero stores have coordinates populated**
-- `store_master` has no lat/lng columns at all
-- The `geo_identities` table exists with a `resolve-geo` edge function, but only 1 record exists
-- The existing `MapCanvas` component renders route stops and worker markers
+# Live Map Upgrade: All Stores + Better Pins + Rider Locations
 
-## What Needs to Happen
+## What Changes
 
-### 1. Batch Geocode Stores (Database + Edge Function)
-Since no stores have coordinates, we need to geocode them before they can appear on the map.
+### 1. Geocode All 2,850+ Remaining Stores
+The `batch-geocode-stores` edge function currently caps at 200 stores per run. It needs to be updated to handle all remaining stores (2,843 without coordinates out of 2,959 total).
 
-- Create a new edge function `batch-geocode-stores` that:
-  - Queries stores with addresses but no lat/lng
-  - Uses Mapbox Geocoding API to resolve coordinates
-  - Updates `stores.lat` and `stores.lng` columns
-  - Processes in batches of 50 to respect rate limits
-- Add a "Geocode Stores" admin action button on the Live Map page to trigger this
-- Also update the store creation/update flow to auto-geocode new stores via the existing `resolve-geo` function
+- Increase the query limit from 200 to 1000
+- The frontend geocode button will need to be invoked multiple times (or we auto-loop), but each run processes up to 1000 stores in batches of 50 with rate-limit pauses
+- The Geocode button should always be visible (not just when `totalStores === 0`) so ops can re-run for newly added stores
 
-### 2. Add Store Pins to MapCanvas with Viewport-Based Rendering
-Modify `MapCanvas.tsx` to accept and render store markers efficiently:
+### 2. Redesign Store Pin to Classic Map Pin Shape
+Replace the current small amber dot with a proper teardrop/map-pin SVG marker. This is the classic pin design users expect on maps.
 
-- Add a new `stores` prop to `MapCanvas` with `{id, name, lat, lng, address_street, address_city, phone, status, health_status, type}`
-- Listen to the map's `moveend` event to get current viewport bounds
-- On each viewport change, filter stores to only those within the visible bounds
-- Render only in-bounds stores as small dot markers (smaller than route stops/workers)
-- On pin click, show a popup card with: store name, address (2-line postal format), phone, status badge, health status, and a "View Profile" link to `/stores/:id`
-- Clear and re-render store markers on viewport change (debounced ~300ms)
+- Use an inline SVG for the pin shape (teardrop with circle top) in amber/gold color
+- Size: roughly 24px tall, visible but not overwhelming
+- Remove all hover animations (`mouseenter`/`mouseleave` scale transitions) as requested
+- Keep the click-to-popup behavior
 
-### 3. Connect Delivery Assignment Details to Sidebar
-Enhance the existing sidebar in `LiveMapCommandCenter`:
+### 3. Redesign Store Popup Card
+Replace the current raw HTML popup with a cleaner, more structured layout:
 
-- Expand the route cards to show:
-  - Assignee name and role
-  - Route date and territory
-  - Stop completion progress bar
-  - Each stop's store name, status (completed/pending/skipped), and arrival time
-  - Total estimated duration and distance
-- When a route is selected, the `RouteDrawer` already handles detailed view -- ensure it shows all stop details with store addresses
-- Add delivery assignment stats to the header stats panel: total assigned, in-progress, completed today
+- Store name (bold) with status badge (colored pill)
+- 2-line postal address (Street / City, State ZIP)
+- Phone number
+- Health score as a small progress indicator
+- Store type label
+- "View Profile" link to `/stores/:id`
+- Better spacing, font hierarchy, and dark-theme-friendly styling
 
-### 4. Wire Store Data into LiveMapCommandCenter
-- Add a new query in `LiveMapCommandCenter` to fetch all stores with lat/lng coordinates from the `stores` table
-- Pass stores down to `MapCanvas` as a new prop
-- Add a "Stores" toggle in the filter bar to show/hide store pins
-- Add store count to the stats panel
+### 4. Plot Live Rider (Driver/Biker) Locations with Target Lines
+Currently workers already render as circle markers. The upgrade:
+
+- Draw a dashed line from each worker's live GPS position to their current target stop (the next pending stop on their active route)
+- This visually connects the rider to where they're heading
+- Line style: dashed, color-matched to the worker's role color, semi-transparent
+- Only draw the line if the worker has an active route with a pending stop that has coordinates
+- Lines update automatically as worker locations and route data refresh
 
 ## Technical Details
 
-### Files to Create
-- `supabase/functions/batch-geocode-stores/index.ts` -- batch geocoding edge function
-
 ### Files to Modify
-- `src/components/livemap/MapCanvas.tsx` -- add store pins with viewport culling, click popups
-- `src/pages/delivery/LiveMapCommandCenter.tsx` -- add store query, pass to MapCanvas, add toggle + stats
-- `src/components/livemap/MapFiltersBar.tsx` -- add "Show Stores" toggle
-- `src/components/livemap/LiveMapLegend.tsx` -- add store pin legend entry
 
-### Viewport Culling Logic (Performance)
+**`supabase/functions/batch-geocode-stores/index.ts`**
+- Change `.limit(200)` to `.limit(1000)` to process more stores per invocation
+
+**`src/components/livemap/MapCanvas.tsx`**
+- Replace amber dot element with SVG teardrop pin for store markers
+- Remove `mouseenter`/`mouseleave` hover animation listeners
+- Redesign popup HTML with cleaner card layout
+- Add worker-to-target-stop dashed line rendering using Mapbox `addSource`/`addLayer` with `line-dasharray`
+- Match each worker to their active route's next pending stop for the line endpoint
+
+**`src/components/livemap/MapFiltersBar.tsx`**
+- Remove the condition `stats.totalStores === 0` from Geocode button so it's always available
+
+**`src/components/livemap/LiveMapLegend.tsx`**
+- Update store legend entry to show the new pin shape instead of the amber dot
+
+### Worker-to-Target Line Logic
 ```text
-map.on('moveend') --> get bounds --> filter stores within bounds --> render only visible pins
-```
-- Debounce the moveend handler by 300ms
-- Cap rendered markers at ~500 to prevent DOM overload
-- Use smaller markers (10px dots) for stores vs route stops (16-24px)
-
-### Store Popup on Click
-```text
-+---------------------------+
-| Store Name           [badge]
-| 123 Main St
-| Brooklyn, NY 11201
-| Phone: (555) 123-4567
-| Health: Active
-| [View Profile ->]
-+---------------------------+
+For each worker with an active route:
+  1. Find route where route.assigned_to === worker.worker_id
+  2. Find the first stop with status !== 'completed' (next target)
+  3. If target stop has store coordinates, draw dashed line from [worker.lng, worker.lat] to [stop.store.lng, stop.store.lat]
+  4. Color the line to match worker role (blue for driver, cyan for biker)
+  5. Clean up and redraw lines on every worker/route data refresh
 ```
 
-### Geocoding Strategy
-- The `batch-geocode-stores` function uses the same Mapbox token already configured (`VITE_MAPBOX_PUBLIC_TOKEN`)
-- Processes stores in chunks, updating `stores.lat` and `stores.lng` directly
-- Returns count of successfully geocoded stores
-- Can be re-run safely (skips stores already geocoded)
+### Pin SVG Design
+A classic teardrop map pin rendered as an inline SVG element, amber-colored with white center dot, approximately 24x32px.
+
+### Performance
+- Viewport culling remains in place (only in-bounds stores render)
+- 500-marker cap stays
+- Debounced viewport updates stay at 300ms
+- Worker target lines use Mapbox native layers (GeoJSON sources) for performance
+
