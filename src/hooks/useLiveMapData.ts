@@ -76,7 +76,13 @@ export interface LiveDeliveryTask {
   delivery_lng: number;
   delivery_address: string;
   recipient_name: string | null;
+  recipient_phone: string | null;
+  delivery_notes: string | null;
   status: string;
+  worker_name: string | null;
+  order_number: string | null;
+  total_amount: number | null;
+  created_at: string | null;
 }
 
 export interface LiveAlert {
@@ -343,41 +349,54 @@ export function useLiveDeliveryTasks() {
       const { data, error } = await supabase
         .from('delivery_tasks')
         .select(`
-          id, biker_id, driver_id, delivery_lat, delivery_lng, delivery_address, recipient_name, status
+          id, biker_id, driver_id, delivery_lat, delivery_lng, delivery_address,
+          recipient_name, recipient_phone, delivery_notes, status, created_at,
+          store_order:store_orders(order_number, total_amount)
         `)
         .in('status', ['assigned', 'picked_up', 'in_transit', 'delivering']);
 
       if (error) throw error;
       if (!data || data.length === 0) return [] as LiveDeliveryTask[];
 
-      // Resolve user_ids from biker/driver record IDs
+      // Resolve user_ids and names from biker/driver record IDs
       const bikerIds = [...new Set(data.map(t => t.biker_id).filter(Boolean))];
       const driverIds = [...new Set(data.map(t => t.driver_id).filter(Boolean))];
 
       const [{ data: bikers }, { data: drivers }] = await Promise.all([
         bikerIds.length > 0
-          ? supabase.from('bikers').select('id, user_id').in('id', bikerIds)
+          ? supabase.from('bikers').select('id, user_id, full_name').in('id', bikerIds)
           : Promise.resolve({ data: [] as any[] }),
         driverIds.length > 0
-          ? supabase.from('drivers').select('id, user_id').in('id', driverIds)
+          ? supabase.from('drivers').select('id, user_id, full_name').in('id', driverIds)
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
-      const bikerUserMap = Object.fromEntries((bikers || []).map(b => [b.id, b.user_id]));
-      const driverUserMap = Object.fromEntries((drivers || []).map(d => [d.id, d.user_id]));
+      const bikerMap = Object.fromEntries((bikers || []).map(b => [b.id, { user_id: b.user_id, name: b.full_name }]));
+      const driverMap = Object.fromEntries((drivers || []).map(d => [d.id, { user_id: d.user_id, name: d.full_name }]));
 
       return data
         .filter(t => t.delivery_lat && t.delivery_lng)
-        .map(t => ({
-          id: t.id,
-          biker_user_id: t.biker_id ? bikerUserMap[t.biker_id] || null : null,
-          driver_user_id: t.driver_id ? driverUserMap[t.driver_id] || null : null,
-          delivery_lat: Number(t.delivery_lat),
-          delivery_lng: Number(t.delivery_lng),
-          delivery_address: t.delivery_address,
-          recipient_name: t.recipient_name,
-          status: t.status,
-        })) as LiveDeliveryTask[];
+        .map(t => {
+          const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
+          const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
+          const order = t.store_order as any;
+          return {
+            id: t.id,
+            biker_user_id: bikerInfo?.user_id || null,
+            driver_user_id: driverInfo?.user_id || null,
+            delivery_lat: Number(t.delivery_lat),
+            delivery_lng: Number(t.delivery_lng),
+            delivery_address: t.delivery_address,
+            recipient_name: t.recipient_name,
+            recipient_phone: t.recipient_phone,
+            delivery_notes: t.delivery_notes,
+            status: t.status,
+            worker_name: bikerInfo?.name || driverInfo?.name || null,
+            order_number: order?.order_number || null,
+            total_amount: order?.total_amount || null,
+            created_at: t.created_at,
+          };
+        }) as LiveDeliveryTask[];
     },
     refetchInterval: 15000,
   });
