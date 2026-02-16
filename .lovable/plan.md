@@ -1,82 +1,113 @@
 
 
-# Plan: Unify Biker & Driver Portal Features + "Mark Delivered" Button
+# Plan: Smart Assignment with Availability Filtering + Accept/Decline Workflow
 
 ## Overview
-Synchronize all delivery functionality across both portals and add a prominent "Mark as Delivered" confirmation button that updates all related database records.
+Three changes to `/grabba/assignments`:
+1. Only show workers who are **truly available** (active status AND not currently on a delivery)
+2. Add `pending_acceptance` status so workers can **accept or decline** assignments
+3. **Notify admins** when a worker declines, so they can reassign
 
 ---
 
 ## Changes
 
-### 1. Add Missing Routes to Biker Portal
-The Biker portal is missing the `delivery`, `delivery/:deliveryId`, and `delivery-tasks` routes that the Driver portal has.
+### 1. Filter Workers by Real Availability (GrabbaAssignments.tsx)
 
-**File: `src/pages/portal/BikerPortal.tsx`**
-- Import `MakeDeliveryPage` and `BikerDeliveryTasks`
-- Add routes: `delivery`, `delivery/:deliveryId`, `delivery-tasks`
+Currently the page fetches bikers/drivers with `status = 'active'` but does not exclude those already on an active delivery. We will:
 
-### 2. Add "Make Delivery" Nav Item for Bikers
-Currently the sidebar only shows "Make Delivery" for drivers.
+- After fetching active bikers/drivers, also fetch `delivery_tasks` with status IN (`assigned`, `picked_up`, `in_transit`, `pending_acceptance`) to identify busy workers
+- Filter out any biker/driver who already has an active task
+- Show a small availability indicator (badge) next to each worker in the dropdown
 
-**File: `src/components/portal/field/PortalSidebar.tsx`**
-- Remove the `portalType === 'driver'` guard so both roles see the "Make Delivery" nav item
+### 2. New Status: `pending_acceptance` (Database Migration)
 
-### 3. Show Delivery Tasks on Both Dashboards
-Currently `BikerDeliveryTasks` only renders for bikers in `MyDayDashboard`. Show delivery tasks for both roles.
+Add a new step to the delivery lifecycle:
+- When admin assigns an order, status starts as `pending_acceptance` instead of `assigned`
+- Worker sees the task in their portal with **Accept** / **Decline** buttons
+- Accept changes status to `assigned` (existing flow continues)
+- Decline changes status to `declined`
 
-**File: `src/components/portal/field/MyDayDashboard.tsx`**
-- Remove the `portalType === 'biker'` guard on line 413
-- Show `BikerDeliveryTasks` for both portal types (it already uses the canonical `useMyAssignedRoutes` hook)
-- Add the "Make Delivery" quick action button for bikers (currently driver-only on line 386)
+**Migration SQL:**
+- No constraint changes needed (delivery_tasks.status is a plain `text` column with no check constraint)
 
-### 4. Add "Mark as Delivered" Button to AssignedOrdersPage
-This is the key feature -- a clear button on each delivery task card.
+### 3. Accept/Decline UI in Worker Portal (AssignedOrdersPage.tsx)
 
-**File: `src/components/portal/field/AssignedOrdersPage.tsx`**
-- Import `useUpdateDeliveryTaskStatus` from `useDeliveryTasks`
-- Add a confirmation dialog (similar to `BikerDeliveryTasks`) with optional delivery notes
-- Add "Mark as Delivered" and "Report Issue" action buttons to each task card
-- On confirmation:
-  - Update `delivery_tasks.status` to `'delivered'` and set `delivered_at`
-  - The existing hook already handles query invalidation for `delivery-tasks` and `biker-delivery-tasks`
-- Add status-appropriate action buttons:
-  - `assigned` -> "Mark Picked Up"
-  - `picked_up` -> "In Transit"
-  - `in_transit` -> "Mark Delivered" / "Report Issue"
+Update the `STATUS_FLOW` map and the task query:
+- Fetch tasks with status `pending_acceptance` in addition to existing statuses
+- Add new flow entry: `pending_acceptance` -> Accept (`assigned`) or Decline (`declined`)
+- Decline requires a reason (notes field)
+- On decline, insert a row into `internal_notifications` targeting `admin` role with details about which order was declined and by whom
 
-### 5. Update `useUpdateDeliveryTaskStatus` Hook
-Ensure the hook also invalidates `my-assigned-tasks` query so the AssignedOrdersPage refreshes after status changes.
+### 4. Admin Notification on Decline (AssignedOrdersPage.tsx + GrabbaAssignments.tsx)
 
-**File: `src/hooks/useDeliveryTasks.ts`**
-- Add `queryClient.invalidateQueries({ queryKey: ["my-assigned-tasks"] })` to the `onSuccess` callback
-- Add `queryClient.invalidateQueries({ queryKey: ["dispatchable-orders"] })` so admin views also refresh
+- When a worker declines, insert into `internal_notifications`:
+  - `title`: "Delivery Declined"
+  - `message`: "[Worker Name] declined order [Order Number]. Reason: [notes]"
+  - `target_role`: "admin"
+  - `entity_type`: "delivery_task"
+  - `entity_id`: task ID
+- On the GrabbaAssignments page, show a visual indicator on orders with `declined` tasks so admin can quickly reassign
+
+### 5. Update useDeliveryTasks Hook
+
+- Update `useCreateDeliveryTask` to set initial status to `pending_acceptance`
+- Add query invalidation for `assignment-tasks` on status updates
 
 ---
 
 ## Technical Details
 
-### Database Flow on "Mark Delivered"
+### Files Modified (4 files)
+
+1. **`src/pages/grabba/GrabbaAssignments.tsx`**
+   - Filter bikers/drivers by cross-referencing active delivery_tasks
+   - Show availability badge in worker dropdown
+   - Change initial assignment status from `assigned` to `pending_acceptance`
+   - Show "Declined" badge on orders where task was declined
+   - Allow re-assignment of declined tasks
+
+2. **`src/components/portal/field/AssignedOrdersPage.tsx`**
+   - Add `pending_acceptance` to the fetched statuses
+   - Add Accept/Decline buttons for `pending_acceptance` tasks
+   - On Decline: update status + insert `internal_notifications` row
+   - Decline requires a reason in the notes field
+
+3. **`src/hooks/useDeliveryTasks.ts`**
+   - Update `useCreateDeliveryTask` default status to `pending_acceptance`
+   - Add `assignment-tasks` to invalidated queries
+
+4. **`src/hooks/useLiveMapData.ts`**
+   - Add `pending_acceptance` to the active task statuses filter so the live map reflects pending tasks
+
+### Status Flow Diagram
+
 ```text
-delivery_tasks.status -> 'delivered'
-delivery_tasks.delivered_at -> current timestamp
-delivery_tasks.delivery_notes -> optional worker notes
+Admin assigns order
+        |
+        v
+ pending_acceptance
+   /          \
+ Accept      Decline
+   |            |
+   v            v
+ assigned    declined --> Admin notified --> Reassign
+   |
+   v
+ picked_up --> in_transit --> delivered / failed
 ```
 
-All queries invalidated:
-- `delivery-tasks` (dispatcher view)
-- `biker-delivery-tasks` (legacy)
-- `my-assigned-tasks` (AssignedOrdersPage)
-- `dispatchable-orders` (admin dispatch)
-- `my-assigned-routes` (canonical route data)
+### Availability Logic (Pseudo-code)
 
-### No Database Migration Needed
-The `delivery_tasks` table already supports the `delivered` status and has `delivered_at`, `delivery_notes` columns. The existing `useUpdateDeliveryTaskStatus` hook handles the update logic correctly.
+```text
+1. Fetch all bikers WHERE status = 'active'
+2. Fetch all delivery_tasks WHERE status IN ('pending_acceptance','assigned','picked_up','in_transit')
+3. busyBikerIds = tasks.map(t => t.biker_id).filter(Boolean)
+4. availableBikers = activeBikers.filter(b => !busyBikerIds.includes(b.id))
+5. Same logic for drivers using driver_id
+```
 
-### Files Changed (5 files)
-1. `src/pages/portal/BikerPortal.tsx` -- add missing routes
-2. `src/components/portal/field/PortalSidebar.tsx` -- show delivery nav for both roles
-3. `src/components/portal/field/MyDayDashboard.tsx` -- show delivery tasks + quick action for both
-4. `src/components/portal/field/AssignedOrdersPage.tsx` -- add Mark Delivered UI with confirmation dialog
-5. `src/hooks/useDeliveryTasks.ts` -- broaden query invalidation
+### No Database Migration Required
+- `delivery_tasks.status` is an unconstrained text column
+- `internal_notifications` table already exists with the needed columns (`title`, `message`, `target_role`, `entity_type`, `entity_id`)
 
