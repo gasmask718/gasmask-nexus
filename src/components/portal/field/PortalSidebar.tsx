@@ -38,9 +38,7 @@ export function PortalSidebar({ portalType }: PortalSidebarProps) {
     { label: t('portal.nav.my_day'), path: basePath, icon: <LayoutDashboard className="h-5 w-5" /> },
     { label: t('portal.nav.stores'), path: `${basePath}/stores`, icon: <Store className="h-5 w-5" /> },
     { label: t('portal.nav.start_visit'), path: `${basePath}/visit`, icon: <ClipboardCheck className="h-5 w-5" /> },
-    ...(portalType === 'driver' ? [
-      { label: t('portal.nav.make_delivery'), path: `${basePath}/delivery`, icon: <Truck className="h-5 w-5" /> },
-    ] : []),
+    { label: t('portal.nav.make_delivery'), path: `${basePath}/delivery`, icon: <Truck className="h-5 w-5" /> },
     { label: 'Assigned Orders', path: `${basePath}/assigned-orders`, icon: <Package className="h-5 w-5" /> },
     { label: t('portal.nav.changes'), path: `${basePath}/changes`, icon: <FileText className="h-5 w-5" /> },
     { label: t('portal.nav.history'), path: `${basePath}/history`, icon: <History className="h-5 w-5" /> },

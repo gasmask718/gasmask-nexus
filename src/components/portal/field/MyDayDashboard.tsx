@@ -383,16 +383,14 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
               <span>{t('action.start_visit')}</span>
             </Button>
             
-            {portalType === 'driver' && (
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col gap-2"
-                onClick={() => navigate(`${basePath}/delivery`)}
-              >
-                <Truck className={`h-6 w-6 ${accentClass}`} />
-                <span>{t('action.make_delivery')}</span>
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              className="h-auto py-4 flex-col gap-2"
+              onClick={() => navigate(`${basePath}/delivery`)}
+            >
+              <Truck className={`h-6 w-6 ${accentClass}`} />
+              <span>{t('action.make_delivery')}</span>
+            </Button>
             
             <Button 
               variant="outline" 
@@ -409,8 +407,8 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
       {/* Live Location Map */}
       <LiveLocationMap height="280px" />
 
-      {/* Delivery Tasks (Biker only) */}
-      {portalType === 'biker' && <BikerDeliveryTasks />}
+      {/* Delivery Tasks */}
+      <BikerDeliveryTasks />
 
       {/* Today's Stops */}
       <Card className="overflow-hidden">

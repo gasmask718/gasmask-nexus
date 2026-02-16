@@ -201,6 +201,9 @@ export function useUpdateDeliveryTaskStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["delivery-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["biker-delivery-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["my-assigned-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["dispatchable-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["my-assigned-routes"] });
       toast.success("Task updated");
     },
     onError: (err: any) => {
