@@ -1,86 +1,87 @@
 
+# Live Map Upgrade: Store Pins + Delivery Assignment Details
 
-# Phase: Fix Biker Portal Location Pipeline
+## Current State
+- `/live-map` route renders `LiveMapCommandCenter` which shows active routes, worker locations, and alerts
+- The `stores` table has `lat`/`lng` columns but **zero stores have coordinates populated**
+- `store_master` has no lat/lng columns at all
+- The `geo_identities` table exists with a `resolve-geo` edge function, but only 1 record exists
+- The existing `MapCanvas` component renders route stops and worker markers
 
-## Problems Found
+## What Needs to Happen
 
-### Problem 1: Location writes from the Biker Portal SILENTLY FAIL
-The `LiveLocationMap` component (used in the biker portal's MyDayDashboard) inserts location events with `event_type: 'live_tracking'`. But the database constraint only allows: `'arrival', 'departure', 'idle', 'gps_ping'`. Every GPS write from the portal is rejected and the error is swallowed silently.
+### 1. Batch Geocode Stores (Database + Edge Function)
+Since no stores have coordinates, we need to geocode them before they can appear on the map.
 
-### Problem 2: Admin cannot read biker location data (RLS blocks it)
-The `BikerLocationPreview` on `/delivery/bikers/:id` queries `location_events` for the biker's `user_id`. But the RLS policy only allows `auth.uid() = user_id` -- meaning only the biker themselves can see their own location. An admin viewing the profile page gets zero results.
+- Create a new edge function `batch-geocode-stores` that:
+  - Queries stores with addresses but no lat/lng
+  - Uses Mapbox Geocoding API to resolve coordinates
+  - Updates `stores.lat` and `stores.lng` columns
+  - Processes in batches of 50 to respect rate limits
+- Add a "Geocode Stores" admin action button on the Live Map page to trigger this
+- Also update the store creation/update flow to auto-geocode new stores via the existing `resolve-geo` function
 
-### Problem 3: Biker-to-User ID linkage is often missing
-Many bikers in the `bikers` table have `user_id = NULL`. The `ensureBikerRecord` in `PortalAuthGuard` tries to auto-heal this on portal login, but the `BikerLocationPreview` needs the `user_id` to query `location_events`. If the linkage doesn't exist, no location is found.
+### 2. Add Store Pins to MapCanvas with Viewport-Based Rendering
+Modify `MapCanvas.tsx` to accept and render store markers efficiently:
 
-### Problem 4: No portal login detection signal
-There's no explicit "biker is online" signal. The only indicator is whether recent `location_events` exist, but since those writes fail (Problem 1), the admin side never sees the biker as active.
+- Add a new `stores` prop to `MapCanvas` with `{id, name, lat, lng, address_street, address_city, phone, status, health_status, type}`
+- Listen to the map's `moveend` event to get current viewport bounds
+- On each viewport change, filter stores to only those within the visible bounds
+- Render only in-bounds stores as small dot markers (smaller than route stops/workers)
+- On pin click, show a popup card with: store name, address (2-line postal format), phone, status badge, health status, and a "View Profile" link to `/stores/:id`
+- Clear and re-render store markers on viewport change (debounced ~300ms)
 
----
+### 3. Connect Delivery Assignment Details to Sidebar
+Enhance the existing sidebar in `LiveMapCommandCenter`:
 
-## Fix Plan
+- Expand the route cards to show:
+  - Assignee name and role
+  - Route date and territory
+  - Stop completion progress bar
+  - Each stop's store name, status (completed/pending/skipped), and arrival time
+  - Total estimated duration and distance
+- When a route is selected, the `RouteDrawer` already handles detailed view -- ensure it shows all stop details with store addresses
+- Add delivery assignment stats to the header stats panel: total assigned, in-progress, completed today
 
-### Fix 1: Update the DB constraint to allow 'live_tracking'
-Add a migration that drops and re-creates the `event_type_check` constraint to include `'live_tracking'` alongside the existing allowed values.
-
-### Fix 2: Add an admin-readable RLS policy on `location_events`
-Add a SELECT policy that allows users with admin/owner/va/ceo roles (looked up from `user_profiles` or `user_roles`) to read all location events. This keeps the existing self-read policy intact.
-
-### Fix 3: Fix the `LiveLocationMap` to log on first position (not just every 30s)
-Currently the first GPS log only happens after 30 seconds. Change it to also log immediately on first position acquisition so the admin sees data right away.
-
-### Fix 4: Add a `portal_session_active` event on portal login
-When a biker logs into the portal, insert a location event with `event_type: 'gps_ping'` (or a new allowed type) so the admin side can detect the biker is online even before GPS coordinates arrive.
-
----
+### 4. Wire Store Data into LiveMapCommandCenter
+- Add a new query in `LiveMapCommandCenter` to fetch all stores with lat/lng coordinates from the `stores` table
+- Pass stores down to `MapCanvas` as a new prop
+- Add a "Stores" toggle in the filter bar to show/hide store pins
+- Add store count to the stats panel
 
 ## Technical Details
 
-### Migration SQL
-```sql
--- Allow 'live_tracking' in event_type
-ALTER TABLE public.location_events DROP CONSTRAINT location_events_event_type_check;
-ALTER TABLE public.location_events ADD CONSTRAINT location_events_event_type_check
-  CHECK (event_type = ANY (ARRAY['arrival','departure','idle','gps_ping','live_tracking']));
+### Files to Create
+- `supabase/functions/batch-geocode-stores/index.ts` -- batch geocoding edge function
 
--- Admin can read all location events
-CREATE POLICY "Admins can view all location events"
-ON location_events FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM user_profiles
-    WHERE user_profiles.user_id = auth.uid()
-    AND user_profiles.primary_role IN ('admin','owner','ceo','va')
-  )
-  OR
-  EXISTS (
-    SELECT 1 FROM user_roles
-    WHERE user_roles.user_id = auth.uid()
-    AND user_roles.role IN ('admin','owner','dynasty_owner','super_admin')
-  )
-);
+### Files to Modify
+- `src/components/livemap/MapCanvas.tsx` -- add store pins with viewport culling, click popups
+- `src/pages/delivery/LiveMapCommandCenter.tsx` -- add store query, pass to MapCanvas, add toggle + stats
+- `src/components/livemap/MapFiltersBar.tsx` -- add "Show Stores" toggle
+- `src/components/livemap/LiveMapLegend.tsx` -- add store pin legend entry
+
+### Viewport Culling Logic (Performance)
+```text
+map.on('moveend') --> get bounds --> filter stores within bounds --> render only visible pins
+```
+- Debounce the moveend handler by 300ms
+- Cap rendered markers at ~500 to prevent DOM overload
+- Use smaller markers (10px dots) for stores vs route stops (16-24px)
+
+### Store Popup on Click
+```text
++---------------------------+
+| Store Name           [badge]
+| 123 Main St
+| Brooklyn, NY 11201
+| Phone: (555) 123-4567
+| Health: Active
+| [View Profile ->]
++---------------------------+
 ```
 
-### Code Changes
-
-**`src/components/map/LiveLocationMap.tsx`**
-- Log location immediately on first GPS fix (not just every 30 seconds)
-- Change `event_type` from `'live_tracking'` to `'gps_ping'` as a fallback-safe option (or keep `'live_tracking'` since the constraint will be updated)
-
-**`src/components/portal/PortalAuthGuard.tsx`**
-- After successful auth guard pass, fire an initial `location_events` insert with `event_type: 'gps_ping'` and null lat/lng as a "session start" signal, so the admin side knows the biker is online
-
-**`src/components/map/BikerLocationPreview.tsx`**
-- Add `'live_tracking'` to the event types it looks for (already queries all types, so this works automatically once data flows)
-- Add a "Last seen" freshness indicator (e.g., green = <5min ago, yellow = <30min, gray = older)
-
-### Files to modify
-1. New migration SQL (constraint + RLS policy)
-2. `src/components/map/LiveLocationMap.tsx` -- immediate first log
-3. `src/components/portal/PortalAuthGuard.tsx` -- session start signal
-4. `src/components/map/BikerLocationPreview.tsx` -- freshness indicator
-
-### No breaking changes
-- Existing location reads/writes unaffected
-- Existing RLS self-read policy preserved
-- BikerLocationPreview already handles missing data gracefully
+### Geocoding Strategy
+- The `batch-geocode-stores` function uses the same Mapbox token already configured (`VITE_MAPBOX_PUBLIC_TOKEN`)
+- Processes stores in chunks, updating `stores.lat` and `stores.lng` directly
+- Returns count of successfully geocoded stores
+- Can be re-run safely (skips stores already geocoded)
