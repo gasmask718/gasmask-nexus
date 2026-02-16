@@ -1,80 +1,92 @@
 
 
-# Live Map Upgrade: All Stores + Better Pins + Rider Locations
+# Address Validation, Normalization, and Full Store Mapping
 
-## What Changes
+## Problem
+Your store data is messy:
+- **2,804 stores** have addresses but no map coordinates
+- Many stores have full addresses crammed into the street field (e.g., "1403 Rockaway Pkwy, Brooklyn, NY 11236, USA") with city/state/zip left blank
+- Some stores have placeholder text like "No address"
+- Only **147 out of 2,959** stores currently appear on the live map
 
-### 1. Geocode All 2,850+ Remaining Stores
-The `batch-geocode-stores` edge function currently caps at 200 stores per run. It needs to be updated to handle all remaining stores (2,843 without coordinates out of 2,959 total).
+## What Will Change
 
-- Increase the query limit from 200 to 1000
-- The frontend geocode button will need to be invoked multiple times (or we auto-loop), but each run processes up to 1000 stores in batches of 50 with rate-limit pauses
-- The Geocode button should always be visible (not just when `totalStores === 0`) so ops can re-run for newly added stores
+### 1. Upgrade the Batch Geocode Function
+The existing `batch-geocode-stores` edge function currently only saves lat/lng. It will be upgraded to also:
 
-### 2. Redesign Store Pin to Classic Map Pin Shape
-Replace the current small amber dot with a proper teardrop/map-pin SVG marker. This is the classic pin design users expect on maps.
+- **Validate** each address through Mapbox -- if Mapbox returns a result, it's a real address
+- **Normalize** the address fields by parsing Mapbox's response to extract the correct street, city, state, and ZIP into their proper columns
+- **Flag invalid addresses** -- stores where Mapbox returns no result will have their `address_country` set to `UNVERIFIED` so ops can review them
+- Process up to 1,000 stores per run (multiple runs needed for all 2,800+)
 
-- Use an inline SVG for the pin shape (teardrop with circle top) in amber/gold color
-- Size: roughly 24px tall, visible but not overwhelming
-- Remove all hover animations (`mouseenter`/`mouseleave` scale transitions) as requested
-- Keep the click-to-popup behavior
+For example, a store with:
+```text
+address_street: "1403 Rockaway Pkwy, Brooklyn, NY 11236, USA"
+address_city: (empty)
+address_state: (empty)
+address_zip: (empty)
+```
+Will be corrected to:
+```text
+address_street: "1403 Rockaway Parkway"
+address_city: "Brooklyn"
+address_state: "New York"
+address_zip: "11236"
+lat: 40.6457
+lng: -73.9028
+```
 
-### 3. Redesign Store Popup Card
-Replace the current raw HTML popup with a cleaner, more structured layout:
+### 2. Re-geocode Already-Geocoded Stores (Optional Flag)
+The function will accept a `revalidate=true` parameter to also re-check the 147 stores that already have coordinates, ensuring their address fields are properly normalized too.
 
-- Store name (bold) with status badge (colored pill)
-- 2-line postal address (Street / City, State ZIP)
-- Phone number
-- Health score as a small progress indicator
-- Store type label
-- "View Profile" link to `/stores/:id`
-- Better spacing, font hierarchy, and dark-theme-friendly styling
+### 3. Live Map Auto-Shows All Valid Stores
+No changes needed to the map rendering logic -- once stores have lat/lng populated, they automatically appear on `/live-map` through the existing viewport-culled pin system.
 
-### 4. Plot Live Rider (Driver/Biker) Locations with Target Lines
-Currently workers already render as circle markers. The upgrade:
-
-- Draw a dashed line from each worker's live GPS position to their current target stop (the next pending stop on their active route)
-- This visually connects the rider to where they're heading
-- Line style: dashed, color-matched to the worker's role color, semi-transparent
-- Only draw the line if the worker has an active route with a pending stop that has coordinates
-- Lines update automatically as worker locations and route data refresh
+### 4. Geocode Button Behavior
+The "Geocode Stores" button on the live map will trigger the function. After each run completes, the store pins refresh automatically. The button can be clicked multiple times to process all 2,800+ stores in batches.
 
 ## Technical Details
 
 ### Files to Modify
 
 **`supabase/functions/batch-geocode-stores/index.ts`**
-- Change `.limit(200)` to `.limit(1000)` to process more stores per invocation
+- After geocoding, parse Mapbox's `context` array to extract:
+  - Street: from `feature.text` + `feature.address` (house number)
+  - City: from context entry starting with `place`
+  - State: from context entry starting with `region`
+  - ZIP: from context entry starting with `postcode`
+- Update the store record with all normalized fields plus lat/lng
+- Accept optional `revalidate` body parameter to re-process stores that already have coordinates
+- Skip stores with clearly invalid addresses (e.g., "No address", empty strings, single characters)
 
-**`src/components/livemap/MapCanvas.tsx`**
-- Replace amber dot element with SVG teardrop pin for store markers
-- Remove `mouseenter`/`mouseleave` hover animation listeners
-- Redesign popup HTML with cleaner card layout
-- Add worker-to-target-stop dashed line rendering using Mapbox `addSource`/`addLayer` with `line-dasharray`
-- Match each worker to their active route's next pending stop for the line endpoint
+**`src/pages/delivery/LiveMapCommandCenter.tsx`**
+- Pass `{ revalidate: false }` in the geocode handler body by default
+- After geocoding completes, show count of validated vs failed stores in the toast
 
-**`src/components/livemap/MapFiltersBar.tsx`**
-- Remove the condition `stats.totalStores === 0` from Geocode button so it's always available
-
-**`src/components/livemap/LiveMapLegend.tsx`**
-- Update store legend entry to show the new pin shape instead of the amber dot
-
-### Worker-to-Target Line Logic
+### Address Parsing Logic from Mapbox Response
 ```text
-For each worker with an active route:
-  1. Find route where route.assigned_to === worker.worker_id
-  2. Find the first stop with status !== 'completed' (next target)
-  3. If target stop has store coordinates, draw dashed line from [worker.lng, worker.lat] to [stop.store.lng, stop.store.lat]
-  4. Color the line to match worker role (blue for driver, cyan for biker)
-  5. Clean up and redraw lines on every worker/route data refresh
+Mapbox feature response:
+  feature.text = "Rockaway Parkway"
+  feature.address = "1403"
+  feature.place_name = "1403 Rockaway Parkway, Brooklyn, New York 11236, United States"
+  feature.context = [
+    { id: "postcode.123", text: "11236" },
+    { id: "place.456", text: "Brooklyn" },
+    { id: "region.789", text: "New York" },
+    ...
+  ]
+
+Extracted:
+  address_street = "1403 Rockaway Parkway"
+  address_city = "Brooklyn"
+  address_state = "New York"
+  address_zip = "11236"
+  lat/lng from feature.center
 ```
 
-### Pin SVG Design
-A classic teardrop map pin rendered as an inline SVG element, amber-colored with white center dot, approximately 24x32px.
-
-### Performance
-- Viewport culling remains in place (only in-bounds stores render)
-- 500-marker cap stays
-- Debounced viewport updates stay at 300ms
-- Worker target lines use Mapbox native layers (GeoJSON sources) for performance
+### Invalid Address Handling
+Stores that fail geocoding (Mapbox returns no results) will be:
+- Skipped for lat/lng (no fake coordinates)
+- Logged with the raw address for ops review
+- Counted in the response as `failed` with a breakdown
 
