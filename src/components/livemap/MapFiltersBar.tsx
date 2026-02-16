@@ -12,6 +12,7 @@ import {
   RefreshCw,
   Filter,
   X,
+  MapPin,
 } from "lucide-react";
 
 export interface MapFilters {
@@ -21,6 +22,7 @@ export interface MapFilters {
   showAlerts: boolean;
   showCriticalOnly: boolean;
   showSLABreached: boolean;
+  showStores: boolean;
 }
 
 interface MapFiltersBarProps {
@@ -34,7 +36,10 @@ interface MapFiltersBarProps {
     totalWorkers: number;
     totalAlerts: number;
     criticalAlerts: number;
+    totalStores: number;
   };
+  onGeocodeStores?: () => void;
+  isGeocoding?: boolean;
 }
 
 export function MapFiltersBar({
@@ -44,6 +49,8 @@ export function MapFiltersBar({
   isRefreshing,
   lastRefresh,
   stats,
+  onGeocodeStores,
+  isGeocoding,
 }: MapFiltersBarProps) {
   const toggleRole = (role: string) => {
     const roles = filters.roles.includes(role)
@@ -67,6 +74,7 @@ export function MapFiltersBar({
       showAlerts: true,
       showCriticalOnly: false,
       showSLABreached: false,
+      showStores: true,
     });
   };
 
@@ -144,8 +152,22 @@ export function MapFiltersBar({
         </Button>
       </div>
 
-      {/* Alert Filters */}
+      {/* Store & Alert Filters */}
       <div className="flex items-center gap-1 bg-background/95 backdrop-blur rounded-lg p-1 border border-border/50">
+        <Button
+          size="sm"
+          variant={filters.showStores ? 'default' : 'ghost'}
+          className="h-8 px-2"
+          onClick={() => onFiltersChange({ ...filters, showStores: !filters.showStores })}
+        >
+          <MapPin className="h-4 w-4 mr-1" />
+          Stores
+          {stats.totalStores > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1">
+              {stats.totalStores}
+            </Badge>
+          )}
+        </Button>
         <Button
           size="sm"
           variant={filters.showCriticalOnly ? 'destructive' : 'ghost'}
@@ -169,6 +191,20 @@ export function MapFiltersBar({
           SLA
         </Button>
       </div>
+
+      {/* Geocode Button */}
+      {onGeocodeStores && stats.totalStores === 0 && (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 px-2"
+          onClick={onGeocodeStores}
+          disabled={isGeocoding}
+        >
+          {isGeocoding ? <RefreshCw className="h-4 w-4 animate-spin mr-1" /> : <MapPin className="h-4 w-4 mr-1" />}
+          Geocode
+        </Button>
+      )}
 
       {/* Clear Filters */}
       {hasActiveFilters && (

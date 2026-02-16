@@ -3,10 +3,26 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { LiveRoute, WorkerLocation, LiveAlert, LiveStop } from "@/hooks/useLiveMapData";
 
+export interface MapStore {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  address_street: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  phone: string | null;
+  status: string | null;
+  health_score: number | null;
+  type: string | null;
+}
+
 interface MapCanvasProps {
   routes: LiveRoute[];
   workers: WorkerLocation[];
   alerts: LiveAlert[];
+  stores?: MapStore[];
+  showStores?: boolean;
   selectedRouteId: string | null;
   selectedWorkerId: string | null;
   followWorkerId: string | null;
@@ -20,6 +36,8 @@ export function MapCanvas({
   routes,
   workers,
   alerts,
+  stores = [],
+  showStores = true,
   selectedRouteId,
   selectedWorkerId,
   followWorkerId,
@@ -32,6 +50,8 @@ export function MapCanvas({
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const routeLayersRef = useRef<string[]>([]);
+  const storeMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -48,7 +68,6 @@ export function MapCanvas({
         zoom: 11,
       });
     } else {
-      // Fallback to OpenStreetMap tiles
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: {
@@ -108,11 +127,114 @@ export function MapCanvas({
     }
   }, []);
 
+  // Render store markers based on viewport
+  const renderStoreMarkers = useCallback(() => {
+    if (!map.current || !showStores) {
+      // Clear all store markers if stores hidden
+      storeMarkersRef.current.forEach(m => m.remove());
+      storeMarkersRef.current = [];
+      return;
+    }
+
+    const bounds = map.current.getBounds();
+    if (!bounds) return;
+
+    // Clear previous store markers
+    storeMarkersRef.current.forEach(m => m.remove());
+    storeMarkersRef.current = [];
+
+    // Filter stores within viewport, cap at 500
+    const visibleStores = stores
+      .filter(s => s.lat && s.lng && bounds.contains([s.lng, s.lat]))
+      .slice(0, 500);
+
+    visibleStores.forEach(store => {
+      const el = document.createElement('div');
+      el.style.cssText = `
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #f59e0b;
+        border: 2px solid #ffffff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        cursor: pointer;
+        transition: transform 0.15s;
+      `;
+      el.addEventListener('mouseenter', () => {
+        el.style.transform = 'scale(1.8)';
+      });
+      el.addEventListener('mouseleave', () => {
+        el.style.transform = 'scale(1)';
+      });
+
+      // Build popup HTML
+      const statusBadge = store.status
+        ? `<span style="display:inline-block;padding:1px 6px;border-radius:9999px;font-size:10px;font-weight:600;background:${store.status === 'active' ? '#22c55e' : store.status === 'churned' ? '#ef4444' : '#6b7280'};color:white;">${store.status}</span>`
+        : '';
+      const healthLabel = store.health_score != null
+        ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;">Health: ${store.health_score}/100</div>`
+        : '';
+      const addressLine1 = store.address_street || '';
+      const addressLine2 = [store.address_city, store.address_state].filter(Boolean).join(', ');
+      const phoneLine = store.phone ? `<div style="font-size:11px;color:#9ca3af;">📞 ${store.phone}</div>` : '';
+
+      const popupHTML = `
+        <div style="min-width:180px;font-family:system-ui,sans-serif;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <strong style="font-size:13px;">${store.name}</strong>
+            ${statusBadge}
+          </div>
+          <div style="font-size:11px;color:#d1d5db;">${addressLine1}</div>
+          <div style="font-size:11px;color:#d1d5db;">${addressLine2}</div>
+          ${phoneLine}
+          ${healthLabel}
+          <a href="/stores/${store.id}" style="display:inline-block;margin-top:6px;font-size:11px;color:#3b82f6;text-decoration:none;">View Profile →</a>
+        </div>
+      `;
+
+      const popup = new mapboxgl.Popup({
+        offset: 8,
+        closeButton: true,
+        maxWidth: '240px',
+      }).setHTML(popupHTML);
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([store.lng, store.lat])
+        .setPopup(popup)
+        .addTo(map.current!);
+
+      storeMarkersRef.current.push(marker);
+    });
+  }, [stores, showStores]);
+
+  // Viewport-based store rendering with debounce
+  useEffect(() => {
+    if (!map.current) return;
+
+    const handler = () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(renderStoreMarkers, 300);
+    };
+
+    // Initial render once map is ready
+    if (map.current.isStyleLoaded()) {
+      renderStoreMarkers();
+    } else {
+      map.current.on('load', renderStoreMarkers);
+    }
+
+    map.current.on('moveend', handler);
+
+    return () => {
+      map.current?.off('moveend', handler);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [renderStoreMarkers]);
+
   // Update worker markers
   useEffect(() => {
     if (!map.current) return;
 
-    // Clear old worker markers
     Object.entries(markersRef.current).forEach(([key, marker]) => {
       if (key.startsWith('worker-')) {
         marker.remove();
@@ -120,7 +242,6 @@ export function MapCanvas({
       }
     });
 
-    // Add worker markers
     workers.forEach(worker => {
       const hasAlert = alerts.some(a => 
         routes.find(r => r.assigned_to === worker.worker_id && r.id === a.route_id)
@@ -145,15 +266,9 @@ export function MapCanvas({
         transition: transform 0.2s;
       `;
       el.innerHTML = worker.name.charAt(0).toUpperCase();
-      el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.15)';
-      });
-      el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)';
-      });
-      el.addEventListener('click', () => {
-        onSelectWorker(worker.worker_id);
-      });
+      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.15)'; });
+      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+      el.addEventListener('click', () => { onSelectWorker(worker.worker_id); });
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([worker.lng, worker.lat])
@@ -167,7 +282,6 @@ export function MapCanvas({
   useEffect(() => {
     if (!map.current) return;
 
-    // Clear old stop markers
     Object.entries(markersRef.current).forEach(([key, marker]) => {
       if (key.startsWith('stop-')) {
         marker.remove();
@@ -175,7 +289,6 @@ export function MapCanvas({
       }
     });
 
-    // Add stop markers for all routes
     routes.forEach(route => {
       const isSelected = route.id === selectedRouteId;
       
@@ -207,9 +320,7 @@ export function MapCanvas({
         if (isSelected) {
           el.innerHTML = String(idx + 1);
         }
-        el.addEventListener('click', () => {
-          onSelectStop(stop.id);
-        });
+        el.addEventListener('click', () => { onSelectStop(stop.id); });
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([stop.store.lng, stop.store.lat])
@@ -224,16 +335,10 @@ export function MapCanvas({
   useEffect(() => {
     if (!map.current) return;
 
-    // Wait for map to be loaded
     const drawRouteLines = () => {
-      // Remove old route layers
       routeLayersRef.current.forEach(layerId => {
-        if (map.current?.getLayer(layerId)) {
-          map.current.removeLayer(layerId);
-        }
-        if (map.current?.getSource(layerId)) {
-          map.current.removeSource(layerId);
-        }
+        if (map.current?.getLayer(layerId)) map.current.removeLayer(layerId);
+        if (map.current?.getSource(layerId)) map.current.removeSource(layerId);
       });
       routeLayersRef.current = [];
 
@@ -258,10 +363,7 @@ export function MapCanvas({
           data: {
             type: 'Feature',
             properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates,
-            },
+            geometry: { type: 'LineString', coordinates },
           },
         });
 
@@ -269,10 +371,7 @@ export function MapCanvas({
           id: layerId,
           type: 'line',
           source: sourceId,
-          layout: {
-            'line-join': 'round',
-            'line-cap': 'round',
-          },
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
             'line-color': getRoleColor(route.assignee?.role || route.type),
             'line-width': 4,
@@ -297,7 +396,6 @@ export function MapCanvas({
   useEffect(() => {
     if (!map.current) return;
 
-    // Clear old alert markers
     Object.entries(markersRef.current).forEach(([key, marker]) => {
       if (key.startsWith('alert-')) {
         marker.remove();
@@ -305,9 +403,7 @@ export function MapCanvas({
       }
     });
 
-    // Add alert markers (positioned at related stop/route)
     alerts.forEach(alert => {
-      // Find the related stop or route to position the alert
       let position: [number, number] | null = null;
 
       if (alert.stop_id) {
@@ -345,9 +441,7 @@ export function MapCanvas({
           <line x1="12" y1="17" x2="12.01" y2="17" stroke="white" stroke-width="2"/>
         </svg>
       `;
-      el.addEventListener('click', () => {
-        onSelectAlert(alert.id);
-      });
+      el.addEventListener('click', () => { onSelectAlert(alert.id); });
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat(position)
@@ -360,21 +454,15 @@ export function MapCanvas({
   // Follow worker
   useEffect(() => {
     if (!map.current || !followWorkerId) return;
-
     const worker = workers.find(w => w.worker_id === followWorkerId);
     if (worker) {
-      map.current.flyTo({
-        center: [worker.lng, worker.lat],
-        zoom: 15,
-        duration: 1000,
-      });
+      map.current.flyTo({ center: [worker.lng, worker.lat], zoom: 15, duration: 1000 });
     }
   }, [followWorkerId, workers]);
 
   // Focus on selected route
   useEffect(() => {
     if (!map.current || !selectedRouteId) return;
-
     const route = routes.find(r => r.id === selectedRouteId);
     if (!route || route.stops.length === 0) return;
 
@@ -389,11 +477,7 @@ export function MapCanvas({
     });
 
     if (hasValidCoords) {
-      map.current.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 14,
-        duration: 1000,
-      });
+      map.current.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 1000 });
     }
   }, [selectedRouteId, routes]);
 
