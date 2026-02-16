@@ -21,6 +21,10 @@ import { useUpdateDeliveryTaskStatus } from '@/hooks/useDeliveryTasks';
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
 
 const STATUS_FLOW: Record<string, { next: string; label: string; variant: "default" | "destructive" }[]> = {
+  pending_acceptance: [
+    { next: "assigned", label: "✅ Accept", variant: "default" },
+    { next: "declined", label: "✖ Decline", variant: "destructive" },
+  ],
   assigned: [{ next: "picked_up", label: "Mark Picked Up", variant: "default" }],
   picked_up: [{ next: "in_transit", label: "In Transit", variant: "default" }],
   in_transit: [
@@ -79,7 +83,7 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
           store_order:store_orders(id, order_number, total_amount, status, notes, store_id)
         `)
         .eq(col, workerRecord!.id)
-        .in('status', ['assigned', 'picked_up', 'in_transit'])
+        .in('status', ['pending_acceptance', 'assigned', 'picked_up', 'in_transit'])
         .order('created_at', { ascending: false });
       if (error) throw error;
       
@@ -203,15 +207,37 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
     }
   };
 
-  const handleStatusUpdate = (taskId: string, newStatus: string) => {
+  const handleStatusUpdate = async (taskId: string, newStatus: string, task?: any) => {
+    // For decline, require a reason
+    if (newStatus === 'declined' && !notes.trim()) {
+      // handled by confirmation dialog
+      return;
+    }
+
     updateStatus.mutate(
       { taskId, status: newStatus, delivery_notes: notes || undefined },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          // If declined, notify admin
+          if (newStatus === 'declined' && task) {
+            try {
+              const workerName = workerRecord?.id || 'Worker';
+              const orderNum = task.store_order?.order_number || `ORD-${task.store_order_id?.slice(0,8)}`;
+              await supabase.from('internal_notifications').insert({
+                title: 'Delivery Declined',
+                message: `${portalType === 'biker' ? 'Biker' : 'Driver'} declined order ${orderNum}. Reason: ${notes}`,
+                target_role: 'admin',
+                entity_type: 'delivery_task',
+                entity_id: taskId,
+              });
+            } catch (err) {
+              console.error('Failed to send decline notification:', err);
+            }
+          }
+
           setConfirmTask(null);
           setNotes("");
-          // If the task was delivered/failed, deselect it
-          if (newStatus === 'delivered' || newStatus === 'failed') {
+          if (['delivered', 'failed', 'declined'].includes(newStatus)) {
             setSelectedTask(null);
           }
         },
@@ -220,6 +246,7 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
   };
 
   const statusColors: Record<string, string> = {
+    pending_acceptance: 'bg-orange-500/10 text-orange-600',
     assigned: 'bg-amber-500/10 text-amber-600',
     picked_up: 'bg-blue-500/10 text-blue-600',
     in_transit: 'bg-purple-500/10 text-purple-600',
@@ -278,16 +305,16 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
                     {actions.length > 0 && (
                       <div className="flex gap-2 mt-3 pt-3 border-t">
                         {actions.map((action) => (
-                          <Button
+                           <Button
                             key={action.next}
                             size="sm"
                             variant={action.variant}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (action.next === "delivered" || action.next === "failed") {
+                              if (action.next === "delivered" || action.next === "failed" || action.next === "declined") {
                                 setConfirmTask({ ...task, nextStatus: action.next });
                               } else {
-                                handleStatusUpdate(task.id, action.next);
+                                handleStatusUpdate(task.id, action.next, task);
                               }
                             }}
                             disabled={updateStatus.isPending}
@@ -382,13 +409,17 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {confirmTask?.nextStatus === "delivered" ? "✅ Confirm Delivery" : "⚠️ Report Issue"}
+              {confirmTask?.nextStatus === "delivered" ? "✅ Confirm Delivery" 
+                : confirmTask?.nextStatus === "declined" ? "✖ Decline Assignment"
+                : "⚠️ Report Issue"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">
               {confirmTask?.nextStatus === "delivered"
                 ? `Confirm that order ${confirmTask?.store_order?.order_number || ''} has been delivered successfully.`
+                : confirmTask?.nextStatus === "declined"
+                ? `Decline this delivery assignment? Please provide a reason — the admin will be notified.`
                 : "Describe the issue with this delivery."}
             </p>
             <Textarea
@@ -397,22 +428,26 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
               placeholder={
                 confirmTask?.nextStatus === "delivered"
                   ? "Any notes about this delivery (optional)..."
+                  : confirmTask?.nextStatus === "declined"
+                  ? "Reason for declining (required)..."
                   : "What went wrong? (required)"
               }
               rows={3}
             />
             <Button
               className="w-full"
-              variant={confirmTask?.nextStatus === "failed" ? "destructive" : "default"}
+              variant={confirmTask?.nextStatus === "failed" || confirmTask?.nextStatus === "declined" ? "destructive" : "default"}
               onClick={() =>
-                confirmTask && handleStatusUpdate(confirmTask.id, confirmTask.nextStatus)
+                confirmTask && handleStatusUpdate(confirmTask.id, confirmTask.nextStatus, confirmTask)
               }
-              disabled={updateStatus.isPending || (confirmTask?.nextStatus === "failed" && !notes.trim())}
+              disabled={updateStatus.isPending || ((confirmTask?.nextStatus === "failed" || confirmTask?.nextStatus === "declined") && !notes.trim())}
             >
               {updateStatus.isPending
                 ? "Updating..."
                 : confirmTask?.nextStatus === "delivered"
                 ? "✅ Confirm Delivered"
+                : confirmTask?.nextStatus === "declined"
+                ? "✖ Confirm Decline"
                 : "Submit Issue Report"}
             </Button>
           </div>
