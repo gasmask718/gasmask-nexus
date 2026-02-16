@@ -4,7 +4,7 @@ export { WorkerDrawer } from './WorkerDrawer';
 export { RouteDrawer } from './RouteDrawer';
 export { AlertDrawer } from './AlertDrawer';
 export { LiveMapLegend } from './LiveMapLegend';
-export { MapCanvas } from './MapCanvas';
+export { MapCanvas, type MapStore } from './MapCanvas';
 export { CommandControlsBar } from './CommandControlsBar';
 export { PredictionOverlay } from './PredictionOverlay';
 export { SLACountdownBadge, SLARiskIndicator } from './SLACountdownBadge';

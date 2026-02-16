@@ -6,8 +6,9 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 import {
   useLiveRoutes,
   useLiveWorkers,
@@ -34,6 +35,8 @@ import { CommandControlsBar } from "@/components/livemap/CommandControlsBar";
 import { PredictionOverlay } from "@/components/livemap/PredictionOverlay";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Navigation } from "lucide-react";
+import { toast } from "sonner";
+import type { MapStore } from "@/components/livemap/MapCanvas";
 
 export default function LiveMapCommandCenter() {
   const navigate = useNavigate();
@@ -63,7 +66,26 @@ export default function LiveMapCommandCenter() {
     showAlerts: true,
     showCriticalOnly: false,
     showSLABreached: false,
+    showStores: true,
   });
+  
+  // Stores query
+  const { data: mapStores = [] } = useQuery({
+    queryKey: ['live-map-stores'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stores')
+        .select('id, name, lat, lng, address_street, address_city, address_state, phone, status, health_score, type')
+        .not('lat', 'is', null)
+        .not('lng', 'is', null);
+      if (error) throw error;
+      return (data || []) as MapStore[];
+    },
+    refetchInterval: 60000,
+  });
+
+  // Geocoding state
+  const [isGeocoding, setIsGeocoding] = useState(false);
   
   // Refresh tracking
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -161,7 +183,24 @@ export default function LiveMapCommandCenter() {
     totalWorkers: workers.length,
     totalAlerts: alerts.length,
     criticalAlerts: alerts.filter(a => a.severity === 'critical').length,
-  }), [routes, workers, alerts]);
+    totalStores: mapStores.length,
+  }), [routes, workers, alerts, mapStores]);
+
+  // Geocode handler
+  const handleGeocodeStores = useCallback(async () => {
+    setIsGeocoding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('batch-geocode-stores');
+      if (error) throw error;
+      toast.success(`Geocoded ${data?.geocoded || 0} stores`);
+      queryClient.invalidateQueries({ queryKey: ['live-map-stores'] });
+    } catch (err) {
+      toast.error('Failed to geocode stores');
+      console.error(err);
+    } finally {
+      setIsGeocoding(false);
+    }
+  }, [queryClient]);
 
   // Refresh handler
   const handleRefresh = useCallback(async () => {
@@ -249,6 +288,8 @@ export default function LiveMapCommandCenter() {
             isRefreshing={isRefreshing}
             lastRefresh={lastRefresh}
             stats={stats}
+            onGeocodeStores={handleGeocodeStores}
+            isGeocoding={isGeocoding}
           />
 
           {/* Map Canvas */}
@@ -256,6 +297,8 @@ export default function LiveMapCommandCenter() {
             routes={enrichedRoutes}
             workers={filteredWorkers}
             alerts={filteredAlerts}
+            stores={mapStores}
+            showStores={filters.showStores}
             selectedRouteId={mapState.selectedRoute}
             selectedWorkerId={mapState.selectedWorker}
             followWorkerId={mapState.followWorker}

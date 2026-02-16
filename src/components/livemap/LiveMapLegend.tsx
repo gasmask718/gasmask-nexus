@@ -1,4 +1,4 @@
-import { Truck, Bike, Users, AlertTriangle, Circle } from "lucide-react";
+import { Truck, Bike, Users, AlertTriangle, Circle, MapPin } from "lucide-react";
 
 export function LiveMapLegend() {
   return (
@@ -63,6 +63,15 @@ export function LiveMapLegend() {
           <div className="flex items-center gap-2">
             <Circle className="h-3 w-3 fill-red-500 text-red-500" />
             <span>Failed</span>
+          </div>
+        </div>
+
+        {/* Stores */}
+        <div className="space-y-1 pt-2 border-t">
+          <div className="text-muted-foreground font-medium">Stores</div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full bg-amber-500 border border-white" />
+            <span>Store Pin</span>
           </div>
         </div>
 
