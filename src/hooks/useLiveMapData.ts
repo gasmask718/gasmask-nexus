@@ -83,6 +83,8 @@ export interface LiveDeliveryTask {
   order_number: string | null;
   total_amount: number | null;
   created_at: string | null;
+  pickup_lat: number | null;
+  pickup_lng: number | null;
 }
 
 export interface LiveAlert {
@@ -351,7 +353,7 @@ export function useLiveDeliveryTasks() {
         .select(`
           id, biker_id, driver_id, delivery_lat, delivery_lng, delivery_address,
           recipient_name, recipient_phone, delivery_notes, status, created_at,
-          store_order:store_orders(order_number, total_amount)
+          store_order:store_orders(order_number, total_amount, store_id)
         `)
         .in('status', ['pending_acceptance', 'assigned', 'picked_up', 'in_transit', 'delivering']);
 
@@ -374,12 +376,28 @@ export function useLiveDeliveryTasks() {
       const bikerMap = Object.fromEntries((bikers || []).map(b => [b.id, { user_id: b.user_id, name: b.full_name }]));
       const driverMap = Object.fromEntries((drivers || []).map(d => [d.id, { user_id: d.user_id, name: d.full_name }]));
 
+      // Fetch store pickup coordinates for fallback trajectory lines
+      const storeIds = [...new Set(data.map(t => (t.store_order as any)?.store_id).filter(Boolean))];
+      let storeMap: Record<string, { lat: number; lng: number }> = {};
+      if (storeIds.length > 0) {
+        const { data: storesData } = await supabase
+          .from('stores')
+          .select('id, lat, lng')
+          .in('id', storeIds);
+        storeMap = Object.fromEntries(
+          (storesData || [])
+            .filter(s => s.lat && s.lng)
+            .map(s => [s.id, { lat: Number(s.lat), lng: Number(s.lng) }])
+        );
+      }
+
       return data
         .filter(t => t.delivery_lat && t.delivery_lng)
         .map(t => {
           const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
           const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
           const order = t.store_order as any;
+          const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
           return {
             id: t.id,
             biker_user_id: bikerInfo?.user_id || null,
@@ -395,6 +413,8 @@ export function useLiveDeliveryTasks() {
             order_number: order?.order_number || null,
             total_amount: order?.total_amount || null,
             created_at: t.created_at,
+            pickup_lat: storeCoords?.lat || null,
+            pickup_lng: storeCoords?.lng || null,
           };
         }) as LiveDeliveryTask[];
     },
