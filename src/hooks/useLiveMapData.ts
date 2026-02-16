@@ -160,35 +160,30 @@ export function useLiveRoutes() {
   });
 }
 
-// Fetch worker locations from drivers_live_location
+// Compute freshness status from timestamp
+function computeStatus(updatedAt: string): 'active' | 'stale' | 'offline' {
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  if (ageMs > 30 * 60 * 1000) return 'offline';
+  if (ageMs > 5 * 60 * 1000) return 'stale';
+  return 'active';
+}
+
+// Fetch worker locations from drivers_live_location + location_events for bikers/drivers
 export function useLiveWorkers() {
   return useQuery({
     queryKey: ['live-map-workers'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1) Existing drivers_live_location source
+      const { data: dllData } = await supabase
         .from('drivers_live_location')
         .select(`
-          id,
-          driver_id,
-          lat,
-          lng,
-          updated_at,
+          id, driver_id, lat, lng, updated_at,
           profile:profiles!drivers_live_location_driver_id_fkey(id, name, role, avatar_url)
         `);
 
-      if (error) throw error;
-
-      const now = new Date();
-      const staleThreshold = 5 * 60 * 1000; // 5 minutes
-
-      const workers: WorkerLocation[] = (data || []).map(loc => {
-        const lastUpdate = new Date(loc.updated_at);
-        const ageMs = now.getTime() - lastUpdate.getTime();
-        
-        let status: 'active' | 'stale' | 'offline' = 'active';
-        if (ageMs > 30 * 60 * 1000) status = 'offline';
-        else if (ageMs > staleThreshold) status = 'stale';
-
+      const seenUserIds = new Set<string>();
+      const workers: WorkerLocation[] = (dllData || []).map(loc => {
+        seenUserIds.add(loc.driver_id);
         return {
           id: loc.id,
           worker_id: loc.driver_id,
@@ -198,13 +193,74 @@ export function useLiveWorkers() {
           lat: loc.lat,
           lng: loc.lng,
           updated_at: loc.updated_at,
-          status,
+          status: computeStatus(loc.updated_at),
         };
       });
 
+      // 2) Fetch active bikers + drivers with user_ids
+      const [{ data: bikers }, { data: drivers }] = await Promise.all([
+        supabase
+          .from('bikers')
+          .select('id, user_id, full_name, status')
+          .eq('status', 'active')
+          .not('user_id', 'is', null),
+        supabase
+          .from('drivers')
+          .select('id, user_id, full_name, status')
+          .eq('status', 'active')
+          .not('user_id', 'is', null),
+      ]);
+
+      // Build lookup of user_ids we need location_events for (skip already-present ones)
+      const fieldWorkers = [
+        ...(bikers || []).map(b => ({ userId: b.user_id!, name: b.full_name || 'Biker', role: 'biker' as const, recordId: b.id })),
+        ...(drivers || []).map(d => ({ userId: d.user_id!, name: d.full_name || 'Driver', role: 'driver' as const, recordId: d.id })),
+      ].filter(w => !seenUserIds.has(w.userId));
+
+      if (fieldWorkers.length > 0) {
+        // 3) Fetch most recent location_event per user via a single query
+        //    We grab the latest event for each user_id
+        const userIds = fieldWorkers.map(w => w.userId);
+        const { data: events } = await supabase
+          .from('location_events')
+          .select('user_id, lat, lng, created_at')
+          .in('user_id', userIds)
+          .order('created_at', { ascending: false })
+          .limit(500);
+
+        // Deduplicate: keep only latest per user_id
+        const latestByUser = new Map<string, { lat: number; lng: number; created_at: string }>();
+        for (const ev of events || []) {
+          if (!latestByUser.has(ev.user_id)) {
+            latestByUser.set(ev.user_id, { lat: ev.lat, lng: ev.lng, created_at: ev.created_at! });
+          }
+        }
+
+        for (const fw of fieldWorkers) {
+          const loc = latestByUser.get(fw.userId);
+          if (!loc) continue;
+          // Skip zero-zero coords (login pings)
+          const lat = Number(loc.lat);
+          const lng = Number(loc.lng);
+          if (lat === 0 && lng === 0) continue;
+          if (!lat || !lng) continue;
+
+          workers.push({
+            id: fw.recordId,
+            worker_id: fw.userId,
+            name: fw.name,
+            role: fw.role,
+            lat,
+            lng,
+            updated_at: loc.created_at,
+            status: computeStatus(loc.created_at),
+          });
+        }
+      }
+
       return workers;
     },
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 10000,
   });
 }
 
@@ -338,6 +394,13 @@ export function useLiveMapSubscription() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'drivers_live_location' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['live-map-workers'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'location_events' },
         () => {
           queryClient.invalidateQueries({ queryKey: ['live-map-workers'] });
         }
