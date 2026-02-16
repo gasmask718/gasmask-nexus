@@ -471,13 +471,24 @@ export function MapCanvas({
           r => r.assigned_to === worker.worker_id && (r.status === 'active' || r.status === 'in_progress')
         );
 
-        // Determine origin for trajectory line: worker GPS > store pickup > none
-        const origin = worker
+        // Haversine-based sanity check: if worker GPS is >500km from destination, treat as stale/wrong
+        const isWorkerNearby = worker ? (() => {
+          const toRad = (d: number) => d * Math.PI / 180;
+          const R = 6371; // km
+          const dLat = toRad(task.delivery_lat - worker.lat);
+          const dLon = toRad(task.delivery_lng - worker.lng);
+          const a = Math.sin(dLat/2)**2 + Math.cos(toRad(worker.lat)) * Math.cos(toRad(task.delivery_lat)) * Math.sin(dLon/2)**2;
+          return 2 * R * Math.asin(Math.sqrt(a)) < 500;
+        })() : false;
+
+        // Determine origin: use worker GPS only if nearby, else fallback to store pickup
+        const useWorkerOrigin = worker && isWorkerNearby;
+        const origin = useWorkerOrigin
           ? [worker.lng, worker.lat]
           : (task.pickup_lat && task.pickup_lng ? [task.pickup_lng, task.pickup_lat] : null);
 
-        // Determine pin color: use worker role color if available, else a default delivery color
-        const pinColor = worker ? getRoleColor(worker.role) : '#f97316';
+        // Determine pin color: use worker role color if worker is the origin, else default delivery orange
+        const pinColor = useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316';
 
         // Draw trajectory line if we have an origin and no route trajectory already exists
         if (origin && !hasRouteTrajectory) {
@@ -540,7 +551,7 @@ export function MapCanvas({
           el.addEventListener('click', (e) => {
             e.stopPropagation();
             storePopupRef.current?.remove();
-            const originLabel = worker ? `🚚 ${task.worker_name || 'Worker'} (live GPS)` : (origin ? '🏪 Store pickup location' : '⚠️ No origin available');
+            const originLabel = useWorkerOrigin ? `🚚 ${task.worker_name || 'Worker'} (live GPS)` : (origin ? '🏪 Store pickup location' : '⚠️ No origin available');
             const html = `<div style="min-width:220px;max-width:280px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                 <div style="flex:1;font-size:14px;font-weight:700;color:#111827;line-height:1.2;">📦 ${task.order_number || 'Delivery Task'}</div>
