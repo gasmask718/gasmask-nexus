@@ -190,9 +190,14 @@ export default function LiveMapCommandCenter() {
   const handleGeocodeStores = useCallback(async () => {
     setIsGeocoding(true);
     try {
-      const { data, error } = await supabase.functions.invoke('batch-geocode-stores');
+      const { data, error } = await supabase.functions.invoke('batch-geocode-stores', {
+        body: { revalidate: false },
+      });
       if (error) throw error;
-      toast.success(`Geocoded ${data?.geocoded || 0} stores`);
+      const g = data?.geocoded || 0;
+      const f = data?.failed || 0;
+      const s = data?.skipped || 0;
+      toast.success(`Validated ${g} stores, ${f} failed, ${s} skipped (${data?.total || 0} processed)`);
       queryClient.invalidateQueries({ queryKey: ['live-map-stores'] });
     } catch (err) {
       toast.error('Failed to geocode stores');
