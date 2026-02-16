@@ -54,6 +54,7 @@ serve(async (req) => {
       .from('stores')
       .select('id, name, address_street, address_city, address_state, address_zip, address_country')
       .not('address_street', 'is', null)
+      .neq('address_street', '')
       .limit(1000);
 
     if (!revalidate) {
