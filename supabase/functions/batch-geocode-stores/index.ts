@@ -28,7 +28,7 @@ serve(async (req) => {
       .select('id, name, address_street, address_city, address_state, address_zip, address_country')
       .or('lat.is.null,lng.is.null')
       .not('address_street', 'is', null)
-      .limit(200);
+      .limit(1000);
 
     if (fetchError) {
       throw new Error(`Failed to fetch stores: ${fetchError.message}`);

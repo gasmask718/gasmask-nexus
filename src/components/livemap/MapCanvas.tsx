@@ -32,6 +32,44 @@ interface MapCanvasProps {
   onSelectAlert: (alertId: string) => void;
 }
 
+// Classic teardrop pin SVG
+const STORE_PIN_SVG = `
+<svg width="24" height="32" viewBox="0 0 24 32" xmlns="http://www.w3.org/2000/svg">
+  <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#f59e0b" stroke="#b45309" stroke-width="1"/>
+  <circle cx="12" cy="11" r="4.5" fill="white"/>
+</svg>`;
+
+function buildStorePopupHTML(store: MapStore): string {
+  const statusColor = store.status === 'active' ? '#22c55e' : store.status === 'churned' ? '#ef4444' : '#6b7280';
+  const statusLabel = store.status || 'unknown';
+  const addressLine1 = store.address_street || '';
+  const addressLine2 = [store.address_city, store.address_state].filter(Boolean).join(', ');
+  const healthBar = store.health_score != null
+    ? `<div style="margin-top:8px;">
+         <div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-bottom:2px;">
+           <span>Health</span><span>${store.health_score}/100</span>
+         </div>
+         <div style="height:4px;background:#374151;border-radius:2px;overflow:hidden;">
+           <div style="height:100%;width:${store.health_score}%;background:${store.health_score >= 70 ? '#22c55e' : store.health_score >= 40 ? '#eab308' : '#ef4444'};border-radius:2px;"></div>
+         </div>
+       </div>`
+    : '';
+
+  return `
+    <div style="min-width:200px;max-width:260px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div style="flex:1;font-size:14px;font-weight:700;color:#f3f4f6;line-height:1.2;">${store.name}</div>
+        <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;text-transform:capitalize;">${statusLabel}</span>
+      </div>
+      ${store.type ? `<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${store.type}</div>` : ''}
+      <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${addressLine1}</div>
+      <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${addressLine2}</div>
+      ${store.phone ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;">📞 ${store.phone}</div>` : ''}
+      ${healthBar}
+      <a href="/stores/${store.id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Profile →</a>
+    </div>`;
+}
+
 export function MapCanvas({
   routes,
   workers,
@@ -51,6 +89,7 @@ export function MapCanvas({
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const routeLayersRef = useRef<string[]>([]);
   const storeMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const targetLineLayersRef = useRef<string[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Initialize map
@@ -127,10 +166,9 @@ export function MapCanvas({
     }
   }, []);
 
-  // Render store markers based on viewport
+  // Render store markers with teardrop pin (viewport culled)
   const renderStoreMarkers = useCallback(() => {
     if (!map.current || !showStores) {
-      // Clear all store markers if stores hidden
       storeMarkersRef.current.forEach(m => m.remove());
       storeMarkersRef.current = [];
       return;
@@ -139,66 +177,26 @@ export function MapCanvas({
     const bounds = map.current.getBounds();
     if (!bounds) return;
 
-    // Clear previous store markers
     storeMarkersRef.current.forEach(m => m.remove());
     storeMarkersRef.current = [];
 
-    // Filter stores within viewport, cap at 500
     const visibleStores = stores
       .filter(s => s.lat && s.lng && bounds.contains([s.lng, s.lat]))
       .slice(0, 500);
 
     visibleStores.forEach(store => {
       const el = document.createElement('div');
-      el.style.cssText = `
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #f59e0b;
-        border: 2px solid #ffffff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-        cursor: pointer;
-        transition: transform 0.15s;
-      `;
-      el.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.8)';
-      });
-      el.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)';
-      });
-
-      // Build popup HTML
-      const statusBadge = store.status
-        ? `<span style="display:inline-block;padding:1px 6px;border-radius:9999px;font-size:10px;font-weight:600;background:${store.status === 'active' ? '#22c55e' : store.status === 'churned' ? '#ef4444' : '#6b7280'};color:white;">${store.status}</span>`
-        : '';
-      const healthLabel = store.health_score != null
-        ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;">Health: ${store.health_score}/100</div>`
-        : '';
-      const addressLine1 = store.address_street || '';
-      const addressLine2 = [store.address_city, store.address_state].filter(Boolean).join(', ');
-      const phoneLine = store.phone ? `<div style="font-size:11px;color:#9ca3af;">📞 ${store.phone}</div>` : '';
-
-      const popupHTML = `
-        <div style="min-width:180px;font-family:system-ui,sans-serif;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-            <strong style="font-size:13px;">${store.name}</strong>
-            ${statusBadge}
-          </div>
-          <div style="font-size:11px;color:#d1d5db;">${addressLine1}</div>
-          <div style="font-size:11px;color:#d1d5db;">${addressLine2}</div>
-          ${phoneLine}
-          ${healthLabel}
-          <a href="/stores/${store.id}" style="display:inline-block;margin-top:6px;font-size:11px;color:#3b82f6;text-decoration:none;">View Profile →</a>
-        </div>
-      `;
+      el.style.cssText = 'width:24px;height:32px;cursor:pointer;';
+      el.innerHTML = STORE_PIN_SVG;
 
       const popup = new mapboxgl.Popup({
-        offset: 8,
+        offset: [0, -32],
         closeButton: true,
-        maxWidth: '240px',
-      }).setHTML(popupHTML);
+        maxWidth: '280px',
+        className: 'store-popup-dark',
+      }).setHTML(buildStorePopupHTML(store));
 
-      const marker = new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([store.lng, store.lat])
         .setPopup(popup)
         .addTo(map.current!);
@@ -216,7 +214,6 @@ export function MapCanvas({
       debounceRef.current = setTimeout(renderStoreMarkers, 300);
     };
 
-    // Initial render once map is ready
     if (map.current.isStyleLoaded()) {
       renderStoreMarkers();
     } else {
@@ -263,11 +260,8 @@ export function MapCanvas({
         color: white;
         font-weight: bold;
         font-size: 12px;
-        transition: transform 0.2s;
       `;
       el.innerHTML = worker.name.charAt(0).toUpperCase();
-      el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.15)'; });
-      el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
       el.addEventListener('click', () => { onSelectWorker(worker.worker_id); });
 
       const marker = new mapboxgl.Marker(el)
@@ -277,6 +271,75 @@ export function MapCanvas({
       markersRef.current[`worker-${worker.worker_id}`] = marker;
     });
   }, [workers, alerts, routes, getRoleColor, getStatusRingColor, onSelectWorker]);
+
+  // Draw worker-to-target dashed lines
+  useEffect(() => {
+    if (!map.current) return;
+
+    const drawLines = () => {
+      // Cleanup old lines
+      targetLineLayersRef.current.forEach(id => {
+        if (map.current?.getLayer(id)) map.current.removeLayer(id);
+        if (map.current?.getSource(id)) map.current.removeSource(id);
+      });
+      targetLineLayersRef.current = [];
+
+      workers.forEach(worker => {
+        // Find active route for this worker
+        const route = routes.find(r => r.assigned_to === worker.worker_id && (r.status === 'active' || r.status === 'in_progress'));
+        if (!route) return;
+
+        // Find next pending stop
+        const nextStop = route.stops
+          .sort((a, b) => a.planned_order - b.planned_order)
+          .find(s => s.status !== 'completed' && s.status !== 'skipped' && s.status !== 'failed');
+        if (!nextStop?.store?.lat || !nextStop?.store?.lng) return;
+
+        const sourceId = `target-line-${worker.worker_id}`;
+        const layerId = `target-line-layer-${worker.worker_id}`;
+
+        try {
+          map.current!.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [worker.lng, worker.lat],
+                  [nextStop.store.lng, nextStop.store.lat],
+                ],
+              },
+            },
+          });
+
+          map.current!.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': getRoleColor(worker.role),
+              'line-width': 2.5,
+              'line-opacity': 0.6,
+              'line-dasharray': [4, 3],
+            },
+          });
+
+          targetLineLayersRef.current.push(sourceId, layerId);
+        } catch (e) {
+          console.warn('Error adding target line:', e);
+        }
+      });
+    };
+
+    if (map.current.isStyleLoaded()) {
+      drawLines();
+    } else {
+      map.current.on('load', drawLines);
+    }
+  }, [workers, routes, getRoleColor]);
 
   // Update route stops
   useEffect(() => {
@@ -315,7 +378,6 @@ export function MapCanvas({
           font-size: 10px;
           font-weight: bold;
           color: white;
-          transition: all 0.2s;
         `;
         if (isSelected) {
           el.innerHTML = String(idx + 1);

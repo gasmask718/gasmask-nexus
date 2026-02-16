@@ -193,7 +193,7 @@ export function MapFiltersBar({
       </div>
 
       {/* Geocode Button */}
-      {onGeocodeStores && stats.totalStores === 0 && (
+      {onGeocodeStores && (
         <Button
           size="sm"
           variant="outline"
