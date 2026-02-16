@@ -6,6 +6,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const INVALID_ADDRESS_PATTERNS = [
+  /^no\s*address$/i,
+  /^n\/?a$/i,
+  /^none$/i,
+  /^unknown$/i,
+  /^tbd$/i,
+  /^test$/i,
+  /^\s*$/,
+  /^.$/,
+];
+
+function isInvalidAddress(street: string | null): boolean {
+  if (!street) return true;
+  const trimmed = street.trim();
+  if (trimmed.length <= 1) return true;
+  return INVALID_ADDRESS_PATTERNS.some(p => p.test(trimmed));
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -22,13 +40,27 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch stores with addresses but no lat/lng
-    const { data: stores, error: fetchError } = await supabase
+    // Parse optional body
+    let revalidate = false;
+    try {
+      const body = await req.json();
+      revalidate = body?.revalidate === true;
+    } catch {
+      // No body or invalid JSON — default revalidate=false
+    }
+
+    // Build query
+    let query = supabase
       .from('stores')
       .select('id, name, address_street, address_city, address_state, address_zip, address_country')
-      .or('lat.is.null,lng.is.null')
       .not('address_street', 'is', null)
       .limit(1000);
+
+    if (!revalidate) {
+      query = query.or('lat.is.null,lng.is.null');
+    }
+
+    const { data: stores, error: fetchError } = await query;
 
     if (fetchError) {
       throw new Error(`Failed to fetch stores: ${fetchError.message}`);
@@ -36,20 +68,28 @@ serve(async (req) => {
 
     if (!stores || stores.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, geocoded: 0, message: 'All stores already geocoded or no addresses found' }),
+        JSON.stringify({ success: true, geocoded: 0, failed: 0, skipped: 0, total: 0, message: 'No stores to process' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     let geocoded = 0;
     let failed = 0;
+    let skipped = 0;
     const batchSize = 50;
 
     for (let i = 0; i < stores.length; i += batchSize) {
       const batch = stores.slice(i, i + batchSize);
 
       for (const store of batch) {
+        // Skip invalid addresses
+        if (isInvalidAddress(store.address_street)) {
+          skipped++;
+          continue;
+        }
+
         try {
+          // Build address string from all available parts
           const addressParts = [
             store.address_street,
             store.address_city,
@@ -58,8 +98,8 @@ serve(async (req) => {
             store.address_country || 'USA',
           ].filter(Boolean);
 
-          if (addressParts.length < 2) {
-            failed++;
+          if (addressParts.length < 1) {
+            skipped++;
             continue;
           }
 
@@ -79,15 +119,47 @@ serve(async (req) => {
 
           if (!data.features || data.features.length === 0) {
             console.warn(`No geocode result for store ${store.id}: ${addressString}`);
+            // Flag as unverified
+            await supabase
+              .from('stores')
+              .update({ address_country: 'UNVERIFIED' })
+              .eq('id', store.id);
             failed++;
             continue;
           }
 
-          const [lng, lat] = data.features[0].center;
+          const feature = data.features[0];
+          const [lng, lat] = feature.center;
 
+          // Parse normalized address from Mapbox response
+          const normalizedStreet = feature.address
+            ? `${feature.address} ${feature.text}`
+            : feature.text || store.address_street;
+
+          let normalizedCity = store.address_city || null;
+          let normalizedState = store.address_state || null;
+          let normalizedZip = store.address_zip || null;
+
+          if (feature.context) {
+            for (const ctx of feature.context) {
+              if (ctx.id?.startsWith('place')) normalizedCity = normalizedCity || ctx.text;
+              if (ctx.id?.startsWith('region')) normalizedState = normalizedState || ctx.text;
+              if (ctx.id?.startsWith('postcode')) normalizedZip = normalizedZip || ctx.text;
+            }
+          }
+
+          // Update store with normalized address + coordinates
           const { error: updateError } = await supabase
             .from('stores')
-            .update({ lat, lng })
+            .update({
+              lat,
+              lng,
+              address_street: normalizedStreet,
+              address_city: normalizedCity,
+              address_state: normalizedState,
+              address_zip: normalizedZip,
+              address_country: 'USA',
+            })
             .eq('id', store.id);
 
           if (updateError) {
@@ -113,8 +185,9 @@ serve(async (req) => {
         success: true,
         geocoded,
         failed,
+        skipped,
         total: stores.length,
-        message: `Geocoded ${geocoded} stores, ${failed} failed, out of ${stores.length} total`,
+        message: `Validated ${geocoded} stores, ${failed} failed, ${skipped} skipped (invalid address), out of ${stores.length} total`,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
