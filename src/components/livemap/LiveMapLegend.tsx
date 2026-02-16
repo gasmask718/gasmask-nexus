@@ -70,7 +70,10 @@ export function LiveMapLegend() {
         <div className="space-y-1 pt-2 border-t">
           <div className="text-muted-foreground font-medium">Stores</div>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-amber-500 border border-white" />
+            <svg width="12" height="16" viewBox="0 0 24 32">
+              <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 20 12 20s12-11 12-20C24 5.4 18.6 0 12 0z" fill="#f59e0b"/>
+              <circle cx="12" cy="11" r="4" fill="white"/>
+            </svg>
             <span>Store Pin</span>
           </div>
         </div>
@@ -89,6 +92,19 @@ export function LiveMapLegend() {
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-3 w-3 text-yellow-500" />
             <span>Medium/Low</span>
+          </div>
+        </div>
+
+        {/* Target Lines */}
+        <div className="space-y-1 pt-2 border-t">
+          <div className="text-muted-foreground font-medium">Target Path</div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-0 border-t-2 border-dashed border-blue-500" />
+            <span>Driver → Stop</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-0 border-t-2 border-dashed border-cyan-500" />
+            <span>Biker → Stop</span>
           </div>
         </div>
       </div>
