@@ -274,13 +274,13 @@ export function MapCanvas({
 
         const html = `<div style="min-width:200px;max-width:260px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <div style="flex:1;font-size:14px;font-weight:700;color:#f3f4f6;line-height:1.2;">${p.name}</div>
+            <div style="flex:1;font-size:14px;font-weight:700;color:#111827;line-height:1.2;">${p.name}</div>
             <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;text-transform:capitalize;">${p.status}</span>
           </div>
           ${p.type ? `<div style="font-size:10px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${p.type}</div>` : ''}
-          <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${p.address_street}</div>
-          <div style="font-size:12px;color:#d1d5db;line-height:1.4;">${addressLine2}</div>
-          ${p.phone ? `<div style="font-size:12px;color:#9ca3af;margin-top:4px;">📞 ${p.phone}</div>` : ''}
+          <div style="font-size:12px;color:#374151;line-height:1.4;">${p.address_street}</div>
+          <div style="font-size:12px;color:#374151;line-height:1.4;">${addressLine2}</div>
+          ${p.phone ? `<div style="font-size:12px;color:#6b7280;margin-top:4px;">📞 ${p.phone}</div>` : ''}
           ${healthBar}
           <a href="/stores/${p.id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Profile →</a>
         </div>`;
@@ -509,7 +509,7 @@ export function MapCanvas({
 
           deliveryLineLayersRef.current.push(sourceId, layerId);
 
-          // Add destination pin marker
+          // Add destination pin marker with click popup
           const el = document.createElement('div');
           el.style.cssText = `
             width: 28px;
@@ -522,7 +522,31 @@ export function MapCanvas({
               <circle cx="12" cy="8" r="3" fill="white"/>
             </svg>
           `;
-          el.title = `${task.recipient_name || 'Delivery'} — ${task.delivery_address}`;
+
+          const statusLabel = task.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const statusColor = task.status === 'delivered' ? '#22c55e' : task.status === 'picked_up' ? '#f59e0b' : '#3b82f6';
+
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            storePopupRef.current?.remove();
+            const html = `<div style="min-width:220px;max-width:280px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <div style="flex:1;font-size:14px;font-weight:700;color:#111827;line-height:1.2;">📦 ${task.order_number || 'Delivery Task'}</div>
+                <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;">${statusLabel}</span>
+              </div>
+              ${task.recipient_name ? `<div style="font-size:12px;color:#374151;margin-bottom:2px;">👤 ${task.recipient_name}</div>` : ''}
+              ${task.recipient_phone ? `<div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📞 ${task.recipient_phone}</div>` : ''}
+              <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📍 ${task.delivery_address}</div>
+              ${task.worker_name ? `<div style="font-size:11px;color:#6b7280;margin-bottom:2px;">🚚 ${task.worker_name}</div>` : ''}
+              ${task.total_amount ? `<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;">💰 $${Number(task.total_amount).toFixed(2)}</div>` : ''}
+              ${task.delivery_notes ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">"${task.delivery_notes}"</div>` : ''}
+            </div>`;
+
+            storePopupRef.current = new mapboxgl.Popup({ offset: [0, -28], closeButton: true, maxWidth: '300px' })
+              .setLngLat([task.delivery_lng, task.delivery_lat])
+              .setHTML(html)
+              .addTo(map.current!);
+          });
 
           const marker = new mapboxgl.Marker(el)
             .setLngLat([task.delivery_lng, task.delivery_lat])
@@ -583,7 +607,37 @@ export function MapCanvas({
         if (isSelected) {
           el.innerHTML = String(idx + 1);
         }
-        el.addEventListener('click', () => { onSelectStop(stop.id); });
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onSelectStop(stop.id);
+
+          storePopupRef.current?.remove();
+          const stopStatusLabel = stop.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          const assigneeName = route.assignee?.name || 'Unassigned';
+          const arrivalInfo = stop.actual_arrival
+            ? `<div style="font-size:11px;color:#6b7280;margin-top:2px;">⏱ Arrived: ${new Date(stop.actual_arrival).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`
+            : '';
+
+          const popupHtml = `<div style="min-width:200px;max-width:260px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="flex:1;font-size:14px;font-weight:700;color:#111827;line-height:1.2;">Stop #${idx + 1}: ${stop.store?.name || 'Unknown'}</div>
+              <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${stopColor};color:white;">${stopStatusLabel}</span>
+            </div>
+            <div style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Route: ${route.territory || route.id.slice(0, 8)}</div>
+            ${stop.store?.address_street ? `<div style="font-size:12px;color:#374151;">📍 ${stop.store.address_street}${stop.store.address_city ? ', ' + stop.store.address_city : ''}</div>` : ''}
+            ${stop.store?.phone ? `<div style="font-size:12px;color:#6b7280;margin-top:2px;">📞 ${stop.store.phone}</div>` : ''}
+            <div style="font-size:11px;color:#6b7280;margin-top:2px;">🚚 ${assigneeName}</div>
+            ${arrivalInfo}
+            ${stop.notes_to_worker ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">"${stop.notes_to_worker}"</div>` : ''}
+            <a href="/stores/${stop.store_id}" style="display:inline-block;margin-top:8px;padding:4px 10px;font-size:11px;font-weight:600;color:white;background:#3b82f6;border-radius:6px;text-decoration:none;">View Store →</a>
+          </div>`;
+
+          storePopupRef.current = new mapboxgl.Popup({ offset: [0, -16], closeButton: true, maxWidth: '280px' })
+            .setLngLat([stop.store!.lng, stop.store!.lat])
+            .setHTML(popupHtml)
+            .addTo(map.current!);
+        });
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([stop.store.lng, stop.store.lat])
