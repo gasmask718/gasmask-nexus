@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import type { LiveRoute, WorkerLocation, LiveAlert, LiveStop } from "@/hooks/useLiveMapData";
+import type { LiveRoute, WorkerLocation, LiveAlert, LiveStop, LiveDeliveryTask } from "@/hooks/useLiveMapData";
 
 export interface MapStore {
   id: string;
@@ -21,6 +21,7 @@ interface MapCanvasProps {
   routes: LiveRoute[];
   workers: WorkerLocation[];
   alerts: LiveAlert[];
+  deliveryTasks?: LiveDeliveryTask[];
   stores?: MapStore[];
   showStores?: boolean;
   selectedRouteId: string | null;
@@ -45,6 +46,7 @@ export function MapCanvas({
   routes,
   workers,
   alerts,
+  deliveryTasks = [],
   stores = [],
   showStores = true,
   selectedRouteId,
@@ -60,6 +62,7 @@ export function MapCanvas({
   const markersRef = useRef<{ [key: string]: mapboxgl.Marker }>({});
   const routeLayersRef = useRef<string[]>([]);
   const targetLineLayersRef = useRef<string[]>([]);
+  const deliveryLineLayersRef = useRef<string[]>([]);
   const storePopupRef = useRef<mapboxgl.Popup | null>(null);
   const storeSourceAddedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -437,6 +440,107 @@ export function MapCanvas({
       map.current.on('load', drawLines);
     }
   }, [workers, routes, getRoleColor]);
+
+  // Draw delivery task destination lines + markers
+  useEffect(() => {
+    if (!map.current) return;
+
+    const drawDeliveryLines = () => {
+      // Cleanup old delivery lines & markers
+      deliveryLineLayersRef.current.forEach(id => {
+        if (map.current?.getLayer(id)) map.current.removeLayer(id);
+        if (map.current?.getSource(id)) map.current.removeSource(id);
+      });
+      deliveryLineLayersRef.current = [];
+
+      Object.entries(markersRef.current).forEach(([key, marker]) => {
+        if (key.startsWith('delivery-dest-')) {
+          marker.remove();
+          delete markersRef.current[key];
+        }
+      });
+
+      deliveryTasks.forEach(task => {
+        const workerUserId = task.biker_user_id || task.driver_user_id;
+        if (!workerUserId) return;
+
+        // Find the worker on the map
+        const worker = workers.find(w => w.worker_id === workerUserId);
+        if (!worker) return;
+
+        // Skip if this worker already has a route trajectory line
+        const hasRouteTrajectory = routes.some(
+          r => r.assigned_to === worker.worker_id && (r.status === 'active' || r.status === 'in_progress')
+        );
+        if (hasRouteTrajectory) return;
+
+        const sourceId = `delivery-line-${task.id}`;
+        const layerId = `delivery-line-layer-${task.id}`;
+
+        try {
+          // Draw dashed line from worker to delivery destination
+          map.current!.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: [
+                  [worker.lng, worker.lat],
+                  [task.delivery_lng, task.delivery_lat],
+                ],
+              },
+            },
+          });
+
+          map.current!.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': getRoleColor(worker.role),
+              'line-width': 2.5,
+              'line-opacity': 0.7,
+              'line-dasharray': [4, 3],
+            },
+          });
+
+          deliveryLineLayersRef.current.push(sourceId, layerId);
+
+          // Add destination pin marker
+          const el = document.createElement('div');
+          el.style.cssText = `
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+          `;
+          el.innerHTML = `
+            <svg viewBox="0 0 24 24" width="28" height="28">
+              <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" fill="${getRoleColor(worker.role)}" stroke="white" stroke-width="1.5"/>
+              <circle cx="12" cy="8" r="3" fill="white"/>
+            </svg>
+          `;
+          el.title = `${task.recipient_name || 'Delivery'} — ${task.delivery_address}`;
+
+          const marker = new mapboxgl.Marker(el)
+            .setLngLat([task.delivery_lng, task.delivery_lat])
+            .addTo(map.current!);
+
+          markersRef.current[`delivery-dest-${task.id}`] = marker;
+        } catch (e) {
+          console.warn('Error adding delivery trajectory:', e);
+        }
+      });
+    };
+
+    if (map.current.isStyleLoaded()) {
+      drawDeliveryLines();
+    } else {
+      map.current.on('load', drawDeliveryLines);
+    }
+  }, [workers, deliveryTasks, routes, getRoleColor]);
 
   // Update route stops
   useEffect(() => {
