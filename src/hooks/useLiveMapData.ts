@@ -246,6 +246,8 @@ export function useLiveWorkers() {
           .limit(500);
 
         for (const ev of events || []) {
+          // Skip (0,0) login pings — find the first real GPS fix
+          if (ev.lat === 0 && ev.lng === 0) continue;
           if (!latestByUser.has(ev.user_id)) {
             latestByUser.set(ev.user_id, { lat: ev.lat, lng: ev.lng, created_at: ev.created_at! });
           }
