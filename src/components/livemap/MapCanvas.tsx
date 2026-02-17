@@ -469,10 +469,7 @@ export function MapCanvas({
           (task.driver_id && w.id === task.driver_id)
         ) || null;
 
-        // Skip trajectory line if this worker already has a route trajectory
-        const hasRouteTrajectory = worker && routes.some(
-          r => r.assigned_to === worker.worker_id && (r.status === 'active' || r.status === 'in_progress')
-        );
+
 
         // Always use worker GPS as origin if available (no distance limit)
         const useWorkerOrigin = !!worker;
@@ -484,7 +481,7 @@ export function MapCanvas({
         const pinColor = useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316';
 
         // Draw trajectory line if we have an origin and no route trajectory already exists
-        if (origin && !hasRouteTrajectory) {
+        if (origin) {
           const sourceId = `delivery-line-${task.id}`;
           const layerId = `delivery-line-layer-${task.id}`;
 
