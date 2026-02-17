@@ -340,6 +340,8 @@ export function MapCanvas({
     });
 
     workers.forEach(worker => {
+      // Skip workers with no valid GPS (they still appear in the Workers tab)
+      if (!worker.lat || !worker.lng || (worker.lat === 0 && worker.lng === 0)) return;
       const hasAlert = alerts.some(a => 
         routes.find(r => r.assigned_to === worker.worker_id && r.id === a.route_id)
       );
@@ -461,6 +463,8 @@ export function MapCanvas({
       });
 
       deliveryTasks.forEach(task => {
+        // Skip tasks with no valid coordinates
+        if (!task.delivery_lat || !task.delivery_lng || (task.delivery_lat === 0 && task.delivery_lng === 0)) return;
         // Match worker by user_id first, then fallback to biker/driver record id
         const worker = workers.find(w =>
           (task.biker_user_id && w.worker_id === task.biker_user_id) ||
