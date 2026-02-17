@@ -107,12 +107,17 @@ export default function StoreOrders() {
                           {order.created_at && format(new Date(order.created_at), 'PPP')}
                           {order.wholesaler && ` • ${order.wholesaler.company_name}`}
                         </p>
-                        <div className="flex items-center gap-4 mt-2 text-sm">
+                        <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
                           <span>{order.items?.length || 0} items</span>
                           {order.shipping_label?.tracking_number && (
                             <span className="text-primary">
                               Tracking: {order.shipping_label.tracking_number}
                             </span>
+                          )}
+                          {(order as any).store_order_status && (
+                            <Badge variant="secondary" className="text-xs">
+                              Dispatch: {(order as any).store_order_status}
+                            </Badge>
                           )}
                         </div>
                       </div>
