@@ -354,6 +354,39 @@ export function MapCanvas({
       const m = map.current!;
       if (deliverySourceAddedRef.current) return;
 
+      // Create teardrop pin images for each status color
+      const pinColors: Record<string, string> = {
+        'delivery-pin-orange': '#f97316',
+        'delivery-pin-green': '#22c55e',
+        'delivery-pin-gray': '#6b7280',
+      };
+      Object.entries(pinColors).forEach(([name, color]) => {
+        if (m.hasImage(name)) return;
+        const canvas = document.createElement('canvas');
+        canvas.width = 48;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d')!;
+        // Teardrop shape
+        ctx.beginPath();
+        ctx.moveTo(24, 0);
+        ctx.bezierCurveTo(10.8, 0, 0, 10.8, 0, 24);
+        ctx.bezierCurveTo(0, 42, 24, 64, 24, 64);
+        ctx.bezierCurveTo(24, 64, 48, 42, 48, 24);
+        ctx.bezierCurveTo(48, 10.8, 37.2, 0, 24, 0);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        // White center dot
+        ctx.beginPath();
+        ctx.arc(24, 22, 7, 0, Math.PI * 2);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+        m.addImage(name, { width: 48, height: 64, data: ctx.getImageData(0, 0, 48, 64).data } as any);
+      });
+
       m.addSource(DELIVERY_LAYER_SOURCE, {
         type: 'geojson',
         data: deliveryGeoJSON as any,
@@ -390,17 +423,22 @@ export function MapCanvas({
         paint: { 'text-color': '#ffffff' },
       });
 
-      // Individual pins — colored circles
+      // Individual pins — teardrop symbol layer
       m.addLayer({
         id: DELIVERY_LAYER_PINS,
-        type: 'circle',
+        type: 'symbol',
         source: DELIVERY_LAYER_SOURCE,
         filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-color': ['get', 'pin_color'],
-          'circle-radius': 8,
-          'circle-stroke-width': 2.5,
-          'circle-stroke-color': '#ffffff',
+        layout: {
+          'icon-image': [
+            'match', ['get', 'pin_color'],
+            '#22c55e', 'delivery-pin-green',
+            '#6b7280', 'delivery-pin-gray',
+            'delivery-pin-orange'
+          ],
+          'icon-size': 0.6,
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
         },
       });
 
@@ -437,7 +475,7 @@ export function MapCanvas({
         </div>`;
 
         storePopupRef.current?.remove();
-        storePopupRef.current = new mapboxgl.Popup({ offset: [0, -12], closeButton: true, maxWidth: '300px' })
+        storePopupRef.current = new mapboxgl.Popup({ offset: [0, -30], closeButton: true, maxWidth: '300px' })
           .setLngLat(coords)
           .setHTML(html)
           .addTo(m);
