@@ -41,6 +41,12 @@ const STORE_LAYER_CLUSTER_COUNT = 'store-cluster-count';
 const STORE_LAYER_PINS = 'store-pins';
 const STORE_MIN_ZOOM = 10; // Only show individual pins at zoom >= 10
 
+// Delivery task GeoJSON layer constants
+const DELIVERY_LAYER_SOURCE = 'delivery-tasks-source';
+const DELIVERY_LAYER_CLUSTERS = 'delivery-task-clusters';
+const DELIVERY_LAYER_CLUSTER_COUNT = 'delivery-task-cluster-count';
+const DELIVERY_LAYER_PINS = 'delivery-task-pins';
+
 
 export function MapCanvas({
   routes,
@@ -65,6 +71,7 @@ export function MapCanvas({
   const deliveryLineLayersRef = useRef<string[]>([]);
   const storePopupRef = useRef<mapboxgl.Popup | null>(null);
   const storeSourceAddedRef = useRef(false);
+  const deliverySourceAddedRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Build GeoJSON from stores array (memoized)
@@ -88,6 +95,37 @@ export function MapCanvas({
         },
       })),
   }), [stores]);
+
+  // Build GeoJSON from delivery tasks (memoized, with clustering)
+  const deliveryGeoJSON = useMemo(() => ({
+    type: 'FeatureCollection' as const,
+    features: deliveryTasks
+      .filter(t => t.delivery_lat && t.delivery_lng && !(t.delivery_lat === 0 && t.delivery_lng === 0))
+      .map(task => {
+        const isCompleted = task.status === 'delivered' || task.status === 'failed' || task.status === 'cancelled';
+        const pinColor = isCompleted
+          ? (task.status === 'delivered' ? '#22c55e' : '#6b7280')
+          : '#f97316';
+        const statusLabel = task.status.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        return {
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [task.delivery_lng, task.delivery_lat] },
+          properties: {
+            id: task.id,
+            order_number: task.order_number || 'Delivery Task',
+            status: task.status,
+            status_label: statusLabel,
+            pin_color: pinColor,
+            recipient_name: task.recipient_name || '',
+            recipient_phone: task.recipient_phone || '',
+            delivery_address: task.delivery_address || '',
+            worker_name: task.worker_name || '',
+            total_amount: task.total_amount ? Number(task.total_amount).toFixed(2) : '',
+            delivery_notes: task.delivery_notes || '',
+          },
+        };
+      }),
+  }), [deliveryTasks]);
 
   // Initialize map
   useEffect(() => {
@@ -308,6 +346,127 @@ export function MapCanvas({
     }
   }, []); // Run once on mount
 
+  // Setup delivery task GeoJSON layers with clustering (once on map load)
+  useEffect(() => {
+    if (!map.current) return;
+
+    const setupDeliveryLayers = () => {
+      const m = map.current!;
+      if (deliverySourceAddedRef.current) return;
+
+      m.addSource(DELIVERY_LAYER_SOURCE, {
+        type: 'geojson',
+        data: deliveryGeoJSON as any,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 40,
+      });
+
+      // Cluster circles (orange)
+      m.addLayer({
+        id: DELIVERY_LAYER_CLUSTERS,
+        type: 'circle',
+        source: DELIVERY_LAYER_SOURCE,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': ['step', ['get', 'point_count'], '#f97316', 10, '#ef4444', 50, '#dc2626'],
+          'circle-radius': ['step', ['get', 'point_count'], 20, 10, 26, 50, 32],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // Cluster count labels
+      m.addLayer({
+        id: DELIVERY_LAYER_CLUSTER_COUNT,
+        type: 'symbol',
+        source: DELIVERY_LAYER_SOURCE,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 13,
+        },
+        paint: { 'text-color': '#ffffff' },
+      });
+
+      // Individual pins — colored circles
+      m.addLayer({
+        id: DELIVERY_LAYER_PINS,
+        type: 'circle',
+        source: DELIVERY_LAYER_SOURCE,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': ['get', 'pin_color'],
+          'circle-radius': 8,
+          'circle-stroke-width': 2.5,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // Click cluster → zoom in
+      m.on('click', DELIVERY_LAYER_CLUSTERS, (e) => {
+        const features = m.queryRenderedFeatures(e.point, { layers: [DELIVERY_LAYER_CLUSTERS] });
+        if (!features.length) return;
+        const clusterId = features[0].properties?.cluster_id;
+        (m.getSource(DELIVERY_LAYER_SOURCE) as mapboxgl.GeoJSONSource).getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (err || zoom == null) return;
+          m.easeTo({ center: (features[0].geometry as any).coordinates, zoom });
+        });
+      });
+
+      // Click individual pin → popup with order details
+      m.on('click', DELIVERY_LAYER_PINS, (e) => {
+        const features = m.queryRenderedFeatures(e.point, { layers: [DELIVERY_LAYER_PINS] });
+        if (!features.length) return;
+        const f = features[0];
+        const coords = (f.geometry as any).coordinates.slice() as [number, number];
+        const p = f.properties!;
+        const statusColor = p.status === 'delivered' ? '#22c55e' : (p.status === 'picked_up' || p.status === 'in_transit') ? '#f59e0b' : '#3b82f6';
+        const html = `<div style="min-width:220px;max-width:280px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+            <div style="flex:1;font-size:14px;font-weight:700;color:#111827;">📦 ${p.order_number}</div>
+            <span style="padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;">${p.status_label}</span>
+          </div>
+          ${p.recipient_name ? `<div style="font-size:12px;color:#374151;margin-bottom:2px;">👤 ${p.recipient_name}</div>` : ''}
+          ${p.recipient_phone ? `<div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📞 ${p.recipient_phone}</div>` : ''}
+          <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📍 ${p.delivery_address}</div>
+          ${p.worker_name ? `<div style="font-size:11px;color:#6b7280;">🚚 ${p.worker_name}</div>` : ''}
+          ${p.total_amount ? `<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;">💰 $${p.total_amount}</div>` : ''}
+          ${p.delivery_notes ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">"${p.delivery_notes}"</div>` : ''}
+        </div>`;
+
+        storePopupRef.current?.remove();
+        storePopupRef.current = new mapboxgl.Popup({ offset: [0, -12], closeButton: true, maxWidth: '300px' })
+          .setLngLat(coords)
+          .setHTML(html)
+          .addTo(m);
+      });
+
+      m.on('mouseenter', DELIVERY_LAYER_PINS, () => { m.getCanvas().style.cursor = 'pointer'; });
+      m.on('mouseleave', DELIVERY_LAYER_PINS, () => { m.getCanvas().style.cursor = ''; });
+      m.on('mouseenter', DELIVERY_LAYER_CLUSTERS, () => { m.getCanvas().style.cursor = 'pointer'; });
+      m.on('mouseleave', DELIVERY_LAYER_CLUSTERS, () => { m.getCanvas().style.cursor = ''; });
+
+      deliverySourceAddedRef.current = true;
+    };
+
+    if (map.current.isStyleLoaded()) {
+      setupDeliveryLayers();
+    } else {
+      map.current.on('load', setupDeliveryLayers);
+    }
+  }, []); // Run once
+
+  // Update delivery GeoJSON when tasks change
+  useEffect(() => {
+    if (!map.current || !deliverySourceAddedRef.current) return;
+    const source = map.current.getSource(DELIVERY_LAYER_SOURCE) as mapboxgl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(deliveryGeoJSON as any);
+    }
+  }, [deliveryGeoJSON]);
+
   // Update store GeoJSON data when stores change
   useEffect(() => {
     if (!map.current || !storeSourceAddedRef.current) return;
@@ -443,29 +602,24 @@ export function MapCanvas({
     }
   }, [workers, routes, getRoleColor]);
 
-  // Draw delivery task destination lines + markers
+  // Draw delivery task trajectory lines only (pins handled by GeoJSON cluster layer)
   useEffect(() => {
     if (!map.current) return;
 
     const drawDeliveryLines = () => {
-      // Cleanup old delivery lines & markers
+      // Cleanup old delivery lines
       deliveryLineLayersRef.current.forEach(id => {
         if (map.current?.getLayer(id)) map.current.removeLayer(id);
         if (map.current?.getSource(id)) map.current.removeSource(id);
       });
       deliveryLineLayersRef.current = [];
 
-      Object.entries(markersRef.current).forEach(([key, marker]) => {
-        if (key.startsWith('delivery-dest-')) {
-          marker.remove();
-          delete markersRef.current[key];
-        }
-      });
-
+      // Only draw trajectory lines for active (non-completed) tasks
       deliveryTasks.forEach(task => {
-        // Skip tasks with no valid coordinates
         if (!task.delivery_lat || !task.delivery_lng || (task.delivery_lat === 0 && task.delivery_lng === 0)) return;
-        // Match worker by user_id first, then fallback to biker/driver record id
+        const isCompleted = task.status === 'delivered' || task.status === 'failed' || task.status === 'cancelled';
+        if (isCompleted) return; // No trajectory for completed tasks
+
         const worker = workers.find(w =>
           (task.biker_user_id && w.worker_id === task.biker_user_id) ||
           (task.driver_user_id && w.worker_id === task.driver_user_id) ||
@@ -473,108 +627,46 @@ export function MapCanvas({
           (task.driver_id && w.id === task.driver_id)
         ) || null;
 
-
-
-        // Always use worker GPS as origin if available (no distance limit)
-        const useWorkerOrigin = !!worker;
+        const useWorkerOrigin = !!worker && worker.lat !== 0 && worker.lng !== 0;
         const origin = useWorkerOrigin
-          ? [worker.lng, worker.lat]
+          ? [worker!.lng, worker!.lat]
           : (task.pickup_lat && task.pickup_lng ? [task.pickup_lng, task.pickup_lat] : null);
 
-        // Determine pin color based on task status
-        const isCompleted = task.status === 'delivered' || task.status === 'failed' || task.status === 'cancelled';
-        const pinColor = isCompleted
-          ? (task.status === 'delivered' ? '#22c55e' : '#6b7280')
-          : (useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316');
+        if (!origin) return;
 
-        // Draw trajectory line if we have an origin and no route trajectory already exists
-        if (origin) {
-          const sourceId = `delivery-line-${task.id}`;
-          const layerId = `delivery-line-layer-${task.id}`;
+        const pinColor = useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316';
+        const sourceId = `delivery-line-${task.id}`;
+        const layerId = `delivery-line-layer-${task.id}`;
 
-          try {
-            map.current!.addSource(sourceId, {
-              type: 'geojson',
-              data: {
-                type: 'Feature',
-                properties: {},
-                geometry: {
-                  type: 'LineString',
-                  coordinates: [
-                    origin,
-                    [task.delivery_lng, task.delivery_lat],
-                  ],
-                },
-              },
-            });
-
-            map.current!.addLayer({
-              id: layerId,
-              type: 'line',
-              source: sourceId,
-              layout: { 'line-join': 'round', 'line-cap': 'round' },
-              paint: {
-                'line-color': pinColor,
-                'line-width': 2.5,
-                'line-opacity': 0.7,
-                'line-dasharray': [4, 3],
-              },
-            });
-
-            deliveryLineLayersRef.current.push(sourceId, layerId);
-          } catch (e) {
-            console.warn('Error adding delivery trajectory:', e);
-          }
-        }
-
-        // ALWAYS render destination pin marker (even without worker/origin)
         try {
-          const el = document.createElement('div');
-          el.style.cssText = `
-            width: 28px;
-            height: 28px;
-            cursor: pointer;
-          `;
-          el.innerHTML = `
-            <svg viewBox="0 0 24 24" width="28" height="28">
-              <path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 8 16 8 16s8-10.75 8-16c0-4.42-3.58-8-8-8z" fill="${pinColor}" stroke="white" stroke-width="1.5"/>
-              <circle cx="12" cy="8" r="3" fill="white"/>
-            </svg>
-          `;
-
-          const statusLabel = task.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-          const statusColor = task.status === 'delivered' ? '#22c55e' : task.status === 'picked_up' ? '#f59e0b' : '#3b82f6';
-
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            storePopupRef.current?.remove();
-            const originLabel = useWorkerOrigin ? `🚚 ${task.worker_name || 'Worker'} (live GPS)` : (origin ? '🏪 Store pickup location' : '⚠️ No origin available');
-            const html = `<div style="min-width:220px;max-width:280px;font-family:system-ui,-apple-system,sans-serif;padding:4px 0;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-                <div style="flex:1;font-size:14px;font-weight:700;color:#111827;line-height:1.2;">📦 ${task.order_number || 'Delivery Task'}</div>
-                <span style="flex-shrink:0;padding:2px 8px;border-radius:9999px;font-size:10px;font-weight:600;background:${statusColor};color:white;">${statusLabel}</span>
-              </div>
-              ${task.recipient_name ? `<div style="font-size:12px;color:#374151;margin-bottom:2px;">👤 ${task.recipient_name}</div>` : ''}
-              ${task.recipient_phone ? `<div style="font-size:12px;color:#6b7280;margin-bottom:2px;">📞 ${task.recipient_phone}</div>` : ''}
-              <div style="font-size:12px;color:#6b7280;margin-bottom:4px;">📍 ${task.delivery_address}</div>
-              <div style="font-size:11px;color:#6b7280;margin-bottom:2px;">${originLabel}</div>
-              ${task.total_amount ? `<div style="font-size:13px;font-weight:600;color:#111827;margin-top:4px;">💰 $${Number(task.total_amount).toFixed(2)}</div>` : ''}
-              ${task.delivery_notes ? `<div style="font-size:11px;color:#9ca3af;margin-top:4px;font-style:italic;">"${task.delivery_notes}"</div>` : ''}
-            </div>`;
-
-            storePopupRef.current = new mapboxgl.Popup({ offset: [0, -28], closeButton: true, maxWidth: '300px' })
-              .setLngLat([task.delivery_lng, task.delivery_lat])
-              .setHTML(html)
-              .addTo(map.current!);
+          map.current!.addSource(sourceId, {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: {
+                type: 'LineString',
+                coordinates: [origin, [task.delivery_lng, task.delivery_lat]],
+              },
+            },
           });
 
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([task.delivery_lng, task.delivery_lat])
-            .addTo(map.current!);
+          map.current!.addLayer({
+            id: layerId,
+            type: 'line',
+            source: sourceId,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: {
+              'line-color': pinColor,
+              'line-width': 2.5,
+              'line-opacity': 0.7,
+              'line-dasharray': [4, 3],
+            },
+          });
 
-          markersRef.current[`delivery-dest-${task.id}`] = marker;
+          deliveryLineLayersRef.current.push(sourceId, layerId);
         } catch (e) {
-          console.warn('Error adding delivery destination pin:', e);
+          console.warn('Error adding delivery trajectory:', e);
         }
       });
     };
