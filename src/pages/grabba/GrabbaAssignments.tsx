@@ -39,24 +39,79 @@ export default function GrabbaAssignments() {
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  // ── Fetch all orders with store info ───────────────────────────────────────
+  // ── Fetch all orders (store_orders + marketplace_orders without a linked store_order) ──
   const { data: orders = [], isLoading: ordersLoading } = useQuery({
     queryKey: ['assignment-orders'],
     queryFn: async () => {
-      const { data: ordersRaw, error } = await supabase
+      // 1. Fetch all store_orders
+      const { data: storeOrdersRaw, error: soErr } = await supabase
         .from('store_orders')
         .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      
-      const storeIds = [...new Set((ordersRaw || []).map((o: any) => o.store_id).filter(Boolean))];
+      if (soErr) throw soErr;
+
+      // 2. Fetch marketplace_orders that have NO linked store_order
+      const linkedMarketplaceIds = (storeOrdersRaw || [])
+        .map((o: any) => o.marketplace_order_id)
+        .filter(Boolean);
+
+      let unlinkedMarketplace: any[] = [];
+      const { data: allMarketplace, error: moErr } = await supabase
+        .from('marketplace_orders')
+        .select(`
+          *,
+          items:marketplace_order_items(id, product_id, qty, price_each)
+        `)
+        .order('created_at', { ascending: false });
+      if (moErr) throw moErr;
+
+      unlinkedMarketplace = (allMarketplace || []).filter(
+        (mo: any) => !linkedMarketplaceIds.includes(mo.id)
+      );
+
+      // 3. Resolve store info for store_orders
+      const storeIds = [...new Set((storeOrdersRaw || []).map((o: any) => o.store_id).filter(Boolean))];
       let storesMap: Record<string, any> = {};
       if (storeIds.length > 0) {
         const { data: stores } = await supabase.from('store_master').select('id, store_name, address, phone').in('id', storeIds);
         storesMap = Object.fromEntries((stores || []).map(s => [s.id, s]));
       }
-      
-      return (ordersRaw || []).map((o: any) => ({ ...o, store: storesMap[o.store_id] || null }));
+
+      // 4. Normalize store_orders
+      const normalizedStoreOrders = (storeOrdersRaw || []).map((o: any) => ({
+        ...o,
+        store: storesMap[o.store_id] || null,
+        _source: 'store_order' as const,
+      }));
+
+      // 5. Normalize marketplace_orders into the same shape
+      const normalizedMarketplace = unlinkedMarketplace.map((mo: any) => {
+        const addr = mo.shipping_address;
+        const deliveryAddress = addr
+          ? `${addr.street || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}`.trim()
+          : '';
+        return {
+          id: mo.id,
+          order_number: `MKT-${mo.id.slice(0, 8).toUpperCase()}`,
+          status: mo.fulfillment_status || 'pending',
+          payment_status: mo.payment_status || 'pending',
+          total_amount: mo.total || 0,
+          subtotal: mo.subtotal || 0,
+          tax: mo.tax_amount || 0,
+          delivery_fee: mo.shipping_cost || 0,
+          delivery_address: deliveryAddress,
+          recipient_name: addr?.fullName || '',
+          recipient_phone: addr?.phone || '',
+          notes: mo.notes,
+          created_at: mo.created_at,
+          store_id: null,
+          store: null,
+          marketplace_order_id: mo.id,
+          _source: 'marketplace' as const,
+        };
+      });
+
+      return [...normalizedStoreOrders, ...normalizedMarketplace];
     },
   });
 
@@ -313,8 +368,34 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, allBiker
     }
     setSubmitting(true);
     try {
+      let storeOrderId = order.id;
+
+      // If this is a marketplace order without a store_order, create one first
+      if (order._source === 'marketplace') {
+        const { data: newStoreOrder, error: soErr } = await supabase
+          .from('store_orders')
+          .insert({
+            marketplace_order_id: order.id,
+            order_number: order.order_number || `MKT-${order.id.slice(0, 8).toUpperCase()}`,
+            status: 'pending',
+            payment_status: order.payment_status || 'unpaid',
+            subtotal: order.subtotal || 0,
+            tax: order.tax || 0,
+            delivery_fee: order.delivery_fee || 0,
+            total_amount: order.total_amount || 0,
+            delivery_address: deliveryAddress || null,
+            recipient_name: recipientName || null,
+            recipient_phone: recipientPhone || null,
+            notes: order.notes,
+          } as any)
+          .select('id')
+          .single();
+        if (soErr) throw soErr;
+        storeOrderId = newStoreOrder.id;
+      }
+
       const taskData: any = {
-        store_order_id: order.id,
+        store_order_id: storeOrderId,
         assigned_by: user?.id || null,
         delivery_address: deliveryAddress || null,
         delivery_lat: order.delivery_lat || order.store?.lat || null,
