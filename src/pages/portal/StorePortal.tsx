@@ -1,17 +1,15 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { ShoppingCart, Package, History, Sparkles, Store } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PortalLayout from '@/components/portal/PortalLayout';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { useProducts } from '@/services/marketplace/useProducts';
-import { usePricing } from '@/services/marketplace/usePricing';
+import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/services/marketplace/useCart';
 import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
 
 const restockSuggestions = [
   { product: 'GasMask Tubes', reason: 'Running low based on your sales pattern', urgency: 'high' },
@@ -21,8 +19,21 @@ const restockSuggestions = [
 export default function StorePortal() {
   const { data: profileData } = useCurrentUserProfile();
   const storeProfile = profileData?.roleProfile as any;
-  const { data: products, isLoading: productsLoading } = useProducts();
-  const { getProductPriceForDisplay } = usePricing();
+  
+  const { data: products, isLoading: productsLoading } = useQuery({
+    queryKey: ['store-portal-products'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name, wholesale_price, suggested_retail_price, is_active, brand:brands(name, color)')
+        .eq('is_deleted', false)
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
   const { addToCart, isAddingToCart, totals } = useCart();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
@@ -133,21 +144,15 @@ export default function StorePortal() {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {products.slice(0, 8).map((product) => {
-                  const price = getProductPriceForDisplay(product, 'store');
+                  const price = product.wholesale_price || 0;
                   return (
                     <div key={product.id} className="flex items-center justify-between p-4 rounded-lg border">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded bg-muted flex-shrink-0 overflow-hidden">
-                          {product.images[0] ? (
-                            <img src={product.images[0]} alt={product.product_name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Package className="h-5 w-5 text-muted-foreground/30" />
-                            </div>
-                          )}
+                        <div className="w-12 h-12 rounded bg-muted flex-shrink-0 overflow-hidden flex items-center justify-center">
+                          <Package className="h-5 w-5 text-muted-foreground/30" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium truncate">{product.product_name}</p>
+                          <p className="font-medium truncate">{product.name}</p>
                           <p className="text-lg font-bold text-primary">{formatCurrency(price)}</p>
                         </div>
                       </div>

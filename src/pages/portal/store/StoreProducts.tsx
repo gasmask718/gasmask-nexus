@@ -1,28 +1,85 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useProducts, useBrands } from "@/services/marketplace/useProducts";
-import { usePricing } from "@/services/marketplace/usePricing";
+import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/services/marketplace/useCart";
 import { Search, ShoppingCart, Package, Filter } from "lucide-react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+
+interface StoreProduct {
+  id: string;
+  name: string;
+  type: string;
+  unit_type: string;
+  sku: string | null;
+  category: string | null;
+  wholesale_price: number;
+  suggested_retail_price: number;
+  is_active: boolean;
+  status: string | null;
+  brand: { name: string; color: string | null } | null;
+}
+
+function useStoreProducts(filters?: { search?: string; brandId?: string }) {
+  return useQuery({
+    queryKey: ['store-products', filters],
+    queryFn: async () => {
+      let query = supabase
+        .from('products')
+        .select(`
+          id, name, type, unit_type, sku, category,
+          wholesale_price, suggested_retail_price,
+          is_active, status,
+          brand:brands(name, color)
+        `)
+        .eq('is_deleted', false)
+        .eq('is_active', true)
+        .order('name');
+
+      if (filters?.brandId && filters.brandId !== 'all') {
+        query = query.eq('brand_id', filters.brandId);
+      }
+
+      if (filters?.search) {
+        query = query.ilike('name', `%${filters.search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as StoreProduct[];
+    },
+  });
+}
+
+function useStoreBrands() {
+  return useQuery({
+    queryKey: ['store-brands'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('brands')
+        .select('id, name, color')
+        .order('name');
+      if (error) throw error;
+      return data;
+    },
+  });
+}
 
 export default function StoreProducts() {
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState<string>("all");
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  const { data: products, isLoading } = useProducts({ 
+  const { data: products, isLoading } = useStoreProducts({ 
     search, 
-    brandId: brandFilter !== "all" ? brandFilter : undefined 
+    brandId: brandFilter 
   });
-  const { data: brands } = useBrands();
-  const { getProductPriceForDisplay } = usePricing();
+  const { data: brands } = useStoreBrands();
   const { addToCart, isAddingToCart } = useCart();
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
   const handleAddToCart = async (productId: string) => {
     const qty = quantities[productId] || 1;
@@ -98,24 +155,16 @@ export default function StoreProducts() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products?.map((product) => {
-              const storePrice = getProductPriceForDisplay(product, 'store');
-              const retailPrice = getProductPriceForDisplay(product, 'retail');
+              const storePrice = product.wholesale_price || 0;
+              const retailPrice = product.suggested_retail_price || 0;
               const savings = retailPrice > storePrice ? ((retailPrice - storePrice) / retailPrice * 100).toFixed(0) : 0;
 
               return (
                 <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-square bg-muted relative">
-                    {product.images[0] ? (
-                      <img
-                        src={product.images[0]}
-                        alt={product.product_name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-16 w-16 text-muted-foreground/30" />
-                      </div>
-                    )}
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="h-16 w-16 text-muted-foreground/30" />
+                    </div>
                     {Number(savings) > 0 && (
                       <Badge className="absolute top-2 right-2 bg-green-500">
                         Save {savings}%
@@ -133,12 +182,10 @@ export default function StoreProducts() {
                   </div>
                   <CardContent className="p-4 space-y-3">
                     <div>
-                      <h3 className="font-semibold line-clamp-2">{product.product_name}</h3>
-                      {product.wholesaler && (
-                        <p className="text-sm text-muted-foreground">
-                          by {product.wholesaler.company_name}
-                        </p>
-                      )}
+                      <h3 className="font-semibold line-clamp-2">{product.name}</h3>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {product.category} · {product.unit_type}
+                      </p>
                     </div>
 
                     <div className="flex items-baseline gap-2">
@@ -150,11 +197,6 @@ export default function StoreProducts() {
                           {formatCurrency(retailPrice)}
                         </span>
                       )}
-                    </div>
-
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Package className="h-4 w-4" />
-                      <span>{product.inventory_qty || 0} in stock</span>
                     </div>
 
                     <div className="flex gap-2">
@@ -171,7 +213,7 @@ export default function StoreProducts() {
                       <Button
                         className="flex-1 gap-2"
                         onClick={() => handleAddToCart(product.id)}
-                        disabled={isAddingToCart || !product.inventory_qty}
+                        disabled={isAddingToCart}
                       >
                         <ShoppingCart className="h-4 w-4" />
                         Add to Cart
