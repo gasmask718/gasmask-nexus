@@ -90,9 +90,9 @@ export function useCheckout() {
       }
     }
 
-    // Cash/Net terms only for stores
-    if (data.paymentMethod !== 'card' && userRole !== 'store' && userRole !== 'store_owner') {
-      errors.push('Cash and net terms are only available for store accounts');
+    // Cash/Net terms available for store accounts and admins
+    if (data.paymentMethod !== 'card' && !['store', 'store_owner', 'admin', 'owner'].includes(userRole || '')) {
+      errors.push('Cash and net terms are only available for authorized accounts');
     }
 
     return { valid: errors.length === 0, errors };
@@ -194,8 +194,8 @@ export function useCheckout() {
             marketplace_order_id: order.id,
             order_number: `MKT-${orderNumber}`,
             status: 'pending',
-            payment_status: data.paymentMethod === 'card' ? 'pending' : 'unpaid',
-            payment_method: data.paymentMethod,
+            payment_status: 'unpaid',
+            payment_method: data.paymentMethod === 'net_terms' ? 'invoice' : data.paymentMethod,
             subtotal: data.totals.subtotal,
             tax: data.totals.tax,
             delivery_fee: data.totals.shipping,
