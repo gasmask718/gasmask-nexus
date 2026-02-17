@@ -672,7 +672,8 @@ export function MapCanvas({
 
         if (!origin) return;
 
-        const pinColor = useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316';
+        // Follow legend: Driver → blue (#3b82f6), Biker → cyan (#06b6d4)
+        const pinColor = task.driver_id ? '#3b82f6' : task.biker_id ? '#06b6d4' : '#f97316';
         const sourceId = `delivery-line-${task.id}`;
         const layerId = `delivery-line-layer-${task.id}`;
 
