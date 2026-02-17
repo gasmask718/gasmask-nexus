@@ -180,7 +180,7 @@ export function RouteListPanel({
           <TabsContent value="workers" className="m-0 p-3 space-y-2">
             {workers.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No workers online
+                No workers found
               </div>
             ) : (
               workers.map(worker => (
@@ -216,6 +216,12 @@ export function RouteListPanel({
                     <div className="mt-2 text-xs text-yellow-600 flex items-center gap-1">
                       <Clock className="h-3 w-3" />
                       Last seen {Math.round((Date.now() - new Date(worker.updated_at).getTime()) / 60000)}m ago
+                    </div>
+                  )}
+                  {worker.status === 'offline' && (
+                    <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {worker.lat === 0 && worker.lng === 0 ? 'No GPS signal' : 'Offline'}
                     </div>
                   )}
                 </div>

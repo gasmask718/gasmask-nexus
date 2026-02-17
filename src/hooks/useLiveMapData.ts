@@ -203,6 +203,7 @@ export function useLiveWorkers() {
         `);
 
       const seenUserIds = new Set<string>();
+      const seenRecordIds = new Set<string>();
       const workers: WorkerLocation[] = (dllData || []).map(loc => {
         seenUserIds.add(loc.driver_id);
         return {
@@ -218,30 +219,25 @@ export function useLiveWorkers() {
         };
       });
 
-      // 2) Fetch active bikers + drivers with user_ids
+      // 2) Fetch ALL bikers + drivers (not just active with user_id)
       const [{ data: bikers }, { data: drivers }] = await Promise.all([
-        supabase
-          .from('bikers')
-          .select('id, user_id, full_name, status')
-          .eq('status', 'active')
-          .not('user_id', 'is', null),
-        supabase
-          .from('drivers')
-          .select('id, user_id, full_name, status')
-          .eq('status', 'active')
-          .not('user_id', 'is', null),
+        supabase.from('bikers').select('id, user_id, full_name, status'),
+        supabase.from('drivers').select('id, user_id, full_name, status'),
       ]);
 
-      // Build lookup of user_ids we need location_events for (skip already-present ones)
-      const fieldWorkers = [
-        ...(bikers || []).map(b => ({ userId: b.user_id!, name: b.full_name || 'Biker', role: 'biker' as const, recordId: b.id })),
-        ...(drivers || []).map(d => ({ userId: d.user_id!, name: d.full_name || 'Driver', role: 'driver' as const, recordId: d.id })),
-      ].filter(w => !seenUserIds.has(w.userId));
+      // Build list of all field workers, marking which ones we still need location for
+      const allFieldWorkers = [
+        ...(bikers || []).map(b => ({ userId: b.user_id, name: b.full_name || 'Biker', role: 'biker' as const, recordId: b.id, workerStatus: b.status })),
+        ...(drivers || []).map(d => ({ userId: d.user_id, name: d.full_name || 'Driver', role: 'driver' as const, recordId: d.id, workerStatus: d.status })),
+      ];
 
-      if (fieldWorkers.length > 0) {
-        // 3) Fetch most recent location_event per user via a single query
-        //    We grab the latest event for each user_id
-        const userIds = fieldWorkers.map(w => w.userId);
+      // Workers with user_ids that aren't already in drivers_live_location
+      const needLocationWorkers = allFieldWorkers.filter(w => w.userId && !seenUserIds.has(w.userId));
+
+      // Fetch latest location_events for workers with user_ids
+      const latestByUser = new Map<string, { lat: number; lng: number; created_at: string }>();
+      if (needLocationWorkers.length > 0) {
+        const userIds = needLocationWorkers.map(w => w.userId!);
         const { data: events } = await supabase
           .from('location_events')
           .select('user_id, lat, lng, created_at')
@@ -249,34 +245,38 @@ export function useLiveWorkers() {
           .order('created_at', { ascending: false })
           .limit(500);
 
-        // Deduplicate: keep only latest per user_id
-        const latestByUser = new Map<string, { lat: number; lng: number; created_at: string }>();
         for (const ev of events || []) {
           if (!latestByUser.has(ev.user_id)) {
             latestByUser.set(ev.user_id, { lat: ev.lat, lng: ev.lng, created_at: ev.created_at! });
           }
         }
+      }
 
-        for (const fw of fieldWorkers) {
-          const loc = latestByUser.get(fw.userId);
-          if (!loc) continue;
-          // Skip zero-zero coords (login pings)
-          const lat = Number(loc.lat);
-          const lng = Number(loc.lng);
-          if (lat === 0 && lng === 0) continue;
-          if (!lat || !lng) continue;
+      // Add all field workers to the list
+      for (const fw of allFieldWorkers) {
+        // Skip if already added via drivers_live_location
+        if (fw.userId && seenUserIds.has(fw.userId)) continue;
+        if (seenRecordIds.has(fw.recordId)) continue;
+        seenRecordIds.add(fw.recordId);
 
-          workers.push({
-            id: fw.recordId,
-            worker_id: fw.userId,
-            name: fw.name,
-            role: fw.role,
-            lat,
-            lng,
-            updated_at: loc.created_at,
-            status: computeStatus(loc.created_at),
-          });
-        }
+        // Try to get GPS from location_events
+        const loc = fw.userId ? latestByUser.get(fw.userId) : null;
+        const lat = loc ? Number(loc.lat) : 0;
+        const lng = loc ? Number(loc.lng) : 0;
+        const hasValidGps = lat !== 0 && lng !== 0 && !!lat && !!lng;
+
+        const updatedAt = loc?.created_at || new Date(0).toISOString();
+
+        workers.push({
+          id: fw.recordId,
+          worker_id: fw.userId || fw.recordId,
+          name: fw.name,
+          role: fw.role,
+          lat: hasValidGps ? lat : 0,
+          lng: hasValidGps ? lng : 0,
+          updated_at: updatedAt,
+          status: hasValidGps ? computeStatus(updatedAt) : 'offline',
+        });
       }
 
       return workers;
@@ -393,21 +393,24 @@ export function useLiveDeliveryTasks() {
         );
       }
 
-      return data
-        .filter(t => t.delivery_lat && t.delivery_lng)
-        .map(t => {
+      return data.map(t => {
           const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
           const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
           const order = t.store_order as any;
           const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
+
+          // Use delivery coords, fallback to store pickup coords
+          const deliveryLat = Number(t.delivery_lat) || storeCoords?.lat || 0;
+          const deliveryLng = Number(t.delivery_lng) || storeCoords?.lng || 0;
+
           return {
             id: t.id,
             biker_id: t.biker_id || null,
             driver_id: t.driver_id || null,
             biker_user_id: bikerInfo?.user_id || null,
             driver_user_id: driverInfo?.user_id || null,
-            delivery_lat: Number(t.delivery_lat),
-            delivery_lng: Number(t.delivery_lng),
+            delivery_lat: deliveryLat,
+            delivery_lng: deliveryLng,
             delivery_address: t.delivery_address,
             recipient_name: t.recipient_name,
             recipient_phone: t.recipient_phone,
