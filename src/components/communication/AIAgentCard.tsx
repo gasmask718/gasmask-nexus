@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
@@ -13,9 +14,11 @@ import {
   Shield,
   Pause,
   Play,
-  Settings
+  Settings,
+  Phone
 } from "lucide-react";
 import type { AIAgent, AgentRole } from "@/hooks/useAIAgents";
+import { VoiceCallDialog } from "./VoiceCallDialog";
 
 interface AIAgentCardProps {
   agent: AIAgent;
@@ -23,6 +26,7 @@ interface AIAgentCardProps {
   onToggle: (active: boolean) => void;
   onPause?: () => void;
   isSupervisor?: boolean;
+  elevenlabsAgentId?: string;
 }
 
 const roleConfig: Record<AgentRole, { icon: React.ElementType; color: string; label: string }> = {
@@ -34,7 +38,8 @@ const roleConfig: Record<AgentRole, { icon: React.ElementType; color: string; la
   supervisor: { icon: Shield, color: "bg-red-500", label: "Supervisor" },
 };
 
-export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSupervisor }: AIAgentCardProps) {
+export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSupervisor, elevenlabsAgentId }: AIAgentCardProps) {
+  const [callOpen, setCallOpen] = useState(false);
   const config = roleConfig[agent.role];
   const Icon = config.icon;
 
@@ -112,6 +117,12 @@ export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSuper
         )}
 
         <div className="flex gap-2 pt-2">
+          {elevenlabsAgentId && agent.active && (
+            <Button variant="outline" size="sm" onClick={() => setCallOpen(true)} className="flex-1">
+              <Phone className="h-4 w-4 mr-1" />
+              Call
+            </Button>
+          )}
           {agent.active && onPause && (
             <Button variant="outline" size="sm" onClick={onPause} className="flex-1">
               <Pause className="h-4 w-4 mr-1" />
@@ -124,6 +135,15 @@ export function AIAgentCard({ agent, assignmentCount, onToggle, onPause, isSuper
           </Button>
         </div>
       </CardContent>
+
+      {elevenlabsAgentId && (
+        <VoiceCallDialog
+          open={callOpen}
+          onOpenChange={setCallOpen}
+          agentName={agent.name}
+          elevenlabsAgentId={elevenlabsAgentId}
+        />
+      )}
     </Card>
   );
 }
