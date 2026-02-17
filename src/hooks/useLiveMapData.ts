@@ -524,6 +524,13 @@ export function useLiveMapSubscription() {
           queryClient.invalidateQueries({ queryKey: ['live-map-alerts'] });
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'delivery_tasks' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['live-map-delivery-tasks'] });
+        }
+      )
       .subscribe();
 
     return () => {
