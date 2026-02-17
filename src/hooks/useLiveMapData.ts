@@ -70,6 +70,8 @@ export interface LiveStop {
 
 export interface LiveDeliveryTask {
   id: string;
+  biker_id: string | null;
+  driver_id: string | null;
   biker_user_id: string | null;
   driver_user_id: string | null;
   delivery_lat: number;
@@ -400,6 +402,8 @@ export function useLiveDeliveryTasks() {
           const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
           return {
             id: t.id,
+            biker_id: t.biker_id || null,
+            driver_id: t.driver_id || null,
             biker_user_id: bikerInfo?.user_id || null,
             driver_user_id: driverInfo?.user_id || null,
             delivery_lat: Number(t.delivery_lat),

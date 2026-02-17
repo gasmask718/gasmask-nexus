@@ -461,10 +461,13 @@ export function MapCanvas({
       });
 
       deliveryTasks.forEach(task => {
-        const workerUserId = task.biker_user_id || task.driver_user_id;
-
-        // Find the worker on the map (may be null if no GPS)
-        const worker = workerUserId ? workers.find(w => w.worker_id === workerUserId) : null;
+        // Match worker by user_id first, then fallback to biker/driver record id
+        const worker = workers.find(w =>
+          (task.biker_user_id && w.worker_id === task.biker_user_id) ||
+          (task.driver_user_id && w.worker_id === task.driver_user_id) ||
+          (task.biker_id && w.id === task.biker_id) ||
+          (task.driver_id && w.id === task.driver_id)
+        ) || null;
 
         // Skip trajectory line if this worker already has a route trajectory
         const hasRouteTrajectory = worker && routes.some(
