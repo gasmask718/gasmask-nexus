@@ -1,24 +1,17 @@
+import { useState } from 'react';
 import { ShoppingCart, Package, History, Sparkles, Store } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import PortalLayout from '@/components/portal/PortalLayout';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-
-// Mock data
-const catalogItems = [
-  { id: 1, name: 'GasMask Tubes (100pk)', price: 45, stock: 'In Stock' },
-  { id: 2, name: 'Hot Mama Boxes (50pk)', price: 120, stock: 'In Stock' },
-  { id: 3, name: 'Grabba R Us Premium', price: 85, stock: 'Low Stock' },
-  { id: 4, name: 'Display Stand - Large', price: 35, stock: 'In Stock' },
-];
-
-const recentOrders = [
-  { id: 'ORD-001', date: '2024-01-15', items: 3, total: '$450', status: 'delivered' },
-  { id: 'ORD-002', date: '2024-01-10', items: 5, total: '$680', status: 'shipped' },
-  { id: 'ORD-003', date: '2024-01-05', items: 2, total: '$200', status: 'delivered' },
-];
+import { useProducts } from '@/services/marketplace/useProducts';
+import { usePricing } from '@/services/marketplace/usePricing';
+import { useCart } from '@/services/marketplace/useCart';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const restockSuggestions = [
   { product: 'GasMask Tubes', reason: 'Running low based on your sales pattern', urgency: 'high' },
@@ -28,6 +21,22 @@ const restockSuggestions = [
 export default function StorePortal() {
   const { data: profileData } = useCurrentUserProfile();
   const storeProfile = profileData?.roleProfile as any;
+  const { data: products, isLoading: productsLoading } = useProducts();
+  const { getProductPriceForDisplay } = usePricing();
+  const { addToCart, isAddingToCart, totals } = useCart();
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+
+  const handleAddToCart = async (productId: string) => {
+    const qty = quantities[productId] || 1;
+    try {
+      await addToCart({ productId, qty, tier: 'store' });
+    } catch (error) {
+      // handled by hook
+    }
+  };
 
   return (
     <PortalLayout title="Store Portal">
@@ -103,67 +112,86 @@ export default function StorePortal() {
                 </CardTitle>
                 <CardDescription>Browse products and place orders</CardDescription>
               </div>
-              <Button>
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                View Cart (0)
-              </Button>
+              <div className="flex gap-2">
+                <Link to="/portal/store/cart">
+                  <Button variant="outline">
+                    <ShoppingCart className="h-4 w-4 mr-2" />
+                    View Cart ({totals.itemCount})
+                  </Button>
+                </Link>
+                <Link to="/portal/store/products">
+                  <Button variant="ghost" size="sm">See All</Button>
+                </Link>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {catalogItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 rounded-lg border">
-                  <div>
-                    <p className="font-medium">{item.name}</p>
-                    <p className="text-lg font-bold text-primary">${item.price}</p>
-                  </div>
-                  <div className="text-right space-y-2">
-                    <Badge variant={item.stock === 'In Stock' ? 'outline' : 'secondary'}>
-                      {item.stock}
-                    </Badge>
-                    <Button size="sm" className="w-full">Add to Cart</Button>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {productsLoading ? (
+              <p className="text-center py-8 text-muted-foreground">Loading products...</p>
+            ) : !products?.length ? (
+              <p className="text-center py-8 text-muted-foreground">No products available.</p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {products.slice(0, 8).map((product) => {
+                  const price = getProductPriceForDisplay(product, 'store');
+                  return (
+                    <div key={product.id} className="flex items-center justify-between p-4 rounded-lg border">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 rounded bg-muted flex-shrink-0 overflow-hidden">
+                          {product.images[0] ? (
+                            <img src={product.images[0]} alt={product.product_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground/30" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{product.product_name}</p>
+                          <p className="text-lg font-bold text-primary">{formatCurrency(price)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={quantities[product.id] || 1}
+                          onChange={(e) => setQuantities(prev => ({ ...prev, [product.id]: parseInt(e.target.value) || 1 }))}
+                          className="w-16"
+                        />
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddToCart(product.id)}
+                          disabled={isAddingToCart || !product.inventory_qty}
+                        >
+                          Add
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Order History */}
+        {/* Order History - Link to full page */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <History className="h-5 w-5 text-primary" />
               My Orders
             </CardTitle>
+            <Link to="/portal/store/orders">
+              <Button variant="ghost" size="sm">View All Orders</Button>
+            </Link>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Order #</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Items</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">{order.id}</TableCell>
-                    <TableCell>{order.date}</TableCell>
-                    <TableCell>{order.items}</TableCell>
-                    <TableCell className="font-medium">{order.total}</TableCell>
-                    <TableCell>
-                      <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
-                        {order.status}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <p className="text-center py-6 text-muted-foreground">
+              <Link to="/portal/store/orders" className="text-primary hover:underline">
+                View your order history →
+              </Link>
+            </p>
           </CardContent>
         </Card>
       </div>
