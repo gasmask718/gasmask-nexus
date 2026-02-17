@@ -184,7 +184,7 @@ export default function StoreProducts() {
                     <div>
                       <h3 className="font-semibold line-clamp-2">{product.name}</h3>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {product.category} · {product.unit_type}
+                        {product.brand?.name ? `${product.brand.name} · ` : ''}{product.category} · {product.unit_type}
                       </p>
                     </div>
 
