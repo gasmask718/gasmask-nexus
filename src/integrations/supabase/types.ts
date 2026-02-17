@@ -44023,6 +44023,7 @@ export type Database = {
           generated_by_ai: boolean | null
           hub_id: string | null
           id: string
+          marketplace_order_id: string | null
           notes: string | null
           order_number: string
           payment_method: string | null
@@ -44048,6 +44049,7 @@ export type Database = {
           generated_by_ai?: boolean | null
           hub_id?: string | null
           id?: string
+          marketplace_order_id?: string | null
           notes?: string | null
           order_number: string
           payment_method?: string | null
@@ -44073,6 +44075,7 @@ export type Database = {
           generated_by_ai?: boolean | null
           hub_id?: string | null
           id?: string
+          marketplace_order_id?: string | null
           notes?: string | null
           order_number?: string
           payment_method?: string | null
@@ -44099,6 +44102,13 @@ export type Database = {
             columns: ["hub_id"]
             isOneToOne: false
             referencedRelation: "wholesale_hubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_orders_marketplace_order_id_fkey"
+            columns: ["marketplace_order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
             referencedColumns: ["id"]
           },
           {

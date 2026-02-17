@@ -53,26 +53,33 @@ export function useStoreOrders() {
             price_each,
             product:products_all(product_name, images)
           ),
-          shipping_label:shipping_labels(tracking_number, carrier)
+          shipping_label:shipping_labels(tracking_number, carrier),
+          linked_store_order:store_orders!marketplace_order_id(id, status, delivery_address)
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(order => ({
-        ...order,
-        shipping_address: order.shipping_address as Record<string, any> | null,
-        billing_address: order.billing_address as Record<string, any> | null,
-        items: order.items?.map((item: any) => ({
-          ...item,
-          product: item.product ? {
-            ...item.product,
-            images: Array.isArray(item.product.images) ? item.product.images : [],
-          } : null,
-        })),
-        shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
-      })) as StoreOrder[];
+      return (data || []).map(order => {
+        const linkedOrder = Array.isArray((order as any).linked_store_order) 
+          ? (order as any).linked_store_order[0] 
+          : (order as any).linked_store_order;
+        return {
+          ...order,
+          shipping_address: order.shipping_address as Record<string, any> | null,
+          billing_address: order.billing_address as Record<string, any> | null,
+          items: order.items?.map((item: any) => ({
+            ...item,
+            product: item.product ? {
+              ...item.product,
+              images: Array.isArray(item.product.images) ? item.product.images : [],
+            } : null,
+          })),
+          shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
+          store_order_status: linkedOrder?.status || null,
+        };
+      }) as StoreOrder[];
     },
     enabled: !!user,
   });

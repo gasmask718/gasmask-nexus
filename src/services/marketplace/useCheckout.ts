@@ -46,6 +46,17 @@ export function useCheckout() {
     return groups;
   };
 
+  // Resolve user's store from user_store_map
+  const resolveUserStore = async (userId: string) => {
+    const { data } = await supabase
+      .from('user_store_map')
+      .select('store_id')
+      .eq('user_id', userId)
+      .limit(1)
+      .maybeSingle();
+    return data?.store_id || null;
+  };
+
   // Validate checkout data
   const validateCheckout = (data: CheckoutData): { valid: boolean; errors: string[] } => {
     const errors: string[] = [];
@@ -101,7 +112,7 @@ export function useCheckout() {
       const wholesalerGroups = groupItemsByWholesaler(data.items);
       const firstWholesalerId = data.items[0]?.product?.wholesaler_id;
 
-      // Create main order
+      // Create main marketplace order
       const { data: order, error: orderError } = await supabase
         .from('marketplace_orders')
         .insert([{
@@ -123,6 +134,8 @@ export function useCheckout() {
         .single();
 
       if (orderError) throw orderError;
+
+      const orderNumber = order.id.slice(0, 8).toUpperCase();
 
       // Create order items
       const orderItems = data.items.map(item => ({
@@ -168,14 +181,112 @@ export function useCheckout() {
         }
       }
 
+      // === BRIDGE: Auto-create store_orders record for dispatch/assignments ===
+      const storeId = await resolveUserStore(user.id);
+      
+      if (storeId) {
+        const deliveryAddress = `${data.shippingAddress.street}, ${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.zipCode}`;
+        
+        const { data: storeOrder, error: storeOrderError } = await supabase
+          .from('store_orders')
+          .insert({
+            store_id: storeId,
+            marketplace_order_id: order.id,
+            order_number: `MKT-${orderNumber}`,
+            status: 'pending',
+            payment_status: data.paymentMethod === 'card' ? 'pending' : 'unpaid',
+            payment_method: data.paymentMethod,
+            subtotal: data.totals.subtotal,
+            tax: data.totals.tax,
+            delivery_fee: data.totals.shipping,
+            total_amount: data.totals.total,
+            recipient_name: data.shippingAddress.fullName,
+            recipient_phone: data.shippingAddress.phone,
+            delivery_address: deliveryAddress,
+            notes: data.notes,
+          })
+          .select('id')
+          .single();
+
+        if (storeOrderError) {
+          console.error('Store order creation error:', storeOrderError);
+        }
+
+        // === BRIDGE: Auto-create invoice (financial truth) ===
+        if (storeOrder) {
+          const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30); // Net 30
+
+          const { data: invoice, error: invoiceError } = await supabase
+            .from('invoices')
+            .insert({
+              invoice_number: invoiceNumber,
+              store_id: storeId,
+              order_id: storeOrder.id,
+              entity_type: 'store',
+              entity_id: storeId,
+              subtotal: data.totals.subtotal,
+              tax: data.totals.tax,
+              total: data.totals.total,
+              total_amount: data.totals.total,
+              due_date: dueDate.toISOString().split('T')[0],
+              status: 'draft',
+              payment_status: 'unpaid',
+              payment_method: data.paymentMethod,
+              pricing_mode: 'retail',
+              notes: `Auto-generated from marketplace order ${orderNumber}`,
+              created_by: user.id,
+            })
+            .select('id')
+            .single();
+
+          if (invoiceError) {
+            console.error('Invoice creation error:', invoiceError);
+          }
+
+          // Create invoice line items
+          if (invoice) {
+            const lineItems = data.items.map(item => ({
+              invoice_id: invoice.id,
+              product_id: item.product_id,
+              product_name: item.product?.product_name || 'Unknown Product',
+              product_name_snapshot: item.product?.product_name || 'Unknown Product',
+              brand: (item.product as any)?.brand || null,
+              brand_name_snapshot: (item.product as any)?.brand || null,
+              quantity: item.qty,
+              unit_price: item.price_locked || 0,
+              total: (item.price_locked || 0) * item.qty,
+              line_subtotal: (item.price_locked || 0) * item.qty,
+              unit_price_used: item.price_locked || 0,
+              list_unit_price: item.price_locked || 0,
+              sale_channel: 'retail',
+              pricing_mode: 'retail',
+            }));
+
+            const { error: lineItemsError } = await supabase
+              .from('invoice_line_items')
+              .insert(lineItems);
+
+            if (lineItemsError) {
+              console.error('Invoice line items error:', lineItemsError);
+            }
+          }
+        }
+      }
+
       return {
         orderId: order.id,
-        orderNumber: order.id.slice(0, 8).toUpperCase(),
+        orderNumber,
       };
     },
     onSuccess: () => {
+      // Invalidate all related queries so every page refreshes
       queryClient.invalidateQueries({ queryKey: ['cart'] });
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.invalidateQueries({ queryKey: ['assignment-orders'] });
+      queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['store-orders'] });
       toast.success('Order placed successfully!');
     },
     onError: (error) => {
