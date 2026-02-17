@@ -1,43 +1,72 @@
 
+# Plan: Connect Marketplace Checkout to Dispatch and Invoice Systems
 
-# Plan: Fix Missing Delivery Trajectories on Live Map
+## The Problem
+Right now, three critical systems are completely disconnected:
 
-## Problem
-The delivery trajectory lines are not appearing because the assigned worker (Biker "Beans") has no valid GPS location -- only `(0, 0)` login pings which are correctly filtered out. The code requires a worker position on the map to draw a line from worker to destination, so when no GPS exists, nothing renders.
+1. **Marketplace Checkout** writes to `marketplace_orders` (user-facing)
+2. **Dispatch/Assignments** reads from `store_orders` (operations-facing)
+3. **Invoices** are never auto-created from orders
 
-## Solution
-Two changes to ensure delivery destinations and paths always appear:
+When a user places an order at checkout, it never appears in `/grabba/assignments` because that page only queries `store_orders`. No invoice is generated either.
 
-### 1. Show Destination Pins Even Without Worker Location (MapCanvas.tsx)
-Currently the code skips the entire task rendering if `worker` is not found on the map. We will split the logic:
-- **Always** render the destination pin/marker for active delivery tasks (so admins see where deliveries are headed)
-- **Only** draw the trajectory line when a worker location exists
+## The Solution
 
-### 2. Use Store (Pickup) Location as Fallback Origin (useLiveMapData.ts)
-When no worker GPS location is available, use the store's coordinates as a fallback to draw a "pickup -> delivery" trajectory. This gives dispatchers visual context even when the worker is offline/no-GPS.
+Bridge the checkout flow so that placing an order automatically:
+1. Creates a `store_orders` record (so it appears in Assignments)
+2. Creates an `invoices` record with line items (financial truth)
+3. Links `delivery_tasks` properly so the Live Map shows trajectories
 
-Changes:
-- In `useLiveDeliveryTasks`, also fetch the store's `lat`/`lng` from the `stores` table and include `pickup_lat`/`pickup_lng` on `LiveDeliveryTask`
-- In `MapCanvas.tsx`, when drawing trajectory lines: if worker location is missing but pickup coordinates exist, draw the line from pickup to destination instead
+The full flow becomes:
+**User places order** --> auto-creates `store_orders` + `invoices` --> **Admin assigns biker/driver** at `/grabba/assignments` --> **Biker gets notified** (accept/decline) --> **Biker delivers and updates status** --> **Live Map shows trajectory**
 
 ---
 
 ## Technical Details
 
-### File 1: `src/hooks/useLiveMapData.ts`
-- Update `LiveDeliveryTask` interface to add `pickup_lat` and `pickup_lng` fields
-- In `useLiveDeliveryTasks`, after resolving biker/driver info, also fetch store coordinates:
-  - Get `store_id` from the joined `store_orders`
-  - Fetch `lat`/`lng` from the `stores` table for those store IDs
-  - Map pickup coordinates onto each task result
+### Step 1: Database -- Add `marketplace_order_id` column to `store_orders`
+Add a nullable `marketplace_order_id` UUID column to `store_orders` to link back to the marketplace order. This preserves the relationship between user-facing and ops-facing records.
 
-### File 2: `src/components/livemap/MapCanvas.tsx`
-- In the `drawDeliveryLines` function (around line 463):
-  - Move destination pin rendering OUTSIDE the `if (!worker) return` guard so pins always show
-  - For the trajectory line: use `worker.lng/lat` if available, otherwise fall back to `task.pickup_lng/pickup_lat`
-  - Only skip the line entirely if NEITHER worker location NOR pickup location exists
+### Step 2: Modify `useCheckout.ts` -- Auto-create `store_orders` + `invoices` after checkout
 
-### Files Changed (2 files)
-1. `src/hooks/useLiveMapData.ts` -- add pickup coordinates to delivery task data
-2. `src/components/livemap/MapCanvas.tsx` -- always show destination pins; use pickup location as fallback for trajectory lines
+After the existing `marketplace_orders` insert, add two more inserts:
 
+**A) Create a `store_orders` record:**
+- Map the user's store (lookup `store_master` by user profile or shipping address)
+- Copy `order_number`, `total`, `delivery_address`, `recipient_name`, `recipient_phone` from checkout data
+- Set `status: 'pending'`, `payment_status` from checkout selection
+- Store `delivery_lat`/`delivery_lng` via geocoding or null
+
+**B) Create an `invoices` record with `invoice_line_items`:**
+- Generate a sequential `invoice_number` (e.g., `INV-{timestamp}`)
+- Set `store_id` from the resolved store, `order_id` from the new `store_orders` record
+- Set `entity_type: 'store'`, `entity_id` from the store
+- Set `due_date` to 30 days from now (Net 30 standard)
+- Set `status: 'draft'`, `payment_status: 'unpaid'`
+- Create one `invoice_line_items` row per cart item with product name, quantity, unit price, and pricing snapshots
+
+### Step 3: Update `StoreOrders.tsx` (portal/store) -- Show both marketplace and store orders
+
+Currently `/portal/store/orders` only shows `marketplace_orders`. Update it to also show the linked `store_orders` data (fulfillment status, delivery tracking) so the store user sees a unified view of their order lifecycle.
+
+### Step 4: Verify `/grabba/assignments` works automatically
+
+The Assignments page already reads from `store_orders` -- once Step 2 creates records there, orders will automatically appear. No changes needed to the Assignments page itself.
+
+### Step 5: Verify Live Map works automatically
+
+The Live Map already reads `delivery_tasks` linked to `store_orders`. Once an admin assigns a biker/driver via Assignments (which creates a `delivery_task`), the trajectory will render on the map using the existing logic (including the store-pickup fallback from the previous fix).
+
+### Step 6: Invalidate correct query keys
+
+After checkout, invalidate:
+- `['assignment-orders']` -- so Assignments page refreshes
+- `['store-invoices']` -- so invoice list refreshes
+- `['store-orders']` -- so portal orders refresh
+
+### Files Changed
+
+1. **Database migration** -- Add `marketplace_order_id` to `store_orders`
+2. **`src/services/marketplace/useCheckout.ts`** -- Add auto-creation of `store_orders` + `invoices` + `invoice_line_items` after marketplace order insert
+3. **`src/services/store/useStoreOrders.ts`** -- Minor update to also surface fulfillment data from linked `store_orders`
+4. **`src/pages/portal/store/StoreOrders.tsx`** -- Show delivery status from the linked `store_orders`/`delivery_tasks`
