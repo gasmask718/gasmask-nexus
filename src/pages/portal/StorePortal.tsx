@@ -153,6 +153,9 @@ export default function StorePortal() {
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium truncate">{product.name}</p>
+                          {product.brand?.name && (
+                            <p className="text-xs text-muted-foreground">{product.brand.name}</p>
+                          )}
                           <p className="text-lg font-bold text-primary">{formatCurrency(price)}</p>
                         </div>
                       </div>
