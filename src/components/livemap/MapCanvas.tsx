@@ -471,18 +471,8 @@ export function MapCanvas({
           r => r.assigned_to === worker.worker_id && (r.status === 'active' || r.status === 'in_progress')
         );
 
-        // Haversine-based sanity check: if worker GPS is >500km from destination, treat as stale/wrong
-        const isWorkerNearby = worker ? (() => {
-          const toRad = (d: number) => d * Math.PI / 180;
-          const R = 6371; // km
-          const dLat = toRad(task.delivery_lat - worker.lat);
-          const dLon = toRad(task.delivery_lng - worker.lng);
-          const a = Math.sin(dLat/2)**2 + Math.cos(toRad(worker.lat)) * Math.cos(toRad(task.delivery_lat)) * Math.sin(dLon/2)**2;
-          return 2 * R * Math.asin(Math.sqrt(a)) < 500;
-        })() : false;
-
-        // Determine origin: use worker GPS only if nearby, else fallback to store pickup
-        const useWorkerOrigin = worker && isWorkerNearby;
+        // Always use worker GPS as origin if available (no distance limit)
+        const useWorkerOrigin = !!worker;
         const origin = useWorkerOrigin
           ? [worker.lng, worker.lat]
           : (task.pickup_lat && task.pickup_lng ? [task.pickup_lng, task.pickup_lat] : null);
