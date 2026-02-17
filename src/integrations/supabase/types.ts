@@ -44031,7 +44031,7 @@ export type Database = {
           recipient_name: string | null
           recipient_phone: string | null
           status: string
-          store_id: string
+          store_id: string | null
           subtotal: number
           tax: number
           total_amount: number
@@ -44057,7 +44057,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           status?: string
-          store_id: string
+          store_id?: string | null
           subtotal?: number
           tax?: number
           total_amount?: number
@@ -44083,7 +44083,7 @@ export type Database = {
           recipient_name?: string | null
           recipient_phone?: string | null
           status?: string
-          store_id?: string
+          store_id?: string | null
           subtotal?: number
           tax?: number
           total_amount?: number
