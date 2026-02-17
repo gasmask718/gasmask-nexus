@@ -29,6 +29,7 @@ import { useMyAssignedRoutes } from '@/hooks/delivery/useMyAssignedRoutes';
 import { DispatchContextBadges } from '@/components/delivery/DispatchContextBadges';
 import { SLAAlertBadges } from '@/components/delivery/SLAAlertBadges';
 import { useSLAAlertForStore } from '@/hooks/useSLAAlerts';
+import { useDeliveryTaskNotifications } from '@/hooks/useDeliveryTaskNotifications';
 
 interface MyDayDashboardProps {
   portalType: 'driver' | 'biker';
@@ -59,6 +60,9 @@ export function MyDayDashboard({ portalType }: MyDayDashboardProps) {
   const [shiftStatus, setShiftStatus] = useState<ShiftStatus>('not_started');
   const [shiftStartTime, setShiftStartTime] = useState<Date | null>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
+
+  // Real-time delivery task notifications
+  useDeliveryTaskNotifications();
 
   // CANONICAL HOOK: Get assigned routes + route_stops for this worker
   const { flatStops: assignedStops, isLoading: loading } = useMyAssignedRoutes();
