@@ -1,72 +1,93 @@
 
-# Plan: Connect Marketplace Checkout to Dispatch and Invoice Systems
 
-## The Problem
-Right now, three critical systems are completely disconnected:
+# Make Customer Portal (`/portal/customer`) Fully Functional
 
-1. **Marketplace Checkout** writes to `marketplace_orders` (user-facing)
-2. **Dispatch/Assignments** reads from `store_orders` (operations-facing)
-3. **Invoices** are never auto-created from orders
+## Overview
+Replace all mock/hardcoded data on the Customer Portal with live database queries, and wire up navigation to the existing `/shop` page for browsing and ordering products. The page will show the real logged-in customer's profile, their actual order history from `marketplace_orders`, and functional navigation to shop, cart, and order tracking.
 
-When a user places an order at checkout, it never appears in `/grabba/assignments` because that page only queries `store_orders`. No invoice is generated either.
+## What Changes
 
-## The Solution
+### 1. Real Profile Data
+- The page already fetches `useCurrentUserProfile()` -- we will also pull the user's `profiles` record (name, email, phone) to display complete account info.
 
-Bridge the checkout flow so that placing an order automatically:
-1. Creates a `store_orders` record (so it appears in Assignments)
-2. Creates an `invoices` record with line items (financial truth)
-3. Links `delivery_tasks` properly so the Live Map shows trajectories
+### 2. Real Order History (replace mock data)
+- Query `marketplace_orders` filtered by `user_id = auth.uid()` with joined `marketplace_order_items` and product details.
+- Display actual order ID (truncated), date, item count, total, and fulfillment/payment status.
+- Map `fulfillment_status` values (`pending`, `processing`, `shipped`, `delivered`) to the existing `HudStatusBadge` component.
 
-The full flow becomes:
-**User places order** --> auto-creates `store_orders` + `invoices` --> **Admin assigns biker/driver** at `/grabba/assignments` --> **Biker gets notified** (accept/decline) --> **Biker delivers and updates status** --> **Live Map shows trajectory**
+### 3. Real Quick Stats
+- **Total Orders**: COUNT from `marketplace_orders` for this user.
+- **Saved Addresses**: Count unique shipping addresses from past orders (extracted from `shipping_address` JSONB).
+- **Rewards Points / Available Deals**: Keep as placeholder (no rewards table exists yet) but clearly label as "Coming Soon".
 
----
+### 4. Active Delivery Banner
+- Query `marketplace_orders` where `fulfillment_status = 'shipped'` (in transit) for the current user.
+- Show the real order ID and estimated delivery info if an active delivery exists.
+
+### 5. Functional Navigation Cards
+- **Shop Now**: Already navigates to `/shop` -- keep as-is (correct).
+- **My Orders**: Navigate to a new section or scroll-to the orders list on the same page; show the full order list with details.
+- **Addresses**: Show a list of saved shipping addresses extracted from past orders' `shipping_address` JSONB.
+- **Support / Rewards**: Keep as placeholders with "Coming Soon" labels.
+
+### 6. Order Detail Expansion
+- Each order in the "Recent Orders" list will be clickable to expand/reveal line items (product name, qty, price each) fetched from `marketplace_order_items` joined with `products_all`.
 
 ## Technical Details
 
-### Step 1: Database -- Add `marketplace_order_id` column to `store_orders`
-Add a nullable `marketplace_order_id` UUID column to `store_orders` to link back to the marketplace order. This preserves the relationship between user-facing and ops-facing records.
+### File: `src/pages/portal/CustomerPortal.tsx` (major rewrite)
 
-### Step 2: Modify `useCheckout.ts` -- Auto-create `store_orders` + `invoices` after checkout
+**New hooks/queries added inline:**
+```typescript
+// Fetch real orders
+const { data: orders, isLoading: ordersLoading } = useQuery({
+  queryKey: ['customer-orders', user?.id],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from('marketplace_orders')
+      .select(`
+        id, created_at, order_type, payment_status, fulfillment_status,
+        subtotal, shipping_cost, tax_amount, total, shipping_address, notes,
+        items:marketplace_order_items(
+          id, qty, price_each,
+          product:products_all(id, product_name, images)
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    return data || [];
+  },
+  enabled: !!user,
+});
+```
 
-After the existing `marketplace_orders` insert, add two more inserts:
+**Derived stats (no extra queries):**
+- `totalOrders = orders?.length`
+- `activeDeliveries = orders?.filter(o => o.fulfillment_status === 'shipped')`
+- `uniqueAddresses` = deduplicated from `orders.map(o => o.shipping_address)`
 
-**A) Create a `store_orders` record:**
-- Map the user's store (lookup `store_master` by user profile or shipping address)
-- Copy `order_number`, `total`, `delivery_address`, `recipient_name`, `recipient_phone` from checkout data
-- Set `status: 'pending'`, `payment_status` from checkout selection
-- Store `delivery_lat`/`delivery_lng` via geocoding or null
+**Order detail expansion:**
+- Use local state `expandedOrderId` to toggle showing line items for a clicked order.
 
-**B) Create an `invoices` record with `invoice_line_items`:**
-- Generate a sequential `invoice_number` (e.g., `INV-{timestamp}`)
-- Set `store_id` from the resolved store, `order_id` from the new `store_orders` record
-- Set `entity_type: 'store'`, `entity_id` from the store
-- Set `due_date` to 30 days from now (Net 30 standard)
-- Set `status: 'draft'`, `payment_status: 'unpaid'`
-- Create one `invoice_line_items` row per cart item with product name, quantity, unit price, and pricing snapshots
+**Profile display:**
+- Use existing `useCurrentUserProfile()` for name.
+- Also fetch from `profiles` table for email/phone to show in an Account Info card.
 
-### Step 3: Update `StoreOrders.tsx` (portal/store) -- Show both marketplace and store orders
+### File: `src/services/marketplace/useCart.ts` -- No changes needed
+The existing `useCart` hook already works for adding products from `/shop`.
 
-Currently `/portal/store/orders` only shows `marketplace_orders`. Update it to also show the linked `store_orders` data (fulfillment status, delivery tracking) so the store user sees a unified view of their order lifecycle.
+### No database migrations needed
+All required tables (`marketplace_orders`, `marketplace_order_items`, `products_all`, `profiles`) already exist with proper schema and RLS.
 
-### Step 4: Verify `/grabba/assignments` works automatically
+### No new files needed
+Everything will be contained in the updated `CustomerPortal.tsx`.
 
-The Assignments page already reads from `store_orders` -- once Step 2 creates records there, orders will automatically appear. No changes needed to the Assignments page itself.
+## Summary of Sections in the Updated Page
 
-### Step 5: Verify Live Map works automatically
+1. **Account Header** -- Real name, email from profile
+2. **Active Delivery Banner** -- Real in-transit orders (if any)
+3. **Quick Stats** -- Real total orders count, addresses; rewards marked "Coming Soon"
+4. **Action Cards** -- Shop Now (to `/shop`), My Orders (scroll), Cart (to `/cart`), Addresses, Support
+5. **Order History** -- Real orders with expandable line items showing product name, qty, price, images
+6. **Cart Quick Access** -- Show current cart item count with link to `/cart`
 
-The Live Map already reads `delivery_tasks` linked to `store_orders`. Once an admin assigns a biker/driver via Assignments (which creates a `delivery_task`), the trajectory will render on the map using the existing logic (including the store-pickup fallback from the previous fix).
-
-### Step 6: Invalidate correct query keys
-
-After checkout, invalidate:
-- `['assignment-orders']` -- so Assignments page refreshes
-- `['store-invoices']` -- so invoice list refreshes
-- `['store-orders']` -- so portal orders refresh
-
-### Files Changed
-
-1. **Database migration** -- Add `marketplace_order_id` to `store_orders`
-2. **`src/services/marketplace/useCheckout.ts`** -- Add auto-creation of `store_orders` + `invoices` + `invoice_line_items` after marketplace order insert
-3. **`src/services/store/useStoreOrders.ts`** -- Minor update to also surface fulfillment data from linked `store_orders`
-4. **`src/pages/portal/store/StoreOrders.tsx`** -- Show delivery status from the linked `store_orders`/`delivery_tasks`
