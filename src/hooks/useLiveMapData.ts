@@ -347,7 +347,7 @@ export function useLiveExceptions() {
   });
 }
 
-// Fetch active delivery tasks with destination coordinates
+// Fetch ALL delivery tasks (every order from /grabba/assignments) for map pins
 export function useLiveDeliveryTasks() {
   return useQuery({
     queryKey: ['live-map-delivery-tasks'],
@@ -359,7 +359,7 @@ export function useLiveDeliveryTasks() {
           recipient_name, recipient_phone, delivery_notes, status, created_at,
           store_order:store_orders(order_number, total_amount, store_id)
         `)
-        .in('status', ['pending_acceptance', 'assigned', 'picked_up', 'in_transit', 'delivering']);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       if (!data || data.length === 0) return [] as LiveDeliveryTask[];

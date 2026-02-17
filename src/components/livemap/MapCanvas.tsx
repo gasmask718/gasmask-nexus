@@ -481,8 +481,11 @@ export function MapCanvas({
           ? [worker.lng, worker.lat]
           : (task.pickup_lat && task.pickup_lng ? [task.pickup_lng, task.pickup_lat] : null);
 
-        // Determine pin color: use worker role color if worker is the origin, else default delivery orange
-        const pinColor = useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316';
+        // Determine pin color based on task status
+        const isCompleted = task.status === 'delivered' || task.status === 'failed' || task.status === 'cancelled';
+        const pinColor = isCompleted
+          ? (task.status === 'delivered' ? '#22c55e' : '#6b7280')
+          : (useWorkerOrigin ? getRoleColor(worker!.role) : '#f97316');
 
         // Draw trajectory line if we have an origin and no route trajectory already exists
         if (origin) {
