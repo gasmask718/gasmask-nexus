@@ -81,8 +81,18 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // ElevenLabs returns TwiML XML directly
-    const twiml = await registerResponse.text();
+    // ElevenLabs returns JSON with a twiml field
+    const responseData = await registerResponse.json();
+    const twiml = responseData.twiml;
+
+    if (!twiml) {
+      console.error("❌ ElevenLabs response missing twiml field:", JSON.stringify(responseData));
+      return new Response(
+        `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the AI agent returned an unexpected response.</Say><Hangup/></Response>`,
+        { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
+      );
+    }
+
     console.log(`✅ ElevenLabs returned TwiML (${twiml.length} bytes)`);
 
     return new Response(twiml, {
