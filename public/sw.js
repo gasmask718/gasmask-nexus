@@ -28,6 +28,13 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Listen for skip waiting message from PwaUpdateToast
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // Fetch: network-first for everything, fall back to cache for static assets only
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);

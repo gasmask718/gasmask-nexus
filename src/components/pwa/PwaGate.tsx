@@ -1,9 +1,32 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, X } from 'lucide-react';
+import { logPwaEvent, isRunningAsInstalledPwa } from './PwaTelemetry';
+
+const THROTTLE_KEY = 'gasmask_pwa_prompt_dismissed_at';
+const THROTTLE_DAYS = 7;
+
+function isThrottled(): boolean {
+  try {
+    const dismissed = localStorage.getItem(THROTTLE_KEY);
+    if (!dismissed) return false;
+    const diff = Date.now() - parseInt(dismissed, 10);
+    return diff < THROTTLE_DAYS * 24 * 60 * 60 * 1000;
+  } catch {
+    return false;
+  }
+}
+
+function setThrottled() {
+  try {
+    localStorage.setItem(THROTTLE_KEY, Date.now().toString());
+  } catch {
+    // localStorage not available
+  }
+}
 
 /**
- * PwaGate — Registers SW and exposes install prompt
+ * PwaGate — Registers SW, exposes install prompt with throttling.
  * Only mounted inside OpsLayout (portal routes).
  */
 export default function PwaGate() {
@@ -13,8 +36,9 @@ export default function PwaGate() {
 
   useEffect(() => {
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (isRunningAsInstalledPwa()) {
       setIsInstalled(true);
+      logPwaEvent('pwa_installed_detected');
       return;
     }
 
@@ -22,13 +46,18 @@ export default function PwaGate() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js', { scope: '/portal' })
+        .then(() => logPwaEvent('sw_registered'))
         .catch((err) => console.warn('SW registration failed:', err));
     }
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setShowInstall(true);
+
+      if (!isThrottled()) {
+        setShowInstall(true);
+        logPwaEvent('pwa_install_prompt_shown');
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -41,9 +70,18 @@ export default function PwaGate() {
     const result = await (deferredPrompt as any).userChoice;
     if (result.outcome === 'accepted') {
       setIsInstalled(true);
+      logPwaEvent('pwa_install_prompt_accepted');
+    } else {
+      logPwaEvent('pwa_install_prompt_dismissed');
     }
     setShowInstall(false);
     setDeferredPrompt(null);
+  };
+
+  const handleDismiss = () => {
+    setShowInstall(false);
+    setThrottled();
+    logPwaEvent('pwa_install_prompt_dismissed');
   };
 
   if (isInstalled || !showInstall) return null;
@@ -54,10 +92,15 @@ export default function PwaGate() {
         <p className="text-xs text-muted-foreground">
           Install <span className="font-semibold text-foreground">GasMask Ops</span> for quick access
         </p>
-        <Button size="sm" onClick={handleInstall} className="gap-1.5 shrink-0">
-          <Download className="h-3.5 w-3.5" />
-          Install
-        </Button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button size="sm" onClick={handleInstall} className="gap-1.5">
+            <Download className="h-3.5 w-3.5" />
+            Install
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleDismiss} className="h-8 w-8 p-0">
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
       </div>
     </div>
   );
