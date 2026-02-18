@@ -6,6 +6,7 @@ import { LogOut, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import OpsBottomNav from '@/layouts/OpsBottomNav';
 import PwaGate from '@/components/pwa/PwaGate';
+import PwaUpdateToast from '@/components/pwa/PwaUpdateToast';
 
 /**
  * OpsLayout — Mobile-first layout for portal/field workers
@@ -63,8 +64,9 @@ export default function OpsLayout() {
       </header>
 
       {/* Main Content — padding-bottom for bottom nav */}
-      {/* PWA Install Banner */}
+      {/* PWA Install Banner + Update Toast */}
       <PwaGate />
+      <PwaUpdateToast />
 
       {/* Main Content — padding-bottom for bottom nav */}
       <main className="flex-1 pb-20">
