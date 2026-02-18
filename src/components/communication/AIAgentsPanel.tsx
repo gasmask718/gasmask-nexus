@@ -9,7 +9,6 @@ import { useStoreCallTable, StoreRow } from "@/hooks/useStoreCallTable";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useCall } from "@/components/communication/CallProvider";
 import { AgentSelectorDialog } from "./AgentSelectorDialog";
-import { VoiceCallDialog } from "./VoiceCallDialog";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 import {
   Table,
@@ -37,9 +36,7 @@ export function AIAgentsPanel() {
   } = useStoreCallTable();
 
   const [selectorOpen, setSelectorOpen] = useState(false);
-  const [callOpen, setCallOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
 
   const handleCallClick = (store: StoreRow) => {
     setSelectedStore(store);
@@ -47,22 +44,20 @@ export function AIAgentsPanel() {
   };
 
   const handleAgentConfirm = (agent: AIAgent) => {
-    if (!selectedStore) return;
+    if (!selectedStore?.phone) return;
 
-    // Place Twilio outbound call to the store's phone
-    if (selectedStore.phone) {
-      placeCallNow({
-        destinationPhone: selectedStore.phone,
-        entityType: "store",
-        entityId: selectedStore.id,
-        entityName: selectedStore.store_name,
-      });
-    }
+    // Place Twilio outbound call with the ElevenLabs agent_id
+    // The backend will route the call through the twilio-elevenlabs-bridge
+    // so the AI agent speaks directly on the phone call
+    placeCallNow({
+      destinationPhone: selectedStore.phone,
+      entityType: "store",
+      entityId: selectedStore.id,
+      entityName: selectedStore.store_name,
+      agentId: ELEVENLABS_AGENT_ID,
+    });
 
-    // Open ElevenLabs AI agent voice dialog
-    setSelectedAgent(agent);
     setSelectorOpen(false);
-    setCallOpen(true);
   };
 
   const activeAgents = agents.filter((a) => a.active);
@@ -166,18 +161,6 @@ export function AIAgentsPanel() {
           storePhone={selectedStore.phone}
           agents={agents}
           onConfirm={handleAgentConfirm}
-        />
-      )}
-
-      {/* Voice Call Dialog */}
-      {selectedAgent && selectedStore && (
-        <VoiceCallDialog
-          open={callOpen}
-          onOpenChange={setCallOpen}
-          agentName={selectedAgent.name}
-          elevenlabsAgentId={ELEVENLABS_AGENT_ID}
-          storeName={selectedStore.store_name}
-          storePhone={selectedStore.phone}
         />
       )}
     </div>
