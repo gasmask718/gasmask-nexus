@@ -1,93 +1,96 @@
 
-# Fix AI Agent + Twilio Call Integration
 
-## Problem
-Right now, clicking "Call" on the AI Agents page does two completely disconnected things:
-1. Places a Twilio phone call to the store -- but the call just says "Connecting your call now" and has nobody on the other end
-2. Opens a browser-based ElevenLabs voice dialog -- which is a separate mic/speaker session in your browser
+# Add Call Transcript Logging for AI Agent Calls
 
-The AI agent is never actually on the phone call. The store hears silence, and no audio flows between them.
+## Overview
+After each AI agent call completes, we will fetch the full conversation transcript from ElevenLabs and store it in the database. This lets you verify the agent followed the GASMASK INVENTORY CHECK script and see exactly what was said on both sides.
 
-## Solution
-Use ElevenLabs' **Register Call API** to connect the AI agent directly to the Twilio phone call. When Twilio answers, instead of playing a generic message, the call will be routed through a WebSocket to the ElevenLabs AI agent -- so the store actually talks to the AI on the phone.
-
-## How It Will Work (New Flow)
+## How It Works
 
 ```text
-User clicks "Call" on store
+Call ends (Twilio status = "completed")
         |
         v
-[place-outbound-call edge function]
+[twilio-call-status] detects it was an AI agent call
         |
         v
-Twilio dials the store's phone
-  - Webhook URL points to new "twilio-elevenlabs-bridge" edge function
+Calls new [fetch-elevenlabs-transcript] edge function
         |
         v
-[twilio-elevenlabs-bridge edge function]
-  - Twilio hits this URL when the call connects
-  - This function calls ElevenLabs Register Call API
-  - ElevenLabs returns TwiML with WebSocket connection
-  - Returns that TwiML to Twilio
+Fetches transcript from ElevenLabs API:
+  GET /v1/convai/conversations/{conversation_id}
         |
         v
-Twilio connects call audio to ElevenLabs AI agent via WebSocket
-  - Store hears the AI agent speaking
-  - AI agent hears the store's responses
-  - Real two-way phone conversation
+Saves transcript to ai_call_logs and manual_call_logs
+        |
+        v
+Viewable in the AI Agents panel UI
 ```
 
 ## Changes
 
-### 1. New Edge Function: `twilio-elevenlabs-bridge`
-A new backend function that serves as the webhook Twilio calls when the outbound call connects. It:
-- Receives the call details (From, To numbers) from Twilio
-- Calls `POST https://api.elevenlabs.io/v1/convai/twilio/register-call` with the agent ID, phone numbers, and direction "outbound"
-- Returns the TwiML from ElevenLabs directly to Twilio
-- This TwiML instructs Twilio to stream the call audio over WebSocket to ElevenLabs
+### 1. Capture `conversation_id` from ElevenLabs Register Call response
+The `twilio-elevenlabs-bridge` function already calls ElevenLabs Register Call API, which returns `{ twiml, conversation_id }`. We will:
+- Extract `conversation_id` from the response
+- Store it in `call_recordings.metadata` (or a new column) keyed to the Twilio `CallSid`
+- This links every Twilio call to its ElevenLabs conversation
 
-### 2. Modify `place-outbound-call` Edge Function
-Change the TwiML URL so that instead of using the simple "Connecting your call now" message, it points to the new `twilio-elevenlabs-bridge` function. The agent ID will be passed as a query parameter so the bridge knows which AI agent to connect.
+### 2. New Edge Function: `fetch-elevenlabs-transcript`
+A backend function that:
+- Accepts a `conversation_id`
+- Calls `GET https://api.elevenlabs.io/v1/convai/conversations/{conversation_id}` with the ElevenLabs API key
+- Returns the structured transcript (array of `{ role, message, time_in_call_secs }`)
+- Saves the transcript to the database
 
-### 3. Update Frontend (`AIAgentsPanel.tsx`)
-Pass the `elevenlabs_agent_id` to the `placeCallNow` call so the backend knows which ElevenLabs agent to connect to the phone call.
+### 3. Store the `conversation_id` during the bridge call
+The bridge function currently does not have database access. Two approaches:
+- **Option A**: Add Supabase client to the bridge and write the `conversation_id` to `call_recordings` directly (matched by `CallSid`)
+- **Option B**: Return the `conversation_id` in TwiML custom parameters and have the call-status webhook store it
 
-### 4. Remove Browser Voice Dialog
-Since the AI agent will now be on the actual phone call (not in the browser), the `VoiceCallDialog` browser session is no longer needed for this flow. The user just initiates the call and the AI handles the conversation on the phone.
+We will use **Option A** since it is simpler and more reliable.
+
+### 4. Modify `twilio-call-status` to fetch transcript on call completion
+When a call reaches "completed" status, the webhook will:
+- Check if the call has a stored `conversation_id` in `call_recordings`
+- If yes, call the ElevenLabs Conversations API to get the transcript
+- Save the formatted transcript to `ai_call_logs.transcription` and/or `manual_call_logs.metadata`
+
+### 5. Add database migration
+- Add `elevenlabs_conversation_id` column to `call_recordings` table
+- This column links Twilio calls to their ElevenLabs conversation for transcript retrieval
+
+### 6. Add Transcript Viewer in the AI Agents panel
+A simple UI component that:
+- Shows a list of recent AI agent calls with status
+- Clicking a call shows the full transcript in a dialog
+- Each message displays the role (Agent vs Customer) and timestamp
+- Highlights whether the agent followed the inventory check script steps
 
 ## Technical Details
 
-**New file: `supabase/functions/twilio-elevenlabs-bridge/index.ts`**
-- Handles POST from Twilio (form-encoded body with `From`, `To`, `CallSid`, etc.)
-- Extracts `agent_id` from query parameters
-- Calls ElevenLabs Register Call API:
-  ```
-  POST https://api.elevenlabs.io/v1/convai/twilio/register-call
-  Headers: { "xi-api-key": ELEVENLABS_API_KEY }
-  Body: { agent_id, from_number, to_number, direction: "outbound" }
-  ```
-- Returns the TwiML response (XML) directly to Twilio
-- Must set `verify_jwt = false` in config.toml (Twilio calls this URL directly)
+**Modified: `supabase/functions/twilio-elevenlabs-bridge/index.ts`**
+- Add Supabase client initialization
+- After getting `conversation_id` from ElevenLabs response, write it to `call_recordings` matched by `CallSid`
 
-**Modified file: `supabase/functions/place-outbound-call/index.ts`**
-- Accept optional `agent_id` parameter in the request body
-- Change the TwiML URL from the simple echo service to the bridge function URL:
-  ```
-  https://{projectId}.supabase.co/functions/v1/twilio-elevenlabs-bridge?agent_id={agentId}
-  ```
-- When no `agent_id` is provided, keep the current simple TwiML behavior (so non-AI calls still work)
+**New: `supabase/functions/fetch-elevenlabs-transcript/index.ts`**
+- Accepts `{ conversation_id }` in POST body
+- Calls `GET https://api.elevenlabs.io/v1/convai/conversations/{conversation_id}`
+- Returns structured transcript data
+- Optionally saves to database
 
-**Modified file: `src/components/communication/AIAgentsPanel.tsx`**
-- Pass `agent_id` in the call parameters (via `notes` or a new field) so the backend connects the right AI agent
-- Simplify the post-call UI since the AI conversation happens on the phone, not in the browser
+**Modified: `supabase/functions/twilio-call-status/index.ts`**
+- On terminal "completed" status, check `call_recordings` for `elevenlabs_conversation_id`
+- If found, fetch transcript from ElevenLabs and save to `ai_call_logs`
 
-**Modified file: `src/hooks/useOutboundCall.ts`**
-- Add optional `agent_id` field to `PlaceCallParams`
-- Pass it through to the edge function
+**New: `src/components/communication/CallTranscriptViewer.tsx`**
+- Dialog component showing call transcript
+- Role-based message bubbles (Agent left, Customer right)
+- Timestamp display for each message
 
-**Config: `supabase/config.toml`**
-- Add `[functions.twilio-elevenlabs-bridge]` with `verify_jwt = false`
+**Modified: `src/components/communication/AIAgentsPanel.tsx`**
+- Add a "Recent Calls" section below the store table
+- Each row shows store name, date, duration, outcome, and a "View Transcript" button
 
-## Prerequisites
-- The ElevenLabs agent must be configured with **u-law 8000 Hz** audio format (both TTS output and input) in the ElevenLabs dashboard for telephony compatibility
-- The `ELEVENLABS_API_KEY` secret is already configured
+**Database migration:**
+- `ALTER TABLE call_recordings ADD COLUMN elevenlabs_conversation_id TEXT`
+
