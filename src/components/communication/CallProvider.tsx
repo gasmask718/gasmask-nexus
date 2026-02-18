@@ -10,15 +10,18 @@ import { CallModal } from "./CallModal";
  * exposes the initiateCall function to all components.
  */
 
+interface CallParams {
+  destinationPhone: string;
+  businessId?: string;
+  entityType?: "store" | "customer" | "wholesaler" | "driver" | "ambassador" | "other";
+  entityId?: string;
+  entityName?: string;
+  notes?: string;
+}
+
 interface CallContextValue {
-  initiateCall: (params: {
-    destinationPhone: string;
-    businessId?: string;
-    entityType?: "store" | "customer" | "wholesaler" | "driver" | "ambassador" | "other";
-    entityId?: string;
-    entityName?: string;
-    notes?: string;
-  }) => void;
+  initiateCall: (params: CallParams) => void;
+  placeCallNow: (params: CallParams) => Promise<any>;
   isCallModalOpen: boolean;
   activeCall: {
     callSid: string;
@@ -53,6 +56,7 @@ export function CallProvider({ children }: CallProviderProps) {
     isPlacingCall,
     businessPhoneNumbers,
     initiateCall,
+    placeCallNow,
     confirmCall,
     cancelCall,
     formatPhoneDisplay,
@@ -62,6 +66,7 @@ export function CallProvider({ children }: CallProviderProps) {
     <CallContext.Provider
       value={{
         initiateCall,
+        placeCallNow,
         isCallModalOpen,
         activeCall,
         formatPhoneDisplay,
