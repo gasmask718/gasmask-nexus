@@ -1,8 +1,14 @@
 User-agent: Googlebot
 Allow: /
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /security/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /security/
 
 User-agent: Twitterbot
 Allow: /
@@ -12,3 +18,8 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /portal/
+Disallow: /admin/
+Disallow: /security/
+
+Sitemap: https://gasmask-os-nexus.lovable.app/sitemap.xml
