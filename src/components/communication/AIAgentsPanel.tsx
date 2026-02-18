@@ -26,7 +26,7 @@ const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
 export function AIAgentsPanel() {
   const { currentBusiness } = useBusiness();
   const { agents, agentsLoading } = useAIAgents(currentBusiness?.id);
-  const { initiateCall } = useCall();
+  const { placeCallNow } = useCall();
 
   const {
     stores,
@@ -51,7 +51,7 @@ export function AIAgentsPanel() {
 
     // Place Twilio outbound call to the store's phone
     if (selectedStore.phone) {
-      initiateCall({
+      placeCallNow({
         destinationPhone: selectedStore.phone,
         entityType: "store",
         entityId: selectedStore.id,
