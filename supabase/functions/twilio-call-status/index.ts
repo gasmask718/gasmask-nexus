@@ -83,6 +83,22 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY") ?? null;
+
+    const waitUntil = (promise: Promise<unknown>) => {
+      try {
+        // @ts-ignore - available in the Edge runtime
+        if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+          // @ts-ignore
+          EdgeRuntime.waitUntil(promise);
+          return;
+        }
+      } catch {
+        // ignore
+      }
+      promise.catch((e) => console.error("❌ Background task failed:", e));
+    };
+
     // Map status
     const dbStatus = STATUS_MAP[callStatus] || callStatus;
     const isTerminal = ["completed", "busy", "no_answer", "failed", "canceled"].includes(dbStatus);
@@ -110,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
     
     const { data: recording, error: recordingFindError } = await supabase
       .from("call_recordings")
-      .select("id, manual_call_id")
+      .select("id, manual_call_id, elevenlabs_conversation_id")
       .eq("provider_call_sid", effectiveSid)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -170,6 +186,128 @@ const handler = async (req: Request): Promise<Response> => {
         } else {
           console.log(`✅ Updated manual_call_logs: ${recording.manual_call_id} → ${dbStatus}`);
         }
+
+        // 2b. If this was an ElevenLabs-powered AI call, fetch/store transcript after the call ends.
+        if (
+          isTerminal &&
+          ELEVENLABS_API_KEY &&
+          recording.elevenlabs_conversation_id &&
+          dbStatus === "completed"
+        ) {
+          const conversationId = recording.elevenlabs_conversation_id;
+          const manualCallId = recording.manual_call_id;
+          const recordingId = recording.id;
+
+          waitUntil((async () => {
+            try {
+              // Skip if we already saved a transcript
+              const { data: existingLog, error: existingLogError } = await supabase
+                .from("manual_call_logs")
+                .select("metadata")
+                .eq("id", manualCallId)
+                .maybeSingle();
+
+              if (existingLogError) {
+                console.error("❌ Error reading manual_call_logs.metadata:", existingLogError);
+                return;
+              }
+
+              const existingMeta = (existingLog?.metadata ?? {}) as Record<string, unknown>;
+              const existingEleven = (existingMeta["elevenlabs"] ?? {}) as Record<string, unknown>;
+              if (typeof existingEleven["transcript_text"] === "string" && (existingEleven["transcript_text"] as string).trim().length > 0) {
+                return;
+              }
+
+              const convoRes = await fetch(
+                `https://api.elevenlabs.io/v1/convai/conversations/${conversationId}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "xi-api-key": ELEVENLABS_API_KEY,
+                    "Content-Type": "application/json",
+                  },
+                },
+              );
+
+              if (!convoRes.ok) {
+                const errText = await convoRes.text();
+                console.error(`❌ ElevenLabs conversation fetch failed (${convoRes.status}):`, errText);
+                return;
+              }
+
+              const convoJson = await convoRes.json();
+
+              const transcriptText = (() => {
+                const lines: string[] = [];
+
+                const pushLine = (role: string, text: string) => {
+                  const clean = (text ?? "").toString().trim();
+                  if (!clean) return;
+                  lines.push(`${role}: ${clean}`);
+                };
+
+                // Try common shapes
+                if (typeof convoJson?.transcript === "string") {
+                  return convoJson.transcript;
+                }
+
+                const items =
+                  convoJson?.messages ??
+                  convoJson?.turns ??
+                  convoJson?.transcript ??
+                  convoJson?.conversation?.messages ??
+                  convoJson?.conversation?.turns ??
+                  null;
+
+                if (Array.isArray(items)) {
+                  for (const it of items) {
+                    const role = (it?.role ?? it?.speaker ?? it?.type ?? "unknown").toString();
+                    const text = (it?.text ?? it?.message ?? it?.content ?? it?.utterance ?? "").toString();
+                    pushLine(role, text);
+                  }
+                  if (lines.length > 0) return lines.join("\n\n");
+                }
+
+                // Fallback: stringify
+                return JSON.stringify(convoJson, null, 2);
+              })();
+
+              const newMetadata = {
+                ...existingMeta,
+                elevenlabs: {
+                  ...existingEleven,
+                  conversation_id: conversationId,
+                  transcript_text: transcriptText,
+                  fetched_at: new Date().toISOString(),
+                },
+              };
+
+              const { error: metaUpdateError } = await supabase
+                .from("manual_call_logs")
+                .update({ metadata: newMetadata })
+                .eq("id", manualCallId);
+
+              if (metaUpdateError) {
+                console.error("❌ Error saving transcript to manual_call_logs.metadata:", metaUpdateError);
+                return;
+              }
+
+              const { error: recordingTranscriptFlagError } = await supabase
+                .from("call_recordings")
+                .update({ has_transcript: true })
+                .eq("id", recordingId);
+
+              if (recordingTranscriptFlagError) {
+                console.error("❌ Error updating call_recordings.has_transcript:", recordingTranscriptFlagError);
+              }
+
+              console.log(`🧾 Saved ElevenLabs transcript for manual_call_id=${manualCallId}`);
+            } catch (e: unknown) {
+              console.error("❌ Transcript logging error:", e);
+            }
+          })());
+        }
+
       }
     } else {
       // No existing record found - this might be an outbound call or delayed webhook

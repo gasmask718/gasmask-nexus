@@ -1,9 +1,21 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Phone, Search, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Bot, Phone, Search, Loader2, FileText } from "lucide-react";
+
 import { useAIAgents } from "@/hooks/useAIAgents";
 import { useStoreCallTable, StoreRow } from "@/hooks/useStoreCallTable";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -22,6 +34,15 @@ import type { AIAgent } from "@/hooks/useAIAgents";
 
 const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
 
+type RecentTranscriptRow = {
+  id: string;
+  created_at: string | null;
+  provider_call_sid: string | null;
+  store_id: string | null;
+  store_master?: { store_name: string | null } | null;
+  manual_call_logs?: { id: string; created_at: string | null; metadata: any } | null;
+};
+
 export function AIAgentsPanel() {
   const { currentBusiness } = useBusiness();
   const { agents, agentsLoading } = useAIAgents(currentBusiness?.id);
@@ -38,6 +59,13 @@ export function AIAgentsPanel() {
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
 
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const [activeTranscript, setActiveTranscript] = useState<{
+    title: string;
+    subtitle: string;
+    text: string;
+  } | null>(null);
+
   const handleCallClick = (store: StoreRow) => {
     setSelectedStore(store);
     setSelectorOpen(true);
@@ -46,9 +74,8 @@ export function AIAgentsPanel() {
   const handleAgentConfirm = (agent: AIAgent) => {
     if (!selectedStore?.phone) return;
 
-    // Place Twilio outbound call with the ElevenLabs agent_id
-    // The backend will route the call through the twilio-elevenlabs-bridge
-    // so the AI agent speaks directly on the phone call
+    // Place outbound call. Backend routes via twilio-elevenlabs-bridge so the AI agent
+    // speaks directly on the phone call.
     placeCallNow({
       destinationPhone: selectedStore.phone,
       entityType: "store",
@@ -61,6 +88,58 @@ export function AIAgentsPanel() {
   };
 
   const activeAgents = agents.filter((a) => a.active);
+
+  const { data: recentTranscriptRows = [], isLoading: recentTranscriptsLoading } = useQuery({
+    queryKey: ["recent-ai-call-transcripts", currentBusiness?.id],
+    enabled: !!currentBusiness?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("call_recordings")
+        .select(
+          "id, created_at, provider_call_sid, store_id, store_master(store_name), manual_call_logs:manual_call_id(id, created_at, metadata)",
+        )
+        .eq("business_id", currentBusiness!.id)
+        .not("elevenlabs_conversation_id", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(12);
+
+      if (error) throw error;
+      return (data ?? []) as unknown as RecentTranscriptRow[];
+    },
+  });
+
+  const transcriptCalls = useMemo(() => {
+    const rows = recentTranscriptRows ?? [];
+
+    const getTranscriptText = (metadata: any): string | null => {
+      const text = metadata?.elevenlabs?.transcript_text;
+      if (typeof text === "string" && text.trim().length > 0) return text;
+      return null;
+    };
+
+    return rows
+      .map((r) => {
+        const transcriptText = getTranscriptText(r.manual_call_logs?.metadata);
+        return {
+          id: r.id,
+          createdAt: r.created_at ?? r.manual_call_logs?.created_at ?? null,
+          storeName: r.store_master?.store_name ?? null,
+          transcriptText,
+        };
+      })
+      .filter((x) => !!x.transcriptText);
+  }, [recentTranscriptRows]);
+
+  const openTranscript = (row: { storeName: string | null; createdAt: string | null; transcriptText: string | null }) => {
+    if (!row.transcriptText) return;
+
+    setActiveTranscript({
+      title: row.storeName ?? "Call Transcript",
+      subtitle: row.createdAt ? new Date(row.createdAt).toLocaleString() : "",
+      text: row.transcriptText,
+    });
+    setTranscriptOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -120,9 +199,13 @@ export function AIAgentsPanel() {
                 stores.map((store) => (
                   <TableRow key={store.id}>
                     <TableCell className="font-medium">{store.store_name}</TableCell>
-                    <TableCell className="text-muted-foreground">{store.address}, {store.city}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {store.address}, {store.city}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{store.phone || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{store.city}, {store.state}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {store.city}, {store.state}
+                    </TableCell>
                     <TableCell>
                       <Button
                         variant="outline"
@@ -151,6 +234,55 @@ export function AIAgentsPanel() {
           />
         </CardContent>
       </Card>
+
+      {/* Recent transcripts */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <FileText className="h-4 w-4" />
+            Recent AI Call Transcripts
+          </div>
+
+          {recentTranscriptsLoading ? (
+            <div className="py-6 text-center">
+              <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+            </div>
+          ) : transcriptCalls.length === 0 ? (
+            <div className="py-6 text-sm text-muted-foreground text-center">
+              No transcripts yet — complete an AI call to see it here.
+            </div>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {transcriptCalls.map((c) => (
+                <div key={c.id} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium truncate">{c.storeName ?? "Unknown store"}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {c.createdAt ? new Date(c.createdAt).toLocaleString() : ""}
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => openTranscript(c)}>
+                    View
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Transcript Dialog */}
+      <Dialog open={transcriptOpen} onOpenChange={setTranscriptOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{activeTranscript?.title ?? "Transcript"}</DialogTitle>
+            <DialogDescription>{activeTranscript?.subtitle ?? ""}</DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh] rounded-md border p-3">
+            <pre className="text-xs whitespace-pre-wrap font-mono">{activeTranscript?.text ?? ""}</pre>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
 
       {/* Agent Selector Dialog */}
       {selectedStore && (

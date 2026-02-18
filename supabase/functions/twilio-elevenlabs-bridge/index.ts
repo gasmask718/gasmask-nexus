@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
  * TWILIO ↔ ELEVENLABS BRIDGE
@@ -84,6 +85,35 @@ const handler = async (req: Request): Promise<Response> => {
     // ElevenLabs returns JSON with a twiml field
     const responseData = await registerResponse.json();
     const twiml = responseData.twiml;
+    const conversationId = responseData.conversation_id ?? responseData.conversationId ?? null;
+
+    if (conversationId) {
+      try {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+        if (supabaseUrl && supabaseServiceRoleKey) {
+          const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+          const { error: convoUpdateError } = await supabase
+            .from("call_recordings")
+            .update({ elevenlabs_conversation_id: conversationId })
+            .eq("provider_call_sid", callSid);
+
+          if (convoUpdateError) {
+            console.error("❌ Failed to persist elevenlabs_conversation_id:", convoUpdateError);
+          } else {
+            console.log(`🧾 Stored ElevenLabs conversation_id=${conversationId} for CallSid=${callSid}`);
+          }
+        } else {
+          console.warn("⚠️ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY; skipping conversation_id persistence");
+        }
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("❌ Error persisting conversation_id:", msg);
+      }
+    } else {
+      console.warn("⚠️ ElevenLabs response missing conversation_id; transcript logging will be unavailable for this call");
+    }
 
     if (!twiml) {
       console.error("❌ ElevenLabs response missing twiml field:", JSON.stringify(responseData));
