@@ -7,6 +7,7 @@ import { Bot, Phone, Search, Loader2 } from "lucide-react";
 import { useAIAgents } from "@/hooks/useAIAgents";
 import { useStoreCallTable, StoreRow } from "@/hooks/useStoreCallTable";
 import { useBusiness } from "@/contexts/BusinessContext";
+import { useCall } from "@/components/communication/CallProvider";
 import { AgentSelectorDialog } from "./AgentSelectorDialog";
 import { VoiceCallDialog } from "./VoiceCallDialog";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
@@ -25,6 +26,8 @@ const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
 export function AIAgentsPanel() {
   const { currentBusiness } = useBusiness();
   const { agents, agentsLoading } = useAIAgents(currentBusiness?.id);
+  const { initiateCall } = useCall();
+
   const {
     stores,
     isLoading: storesLoading,
@@ -44,6 +47,19 @@ export function AIAgentsPanel() {
   };
 
   const handleAgentConfirm = (agent: AIAgent) => {
+    if (!selectedStore) return;
+
+    // Place Twilio outbound call to the store's phone
+    if (selectedStore.phone) {
+      initiateCall({
+        destinationPhone: selectedStore.phone,
+        entityType: "store",
+        entityId: selectedStore.id,
+        entityName: selectedStore.store_name,
+      });
+    }
+
+    // Open ElevenLabs AI agent voice dialog
     setSelectedAgent(agent);
     setSelectorOpen(false);
     setCallOpen(true);
