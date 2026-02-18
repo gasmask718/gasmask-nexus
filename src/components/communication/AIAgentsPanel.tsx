@@ -1,119 +1,168 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Bot, Plus, Shield, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Bot, Phone, Search, Loader2 } from "lucide-react";
 import { useAIAgents } from "@/hooks/useAIAgents";
+import { useStoreCallTable, StoreRow } from "@/hooks/useStoreCallTable";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { AIAgentCard } from "./AIAgentCard";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CreateAgentDialog } from "./CreateAgentDialog";
+import { AgentSelectorDialog } from "./AgentSelectorDialog";
+import { VoiceCallDialog } from "./VoiceCallDialog";
+import { DataTablePagination } from "@/components/crud/DataTablePagination";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import type { AIAgent } from "@/hooks/useAIAgents";
+
+const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
+
 export function AIAgentsPanel() {
   const { currentBusiness } = useBusiness();
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const { 
-    agents, 
-    agentsLoading, 
-    assignments, 
-    toggleAgent,
-    stats 
-  } = useAIAgents(currentBusiness?.id);
+  const { agents, agentsLoading } = useAIAgents(currentBusiness?.id);
+  const {
+    stores,
+    isLoading: storesLoading,
+    search,
+    setSearch,
+    pagination,
+  } = useStoreCallTable();
 
-  const getAssignmentCount = (agentId: string) => 
-    assignments.filter(a => a.agent_id === agentId).length;
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const [selectedStore, setSelectedStore] = useState<StoreRow | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<AIAgent | null>(null);
 
-  if (agentsLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Bot className="h-8 w-8 animate-pulse text-muted-foreground" />
-      </div>
-    );
-  }
+  const handleCallClick = (store: StoreRow) => {
+    setSelectedStore(store);
+    setSelectorOpen(true);
+  };
+
+  const handleAgentConfirm = (agent: AIAgent) => {
+    setSelectedAgent(agent);
+    setSelectorOpen(false);
+    setCallOpen(true);
+  };
+
+  const activeAgents = agents.filter((a) => a.active);
 
   return (
     <div className="space-y-6">
-      {/* Header Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Total Agents</p>
-            <p className="text-2xl font-bold">{stats.totalAgents}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Active</p>
-            <p className="text-2xl font-bold text-green-500">{stats.activeAgents}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Pending Tasks</p>
-            <p className="text-2xl font-bold text-amber-500">{stats.pendingTasks}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">In Progress</p>
-            <p className="text-2xl font-bold text-blue-500">{stats.inProgressTasks}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Handoffs</p>
-            <p className="text-2xl font-bold">{stats.totalHandoffs}</p>
-          </CardContent>
-        </Card>
+      {/* Agent Bar */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2">
+        <span className="text-sm font-medium text-muted-foreground whitespace-nowrap">Agents:</span>
+        {agentsLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          activeAgents.map((agent) => (
+            <Badge key={agent.id} variant="secondary" className="whitespace-nowrap text-xs">
+              <Bot className="h-3 w-3 mr-1" />
+              {agent.name}
+            </Badge>
+          ))
+        )}
       </div>
 
-      {/* Supervisor Warning */}
-      {!stats.hasSupervisor && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Supervisor Required:</strong> The Supervisor agent must be active to ensure quality control and safety.
-          </AlertDescription>
-        </Alert>
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search stores..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
+      {/* Store Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Store Name</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>City</TableHead>
+                <TableHead className="w-[100px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {storesLoading ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+                  </TableCell>
+                </TableRow>
+              ) : stores.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                    No stores found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                stores.map((store) => (
+                  <TableRow key={store.id}>
+                    <TableCell className="font-medium">{store.store_name}</TableCell>
+                    <TableCell className="text-muted-foreground">{store.address}, {store.city}</TableCell>
+                    <TableCell className="text-muted-foreground">{store.phone || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground">{store.city}, {store.state}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCallClick(store)}
+                        disabled={activeAgents.length === 0}
+                      >
+                        <Phone className="h-4 w-4 mr-1" />
+                        Call
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+
+          <DataTablePagination
+            currentPage={pagination.page}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalCount}
+            onPageChange={pagination.controls.goToPage}
+            onPageSizeChange={pagination.controls.setPageSize}
+            pageSizeOptions={[25, 50, 100]}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Agent Selector Dialog */}
+      {selectedStore && (
+        <AgentSelectorDialog
+          open={selectorOpen}
+          onOpenChange={setSelectorOpen}
+          storeName={selectedStore.store_name}
+          storePhone={selectedStore.phone}
+          agents={agents}
+          onConfirm={handleAgentConfirm}
+        />
       )}
 
-      {/* Agents Grid */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Bot className="h-5 w-5" />
-          AI Agent Team
-        </h3>
-        <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add Agent
-        </Button>
-      </div>
-
-      <CreateAgentDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
-
-      {agents.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <Bot className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No AI agents configured yet</p>
-            <Button className="mt-4" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Create First Agent
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {agents.map((agent) => (
-            <AIAgentCard
-              key={agent.id}
-              agent={agent}
-              assignmentCount={getAssignmentCount(agent.id)}
-              onToggle={(active) => toggleAgent({ agentId: agent.id, active })}
-              isSupervisor={agent.role === "supervisor"}
-              elevenlabsAgentId="agent_8601khrh92krfgrrdj6gqcdpwate"
-            />
-          ))}
-        </div>
+      {/* Voice Call Dialog */}
+      {selectedAgent && selectedStore && (
+        <VoiceCallDialog
+          open={callOpen}
+          onOpenChange={setCallOpen}
+          agentName={selectedAgent.name}
+          elevenlabsAgentId={ELEVENLABS_AGENT_ID}
+          storeName={selectedStore.store_name}
+          storePhone={selectedStore.phone}
+        />
       )}
     </div>
   );
