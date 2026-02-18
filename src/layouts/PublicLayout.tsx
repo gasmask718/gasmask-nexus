@@ -23,8 +23,11 @@ export default function PublicLayout() {
             <Link to="/shop" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Shop
             </Link>
-            <Link to="/twl-landing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               About
+            </Link>
+            <Link to="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Contact
             </Link>
           </nav>
 
@@ -57,7 +60,8 @@ export default function PublicLayout() {
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <Link to="/shop" className="hover:text-foreground transition-colors">Shop</Link>
-              <Link to="/twl-landing" className="hover:text-foreground transition-colors">About</Link>
+              <Link to="/about" className="hover:text-foreground transition-colors">About</Link>
+              <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
               <Link to="/auth" className="hover:text-foreground transition-colors">Login</Link>
             </div>
             <p className="text-xs text-muted-foreground">

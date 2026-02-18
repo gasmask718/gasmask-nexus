@@ -11,6 +11,8 @@ import Layout from '@/components/Layout';
 import PublicLayout from '@/layouts/PublicLayout';
 import OpsLayout from '@/layouts/OpsLayout';
 import LandingPage from '@/pages/public/LandingPage';
+import AboutPage from '@/pages/public/AboutPage';
+import ContactPage from '@/pages/public/ContactPage';
 import { useAuth } from '@/contexts/AuthContext';
 
 // Public pages
@@ -586,6 +588,8 @@ export default function AppRoutes() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Route>
 
       {/* Standalone public routes (own layouts) */}
