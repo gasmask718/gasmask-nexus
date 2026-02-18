@@ -28,6 +28,7 @@ import DriverLogin from '@/pages/portal/DriverLogin';
 import BikerLogin from '@/pages/portal/BikerLogin';
 import InviteSignup from '@/pages/auth/InviteSignup';
 import UserInvitations from '@/pages/security/UserInvitations';
+import InviteLanding from '@/pages/portal/InviteLanding';
 
 // Protected page imports
 import Dashboard from '@/pages/Dashboard';
@@ -1447,6 +1448,9 @@ export default function AppRoutes() {
         <Route path="/grabba/advisor-penthouse" element={<AdvisorPenthouse />} />
         <Route path="/grabba/instinct-log" element={<InstinctLog />} />
       </Route>
+
+      {/* Portal Invite Landing — standalone, no layout, auth optional */}
+      <Route path="/portal/invite/:token" element={<InviteLanding />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* OPS/PORTAL ROUTES — Wrapped in OpsLayout (mobile-first + bottom nav)         */}

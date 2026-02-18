@@ -35253,6 +35253,81 @@ export type Database = {
         }
         Relationships: []
       }
+      portal_invites: {
+        Row: {
+          consumed_at: string | null
+          consumed_by: string | null
+          created_at: string
+          created_by: string
+          email: string | null
+          expires_at: string
+          id: string
+          max_uses: number
+          metadata: Json | null
+          phone: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["portal_invite_status"]
+          store_id: string | null
+          token_hash: string
+          uses: number
+        }
+        Insert: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          created_by: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          max_uses?: number
+          metadata?: Json | null
+          phone?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["portal_invite_status"]
+          store_id?: string | null
+          token_hash: string
+          uses?: number
+        }
+        Update: {
+          consumed_at?: string | null
+          consumed_by?: string | null
+          created_at?: string
+          created_by?: string
+          email?: string | null
+          expires_at?: string
+          id?: string
+          max_uses?: number
+          metadata?: Json | null
+          phone?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: Database["public"]["Enums"]["portal_invite_status"]
+          store_id?: string | null
+          token_hash?: string
+          uses?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "portal_invites_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portal_invites_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       portal_rate_limits: {
         Row: {
           device_id: string
@@ -57663,6 +57738,10 @@ export type Database = {
         }
         Returns: Json
       }
+      redeem_portal_invite: {
+        Args: { p_token_hash: string; p_user_id: string }
+        Returns: Json
+      }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
       reject_store_promotion: {
         Args: { p_promotion_id: string; p_rejection_reason?: string }
@@ -58087,6 +58166,7 @@ export type Database = {
       payment_status: "unpaid" | "partial" | "paid" | "refunded" | "chargeback"
       payment_type: "pays_upfront" | "bill_to_bill"
       payment_type_enum: "pay_upfront" | "bill_to_bill"
+      portal_invite_status: "active" | "revoked" | "expired" | "consumed"
       promise_status: "active" | "kept" | "broken" | "cancelled"
       property_type:
         | "single_family"
@@ -58636,6 +58716,7 @@ export const Constants = {
       payment_status: ["unpaid", "partial", "paid", "refunded", "chargeback"],
       payment_type: ["pays_upfront", "bill_to_bill"],
       payment_type_enum: ["pay_upfront", "bill_to_bill"],
+      portal_invite_status: ["active", "revoked", "expired", "consumed"],
       promise_status: ["active", "kept", "broken", "cancelled"],
       property_type: [
         "single_family",
