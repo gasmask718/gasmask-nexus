@@ -110,6 +110,7 @@ export function AIAgentsPanel() {
               assignmentCount={getAssignmentCount(agent.id)}
               onToggle={(active) => toggleAgent({ agentId: agent.id, active })}
               isSupervisor={agent.role === "supervisor"}
+              elevenlabsAgentId="agent_8601khrh92krfgrrdj6gqcdpwate"
             />
           ))}
         </div>
