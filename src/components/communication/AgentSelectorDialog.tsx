@@ -67,11 +67,17 @@ export function AgentSelectorDialog({
           ))}
         </RadioGroup>
 
+        {!storePhone && (
+          <p className="text-sm text-destructive">
+            ⚠ This store has no phone number on file. A Twilio call cannot be placed.
+          </p>
+        )}
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!selectedId}>
+          <Button onClick={handleConfirm} disabled={!selectedId || !storePhone}>
             <Phone className="h-4 w-4 mr-1" />
             Start Call
           </Button>
