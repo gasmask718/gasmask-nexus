@@ -1,178 +1,182 @@
 
 
-# Multi-Surface Architecture Implementation Plan
+# Phase 1-3: Layout Separation + Ops Nav + Route Wiring
 
 ## Summary
 
-Transform GasMask OS from a single-layout application into a three-surface system: **Public** (marketing), **Ops PWA** (field workers), and **Admin** (existing floor system). This is done incrementally without breaking existing functionality.
+Create three layout components (`PublicLayout`, `OpsLayout`, `AdminLayout`), a role-specific bottom nav config, and wire them into `AppRoutes.tsx` -- all without touching existing components or breaking any current routes.
 
 ---
 
-## What Already Exists (Will NOT Be Changed)
+## What Will NOT Change
 
-- RBAC system (`RequireRole`, `ROLE_PERMISSION_MATRIX`) -- battle-tested, untouched
+- `src/components/Layout.tsx` (913-line admin sidebar) -- untouched
+- `src/components/security/RequireRole.tsx` -- untouched  
+- `src/hooks/useUserRole.ts` -- untouched (reused by OpsLayout)
+- `src/config/osNavigation.ts` -- untouched (already has `getRoleRedirectPath`, portal configs)
 - All existing portal page components -- untouched
-- `Layout.tsx` (913-line admin sidebar) -- untouched, reused as AdminLayout
 - All RLS policies -- untouched
-- All hooks/services -- untouched
 - `ProtectedRoute` component -- untouched
 
 ---
 
-## Phase 1: Create Layout Components
+## Phase 1: Create Layout Components (4 new files)
 
-### 1a. `src/layouts/PublicLayout.tsx`
-- Marketing navbar: Logo, Shop, About, Contact, Login button
-- Footer with links and social media
-- SEO-friendly (no noindex tags)
+### `src/layouts/PublicLayout.tsx`
+- Marketing navbar: GasMask logo, Shop, About, Contact, Login button
+- Footer with links and copyright
+- SEO-friendly (no noindex)
+- Uses `<Outlet />` for child routes
 - No sidebar, no admin controls
-- Clean, brand-focused design matching TWL Landing aesthetic
 
-### 1b. `src/layouts/OpsLayout.tsx`
-- Minimal sticky top header: logo, user name, role badge, logout
-- Role-specific bottom navigation bar (mobile-first)
-- Injects `<meta name="robots" content="noindex, nofollow">` via useEffect
-- No sidebar, no floor navigation, no admin features
-- Receives role context from current user profile
-- Padding for bottom nav so content is not hidden
+### `src/layouts/OpsLayout.tsx`
+- Minimal sticky top header: GasMask Ops logo, user name badge (from `useCurrentUserProfile`), logout button
+- Renders `<Outlet />` with bottom padding to avoid content hidden by nav
+- Injects `<meta name="robots" content="noindex, nofollow">` via `useEffect` (cleaned up on unmount)
+- Renders `<OpsBottomNav />` at the bottom
+- No sidebar, no floor navigation
+- Detects user role from `useCurrentUserProfile` and passes to bottom nav
 
-### 1c. `src/layouts/AdminLayout.tsx`
-- Thin wrapper around existing `Layout` component
-- Alias for clarity and future separation
-- No functional changes to existing admin experience
+### `src/layouts/AdminLayout.tsx`
+- Thin wrapper: imports existing `Layout` from `@/components/Layout`, renders `<Layout><Outlet /></Layout>`
+- Pure alias for clarity; zero behavioral change
 
-### 1d. `src/layouts/OpsBottomNav.tsx`
-- Fixed bottom navigation bar component
-- Renders role-specific nav items from config
-- Active tab highlighting based on current route
-- Icons + labels, mobile-optimized touch targets
+### `src/layouts/OpsBottomNav.tsx`
+- Fixed bottom navigation bar (`fixed bottom-0`)
+- Reads current user's `primary_role` from `useCurrentUserProfile` hook
+- Looks up nav items from `opsNavigation` config (Phase 2)
+- Renders `NavLink` for each item with active state highlighting
+- Icons from lucide-react, mobile-optimized touch targets (min 48px)
 
 ---
 
-## Phase 2: Navigation Configuration
+## Phase 2: Navigation Config (1 new file)
 
 ### `src/config/opsNavigation.ts`
-Role-specific bottom nav configs:
+Role-specific bottom nav configs using lucide icons:
 
-**Driver:** Home, Today's Route, Stores, Messages, Profile
-**Biker:** Home, Store Checks, Issues, Route, Profile
-**Ambassador:** Home, Stores, Commissions, Content, Profile
-**Influencer:** Home, Campaigns, Content, Analytics, Profile
-**Store:** Dashboard, Products, Orders, Invoices, Settings
-**Wholesaler:** Dashboard, Products, Orders, Finance, Settings
+| Role | Tabs |
+|------|------|
+| **driver** | Home, Route, Stores, Messages, Profile |
+| **biker** | Home, Checks, Issues, Route, Profile |
+| **ambassador** | Home, Stores, Commissions, Tasks, Profile |
+| **influencer** | Home, Campaigns, Content, Analytics, Profile |
+| **store** | Dashboard, Products, Orders, Invoices, Settings |
+| **wholesaler** | Dashboard, Products, Orders, Finance, Settings |
+| **customer** | Home, Orders, Rewards, Support, Profile |
+| **production** | Home, Batches, Progress, Quality, Profile |
 
-Each config maps to existing portal page routes.
-
----
-
-## Phase 3: Wire Routes to Layouts
-
-Modify `src/routes/AppRoutes.tsx` to wrap route groups in their correct layout:
-
-**Public routes** (no auth required):
-- `/` (unauthenticated) -- new public landing page
-- `/shop`, `/cart`, `/checkout` -- wrapped in PublicLayout
-- `/twl-landing` -- kept as-is (already has its own design)
-- `/auth`, `/portal/login`, `/portal/register` -- kept outside layouts
-
-**Portal/Ops routes** (currently under `ProtectedNoLayout`):
-- `/portal/driver/*`, `/portal/biker/*`, `/portal/store/*`, `/portal/wholesaler/*`, `/portal/ambassador/*`, `/portal/influencer/*` -- wrapped in OpsLayout
-- Each portal group gets `RequireRole` guard matching existing role rules
-
-**Admin routes** (currently under `ProtectedLayout`):
-- All `/grabba/*`, `/security/*`, `/admin/*`, `/territory/*`, Floor routes -- unchanged, keep using existing `Layout` via `ProtectedLayout`
-
-**Key change to `/` route:**
-- Unauthenticated visitors see PublicLayout + new LandingPage
-- Authenticated users see Dashboard (existing behavior preserved)
+Each nav item maps `{ label, path, icon }` to existing portal page routes (e.g., driver Home maps to `/portal/driver`, Stores maps to `/portal/driver/stores`).
 
 ---
 
-## Phase 4: PWA Support (Portal Only)
+## Phase 3: Route Wiring (modify AppRoutes.tsx)
 
-### `public/manifest.json`
-- App name: "GasMask Ops"
-- Display: standalone
-- Theme color matching brand
-- Icons (placeholder, can be updated later)
+This is the **surgical** change. We wrap existing route groups in their layout without moving or deleting any routes.
 
-### `public/sw.js`
-- Minimal service worker caching shell assets
-- Cache-first strategy for static assets
-- Network-first for API calls
+### Strategy: Additive wrapping, not restructuring
 
-### `src/components/pwa/usePWA.ts`
-- Hook that registers service worker only on `/portal/*` routes
-- Captures `beforeinstallprompt` event for install banner
+The 2,306-line `AppRoutes.tsx` stays intact. We make these targeted changes:
 
-### `src/components/pwa/InstallPrompt.tsx`
-- "Add to Home Screen" banner/button
-- Only shown on portal routes
-- Dismissible, remembers user preference
+**1. Add layout wrapper for portal/ops routes (lines ~1343-1474)**
 
-### `index.html`
-- Add manifest link (service worker registration handled via JS, scoped to portal)
+The current `ProtectedNoLayout` section (line 1343) contains all portal routes. We wrap the portal route subset inside `OpsLayout`:
+
+```text
+Before:
+  <Route element={<ProtectedNoLayout />}>
+    ...communication routes...
+    ...portal routes (lines 1410-1474)...
+  </Route>
+
+After:
+  <Route element={<ProtectedNoLayout />}>
+    ...communication routes (unchanged)...
+    ...non-portal routes (unchanged)...
+  </Route>
+
+  {/* NEW: Portal/Ops routes wrapped in OpsLayout */}
+  <Route element={<ProtectedRoute><OpsLayout><Outlet /></OpsLayout></ProtectedRoute>}>
+    <Route path="/portal" element={<RoleRouter />} />
+    <Route path="/portal/home" element={<PortalHome />} />
+    <Route path="/portal/driver/*" element={<DriverPortal />} />
+    <Route path="/portal/biker/*" element={<BikerPortal />} />
+    <Route path="/portal/store/*" element={...} />
+    <Route path="/portal/wholesaler/*" element={...} />
+    ...all portal/* routes moved here...
+  </Route>
+```
+
+**2. Add public routes with PublicLayout (before line 560)**
+
+Currently public routes (`/shop`, `/cart`, `/checkout`, `/twl-landing`) have no layout wrapper. We wrap them:
+
+```text
+{/* Public routes with marketing layout */}
+<Route element={<PublicLayout />}>
+  <Route path="/shop" element={<Shop />} />
+  <Route path="/cart" element={<Cart />} />
+  <Route path="/checkout" element={<Checkout />} />
+</Route>
+```
+
+- `/twl-landing` stays standalone (has its own design)
+- Auth routes (`/auth`, `/portal/login`, etc.) stay standalone
+- The existing `ProtectedLayout` (line 537) stays as-is -- it already wraps admin routes in `Layout`
+
+**3. Update `/` route for unauthenticated landing**
+
+Currently `/` always renders `<Dashboard />` inside `ProtectedLayout`. We add a conditional:
+- Unauthenticated: show a simple `LandingRedirect` component that checks auth state and either redirects to Dashboard or renders a basic public landing
+- Authenticated: existing Dashboard behavior preserved
+
+### What moves, what stays
+
+| Route group | Current location | Change |
+|------------|-----------------|--------|
+| `/portal/*` routes | Inside `ProtectedNoLayout` (line 1343) | Move to new `OpsLayout`-wrapped group |
+| `/portals/*` routes | Inside `ProtectedNoLayout` (line 1455) | Move to new `OpsLayout`-wrapped group |
+| `/shop`, `/cart`, `/checkout` | Standalone public (line 562) | Wrap in `PublicLayout` |
+| `/communication/*` | Inside `ProtectedNoLayout` | Stay as-is (has own `CommunicationHubLayout`) |
+| All admin/grabba routes | Inside `ProtectedLayout` or standalone | Stay as-is (use existing `Layout`) |
+| `/twl-landing`, `/auth`, login pages | Standalone | Stay as-is |
 
 ---
 
-## Phase 5: Public Landing Page
+## New Files Summary (6 files)
 
-### `src/pages/public/LandingPage.tsx`
-- Marketing hero page with GasMask brand aesthetic
-- Sections: Hero, Featured Products, Store Locator CTA, Ambassador CTA, Footer
-- Links to `/shop`, `/auth`, `/apply/ambassador`
-- Uses framer-motion for animations (already installed)
-
----
-
-## Phase 6: SEO Protection
-
-- `OpsLayout` injects `<meta name="robots" content="noindex, nofollow">` on mount and removes on unmount
-- Public routes remain fully indexable
-- Admin routes already behind auth (no additional action needed)
-
----
-
-## File Changes Summary
-
-### New Files (10)
 | File | Purpose |
 |------|---------|
-| `src/layouts/PublicLayout.tsx` | Marketing nav + footer wrapper |
-| `src/layouts/OpsLayout.tsx` | Mobile-first portal layout with bottom nav + noindex |
-| `src/layouts/AdminLayout.tsx` | Thin wrapper around existing Layout |
-| `src/layouts/OpsBottomNav.tsx` | Role-driven bottom navigation component |
-| `src/config/opsNavigation.ts` | Nav configs per portal role |
-| `src/components/pwa/InstallPrompt.tsx` | PWA install banner |
-| `src/components/pwa/usePWA.ts` | PWA registration hook (portal-scoped) |
-| `public/manifest.json` | PWA manifest for GasMask Ops |
-| `public/sw.js` | Service worker (cache shell assets) |
-| `src/pages/public/LandingPage.tsx` | Public marketing landing page |
+| `src/layouts/PublicLayout.tsx` | Marketing nav + footer + `<Outlet />` |
+| `src/layouts/OpsLayout.tsx` | Mobile-first header + bottom nav + noindex + `<Outlet />` |
+| `src/layouts/AdminLayout.tsx` | Thin wrapper around existing `Layout` + `<Outlet />` |
+| `src/layouts/OpsBottomNav.tsx` | Role-driven bottom navigation bar |
+| `src/config/opsNavigation.ts` | Nav config per ops/portal role |
+| `src/pages/public/LandingPage.tsx` | Simple public marketing landing page |
 
-### Modified Files (2)
+## Modified Files (1 file)
+
 | File | Change |
 |------|--------|
-| `src/routes/AppRoutes.tsx` | Wrap public routes in PublicLayout, portal routes in OpsLayout, update `/` for auth-gated redirect |
-| `index.html` | Add `<link rel="manifest">` tag |
-
-### Explicitly Unchanged
-- `src/components/Layout.tsx`
-- `src/components/security/RequireRole.tsx`
-- `src/security/permissions.ts`
-- All existing portal page components
-- All RLS policies
-- All existing hooks and services
+| `src/routes/AppRoutes.tsx` | (1) Extract portal routes from `ProtectedNoLayout` into `OpsLayout` wrapper group. (2) Wrap `/shop`, `/cart`, `/checkout` in `PublicLayout`. (3) Add unauthenticated landing page at `/`. |
 
 ---
 
-## Implementation Order
+## Technical Notes
 
-1. Create all layout files (PublicLayout, OpsLayout, AdminLayout, OpsBottomNav)
-2. Create opsNavigation config
-3. Create PWA files (manifest.json, sw.js, usePWA hook, InstallPrompt)
-4. Create public LandingPage
-5. Wire everything in AppRoutes.tsx (the final integration step)
-6. Update index.html with manifest link
+- `OpsLayout` uses existing `useCurrentUserProfile()` hook for user info and role detection -- no new auth logic needed
+- `OpsBottomNav` uses `NavLink` from react-router-dom with `end` prop for exact matching
+- `PublicLayout` uses `Link` from react-router-dom for navigation links
+- `AdminLayout` is a 10-line wrapper file that just re-exports the existing admin experience
+- The `noindex` meta tag in `OpsLayout` is injected via `document.createElement` in `useEffect` and removed on unmount to avoid SEO leakage
+- No new dependencies required -- everything uses existing packages (react-router-dom, lucide-react, tailwind)
 
-Each step is independently testable and reversible.
+## Risks and Mitigations
+
+- **Risk**: Moving portal routes out of `ProtectedNoLayout` could break if `ProtectedRoute` behavior differs when nested differently
+  - **Mitigation**: The new group uses the exact same `<ProtectedRoute>` wrapper; only the layout inside changes
+- **Risk**: `OpsLayout`'s `<Outlet />` might not render portal pages that expect to be direct children
+  - **Mitigation**: All portal pages are self-contained components; they don't rely on parent layout context
+- **Risk**: Bottom nav paths might not match existing portal routes exactly
+  - **Mitigation**: Nav config paths are mapped directly from the existing route definitions in `AppRoutes.tsx`
 
