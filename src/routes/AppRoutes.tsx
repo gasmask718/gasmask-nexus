@@ -7,6 +7,12 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
 
+// Multi-Surface Layouts
+import PublicLayout from '@/layouts/PublicLayout';
+import OpsLayout from '@/layouts/OpsLayout';
+import LandingPage from '@/pages/public/LandingPage';
+import { useAuth } from '@/contexts/AuthContext';
+
 // Public pages
 import Auth from '@/pages/Auth';
 import Shop from '@/pages/Shop';
@@ -551,17 +557,40 @@ const ProtectedNoLayout = () => (
   </ProtectedRoute>
 );
 
+/**
+ * LandingRedirect — Shows public landing for unauthenticated, Dashboard for authenticated
+ */
+function LandingRedirect() {
+  const { user, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  if (!user) return <LandingPage />;
+  return <Navigate to="/" replace />;
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PUBLIC ROUTES (No authentication required)                                   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      
+      {/* Public routes wrapped in PublicLayout (marketing nav + footer) */}
+      <Route element={<PublicLayout />}>
+        <Route path="/public" element={<LandingRedirect />} />
+        <Route path="/shop" element={<Shop />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
+      </Route>
+
+      {/* Standalone public routes (own layouts) */}
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/shop" element={<Shop />} />
-      <Route path="/cart" element={<Cart />} />
-      <Route path="/checkout" element={<Checkout />} />
       <Route path="/portal/login" element={<PortalLogin />} />
       <Route path="/portal/register" element={<PortalRegister />} />
       <Route path="/portal/driver/login" element={<DriverLogin />} />
@@ -1407,6 +1436,18 @@ export default function AppRoutes() {
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/expansion/capacity" element={<DeliveryCapacity />} />
 
+        {/* Grabba Financial (no layout, stays in ProtectedNoLayout) */}
+        <Route path="/grabba/financial-dashboard" element={<FinancialDashboard />} />
+        <Route path="/grabba/personal-finance" element={<PersonalFinance />} />
+        <Route path="/grabba/payroll-manager" element={<PayrollManager />} />
+        <Route path="/grabba/advisor-penthouse" element={<AdvisorPenthouse />} />
+        <Route path="/grabba/instinct-log" element={<InstinctLog />} />
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* OPS/PORTAL ROUTES — Wrapped in OpsLayout (mobile-first + bottom nav)         */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedRoute><OpsLayout /></ProtectedRoute>}>
         {/* Portal Routes */}
         <Route path="/portal" element={<RoleRouter />} />
         <Route path="/portal/home" element={<PortalHome />} />
@@ -1449,9 +1490,7 @@ export default function AppRoutes() {
         <Route path="/portal/influencer" element={<PortalInfluencer />} />
         <Route path="/portal/dashboard" element={<PortalDashboard />} />
 
-        {/* ═══════════════════════════════════════════════════════════════════════════ */}
-        {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*)                            */}
-        {/* ═══════════════════════════════════════════════════════════════════════════ */}
+        {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*) */}
         <Route path="/portals/driver" element={<DriverPortalPage />} />
         <Route path="/portals/biker" element={<BikerPortalPage />} />
         <Route path="/portals/ambassador" element={<AmbassadorPortalPage />} />
@@ -1464,13 +1503,6 @@ export default function AppRoutes() {
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
         <Route path="/portals/admin" element={<MarketplaceAdminPortalPage />} />
-
-        {/* Grabba Financial (no layout) */}
-        <Route path="/grabba/financial-dashboard" element={<FinancialDashboard />} />
-        <Route path="/grabba/personal-finance" element={<PersonalFinance />} />
-        <Route path="/grabba/payroll-manager" element={<PayrollManager />} />
-        <Route path="/grabba/advisor-penthouse" element={<AdvisorPenthouse />} />
-        <Route path="/grabba/instinct-log" element={<InstinctLog />} />
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
