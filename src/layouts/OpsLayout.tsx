@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import OpsBottomNav from '@/layouts/OpsBottomNav';
 import PwaGate from '@/components/pwa/PwaGate';
 import PwaUpdateToast from '@/components/pwa/PwaUpdateToast';
+import OpsAccessGate from '@/components/security/OpsAccessGate';
 
 /**
  * OpsLayout — Mobile-first layout for portal/field workers
@@ -32,49 +33,50 @@ export default function OpsLayout() {
   const userRole = data?.profile?.primary_role || '';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Sticky Top Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Crown className="h-4 w-4 text-primary" />
+    <OpsAccessGate>
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Sticky Top Header */}
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
+          <div className="flex items-center justify-between px-4 h-14">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Crown className="h-4 w-4 text-primary" />
+              </div>
+              <span className="font-bold text-sm text-foreground">GasMask Ops</span>
             </div>
-            <span className="font-bold text-sm text-foreground">GasMask Ops</span>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-medium text-foreground truncate max-w-[120px]">{userName}</p>
-              <p className="text-[10px] text-muted-foreground capitalize">{userRole}</p>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-medium text-foreground truncate max-w-[120px]">{userName}</p>
+                <p className="text-[10px] text-muted-foreground capitalize">{userRole}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  signOut();
+                  navigate('/auth');
+                }}
+                className="h-8 w-8"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                signOut();
-                navigate('/auth');
-              }}
-              className="h-8 w-8"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content — padding-bottom for bottom nav */}
-      {/* PWA Install Banner + Update Toast */}
-      <PwaGate />
-      <PwaUpdateToast />
+        {/* PWA Install Banner + Update Toast */}
+        <PwaGate />
+        <PwaUpdateToast />
 
-      {/* Main Content — padding-bottom for bottom nav */}
-      <main className="flex-1 pb-20">
-        <Outlet />
-      </main>
+        {/* Main Content — padding-bottom for bottom nav */}
+        <main className="flex-1 pb-20">
+          <Outlet />
+        </main>
 
-      {/* Bottom Navigation */}
-      <OpsBottomNav />
-    </div>
+        {/* Bottom Navigation */}
+        <OpsBottomNav />
+      </div>
+    </OpsAccessGate>
   );
 }

@@ -124,3 +124,6 @@ verify_jwt = false
 
 [functions.twilio-elevenlabs-bridge]
 verify_jwt = false
+
+[functions.redeem-portal-invite]
+verify_jwt = false
