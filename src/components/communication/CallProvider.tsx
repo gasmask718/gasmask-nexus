@@ -17,6 +17,7 @@ interface CallParams {
   entityId?: string;
   entityName?: string;
   notes?: string;
+  agentId?: string;
 }
 
 interface CallContextValue {

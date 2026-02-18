@@ -24,6 +24,7 @@ interface PlaceCallParams {
   entityId?: string;
   entityName?: string;
   notes?: string;
+  agentId?: string;
 }
 
 interface CallResult {
@@ -108,6 +109,7 @@ export function useOutboundCall() {
             entity_id: params.entityId,
             entity_name: params.entityName,
             notes: params.notes,
+            agent_id: params.agentId,
           }),
         }
       );

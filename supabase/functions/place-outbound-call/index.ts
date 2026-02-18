@@ -89,6 +89,7 @@ interface PlaceCallRequest {
   entity_name?: string;
   business_id?: string;
   notes?: string;
+  agent_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -221,7 +222,8 @@ const handler = async (req: Request): Promise<Response> => {
       entity_id, 
       entity_name,
       business_id,
-      notes 
+      notes,
+      agent_id,
     } = body;
 
     if (!destination_phone) {
@@ -302,7 +304,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // 2. Build TwiML URL for connecting the call
-    const twimlUrl = buildTwimlUrl(formattedPhone, statusCallbackUrl, callerIdNumber);
+    let twimlUrl: string;
+    if (agent_id) {
+      // Route through ElevenLabs bridge so the AI agent handles the phone call
+      twimlUrl = `https://${projectId}.supabase.co/functions/v1/twilio-elevenlabs-bridge?agent_id=${encodeURIComponent(agent_id)}`;
+      console.log(`🤖 AI Agent mode: routing call to ElevenLabs bridge (agent=${agent_id})`);
+    } else {
+      twimlUrl = buildTwimlUrl(formattedPhone, statusCallbackUrl, callerIdNumber);
+    }
 
     // 3. Initiate call via Twilio
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
