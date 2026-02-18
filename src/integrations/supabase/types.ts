@@ -11708,6 +11708,7 @@ export type Database = {
           channels: string | null
           completed_at: string | null
           created_at: string | null
+          elevenlabs_conversation_id: string | null
           has_transcript: boolean | null
           id: string
           language: string | null
@@ -11727,6 +11728,7 @@ export type Database = {
           channels?: string | null
           completed_at?: string | null
           created_at?: string | null
+          elevenlabs_conversation_id?: string | null
           has_transcript?: boolean | null
           id?: string
           language?: string | null
@@ -11746,6 +11748,7 @@ export type Database = {
           channels?: string | null
           completed_at?: string | null
           created_at?: string | null
+          elevenlabs_conversation_id?: string | null
           has_transcript?: boolean | null
           id?: string
           language?: string | null

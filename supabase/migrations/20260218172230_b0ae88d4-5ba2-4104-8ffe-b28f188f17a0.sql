@@ -1,0 +1,1 @@
+ALTER TABLE public.call_recordings ADD COLUMN elevenlabs_conversation_id TEXT;
