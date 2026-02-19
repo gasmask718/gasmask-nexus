@@ -4,69 +4,72 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 /**
- * Export full Owner OS data to Excel
+ * Paginated fetch helper — pulls up to `maxRows` in 1000-row pages.
+ */
+async function fetchAllRows(
+  table: string,
+  maxRows = 10000,
+  orderCol = 'created_at',
+  ascending = false
+): Promise<any[]> {
+  const PAGE = 1000;
+  const rows: any[] = [];
+  for (let offset = 0; offset < maxRows; offset += PAGE) {
+    const { data, error } = await supabase
+      .from(table as any)
+      .select('*')
+      .order(orderCol, { ascending })
+      .range(offset, offset + PAGE - 1);
+    if (error) { console.error(`fetchAllRows(${table}):`, error); break; }
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+  }
+  return rows;
+}
+
+function addSheet(wb: XLSX.WorkBook, data: any[], name: string) {
+  if (data.length > 0) {
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), name);
+  }
+}
+
+/**
+ * Export full Owner OS data to Excel (up to 10k rows per entity)
  */
 export async function exportFullOSToExcel(): Promise<Blob | null> {
   try {
     toast.info('Gathering empire data...');
 
-    // Fetch data from all key tables
-    const [companiesRes, storesRes, ordersRes, alertsRes, ambassadorsRes, driversRes] = await Promise.all([
-      supabase.from('companies').select('*').limit(500),
-      supabase.from('stores').select('*').limit(500),
-      supabase.from('wholesale_orders').select('*').order('created_at', { ascending: false }).limit(1000),
-      supabase.from('ai_recommendations').select('*').order('created_at', { ascending: false }).limit(100),
-      supabase.from('ambassadors').select('*').limit(200),
-      supabase.from('biker_routes').select('*').limit(200),
+    const [companies, stores, invoices, alerts, ambassadors, drivers] = await Promise.all([
+      fetchAllRows('companies', 10000, 'created_at'),
+      fetchAllRows('store_master', 10000, 'created_at'),
+      fetchAllRows('invoices', 10000, 'created_at'),
+      fetchAllRows('ai_recommendations', 500, 'created_at'),
+      fetchAllRows('ambassadors', 5000, 'created_at'),
+      fetchAllRows('biker_routes', 5000, 'created_at'),
     ]);
 
     const wb = XLSX.utils.book_new();
 
-    // Add sheets with data
-    if (companiesRes.data && companiesRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(companiesRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Companies');
-    }
+    addSheet(wb, companies, 'Companies');
+    addSheet(wb, stores, 'Stores');
+    addSheet(wb, invoices, 'Invoices');
+    addSheet(wb, alerts, 'Alerts');
+    addSheet(wb, ambassadors, 'Ambassadors');
+    addSheet(wb, drivers, 'Routes');
 
-    if (storesRes.data && storesRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(storesRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Stores');
-    }
-
-    if (ordersRes.data && ordersRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(ordersRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Orders');
-    }
-
-    if (alertsRes.data && alertsRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(alertsRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Alerts');
-    }
-
-    if (ambassadorsRes.data && ambassadorsRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(ambassadorsRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Ambassadors');
-    }
-
-    if (driversRes.data && driversRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(driversRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Routes');
-    }
-
-    // Add summary sheet
+    // Summary sheet
     const summary = [{
-      total_companies: companiesRes.data?.length || 0,
-      total_stores: storesRes.data?.length || 0,
-      total_orders: ordersRes.data?.length || 0,
-      active_alerts: alertsRes.data?.length || 0,
-      active_ambassadors: ambassadorsRes.data?.length || 0,
-      active_routes: driversRes.data?.length || 0,
+      total_companies: companies.length,
+      total_stores: stores.length,
+      total_invoices: invoices.length,
+      active_alerts: alerts.length,
+      active_ambassadors: ambassadors.length,
+      active_routes: drivers.length,
       exported_at: new Date().toISOString(),
     }];
-    const summaryWs = XLSX.utils.json_to_sheet(summary);
-    XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+    addSheet(wb, summary, 'Summary');
 
-    // Generate binary data
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     
@@ -85,34 +88,18 @@ export async function exportGrabbaToExcel(): Promise<Blob | null> {
   try {
     toast.info('Gathering Grabba data...');
 
-    const [storesRes, ordersRes, driversRes, ambassadorsRes] = await Promise.all([
-      supabase.from('stores').select('*').limit(500),
-      supabase.from('wholesale_orders').select('*').order('created_at', { ascending: false }).limit(1000),
-      supabase.from('biker_routes').select('*').limit(200),
-      supabase.from('ambassadors').select('*').limit(200),
+    const [stores, invoices, drivers, ambassadors] = await Promise.all([
+      fetchAllRows('store_master', 10000, 'created_at'),
+      fetchAllRows('invoices', 10000, 'created_at'),
+      fetchAllRows('biker_routes', 5000, 'created_at'),
+      fetchAllRows('ambassadors', 5000, 'created_at'),
     ]);
 
     const wb = XLSX.utils.book_new();
-
-    if (storesRes.data && storesRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(storesRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Stores');
-    }
-
-    if (ordersRes.data && ordersRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(ordersRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Orders');
-    }
-
-    if (driversRes.data && driversRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(driversRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Routes');
-    }
-
-    if (ambassadorsRes.data && ambassadorsRes.data.length > 0) {
-      const ws = XLSX.utils.json_to_sheet(ambassadorsRes.data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Ambassadors');
-    }
+    addSheet(wb, stores, 'Stores');
+    addSheet(wb, invoices, 'Invoices');
+    addSheet(wb, drivers, 'Routes');
+    addSheet(wb, ambassadors, 'Ambassadors');
 
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
