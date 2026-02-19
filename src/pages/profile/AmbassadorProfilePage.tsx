@@ -23,6 +23,10 @@ import { LeadIntakeTab } from '@/components/ambassador/LeadIntakeTab';
 import { LeadBar } from '@/components/ambassador/LeadBar';
 import { CommissionPanel } from '@/components/ambassador/CommissionPanel';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedProfileView } from '@/hooks/useUnifiedProfileView';
+import { OpsParticipationSummary } from '@/components/profile/OpsParticipationSummary';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Shield } from 'lucide-react';
 
 export default function AmbassadorProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -120,6 +124,18 @@ export default function AmbassadorProfilePage() {
   const profile = profileQuery.data;
   const isLoading = profileQuery.isLoading;
 
+  const unifiedProfile = useUnifiedProfileView({
+    userId: profile?.user_id,
+    role: 'ambassador',
+    displayName: profile?.name || 'Ambassador',
+    status: profile?.is_active ? 'active' : 'inactive',
+    joinedAt: profile?.created_at || null,
+    phone: profile?.phone_primary,
+    email: profile?.profiles?.email,
+    neighborhood: profile?.neighborhood,
+    territory: profile?.city,
+  });
+
   if (!profile && !isLoading) {
     return (
       <div className="text-center py-12">
@@ -139,7 +155,16 @@ export default function AmbassadorProfilePage() {
       id: 'overview',
       label: 'Overview',
       content: (
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-6">
+          {/* Governance Banner */}
+          <Alert className="border-blue-500/30 bg-blue-500/5">
+            <Shield className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-sm text-muted-foreground">
+              Ambassador profiles are used for coordination, attribution, and analytics only.
+              They are not employment records, disciplinary tools, or automated decision engines.
+            </AlertDescription>
+          </Alert>
+          <div className="grid md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <CardTitle>Contact Information</CardTitle>
@@ -197,6 +222,7 @@ export default function AmbassadorProfilePage() {
               </div>
             </CardContent>
           </Card>
+        </div>
         </div>
       ),
     },
@@ -431,13 +457,20 @@ export default function AmbassadorProfilePage() {
       ),
     },
     {
-      id: 'activity',
-      label: 'Activity',
+      id: 'ops',
+      label: 'Ops',
       content: (
-        <ProfileActivityPanel
-          userId={profile?.user_id}
-          entityName={displayName}
-        />
+        <div className="space-y-6">
+          <OpsParticipationSummary
+            data={unifiedProfile.opsParticipation}
+            isLoading={unifiedProfile.isLoading}
+            entityName={displayName}
+          />
+          <ProfileActivityPanel
+            userId={profile?.user_id}
+            entityName={displayName}
+          />
+        </div>
       ),
     },
     {

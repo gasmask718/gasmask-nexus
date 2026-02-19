@@ -28,6 +28,8 @@ import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 import { CurrentTaskCard } from '@/components/delivery/CurrentTaskCard';
 import { ProfileLayout, ProfileTab } from '@/components/profile/ProfileLayout';
 import { ProfileActivityPanel } from '@/components/profile';
+import { useUnifiedProfileView } from '@/hooks/useUnifiedProfileView';
+import { OpsParticipationSummary } from '@/components/profile/OpsParticipationSummary';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -163,6 +165,17 @@ const BikerProfile: React.FC = () => {
       />
     );
   }
+
+  const unifiedProfile = useUnifiedProfileView({
+    userId: biker.user_id || bikerId,
+    role: 'biker',
+    displayName: biker.full_name,
+    status: biker.status || 'active',
+    joinedAt: biker.created_at || null,
+    phone: biker.phone,
+    email: biker.email,
+    territory: biker.territory,
+  });
 
   // ─── Performance Metrics ───
   const completedTasks = tasks.filter((t: any) => t.status === 'completed').length;
@@ -389,13 +402,20 @@ const BikerProfile: React.FC = () => {
       ),
     },
     {
-      id: 'activity',
-      label: 'Activity',
+      id: 'ops',
+      label: 'Ops',
       content: (
-        <ProfileActivityPanel
-          userId={biker?.user_id || bikerId || null}
-          entityName={biker.full_name}
-        />
+        <div className="space-y-6">
+          <OpsParticipationSummary
+            data={unifiedProfile.opsParticipation}
+            isLoading={unifiedProfile.isLoading}
+            entityName={biker.full_name}
+          />
+          <ProfileActivityPanel
+            userId={biker?.user_id || bikerId || null}
+            entityName={biker.full_name}
+          />
+        </div>
       ),
     },
     {

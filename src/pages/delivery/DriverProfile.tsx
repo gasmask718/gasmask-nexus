@@ -22,6 +22,8 @@ import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDial
 import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 import { ProfileLayout, ProfileTab } from '@/components/profile/ProfileLayout';
 import { ProfileActivityPanel } from '@/components/profile';
+import { useUnifiedProfileView } from '@/hooks/useUnifiedProfileView';
+import { OpsParticipationSummary } from '@/components/profile/OpsParticipationSummary';
 
 const DriverProfile: React.FC = () => {
   const { driverId } = useParams();
@@ -159,6 +161,17 @@ const DriverProfile: React.FC = () => {
       />
     );
   }
+
+  const unifiedProfile = useUnifiedProfileView({
+    userId: driver.user_id || driverId,
+    role: 'driver',
+    displayName: driver.full_name,
+    status: driver.status || 'active',
+    joinedAt: driver.created_at || null,
+    phone: driver.phone,
+    email: driver.email,
+    territory: driver.home_base,
+  });
 
   // ─── Compute Performance Metrics ───
   const allRoutes = canonicalRoutes.length > 0 ? canonicalRoutes : legacyRoutes;
@@ -390,13 +403,20 @@ const DriverProfile: React.FC = () => {
       ),
     },
     {
-      id: 'activity',
-      label: 'Activity',
+      id: 'ops',
+      label: 'Ops',
       content: (
-        <ProfileActivityPanel
-          userId={driver?.user_id || driverId || null}
-          entityName={driver.full_name}
-        />
+        <div className="space-y-6">
+          <OpsParticipationSummary
+            data={unifiedProfile.opsParticipation}
+            isLoading={unifiedProfile.isLoading}
+            entityName={driver.full_name}
+          />
+          <ProfileActivityPanel
+            userId={driver?.user_id || driverId || null}
+            entityName={driver.full_name}
+          />
+        </div>
       ),
     },
     {
