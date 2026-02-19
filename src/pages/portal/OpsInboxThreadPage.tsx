@@ -7,6 +7,7 @@ import {
   useResolveThread,
   useSnoozeThread,
   useReplyToThread,
+  useOpsInboxThreads,
 } from '@/hooks/useOpsInbox';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Check, CheckCheck, Clock, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import TaskPanel from '@/components/ops/TaskPanel';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 export default function OpsInboxThreadPage() {
   const { threadId } = useParams<{ threadId: string }>();
@@ -23,11 +26,16 @@ export default function OpsInboxThreadPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   const { data: messages = [], isLoading } = useOpsThreadMessages(threadId);
+  const { data: threads = [] } = useOpsInboxThreads();
+  const { data: profileData } = useCurrentUserProfile();
   const markRead = useMarkThreadRead();
   const ack = useAckThread();
   const resolve = useResolveThread();
   const snooze = useSnoozeThread();
   const replyMutation = useReplyToThread();
+
+  const currentThread = threads.find(t => t.id === threadId);
+  const isAdmin = profileData?.profile?.primary_role === 'admin';
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id || null));
@@ -72,6 +80,18 @@ export default function OpsInboxThreadPage() {
           <Clock className="h-3 w-3" /> Snooze 4h
         </Button>
       </div>
+
+      {/* Task Panel */}
+      {threadId && (
+        <div className="px-4 py-2 border-b border-border">
+          <TaskPanel
+            threadId={threadId}
+            threadTitle={currentThread?.title || ''}
+            threadPriority={currentThread?.priority || 'normal'}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">

@@ -282,6 +282,7 @@ import PortalWholesale from '@/pages/portal/PortalWholesale';
 import PortalInfluencer from '@/pages/portal/PortalInfluencer';
 import OpsInboxPage from '@/pages/portal/OpsInboxPage';
 import OpsInboxThreadPage from '@/pages/portal/OpsInboxThreadPage';
+import OpsTaskListPage from '@/pages/portal/OpsTaskListPage';
 import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings, WholesalerMessages } from '@/pages/portal/wholesaler';
 import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings, StoreMessages } from '@/pages/portal/store';
 import StoreTeam from '@/pages/portal/store/StoreTeam';
@@ -1498,8 +1499,9 @@ export default function AppRoutes() {
         <Route path="/portal/invoices/:id" element={<PortalInvoiceDetail />} />
         <Route path="/portal/wholesale" element={<PortalWholesale />} />
         <Route path="/portal/influencer" element={<PortalInfluencer />} />
-        <Route path="/portal/inbox" element={<OpsInboxPage />} />
-        <Route path="/portal/inbox/:threadId" element={<OpsInboxThreadPage />} />
+         <Route path="/portal/inbox" element={<OpsInboxPage />} />
+         <Route path="/portal/inbox/:threadId" element={<OpsInboxThreadPage />} />
+         <Route path="/portal/tasks" element={<OpsTaskListPage />} />
         <Route path="/portal/dashboard" element={<PortalDashboard />} />
 
         {/* NEW ROLE PORTALS - Enterprise-grade (/portals/*) */}
