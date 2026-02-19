@@ -31274,6 +31274,107 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_task_events: {
+        Row: {
+          actor_id: string
+          created_at: string
+          event_type: Database["public"]["Enums"]["ops_task_event_type"]
+          id: string
+          new_status: Database["public"]["Enums"]["ops_task_status"] | null
+          previous_status: Database["public"]["Enums"]["ops_task_status"] | null
+          task_id: string
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          event_type: Database["public"]["Enums"]["ops_task_event_type"]
+          id?: string
+          new_status?: Database["public"]["Enums"]["ops_task_status"] | null
+          previous_status?:
+            | Database["public"]["Enums"]["ops_task_status"]
+            | null
+          task_id: string
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["ops_task_event_type"]
+          id?: string
+          new_status?: Database["public"]["Enums"]["ops_task_status"] | null
+          previous_status?:
+            | Database["public"]["Enums"]["ops_task_status"]
+            | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_task_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "ops_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_tasks: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_at: string | null
+          expected_actor_id: string | null
+          expected_role: string | null
+          id: string
+          priority: Database["public"]["Enums"]["ops_task_priority"]
+          status: Database["public"]["Enums"]["ops_task_status"]
+          task_type: Database["public"]["Enums"]["ops_task_type"]
+          thread_id: string | null
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_at?: string | null
+          expected_actor_id?: string | null
+          expected_role?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ops_task_priority"]
+          status?: Database["public"]["Enums"]["ops_task_status"]
+          task_type?: Database["public"]["Enums"]["ops_task_type"]
+          thread_id?: string | null
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_at?: string | null
+          expected_actor_id?: string | null
+          expected_role?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ops_task_priority"]
+          status?: Database["public"]["Enums"]["ops_task_status"]
+          task_type?: Database["public"]["Enums"]["ops_task_type"]
+          thread_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_tasks_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ops_inbox_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_routing: {
         Row: {
           assigned_at: string | null
@@ -57302,6 +57403,7 @@ export type Database = {
         Args: { p_days_old?: number }
         Returns: number
       }
+      complete_ops_task: { Args: { p_task_id: string }; Returns: undefined }
       complete_territory_task: {
         Args: { p_outcome: Json; p_task_id: string }
         Returns: undefined
@@ -57367,6 +57469,19 @@ export type Database = {
           p_quantity?: number
           p_submission_id: string
           p_worker_id: string
+        }
+        Returns: string
+      }
+      create_ops_task: {
+        Args: {
+          p_description?: string
+          p_due_at?: string
+          p_expected_actor_id?: string
+          p_expected_role?: string
+          p_priority?: Database["public"]["Enums"]["ops_task_priority"]
+          p_task_type?: Database["public"]["Enums"]["ops_task_type"]
+          p_thread_id: string
+          p_title: string
         }
         Returns: string
       }
@@ -57914,6 +58029,7 @@ export type Database = {
         Args: { p_promotion_id: string; p_rejection_reason?: string }
         Returns: undefined
       }
+      reopen_ops_task: { Args: { p_task_id: string }; Returns: undefined }
       repair_invoice_units: {
         Args: { p_invoice_id: string; p_reason: string; p_user_id?: string }
         Returns: Json
@@ -58054,6 +58170,13 @@ export type Database = {
       }
       update_contact_responsiveness: {
         Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      update_ops_task_status: {
+        Args: {
+          p_new_status: Database["public"]["Enums"]["ops_task_status"]
+          p_task_id: string
+        }
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
@@ -58299,6 +58422,22 @@ export type Database = {
         | "blocked"
         | "deferred"
         | "cancelled"
+      ops_task_event_type:
+        | "created"
+        | "status_changed"
+        | "completed"
+        | "reopened"
+        | "cancelled"
+      ops_task_priority: "low" | "normal" | "high" | "critical"
+      ops_task_status: "open" | "in_progress" | "completed" | "cancelled"
+      ops_task_type:
+        | "visit"
+        | "delivery"
+        | "follow_up"
+        | "call"
+        | "audit"
+        | "review"
+        | "other"
       order_channel:
         | "web"
         | "mobile"
@@ -58844,6 +58983,24 @@ export const Constants = {
         "blocked",
         "deferred",
         "cancelled",
+      ],
+      ops_task_event_type: [
+        "created",
+        "status_changed",
+        "completed",
+        "reopened",
+        "cancelled",
+      ],
+      ops_task_priority: ["low", "normal", "high", "critical"],
+      ops_task_status: ["open", "in_progress", "completed", "cancelled"],
+      ops_task_type: [
+        "visit",
+        "delivery",
+        "follow_up",
+        "call",
+        "audit",
+        "review",
+        "other",
       ],
       order_channel: [
         "web",
