@@ -27,6 +27,7 @@ import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDial
 import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 import { CurrentTaskCard } from '@/components/delivery/CurrentTaskCard';
 import { ProfileLayout, ProfileTab } from '@/components/profile/ProfileLayout';
+import { ProfileActivityPanel } from '@/components/profile';
 
 const BikerProfile: React.FC = () => {
   const { bikerId } = useParams();
@@ -385,6 +386,16 @@ const BikerProfile: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+      ),
+    },
+    {
+      id: 'activity',
+      label: 'Activity',
+      content: (
+        <ProfileActivityPanel
+          userId={biker?.user_id || bikerId || null}
+          entityName={biker.full_name}
+        />
       ),
     },
     {
