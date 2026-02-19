@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BulkSMSModal } from "./BulkSMSModal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ import {
   Copy,
   FileText,
   Sparkles,
+  Rocket,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,6 +78,7 @@ export function TemplatesLibrary() {
   const [activeTab, setActiveTab] = useState("all");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [bulkSMSTemplate, setBulkSMSTemplate] = useState<Template | null>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -305,6 +308,17 @@ export function TemplatesLibrary() {
                       <Copy className="h-3 w-3 mr-1" />
                       Copy
                     </Button>
+                    {template.template_type === 'sms' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-primary"
+                        onClick={() => setBulkSMSTemplate(template)}
+                      >
+                        <Rocket className="h-3 w-3 mr-1" />
+                        Bulk SMS
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -433,6 +447,13 @@ export function TemplatesLibrary() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Bulk SMS Modal */}
+      <BulkSMSModal
+        open={!!bulkSMSTemplate}
+        onOpenChange={(open) => { if (!open) setBulkSMSTemplate(null); }}
+        template={bulkSMSTemplate}
+      />
     </div>
   );
 }

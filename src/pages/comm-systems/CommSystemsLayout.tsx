@@ -54,6 +54,7 @@ const navSections = [
     label: '📻 Communication Hub',
     icon: Radio,
     items: [
+      { to: '/comm-systems/comm-hub', icon: Radio, label: 'Comm Hub' },
       { to: '/comm-systems/comm-ai', icon: Brain, label: 'Communications AI' },
       { to: '/comm-systems/automation', icon: Zap, label: 'Comm Automation' },
       { to: '/comm-systems/insights', icon: Eye, label: 'Comm Insights' },
