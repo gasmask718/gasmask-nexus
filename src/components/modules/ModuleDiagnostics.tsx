@@ -9,6 +9,7 @@ import { exportToDropbox } from '@/services/dropboxExportService';
 import { useDataExport } from '@/hooks/useDataExport';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { TubeIntegrityPanel } from '@/components/diagnostics/TubeIntegrityPanel';
 
 /**
  * ModuleDiagnostics - Section 6.3 Enhanced Diagnostics
@@ -133,6 +134,9 @@ export function ModuleDiagnostics() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Tube Integrity Check */}
+      <TubeIntegrityPanel />
 
       <Tabs defaultValue="modules">
         <TabsList>
