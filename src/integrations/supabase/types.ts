@@ -31112,6 +31112,168 @@ export type Database = {
         }
         Relationships: []
       }
+      ops_inbox_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json | null
+          thread_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          thread_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_inbox_events_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ops_inbox_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_inbox_messages: {
+        Row: {
+          attachments: Json | null
+          body: string
+          created_at: string
+          id: string
+          sender_type: string
+          sender_user_id: string | null
+          thread_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          body: string
+          created_at?: string
+          id?: string
+          sender_type?: string
+          sender_user_id?: string | null
+          thread_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          body?: string
+          created_at?: string
+          id?: string
+          sender_type?: string
+          sender_user_id?: string | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_inbox_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ops_inbox_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_inbox_recipients: {
+        Row: {
+          acknowledged_at: string | null
+          delivered_at: string
+          id: string
+          last_seen_message_at: string | null
+          read_at: string | null
+          resolved_at: string | null
+          snoozed_until: string | null
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          delivered_at?: string
+          id?: string
+          last_seen_message_at?: string | null
+          read_at?: string | null
+          resolved_at?: string | null
+          snoozed_until?: string | null
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          delivered_at?: string
+          id?: string
+          last_seen_message_at?: string | null
+          read_at?: string | null
+          resolved_at?: string | null
+          snoozed_until?: string | null
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ops_inbox_recipients_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "ops_inbox_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ops_inbox_threads: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          priority: string
+          status: string
+          targeting: Json | null
+          title: string
+          type: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string
+          status?: string
+          targeting?: Json | null
+          title: string
+          type?: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: string
+          status?: string
+          targeting?: Json | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       order_routing: {
         Row: {
           assigned_at: string | null
@@ -56961,6 +57123,7 @@ export type Database = {
         Args: { p_token: string; p_user_id: string }
         Returns: Json
       }
+      ack_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
       acknowledge_drift_alert: {
         Args: { p_alert_id: string; p_user_id?: string }
         Returns: undefined
@@ -57676,6 +57839,10 @@ export type Database = {
         Args: { p_action: string; p_details?: Json }
         Returns: string
       }
+      mark_ops_thread_read: {
+        Args: { p_thread_id: string }
+        Returns: undefined
+      }
       mark_overdue_followups: { Args: never; Returns: undefined }
       mark_payout_batch_paid: {
         Args: { p_batch_id: string; p_export_ref?: string }
@@ -57779,6 +57946,7 @@ export type Database = {
         Returns: boolean
       }
       resolve_intent: { Args: { p_intent_id: string }; Returns: Json }
+      resolve_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
       resolve_permissions_for_commitment: {
         Args: { p_commitment_id: string }
         Returns: undefined
@@ -57849,6 +58017,10 @@ export type Database = {
       }
       skip_payout_item: {
         Args: { p_item_id: string; p_reason: string }
+        Returns: undefined
+      }
+      snooze_ops_thread: {
+        Args: { p_thread_id: string; p_until: string }
         Returns: undefined
       }
       soft_delete: {

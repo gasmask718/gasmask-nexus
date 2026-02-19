@@ -127,3 +127,6 @@ verify_jwt = false
 
 [functions.redeem-portal-invite]
 verify_jwt = false
+
+[functions.create-ops-thread]
+verify_jwt = false
