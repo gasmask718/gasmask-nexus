@@ -261,6 +261,7 @@ import CommSystemsEmailsPage from '@/pages/comm-systems/emails/EmailsPage';
 import CommSystemsCommAIPage from '@/pages/comm-systems/hub/CommAIPage';
 import CommSystemsAutomationPage from '@/pages/comm-systems/hub/CommAutomationPage';
 import CommSystemsInsightsPage from '@/pages/comm-systems/hub/CommInsightsPage';
+import CommunicationHubPage from '@/pages/comm-systems/hub/CommunicationHubPage';
 
 import BillingCenter from '@/pages/BillingCenter';
 import BillingInvoices from '@/pages/BillingInvoices';
@@ -793,6 +794,7 @@ export default function AppRoutes() {
         <Route path="/comm-systems/call-analytics" element={<CommSystemsAnalyticsPage />} />
         <Route path="/comm-systems/messages" element={<CommSystemsMessagesPage />} />
         <Route path="/comm-systems/emails" element={<CommSystemsEmailsPage />} />
+        <Route path="/comm-systems/comm-hub" element={<CommunicationHubPage />} />
         <Route path="/comm-systems/comm-ai" element={<CommSystemsCommAIPage />} />
         <Route path="/comm-systems/automation" element={<CommSystemsAutomationPage />} />
         <Route path="/comm-systems/insights" element={<CommSystemsInsightsPage />} />
