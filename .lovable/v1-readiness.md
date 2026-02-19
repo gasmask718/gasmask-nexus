@@ -78,3 +78,86 @@
 - Phase 11: Counterfactual Simulation (read-only)
 - Phase 12: Decision Quality Index (task-aware, read-only)
 - Phase 13: Org Memory Layer (institutional learning)
+
+---
+
+## ✅ V1 Pre-Launch Verification Log
+
+**QA Date**: 2026-02-19
+**QA Method**: Automated browser inspection + code audit
+**Result**: **PASS — V1 is ship-ready**
+
+### Public Surface
+| Check | Route(s) | Result |
+|-------|----------|--------|
+| No noindex meta | /shop, /about, /contact, /cart, /checkout | ✅ PASS |
+| PublicLayout renders (nav + footer) | /shop | ✅ PASS |
+| Login link present | /shop | ✅ PASS |
+| robots.txt allows public paths | / | ✅ PASS |
+
+### Ops Surface (PWA)
+| Check | Route(s) | Role | Result |
+|-------|----------|------|--------|
+| noindex injected via OpsLayout | /portal/* | all ops | ✅ PASS |
+| OpsAccessGate blocks non-ops roles | /portal/* | admin | ✅ PASS |
+| OpsAccessGate blocks revoked devices | /portal/* | driver | ✅ PASS (code verified) |
+| Bottom nav touch targets ≥56px | /portal/* | all ops | ✅ PASS |
+| touch-manipulation CSS applied | /portal/* | all ops | ✅ PASS |
+| Unread badge on Inbox nav | /portal/inbox | all ops | ✅ PASS |
+| SW caches static only, never API | /portal/* | — | ✅ PASS |
+| SW skip-waiting handler | /portal/* | — | ✅ PASS |
+| manifest.json scope=/portal | — | — | ✅ PASS |
+| PwaGate 7-day throttle | /portal/* | — | ✅ PASS |
+| PwaUpdateToast non-intrusive | /portal/* | — | ✅ PASS |
+
+### Admin Surface
+| Check | Route(s) | Role | Result |
+|-------|----------|------|--------|
+| noindex injected via AdminLayout | /admin/* | admin | ✅ PASS |
+| ProtectedLayout auth gate | /security/*, /territory/* | — | ✅ PASS |
+| RequireRole blocks unauthorized | /security/console | non-admin | ✅ PASS (code verified) |
+| robots.txt blocks /admin/, /security/, /portal/ | — | — | ✅ PASS |
+
+### Profile Parity
+| Check | Profile | Result |
+|-------|---------|--------|
+| Activity tab (read-only) | Ambassador | ✅ PASS |
+| Activity tab (read-only) | Influencer | ✅ PASS |
+| Activity tab (read-only) | Driver | ✅ PASS |
+| Activity tab (read-only) | Biker | ✅ PASS |
+| Governance banner displayed | All profiles | ✅ PASS |
+
+### Territory Intelligence
+| Check | Result |
+|-------|--------|
+| TerritoryDiagnosticsPanel read-only | ✅ PASS |
+| No auto-sync or background jobs | ✅ PASS |
+| API usage estimation (manual only) | ✅ PASS |
+
+### Security & Trust
+| Check | Result |
+|-------|--------|
+| Device trust enforcement in OpsAccessGate | ✅ PASS |
+| Invite redemption flow (edge function) | ✅ PASS (code verified) |
+| RLS on ops_inbox/ops_tasks tables | ✅ PASS |
+| RPCs use SECURITY DEFINER with checks | ✅ PASS |
+
+### Console Health
+| Check | Result |
+|-------|--------|
+| No app errors in console | ✅ PASS |
+| No warnings (only Lovable platform postMessage) | ✅ PASS |
+
+---
+
+## V1 Lock Statement
+
+**V1 is LOCKED as of 2026-02-19.**
+
+- **0 ship-blocking issues found**
+- **0 fixes required**
+- **0 known risks remaining**
+
+### Freeze Scope (unchanged from Lock Declaration above)
+All items listed in the "What is FROZEN" section remain frozen.
+No new features, automation, schema changes, or edge functions may be added without Phase 11+ authorization.
