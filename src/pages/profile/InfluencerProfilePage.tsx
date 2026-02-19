@@ -26,6 +26,8 @@ import { InfluencerAnalyticsDashboard } from '@/components/influencer/Influencer
 import { InfluencerContentTracker } from '@/components/influencer/InfluencerContentTracker';
 import { InfluencerPayoutsPanel } from '@/components/influencer/InfluencerPayoutsPanel';
 import { InfluencerCommunicationPanel } from '@/components/influencer/InfluencerCommunicationPanel';
+import { useUnifiedProfileView } from '@/hooks/useUnifiedProfileView';
+import { OpsParticipationSummary } from '@/components/profile/OpsParticipationSummary';
 
 export default function InfluencerProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -95,6 +97,19 @@ export default function InfluencerProfilePage() {
 
   const profile = profileQuery.data;
   const isLoading = profileQuery.isLoading;
+
+  const unifiedProfile = useUnifiedProfileView({
+    userId: profile?.created_by,
+    role: 'influencer',
+    displayName: profile?.name || 'Influencer',
+    status: profile?.status || 'active',
+    joinedAt: profile?.created_at || null,
+    phone: profile?.phone,
+    email: profile?.email,
+    dateOfBirth: profile?.date_of_birth,
+    neighborhood: profile?.neighborhood,
+    territory: profile?.city,
+  });
 
   if (!profile && !isLoading) {
     return (
@@ -169,6 +184,13 @@ export default function InfluencerProfilePage() {
                       {[profile.neighborhood, profile.city, profile.state, profile.country]
                         .filter(Boolean).join(', ')}
                     </span>
+                  </div>
+                )}
+                {unifiedProfile.contact.dateOfBirthMasked && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Born:</span>
+                    <span className="font-medium">{unifiedProfile.contact.dateOfBirthMasked}</span>
                   </div>
                 )}
                 {profile?.timezone && (
@@ -321,13 +343,20 @@ export default function InfluencerProfilePage() {
       ),
     },
     {
-      id: 'activity',
-      label: 'Activity',
+      id: 'ops',
+      label: 'Ops',
       content: (
-        <ProfileActivityPanel
-          userId={profile?.created_by || null}
-          entityName={displayName}
-        />
+        <div className="space-y-6">
+          <OpsParticipationSummary
+            data={unifiedProfile.opsParticipation}
+            isLoading={unifiedProfile.isLoading}
+            entityName={displayName}
+          />
+          <ProfileActivityPanel
+            userId={profile?.created_by || null}
+            entityName={displayName}
+          />
+        </div>
       ),
     },
     {

@@ -4,3 +4,4 @@ export { ProfileNotesTab } from './ProfileNotesTab';
 export type { ProfileNote } from './ProfileNotesTab';
 export { ProfileStatCard } from './ProfileStatCard';
 export { ProfileActivityPanel } from './ProfileActivityPanel';
+export { OpsParticipationSummary } from './OpsParticipationSummary';
