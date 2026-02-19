@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClipboardList, CheckCircle2, RotateCcw, Play, XCircle, AlertCircle } from 'lucide-react';
+import TaskOutcomeSummary from '@/components/ops/TaskOutcomeSummary';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -102,6 +103,9 @@ export default function TaskPanel({ threadId, threadTitle, threadPriority, isAdm
               </Button>
             )}
           </div>
+
+          {/* Phase 10B: Outcome Summary */}
+          <TaskOutcomeSummary taskId={task.id} />
 
           <div className="border-t border-border pt-2">
             <p className="text-[10px] text-muted-foreground flex items-center gap-1">
