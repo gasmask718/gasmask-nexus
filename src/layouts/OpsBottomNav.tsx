@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { getOpsNavItems } from '@/config/opsNavigation';
+import { useOpsUnreadCount } from '@/hooks/useOpsInbox';
 import { cn } from '@/lib/utils';
 
 export default function OpsBottomNav() {
   const { data, isLoading } = useCurrentUserProfile();
+  const { data: unreadCount = 0 } = useOpsUnreadCount();
 
   if (isLoading || !data?.profile) return null;
 
@@ -20,10 +22,10 @@ export default function OpsBottomNav() {
           <NavLink
             key={item.path}
             to={item.path}
-            end={item.path === '/portal/driver' || item.path === '/portal/biker' || item.path === '/portal/store' || item.path === '/portal/wholesaler' || item.path === '/portal/customer' || item.path === '/portal/production' || item.path === '/ambassador/dashboard' || item.path === '/portal/influencer'}
+            end={item.path === '/portal/driver' || item.path === '/portal/biker' || item.path === '/portal/store' || item.path === '/portal/wholesaler' || item.path === '/portal/customer' || item.path === '/portal/production' || item.path === '/ambassador/dashboard' || item.path === '/portal/influencer' || item.path === '/portal/inbox'}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-h-[48px] min-w-[48px] flex-1 text-xs transition-colors',
+                'flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-h-[48px] min-w-[48px] flex-1 text-xs transition-colors relative',
                 isActive
                   ? 'text-primary font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -32,6 +34,11 @@ export default function OpsBottomNav() {
           >
             <item.icon className="h-5 w-5" />
             <span className="truncate max-w-[64px]">{item.label}</span>
+            {item.path === '/portal/inbox' && unreadCount > 0 && (
+              <span className="absolute top-1 right-1/4 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </NavLink>
         ))}
       </div>
