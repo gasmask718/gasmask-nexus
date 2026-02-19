@@ -12,7 +12,7 @@ import {
   FileInput, Wallet
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { ProfileLayout, ProfileStatCard, ProfileNotesTab, ProfileNote } from '@/components/profile';
+import { ProfileLayout, ProfileStatCard, ProfileNotesTab, ProfileNote, ProfileActivityPanel } from '@/components/profile';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -427,6 +427,16 @@ export default function AmbassadorProfilePage() {
         <LeadIntakeTab 
           ambassadorId={id!} 
           ambassadorUserId={profile?.user_id}
+        />
+      ),
+    },
+    {
+      id: 'activity',
+      label: 'Activity',
+      content: (
+        <ProfileActivityPanel
+          userId={profile?.user_id}
+          entityName={displayName}
         />
       ),
     },

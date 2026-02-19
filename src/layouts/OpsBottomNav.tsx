@@ -25,7 +25,7 @@ export default function OpsBottomNav() {
             end={item.path === '/portal/driver' || item.path === '/portal/biker' || item.path === '/portal/store' || item.path === '/portal/wholesaler' || item.path === '/portal/customer' || item.path === '/portal/production' || item.path === '/ambassador/dashboard' || item.path === '/portal/influencer' || item.path === '/portal/inbox'}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-h-[48px] min-w-[48px] flex-1 text-xs transition-colors relative',
+                'flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 min-h-[56px] min-w-[56px] flex-1 text-xs transition-colors relative touch-manipulation',
                 isActive
                   ? 'text-primary font-semibold'
                   : 'text-muted-foreground hover:text-foreground'

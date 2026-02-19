@@ -21,6 +21,7 @@ import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
 import { RouteAssignmentDialog } from '@/components/delivery/RouteAssignmentDialog';
 import { ActiveRouteStatus } from '@/components/delivery/ActiveRouteStatus';
 import { ProfileLayout, ProfileTab } from '@/components/profile/ProfileLayout';
+import { ProfileActivityPanel } from '@/components/profile';
 
 const DriverProfile: React.FC = () => {
   const { driverId } = useParams();
@@ -384,6 +385,16 @@ const DriverProfile: React.FC = () => {
         <ConversationInbox
           entityType="driver"
           entityId={driverId || ''}
+          entityName={driver.full_name}
+        />
+      ),
+    },
+    {
+      id: 'activity',
+      label: 'Activity',
+      content: (
+        <ProfileActivityPanel
+          userId={driver?.user_id || driverId || null}
           entityName={driver.full_name}
         />
       ),
