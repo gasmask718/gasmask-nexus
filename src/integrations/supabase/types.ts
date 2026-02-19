@@ -7518,6 +7518,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "bag_sale_ledger_line_item_id_fkey"
             columns: ["line_item_id"]
             isOneToOne: false
@@ -19745,6 +19752,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "delivery_tasks_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "delivery_tasks_store_order_id_fkey"
             columns: ["store_order_id"]
             isOneToOne: false
@@ -23166,6 +23180,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "historical_invoice_line_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "historical_invoice_line_repairs_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -23247,6 +23268,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "historical_invoice_repairs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: true
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
@@ -26743,6 +26771,13 @@ export type Database = {
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
           },
+          {
+            foreignKeyName: "inventory_repair_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       inventory_risk_flags: {
@@ -27433,6 +27468,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "invoice_line_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -27542,6 +27584,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_receipt_log_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_receipt_log_store_id_fkey"
@@ -44551,6 +44600,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "store_payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "store_payments_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -45413,6 +45469,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "store_transactions_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "store_transactions_order_id_fkey"
@@ -48620,6 +48683,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "tube_sale_ledger_line_item_id_fkey"
@@ -55080,6 +55150,13 @@ export type Database = {
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
           },
+          {
+            foreignKeyName: "bag_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
         ]
       }
       v_bags_sold_per_store_per_day: {
@@ -55655,6 +55732,13 @@ export type Database = {
             referencedColumns: ["order_id"]
           },
           {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
+          },
+          {
             foreignKeyName: "invoice_line_items_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -55726,6 +55810,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_product_id_fkey"
@@ -55892,6 +55983,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_product_id_fkey"
@@ -56093,6 +56191,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
           {
             foreignKeyName: "invoice_line_items_product_id_fkey"
@@ -57087,6 +57192,21 @@ export type Database = {
         }
         Relationships: []
       }
+      v_tube_integrity_check: {
+        Row: {
+          entity_id: string | null
+          entity_type: string | null
+          integrity_status: string | null
+          invoice_date: string | null
+          invoice_id: string | null
+          invoice_number: string | null
+          invoice_status: string | null
+          ledger_tubes_delta: number | null
+          line_items_tubes: number | null
+          mismatch: number | null
+        }
+        Relationships: []
+      }
       v_tube_reorder_alerts: {
         Row: {
           alert_level: string | null
@@ -57142,6 +57262,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_brand_order_gaps"
             referencedColumns: ["order_id"]
+          },
+          {
+            foreignKeyName: "tube_sale_ledger_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "v_tube_integrity_check"
+            referencedColumns: ["invoice_id"]
           },
         ]
       }
