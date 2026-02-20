@@ -45611,6 +45611,10 @@ export type Database = {
           product_introduced: boolean
           starter_kit_delivered: boolean
           store_id: string
+          switch_flagged_at: string | null
+          switch_flagged_by: string | null
+          switch_notes: string | null
+          switch_quantity: number | null
         }
         Insert: {
           brand_id: string
@@ -45633,6 +45637,10 @@ export type Database = {
           product_introduced?: boolean
           starter_kit_delivered?: boolean
           store_id: string
+          switch_flagged_at?: string | null
+          switch_flagged_by?: string | null
+          switch_notes?: string | null
+          switch_quantity?: number | null
         }
         Update: {
           brand_id?: string
@@ -45655,6 +45663,10 @@ export type Database = {
           product_introduced?: boolean
           starter_kit_delivered?: boolean
           store_id?: string
+          switch_flagged_at?: string | null
+          switch_flagged_by?: string | null
+          switch_notes?: string | null
+          switch_quantity?: number | null
         }
         Relationships: [
           {

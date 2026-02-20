@@ -70,6 +70,7 @@ interface StoreIntelRow {
   bring_samples: boolean;
   bring_starter_kit: boolean;
   needs_switch: boolean;
+  switch_quantity: number | null;
   has_ever_ordered: boolean;
   last_order_date: string | null;
   last_updated_by: string | null;
@@ -163,6 +164,7 @@ export default function MasterOpportunities() {
       bring_samples: item.bring_samples,
       bring_starter_kit: item.bring_starter_kit,
       needs_switch: item.needs_switch,
+      switch_quantity: (item as any).switch_quantity || null,
       has_ever_ordered: item.has_ever_ordered,
       last_order_date: item.last_order_date,
       last_updated_by: item.last_updated_by,
@@ -323,10 +325,11 @@ export default function MasterOpportunities() {
       );
     }
     if (row.needs_switch) {
+      const switchQty = row.switch_quantity;
       badges.push(
         <Badge key="switch_tubes" variant="default" className="bg-red-600 text-white text-xs">
           <Repeat className="h-3 w-3 mr-1" />
-          Switch Required
+          Switch{switchQty ? ` (${switchQty})` : ' Required'}
         </Badge>
       );
     }
@@ -523,6 +526,11 @@ export default function MasterOpportunities() {
                   <div>
                     <p className="text-sm text-muted-foreground">Switch Tubes</p>
                     <p className="text-2xl font-bold text-red-600">{signalSummary?.needsSwitch || 0}</p>
+                    {(signalSummary?.totalSwitchQuantity ?? 0) > 0 && (
+                      <p className="text-xs text-red-500 mt-0.5">
+                        {signalSummary?.totalSwitchQuantity?.toLocaleString()} Tubes Pending
+                      </p>
+                    )}
                   </div>
                   <Repeat className="h-8 w-8 text-red-500 opacity-50" />
                 </div>

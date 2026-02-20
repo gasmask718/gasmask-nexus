@@ -694,6 +694,71 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                         </div>
                       </div>
 
+                      {/* Switch Tubes Quantity Entry (inline, shown when active) */}
+                      {needsSwitch && (
+                        <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs text-red-700 dark:text-red-400 whitespace-nowrap">Tubes to switch:</Label>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={intel?.switch_quantity ?? ''}
+                              placeholder="Qty"
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value) || null;
+                                const intelRecord = intelData.find(r => r.brand_id === brand.id);
+                                if (intelRecord?.id) {
+                                  updateField.mutate({
+                                    id: intelRecord.id,
+                                    store_id: storeId,
+                                    brand_id: brand.id,
+                                    field: 'switch_quantity',
+                                    value: val as any,
+                                    role: tubeIntelRole,
+                                    update_method: selectedMethod,
+                                  });
+                                }
+                              }}
+                              className="w-20 h-7 text-sm bg-background"
+                              disabled={!canToggleSignals || updateField.isPending}
+                            />
+                            {intel?.switch_quantity && intel.switch_quantity >= 100 && (
+                              <Badge variant="destructive" className="text-[10px]">High Priority</Badge>
+                            )}
+                            {intel?.switch_quantity && intel.switch_quantity >= 25 && intel.switch_quantity < 100 && (
+                              <Badge className="text-[10px] bg-orange-500 text-white">Medium</Badge>
+                            )}
+                            {intel?.switch_quantity && intel.switch_quantity > 0 && intel.switch_quantity < 25 && (
+                              <Badge variant="secondary" className="text-[10px]">Low</Badge>
+                            )}
+                          </div>
+                          <Input
+                            type="text"
+                            value={intel?.switch_notes ?? ''}
+                            placeholder="Notes (optional)"
+                            onChange={(e) => {
+                              const intelRecord = intelData.find(r => r.brand_id === brand.id);
+                              if (intelRecord?.id) {
+                                updateField.mutate({
+                                  id: intelRecord.id,
+                                  store_id: storeId,
+                                  brand_id: brand.id,
+                                  field: 'switch_notes',
+                                  value: e.target.value || null,
+                                  role: tubeIntelRole,
+                                  update_method: selectedMethod,
+                                });
+                              }
+                            }}
+                            className="h-7 text-xs bg-background"
+                            disabled={!canToggleSignals || updateField.isPending}
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            Switch quantities are observational and do not modify inventory or create orders.
+                          </p>
+                        </div>
+                      )}
+
                       {/* Interest State (Mutually Exclusive Buttons) */}
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground mr-1">Interest:</span>
