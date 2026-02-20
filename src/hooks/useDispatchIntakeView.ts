@@ -17,6 +17,8 @@ export interface DispatchSignal {
     order: boolean;
     samples: boolean;
     starter_kit: boolean;
+    switch: boolean;
+    switch_quantity: number;
     opportunity: boolean;
     follow_up: boolean;
   };
@@ -51,10 +53,12 @@ export function useDispatchIntakeView(filters?: {
             needs_order,
             bring_samples,
             bring_starter_kit,
+            needs_switch,
+            switch_quantity,
             owner_interested,
             last_updated_at
           `)
-          .or('needs_order.eq.true,bring_samples.eq.true,bring_starter_kit.eq.true,owner_interested.eq.true');
+          .or('needs_order.eq.true,bring_samples.eq.true,bring_starter_kit.eq.true,needs_switch.eq.true,owner_interested.eq.true');
 
         if (invErr) throw invErr;
 
@@ -121,6 +125,7 @@ export function useDispatchIntakeView(filters?: {
             invSignals.some(s => s.needs_order) ||
             invSignals.some(s => s.bring_samples) ||
             invSignals.some(s => s.bring_starter_kit) ||
+            invSignals.some(s => (s as any).needs_switch) ||
             opps.length > 0 ||
             followUpsForStore.length > 0;
 
@@ -130,6 +135,10 @@ export function useDispatchIntakeView(filters?: {
           if (invSignals.some(s => s.needs_order)) actions.push('Process order');
           if (invSignals.some(s => s.bring_samples)) actions.push('Deliver samples');
           if (invSignals.some(s => s.bring_starter_kit)) actions.push('Deliver starter kit');
+          if (invSignals.some(s => (s as any).needs_switch)) {
+            const totalSwitchQty = invSignals.reduce((sum, s) => sum + ((s as any).switch_quantity || 0), 0);
+            actions.push(totalSwitchQty > 0 ? `Bring replacement tubes (~${totalSwitchQty})` : 'Switch tubes required');
+          }
           if (invSignals.some(s => s.owner_interested)) actions.push('Discuss opportunity');
           if (opps.length > 0) actions.push(`${opps.length} open opportunity(ies)`);
           if (followUpsForStore.length > 0) actions.push(`${followUpsForStore.length} follow-up(s) due`);
@@ -138,6 +147,7 @@ export function useDispatchIntakeView(filters?: {
           let urgency = 0;
           if (invSignals.some(s => s.needs_order)) urgency += 10;
           if (invSignals.some(s => s.bring_samples)) urgency += 5;
+          if (invSignals.some(s => (s as any).needs_switch)) urgency += 8;
           if (opps.length > 0) urgency += 7;
           if (followUpsForStore.some(f => f.status === 'overdue')) urgency += 15;
 
@@ -153,6 +163,8 @@ export function useDispatchIntakeView(filters?: {
               order: invSignals.some(s => s.needs_order),
               samples: invSignals.some(s => s.bring_samples),
               starter_kit: invSignals.some(s => s.bring_starter_kit),
+              switch: invSignals.some(s => (s as any).needs_switch),
+              switch_quantity: invSignals.reduce((sum, s) => sum + ((s as any).switch_quantity || 0), 0),
               opportunity: opps.length > 0,
               follow_up: followUpsForStore.length > 0,
             },

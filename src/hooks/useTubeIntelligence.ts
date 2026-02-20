@@ -31,6 +31,10 @@ export interface TubeIntelStatus {
   bring_samples: boolean;
   bring_starter_kit: boolean;
   needs_switch: boolean;
+  switch_quantity: number | null;
+  switch_notes: string | null;
+  switch_flagged_at: string | null;
+  switch_flagged_by: string | null;
   has_ever_ordered: boolean;
   starter_kit_delivered: boolean;
   last_updated_by: string | null;
@@ -46,9 +50,10 @@ export interface TubeIntelUpdatePayload {
   brand_id: string;
   field: keyof Pick<TubeIntelStatus, 
     'product_introduced' | 'owner_interested' | 'needs_order' | 
-    'bring_samples' | 'bring_starter_kit' | 'starter_kit_delivered' | 'needs_switch'
+    'bring_samples' | 'bring_starter_kit' | 'starter_kit_delivered' | 'needs_switch' |
+    'switch_quantity' | 'switch_notes'
   >;
-  value: boolean | null;
+  value: boolean | number | string | null;
   role?: TubeIntelRole;
   update_method?: UpdateMethod;
 }
@@ -173,14 +178,33 @@ export function useTubeIntelligence(storeId: string | null) {
 
       // Non-field roles: execute mutation directly
       if (id) {
+        const updatePayload: Record<string, unknown> = { 
+          [field]: value,
+          last_updated_by_role: effectiveRole || null,
+          last_updated_at: new Date().toISOString(),
+          last_updated_method: effectiveMethod,
+        };
+        // When toggling switch off, clear quantity/notes/flagged fields
+        if (field === 'needs_switch' && value === false) {
+          updatePayload.switch_quantity = null;
+          updatePayload.switch_notes = null;
+          updatePayload.switch_flagged_at = null;
+          updatePayload.switch_flagged_by = null;
+        }
+        // When toggling switch on, set flagged timestamp
+        if (field === 'needs_switch' && value === true) {
+          updatePayload.switch_flagged_at = new Date().toISOString();
+          updatePayload.switch_flagged_by = user?.id || null;
+        }
+        // When setting switch_quantity, also set flagged fields if not already set
+        if (field === 'switch_quantity' && value && Number(value) > 0) {
+          updatePayload.needs_switch = true;
+          updatePayload.switch_flagged_at = new Date().toISOString();
+          updatePayload.switch_flagged_by = user?.id || null;
+        }
         const { error } = await supabase
           .from('store_tube_inventory_status')
-          .update({ 
-            [field]: value,
-            last_updated_by_role: effectiveRole || null,
-            last_updated_at: new Date().toISOString(),
-            last_updated_method: effectiveMethod,
-          })
+          .update(updatePayload)
           .eq('id', id);
         if (error) throw error;
       } else {
@@ -327,7 +351,7 @@ export function useTubeIntelSummary() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_tube_inventory_status')
-        .select('needs_order, bring_samples, bring_starter_kit, needs_switch, product_introduced, owner_interested')
+        .select('needs_order, bring_samples, bring_starter_kit, needs_switch, switch_quantity, product_introduced, owner_interested')
         .eq('is_simulation', simulationMode);
 
       if (error) throw error;
@@ -337,6 +361,7 @@ export function useTubeIntelSummary() {
         bringSamples: 0,
         bringStarterKit: 0,
         needsSwitch: 0,
+        totalSwitchQuantity: 0,
         interested: 0,
         notInterested: 0,
         notAsked: 0,
@@ -350,7 +375,10 @@ export function useTubeIntelSummary() {
         if (item.needs_order) summary.needsOrder++;
         if (item.bring_samples) summary.bringSamples++;
         if (item.bring_starter_kit) summary.bringStarterKit++;
-        if (item.needs_switch) summary.needsSwitch++;
+        if (item.needs_switch) {
+          summary.needsSwitch++;
+          summary.totalSwitchQuantity += (item as any).switch_quantity || 0;
+        }
         
         // New interest-based counts
         if (item.owner_interested === true) summary.interested++;
