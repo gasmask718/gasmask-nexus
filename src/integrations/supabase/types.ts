@@ -45606,6 +45606,7 @@ export type Database = {
           last_updated_by_role: string | null
           last_updated_method: string | null
           needs_order: boolean
+          needs_switch: boolean
           owner_interested: boolean | null
           product_introduced: boolean
           starter_kit_delivered: boolean
@@ -45627,6 +45628,7 @@ export type Database = {
           last_updated_by_role?: string | null
           last_updated_method?: string | null
           needs_order?: boolean
+          needs_switch?: boolean
           owner_interested?: boolean | null
           product_introduced?: boolean
           starter_kit_delivered?: boolean
@@ -45648,6 +45650,7 @@ export type Database = {
           last_updated_by_role?: string | null
           last_updated_method?: string | null
           needs_order?: boolean
+          needs_switch?: boolean
           owner_interested?: boolean | null
           product_introduced?: boolean
           starter_kit_delivered?: boolean

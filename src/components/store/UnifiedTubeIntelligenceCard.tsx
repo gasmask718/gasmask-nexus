@@ -17,7 +17,7 @@ import { useStoreBrandRelationships } from '@/hooks/useStoreBrandRelationships';
 import {
   Package, Save, RefreshCw, Clock, Calendar, ShoppingCart, FlaskConical,
   Gift, ThumbsUp, ThumbsDown, AlertTriangle, User, MapPin, Phone, MessageSquare, Monitor,
-  Power
+  Power, Repeat
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -311,7 +311,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   // ── Signal toggle handler ──
   const handleSignalToggle = (
     brandId: string,
-    field: 'needs_order' | 'bring_samples' | 'bring_starter_kit',
+    field: 'needs_order' | 'bring_samples' | 'bring_starter_kit' | 'needs_switch',
     currentValue: boolean
   ) => {
     const intelRecord = intelData.find(r => r.brand_id === brandId);
@@ -494,6 +494,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                 const needsOrder = intel?.needs_order ?? false;
                 const bringSamples = intel?.bring_samples ?? false;
                 const bringStarterKit = intel?.bring_starter_kit ?? false;
+                const needsSwitch = intel?.needs_switch ?? false;
                 const ownerInterested = intel?.owner_interested;
 
                 // Permission checks
@@ -607,7 +608,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                     {/* ═══════════════════════════════════════════════════ */}
                     <div className="space-y-2 border-t border-border/30 pt-2">
                       {/* Signal Toggles Row */}
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-4 gap-2">
                         {/* Needs Order */}
                         <div className="flex items-center gap-2">
                           <Switch
@@ -668,6 +669,27 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                           >
                             <FlaskConical className="h-3 w-3 inline mr-1" />
                             Bring Samples
+                          </Label>
+                        </div>
+
+                        {/* Switch Tubes */}
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            id={`switch-tubes-${brand.id}`}
+                            checked={needsSwitch}
+                            onCheckedChange={() => handleSignalToggle(brand.id, 'needs_switch', needsSwitch)}
+                            disabled={!canToggleSignals || updateField.isPending}
+                            className="scale-90"
+                          />
+                          <Label
+                            htmlFor={`switch-tubes-${brand.id}`}
+                            className={cn(
+                              'text-xs cursor-pointer',
+                              needsSwitch ? 'text-red-600 font-medium dark:text-red-400' : 'text-muted-foreground'
+                            )}
+                          >
+                            <Repeat className="h-3 w-3 inline mr-1" />
+                            Switch Tubes
                           </Label>
                         </div>
                       </div>
