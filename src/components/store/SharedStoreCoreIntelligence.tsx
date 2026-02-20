@@ -29,7 +29,6 @@ import { StoreFieldActivityPanel } from '@/components/store/StoreFieldActivityPa
 import { InvoiceHistoryCard } from '@/components/store/InvoiceHistoryCard';
 import { StoreCadenceSettings } from '@/components/store/StoreCadenceSettings';
 import { BrandRelationshipsPanel } from '@/components/store/BrandRelationshipsPanel';
-import { TubeSwitchPanel } from '@/components/store/TubeSwitchPanel';
 
 
 export interface SharedStoreCoreIntelligenceProps {
@@ -90,7 +89,6 @@ export function SharedStoreCoreIntelligence({
 
       {/* ══════════════ Inventory Intelligence ══════════════ */}
       <UnifiedTubeIntelligenceCard storeId={storeId} role={role} />
-      <TubeSwitchPanel storeId={storeId} />
       <SellThroughIntelCard storeId={storeId} />
       <BrandStickersCard storeId={storeId} role={role} />
       <StoreVisitInventoryCard storeId={storeId} />

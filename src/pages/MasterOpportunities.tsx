@@ -44,6 +44,7 @@ import {
   ThumbsUp,
   ThumbsDown,
   Sticker,
+  Repeat,
 } from 'lucide-react';
 import { format, isToday, isThisWeek } from 'date-fns';
 import { useGlobalTubeIntelligence, useTubeIntelSummary, TUBE_BRANDS } from '@/hooks/useTubeIntelligence';
@@ -53,7 +54,7 @@ import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { toast } from 'sonner';
 
-type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'interested' | 'not_interested';
+type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'switch_tubes' | 'interested' | 'not_interested';
 type TimeFilter = 'all' | 'today' | 'this_week';
 type OpportunityFilter = 'all' | 'pending' | 'completed';
 
@@ -68,6 +69,7 @@ interface StoreIntelRow {
   needs_order: boolean;
   bring_samples: boolean;
   bring_starter_kit: boolean;
+  needs_switch: boolean;
   has_ever_ordered: boolean;
   last_order_date: string | null;
   last_updated_by: string | null;
@@ -119,6 +121,8 @@ export default function MasterOpportunities() {
         return { bringSamples: true };
       case 'starter_kit':
         return { bringStarterKit: true };
+      case 'switch_tubes':
+        return { needsSwitch: true };
       case 'interested':
         return { interested: true };
       case 'not_interested':
@@ -158,6 +162,7 @@ export default function MasterOpportunities() {
       needs_order: item.needs_order,
       bring_samples: item.bring_samples,
       bring_starter_kit: item.bring_starter_kit,
+      needs_switch: item.needs_switch,
       has_ever_ordered: item.has_ever_ordered,
       last_order_date: item.last_order_date,
       last_updated_by: item.last_updated_by,
@@ -317,6 +322,14 @@ export default function MasterOpportunities() {
         </Badge>
       );
     }
+    if (row.needs_switch) {
+      badges.push(
+        <Badge key="switch_tubes" variant="default" className="bg-red-600 text-white text-xs">
+          <Repeat className="h-3 w-3 mr-1" />
+          Switch Required
+        </Badge>
+      );
+    }
     // Updated: Show interest status badges
     if (row.owner_interested === true) {
       badges.push(
@@ -373,6 +386,7 @@ export default function MasterOpportunities() {
     { key: 'needs_order', label: 'Needs Order' },
     { key: 'bring_samples', label: 'Bring Samples' },
     { key: 'bring_starter_kit', label: 'Starter Kit' },
+    { key: 'needs_switch', label: 'Switch Tubes' },
     { key: 'product_introduced', label: 'Introduced' },
     { key: 'owner_interested', label: 'Interested' },
     { key: 'last_updated_by_role', label: 'Reported By' },
@@ -441,7 +455,7 @@ export default function MasterOpportunities() {
           </div>
 
           {/* Signal Summary Cards */}
-          <div className="grid gap-4 md:grid-cols-5">
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
             <Card 
               className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'needs_order' ? 'ring-2 ring-yellow-500 shadow-md' : 'hover:bg-muted/50'}`}
               onClick={() => handleSignalTabClick('needs_order')}
@@ -491,6 +505,26 @@ export default function MasterOpportunities() {
                     <p className="text-2xl font-bold text-purple-600">{signalSummary?.bringStarterKit || 0}</p>
                   </div>
                   <Gift className="h-8 w-8 text-purple-500 opacity-50" />
+                </div>
+                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
+                  <Eye className="h-3 w-3 mr-1" />
+                  View Details
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Switch Tubes KPI */}
+            <Card 
+              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'switch_tubes' ? 'ring-2 ring-red-600 shadow-md' : 'hover:bg-muted/50'}`}
+              onClick={() => handleSignalTabClick('switch_tubes')}
+            >
+              <CardContent className="pt-6 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Switch Tubes</p>
+                    <p className="text-2xl font-bold text-red-600">{signalSummary?.needsSwitch || 0}</p>
+                  </div>
+                  <Repeat className="h-8 w-8 text-red-500 opacity-50" />
                 </div>
                 <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
                   <Eye className="h-3 w-3 mr-1" />
@@ -562,6 +596,7 @@ export default function MasterOpportunities() {
                 {activeSignalTab === 'needs_order' && <><ShoppingCart className="h-3 w-3" /> Needs Order</>}
                 {activeSignalTab === 'bring_samples' && <><Package className="h-3 w-3" /> Bring Samples</>}
                 {activeSignalTab === 'starter_kit' && <><Gift className="h-3 w-3" /> Starter Kit</>}
+                {activeSignalTab === 'switch_tubes' && <><Repeat className="h-3 w-3" /> Switch Tubes</>}
                 {activeSignalTab === 'interested' && <><ThumbsUp className="h-3 w-3" /> Interested</>}
                 {activeSignalTab === 'not_interested' && <><ThumbsDown className="h-3 w-3" /> Not Interested</>}
               </Badge>
@@ -590,7 +625,6 @@ export default function MasterOpportunities() {
                     className="pl-10"
                   />
                 </div>
-                
                 <Select value={brandFilter} onValueChange={(v) => { setBrandFilter(v); handleFilterChange(); }}>
                   <SelectTrigger className="w-full lg:w-[180px]">
                     <SelectValue placeholder="All Brands" />
@@ -687,6 +721,7 @@ export default function MasterOpportunities() {
                         activeSignalTab === 'needs_order' ? signalSummary.needsOrder :
                         activeSignalTab === 'bring_samples' ? signalSummary.bringSamples :
                         activeSignalTab === 'starter_kit' ? signalSummary.bringStarterKit :
+                        activeSignalTab === 'switch_tubes' ? signalSummary.needsSwitch :
                         activeSignalTab === 'interested' ? signalSummary.interested :
                         activeSignalTab === 'not_interested' ? signalSummary.notInterested : 0;
                       

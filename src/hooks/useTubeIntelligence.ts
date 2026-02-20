@@ -30,6 +30,7 @@ export interface TubeIntelStatus {
   needs_order: boolean;
   bring_samples: boolean;
   bring_starter_kit: boolean;
+  needs_switch: boolean;
   has_ever_ordered: boolean;
   starter_kit_delivered: boolean;
   last_updated_by: string | null;
@@ -45,7 +46,7 @@ export interface TubeIntelUpdatePayload {
   brand_id: string;
   field: keyof Pick<TubeIntelStatus, 
     'product_introduced' | 'owner_interested' | 'needs_order' | 
-    'bring_samples' | 'bring_starter_kit' | 'starter_kit_delivered'
+    'bring_samples' | 'bring_starter_kit' | 'starter_kit_delivered' | 'needs_switch'
   >;
   value: boolean | null;
   role?: TubeIntelRole;
@@ -57,10 +58,10 @@ export type TubeIntelRole = 'admin' | 'va' | 'ambassador' | 'biker' | 'driver';
 
 // Updated permissions - all field users can set interest + action signals
 export const ROLE_FIELD_PERMISSIONS: Record<TubeIntelRole, string[]> = {
-  admin: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'starter_kit_delivered'],
-  va: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'starter_kit_delivered'],
-  ambassador: ['owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit'],
-  biker: ['owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit'],
+  admin: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'starter_kit_delivered', 'needs_switch'],
+  va: ['product_introduced', 'owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'starter_kit_delivered', 'needs_switch'],
+  ambassador: ['owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'needs_switch'],
+  biker: ['owner_interested', 'needs_order', 'bring_samples', 'bring_starter_kit', 'needs_switch'],
   driver: [], // Read-only
 };
 
@@ -232,6 +233,7 @@ export interface TubeIntelFilters {
   needsOrder?: boolean;
   bringSamples?: boolean;
   bringStarterKit?: boolean;
+  needsSwitch?: boolean;
   interested?: boolean;
   notInterested?: boolean;
   notAsked?: boolean;
@@ -275,6 +277,9 @@ export function useGlobalTubeIntelligence(filters: TubeIntelFilters = {}) {
       }
       if (filters.bringStarterKit) {
         query = query.eq('bring_starter_kit', true);
+      }
+      if (filters.needsSwitch) {
+        query = query.eq('needs_switch', true);
       }
       // New interest-based filters
       if (filters.interested) {
@@ -322,7 +327,7 @@ export function useTubeIntelSummary() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('store_tube_inventory_status')
-        .select('needs_order, bring_samples, bring_starter_kit, product_introduced, owner_interested')
+        .select('needs_order, bring_samples, bring_starter_kit, needs_switch, product_introduced, owner_interested')
         .eq('is_simulation', simulationMode);
 
       if (error) throw error;
@@ -331,6 +336,7 @@ export function useTubeIntelSummary() {
         needsOrder: 0,
         bringSamples: 0,
         bringStarterKit: 0,
+        needsSwitch: 0,
         interested: 0,
         notInterested: 0,
         notAsked: 0,
@@ -344,6 +350,7 @@ export function useTubeIntelSummary() {
         if (item.needs_order) summary.needsOrder++;
         if (item.bring_samples) summary.bringSamples++;
         if (item.bring_starter_kit) summary.bringStarterKit++;
+        if (item.needs_switch) summary.needsSwitch++;
         
         // New interest-based counts
         if (item.owner_interested === true) summary.interested++;
