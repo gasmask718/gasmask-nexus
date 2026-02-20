@@ -45670,6 +45670,66 @@ export type Database = {
           },
         ]
       }
+      store_tube_switches: {
+        Row: {
+          created_at: string
+          estimated_old_tube_quantity: number
+          id: string
+          notes: string | null
+          old_tube_batch_id: string | null
+          old_tube_type: string | null
+          store_id: string
+          switch_reason: string
+          switched_by_user_id: string
+          switched_quantity: number
+          territory: string | null
+          verified: boolean
+        }
+        Insert: {
+          created_at?: string
+          estimated_old_tube_quantity?: number
+          id?: string
+          notes?: string | null
+          old_tube_batch_id?: string | null
+          old_tube_type?: string | null
+          store_id: string
+          switch_reason: string
+          switched_by_user_id: string
+          switched_quantity?: number
+          territory?: string | null
+          verified?: boolean
+        }
+        Update: {
+          created_at?: string
+          estimated_old_tube_quantity?: number
+          id?: string
+          notes?: string | null
+          old_tube_batch_id?: string | null
+          old_tube_type?: string | null
+          store_id?: string
+          switch_reason?: string
+          switched_by_user_id?: string
+          switched_quantity?: number
+          territory?: string | null
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_tube_switches_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_tube_switches_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       store_vertical_permissions: {
         Row: {
           allowed_brands: string[] | null
