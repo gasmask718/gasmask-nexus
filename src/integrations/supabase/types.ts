@@ -6602,6 +6602,236 @@ export type Database = {
           },
         ]
       }
+      audit_approvals_log: {
+        Row: {
+          action: string
+          actor_id: string
+          after: Json | null
+          batch_id: string | null
+          before: Json | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          note: string | null
+          store_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          after?: Json | null
+          batch_id?: string | null
+          before?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          note?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          after?: Json | null
+          batch_id?: string | null
+          before?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          note?: string | null
+          store_id?: string | null
+        }
+        Relationships: []
+      }
+      audit_batches: {
+        Row: {
+          created_at: string
+          created_by: string
+          error_message: string | null
+          id: string
+          model_name: string | null
+          raw_text: string
+          source_type: string
+          status: string
+          totals: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          error_message?: string | null
+          id?: string
+          model_name?: string | null
+          raw_text: string
+          source_type: string
+          status?: string
+          totals?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          id?: string
+          model_name?: string | null
+          raw_text?: string
+          source_type?: string
+          status?: string
+          totals?: Json
+        }
+        Relationships: []
+      }
+      audit_flags: {
+        Row: {
+          batch_id: string
+          confidence_score: number
+          created_at: string
+          description: string
+          event_id: string | null
+          evidence: Json
+          flag_type: string
+          id: string
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          status: string
+          store_id: string | null
+          title: string
+        }
+        Insert: {
+          batch_id: string
+          confidence_score: number
+          created_at?: string
+          description: string
+          event_id?: string | null
+          evidence?: Json
+          flag_type: string
+          id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: string
+          status?: string
+          store_id?: string | null
+          title: string
+        }
+        Update: {
+          batch_id?: string
+          confidence_score?: number
+          created_at?: string
+          description?: string
+          event_id?: string | null
+          evidence?: Json
+          flag_type?: string
+          id?: string
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          status?: string
+          store_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_flags_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "audit_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_flags_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "audit_note_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_invoice_drafts: {
+        Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
+          batch_id: string
+          confidence_score: number
+          created_at: string
+          currency: string
+          finalize_status: string
+          finalized_at: string | null
+          finalized_by: string | null
+          finalized_invoice_id: string | null
+          id: string
+          invoice_date: string | null
+          line_items: Json
+          notes: string | null
+          payment_status: string
+          source_event_ids: string[]
+          source_raw_excerpt: string | null
+          store_id: string | null
+          subtotal: number | null
+          taxes: number | null
+          total: number | null
+        }
+        Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_id: string
+          confidence_score: number
+          created_at?: string
+          currency?: string
+          finalize_status?: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          finalized_invoice_id?: string | null
+          id?: string
+          invoice_date?: string | null
+          line_items?: Json
+          notes?: string | null
+          payment_status?: string
+          source_event_ids?: string[]
+          source_raw_excerpt?: string | null
+          store_id?: string | null
+          subtotal?: number | null
+          taxes?: number | null
+          total?: number | null
+        }
+        Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          batch_id?: string
+          confidence_score?: number
+          created_at?: string
+          currency?: string
+          finalize_status?: string
+          finalized_at?: string | null
+          finalized_by?: string | null
+          finalized_invoice_id?: string | null
+          id?: string
+          invoice_date?: string | null
+          line_items?: Json
+          notes?: string | null
+          payment_status?: string
+          source_event_ids?: string[]
+          source_raw_excerpt?: string | null
+          store_id?: string | null
+          subtotal?: number | null
+          taxes?: number | null
+          total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_invoice_drafts_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "audit_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_lock: {
         Row: {
           locked: boolean
@@ -6730,6 +6960,80 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      audit_note_events: {
+        Row: {
+          amount_paid: number | null
+          amount_unpaid: number | null
+          batch_id: string
+          brand: string | null
+          confidence_score: number
+          created_at: string
+          event_date: string | null
+          event_type: string
+          id: string
+          parsed: Json
+          product: string | null
+          quantity_numeric: number | null
+          quantity_raw: string | null
+          raw_line: string
+          severity: string
+          sku: string | null
+          store_id: string | null
+          store_match_confidence: number | null
+          store_match_method: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          amount_unpaid?: number | null
+          batch_id: string
+          brand?: string | null
+          confidence_score: number
+          created_at?: string
+          event_date?: string | null
+          event_type: string
+          id?: string
+          parsed?: Json
+          product?: string | null
+          quantity_numeric?: number | null
+          quantity_raw?: string | null
+          raw_line: string
+          severity?: string
+          sku?: string | null
+          store_id?: string | null
+          store_match_confidence?: number | null
+          store_match_method?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          amount_unpaid?: number | null
+          batch_id?: string
+          brand?: string | null
+          confidence_score?: number
+          created_at?: string
+          event_date?: string | null
+          event_type?: string
+          id?: string
+          parsed?: Json
+          product?: string | null
+          quantity_numeric?: number | null
+          quantity_raw?: string | null
+          raw_line?: string
+          severity?: string
+          sku?: string | null
+          store_id?: string | null
+          store_match_confidence?: number | null
+          store_match_method?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_note_events_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "audit_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_trail: {
         Row: {

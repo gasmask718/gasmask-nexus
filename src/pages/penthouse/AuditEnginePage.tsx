@@ -2,14 +2,13 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   Shield, Search, FileText, AlertTriangle, FileWarning, Loader2,
-  CheckCircle, XCircle, Eye, ChevronDown, ChevronUp, Send,
-  TrendingUp, DollarSign, AlertCircle, ClipboardList
+  CheckCircle, XCircle, Eye, Send,
+  TrendingUp, DollarSign, AlertCircle, ClipboardList, Lock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
@@ -24,11 +23,13 @@ import {
   useAuditMetrics,
   useProcessDraft,
   useResolveFlag,
+  useFinalizeIntent,
   type AuditInvoiceDraft,
   type AuditFlag,
+  type AuditBatch,
 } from '@/hooks/useAuditEngine';
 
-// ═══ Severity Colors ═══
+// ═══ Color Maps ═══
 const SEVERITY_COLORS: Record<string, string> = {
   critical: 'bg-red-600/20 text-red-400 border-red-600/30',
   high: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
@@ -44,6 +45,8 @@ const FLAG_TYPE_LABELS: Record<string, string> = {
   QUANTITY_UNPRICED: '📦 Quantity Unpriced',
   STORE_NOT_LINKED: '🔗 Store Not Linked',
   FOLLOW_UP_REQUIRED: '📞 Follow-Up Required',
+  DATE_AMBIGUOUS: '📅 Date Ambiguous',
+  CONFLICTING_AMOUNTS: '⚠️ Conflicting Amounts',
 };
 
 const EVENT_TYPE_COLORS: Record<string, string> = {
@@ -52,10 +55,8 @@ const EVENT_TYPE_COLORS: Record<string, string> = {
   visit: 'bg-blue-500/15 text-blue-400',
   order_request: 'bg-purple-500/15 text-purple-400',
   unpaid_balance: 'bg-red-500/15 text-red-400',
-  sticker_check: 'bg-yellow-500/15 text-yellow-400',
-  sample_drop: 'bg-cyan-500/15 text-cyan-400',
-  switch_tubes: 'bg-orange-500/15 text-orange-400',
-  other: 'bg-muted text-muted-foreground',
+  inventory_check: 'bg-yellow-500/15 text-yellow-400',
+  note_only: 'bg-cyan-500/15 text-cyan-400',
   unknown: 'bg-muted text-muted-foreground',
 };
 
@@ -65,6 +66,7 @@ export default function AuditEnginePage() {
   const [activeTab, setActiveTab] = useState('ingest');
   const [draftDialog, setDraftDialog] = useState<AuditInvoiceDraft | null>(null);
   const [flagDialog, setFlagDialog] = useState<AuditFlag | null>(null);
+  const [finalizeDialog, setFinalizeDialog] = useState<AuditInvoiceDraft | null>(null);
   const [actionNotes, setActionNotes] = useState('');
 
   const parseNotes = useParseNotes();
@@ -75,6 +77,7 @@ export default function AuditEnginePage() {
   const { data: metrics } = useAuditMetrics();
   const processDraft = useProcessDraft();
   const resolveFlag = useResolveFlag();
+  const finalizeIntent = useFinalizeIntent();
 
   const handleParse = async () => {
     if (!rawText.trim()) return;
@@ -86,20 +89,22 @@ export default function AuditEnginePage() {
 
   const handleDraftAction = async (action: 'approve' | 'reject') => {
     if (!draftDialog) return;
-    await processDraft.mutateAsync({
-      draftId: draftDialog.id,
-      action,
-      notes: actionNotes,
-      rejectionReason: action === 'reject' ? actionNotes : undefined,
-    });
+    await processDraft.mutateAsync({ draftId: draftDialog.id, action, notes: actionNotes });
     setDraftDialog(null);
     setActionNotes('');
   };
 
-  const handleResolveFlag = async () => {
+  const handleResolveFlag = async (action: 'resolve' | 'dismiss' = 'resolve') => {
     if (!flagDialog) return;
-    await resolveFlag.mutateAsync({ flagId: flagDialog.id, notes: actionNotes });
+    await resolveFlag.mutateAsync({ flagId: flagDialog.id, action, notes: actionNotes });
     setFlagDialog(null);
+    setActionNotes('');
+  };
+
+  const handleFinalizeIntent = async () => {
+    if (!finalizeDialog) return;
+    await finalizeIntent.mutateAsync({ draftId: finalizeDialog.id, notes: actionNotes });
+    setFinalizeDialog(null);
     setActionNotes('');
   };
 
@@ -122,9 +127,9 @@ export default function AuditEnginePage() {
         <MetricCard icon={AlertTriangle} label="Open Flags" value={metrics?.openFlags || 0} color="text-orange-400" />
         <MetricCard icon={FileText} label="Pending Drafts" value={metrics?.pendingDrafts || 0} color="text-yellow-400" />
         <MetricCard icon={CheckCircle} label="Approved" value={metrics?.approvedDrafts || 0} color="text-green-400" />
+        <MetricCard icon={Lock} label="Ready to Finalize" value={metrics?.readyToFinalize || 0} color="text-blue-400" />
         <MetricCard icon={DollarSign} label="Est. Recovery" value={`$${(metrics?.estimatedRecovery || 0).toLocaleString()}`} color="text-emerald-400" />
         <MetricCard icon={FileWarning} label="Missing Invoices" value={metrics?.missingInvoices || 0} color="text-red-400" />
-        <MetricCard icon={TrendingUp} label="Unmatched $" value={metrics?.unmatchedPayments || 0} color="text-purple-400" />
       </div>
 
       {/* Main Tabs */}
@@ -160,11 +165,7 @@ export default function AuditEnginePage() {
                 <p className="text-xs text-muted-foreground">
                   {rawText.length} characters • AI will parse into structured events
                 </p>
-                <Button
-                  onClick={handleParse}
-                  disabled={!rawText.trim() || parseNotes.isPending}
-                  className="gap-2"
-                >
+                <Button onClick={handleParse} disabled={!rawText.trim() || parseNotes.isPending} className="gap-2">
                   {parseNotes.isPending ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Parsing...</>
                   ) : (
@@ -178,18 +179,6 @@ export default function AuditEnginePage() {
               </p>
             </CardContent>
           </Card>
-
-          {/* AI Summary if just parsed */}
-          {selectedBatchId && batches?.find(b => b.id === selectedBatchId)?.ai_summary && (
-            <Card className="border-yellow-500/30 bg-yellow-500/5">
-              <CardContent className="pt-4">
-                <p className="text-sm font-medium text-yellow-400 mb-1">🧠 AI Summary</p>
-                <p className="text-sm text-muted-foreground">
-                  {batches?.find(b => b.id === selectedBatchId)?.ai_summary}
-                </p>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         {/* ═══ EVENTS TAB ═══ */}
@@ -204,11 +193,11 @@ export default function AuditEnginePage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Store</TableHead>
+                    <TableHead>Store Match</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Product</TableHead>
+                    <TableHead>Brand / Product</TableHead>
                     <TableHead>Qty</TableHead>
-                    <TableHead>Payment</TableHead>
+                    <TableHead>Paid</TableHead>
                     <TableHead>Unpaid</TableHead>
                     <TableHead>Confidence</TableHead>
                   </TableRow>
@@ -225,23 +214,30 @@ export default function AuditEnginePage() {
                       <TableCell className="text-sm">
                         {evt.event_date ? format(new Date(evt.event_date), 'MMM d') : '—'}
                       </TableCell>
-                      <TableCell className="text-sm font-medium">
-                        {evt.store_name_raw || '—'}
-                        {evt.linked && <Badge variant="outline" className="ml-1 text-[10px]">Linked</Badge>}
+                      <TableCell className="text-sm">
+                        <div className="flex items-center gap-1">
+                          {evt.store_match_method && evt.store_match_method !== 'unlinked' ? (
+                            <Badge variant="outline" className="text-[10px]">{evt.store_match_method}</Badge>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">unlinked</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge className={EVENT_TYPE_COLORS[evt.event_type] || EVENT_TYPE_COLORS.unknown}>
                           {evt.event_type}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{evt.product || '—'}</TableCell>
-                      <TableCell className="text-sm">{evt.quantity ?? '—'}</TableCell>
                       <TableCell className="text-sm">
-                        {evt.payment_amount ? `$${evt.payment_amount}` : '—'}
+                        {evt.brand || evt.product || '—'}
+                      </TableCell>
+                      <TableCell className="text-sm">{evt.quantity_raw || evt.quantity_numeric || '—'}</TableCell>
+                      <TableCell className="text-sm">
+                        {evt.amount_paid ? `$${evt.amount_paid}` : '—'}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {evt.unpaid_balance ? (
-                          <span className="text-red-400">${evt.unpaid_balance}</span>
+                        {evt.amount_unpaid ? (
+                          <span className="text-red-400">${evt.amount_unpaid}</span>
                         ) : '—'}
                       </TableCell>
                       <TableCell>
@@ -274,7 +270,7 @@ export default function AuditEnginePage() {
                 <div
                   key={flag.id}
                   className={`border rounded-lg p-4 space-y-2 ${
-                    flag.status === 'resolved' ? 'opacity-50' : ''
+                    flag.status === 'resolved' || flag.status === 'dismissed' ? 'opacity-50' : ''
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -285,16 +281,20 @@ export default function AuditEnginePage() {
                       <span className="text-sm font-medium">
                         {FLAG_TYPE_LABELS[flag.flag_type] || flag.flag_type}
                       </span>
+                      <span className="text-xs text-muted-foreground">{flag.title}</span>
                     </div>
                     {flag.status === 'open' ? (
                       <Button size="sm" variant="outline" onClick={() => { setFlagDialog(flag); setActionNotes(''); }}>
                         Resolve
                       </Button>
                     ) : (
-                      <Badge variant="outline" className="text-green-400">Resolved</Badge>
+                      <Badge variant="outline" className="text-green-400">{flag.status}</Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">{flag.description}</p>
+                  <div className="flex items-center gap-2">
+                    <ConfidenceBadge score={flag.confidence_score} />
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -310,8 +310,8 @@ export default function AuditEnginePage() {
                 Invoice Drafts {drafts?.length ? `(${drafts.length})` : ''}
               </CardTitle>
               <CardDescription>
-                AI-generated invoice drafts. Review and approve to create real invoices.
-                Nothing touches revenue until you confirm.
+                AI-generated invoice drafts. Approve → Finalize (two-step gate).
+                Nothing touches revenue until you confirm finalization.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -324,6 +324,7 @@ export default function AuditEnginePage() {
                   key={draft.id}
                   draft={draft}
                   onReview={() => { setDraftDialog(draft); setActionNotes(''); }}
+                  onFinalize={() => { setFinalizeDialog(draft); setActionNotes(''); }}
                 />
               ))}
             </CardContent>
@@ -362,13 +363,13 @@ export default function AuditEnginePage() {
                         {format(new Date(batch.created_at), 'MMM d, h:mm a')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={batch.status === 'completed' ? 'default' : 'secondary'}>
+                        <Badge variant={batch.status === 'completed' ? 'default' : batch.status === 'failed' ? 'destructive' : 'secondary'}>
                           {batch.status}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-sm">{batch.total_events}</TableCell>
-                      <TableCell className="text-sm">{batch.total_flags}</TableCell>
-                      <TableCell className="text-sm">{batch.total_drafts}</TableCell>
+                      <TableCell className="text-sm">{batch.totals?.events_created ?? 0}</TableCell>
+                      <TableCell className="text-sm">{batch.totals?.flags_created ?? 0}</TableCell>
+                      <TableCell className="text-sm">{batch.totals?.drafts_created ?? 0}</TableCell>
                       <TableCell>
                         <Button
                           size="sm"
@@ -404,23 +405,23 @@ export default function AuditEnginePage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Store:</span>{' '}
-                  <span className="font-medium">{draftDialog.store_name_inferred || 'Unknown'}</span>
+                  <span className="font-medium">{draftDialog.notes || 'Unknown'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Date:</span>{' '}
-                  <span>{draftDialog.inferred_date || 'Unknown'}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Brand:</span>{' '}
-                  <span>{draftDialog.brand || 'Unknown'}</span>
+                  <span>{draftDialog.invoice_date || 'Unknown'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Total:</span>{' '}
-                  <span className="font-bold">${draftDialog.estimated_total}</span>
+                  <span className="font-bold">${draftDialog.total ?? 0}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Payment:</span>{' '}
-                  <Badge variant="outline">{draftDialog.payment_status_inferred}</Badge>
+                  <Badge variant="outline">{draftDialog.payment_status}</Badge>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Currency:</span>{' '}
+                  <span>{draftDialog.currency}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Confidence:</span>{' '}
@@ -428,27 +429,27 @@ export default function AuditEnginePage() {
                 </div>
               </div>
 
-              {/* Products */}
-              {Array.isArray(draftDialog.products) && draftDialog.products.length > 0 && (
+              {/* Line Items */}
+              {Array.isArray(draftDialog.line_items) && draftDialog.line_items.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium mb-1">Products:</p>
+                  <p className="text-sm font-medium mb-1">Line Items:</p>
                   <div className="space-y-1">
-                    {draftDialog.products.map((p: any, i: number) => (
+                    {draftDialog.line_items.map((li, i) => (
                       <div key={i} className="text-sm text-muted-foreground flex justify-between">
-                        <span>{p.name} × {p.quantity}</span>
-                        <span>${p.estimated_unit_price || '?'}/ea</span>
+                        <span>{li.brand || li.product || 'Item'} × {li.qty_raw || li.qty || '?'}</span>
+                        <span>${li.line_total || '?'}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Source notes */}
-              {draftDialog.source_notes && (
+              {/* Source excerpt */}
+              {draftDialog.source_raw_excerpt && (
                 <div>
                   <p className="text-sm font-medium mb-1">Source Notes:</p>
                   <p className="text-xs text-muted-foreground bg-muted/50 p-2 rounded font-mono">
-                    {draftDialog.source_notes}
+                    {draftDialog.source_raw_excerpt}
                   </p>
                 </div>
               )}
@@ -466,18 +467,10 @@ export default function AuditEnginePage() {
             </div>
           )}
           <DialogFooter className="gap-2">
-            <Button
-              variant="destructive"
-              onClick={() => handleDraftAction('reject')}
-              disabled={processDraft.isPending}
-            >
+            <Button variant="destructive" onClick={() => handleDraftAction('reject')} disabled={processDraft.isPending}>
               <XCircle className="h-4 w-4 mr-1" /> Reject
             </Button>
-            <Button
-              onClick={() => handleDraftAction('approve')}
-              disabled={processDraft.isPending}
-              className="bg-green-600 hover:bg-green-700"
-            >
+            <Button onClick={() => handleDraftAction('approve')} disabled={processDraft.isPending} className="bg-green-600 hover:bg-green-700">
               <CheckCircle className="h-4 w-4 mr-1" /> Approve Draft
             </Button>
           </DialogFooter>
@@ -495,6 +488,7 @@ export default function AuditEnginePage() {
           </DialogHeader>
           {flagDialog && (
             <div className="space-y-4">
+              <p className="text-sm font-medium">{flagDialog.title}</p>
               <p className="text-sm text-muted-foreground">{flagDialog.description}</p>
               <Textarea
                 placeholder="Resolution notes..."
@@ -504,9 +498,70 @@ export default function AuditEnginePage() {
               />
             </div>
           )}
-          <DialogFooter>
-            <Button onClick={handleResolveFlag} disabled={resolveFlag.isPending}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleResolveFlag('dismiss')} disabled={resolveFlag.isPending}>
+              Dismiss
+            </Button>
+            <Button onClick={() => handleResolveFlag('resolve')} disabled={resolveFlag.isPending}>
               <CheckCircle className="h-4 w-4 mr-1" /> Mark Resolved
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ FINALIZE CONFIRMATION DIALOG ═══ */}
+      <Dialog open={!!finalizeDialog} onOpenChange={(o) => !o && setFinalizeDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5 text-yellow-500" />
+              Confirm Finalization Intent
+            </DialogTitle>
+            <DialogDescription>
+              This will prepare this draft for live invoice creation. Revenue, commissions, and inventory
+              will be affected only after the final confirmation step.
+            </DialogDescription>
+          </DialogHeader>
+          {finalizeDialog && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Store:</span>
+                  <span className="font-medium">{finalizeDialog.notes || 'Unknown'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total:</span>
+                  <span className="font-bold text-lg">${finalizeDialog.total ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Line Items:</span>
+                  <span>{finalizeDialog.line_items?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Status:</span>
+                  <Badge variant="outline">{finalizeDialog.payment_status}</Badge>
+                </div>
+              </div>
+
+              <Textarea
+                placeholder="Finalization notes (optional)..."
+                value={actionNotes}
+                onChange={(e) => setActionNotes(e.target.value)}
+                className="min-h-[60px]"
+              />
+
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                <p className="text-xs text-yellow-400">
+                  ⚠️ After confirming intent, the "Create Live Invoice" step will generate a real invoice
+                  in the accounting system. This action is irreversible.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinalizeDialog(null)}>Cancel</Button>
+            <Button onClick={handleFinalizeIntent} disabled={finalizeIntent.isPending} className="bg-yellow-600 hover:bg-yellow-700">
+              <Lock className="h-4 w-4 mr-1" /> Prepare Finalization
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -538,11 +593,21 @@ function ConfidenceBadge({ score }: { score: number }) {
   return <span className={`text-sm font-mono font-medium ${color}`}>{score}%</span>;
 }
 
-function DraftCard({ draft, onReview }: { draft: AuditInvoiceDraft; onReview: () => void }) {
+function DraftCard({ draft, onReview, onFinalize }: {
+  draft: AuditInvoiceDraft;
+  onReview: () => void;
+  onFinalize: () => void;
+}) {
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
     approved: 'bg-green-500/15 text-green-400 border-green-500/30',
     rejected: 'bg-red-500/15 text-red-400 border-red-500/30',
+  };
+
+  const finalizeColors: Record<string, string> = {
+    not_finalized: '',
+    ready_to_finalize: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+    finalized: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   };
 
   return (
@@ -550,20 +615,28 @@ function DraftCard({ draft, onReview }: { draft: AuditInvoiceDraft; onReview: ()
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-yellow-400" />
-          <span className="font-medium">{draft.store_name_inferred || 'Unknown Store'}</span>
+          <span className="font-medium">{draft.notes || 'Unknown Store'}</span>
           <Badge className={statusColors[draft.approval_status] || ''}>{draft.approval_status}</Badge>
+          {draft.finalize_status !== 'not_finalized' && (
+            <Badge className={finalizeColors[draft.finalize_status] || ''}>{draft.finalize_status}</Badge>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold">${draft.estimated_total}</span>
+          <span className="text-lg font-bold">${draft.total ?? 0}</span>
           {draft.approval_status === 'pending' && (
             <Button size="sm" onClick={onReview}>Review</Button>
+          )}
+          {draft.finalize_status === 'ready_to_finalize' && (
+            <Button size="sm" variant="outline" className="border-yellow-500/50 text-yellow-400" onClick={onFinalize}>
+              <Lock className="h-3 w-3 mr-1" /> Finalize
+            </Button>
           )}
         </div>
       </div>
       <div className="grid grid-cols-4 gap-2 text-sm text-muted-foreground">
-        <div>📅 {draft.inferred_date || 'No date'}</div>
-        <div>🏷 {draft.brand || 'Unknown brand'}</div>
-        <div>💳 {draft.payment_status_inferred}</div>
+        <div>📅 {draft.invoice_date || 'No date'}</div>
+        <div>📦 {draft.line_items?.length || 0} items</div>
+        <div>💳 {draft.payment_status}</div>
         <div><ConfidenceBadge score={draft.confidence_score} /></div>
       </div>
     </div>
