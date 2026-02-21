@@ -133,3 +133,6 @@ verify_jwt = false
 
 [functions.audit-note-parser]
 verify_jwt = false
+
+[functions.finalize-audit-draft]
+verify_jwt = false

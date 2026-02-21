@@ -24,6 +24,7 @@ import {
   useProcessDraft,
   useResolveFlag,
   useFinalizeIntent,
+  useFinalizeDraft,
   type AuditInvoiceDraft,
   type AuditFlag,
   type AuditBatch,
@@ -67,6 +68,7 @@ export default function AuditEnginePage() {
   const [draftDialog, setDraftDialog] = useState<AuditInvoiceDraft | null>(null);
   const [flagDialog, setFlagDialog] = useState<AuditFlag | null>(null);
   const [finalizeDialog, setFinalizeDialog] = useState<AuditInvoiceDraft | null>(null);
+  const [confirmFinalizeDialog, setConfirmFinalizeDialog] = useState<AuditInvoiceDraft | null>(null);
   const [actionNotes, setActionNotes] = useState('');
 
   const parseNotes = useParseNotes();
@@ -78,6 +80,7 @@ export default function AuditEnginePage() {
   const processDraft = useProcessDraft();
   const resolveFlag = useResolveFlag();
   const finalizeIntent = useFinalizeIntent();
+  const finalizeDraft = useFinalizeDraft();
 
   const handleParse = async () => {
     if (!rawText.trim()) return;
@@ -106,6 +109,12 @@ export default function AuditEnginePage() {
     await finalizeIntent.mutateAsync({ draftId: finalizeDialog.id, notes: actionNotes });
     setFinalizeDialog(null);
     setActionNotes('');
+  };
+
+  const handleCreateLiveInvoice = async () => {
+    if (!confirmFinalizeDialog) return;
+    await finalizeDraft.mutateAsync(confirmFinalizeDialog.id);
+    setConfirmFinalizeDialog(null);
   };
 
   return (
@@ -325,6 +334,7 @@ export default function AuditEnginePage() {
                   draft={draft}
                   onReview={() => { setDraftDialog(draft); setActionNotes(''); }}
                   onFinalize={() => { setFinalizeDialog(draft); setActionNotes(''); }}
+                  onCreateInvoice={() => { setConfirmFinalizeDialog(draft); }}
                 />
               ))}
             </CardContent>
@@ -566,6 +576,91 @@ export default function AuditEnginePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ═══ CREATE LIVE INVOICE CONFIRMATION ═══ */}
+      <Dialog open={!!confirmFinalizeDialog} onOpenChange={(o) => !o && setConfirmFinalizeDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Create Live Invoice — Final Confirmation
+            </DialogTitle>
+            <DialogDescription>
+              This will create a REAL invoice in the accounting system. This action is irreversible.
+            </DialogDescription>
+          </DialogHeader>
+          {confirmFinalizeDialog && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Store:</span>
+                  <span className="font-medium">{confirmFinalizeDialog.notes || 'Unknown'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total:</span>
+                  <span className="font-bold text-lg">${confirmFinalizeDialog.total ?? 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Line Items:</span>
+                  <span>{confirmFinalizeDialog.line_items?.length || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment Status:</span>
+                  <Badge variant="outline">{confirmFinalizeDialog.payment_status}</Badge>
+                </div>
+              </div>
+
+              {(!confirmFinalizeDialog.total || confirmFinalizeDialog.total <= 0) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <p className="text-xs text-destructive">
+                    ❌ Cannot finalize: total is zero or missing. Edit the draft first.
+                  </p>
+                </div>
+              )}
+              {(!confirmFinalizeDialog.line_items?.length) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <p className="text-xs text-destructive">
+                    ❌ Cannot finalize: no line items. Edit the draft first.
+                  </p>
+                </div>
+              )}
+              {(!confirmFinalizeDialog.store_id) && (
+                <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                  <p className="text-xs text-destructive">
+                    ❌ Cannot finalize: no linked store. Link a store first.
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3">
+                <p className="text-xs text-destructive font-medium">
+                  ⚠️ This will create a live invoice record. Revenue will be affected. This cannot be undone.
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmFinalizeDialog(null)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleCreateLiveInvoice}
+              disabled={
+                finalizeDraft.isPending ||
+                !confirmFinalizeDialog?.total ||
+                confirmFinalizeDialog.total <= 0 ||
+                !confirmFinalizeDialog?.line_items?.length ||
+                !confirmFinalizeDialog?.store_id
+              }
+            >
+              {finalizeDraft.isPending ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Creating...</>
+              ) : (
+                <><FileText className="h-4 w-4 mr-1" /> Create Live Invoice</>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -593,10 +688,11 @@ function ConfidenceBadge({ score }: { score: number }) {
   return <span className={`text-sm font-mono font-medium ${color}`}>{score}%</span>;
 }
 
-function DraftCard({ draft, onReview, onFinalize }: {
+function DraftCard({ draft, onReview, onFinalize, onCreateInvoice }: {
   draft: AuditInvoiceDraft;
   onReview: () => void;
   onFinalize: () => void;
+  onCreateInvoice: () => void;
 }) {
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
@@ -627,9 +723,19 @@ function DraftCard({ draft, onReview, onFinalize }: {
             <Button size="sm" onClick={onReview}>Review</Button>
           )}
           {draft.finalize_status === 'ready_to_finalize' && (
-            <Button size="sm" variant="outline" className="border-yellow-500/50 text-yellow-400" onClick={onFinalize}>
-              <Lock className="h-3 w-3 mr-1" /> Finalize
-            </Button>
+            <>
+              <Button size="sm" variant="outline" className="border-yellow-500/50 text-yellow-400" onClick={onFinalize}>
+                <Lock className="h-3 w-3 mr-1" /> Prepare
+              </Button>
+              <Button size="sm" variant="destructive" onClick={onCreateInvoice}>
+                <FileText className="h-3 w-3 mr-1" /> Create Invoice
+              </Button>
+            </>
+          )}
+          {draft.finalize_status === 'finalized' && (
+            <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+              <CheckCircle className="h-3 w-3 mr-1" /> Finalized ✅
+            </Badge>
           )}
         </div>
       </div>
@@ -639,6 +745,11 @@ function DraftCard({ draft, onReview, onFinalize }: {
         <div>💳 {draft.payment_status}</div>
         <div><ConfidenceBadge score={draft.confidence_score} /></div>
       </div>
+      {draft.finalized_invoice_id && (
+        <div className="mt-2 text-xs text-emerald-400">
+          Invoice ID: {draft.finalized_invoice_id}
+        </div>
+      )}
     </div>
   );
 }

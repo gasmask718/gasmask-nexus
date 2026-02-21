@@ -322,7 +322,7 @@ export function useResolveFlag() {
   });
 }
 
-// ═══ Finalize Intent (two-step gate) ═══
+// ═══ Finalize Intent (two-step gate — Step 1) ═══
 export function useFinalizeIntent() {
   const queryClient = useQueryClient();
 
@@ -331,7 +331,6 @@ export function useFinalizeIntent() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Log finalize_intent
       const { data: draft } = await db
         .from('audit_invoice_drafts')
         .select('*')
@@ -361,6 +360,36 @@ export function useFinalizeIntent() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to prepare finalization');
+    },
+  });
+}
+
+// ═══ Finalize Draft — Step 2: Create Live Invoice ═══
+export function useFinalizeDraft() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (draftId: string) => {
+      const { data, error } = await supabase.functions.invoke('finalize-audit-draft', {
+        body: { draft_id: draftId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as {
+        status: string;
+        draft_id: string;
+        invoice_id: string;
+        invoice_number: string;
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-drafts'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      toast.success(`✅ Live invoice created: ${data.invoice_number}`);
+    },
+    onError: (error: any) => {
+      console.error('Finalization failed:', error);
+      toast.error(error.message || 'Failed to create live invoice');
     },
   });
 }
