@@ -136,3 +136,6 @@ verify_jwt = false
 
 [functions.finalize-audit-draft]
 verify_jwt = false
+
+[functions.reconcile-audit-batch]
+verify_jwt = false
