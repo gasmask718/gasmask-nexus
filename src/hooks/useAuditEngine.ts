@@ -2,76 +2,99 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Cast helper for new tables not yet in generated types
+// Cast helper for tables not yet in generated types
 const db = supabase as any;
 
-// ═══ Types ═══
+// ═══ Types (matching exact DB schema) ═══
+
 export interface AuditBatch {
   id: string;
-  raw_input: string;
-  input_type: string;
-  total_events: number;
-  total_flags: number;
-  total_drafts: number;
-  status: string;
-  ai_summary: string | null;
-  processed_at: string | null;
   created_at: string;
-  created_by: string | null;
+  created_by: string;
+  source_type: string;
+  raw_text: string;
+  model_name: string | null;
+  status: 'processing' | 'completed' | 'failed';
+  error_message: string | null;
+  totals: {
+    events_created?: number;
+    flags_created?: number;
+    drafts_created?: number;
+    unlinked_events?: number;
+  };
 }
 
 export interface AuditNoteEvent {
   id: string;
+  created_at: string;
   batch_id: string;
-  raw_text: string;
   store_id: string | null;
-  store_name_raw: string | null;
+  store_match_method: 'exact' | 'fuzzy' | 'address' | 'phone' | 'unlinked' | null;
+  store_match_confidence: number | null;
   event_date: string | null;
   event_type: string;
+  severity: 'info' | 'warning' | 'critical';
+  brand: string | null;
   product: string | null;
-  quantity: number | null;
-  payment_amount: number | null;
-  unpaid_balance: number | null;
-  notes: string | null;
+  sku: string | null;
+  quantity_numeric: number | null;
+  quantity_raw: string | null;
+  amount_paid: number | null;
+  amount_unpaid: number | null;
+  raw_line: string;
+  parsed: Record<string, any>;
   confidence_score: number;
-  linked: boolean;
-  created_at: string;
 }
 
 export interface AuditFlag {
   id: string;
+  created_at: string;
   batch_id: string;
-  event_id: string | null;
   store_id: string | null;
+  event_id: string | null;
   flag_type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
   description: string;
-  severity: string;
-  status: string;
+  status: 'open' | 'in_review' | 'resolved' | 'dismissed';
+  resolution_note: string | null;
   resolved_by: string | null;
   resolved_at: string | null;
-  resolution_notes: string | null;
-  created_at: string;
+  evidence: Record<string, any>;
+  confidence_score: number;
 }
 
 export interface AuditInvoiceDraft {
   id: string;
+  created_at: string;
   batch_id: string;
   store_id: string | null;
-  store_name_inferred: string | null;
-  inferred_date: string | null;
-  brand: string | null;
-  products: any[];
-  estimated_total: number;
-  payment_status_inferred: string;
-  confidence_score: number;
+  invoice_date: string | null;
+  currency: string;
+  line_items: Array<{
+    brand?: string;
+    product?: string;
+    sku?: string;
+    qty?: number;
+    qty_raw?: string;
+    unit_price?: number;
+    line_total?: number;
+  }>;
+  subtotal: number | null;
+  taxes: number | null;
+  total: number | null;
+  payment_status: 'unknown' | 'unpaid' | 'partial' | 'paid';
+  notes: string | null;
   source_event_ids: string[];
-  source_notes: string | null;
-  approval_status: string;
+  source_raw_excerpt: string | null;
+  confidence_score: number;
+  approval_status: 'pending' | 'approved' | 'rejected';
   approved_by: string | null;
   approved_at: string | null;
-  rejection_reason: string | null;
+  finalize_status: 'not_finalized' | 'ready_to_finalize' | 'finalized';
   finalized_invoice_id: string | null;
-  created_at: string;
+  finalized_by: string | null;
+  finalized_at: string | null;
 }
 
 // ═══ Parse Notes ═══
@@ -81,16 +104,19 @@ export function useParseNotes() {
   return useMutation({
     mutationFn: async (rawText: string) => {
       const { data, error } = await supabase.functions.invoke('audit-note-parser', {
-        body: { rawText },
+        body: { raw_text: rawText, source_type: 'raw_text_paste' },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       return data as {
         batch_id: string;
-        total_events: number;
-        total_flags: number;
-        total_drafts: number;
-        summary: string | null;
+        status: string;
+        totals: {
+          events_created: number;
+          flags_created: number;
+          drafts_created: number;
+          unlinked_events: number;
+        };
       };
     },
     onSuccess: (data) => {
@@ -98,7 +124,9 @@ export function useParseNotes() {
       queryClient.invalidateQueries({ queryKey: ['audit-events'] });
       queryClient.invalidateQueries({ queryKey: ['audit-flags'] });
       queryClient.invalidateQueries({ queryKey: ['audit-drafts'] });
-      toast.success(`Parsed: ${data.total_events} events, ${data.total_flags} flags, ${data.total_drafts} drafts`);
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      const t = data.totals;
+      toast.success(`Parsed: ${t.events_created} events, ${t.flags_created} flags, ${t.drafts_created} drafts`);
     },
     onError: (error: any) => {
       console.error('Parse failed:', error);
@@ -177,38 +205,6 @@ export function useAuditDrafts(batchId: string | null) {
   });
 }
 
-// ═══ All Pending Drafts ═══
-export function usePendingDrafts() {
-  return useQuery({
-    queryKey: ['audit-drafts', 'pending'],
-    queryFn: async () => {
-      const { data, error } = await db
-        .from('audit_invoice_drafts')
-        .select('*')
-        .eq('approval_status', 'pending')
-        .order('confidence_score', { ascending: false });
-      if (error) throw error;
-      return (data || []) as AuditInvoiceDraft[];
-    },
-  });
-}
-
-// ═══ All Open Flags ═══
-export function useOpenFlags() {
-  return useQuery({
-    queryKey: ['audit-flags', 'open'],
-    queryFn: async () => {
-      const { data, error } = await db
-        .from('audit_flags')
-        .select('*')
-        .eq('status', 'open')
-        .order('severity', { ascending: false });
-      if (error) throw error;
-      return (data || []) as AuditFlag[];
-    },
-  });
-}
-
 // ═══ Approve/Reject Draft ═══
 export function useProcessDraft() {
   const queryClient = useQueryClient();
@@ -216,19 +212,18 @@ export function useProcessDraft() {
   return useMutation({
     mutationFn: async (params: {
       draftId: string;
-      action: 'approve' | 'reject' | 'edit';
+      action: 'approve' | 'reject';
       notes?: string;
-      rejectionReason?: string;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      await db.from('audit_approvals_log').insert({
-        draft_id: params.draftId,
-        action: params.action,
-        actor_id: user.id,
-        notes: params.notes || null,
-      });
+      // Get draft before state for audit log
+      const { data: draftBefore } = await db
+        .from('audit_invoice_drafts')
+        .select('*')
+        .eq('id', params.draftId)
+        .single();
 
       if (params.action === 'approve') {
         const { error } = await db
@@ -237,26 +232,37 @@ export function useProcessDraft() {
             approval_status: 'approved',
             approved_by: user.id,
             approved_at: new Date().toISOString(),
+            finalize_status: 'ready_to_finalize',
           })
           .eq('id', params.draftId);
         if (error) throw error;
-      } else if (params.action === 'reject') {
+      } else {
         const { error } = await db
           .from('audit_invoice_drafts')
-          .update({
-            approval_status: 'rejected',
-            rejection_reason: params.rejectionReason || params.notes || null,
-          })
+          .update({ approval_status: 'rejected' })
           .eq('id', params.draftId);
         if (error) throw error;
       }
+
+      // Write immutable audit log
+      await db.from('audit_approvals_log').insert({
+        actor_id: user.id,
+        entity_type: 'draft',
+        entity_id: params.draftId,
+        action: params.action,
+        before: draftBefore || null,
+        after: { approval_status: params.action === 'approve' ? 'approved' : 'rejected' },
+        note: params.notes || null,
+        batch_id: draftBefore?.batch_id || null,
+        store_id: draftBefore?.store_id || null,
+      });
 
       return true;
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['audit-drafts'] });
-      queryClient.invalidateQueries({ queryKey: ['audit-flags'] });
-      toast.success(vars.action === 'approve' ? 'Draft approved' : 'Draft rejected');
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      toast.success(vars.action === 'approve' ? 'Draft approved → ready to finalize' : 'Draft rejected');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to process draft');
@@ -264,41 +270,97 @@ export function useProcessDraft() {
   });
 }
 
-// ═══ Resolve Flag ═══
+// ═══ Resolve / Dismiss Flag ═══
 export function useResolveFlag() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (params: { flagId: string; notes?: string }) => {
+    mutationFn: async (params: { flagId: string; action?: 'resolve' | 'dismiss'; notes?: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
+      const action = params.action || 'resolve';
+
+      const { data: flagBefore } = await db
+        .from('audit_flags')
+        .select('*')
+        .eq('id', params.flagId)
+        .single();
 
       const { error } = await db
         .from('audit_flags')
         .update({
-          status: 'resolved',
+          status: action === 'dismiss' ? 'dismissed' : 'resolved',
           resolved_by: user.id,
           resolved_at: new Date().toISOString(),
-          resolution_notes: params.notes || null,
+          resolution_note: params.notes || null,
         })
         .eq('id', params.flagId);
       if (error) throw error;
 
       await db.from('audit_approvals_log').insert({
-        flag_id: params.flagId,
-        action: 'resolve_flag',
         actor_id: user.id,
-        notes: params.notes || null,
+        entity_type: 'flag',
+        entity_id: params.flagId,
+        action: action,
+        before: flagBefore || null,
+        after: { status: action === 'dismiss' ? 'dismissed' : 'resolved' },
+        note: params.notes || null,
+        batch_id: flagBefore?.batch_id || null,
+        store_id: flagBefore?.store_id || null,
       });
 
       return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audit-flags'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
       toast.success('Flag resolved');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to resolve flag');
+    },
+  });
+}
+
+// ═══ Finalize Intent (two-step gate) ═══
+export function useFinalizeIntent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { draftId: string; notes?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Log finalize_intent
+      const { data: draft } = await db
+        .from('audit_invoice_drafts')
+        .select('*')
+        .eq('id', params.draftId)
+        .single();
+
+      if (draft?.approval_status !== 'approved' || draft?.finalize_status !== 'ready_to_finalize') {
+        throw new Error('Draft must be approved before finalization');
+      }
+
+      await db.from('audit_approvals_log').insert({
+        actor_id: user.id,
+        entity_type: 'draft',
+        entity_id: params.draftId,
+        action: 'finalize_intent',
+        before: draft,
+        note: params.notes || null,
+        batch_id: draft?.batch_id || null,
+        store_id: draft?.store_id || null,
+      });
+
+      return draft as AuditInvoiceDraft;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['audit-drafts'] });
+      toast.info('Finalization prepared — confirm to create live invoice');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to prepare finalization');
     },
   });
 }
@@ -309,30 +371,32 @@ export function useAuditMetrics() {
     queryKey: ['audit-metrics'],
     queryFn: async () => {
       const [batchesRes, flagsRes, draftsRes] = await Promise.all([
-        db.from('audit_batches').select('total_events, total_flags, total_drafts, status'),
+        db.from('audit_batches').select('totals, status'),
         db.from('audit_flags').select('status, flag_type'),
-        db.from('audit_invoice_drafts').select('approval_status, estimated_total'),
+        db.from('audit_invoice_drafts').select('approval_status, total, finalize_status'),
       ]);
 
-      const batches = (batchesRes.data || []) as any[];
-      const flags = (flagsRes.data || []) as any[];
-      const drafts = (draftsRes.data || []) as any[];
+      const batches = (batchesRes.data || []) as AuditBatch[];
+      const flags = (flagsRes.data || []) as AuditFlag[];
+      const drafts = (draftsRes.data || []) as AuditInvoiceDraft[];
 
-      const totalEvents = batches.reduce((sum: number, b: any) => sum + (b.total_events || 0), 0);
-      const openFlags = flags.filter((f: any) => f.status === 'open').length;
-      const pendingDrafts = drafts.filter((d: any) => d.approval_status === 'pending').length;
-      const approvedDrafts = drafts.filter((d: any) => d.approval_status === 'approved').length;
+      const totalEvents = batches.reduce((sum, b) => sum + (b.totals?.events_created || 0), 0);
+      const openFlags = flags.filter(f => f.status === 'open').length;
+      const pendingDrafts = drafts.filter(d => d.approval_status === 'pending').length;
+      const approvedDrafts = drafts.filter(d => d.approval_status === 'approved').length;
+      const readyToFinalize = drafts.filter(d => d.finalize_status === 'ready_to_finalize').length;
       const estimatedRecovery = drafts
-        .filter((d: any) => d.approval_status === 'approved')
-        .reduce((sum: number, d: any) => sum + (d.estimated_total || 0), 0);
-      const missingInvoices = flags.filter((f: any) => f.flag_type === 'MISSING_INVOICE').length;
-      const unmatchedPayments = flags.filter((f: any) => f.flag_type === 'PAYMENT_UNMATCHED').length;
+        .filter(d => d.approval_status === 'approved')
+        .reduce((sum, d) => sum + (d.total || 0), 0);
+      const missingInvoices = flags.filter(f => f.flag_type === 'MISSING_INVOICE').length;
+      const unmatchedPayments = flags.filter(f => f.flag_type === 'PAYMENT_UNMATCHED').length;
 
       return {
         totalEvents,
         openFlags,
         pendingDrafts,
         approvedDrafts,
+        readyToFinalize,
         estimatedRecovery,
         missingInvoices,
         unmatchedPayments,
