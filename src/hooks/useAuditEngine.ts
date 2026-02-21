@@ -22,6 +22,9 @@ export interface AuditBatch {
     drafts_created?: number;
     unlinked_events?: number;
   };
+  batch_status: 'open' | 'under_review' | 'verified_clean' | 'closed';
+  closed_at: string | null;
+  closed_by: string | null;
 }
 
 export interface AuditNoteEvent {
@@ -641,6 +644,76 @@ export function useVerificationSnapshots(batchId: string | null) {
       return (data || []) as AuditVerificationSnapshot[];
     },
     enabled: !!batchId,
+  });
+}
+
+// ═══ Update Batch Status ═══
+export function useUpdateBatchStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: { batchId: string; newStatus: 'open' | 'under_review' | 'verified_clean' | 'closed' }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: batch } = await db
+        .from('audit_batches')
+        .select('batch_status')
+        .eq('id', params.batchId)
+        .single();
+      if (!batch) throw new Error('Batch not found');
+
+      // Enforce valid transitions
+      const validTransitions: Record<string, string[]> = {
+        open: ['under_review'],
+        under_review: ['open', 'verified_clean'],
+        verified_clean: ['under_review', 'closed'],
+        closed: [], // terminal state
+      };
+      if (!validTransitions[batch.batch_status]?.includes(params.newStatus)) {
+        throw new Error(`Cannot transition from ${batch.batch_status} to ${params.newStatus}`);
+      }
+
+      const updatePayload: any = { batch_status: params.newStatus };
+      if (params.newStatus === 'closed') {
+        updatePayload.closed_at = new Date().toISOString();
+        updatePayload.closed_by = user.id;
+      }
+
+      const { error } = await db
+        .from('audit_batches')
+        .update(updatePayload)
+        .eq('id', params.batchId);
+      if (error) throw error;
+
+      // Audit log
+      await db.from('audit_approvals_log').insert({
+        actor_id: user.id,
+        entity_type: 'batch',
+        entity_id: params.batchId,
+        action: `batch_status_${params.newStatus}`,
+        before: { batch_status: batch.batch_status },
+        after: { batch_status: params.newStatus },
+        note: `Batch transitioned to ${params.newStatus}`,
+        batch_id: params.batchId,
+      });
+
+      return params.newStatus;
+    },
+    onSuccess: (newStatus) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-batches'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      const labels: Record<string, string> = {
+        under_review: 'Batch moved to Under Review',
+        verified_clean: 'Batch marked Verified Clean ✅',
+        closed: '🔒 Batch closed — permanent record created',
+        open: 'Batch reopened',
+      };
+      toast.success(labels[newStatus] || `Status: ${newStatus}`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update batch status');
+    },
   });
 }
 
