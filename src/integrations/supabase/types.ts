@@ -7035,6 +7035,75 @@ export type Database = {
           },
         ]
       }
+      audit_reconciliation_results: {
+        Row: {
+          applied_at: string | null
+          applied_by: string | null
+          batch_id: string
+          confidence_score: number
+          created_at: string
+          event_summary: string | null
+          evidence: Json
+          id: string
+          invoice_summary: string | null
+          recommended_action: string
+          reconciliation_type: string
+          related_event_id: string | null
+          related_invoice_id: string | null
+          status: string
+          store_id: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          applied_by?: string | null
+          batch_id: string
+          confidence_score: number
+          created_at?: string
+          event_summary?: string | null
+          evidence?: Json
+          id?: string
+          invoice_summary?: string | null
+          recommended_action: string
+          reconciliation_type: string
+          related_event_id?: string | null
+          related_invoice_id?: string | null
+          status?: string
+          store_id?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          applied_by?: string | null
+          batch_id?: string
+          confidence_score?: number
+          created_at?: string
+          event_summary?: string | null
+          evidence?: Json
+          id?: string
+          invoice_summary?: string | null
+          recommended_action?: string
+          reconciliation_type?: string
+          related_event_id?: string | null
+          related_invoice_id?: string | null
+          status?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_reconciliation_results_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "audit_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_reconciliation_results_related_event_id_fkey"
+            columns: ["related_event_id"]
+            isOneToOne: false
+            referencedRelation: "audit_note_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_trail: {
         Row: {
           after: Json | null

@@ -394,20 +394,172 @@ export function useFinalizeDraft() {
   });
 }
 
+// ═══ Reconciliation Types ═══
+export interface AuditReconciliationResult {
+  id: string;
+  created_at: string;
+  batch_id: string;
+  store_id: string | null;
+  reconciliation_type: 'missing_note' | 'missing_invoice' | 'orphan_invoice' | 'amount_mismatch' | 'payment_mismatch' | 'duplicate_risk';
+  related_event_id: string | null;
+  related_invoice_id: string | null;
+  recommended_action: 'create_note' | 'create_invoice' | 'update_invoice' | 'mark_paid' | 'merge' | 'review';
+  confidence_score: number;
+  event_summary: string | null;
+  invoice_summary: string | null;
+  evidence: Record<string, any>;
+  status: 'open' | 'approved' | 'rejected' | 'applied';
+  applied_at: string | null;
+  applied_by: string | null;
+}
+
+// ═══ Run Reconciliation ═══
+export function useRunReconciliation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (batchId: string) => {
+      const { data, error } = await supabase.functions.invoke('reconcile-audit-batch', {
+        body: { batch_id: batchId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as {
+        batch_id: string;
+        status: string;
+        total_results: number;
+        summary: Record<string, number>;
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-reconciliation'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      const s = data.summary;
+      const parts = Object.entries(s).map(([k, v]) => `${v} ${k.replace(/_/g, ' ')}`);
+      toast.success(`Reconciliation complete: ${parts.join(', ') || 'no issues found'}`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Reconciliation failed');
+    },
+  });
+}
+
+// ═══ Fetch Reconciliation Results ═══
+export function useReconciliationResults(batchId: string | null) {
+  return useQuery({
+    queryKey: ['audit-reconciliation', batchId],
+    queryFn: async () => {
+      if (!batchId) return [];
+      const { data, error } = await db
+        .from('audit_reconciliation_results')
+        .select('*')
+        .eq('batch_id', batchId)
+        .order('reconciliation_type', { ascending: true });
+      if (error) throw error;
+      return (data || []) as AuditReconciliationResult[];
+    },
+    enabled: !!batchId,
+  });
+}
+
+// ═══ Apply Reconciliation Action ═══
+export function useApplyReconciliation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      resultId: string;
+      action: 'approve' | 'reject';
+      notes?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: result } = await db
+        .from('audit_reconciliation_results')
+        .select('*')
+        .eq('id', params.resultId)
+        .single();
+      if (!result) throw new Error('Result not found');
+
+      if (params.action === 'approve') {
+        // Apply the recommended action
+        if (result.recommended_action === 'create_note' && result.store_id && result.event_summary) {
+          await db.from('store_notes').insert({
+            store_id: result.store_id,
+            note_text: `[Audit Engine] ${result.event_summary}`,
+            note_date: new Date().toISOString().substring(0, 10),
+            created_by: user.id,
+          });
+        }
+
+        if (result.recommended_action === 'mark_paid' && result.related_invoice_id) {
+          await db.from('invoices').update({
+            payment_status: 'paid',
+            paid_at: new Date().toISOString(),
+          }).eq('id', result.related_invoice_id);
+        }
+
+        // Update result status
+        const { error } = await db
+          .from('audit_reconciliation_results')
+          .update({
+            status: 'applied',
+            applied_at: new Date().toISOString(),
+            applied_by: user.id,
+          })
+          .eq('id', params.resultId);
+        if (error) throw error;
+      } else {
+        const { error } = await db
+          .from('audit_reconciliation_results')
+          .update({ status: 'rejected' })
+          .eq('id', params.resultId);
+        if (error) throw error;
+      }
+
+      // Write audit log
+      await db.from('audit_approvals_log').insert({
+        actor_id: user.id,
+        entity_type: 'flag',
+        entity_id: params.resultId,
+        action: params.action,
+        before: result,
+        after: { status: params.action === 'approve' ? 'applied' : 'rejected' },
+        note: params.notes || `Reconciliation: ${result.recommended_action}`,
+        batch_id: result.batch_id || null,
+        store_id: result.store_id || null,
+      });
+
+      return true;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-reconciliation'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      toast.success(vars.action === 'approve' ? 'Action applied' : 'Rejected');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to apply action');
+    },
+  });
+}
+
 // ═══ Audit Metrics ═══
 export function useAuditMetrics() {
   return useQuery({
     queryKey: ['audit-metrics'],
     queryFn: async () => {
-      const [batchesRes, flagsRes, draftsRes] = await Promise.all([
+      const [batchesRes, flagsRes, draftsRes, reconRes] = await Promise.all([
         db.from('audit_batches').select('totals, status'),
         db.from('audit_flags').select('status, flag_type'),
         db.from('audit_invoice_drafts').select('approval_status, total, finalize_status'),
+        db.from('audit_reconciliation_results').select('status, reconciliation_type'),
       ]);
 
       const batches = (batchesRes.data || []) as AuditBatch[];
       const flags = (flagsRes.data || []) as AuditFlag[];
       const drafts = (draftsRes.data || []) as AuditInvoiceDraft[];
+      const recon = (reconRes.data || []) as AuditReconciliationResult[];
 
       const totalEvents = batches.reduce((sum, b) => sum + (b.totals?.events_created || 0), 0);
       const openFlags = flags.filter(f => f.status === 'open').length;
@@ -419,6 +571,7 @@ export function useAuditMetrics() {
         .reduce((sum, d) => sum + (d.total || 0), 0);
       const missingInvoices = flags.filter(f => f.flag_type === 'MISSING_INVOICE').length;
       const unmatchedPayments = flags.filter(f => f.flag_type === 'PAYMENT_UNMATCHED').length;
+      const openRecon = recon.filter(r => r.status === 'open').length;
 
       return {
         totalEvents,
@@ -430,6 +583,7 @@ export function useAuditMetrics() {
         missingInvoices,
         unmatchedPayments,
         totalBatches: batches.length,
+        openRecon,
       };
     },
   });

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import {
   Shield, Search, FileText, AlertTriangle, FileWarning, Loader2,
-  CheckCircle, XCircle, Eye, Send,
+  CheckCircle, XCircle, Eye, Send, GitCompare,
   TrendingUp, DollarSign, AlertCircle, ClipboardList, Lock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -25,9 +25,13 @@ import {
   useResolveFlag,
   useFinalizeIntent,
   useFinalizeDraft,
+  useRunReconciliation,
+  useReconciliationResults,
+  useApplyReconciliation,
   type AuditInvoiceDraft,
   type AuditFlag,
   type AuditBatch,
+  type AuditReconciliationResult,
 } from '@/hooks/useAuditEngine';
 
 // ═══ Color Maps ═══
@@ -81,6 +85,9 @@ export default function AuditEnginePage() {
   const resolveFlag = useResolveFlag();
   const finalizeIntent = useFinalizeIntent();
   const finalizeDraft = useFinalizeDraft();
+  const runReconciliation = useRunReconciliation();
+  const { data: reconResults } = useReconciliationResults(selectedBatchId);
+  const applyRecon = useApplyReconciliation();
 
   const handleParse = async () => {
     if (!rawText.trim()) return;
@@ -131,7 +138,7 @@ export default function AuditEnginePage() {
       </div>
 
       {/* Metrics Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <MetricCard icon={ClipboardList} label="Events Parsed" value={metrics?.totalEvents || 0} />
         <MetricCard icon={AlertTriangle} label="Open Flags" value={metrics?.openFlags || 0} color="text-orange-400" />
         <MetricCard icon={FileText} label="Pending Drafts" value={metrics?.pendingDrafts || 0} color="text-yellow-400" />
@@ -139,15 +146,17 @@ export default function AuditEnginePage() {
         <MetricCard icon={Lock} label="Ready to Finalize" value={metrics?.readyToFinalize || 0} color="text-blue-400" />
         <MetricCard icon={DollarSign} label="Est. Recovery" value={`$${(metrics?.estimatedRecovery || 0).toLocaleString()}`} color="text-emerald-400" />
         <MetricCard icon={FileWarning} label="Missing Invoices" value={metrics?.missingInvoices || 0} color="text-red-400" />
+        <MetricCard icon={GitCompare} label="Open Recon" value={metrics?.openRecon || 0} color="text-purple-400" />
       </div>
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
           <TabsTrigger value="ingest">📥 Ingest</TabsTrigger>
           <TabsTrigger value="events">📋 Events</TabsTrigger>
           <TabsTrigger value="flags">🔎 Flags</TabsTrigger>
           <TabsTrigger value="drafts">🧾 Drafts</TabsTrigger>
+          <TabsTrigger value="recon">🔍 Reconciliation</TabsTrigger>
           <TabsTrigger value="history">📂 History</TabsTrigger>
         </TabsList>
 
@@ -341,7 +350,55 @@ export default function AuditEnginePage() {
           </Card>
         </TabsContent>
 
-        {/* ═══ HISTORY TAB ═══ */}
+        {/* ═══ RECONCILIATION TAB ═══ */}
+        <TabsContent value="recon">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <GitCompare className="h-5 w-5 text-purple-400" />
+                    Note–Invoice Reconciliation {reconResults?.length ? `(${reconResults.length})` : ''}
+                  </CardTitle>
+                  <CardDescription>
+                    Cross-references parsed events against existing invoices and CRM notes.
+                    Detects mismatches, orphans, and missing records.
+                  </CardDescription>
+                </div>
+                <Button
+                  onClick={() => selectedBatchId && runReconciliation.mutateAsync(selectedBatchId)}
+                  disabled={!selectedBatchId || runReconciliation.isPending}
+                  className="gap-2"
+                >
+                  {runReconciliation.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Reconciling...</>
+                  ) : (
+                    <><GitCompare className="h-4 w-4" /> Run Reconciliation</>
+                  )}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!selectedBatchId ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  Select a batch from History tab first, then run reconciliation
+                </p>
+              ) : !reconResults?.length ? (
+                <p className="text-center py-8 text-muted-foreground">
+                  {runReconciliation.isPending ? 'Running...' : 'No reconciliation results yet. Click "Run Reconciliation" to start.'}
+                </p>
+              ) : (
+                <ReconResultsList
+                  results={reconResults}
+                  onApply={(id) => applyRecon.mutateAsync({ resultId: id, action: 'approve' })}
+                  onReject={(id) => applyRecon.mutateAsync({ resultId: id, action: 'reject' })}
+                  isApplying={applyRecon.isPending}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="history">
           <Card>
             <CardHeader>
@@ -750,6 +807,114 @@ function DraftCard({ draft, onReview, onFinalize, onCreateInvoice }: {
           Invoice ID: {draft.finalized_invoice_id}
         </div>
       )}
+    </div>
+  );
+}
+
+const RECON_TYPE_LABELS: Record<string, string> = {
+  missing_note: '📝 Missing Note',
+  missing_invoice: '🧾 Missing Invoice',
+  orphan_invoice: '👻 Orphan Invoice',
+  amount_mismatch: '💲 Amount Mismatch',
+  payment_mismatch: '💰 Payment Mismatch',
+  duplicate_risk: '🔁 Duplicate Risk',
+};
+
+const RECON_ACTION_LABELS: Record<string, string> = {
+  create_note: 'Create Note',
+  create_invoice: 'Create Invoice',
+  update_invoice: 'Update Invoice',
+  mark_paid: 'Mark Paid',
+  merge: 'Merge',
+  review: 'Review',
+};
+
+const RECON_TYPE_COLORS: Record<string, string> = {
+  missing_note: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+  missing_invoice: 'bg-red-500/15 text-red-400 border-red-500/30',
+  orphan_invoice: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  amount_mismatch: 'bg-orange-500/15 text-orange-400 border-orange-500/30',
+  payment_mismatch: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+  duplicate_risk: 'bg-pink-500/15 text-pink-400 border-pink-500/30',
+};
+
+function ReconResultsList({ results, onApply, onReject, isApplying }: {
+  results: AuditReconciliationResult[];
+  onApply: (id: string) => void;
+  onReject: (id: string) => void;
+  isApplying: boolean;
+}) {
+  // Group by type
+  const grouped = results.reduce((acc, r) => {
+    (acc[r.reconciliation_type] = acc[r.reconciliation_type] || []).push(r);
+    return acc;
+  }, {} as Record<string, AuditReconciliationResult[]>);
+
+  return (
+    <div className="space-y-6">
+      {Object.entries(grouped).map(([type, items]) => (
+        <div key={type} className="space-y-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <Badge className={RECON_TYPE_COLORS[type] || 'bg-muted'}>
+              {RECON_TYPE_LABELS[type] || type}
+            </Badge>
+            <span className="text-muted-foreground text-xs">({items.length})</span>
+          </h3>
+          {items.map(item => (
+            <div
+              key={item.id}
+              className={`border rounded-lg p-3 space-y-2 ${
+                item.status === 'applied' || item.status === 'rejected' ? 'opacity-50' : ''
+              }`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1 flex-1">
+                  {item.event_summary && (
+                    <p className="text-sm"><span className="text-muted-foreground">Event:</span> {item.event_summary}</p>
+                  )}
+                  {item.invoice_summary && (
+                    <p className="text-sm"><span className="text-muted-foreground">Invoice:</span> {item.invoice_summary}</p>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-xs">
+                      {RECON_ACTION_LABELS[item.recommended_action] || item.recommended_action}
+                    </Badge>
+                    <ConfidenceBadge score={item.confidence_score} />
+                    {item.status !== 'open' && (
+                      <Badge variant={item.status === 'applied' ? 'default' : 'secondary'} className="text-xs">
+                        {item.status}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {item.status === 'open' && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {item.confidence_score < 60 && (
+                      <span className="text-xs text-muted-foreground mr-1">⚠️ Low conf</span>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onReject(item.id)}
+                      disabled={isApplying}
+                    >
+                      <XCircle className="h-3 w-3 mr-1" /> Ignore
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => onApply(item.id)}
+                      disabled={isApplying}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-3 w-3 mr-1" /> Apply
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }
