@@ -4,7 +4,8 @@ import {
   Shield, Search, FileText, AlertTriangle, FileWarning, Loader2,
   CheckCircle, XCircle, Eye, Send, GitCompare,
   TrendingUp, DollarSign, AlertCircle, ClipboardList, Lock,
-  ShieldCheck, ShieldAlert, ToggleLeft, ToggleRight, Archive, LockKeyhole
+  ShieldCheck, ShieldAlert, ToggleLeft, ToggleRight, Archive, LockKeyhole,
+  UserPlus, Phone, Mail, MapPin, Users
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,11 +34,15 @@ import {
   useStrictVerification,
   useVerificationSnapshots,
   useUpdateBatchStatus,
+  useRunEnrichment,
+  useEnrichmentCandidates,
+  useProcessEnrichment,
   type AuditInvoiceDraft,
   type AuditFlag,
   type AuditBatch,
   type AuditReconciliationResult,
   type AuditVerificationSnapshot,
+  type EnrichmentCandidate,
 } from '@/hooks/useAuditEngine';
 
 // ═══ Color Maps ═══
@@ -100,6 +105,9 @@ export default function AuditEnginePage() {
   const strictVerify = useStrictVerification();
   const { data: snapshots } = useVerificationSnapshots(selectedBatchId);
   const updateBatchStatus = useUpdateBatchStatus();
+  const runEnrichment = useRunEnrichment();
+  const { data: enrichmentCandidates } = useEnrichmentCandidates(selectedBatchId);
+  const processEnrichment = useProcessEnrichment();
 
   // Determine if selected batch is locked
   const selectedBatch = batches?.find(b => b.id === selectedBatchId);
@@ -172,12 +180,13 @@ export default function AuditEnginePage() {
 
       {/* Main Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
+        <TabsList className="grid grid-cols-7 w-full max-w-4xl">
           <TabsTrigger value="ingest">📥 Ingest</TabsTrigger>
           <TabsTrigger value="events">📋 Events</TabsTrigger>
           <TabsTrigger value="flags">🔎 Flags</TabsTrigger>
           <TabsTrigger value="drafts">🧾 Drafts</TabsTrigger>
           <TabsTrigger value="recon">🔍 Reconciliation</TabsTrigger>
+          <TabsTrigger value="enrichment">👥 Enrichment</TabsTrigger>
           <TabsTrigger value="history">📂 History</TabsTrigger>
         </TabsList>
 
@@ -581,6 +590,247 @@ export default function AuditEnginePage() {
                 )}
               </CardContent>
             </Card>
+          </div>
+        </TabsContent>
+
+        {/* ═══ PROFILE ENRICHMENT TAB ═══ */}
+        <TabsContent value="enrichment">
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-blue-400" />
+                    <span className="text-sm font-medium">Profile Enrichment Engine</span>
+                    <span className="text-xs text-muted-foreground">
+                      Detect missing contacts, phones, emails & addresses from parsed notes
+                    </span>
+                  </div>
+                  <Button
+                    onClick={() => selectedBatchId && runEnrichment.mutateAsync(selectedBatchId)}
+                    disabled={!selectedBatchId || runEnrichment.isPending || isBatchClosed}
+                    className="gap-2"
+                  >
+                    {runEnrichment.isPending ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" /> Scanning...</>
+                    ) : (
+                      <><UserPlus className="h-4 w-4" /> Run Enrichment Scan</>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Enrichment Summary */}
+            {enrichmentCandidates && enrichmentCandidates.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <UserPlus className="h-5 w-5 mx-auto mb-1 text-blue-400" />
+                  <p className="text-2xl font-bold">{enrichmentCandidates.filter(c => c.enrichment_type === 'new_contact').length}</p>
+                  <p className="text-xs text-muted-foreground">New Contacts</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <Phone className="h-5 w-5 mx-auto mb-1 text-green-400" />
+                  <p className="text-2xl font-bold">{enrichmentCandidates.filter(c => c.enrichment_type === 'new_phone').length}</p>
+                  <p className="text-xs text-muted-foreground">New Phones</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <Mail className="h-5 w-5 mx-auto mb-1 text-purple-400" />
+                  <p className="text-2xl font-bold">{enrichmentCandidates.filter(c => c.enrichment_type === 'new_email').length}</p>
+                  <p className="text-xs text-muted-foreground">New Emails</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <MapPin className="h-5 w-5 mx-auto mb-1 text-orange-400" />
+                  <p className="text-2xl font-bold">{enrichmentCandidates.filter(c => c.enrichment_type === 'new_address').length}</p>
+                  <p className="text-xs text-muted-foreground">New Addresses</p>
+                </div>
+              </div>
+            )}
+
+            {/* Pending candidates requiring action */}
+            {(() => {
+              const pending = (enrichmentCandidates || []).filter(c => c.status === 'pending');
+              const resolved = (enrichmentCandidates || []).filter(c => c.status !== 'pending');
+
+              const ENRICHMENT_ICONS: Record<string, any> = {
+                new_contact: UserPlus,
+                new_phone: Phone,
+                new_email: Mail,
+                new_address: MapPin,
+              };
+
+              const ENRICHMENT_COLORS: Record<string, string> = {
+                new_contact: 'text-blue-400',
+                new_phone: 'text-green-400',
+                new_email: 'text-purple-400',
+                new_address: 'text-orange-400',
+              };
+
+              const ENRICHMENT_LABELS: Record<string, string> = {
+                new_contact: 'New Contact',
+                new_phone: 'New Phone',
+                new_email: 'New Email',
+                new_address: 'New Address',
+              };
+
+              if (!selectedBatchId) {
+                return (
+                  <Card>
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      Select a batch from History tab first
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+              if (!enrichmentCandidates?.length) {
+                return (
+                  <Card>
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      No enrichment candidates found. Run Enrichment Scan to detect missing profile data.
+                    </CardContent>
+                  </Card>
+                );
+              }
+
+              return (
+                <>
+                  {pending.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base flex items-center gap-2">
+                          <AlertCircle className="h-5 w-5 text-yellow-400" />
+                          Pending Review ({pending.length})
+                        </CardTitle>
+                        <CardDescription>
+                          Each candidate requires explicit approval before CRM data is modified.
+                          {isBatchClosed && ' (Batch closed — view only)'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {pending.map(candidate => {
+                          const Icon = ENRICHMENT_ICONS[candidate.enrichment_type] || UserPlus;
+                          const color = ENRICHMENT_COLORS[candidate.enrichment_type] || 'text-muted-foreground';
+                          const val = candidate.extracted_value as Record<string, any>;
+                          const isLowConf = candidate.confidence_score < 70;
+
+                          return (
+                            <div key={candidate.id} className="border rounded-lg p-4 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Icon className={`h-4 w-4 ${color}`} />
+                                  <Badge variant="outline" className="text-xs">
+                                    {ENRICHMENT_LABELS[candidate.enrichment_type]}
+                                  </Badge>
+                                  <span className="text-sm font-medium">
+                                    Store: {candidate.store_id.substring(0, 8)}...
+                                  </span>
+                                  <ConfidenceBadge score={candidate.confidence_score} />
+                                  {isLowConf && (
+                                    <Badge variant="outline" className="text-xs border-yellow-500/50 text-yellow-400">
+                                      ⚠️ Low confidence
+                                    </Badge>
+                                  )}
+                                </div>
+                                <Badge variant="outline" className="text-xs">
+                                  {candidate.recommended_action}
+                                </Badge>
+                              </div>
+
+                              {/* Extracted data display */}
+                              <div className="bg-muted/50 rounded-lg p-3 text-sm space-y-1">
+                                {candidate.enrichment_type === 'new_contact' && (
+                                  <>
+                                    <p><span className="text-muted-foreground">Name:</span> <span className="font-medium">{val.name}</span></p>
+                                    {val.role && <p><span className="text-muted-foreground">Role:</span> {val.role}</p>}
+                                    {val.context && <p className="text-xs text-muted-foreground mt-1">Context: "{val.context}"</p>}
+                                  </>
+                                )}
+                                {candidate.enrichment_type === 'new_phone' && (
+                                  <p><span className="text-muted-foreground">Phone:</span> <span className="font-medium font-mono">{val.phone}</span></p>
+                                )}
+                                {candidate.enrichment_type === 'new_email' && (
+                                  <p><span className="text-muted-foreground">Email:</span> <span className="font-medium">{val.email}</span></p>
+                                )}
+                                {candidate.enrichment_type === 'new_address' && (
+                                  <>
+                                    <p><span className="text-muted-foreground">Address:</span> <span className="font-medium">{val.address}</span></p>
+                                    <p className="text-xs text-muted-foreground">Type: {val.type || 'secondary'}</p>
+                                  </>
+                                )}
+                              </div>
+
+                              {/* Action buttons */}
+                              {!isBatchClosed && (
+                                <div className="flex items-center gap-2 justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => processEnrichment.mutateAsync({
+                                      candidateId: candidate.id,
+                                      action: 'reject',
+                                      rejectionReason: 'Manually rejected',
+                                    })}
+                                    disabled={processEnrichment.isPending}
+                                  >
+                                    <XCircle className="h-3 w-3 mr-1" /> Reject
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => processEnrichment.mutateAsync({
+                                      candidateId: candidate.id,
+                                      action: 'approve',
+                                    })}
+                                    disabled={processEnrichment.isPending}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <CheckCircle className="h-3 w-3 mr-1" /> Approve & Apply
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {resolved.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Resolved ({resolved.length})</CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {resolved.map(candidate => {
+                          const Icon = ENRICHMENT_ICONS[candidate.enrichment_type] || UserPlus;
+                          const val = candidate.extracted_value as Record<string, any>;
+                          return (
+                            <div key={candidate.id} className="border rounded-lg p-3 opacity-60 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Icon className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-sm">
+                                  {val.name || val.phone || val.email || val.address || 'Unknown'}
+                                </span>
+                              </div>
+                              <Badge variant={candidate.status === 'applied' ? 'default' : 'secondary'} className="text-xs">
+                                {candidate.status === 'applied' ? '✅ Applied' : '❌ Rejected'}
+                              </Badge>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              );
+            })()}
+
+            <div className="bg-muted/30 border border-muted rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">
+                ⚠️ This system NEVER auto-modifies store data. All changes require explicit approval and are logged to the audit trail.
+                Primary addresses and phones are never overwritten — new data is added as secondary records.
+              </p>
+            </div>
           </div>
         </TabsContent>
 

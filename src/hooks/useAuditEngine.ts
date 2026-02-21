@@ -674,6 +674,19 @@ export function useUpdateBatchStatus() {
         throw new Error(`Cannot transition from ${batch.batch_status} to ${params.newStatus}`);
       }
 
+      // Block verified_clean/closed if unresolved enrichment candidates exist
+      if (params.newStatus === 'verified_clean' || params.newStatus === 'closed') {
+        const { data: pendingEnrichment } = await db
+          .from('audit_profile_enrichment_candidates')
+          .select('id')
+          .eq('batch_id', params.batchId)
+          .eq('status', 'pending')
+          .limit(1);
+        if (pendingEnrichment && pendingEnrichment.length > 0) {
+          throw new Error('Cannot transition: unresolved enrichment candidates exist. Approve or reject all candidates first.');
+        }
+      }
+
       const updatePayload: any = { batch_status: params.newStatus };
       if (params.newStatus === 'closed') {
         updatePayload.closed_at = new Date().toISOString();
@@ -713,6 +726,165 @@ export function useUpdateBatchStatus() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update batch status');
+    },
+  });
+}
+
+// ═══ Profile Enrichment Types ═══
+export interface EnrichmentCandidate {
+  id: string;
+  created_at: string;
+  batch_id: string;
+  store_id: string;
+  enrichment_type: 'new_contact' | 'new_phone' | 'new_email' | 'new_address';
+  extracted_value: Record<string, any>;
+  confidence_score: number;
+  matched_existing: boolean;
+  recommended_action: 'create' | 'attach' | 'ignore';
+  status: 'pending' | 'approved' | 'rejected' | 'applied';
+  applied_by: string | null;
+  applied_at: string | null;
+  rejection_reason: string | null;
+}
+
+// ═══ Run Profile Enrichment ═══
+export function useRunEnrichment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (batchId: string) => {
+      const { data, error } = await supabase.functions.invoke('extract-profile-enrichment', {
+        body: { batch_id: batchId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as {
+        status: string;
+        candidates_created: number;
+        summary: { new_contacts: number; new_phones: number; new_emails: number; new_addresses: number };
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['enrichment-candidates'] });
+      const s = data.summary;
+      toast.success(`Enrichment: ${s.new_contacts} contacts, ${s.new_phones} phones, ${s.new_emails} emails, ${s.new_addresses} addresses`);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Enrichment extraction failed');
+    },
+  });
+}
+
+// ═══ Fetch Enrichment Candidates ═══
+export function useEnrichmentCandidates(batchId: string | null) {
+  return useQuery({
+    queryKey: ['enrichment-candidates', batchId],
+    queryFn: async () => {
+      if (!batchId) return [];
+      const { data, error } = await db
+        .from('audit_profile_enrichment_candidates')
+        .select('*')
+        .eq('batch_id', batchId)
+        .order('enrichment_type', { ascending: true });
+      if (error) throw error;
+      return (data || []) as EnrichmentCandidate[];
+    },
+    enabled: !!batchId,
+  });
+}
+
+// ═══ Apply/Reject Enrichment Candidate ═══
+export function useProcessEnrichment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: {
+      candidateId: string;
+      action: 'approve' | 'reject';
+      rejectionReason?: string;
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: candidate } = await db
+        .from('audit_profile_enrichment_candidates')
+        .select('*')
+        .eq('id', params.candidateId)
+        .single();
+      if (!candidate) throw new Error('Candidate not found');
+
+      if (params.action === 'approve') {
+        // Apply the enrichment
+        const val = candidate.extracted_value as Record<string, any>;
+
+        if (candidate.enrichment_type === 'new_contact') {
+          await db.from('store_contacts').insert({
+            store_id: candidate.store_id,
+            name: val.name,
+            role: val.role || null,
+            phone: null,
+            email: null,
+            is_primary: false,
+          });
+        } else if (candidate.enrichment_type === 'new_phone') {
+          // Try to attach to existing contact or create new
+          await db.from('store_contacts').insert({
+            store_id: candidate.store_id,
+            name: null,
+            phone: val.phone,
+            is_primary: false,
+          });
+        } else if (candidate.enrichment_type === 'new_email') {
+          await db.from('store_contacts').insert({
+            store_id: candidate.store_id,
+            name: null,
+            email: val.email,
+            is_primary: false,
+          });
+        }
+        // new_address: no store_addresses table exists, log only
+
+        const { error } = await db
+          .from('audit_profile_enrichment_candidates')
+          .update({
+            status: 'applied',
+            applied_by: user.id,
+            applied_at: new Date().toISOString(),
+          })
+          .eq('id', params.candidateId);
+        if (error) throw error;
+      } else {
+        const { error } = await db
+          .from('audit_profile_enrichment_candidates')
+          .update({
+            status: 'rejected',
+            rejection_reason: params.rejectionReason || null,
+          })
+          .eq('id', params.candidateId);
+        if (error) throw error;
+      }
+
+      // Audit log
+      await db.from('audit_approvals_log').insert({
+        actor_id: user.id,
+        entity_type: 'profile_enrichment',
+        entity_id: params.candidateId,
+        action: params.action,
+        before: candidate,
+        after: { status: params.action === 'approve' ? 'applied' : 'rejected' },
+        note: params.rejectionReason || `Enrichment ${params.action}: ${candidate.enrichment_type}`,
+        batch_id: candidate.batch_id,
+        store_id: candidate.store_id,
+      });
+
+      return true;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['enrichment-candidates'] });
+      toast.success(vars.action === 'approve' ? 'Enrichment applied to CRM' : 'Candidate rejected');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to process enrichment');
     },
   });
 }
