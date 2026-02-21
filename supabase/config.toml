@@ -139,3 +139,6 @@ verify_jwt = false
 
 [functions.reconcile-audit-batch]
 verify_jwt = false
+
+[functions.strict-verify-batch]
+verify_jwt = false

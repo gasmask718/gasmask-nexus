@@ -413,6 +413,58 @@ export interface AuditReconciliationResult {
   applied_by: string | null;
 }
 
+// ═══ Verification Snapshot Types ═══
+export interface VerificationLedgerEntry {
+  date: string | null;
+  delivery_event_id: string | null;
+  delivery_quantity: number | null;
+  delivery_amount: number | null;
+  invoice_id: string | null;
+  invoice_number: string | null;
+  invoice_total: number | null;
+  note_id: string | null;
+  note_excerpt: string | null;
+  payment_status: string | null;
+  verification_status: 'matched' | 'confirmed_missing_invoice' | 'confirmed_missing_note' | 'payment_status_error' | 'duplicate_risk';
+  failure_reason: string | null;
+  confidence: number;
+  amount_difference: number | null;
+}
+
+export interface AuditVerificationSnapshot {
+  id: string;
+  created_at: string;
+  batch_id: string;
+  store_id: string | null;
+  snapshot: VerificationLedgerEntry[];
+  status: 'verified' | 'issues_found';
+  summary: {
+    total_deliveries: number;
+    matched: number;
+    missing_invoices: number;
+    missing_notes: number;
+    duplicate_risks: number;
+    payment_events: number;
+  };
+}
+
+export interface StrictVerificationResponse {
+  batch_id: string;
+  status: 'verified_clean' | 'issues_found';
+  summary: {
+    total_deliveries: number;
+    matched_deliveries: number;
+    confirmed_missing_invoices: number;
+    confirmed_missing_notes: number;
+    payment_errors: number;
+    duplicate_risks: number;
+    stores_verified: number;
+    stores_with_issues: number;
+  };
+  total_results: number;
+  total_snapshots: number;
+}
+
 // ═══ Run Reconciliation ═══
 export function useRunReconciliation() {
   const queryClient = useQueryClient();
@@ -541,6 +593,54 @@ export function useApplyReconciliation() {
     onError: (error: any) => {
       toast.error(error.message || 'Failed to apply action');
     },
+  });
+}
+
+// ═══ Strict Verification ═══
+export function useStrictVerification() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (batchId: string) => {
+      const { data, error } = await supabase.functions.invoke('strict-verify-batch', {
+        body: { batch_id: batchId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data as StrictVerificationResponse;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['audit-reconciliation'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-verification-snapshots'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-metrics'] });
+      if (data.status === 'verified_clean') {
+        toast.success('✅ CLEAN — 100% of deliveries accounted for');
+      } else {
+        const s = data.summary;
+        toast.warning(`Issues found: ${s.confirmed_missing_invoices} missing invoices, ${s.confirmed_missing_notes} missing notes, ${s.payment_errors} payment errors`);
+      }
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Strict verification failed');
+    },
+  });
+}
+
+// ═══ Fetch Verification Snapshots ═══
+export function useVerificationSnapshots(batchId: string | null) {
+  return useQuery({
+    queryKey: ['audit-verification-snapshots', batchId],
+    queryFn: async () => {
+      if (!batchId) return [];
+      const { data, error } = await db
+        .from('audit_verification_snapshots')
+        .select('*')
+        .eq('batch_id', batchId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data || []) as AuditVerificationSnapshot[];
+    },
+    enabled: !!batchId,
   });
 }
 

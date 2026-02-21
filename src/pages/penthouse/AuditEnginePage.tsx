@@ -3,7 +3,8 @@ import { format } from 'date-fns';
 import {
   Shield, Search, FileText, AlertTriangle, FileWarning, Loader2,
   CheckCircle, XCircle, Eye, Send, GitCompare,
-  TrendingUp, DollarSign, AlertCircle, ClipboardList, Lock
+  TrendingUp, DollarSign, AlertCircle, ClipboardList, Lock,
+  ShieldCheck, ShieldAlert, ToggleLeft, ToggleRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import {
   useParseNotes,
   useAuditBatches,
@@ -28,10 +30,13 @@ import {
   useRunReconciliation,
   useReconciliationResults,
   useApplyReconciliation,
+  useStrictVerification,
+  useVerificationSnapshots,
   type AuditInvoiceDraft,
   type AuditFlag,
   type AuditBatch,
   type AuditReconciliationResult,
+  type AuditVerificationSnapshot,
 } from '@/hooks/useAuditEngine';
 
 // ═══ Color Maps ═══
@@ -74,6 +79,9 @@ export default function AuditEnginePage() {
   const [finalizeDialog, setFinalizeDialog] = useState<AuditInvoiceDraft | null>(null);
   const [confirmFinalizeDialog, setConfirmFinalizeDialog] = useState<AuditInvoiceDraft | null>(null);
   const [actionNotes, setActionNotes] = useState('');
+  const [strictMode, setStrictMode] = useState(false);
+  const [ignoreReasonDialog, setIgnoreReasonDialog] = useState<string | null>(null);
+  const [ignoreReason, setIgnoreReason] = useState('');
 
   const parseNotes = useParseNotes();
   const { data: batches } = useAuditBatches();
@@ -88,6 +96,13 @@ export default function AuditEnginePage() {
   const runReconciliation = useRunReconciliation();
   const { data: reconResults } = useReconciliationResults(selectedBatchId);
   const applyRecon = useApplyReconciliation();
+  const strictVerify = useStrictVerification();
+  const { data: snapshots } = useVerificationSnapshots(selectedBatchId);
+
+  // Filter recon results based on mode
+  const filteredReconResults = strictMode
+    ? (reconResults || []).filter(r => r.confidence_score >= 80)
+    : reconResults;
 
   const handleParse = async () => {
     if (!rawText.trim()) return;
@@ -352,51 +367,194 @@ export default function AuditEnginePage() {
 
         {/* ═══ RECONCILIATION TAB ═══ */}
         <TabsContent value="recon">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <GitCompare className="h-5 w-5 text-purple-400" />
-                    Note–Invoice Reconciliation {reconResults?.length ? `(${reconResults.length})` : ''}
-                  </CardTitle>
-                  <CardDescription>
-                    Cross-references parsed events against existing invoices and CRM notes.
-                    Detects mismatches, orphans, and missing records.
-                  </CardDescription>
+          <div className="space-y-4">
+            {/* Mode Toggle */}
+            <Card>
+              <CardContent className="pt-4 pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Switch checked={strictMode} onCheckedChange={setStrictMode} />
+                      <span className="text-sm font-medium flex items-center gap-1">
+                        {strictMode ? (
+                          <><ShieldCheck className="h-4 w-4 text-emerald-400" /> STRICT VERIFICATION</>
+                        ) : (
+                          <><GitCompare className="h-4 w-4 text-purple-400" /> Normal Reconciliation</>
+                        )}
+                      </span>
+                    </div>
+                    {strictMode && (
+                      <p className="text-xs text-muted-foreground">
+                        Only confirmed mismatches • Confidence ≥ 80% • No fuzzy noise
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!strictMode ? (
+                      <Button
+                        onClick={() => selectedBatchId && runReconciliation.mutateAsync(selectedBatchId)}
+                        disabled={!selectedBatchId || runReconciliation.isPending}
+                        className="gap-2"
+                      >
+                        {runReconciliation.isPending ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Reconciling...</>
+                        ) : (
+                          <><GitCompare className="h-4 w-4" /> Run Reconciliation</>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => selectedBatchId && strictVerify.mutateAsync(selectedBatchId)}
+                        disabled={!selectedBatchId || strictVerify.isPending}
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                      >
+                        {strictVerify.isPending ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> Verifying...</>
+                        ) : (
+                          <><ShieldCheck className="h-4 w-4" /> Run Strict Verification</>
+                        )}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <Button
-                  onClick={() => selectedBatchId && runReconciliation.mutateAsync(selectedBatchId)}
-                  disabled={!selectedBatchId || runReconciliation.isPending}
-                  className="gap-2"
-                >
-                  {runReconciliation.isPending ? (
-                    <><Loader2 className="h-4 w-4 animate-spin" /> Reconciling...</>
+              </CardContent>
+            </Card>
+
+            {/* Strict Mode: Verification Summary */}
+            {strictMode && snapshots && snapshots.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-emerald-400" />
+                    Verification Snapshot
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                    {(() => {
+                      const totals = snapshots.reduce((acc, s) => ({
+                        deliveries: acc.deliveries + (s.summary?.total_deliveries || 0),
+                        matched: acc.matched + (s.summary?.matched || 0),
+                        missingInv: acc.missingInv + (s.summary?.missing_invoices || 0),
+                        missingNote: acc.missingNote + (s.summary?.missing_notes || 0),
+                        dupes: acc.dupes + (s.summary?.duplicate_risks || 0),
+                      }), { deliveries: 0, matched: 0, missingInv: 0, missingNote: 0, dupes: 0 });
+
+                      const allClean = totals.missingInv === 0 && totals.missingNote === 0 && totals.dupes === 0;
+
+                      return (
+                        <>
+                          <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <p className="text-2xl font-bold">{totals.deliveries}</p>
+                            <p className="text-xs text-muted-foreground">Total Deliveries</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <p className="text-2xl font-bold text-emerald-400">{totals.matched}</p>
+                            <p className="text-xs text-muted-foreground">Matched ✅</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <p className={`text-2xl font-bold ${totals.missingInv > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                              {totals.missingInv}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Missing Invoices</p>
+                          </div>
+                          <div className="bg-muted/50 rounded-lg p-3 text-center">
+                            <p className={`text-2xl font-bold ${totals.missingNote > 0 ? 'text-yellow-400' : 'text-emerald-400'}`}>
+                              {totals.missingNote}
+                            </p>
+                            <p className="text-xs text-muted-foreground">Missing Notes</p>
+                          </div>
+                          {allClean && (
+                            <div className="col-span-full bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4 text-center">
+                              <ShieldCheck className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
+                              <p className="text-sm font-semibold text-emerald-400">
+                                100% of deliveries are accounted for.
+                              </p>
+                              <p className="text-xs text-muted-foreground">Provable. Not probable.</p>
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Per-store breakdown */}
+                  <div className="space-y-2">
+                    {snapshots.map(snap => (
+                      <div key={snap.id} className="border rounded-lg p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {snap.status === 'verified' ? (
+                            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                          ) : (
+                            <ShieldAlert className="h-4 w-4 text-red-400" />
+                          )}
+                          <span className="text-sm font-medium">
+                            Store {snap.store_id?.substring(0, 8)}...
+                          </span>
+                          <Badge variant={snap.status === 'verified' ? 'default' : 'destructive'} className="text-xs">
+                            {snap.status === 'verified' ? 'CLEAN' : 'ISSUES'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span>{snap.summary?.total_deliveries || 0} deliveries</span>
+                          <span className="text-emerald-400">{snap.summary?.matched || 0} matched</span>
+                          {(snap.summary?.missing_invoices || 0) > 0 && (
+                            <span className="text-red-400">{snap.summary.missing_invoices} missing inv</span>
+                          )}
+                          {(snap.summary?.missing_notes || 0) > 0 && (
+                            <span className="text-yellow-400">{snap.summary.missing_notes} missing notes</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Results List */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  {strictMode ? (
+                    <><ShieldCheck className="h-5 w-5 text-emerald-400" /> Confirmed Issues {filteredReconResults?.length ? `(${filteredReconResults.length})` : ''}</>
                   ) : (
-                    <><GitCompare className="h-4 w-4" /> Run Reconciliation</>
+                    <><GitCompare className="h-5 w-5 text-purple-400" /> Reconciliation Results {filteredReconResults?.length ? `(${filteredReconResults.length})` : ''}</>
                   )}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!selectedBatchId ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  Select a batch from History tab first, then run reconciliation
-                </p>
-              ) : !reconResults?.length ? (
-                <p className="text-center py-8 text-muted-foreground">
-                  {runReconciliation.isPending ? 'Running...' : 'No reconciliation results yet. Click "Run Reconciliation" to start.'}
-                </p>
-              ) : (
-                <ReconResultsList
-                  results={reconResults}
-                  onApply={(id) => applyRecon.mutateAsync({ resultId: id, action: 'approve' })}
-                  onReject={(id) => applyRecon.mutateAsync({ resultId: id, action: 'reject' })}
-                  isApplying={applyRecon.isPending}
-                />
-              )}
-            </CardContent>
-          </Card>
+                </CardTitle>
+                <CardDescription>
+                  {strictMode
+                    ? 'Only confirmed mismatches with ≥80% confidence. Every action requires manual confirmation.'
+                    : 'Cross-references parsed events against existing invoices and CRM notes.'
+                  }
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {!selectedBatchId ? (
+                  <p className="text-center py-8 text-muted-foreground">
+                    Select a batch from History tab first
+                  </p>
+                ) : !filteredReconResults?.length ? (
+                  <p className="text-center py-8 text-muted-foreground">
+                    {(runReconciliation.isPending || strictVerify.isPending)
+                      ? 'Running...'
+                      : strictMode
+                        ? 'No confirmed issues. Run Strict Verification to check.'
+                        : 'No reconciliation results yet. Run Reconciliation to start.'
+                    }
+                  </p>
+                ) : (
+                  <StrictReconResultsList
+                    results={filteredReconResults}
+                    strictMode={strictMode}
+                    onApply={(id) => applyRecon.mutateAsync({ resultId: id, action: 'approve' })}
+                    onReject={(id, reason) => applyRecon.mutateAsync({ resultId: id, action: 'reject', notes: reason })}
+                    isApplying={applyRecon.isPending}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="history">
@@ -838,83 +996,176 @@ const RECON_TYPE_COLORS: Record<string, string> = {
   duplicate_risk: 'bg-pink-500/15 text-pink-400 border-pink-500/30',
 };
 
-function ReconResultsList({ results, onApply, onReject, isApplying }: {
+function StrictReconResultsList({ results, strictMode, onApply, onReject, isApplying }: {
   results: AuditReconciliationResult[];
+  strictMode: boolean;
   onApply: (id: string) => void;
-  onReject: (id: string) => void;
+  onReject: (id: string, reason?: string) => void;
   isApplying: boolean;
 }) {
+  const [ignoreDialogId, setIgnoreDialogId] = useState<string | null>(null);
+  const [ignoreReason, setIgnoreReason] = useState('');
+  const [lowConfirmChecked, setLowConfirmChecked] = useState<Record<string, boolean>>({});
+
   // Group by type
   const grouped = results.reduce((acc, r) => {
     (acc[r.reconciliation_type] = acc[r.reconciliation_type] || []).push(r);
     return acc;
   }, {} as Record<string, AuditReconciliationResult[]>);
 
+  const handleIgnore = () => {
+    if (!ignoreDialogId || (strictMode && !ignoreReason.trim())) return;
+    onReject(ignoreDialogId, ignoreReason || undefined);
+    setIgnoreDialogId(null);
+    setIgnoreReason('');
+  };
+
   return (
-    <div className="space-y-6">
-      {Object.entries(grouped).map(([type, items]) => (
-        <div key={type} className="space-y-2">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Badge className={RECON_TYPE_COLORS[type] || 'bg-muted'}>
-              {RECON_TYPE_LABELS[type] || type}
-            </Badge>
-            <span className="text-muted-foreground text-xs">({items.length})</span>
-          </h3>
-          {items.map(item => (
-            <div
-              key={item.id}
-              className={`border rounded-lg p-3 space-y-2 ${
-                item.status === 'applied' || item.status === 'rejected' ? 'opacity-50' : ''
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1 flex-1">
-                  {item.event_summary && (
-                    <p className="text-sm"><span className="text-muted-foreground">Event:</span> {item.event_summary}</p>
-                  )}
-                  {item.invoice_summary && (
-                    <p className="text-sm"><span className="text-muted-foreground">Invoice:</span> {item.invoice_summary}</p>
-                  )}
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {RECON_ACTION_LABELS[item.recommended_action] || item.recommended_action}
-                    </Badge>
-                    <ConfidenceBadge score={item.confidence_score} />
-                    {item.status !== 'open' && (
-                      <Badge variant={item.status === 'applied' ? 'default' : 'secondary'} className="text-xs">
-                        {item.status}
+    <>
+      <div className="space-y-6">
+        {Object.entries(grouped).map(([type, items]) => (
+          <div key={type} className="space-y-2">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Badge className={RECON_TYPE_COLORS[type] || 'bg-muted'}>
+                {RECON_TYPE_LABELS[type] || type}
+              </Badge>
+              <span className="text-muted-foreground text-xs">({items.length})</span>
+            </h3>
+            {items.map(item => {
+              const requiresManualConfirm = item.evidence?.requires_manual_confirm || (item.evidence?.amount_difference && item.evidence.amount_difference > 10);
+              const isLowConf = item.confidence_score < 60;
+              const needsSecondary = strictMode && isLowConf;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`border rounded-lg p-4 space-y-3 ${
+                    item.status === 'applied' || item.status === 'rejected' ? 'opacity-50' : ''
+                  }`}
+                >
+                  {/* Three-column layout: Event / Invoice / Note summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Delivery Summary</p>
+                      <p className="text-sm">{item.event_summary || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Invoice Summary</p>
+                      <p className="text-sm">{item.invoice_summary || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-1">Why It Failed</p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.evidence?.strict_mode
+                          ? `Strict: ${item.reconciliation_type.replace(/_/g, ' ')}`
+                          : item.reconciliation_type.replace(/_/g, ' ')
+                        }
+                        {item.evidence?.amount_difference != null && ` (Δ$${item.evidence.amount_difference.toFixed(2)})`}
+                        {item.evidence?.invoices_checked != null && ` • ${item.evidence.invoices_checked} invoices checked`}
+                        {item.evidence?.notes_checked != null && ` • ${item.evidence.notes_checked} notes checked`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        {RECON_ACTION_LABELS[item.recommended_action] || item.recommended_action}
                       </Badge>
+                      <ConfidenceBadge score={item.confidence_score} />
+                      {requiresManualConfirm && (
+                        <Badge variant="outline" className="text-xs border-yellow-500/50 text-yellow-400">
+                          ⚠️ Manual confirm required
+                        </Badge>
+                      )}
+                      {item.evidence?.strict_mode && (
+                        <Badge variant="outline" className="text-xs border-emerald-500/50 text-emerald-400">
+                          STRICT
+                        </Badge>
+                      )}
+                      {item.status !== 'open' && (
+                        <Badge variant={item.status === 'applied' ? 'default' : 'secondary'} className="text-xs">
+                          {item.status}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {item.status === 'open' && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        {needsSecondary && (
+                          <label className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <input
+                              type="checkbox"
+                              checked={lowConfirmChecked[item.id] || false}
+                              onChange={(e) => setLowConfirmChecked(prev => ({ ...prev, [item.id]: e.target.checked }))}
+                              className="rounded"
+                            />
+                            I confirm low-confidence action
+                          </label>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            if (strictMode) {
+                              setIgnoreDialogId(item.id);
+                              setIgnoreReason('');
+                            } else {
+                              onReject(item.id);
+                            }
+                          }}
+                          disabled={isApplying}
+                        >
+                          <XCircle className="h-3 w-3 mr-1" /> Ignore
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => onApply(item.id)}
+                          disabled={isApplying || (needsSecondary && !lowConfirmChecked[item.id])}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          {item.recommended_action === 'create_invoice' ? 'Create Invoice' :
+                           item.recommended_action === 'create_note' ? 'Create Note' :
+                           item.recommended_action === 'mark_paid' ? 'Fix Payment' :
+                           'Apply'}
+                        </Button>
+                      </div>
                     )}
                   </div>
                 </div>
-                {item.status === 'open' && (
-                  <div className="flex items-center gap-1 shrink-0">
-                    {item.confidence_score < 60 && (
-                      <span className="text-xs text-muted-foreground mr-1">⚠️ Low conf</span>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onReject(item.id)}
-                      disabled={isApplying}
-                    >
-                      <XCircle className="h-3 w-3 mr-1" /> Ignore
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => onApply(item.id)}
-                      disabled={isApplying}
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <CheckCircle className="h-3 w-3 mr-1" /> Apply
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* Ignore reason dialog (strict mode requires reason) */}
+      <Dialog open={!!ignoreDialogId} onOpenChange={(o) => !o && setIgnoreDialogId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ignore Issue — Reason Required</DialogTitle>
+            <DialogDescription>
+              Strict mode requires a documented reason for ignoring any finding.
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            placeholder="Why is this being ignored? e.g., 'Duplicate entry from previous batch' or 'Store confirmed verbally'"
+            value={ignoreReason}
+            onChange={(e) => setIgnoreReason(e.target.value)}
+            className="min-h-[80px]"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIgnoreDialogId(null)}>Cancel</Button>
+            <Button
+              onClick={handleIgnore}
+              disabled={!ignoreReason.trim()}
+            >
+              Confirm Ignore
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

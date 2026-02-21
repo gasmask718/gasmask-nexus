@@ -7134,6 +7134,44 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_verification_snapshots: {
+        Row: {
+          batch_id: string
+          created_at: string
+          id: string
+          snapshot: Json
+          status: string
+          store_id: string | null
+          summary: Json
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          status?: string
+          store_id?: string | null
+          summary?: Json
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          status?: string
+          store_id?: string | null
+          summary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_verification_snapshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "audit_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       automated_notifications: {
         Row: {
           created_at: string
