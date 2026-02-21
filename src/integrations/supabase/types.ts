@@ -58022,6 +58022,7 @@ export type Database = {
           priority: number
         }[]
       }
+      has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {
         Args: {
