@@ -106,6 +106,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
   const [selectedMethod, setSelectedMethod] = useState<UpdateMethod>(() => detectDefaultMethod(role));
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
 
+  // ── Switch Tubes draft state (decoupled from server) ──
+  const [switchDrafts, setSwitchDrafts] = useState<Record<string, { quantity: string; notes: string; dirty: boolean; saving: boolean; status: 'idle' | 'dirty' | 'saving' | 'saved' | 'error' }>>({});
+
   // ── Brand relationship data (is_active source of truth) ──
   const { relationships, updateRelationship } = useStoreBrandRelationships(storeId);
 
@@ -695,69 +698,104 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                       </div>
 
                       {/* Switch Tubes Quantity Entry (inline, shown when active) */}
-                      {needsSwitch && (
-                        <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label className="text-xs text-red-700 dark:text-red-400 whitespace-nowrap">Tubes to switch:</Label>
+                      {needsSwitch && (() => {
+                        const draft = switchDrafts[brand.id] ?? { quantity: String(intel?.switch_quantity ?? ''), notes: intel?.switch_notes ?? '', dirty: false, saving: false, status: 'idle' as const };
+                        const priorityQty = parseInt(draft.quantity) || 0;
+                        
+                        const initDraft = () => {
+                          if (!switchDrafts[brand.id]) {
+                            setSwitchDrafts(prev => ({ ...prev, [brand.id]: { quantity: String(intel?.switch_quantity ?? ''), notes: intel?.switch_notes ?? '', dirty: false, saving: false, status: 'idle' } }));
+                          }
+                        };
+                        
+                        const setDraftField = (field: 'quantity' | 'notes', val: string) => {
+                          initDraft();
+                          setSwitchDrafts(prev => ({ ...prev, [brand.id]: { ...prev[brand.id] ?? { quantity: String(intel?.switch_quantity ?? ''), notes: intel?.switch_notes ?? '', saving: false, status: 'idle' }, [field]: val, dirty: true, status: 'dirty' } }));
+                        };
+                        
+                        const saveDraft = async () => {
+                          const d = switchDrafts[brand.id];
+                          if (!d?.dirty) return;
+                          const intelRecord = intelData.find(r => r.brand_id === brand.id);
+                          if (!intelRecord?.id) return;
+                          
+                          setSwitchDrafts(prev => ({ ...prev, [brand.id]: { ...prev[brand.id], saving: true, status: 'saving' } }));
+                          try {
+                            const qtyVal = parseInt(d.quantity) || null;
+                            await updateField.mutateAsync({
+                              id: intelRecord.id, store_id: storeId, brand_id: brand.id,
+                              field: 'switch_quantity', value: qtyVal as any,
+                              role: tubeIntelRole, update_method: selectedMethod,
+                            });
+                            if (d.notes !== (intel?.switch_notes ?? '')) {
+                              await updateField.mutateAsync({
+                                id: intelRecord.id, store_id: storeId, brand_id: brand.id,
+                                field: 'switch_notes', value: d.notes || null,
+                                role: tubeIntelRole, update_method: selectedMethod,
+                              });
+                            }
+                            setSwitchDrafts(prev => ({ ...prev, [brand.id]: { ...prev[brand.id], dirty: false, saving: false, status: 'saved' } }));
+                            setTimeout(() => setSwitchDrafts(prev => ({ ...prev, [brand.id]: { ...prev[brand.id], status: 'idle' } })), 2000);
+                          } catch {
+                            setSwitchDrafts(prev => ({ ...prev, [brand.id]: { ...prev[brand.id], saving: false, status: 'error' } }));
+                          }
+                        };
+
+                        return (
+                          <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs text-red-700 dark:text-red-400 whitespace-nowrap">Tubes to switch:</Label>
+                              <Input
+                                type="number"
+                                min={1}
+                                value={draft.quantity}
+                                placeholder="Qty"
+                                onChange={(e) => setDraftField('quantity', e.target.value)}
+                                className="w-20 h-7 text-sm bg-background"
+                                disabled={!canToggleSignals || draft.saving}
+                              />
+                              {priorityQty >= 100 && (
+                                <Badge variant="destructive" className="text-[10px]">High Priority</Badge>
+                              )}
+                              {priorityQty >= 25 && priorityQty < 100 && (
+                                <Badge className="text-[10px] bg-orange-500 text-white">Medium</Badge>
+                              )}
+                              {priorityQty > 0 && priorityQty < 25 && (
+                                <Badge variant="secondary" className="text-[10px]">Low</Badge>
+                              )}
+                            </div>
                             <Input
-                              type="number"
-                              min={1}
-                              value={intel?.switch_quantity ?? ''}
-                              placeholder="Qty"
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value) || null;
-                                const intelRecord = intelData.find(r => r.brand_id === brand.id);
-                                if (intelRecord?.id) {
-                                  updateField.mutate({
-                                    id: intelRecord.id,
-                                    store_id: storeId,
-                                    brand_id: brand.id,
-                                    field: 'switch_quantity',
-                                    value: val as any,
-                                    role: tubeIntelRole,
-                                    update_method: selectedMethod,
-                                  });
-                                }
-                              }}
-                              className="w-20 h-7 text-sm bg-background"
-                              disabled={!canToggleSignals || updateField.isPending}
+                              type="text"
+                              value={draft.notes}
+                              placeholder="Notes (optional)"
+                              onChange={(e) => setDraftField('notes', e.target.value)}
+                              className="h-7 text-xs bg-background"
+                              disabled={!canToggleSignals || draft.saving}
                             />
-                            {intel?.switch_quantity && intel.switch_quantity >= 100 && (
-                              <Badge variant="destructive" className="text-[10px]">High Priority</Badge>
-                            )}
-                            {intel?.switch_quantity && intel.switch_quantity >= 25 && intel.switch_quantity < 100 && (
-                              <Badge className="text-[10px] bg-orange-500 text-white">Medium</Badge>
-                            )}
-                            {intel?.switch_quantity && intel.switch_quantity > 0 && intel.switch_quantity < 25 && (
-                              <Badge variant="secondary" className="text-[10px]">Low</Badge>
-                            )}
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] text-muted-foreground">
+                                Switch quantities are observational and do not modify inventory or create orders.
+                              </p>
+                              <div className="flex items-center gap-2">
+                                {draft.status === 'dirty' && <span className="text-[10px] text-amber-600 dark:text-amber-400">Unsaved</span>}
+                                {draft.status === 'saving' && <span className="text-[10px] text-muted-foreground">Saving…</span>}
+                                {draft.status === 'saved' && <span className="text-[10px] text-green-600 dark:text-green-400">Saved ✓</span>}
+                                {draft.status === 'error' && <span className="text-[10px] text-destructive">Error</span>}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 px-2 text-[10px]"
+                                  disabled={!draft.dirty || draft.saving}
+                                  onClick={saveDraft}
+                                >
+                                  <Save className="h-3 w-3 mr-1" />
+                                  Save
+                                </Button>
+                              </div>
+                            </div>
                           </div>
-                          <Input
-                            type="text"
-                            value={intel?.switch_notes ?? ''}
-                            placeholder="Notes (optional)"
-                            onChange={(e) => {
-                              const intelRecord = intelData.find(r => r.brand_id === brand.id);
-                              if (intelRecord?.id) {
-                                updateField.mutate({
-                                  id: intelRecord.id,
-                                  store_id: storeId,
-                                  brand_id: brand.id,
-                                  field: 'switch_notes',
-                                  value: e.target.value || null,
-                                  role: tubeIntelRole,
-                                  update_method: selectedMethod,
-                                });
-                              }
-                            }}
-                            className="h-7 text-xs bg-background"
-                            disabled={!canToggleSignals || updateField.isPending}
-                          />
-                          <p className="text-[10px] text-muted-foreground">
-                            Switch quantities are observational and do not modify inventory or create orders.
-                          </p>
-                        </div>
-                      )}
+                        );
+                      })()}
 
                       {/* Interest State (Mutually Exclusive Buttons) */}
                       <div className="flex items-center gap-2">
