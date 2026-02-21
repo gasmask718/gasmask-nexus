@@ -4,7 +4,7 @@ import {
   Shield, Search, FileText, AlertTriangle, FileWarning, Loader2,
   CheckCircle, XCircle, Eye, Send, GitCompare,
   TrendingUp, DollarSign, AlertCircle, ClipboardList, Lock,
-  ShieldCheck, ShieldAlert, ToggleLeft, ToggleRight
+  ShieldCheck, ShieldAlert, ToggleLeft, ToggleRight, Archive, LockKeyhole
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ import {
   useApplyReconciliation,
   useStrictVerification,
   useVerificationSnapshots,
+  useUpdateBatchStatus,
   type AuditInvoiceDraft,
   type AuditFlag,
   type AuditBatch,
@@ -98,7 +99,12 @@ export default function AuditEnginePage() {
   const applyRecon = useApplyReconciliation();
   const strictVerify = useStrictVerification();
   const { data: snapshots } = useVerificationSnapshots(selectedBatchId);
+  const updateBatchStatus = useUpdateBatchStatus();
 
+  // Determine if selected batch is locked
+  const selectedBatch = batches?.find(b => b.id === selectedBatchId);
+  const isBatchClosed = selectedBatch?.batch_status === 'closed';
+  const batchStatus = selectedBatch?.batch_status || 'open';
   // Filter recon results based on mode
   const filteredReconResults = strictMode
     ? (reconResults || []).filter(r => r.confidence_score >= 80)
@@ -175,7 +181,19 @@ export default function AuditEnginePage() {
           <TabsTrigger value="history">📂 History</TabsTrigger>
         </TabsList>
 
-        {/* ═══ INGEST TAB ═══ */}
+        {/* Batch Lockdown Banner */}
+        {isBatchClosed && activeTab !== 'ingest' && activeTab !== 'history' && (
+          <div className="bg-muted/50 border border-muted rounded-lg p-4 flex items-center gap-3">
+            <LockKeyhole className="h-5 w-5 text-muted-foreground" />
+            <div>
+              <p className="text-sm font-medium">Batch Closed — View Only</p>
+              <p className="text-xs text-muted-foreground">
+                This batch was closed on {selectedBatch?.closed_at ? format(new Date(selectedBatch.closed_at), 'MMM d, yyyy h:mm a') : 'unknown'}.
+                No further modifications are permitted.
+              </p>
+            </div>
+          </div>
+        )}
         <TabsContent value="ingest" className="space-y-4">
           <Card>
             <CardHeader>
@@ -316,7 +334,7 @@ export default function AuditEnginePage() {
                       </span>
                       <span className="text-xs text-muted-foreground">{flag.title}</span>
                     </div>
-                    {flag.status === 'open' ? (
+                    {flag.status === 'open' && !isBatchClosed ? (
                       <Button size="sm" variant="outline" onClick={() => { setFlagDialog(flag); setActionNotes(''); }}>
                         Resolve
                       </Button>
@@ -356,6 +374,7 @@ export default function AuditEnginePage() {
                 <DraftCard
                   key={draft.id}
                   draft={draft}
+                  locked={isBatchClosed}
                   onReview={() => { setDraftDialog(draft); setActionNotes(''); }}
                   onFinalize={() => { setFinalizeDialog(draft); setActionNotes(''); }}
                   onCreateInvoice={() => { setConfirmFinalizeDialog(draft); }}
@@ -393,7 +412,7 @@ export default function AuditEnginePage() {
                     {!strictMode ? (
                       <Button
                         onClick={() => selectedBatchId && runReconciliation.mutateAsync(selectedBatchId)}
-                        disabled={!selectedBatchId || runReconciliation.isPending}
+                        disabled={!selectedBatchId || runReconciliation.isPending || isBatchClosed}
                         className="gap-2"
                       >
                         {runReconciliation.isPending ? (
@@ -404,8 +423,15 @@ export default function AuditEnginePage() {
                       </Button>
                     ) : (
                       <Button
-                        onClick={() => selectedBatchId && strictVerify.mutateAsync(selectedBatchId)}
-                        disabled={!selectedBatchId || strictVerify.isPending}
+                        onClick={async () => {
+                          if (!selectedBatchId) return;
+                          const result = await strictVerify.mutateAsync(selectedBatchId);
+                          // Auto-transition to verified_clean if zero issues
+                          if (result.status === 'verified_clean' && batchStatus === 'under_review') {
+                            await updateBatchStatus.mutateAsync({ batchId: selectedBatchId, newStatus: 'verified_clean' });
+                          }
+                        }}
+                        disabled={!selectedBatchId || strictVerify.isPending || isBatchClosed}
                         className="gap-2 bg-emerald-600 hover:bg-emerald-700"
                       >
                         {strictVerify.isPending ? (
@@ -547,6 +573,7 @@ export default function AuditEnginePage() {
                   <StrictReconResultsList
                     results={filteredReconResults}
                     strictMode={strictMode}
+                    locked={isBatchClosed}
                     onApply={(id) => applyRecon.mutateAsync({ resultId: id, action: 'approve' })}
                     onReject={(id, reason) => applyRecon.mutateAsync({ resultId: id, action: 'reject', notes: reason })}
                     isApplying={applyRecon.isPending}
@@ -561,14 +588,15 @@ export default function AuditEnginePage() {
           <Card>
             <CardHeader>
               <CardTitle>Audit History</CardTitle>
-              <CardDescription>Previous parse batches and their results</CardDescription>
+              <CardDescription>Previous parse batches and their lifecycle status</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Parse Status</TableHead>
+                    <TableHead>Batch Status</TableHead>
                     <TableHead>Events</TableHead>
                     <TableHead>Flags</TableHead>
                     <TableHead>Drafts</TableHead>
@@ -578,7 +606,7 @@ export default function AuditEnginePage() {
                 <TableBody>
                   {!batches?.length ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                         No audit batches yet
                       </TableCell>
                     </TableRow>
@@ -592,20 +620,46 @@ export default function AuditEnginePage() {
                           {batch.status}
                         </Badge>
                       </TableCell>
+                      <TableCell>
+                        <BatchStatusBadge status={batch.batch_status} />
+                      </TableCell>
                       <TableCell className="text-sm">{batch.totals?.events_created ?? 0}</TableCell>
                       <TableCell className="text-sm">{batch.totals?.flags_created ?? 0}</TableCell>
                       <TableCell className="text-sm">{batch.totals?.drafts_created ?? 0}</TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedBatchId(batch.id);
-                            setActiveTab('events');
-                          }}
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setSelectedBatchId(batch.id);
+                              setActiveTab('events');
+                            }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" /> View
+                          </Button>
+                          {batch.batch_status === 'open' && batch.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateBatchStatus.mutateAsync({ batchId: batch.id, newStatus: 'under_review' })}
+                              disabled={updateBatchStatus.isPending}
+                            >
+                              Start Review
+                            </Button>
+                          )}
+                          {batch.batch_status === 'verified_clean' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-emerald-500/50 text-emerald-400"
+                              onClick={() => updateBatchStatus.mutateAsync({ batchId: batch.id, newStatus: 'closed' })}
+                              disabled={updateBatchStatus.isPending}
+                            >
+                              <LockKeyhole className="h-3 w-3 mr-1" /> Close Batch
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -880,6 +934,26 @@ export default function AuditEnginePage() {
   );
 }
 
+function BatchStatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    open: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
+    under_review: 'bg-yellow-500/15 text-yellow-400 border-yellow-500/30',
+    verified_clean: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
+    closed: 'bg-muted text-muted-foreground border-muted',
+  };
+  const icons: Record<string, string> = {
+    open: '📂',
+    under_review: '🔍',
+    verified_clean: '✅',
+    closed: '🔒',
+  };
+  return (
+    <Badge className={styles[status] || 'bg-muted'}>
+      {icons[status] || ''} {status.replace(/_/g, ' ')}
+    </Badge>
+  );
+}
+
 // ═══ Sub-Components ═══
 
 function MetricCard({ icon: Icon, label, value, color }: {
@@ -903,8 +977,9 @@ function ConfidenceBadge({ score }: { score: number }) {
   return <span className={`text-sm font-mono font-medium ${color}`}>{score}%</span>;
 }
 
-function DraftCard({ draft, onReview, onFinalize, onCreateInvoice }: {
+function DraftCard({ draft, locked = false, onReview, onFinalize, onCreateInvoice }: {
   draft: AuditInvoiceDraft;
+  locked?: boolean;
   onReview: () => void;
   onFinalize: () => void;
   onCreateInvoice: () => void;
@@ -934,10 +1009,10 @@ function DraftCard({ draft, onReview, onFinalize, onCreateInvoice }: {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold">${draft.total ?? 0}</span>
-          {draft.approval_status === 'pending' && (
+          {!locked && draft.approval_status === 'pending' && (
             <Button size="sm" onClick={onReview}>Review</Button>
           )}
-          {draft.finalize_status === 'ready_to_finalize' && (
+          {!locked && draft.finalize_status === 'ready_to_finalize' && (
             <>
               <Button size="sm" variant="outline" className="border-yellow-500/50 text-yellow-400" onClick={onFinalize}>
                 <Lock className="h-3 w-3 mr-1" /> Prepare
@@ -996,9 +1071,10 @@ const RECON_TYPE_COLORS: Record<string, string> = {
   duplicate_risk: 'bg-pink-500/15 text-pink-400 border-pink-500/30',
 };
 
-function StrictReconResultsList({ results, strictMode, onApply, onReject, isApplying }: {
+function StrictReconResultsList({ results, strictMode, locked = false, onApply, onReject, isApplying }: {
   results: AuditReconciliationResult[];
   strictMode: boolean;
+  locked?: boolean;
   onApply: (id: string) => void;
   onReject: (id: string, reason?: string) => void;
   isApplying: boolean;
@@ -1090,7 +1166,7 @@ function StrictReconResultsList({ results, strictMode, onApply, onReject, isAppl
                       )}
                     </div>
 
-                    {item.status === 'open' && (
+                    {item.status === 'open' && !locked && (
                       <div className="flex items-center gap-2 shrink-0">
                         {needsSecondary && (
                           <label className="flex items-center gap-1 text-xs text-muted-foreground">

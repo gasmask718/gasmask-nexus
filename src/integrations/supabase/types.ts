@@ -6646,6 +6646,9 @@ export type Database = {
       }
       audit_batches: {
         Row: {
+          batch_status: string
+          closed_at: string | null
+          closed_by: string | null
           created_at: string
           created_by: string
           error_message: string | null
@@ -6657,6 +6660,9 @@ export type Database = {
           totals: Json
         }
         Insert: {
+          batch_status?: string
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by: string
           error_message?: string | null
@@ -6668,6 +6674,9 @@ export type Database = {
           totals?: Json
         }
         Update: {
+          batch_status?: string
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by?: string
           error_message?: string | null
