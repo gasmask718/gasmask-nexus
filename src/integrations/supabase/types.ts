@@ -58499,6 +58499,7 @@ export type Database = {
         Returns: boolean
       }
       is_developer: { Args: { _user_id: string }; Returns: boolean }
+      is_elevated_admin: { Args: { _user_id: string }; Returns: boolean }
       is_elevated_user:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
