@@ -130,3 +130,6 @@ verify_jwt = false
 
 [functions.create-ops-thread]
 verify_jwt = false
+
+[functions.audit-note-parser]
+verify_jwt = false

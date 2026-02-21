@@ -528,6 +528,7 @@ import FinancialDashboard from '@/pages/grabba/FinancialDashboard';
 import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
 import AdvisorPenthouse from '@/pages/grabba/AdvisorPenthouse';
+import AuditEnginePage from '@/pages/penthouse/AuditEnginePage';
 import InstinctLog from '@/pages/grabba/InstinctLog';
 import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerformance';
 import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
@@ -1364,6 +1365,13 @@ export default function AppRoutes() {
         <Route path="/penthouse/missions" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <OwnerMissionControl />
+          </RequireRole>
+        } />
+
+        {/* ═══ PENTHOUSE — Intelligent Audit Engine ═══ */}
+        <Route path="/penthouse/audit-engine" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <AuditEnginePage />
           </RequireRole>
         } />
 
