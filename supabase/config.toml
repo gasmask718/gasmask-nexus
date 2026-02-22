@@ -142,3 +142,9 @@ verify_jwt = false
 
 [functions.strict-verify-batch]
 verify_jwt = false
+
+[functions.marketplace-order-engine]
+verify_jwt = false
+
+[functions.extract-profile-enrichment]
+verify_jwt = false
