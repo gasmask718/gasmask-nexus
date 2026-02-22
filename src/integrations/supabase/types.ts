@@ -30022,6 +30022,47 @@ export type Database = {
           },
         ]
       }
+      marketplace_payout_events: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          new_status: string | null
+          old_status: string | null
+          payout_id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          payout_id: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          payout_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_payout_events_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mass_offer_campaigns: {
         Row: {
           accepted_count: number
@@ -53196,7 +53237,9 @@ export type Database = {
       wholesaler_payouts: {
         Row: {
           amount: number
+          approved_at: string | null
           created_at: string | null
+          hold_reason: string | null
           id: string
           net_amount: number
           order_id: string | null
@@ -53206,12 +53249,15 @@ export type Database = {
           period_end: string | null
           period_start: string | null
           platform_fee: number | null
+          reversal_reason: string | null
           status: string | null
           wholesaler_id: string | null
         }
         Insert: {
           amount: number
+          approved_at?: string | null
           created_at?: string | null
+          hold_reason?: string | null
           id?: string
           net_amount: number
           order_id?: string | null
@@ -53221,12 +53267,15 @@ export type Database = {
           period_end?: string | null
           period_start?: string | null
           platform_fee?: number | null
+          reversal_reason?: string | null
           status?: string | null
           wholesaler_id?: string | null
         }
         Update: {
           amount?: number
+          approved_at?: string | null
           created_at?: string | null
+          hold_reason?: string | null
           id?: string
           net_amount?: number
           order_id?: string | null
@@ -53236,6 +53285,7 @@ export type Database = {
           period_end?: string | null
           period_start?: string | null
           platform_fee?: number | null
+          reversal_reason?: string | null
           status?: string | null
           wholesaler_id?: string | null
         }
