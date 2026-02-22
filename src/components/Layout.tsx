@@ -103,6 +103,7 @@ import {
   UserMinus,
   Accessibility,
   Star,
+  Link2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
@@ -133,6 +134,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/owner/risk-radar', label: 'Risk Radar', icon: AlertTriangle },
       { path: '/os/owner/briefing', label: 'Daily Briefing', icon: Calendar },
       { path: '/os/owner/holdings', label: 'Holdings Overview', icon: Building },
+      { path: '/admin/dev/marketplace-connection', label: 'Marketplace Connection', icon: Link2 },
     ],
   },
   securityGovernance: {
