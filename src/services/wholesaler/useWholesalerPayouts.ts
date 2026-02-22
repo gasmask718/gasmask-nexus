@@ -21,6 +21,13 @@ export interface WholesalerPayout {
 export interface FinancialSummary {
   totalEarnings: number;
   pendingPayout: number;
+  approvedPayout: number;
+  paidPayout: number;
+  heldPayout: number;
+  pendingCount: number;
+  approvedCount: number;
+  paidCount: number;
+  heldCount: number;
   totalOrders: number;
   platformFees: number;
   averageOrderValue: number;
@@ -52,45 +59,48 @@ export function useWholesalerPayouts() {
     queryFn: async () => {
       if (!profile) return null;
 
-      // Get all completed orders
-      const { data: orders, error: ordersError } = await supabase
-        .from('marketplace_orders')
-        .select('total, subtotal')
-        .eq('wholesaler_id', profile.id)
-        .eq('payment_status', 'paid');
-
-      if (ordersError) throw ordersError;
-
-      // Get pending payouts
-      const { data: pendingPayouts, error: payoutsError } = await supabase
+      // Get all payouts grouped by status
+      const { data: allPayouts, error: payoutsError } = await supabase
         .from('wholesaler_payouts')
-        .select('net_amount')
-        .eq('wholesaler_id', profile.id)
-        .eq('status', 'pending');
+        .select('net_amount, platform_fee, amount, status')
+        .eq('wholesaler_id', profile.id);
 
       if (payoutsError) throw payoutsError;
 
-      // Get paid payouts
-      const { data: paidPayouts, error: paidError } = await supabase
-        .from('wholesaler_payouts')
-        .select('net_amount, platform_fee')
-        .eq('wholesaler_id', profile.id)
-        .eq('status', 'paid');
+      const rows = allPayouts || [];
+      const byStatus = (s: string) => rows.filter(r => r.status === s);
+      const sumNet = (arr: typeof rows) => arr.reduce((s, r) => s + Number(r.net_amount || 0), 0);
 
-      if (paidError) throw paidError;
+      const pending = byStatus('pending');
+      const approved = byStatus('approved');
+      const paid = byStatus('paid');
+      const held = byStatus('held');
+
+      const totalEarnings = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+      const platformFees = rows.reduce((s, r) => s + Number(r.platform_fee || 0), 0);
+
+      // Get order count
+      const { data: orders } = await supabase
+        .from('marketplace_orders')
+        .select('id')
+        .eq('wholesaler_id', profile.id)
+        .eq('payment_status', 'paid');
 
       const totalOrders = orders?.length || 0;
-      const totalEarnings = orders?.reduce((sum, o) => sum + (Number(o.subtotal) || 0), 0) || 0;
-      const pendingPayout = pendingPayouts?.reduce((sum, p) => sum + (Number(p.net_amount) || 0), 0) || 0;
-      const platformFees = paidPayouts?.reduce((sum, p) => sum + (Number(p.platform_fee) || 0), 0) || 0;
-      const averageOrderValue = totalOrders > 0 ? totalEarnings / totalOrders : 0;
 
       return {
         totalEarnings,
-        pendingPayout,
+        pendingPayout: sumNet(pending),
+        approvedPayout: sumNet(approved),
+        paidPayout: sumNet(paid),
+        heldPayout: sumNet(held),
+        pendingCount: pending.length,
+        approvedCount: approved.length,
+        paidCount: paid.length,
+        heldCount: held.length,
         totalOrders,
         platformFees,
-        averageOrderValue,
+        averageOrderValue: totalOrders > 0 ? totalEarnings / totalOrders : 0,
       } as FinancialSummary;
     },
     enabled: !!profile,

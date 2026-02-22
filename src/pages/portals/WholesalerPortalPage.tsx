@@ -290,6 +290,7 @@ function PayoutSummaryPanel({
   }
 
   const pendingPayouts = payouts?.filter(p => p.status === 'pending') || [];
+  const approvedPayouts = payouts?.filter(p => p.status === 'approved') || [];
   const paidPayouts = payouts?.filter(p => p.status === 'paid') || [];
 
   return (
@@ -309,25 +310,37 @@ function PayoutSummaryPanel({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
-              <p className="text-xs text-muted-foreground">Total Earnings</p>
-              <p className="text-xl font-bold text-emerald-400">
-                ${(summary?.totalEarnings || 0).toLocaleString()}
-              </p>
-            </div>
             <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-              <p className="text-xs text-muted-foreground">Pending Payout</p>
-              <p className="text-xl font-bold text-amber-400">
+              <p className="text-xs text-muted-foreground">Pending</p>
+              <p className="text-lg font-bold text-amber-400">
                 ${(summary?.pendingPayout || 0).toLocaleString()}
               </p>
+              <p className="text-[10px] text-muted-foreground">{summary?.pendingCount || 0} payouts</p>
+            </div>
+            <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+              <p className="text-xs text-muted-foreground">Approved</p>
+              <p className="text-lg font-bold text-blue-400">
+                ${(summary?.approvedPayout || 0).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{summary?.approvedCount || 0} payouts</p>
+            </div>
+            <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+              <p className="text-xs text-muted-foreground">Paid Out</p>
+              <p className="text-lg font-bold text-emerald-400">
+                ${(summary?.paidPayout || 0).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{summary?.paidCount || 0} payouts</p>
+            </div>
+            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+              <p className="text-xs text-muted-foreground">Total Earnings</p>
+              <p className="text-lg font-bold">
+                ${(summary?.totalEarnings || 0).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{summary?.totalOrders || 0} orders</p>
             </div>
           </div>
 
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Total Orders</span>
-              <span className="font-medium">{summary?.totalOrders || 0}</span>
-            </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Platform Fees</span>
               <span className="font-medium text-red-400">

@@ -92,6 +92,7 @@ import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage 
 import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
 import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
 import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
+import { AdminMarketplacePayoutsPage } from '@/pages/admin/marketplace-payouts';
 import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxReportsPage, PayoutReportsPage } from '@/pages/admin/reports';
 import DeletedRecords from '@/pages/admin/DeletedRecords';
 import QACommandCenter from '@/pages/admin/qa/QACommandCenter';
@@ -2257,6 +2258,15 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['admin']}>
             <Layout><AdminPayoutDetailPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* Marketplace Vendor Payouts */}
+      <Route path="/admin/marketplace-payouts" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['owner', 'admin']}>
+            <Layout><AdminMarketplacePayoutsPage /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />
