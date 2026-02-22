@@ -18,6 +18,9 @@ import {
   Search, Download, Snowflake, Lock, Unlock, RotateCcw,
   ShieldAlert, Gauge, Timer, TriangleAlert
 } from 'lucide-react';
+
+const UI_VERSION = "Marketplace Command Center v2.0";
+console.log("Loaded:", UI_VERSION);
 import {
   useMarketplaceKPIs,
   useOrderLifecycle,
@@ -121,7 +124,7 @@ export default function MarketplaceControlTowerPage() {
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Marketplace Command Center</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Marketplace Command Center — <span className="text-primary">v2.0</span></h1>
               <p className="text-xs text-muted-foreground">Full operational control — risk, settlement, vendors, disputes</p>
             </div>
             {kpis?.riskHeat && <div className="flex items-center gap-1.5 ml-4">{riskHeatIndicator(kpis.riskHeat)} <span className="text-xs text-muted-foreground uppercase font-mono">{kpis.riskHeat}</span></div>}
