@@ -151,6 +151,17 @@ const DriverProfile: React.FC = () => {
     onError: (err: any) => toast.error(err.message || 'Failed to update driver')
   });
 
+  const unifiedProfile = useUnifiedProfileView({
+    userId: driver?.user_id || driverId || null,
+    role: 'driver',
+    displayName: driver?.full_name || '',
+    status: driver?.status || 'active',
+    joinedAt: driver?.created_at || null,
+    phone: driver?.phone,
+    email: driver?.email,
+    territory: driver?.home_base,
+  });
+
   if (isLoading || !driver) {
     return (
       <ProfileLayout
@@ -161,17 +172,6 @@ const DriverProfile: React.FC = () => {
       />
     );
   }
-
-  const unifiedProfile = useUnifiedProfileView({
-    userId: driver.user_id || driverId,
-    role: 'driver',
-    displayName: driver.full_name,
-    status: driver.status || 'active',
-    joinedAt: driver.created_at || null,
-    phone: driver.phone,
-    email: driver.email,
-    territory: driver.home_base,
-  });
 
   // ─── Compute Performance Metrics ───
   const allRoutes = canonicalRoutes.length > 0 ? canonicalRoutes : legacyRoutes;
