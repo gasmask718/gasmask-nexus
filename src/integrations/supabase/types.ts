@@ -29958,6 +29958,10 @@ export type Database = {
         Row: {
           billing_address: Json | null
           created_at: string | null
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          dispute_resolved_at: string | null
+          dispute_status: string
           fulfillment_status: string | null
           id: string
           notes: string | null
@@ -29977,6 +29981,10 @@ export type Database = {
         Insert: {
           billing_address?: Json | null
           created_at?: string | null
+          dispute_opened_at?: string | null
+          dispute_reason?: string | null
+          dispute_resolved_at?: string | null
+          dispute_status?: string
           fulfillment_status?: string | null
           id?: string
           notes?: string | null
@@ -29996,6 +30004,10 @@ export type Database = {
         Update: {
           billing_address?: Json | null
           created_at?: string | null
+          dispute_opened_at?: string | null
+          dispute_reason?: string | null
+          dispute_resolved_at?: string | null
+          dispute_status?: string
           fulfillment_status?: string | null
           id?: string
           notes?: string | null
@@ -50889,6 +50901,64 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_liabilities: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          order_id: string | null
+          payout_id: string | null
+          reason: string | null
+          resolved_at: string | null
+          status: string
+          vendor_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          payout_id?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          vendor_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          payout_id?: string | null
+          reason?: string | null
+          resolved_at?: string | null
+          status?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_liabilities_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_liabilities_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_payouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_liabilities_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_playbooks: {
         Row: {
           approved_at: string | null
@@ -53239,8 +53309,11 @@ export type Database = {
           amount: number
           approved_at: string | null
           created_at: string | null
+          dispute_flag: boolean
+          dispute_linked_order_id: string | null
           hold_reason: string | null
           id: string
+          liability_amount: number | null
           net_amount: number
           order_id: string | null
           paid_at: string | null
@@ -53259,8 +53332,11 @@ export type Database = {
           amount: number
           approved_at?: string | null
           created_at?: string | null
+          dispute_flag?: boolean
+          dispute_linked_order_id?: string | null
           hold_reason?: string | null
           id?: string
+          liability_amount?: number | null
           net_amount: number
           order_id?: string | null
           paid_at?: string | null
@@ -53279,8 +53355,11 @@ export type Database = {
           amount?: number
           approved_at?: string | null
           created_at?: string | null
+          dispute_flag?: boolean
+          dispute_linked_order_id?: string | null
           hold_reason?: string | null
           id?: string
+          liability_amount?: number | null
           net_amount?: number
           order_id?: string | null
           paid_at?: string | null
@@ -53296,6 +53375,13 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesaler_payouts_dispute_linked_order_id_fkey"
+            columns: ["dispute_linked_order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesaler_payouts_order_id_fkey"
             columns: ["order_id"]
@@ -58568,6 +58654,10 @@ export type Database = {
           priority: number
         }[]
       }
+      handle_order_dispute: {
+        Args: { p_order_id: string; p_reason: string }
+        Returns: undefined
+      }
       has_audit_engine_access: { Args: { _user_id: string }; Returns: boolean }
       has_finance_access: { Args: { _user_id: string }; Returns: boolean }
       has_org_role: {
@@ -58812,6 +58902,10 @@ export type Database = {
       require_device_key_rotation: {
         Args: { _device_id: string }
         Returns: boolean
+      }
+      resolve_dispute: {
+        Args: { p_order_id: string; p_outcome: string }
+        Returns: undefined
       }
       resolve_intent: { Args: { p_intent_id: string }; Returns: Json }
       resolve_ops_thread: { Args: { p_thread_id: string }; Returns: undefined }
