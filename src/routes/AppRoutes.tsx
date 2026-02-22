@@ -377,6 +377,7 @@ import { WarehouseDashboard } from '@/pages/os/warehouse';
 import { InventoryDashboard, ProductsPage, ProductDetailPage, ProductInventoryPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
 import ProductConversions from '@/pages/os/ProductConversions';
 import LegacyInvoiceRepair from '@/pages/admin/LegacyInvoiceRepair';
+import MarketplaceConnectionPage from '@/pages/admin/dev/MarketplaceConnectionPage';
 import OSLayout from '@/pages/os/OSLayout';
 import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
 import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
@@ -1096,6 +1097,16 @@ export default function AppRoutes() {
           element={
             <RequireRole allowedRoles={['admin']} showLocked>
               <LegacyInvoiceRepair />
+            </RequireRole>
+          }
+        />
+
+        {/* Marketplace Connection Pack - Dev Only, Admin/Owner */}
+        <Route
+          path="/admin/dev/marketplace-connection"
+          element={
+            <RequireRole allowedRoles={['admin', 'owner']} showLocked>
+              <MarketplaceConnectionPage />
             </RequireRole>
           }
         />
