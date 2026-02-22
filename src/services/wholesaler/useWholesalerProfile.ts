@@ -17,6 +17,8 @@ export interface WholesalerProfile {
   shipping_preferences: any;
   website_url: string | null;
   wholesaler_type: string | null;
+  commission_percent: number | null;
+  warehouse_address: string | null;
   created_at: string | null;
 }
 

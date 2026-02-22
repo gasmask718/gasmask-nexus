@@ -148,3 +148,6 @@ verify_jwt = false
 
 [functions.extract-profile-enrichment]
 verify_jwt = false
+
+[functions.generate-shipping-label]
+verify_jwt = false
