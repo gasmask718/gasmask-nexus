@@ -5,7 +5,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-const OPS_ROLES = ['driver', 'biker', 'ambassador', 'influencer', 'store', 'store_owner', 'wholesaler', 'customer', 'production'];
+const OPS_ROLES = ['driver', 'biker', 'ambassador', 'influencer', 'store', 'store_owner', 'wholesaler', 'customer', 'production', 'owner', 'admin', 'ceo', 'va', 'manager', 'accountant', 'csr', 'dynasty_owner', 'super_admin'];
 
 interface OpsAccessGateProps {
   children: React.ReactNode;
