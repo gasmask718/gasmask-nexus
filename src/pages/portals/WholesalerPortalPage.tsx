@@ -4,26 +4,29 @@ import { useWholesalerFulfillments } from '@/services/wholesaler/useWholesalerFu
 import { useWholesalerPayouts } from '@/services/wholesaler/useWholesalerPayouts';
 import { useWholesalerProfile } from '@/services/wholesaler/useWholesalerProfile';
 import { useWholesalerAnalytics } from '@/services/wholesaler/useWholesalerAnalytics';
+import { useWholesalerDisputes } from '@/services/wholesaler/useWholesalerDisputes';
 import { Warehouse, Loader2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ExecutiveKPIPanel,
-  RevenueAnalyticsSection,
   FulfillmentCommandGrid,
   SettlementPipelineVisualizer,
+  SettlementDetail,
   PayoutLedgerAdvanced,
-  PerformanceScorecard,
   LiabilityBanner,
+  DisputeView,
+  RevenueAnalyticsSection,
 } from '@/components/wholesaler-console';
 
-type ConsoleTab = 'operations' | 'finance' | 'analytics';
+type ConsoleTab = 'fulfillment' | 'settlement' | 'payouts' | 'disputes' | 'analytics';
 
 export default function WholesalerPortalPage() {
   const { profile, isLoading: profileLoading } = useWholesalerProfile();
   const { fulfillments, isLoading: fulfillmentsLoading, generateLabel, isGeneratingLabel, markShipped, isMarkingShipped } = useWholesalerFulfillments();
-  const { payouts, financialSummary, isLoading: payoutsLoading } = useWholesalerPayouts();
-  const { revenueData, pipelineData, disputeTrend, performance, trendKPIs, liabilities, isLoading: analyticsLoading } = useWholesalerAnalytics();
-  const [activeTab, setActiveTab] = useState<ConsoleTab>('operations');
+  const { payouts, isLoading: payoutsLoading } = useWholesalerPayouts();
+  const { revenueData, pipelineData, disputeTrend, trendKPIs, liabilities, isLoading: analyticsLoading } = useWholesalerAnalytics();
+  const { disputes, isLoading: disputesLoading, hasDisputes } = useWholesalerDisputes();
+  const [activeTab, setActiveTab] = useState<ConsoleTab>('fulfillment');
 
   const isLoading = profileLoading || fulfillmentsLoading || payoutsLoading;
 
@@ -31,7 +34,7 @@ export default function WholesalerPortalPage() {
     return (
       <EnhancedPortalLayout
         title="Operations Console"
-        subtitle="Enterprise wholesaler command center"
+        subtitle="Wholesaler command center"
         portalIcon={<Warehouse className="h-4 w-4 text-primary-foreground" />}
         quickActions={[]}
       >
@@ -45,39 +48,56 @@ export default function WholesalerPortalPage() {
   return (
     <EnhancedPortalLayout
       title="Operations Console"
-      subtitle={profile?.company_name ? `${profile.company_name} · Enterprise Dashboard` : 'Enterprise wholesaler command center'}
+      subtitle={profile?.company_name || 'Wholesaler Dashboard'}
       portalIcon={<Warehouse className="h-4 w-4 text-primary-foreground" />}
       quickActions={[]}
     >
-      {/* Liability Warning */}
+      {/* Liability Warning — always visible if present */}
       <LiabilityBanner totalLiability={liabilities.total} itemCount={liabilities.items.length} />
 
-      {/* Executive KPIs */}
+      {/* Financial Heartbeat — Top KPIs */}
       <div className="mt-4">
         <ExecutiveKPIPanel kpis={trendKPIs} />
       </div>
 
-      {/* Settlement Pipeline */}
+      {/* Settlement Pipeline Overview */}
       <div className="mt-4">
         <SettlementPipelineVisualizer stages={pipelineData} />
       </div>
 
-      {/* Console Tabs */}
+      {/* Main Console Tabs */}
       <div className="mt-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ConsoleTab)}>
-          <TabsList className="w-full grid grid-cols-3 mb-4">
-            <TabsTrigger value="operations" className="text-xs font-semibold">
-              Fulfillment Queue
+          <TabsList className="w-full grid grid-cols-5 mb-4">
+            <TabsTrigger value="fulfillment" className="text-xs font-semibold">
+              Orders
+              {fulfillments.filter(f => f.status === 'pending').length > 0 && (
+                <span className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-bold">
+                  {fulfillments.filter(f => f.status === 'pending').length}
+                </span>
+              )}
             </TabsTrigger>
-            <TabsTrigger value="finance" className="text-xs font-semibold">
-              Payout Ledger
+            <TabsTrigger value="settlement" className="text-xs font-semibold">
+              Settlement
+            </TabsTrigger>
+            <TabsTrigger value="payouts" className="text-xs font-semibold">
+              Payouts
+            </TabsTrigger>
+            <TabsTrigger value="disputes" className="text-xs font-semibold">
+              Disputes
+              {hasDisputes && (
+                <span className="ml-1.5 inline-flex items-center justify-center h-4 w-4 rounded-full bg-red-500/20 text-red-400 text-[10px] font-bold">
+                  {disputes.length}
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs font-semibold">
               Analytics
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="operations">
+          {/* Fulfillment Queue */}
+          <TabsContent value="fulfillment">
             <FulfillmentCommandGrid
               fulfillments={fulfillments}
               isLoading={fulfillmentsLoading}
@@ -88,19 +108,34 @@ export default function WholesalerPortalPage() {
             />
           </TabsContent>
 
-          <TabsContent value="finance">
+          {/* Settlement Detail */}
+          <TabsContent value="settlement">
+            <SettlementDetail payouts={payouts} />
+            {payouts.filter(p => p.status === 'in_settlement').length === 0 && (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                No funds currently in settlement.
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Payout Ledger */}
+          <TabsContent value="payouts">
             <PayoutLedgerAdvanced payouts={payouts} isLoading={payoutsLoading} />
           </TabsContent>
 
+          {/* Disputes (Read Only) */}
+          <TabsContent value="disputes">
+            <DisputeView disputes={disputes} isLoading={disputesLoading} />
+            {!hasDisputes && !disputesLoading && (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                No disputes on record.
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Analytics */}
           <TabsContent value="analytics">
-            <div className="grid lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2 space-y-4">
-                <RevenueAnalyticsSection revenueData={revenueData} disputeTrend={disputeTrend} />
-              </div>
-              <div className="space-y-4">
-                <PerformanceScorecard metrics={performance} />
-              </div>
-            </div>
+            <RevenueAnalyticsSection revenueData={revenueData} disputeTrend={disputeTrend} />
           </TabsContent>
         </Tabs>
       </div>
