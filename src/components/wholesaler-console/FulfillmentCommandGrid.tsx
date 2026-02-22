@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Printer, Truck, FileText, CheckCircle, Clock, Loader2, ArrowUpDown } from 'lucide-react';
+import { Printer, Truck, CheckCircle, Loader2, ArrowUpDown, MapPin, Lock } from 'lucide-react';
 import { format, differenceInHours } from 'date-fns';
 import { WholesalerFulfillment } from '@/services/wholesaler/useWholesalerFulfillments';
 
@@ -28,6 +28,7 @@ export function FulfillmentCommandGrid({
   const [sortBy, setSortBy] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const getSLAHours = (f: WholesalerFulfillment) => {
     if (f.status !== 'pending' && f.status !== 'label_generated') return Infinity;
@@ -124,63 +125,114 @@ export function FulfillmentCommandGrid({
             const items = Array.isArray(f.items_snapshot) ? f.items_snapshot : [];
             const firstItem = items[0];
             const totalQty = items.reduce((s: number, it: any) => s + (it.qty || 0), 0);
+            const isExpanded = expandedId === f.id;
 
             return (
-              <div key={f.id} className="grid grid-cols-[1fr_100px_80px_80px_100px_120px] gap-2 px-4 py-2.5 border-b border-border/20 items-center hover:bg-muted/20 transition-colors text-sm">
-                <div>
-                  <p className="font-mono text-xs font-medium">#{f.order?.id?.slice(0, 8)}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {f.created_at ? format(new Date(f.created_at), 'MMM d, h:mm a') : '—'}
+              <div key={f.id}>
+                <div
+                  className="grid grid-cols-[1fr_100px_80px_80px_100px_120px] gap-2 px-4 py-2.5 border-b border-border/20 items-center hover:bg-muted/20 transition-colors text-sm cursor-pointer"
+                  onClick={() => setExpandedId(isExpanded ? null : f.id)}
+                >
+                  <div>
+                    <p className="font-mono text-xs font-medium">#{f.order_id?.slice(0, 8)}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {f.created_at ? format(new Date(f.created_at), 'MMM d, h:mm a') : '—'}
+                    </p>
+                  </div>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {firstItem?.product_name || '—'}{items.length > 1 ? ` +${items.length - 1}` : ''}
                   </p>
+                  <p className="text-xs font-medium">{totalQty}</p>
+                  <div>
+                    {slaHours !== Infinity ? (
+                      <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded border ${getSLABg(slaHours)} ${getSLAColor(slaHours)}`}>
+                        {slaHours}h
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </div>
+                  <Badge className={`text-[10px] h-5 ${statusBadgeColor[f.status] || ''}`}>
+                    {f.status.replace('_', ' ')}
+                  </Badge>
+                  <div className="flex justify-end" onClick={e => e.stopPropagation()}>
+                    {f.status === 'pending' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        disabled={activeId === f.id && isGeneratingLabel}
+                        onClick={() => handleAction(f.id, 'label')}
+                      >
+                        {activeId === f.id && isGeneratingLabel ? <Loader2 className="h-3 w-3 animate-spin" /> : <Printer className="h-3 w-3" />}
+                        Label
+                      </Button>
+                    )}
+                    {f.status === 'label_generated' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1"
+                        disabled={activeId === f.id && isMarkingShipped}
+                        onClick={() => handleAction(f.id, 'ship')}
+                      >
+                        {activeId === f.id && isMarkingShipped ? <Loader2 className="h-3 w-3 animate-spin" /> : <Truck className="h-3 w-3" />}
+                        Ship
+                      </Button>
+                    )}
+                    {f.status === 'shipped' && (
+                      <span className="text-xs text-purple-400 flex items-center gap-1"><Truck className="h-3 w-3" /> Transit</span>
+                    )}
+                    {f.status === 'completed' && (
+                      <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Done</span>
+                    )}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground truncate">
-                  {firstItem?.product_name || '—'}{items.length > 1 ? ` +${items.length - 1}` : ''}
-                </p>
-                <p className="text-xs font-medium">{totalQty}</p>
-                <div>
-                  {slaHours !== Infinity ? (
-                    <span className={`text-xs font-mono font-bold px-1.5 py-0.5 rounded border ${getSLABg(slaHours)} ${getSLAColor(slaHours)}`}>
-                      {slaHours}h
-                    </span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </div>
-                <Badge className={`text-[10px] h-5 ${statusBadgeColor[f.status] || ''}`}>
-                  {f.status.replace('_', ' ')}
-                </Badge>
-                <div className="flex justify-end">
-                  {f.status === 'pending' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs gap-1"
-                      disabled={activeId === f.id && isGeneratingLabel}
-                      onClick={() => handleAction(f.id, 'label')}
-                    >
-                      {activeId === f.id && isGeneratingLabel ? <Loader2 className="h-3 w-3 animate-spin" /> : <Printer className="h-3 w-3" />}
-                      Label
-                    </Button>
-                  )}
-                  {f.status === 'label_generated' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 text-xs gap-1"
-                      disabled={activeId === f.id && isMarkingShipped}
-                      onClick={() => handleAction(f.id, 'ship')}
-                    >
-                      {activeId === f.id && isMarkingShipped ? <Loader2 className="h-3 w-3 animate-spin" /> : <Truck className="h-3 w-3" />}
-                      Ship
-                    </Button>
-                  )}
-                  {f.status === 'shipped' && (
-                    <span className="text-xs text-purple-400 flex items-center gap-1"><Truck className="h-3 w-3" /> Transit</span>
-                  )}
-                  {f.status === 'completed' && (
-                    <span className="text-xs text-emerald-400 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Done</span>
-                  )}
-                </div>
+
+                {/* Expanded: shipping address + item details (privacy-controlled) */}
+                {isExpanded && (
+                  <div className="px-6 py-3 bg-muted/10 border-b border-border/20 grid grid-cols-2 gap-4 text-xs">
+                    {/* Shipping destination */}
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
+                        <MapPin className="h-3 w-3" /> Ship To
+                      </p>
+                      {f.ship_to ? (
+                        <div className="space-y-0.5 text-foreground">
+                          <p className="font-medium">{f.ship_to.name}</p>
+                          <p>{f.ship_to.address1}</p>
+                          {f.ship_to.address2 && <p>{f.ship_to.address2}</p>}
+                          <p>{f.ship_to.city}, {f.ship_to.state} {f.ship_to.zip}</p>
+                          {f.ship_to.country && f.ship_to.country !== 'US' && <p>{f.ship_to.country}</p>}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Lock className="h-3 w-3" />
+                          <span>Address available after payment confirmed</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Items detail */}
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5">Items</p>
+                      <div className="space-y-1">
+                        {items.map((item: any, idx: number) => (
+                          <div key={idx} className="flex justify-between text-foreground">
+                            <span className="truncate mr-2">{item.product_name || `Product ${idx + 1}`}</span>
+                            <span className="font-mono font-medium whitespace-nowrap">×{item.qty}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {f.tracking_number && (
+                        <div className="mt-2 pt-2 border-t border-border/20">
+                          <p className="text-[10px] text-muted-foreground">Tracking</p>
+                          <p className="font-mono text-foreground">{f.tracking_number}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
