@@ -31957,6 +31957,63 @@ export type Database = {
           },
         ]
       }
+      order_messages: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          id: string
+          is_archived: boolean
+          is_read: boolean
+          message_body: string
+          message_type: Database["public"]["Enums"]["order_message_type"]
+          order_id: string
+          sender_role: Database["public"]["Enums"]["message_sender_role"]
+          sender_user_id: string
+          vendor_id: string | null
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_read?: boolean
+          message_body: string
+          message_type?: Database["public"]["Enums"]["order_message_type"]
+          order_id: string
+          sender_role: Database["public"]["Enums"]["message_sender_role"]
+          sender_user_id: string
+          vendor_id?: string | null
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          id?: string
+          is_archived?: boolean
+          is_read?: boolean
+          message_body?: string
+          message_type?: Database["public"]["Enums"]["order_message_type"]
+          order_id?: string
+          sender_role?: Database["public"]["Enums"]["message_sender_role"]
+          sender_user_id?: string
+          vendor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_messages_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_routing: {
         Row: {
           assigned_at: string | null
@@ -58733,6 +58790,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string[]
       }
+      get_user_vendor_id: { Args: { _user_id: string }; Returns: string }
       get_vertical_guardrails: {
         Args: { p_vertical_slug: string }
         Returns: {
@@ -58815,6 +58873,14 @@ export type Database = {
       }
       is_office_manager: {
         Args: { _office_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_order_customer: {
+        Args: { _order_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_order_vendor: {
+        Args: { _order_id: string; _user_id: string }
         Returns: boolean
       }
       is_org_member: {
@@ -59333,6 +59399,7 @@ export type Database = {
         | "moneyline"
         | "player_prop"
         | "fantasy_prop"
+      message_sender_role: "customer" | "vendor" | "admin" | "system"
       mission_category:
         | "strategic"
         | "operational"
@@ -59382,6 +59449,7 @@ export type Database = {
         | "store_portal"
         | "wholesaler_portal"
         | "other"
+      order_message_type: "standard" | "system" | "dispute_related"
       order_status:
         | "draft"
         | "pending"
@@ -59892,6 +59960,7 @@ export const Constants = {
         "player_prop",
         "fantasy_prop",
       ],
+      message_sender_role: ["customer", "vendor", "admin", "system"],
       mission_category: [
         "strategic",
         "operational",
@@ -59947,6 +60016,7 @@ export const Constants = {
         "wholesaler_portal",
         "other",
       ],
+      order_message_type: ["standard", "system", "dispute_related"],
       order_status: [
         "draft",
         "pending",

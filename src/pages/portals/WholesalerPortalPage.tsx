@@ -105,6 +105,7 @@ export default function WholesalerPortalPage() {
               onMarkShipped={markShipped}
               isGeneratingLabel={isGeneratingLabel}
               isMarkingShipped={isMarkingShipped}
+              currentVendorId={profile?.id}
             />
           </TabsContent>
 
