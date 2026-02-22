@@ -31406,6 +31406,93 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_events: {
+        Row: {
+          channel: string
+          created_at: string
+          event_type: string
+          id: string
+          idempotency_key: string
+          payload_json: Json | null
+          related_fulfillment_id: string | null
+          related_message_id: string | null
+          related_order_id: string | null
+          retry_count: number
+          role: string
+          sent_at: string | null
+          sent_status: Database["public"]["Enums"]["notification_sent_status"]
+          user_id: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          event_type: string
+          id?: string
+          idempotency_key: string
+          payload_json?: Json | null
+          related_fulfillment_id?: string | null
+          related_message_id?: string | null
+          related_order_id?: string | null
+          retry_count?: number
+          role: string
+          sent_at?: string | null
+          sent_status?: Database["public"]["Enums"]["notification_sent_status"]
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          idempotency_key?: string
+          payload_json?: Json | null
+          related_fulfillment_id?: string | null
+          related_message_id?: string | null
+          related_order_id?: string | null
+          retry_count?: number
+          role?: string
+          sent_at?: string | null
+          sent_status?: Database["public"]["Enums"]["notification_sent_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_events_related_fulfillment_id_fkey"
+            columns: ["related_fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_fulfillments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_related_fulfillment_id_fkey"
+            columns: ["related_fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_fulfillment_view"
+            referencedColumns: ["fulfillment_id"]
+          },
+          {
+            foreignKeyName: "notification_events_related_message_id_fkey"
+            columns: ["related_message_id"]
+            isOneToOne: false
+            referencedRelation: "order_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -59422,6 +59509,7 @@ export type Database = {
         | "blocked"
         | "deferred"
         | "cancelled"
+      notification_sent_status: "pending" | "sent" | "failed"
       ops_task_event_type:
         | "created"
         | "status_changed"
@@ -59986,6 +60074,7 @@ export const Constants = {
         "deferred",
         "cancelled",
       ],
+      notification_sent_status: ["pending", "sent", "failed"],
       ops_task_event_type: [
         "created",
         "status_changed",
