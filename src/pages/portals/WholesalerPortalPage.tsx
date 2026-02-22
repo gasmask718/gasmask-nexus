@@ -289,9 +289,42 @@ function PayoutSummaryPanel({
     );
   }
 
-  const pendingPayouts = payouts?.filter(p => p.status === 'pending') || [];
-  const approvedPayouts = payouts?.filter(p => p.status === 'approved') || [];
-  const paidPayouts = payouts?.filter(p => p.status === 'paid') || [];
+  const inSettlementPayouts = payouts?.filter(p => p.status === 'in_settlement') || [];
+
+  const getCountdown = (releaseAt: string | null) => {
+    if (!releaseAt) return null;
+    const diff = new Date(releaseAt).getTime() - Date.now();
+    if (diff <= 0) return 'Releasing soon...';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${hours}h ${mins}m remaining`;
+  };
+
+  const getPayoutStatusLabel = (status: string) => {
+    const map: Record<string, string> = {
+      pending: 'Pending Shipment',
+      approved_pending_delivery: 'Shipped • Awaiting Delivery',
+      in_settlement: 'In Settlement',
+      approved: 'Approved for Payout',
+      paid: 'Paid',
+      held: 'On Hold',
+      reversed: 'Reversed',
+    };
+    return map[status] || status;
+  };
+
+  const getPayoutStatusColor = (status: string) => {
+    const map: Record<string, string> = {
+      pending: 'text-amber-400 border-amber-500/30',
+      approved_pending_delivery: 'text-purple-400 border-purple-500/30',
+      in_settlement: 'text-cyan-400 border-cyan-500/30',
+      approved: 'text-blue-400 border-blue-500/30',
+      paid: 'text-emerald-400 border-emerald-500/30',
+      held: 'text-red-400 border-red-500/30',
+      reversed: 'text-zinc-400 border-zinc-500/30',
+    };
+    return map[status] || 'text-muted-foreground';
+  };
 
   return (
     <div className="space-y-4">
@@ -311,14 +344,28 @@ function PayoutSummaryPanel({
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
-              <p className="text-xs text-muted-foreground">Pending</p>
+              <p className="text-xs text-muted-foreground">Pending Shipment</p>
               <p className="text-lg font-bold text-amber-400">
                 ${(summary?.pendingPayout || 0).toLocaleString()}
               </p>
               <p className="text-[10px] text-muted-foreground">{summary?.pendingCount || 0} payouts</p>
             </div>
+            <div className="p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+              <p className="text-xs text-muted-foreground">Awaiting Delivery</p>
+              <p className="text-lg font-bold text-purple-400">
+                ${(summary?.approvedPendingDeliveryPayout || 0).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{summary?.approvedPendingDeliveryCount || 0} payouts</p>
+            </div>
+            <div className="p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+              <p className="text-xs text-muted-foreground">In Settlement</p>
+              <p className="text-lg font-bold text-cyan-400">
+                ${(summary?.inSettlementPayout || 0).toLocaleString()}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{summary?.inSettlementCount || 0} payouts</p>
+            </div>
             <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
-              <p className="text-xs text-muted-foreground">Approved</p>
+              <p className="text-xs text-muted-foreground">Ready to Pay</p>
               <p className="text-lg font-bold text-blue-400">
                 ${(summary?.approvedPayout || 0).toLocaleString()}
               </p>
@@ -347,27 +394,41 @@ function PayoutSummaryPanel({
                 -${(summary?.platformFees || 0).toLocaleString()}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Avg Order Value</span>
-              <span className="font-medium">
-                ${(summary?.averageOrderValue || 0).toFixed(2)}
-              </span>
-            </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Settlement Countdown */}
+      {inSettlementPayouts.length > 0 && (
+        <Card className="bg-cyan-500/5 border-cyan-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Clock className="h-4 w-4 text-cyan-400" />
+              Settlement Window
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {inSettlementPayouts.map((p: any) => (
+              <div key={p.id} className="flex items-center justify-between p-2 rounded-md bg-card/50">
+                <div>
+                  <p className="text-sm font-medium">${Number(p.net_amount || 0).toFixed(2)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Started {p.settlement_start_at ? format(new Date(p.settlement_start_at), 'MMM d, h:mm a') : ''}
+                  </p>
+                </div>
+                <Badge className="bg-cyan-500/15 text-cyan-400 border-cyan-500/30 text-xs">
+                  {getCountdown(p.settlement_release_at)}
+                </Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payout Ledger */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Payout Ledger</CardTitle>
-            {pendingPayouts.length > 0 && (
-              <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30 text-xs">
-                {pendingPayouts.length} pending
-              </Badge>
-            )}
-          </div>
+          <CardTitle className="text-sm">Payout Ledger</CardTitle>
         </CardHeader>
         <CardContent>
           {(!payouts || payouts.length === 0) ? (
@@ -388,13 +449,8 @@ function PayoutSummaryPanel({
                     <p className="text-sm font-bold text-emerald-400">
                       ${(payout.net_amount || 0).toFixed(2)}
                     </p>
-                    <Badge variant="outline" className={`text-xs ${
-                      payout.status === 'paid' ? 'text-emerald-400 border-emerald-500/30' :
-                      payout.status === 'pending' ? 'text-amber-400 border-amber-500/30' :
-                      payout.status === 'approved' ? 'text-blue-400 border-blue-500/30' :
-                      'text-muted-foreground'
-                    }`}>
-                      {payout.status}
+                    <Badge variant="outline" className={`text-xs ${getPayoutStatusColor(payout.status || '')}`}>
+                      {getPayoutStatusLabel(payout.status || '')}
                     </Badge>
                   </div>
                 </div>

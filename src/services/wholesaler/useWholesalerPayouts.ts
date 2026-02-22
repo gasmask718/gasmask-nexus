@@ -15,16 +15,25 @@ export interface WholesalerPayout {
   period_start: string | null;
   period_end: string | null;
   paid_at: string | null;
+  approved_at: string | null;
+  settlement_start_at: string | null;
+  settlement_release_at: string | null;
+  hold_reason: string | null;
+  reversal_reason: string | null;
   created_at: string | null;
 }
 
 export interface FinancialSummary {
   totalEarnings: number;
   pendingPayout: number;
+  approvedPendingDeliveryPayout: number;
+  inSettlementPayout: number;
   approvedPayout: number;
   paidPayout: number;
   heldPayout: number;
   pendingCount: number;
+  approvedPendingDeliveryCount: number;
+  inSettlementCount: number;
   approvedCount: number;
   paidCount: number;
   heldCount: number;
@@ -72,6 +81,8 @@ export function useWholesalerPayouts() {
       const sumNet = (arr: typeof rows) => arr.reduce((s, r) => s + Number(r.net_amount || 0), 0);
 
       const pending = byStatus('pending');
+      const approvedPendingDelivery = byStatus('approved_pending_delivery');
+      const inSettlement = byStatus('in_settlement');
       const approved = byStatus('approved');
       const paid = byStatus('paid');
       const held = byStatus('held');
@@ -91,10 +102,14 @@ export function useWholesalerPayouts() {
       return {
         totalEarnings,
         pendingPayout: sumNet(pending),
+        approvedPendingDeliveryPayout: sumNet(approvedPendingDelivery),
+        inSettlementPayout: sumNet(inSettlement),
         approvedPayout: sumNet(approved),
         paidPayout: sumNet(paid),
         heldPayout: sumNet(held),
         pendingCount: pending.length,
+        approvedPendingDeliveryCount: approvedPendingDelivery.length,
+        inSettlementCount: inSettlement.length,
         approvedCount: approved.length,
         paidCount: paid.length,
         heldCount: held.length,
