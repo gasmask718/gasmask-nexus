@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 // ─── Executive KPI Summary ───
 export function useMarketplaceKPIs() {
@@ -11,19 +11,20 @@ export function useMarketplaceKPIs() {
       const d7 = new Date(now.getTime() - 7 * 86400000).toISOString();
       const d30 = new Date(now.getTime() - 30 * 86400000).toISOString();
 
-      const [ordersRes, fulfillmentsRes, payoutsRes, disputesRes] = await Promise.all([
+      const [ordersRes, fulfillmentsRes, payoutsRes, disputesRes, frozenRes] = await Promise.all([
         supabase.from('marketplace_orders').select('id, total, payment_status, fulfillment_status, created_at, dispute_status'),
-        supabase.from('marketplace_fulfillments').select('id, status, created_at, wholesaler_id'),
+        supabase.from('marketplace_fulfillments').select('id, status, created_at, wholesaler_id, updated_at'),
         supabase.from('wholesaler_payouts').select('id, status, net_amount, amount, dispute_flag'),
         supabase.from('marketplace_orders').select('id').neq('dispute_status', 'none').not('dispute_status', 'is', null),
+        supabase.from('wholesalers').select('id').eq('is_frozen', true),
       ]);
 
       const orders = ordersRes.data || [];
       const fulfillments = fulfillmentsRes.data || [];
       const payouts = payoutsRes.data || [];
 
-      const gmv7d = orders.filter(o => o.created_at >= d7).reduce((s, o) => s + (o.total || 0), 0);
-      const gmv30d = orders.filter(o => o.created_at >= d30).reduce((s, o) => s + (o.total || 0), 0);
+      const gmv7d = orders.filter(o => o.created_at && o.created_at >= d7).reduce((s, o) => s + (o.total || 0), 0);
+      const gmv30d = orders.filter(o => o.created_at && o.created_at >= d30).reduce((s, o) => s + (o.total || 0), 0);
 
       const pendingShipment = fulfillments.filter(f => f.status === 'pending').length;
       const overdueShipment = fulfillments.filter(f => {
@@ -35,16 +36,59 @@ export function useMarketplaceKPIs() {
       const heldTotal = payouts.filter(p => p.status === 'held').reduce((s, p) => s + (p.net_amount || 0), 0);
       const activeDisputes = (disputesRes.data || []).length;
 
-      const totalOrders30d = orders.filter(o => o.created_at >= d30).length;
+      const totalOrders30d = orders.filter(o => o.created_at && o.created_at >= d30).length;
       const refundedOrders = payouts.filter(p => p.status === 'reversed').length;
       const refundRate = totalOrders30d > 0 ? ((refundedOrders / totalOrders30d) * 100) : 0;
 
+      // Avg fulfillment time (use updated_at as proxy for ship time for completed/shipped)
+      const shippedFulfillments = fulfillments.filter(f => ['shipped', 'completed'].includes(f.status) && f.updated_at && f.created_at);
+      const avgFulfillmentTime = shippedFulfillments.length > 0
+        ? shippedFulfillments.reduce((s, f) => s + (new Date(f.updated_at!).getTime() - new Date(f.created_at!).getTime()), 0) / shippedFulfillments.length / 3600000
+        : 0;
+
+      const riskHeat: 'red' | 'yellow' | 'green' = overdueShipment > 5 || activeDisputes > 3 ? 'red'
+        : overdueShipment > 2 || activeDisputes > 1 ? 'yellow' : 'green';
+
       return {
         gmv7d, gmv30d, pendingShipment, overdueShipment, inSettlement,
-        heldTotal, activeDisputes, refundRate,
-        totalFulfillments: fulfillments.length,
-        shippedCount: fulfillments.filter(f => ['shipped', 'completed'].includes(f.status || '')).length,
+        heldTotal, activeDisputes, refundRate, avgFulfillmentTime, riskHeat,
+        frozenVendors: (frozenRes.data || []).length,
+        shippedCount: shippedFulfillments.length,
       };
+    },
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  });
+}
+
+// ─── Order Lifecycle Grid ───
+export function useOrderLifecycle() {
+  return useQuery({
+    queryKey: ['marketplace-order-lifecycle'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marketplace_orders')
+        .select('id, user_id, wholesaler_id, payment_status, fulfillment_status, dispute_status, total, created_at, order_type')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) throw error;
+
+      const orderIds = (data || []).map(o => o.id);
+      const { data: fulfillments } = orderIds.length > 0
+        ? await supabase.from('marketplace_fulfillments').select('order_id, wholesaler_id').in('order_id', orderIds)
+        : { data: [] };
+
+      const vendorCounts: Record<string, number> = {};
+      (fulfillments || []).forEach(f => {
+        vendorCounts[f.order_id] = (vendorCounts[f.order_id] || 0) + 1;
+      });
+
+      return (data || []).map(o => ({
+        ...o,
+        vendorCount: vendorCounts[o.id] || 0,
+        riskFlag: o.dispute_status && o.dispute_status !== 'none',
+      }));
     },
     staleTime: 30_000,
   });
@@ -65,16 +109,8 @@ export function useOverdueFulfillments() {
 
       const now = Date.now();
       return (data || []).map(f => {
-        const hoursElapsed = (now - new Date(f.created_at).getTime()) / 3600000;
-        return {
-          id: f.id,
-          order_id: f.order_id,
-          wholesaler_id: f.wholesaler_id,
-          status: f.status,
-          created_at: f.created_at,
-          hoursElapsed,
-          severity: hoursElapsed > 48 ? 'critical' as const : hoursElapsed > 24 ? 'warning' as const : 'ok' as const,
-        };
+        const hoursElapsed = f.created_at ? (now - new Date(f.created_at).getTime()) / 3600000 : 0;
+        return { ...f, hoursElapsed, severity: hoursElapsed > 48 ? 'critical' as const : hoursElapsed > 24 ? 'warning' as const : 'ok' as const };
       }).filter(f => f.severity !== 'ok');
     },
     staleTime: 30_000,
@@ -88,10 +124,28 @@ export function useActiveDisputes() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('marketplace_orders')
-        .select('id, wholesaler_id, dispute_status, dispute_reason, dispute_opened_at, payment_status, total')
+        .select('id, wholesaler_id, user_id, dispute_status, dispute_reason, dispute_opened_at, payment_status, total')
         .neq('dispute_status', 'none')
         .not('dispute_status', 'is', null)
         .order('dispute_opened_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30_000,
+  });
+}
+
+// ─── Settlement Pipeline ───
+export function useSettlementPipeline() {
+  return useQuery({
+    queryKey: ['marketplace-settlement-pipeline'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('wholesaler_payouts')
+        .select('id, wholesaler_id, order_id, net_amount, status, settlement_start_at, settlement_release_at, dispute_flag, hold_reason, created_at')
+        .in('status', ['in_settlement', 'held', 'reversed', 'approved'])
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data || [];
@@ -135,6 +189,68 @@ export function useVendorPerformance() {
   });
 }
 
+// ─── Integrity / Anomaly Detection ───
+export function useIntegrityAnomalies() {
+  return useQuery({
+    queryKey: ['marketplace-integrity-anomalies'],
+    queryFn: async () => {
+      const now = new Date();
+      const h48ago = new Date(now.getTime() - 48 * 3600000).toISOString();
+
+      const [overdueRes, allFulfillmentsRes, allPayoutsRes] = await Promise.all([
+        supabase.from('marketplace_orders')
+          .select('id, total, payment_status, created_at, wholesaler_id')
+          .eq('payment_status', 'paid')
+          .lt('created_at', h48ago),
+        supabase.from('marketplace_fulfillments')
+          .select('id, order_id, status, tracking_number'),
+        supabase.from('wholesaler_payouts')
+          .select('id, order_id, net_amount, status'),
+      ]);
+
+      const fulfillmentsByOrder = new Map<string, any[]>();
+      (allFulfillmentsRes.data || []).forEach(f => {
+        const arr = fulfillmentsByOrder.get(f.order_id) || [];
+        arr.push(f);
+        fulfillmentsByOrder.set(f.order_id, arr);
+      });
+
+      const payoutsByOrder = new Map<string, any[]>();
+      (allPayoutsRes.data || []).forEach(p => {
+        const arr = payoutsByOrder.get(p.order_id) || [];
+        arr.push(p);
+        payoutsByOrder.set(p.order_id, arr);
+      });
+
+      const anomalies: Array<{ type: string; order_id: string; detail: string; severity: string }> = [];
+
+      (overdueRes.data || []).forEach(o => {
+        const ffs = fulfillmentsByOrder.get(o.id) || [];
+        if (ffs.length === 0) {
+          anomalies.push({ type: 'no_fulfillment', order_id: o.id, detail: 'Paid order has no fulfillment record', severity: 'critical' });
+        }
+        ffs.forEach(f => {
+          if (f.status === 'shipped' && !f.tracking_number) {
+            anomalies.push({ type: 'no_tracking', order_id: o.id, detail: 'Shipped fulfillment missing tracking number', severity: 'warning' });
+          }
+        });
+        const payouts = payoutsByOrder.get(o.id) || [];
+        if (payouts.length === 0) {
+          anomalies.push({ type: 'no_payout', order_id: o.id, detail: 'Order missing payout record', severity: 'warning' });
+        }
+        payouts.forEach(p => {
+          if ((p.net_amount || 0) < 0) {
+            anomalies.push({ type: 'negative_payout', order_id: o.id, detail: `Negative net payout: $${p.net_amount}`, severity: 'critical' });
+          }
+        });
+      });
+
+      return anomalies;
+    },
+    staleTime: 60_000,
+  });
+}
+
 // ─── Order Deep-Dive ───
 export function useOrderDeepDive(orderId: string | null) {
   return useQuery({
@@ -162,10 +278,9 @@ export function useOrderDeepDive(orderId: string | null) {
   });
 }
 
-// ─── Admin Actions ───
+// ─── Admin Actions (with actual side effects) ───
 export function useAdminAction() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (params: {
@@ -179,6 +294,54 @@ export function useAdminAction() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Execute the side effect
+      if (params.action_type === 'hold_payout' && params.related_order_id) {
+        await supabase.from('wholesaler_payouts')
+          .update({ status: 'held', hold_reason: params.reason })
+          .eq('order_id', params.related_order_id);
+      } else if (params.action_type === 'release_payout' && params.related_order_id) {
+        await supabase.from('wholesaler_payouts')
+          .update({ status: 'approved', hold_reason: null })
+          .eq('order_id', params.related_order_id)
+          .eq('status', 'held');
+      } else if (params.action_type === 'freeze_vendor' && params.related_vendor_id) {
+        await supabase.from('wholesalers')
+          .update({ is_frozen: true } as any)
+          .eq('id', params.related_vendor_id);
+      } else if (params.action_type === 'unfreeze_vendor' && params.related_vendor_id) {
+        await supabase.from('wholesalers')
+          .update({ is_frozen: false } as any)
+          .eq('id', params.related_vendor_id);
+      } else if (params.action_type === 'reverse_payout' && params.related_order_id) {
+        await supabase.from('wholesaler_payouts')
+          .update({ status: 'reversed' })
+          .eq('order_id', params.related_order_id);
+      } else if (params.action_type === 'convert_to_liability' && params.related_order_id && params.related_vendor_id) {
+        const { data: payouts } = await supabase.from('wholesaler_payouts')
+          .select('net_amount')
+          .eq('order_id', params.related_order_id)
+          .limit(1);
+        const amount = payouts?.[0]?.net_amount || 0;
+        if (amount > 0) {
+          await supabase.from('vendor_liabilities').insert({
+            wholesaler_id: params.related_vendor_id,
+            order_id: params.related_order_id,
+            amount,
+            reason: params.reason,
+            status: 'pending',
+          } as any);
+        }
+      } else if (params.action_type === 'marketplace_freeze') {
+        await supabase.from('marketplace_config' as any)
+          .update({ value: { active: true }, updated_by: user.id } as any)
+          .eq('key', 'marketplace_freeze');
+      } else if (params.action_type === 'marketplace_unfreeze') {
+        await supabase.from('marketplace_config' as any)
+          .update({ value: { active: false }, updated_by: user.id } as any)
+          .eq('key', 'marketplace_freeze');
+      }
+
+      // Log the action
       const { error } = await supabase.from('marketplace_admin_actions').insert({
         admin_user_id: user.id,
         action_type: params.action_type,
@@ -192,26 +355,39 @@ export function useAdminAction() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({ title: 'Action logged', description: 'Admin action recorded successfully.' });
-      queryClient.invalidateQueries({ queryKey: ['marketplace-control'] });
+      toast.success('Action executed and logged');
+      queryClient.invalidateQueries({ queryKey: ['marketplace-control-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-held-payouts'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-settlement-pipeline'] });
+      queryClient.invalidateQueries({ queryKey: ['vendor-performance-summary'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-admin-action-log'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-order-lifecycle'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-kill-switch'] });
     },
     onError: (err: any) => {
-      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      toast.error(err.message || 'Action failed');
     },
   });
 }
 
 // ─── Admin Action Log ───
-export function useAdminActionLog() {
+export function useAdminActionLog(filters?: { actionType?: string; orderId?: string; vendorId?: string; dateFrom?: string; dateTo?: string }) {
   return useQuery({
-    queryKey: ['marketplace-admin-action-log'],
+    queryKey: ['marketplace-admin-action-log', filters],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('marketplace_admin_actions')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
 
+      if (filters?.actionType) query = query.eq('action_type', filters.actionType);
+      if (filters?.orderId) query = query.eq('related_order_id', filters.orderId);
+      if (filters?.vendorId) query = query.eq('related_vendor_id', filters.vendorId);
+      if (filters?.dateFrom) query = query.gte('created_at', filters.dateFrom);
+      if (filters?.dateTo) query = query.lte('created_at', filters.dateTo);
+
+      const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
@@ -219,10 +395,10 @@ export function useAdminActionLog() {
   });
 }
 
-// ─── Message Oversight ───
-export function useMessageOversight(filter?: string) {
+// ─── Message Oversight (upgraded) ───
+export function useMessageOversight(filters?: { type?: string; orderId?: string; vendorId?: string }) {
   return useQuery({
-    queryKey: ['marketplace-message-oversight', filter],
+    queryKey: ['marketplace-message-oversight', filters],
     queryFn: async () => {
       let query = supabase
         .from('order_messages')
@@ -230,14 +406,52 @@ export function useMessageOversight(filter?: string) {
         .order('created_at', { ascending: false })
         .limit(200);
 
-      if (filter === 'dispute_related') {
-        query = query.eq('message_type', 'dispute_related');
-      }
+      if (filters?.type === 'dispute_related') query = query.eq('message_type', 'dispute_related');
+      if (filters?.orderId) query = query.eq('order_id', filters.orderId);
+      if (filters?.vendorId) query = query.eq('vendor_id', filters.vendorId);
 
       const { data, error } = await query;
       if (error) throw error;
       return data || [];
     },
     staleTime: 30_000,
+  });
+}
+
+// ─── Kill Switch ───
+export function useMarketplaceKillSwitch() {
+  return useQuery({
+    queryKey: ['marketplace-kill-switch'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marketplace_config' as any)
+        .select('value')
+        .eq('key', 'marketplace_freeze')
+        .single();
+
+      if (error || !data) return { active: false };
+      const val = (data as any)?.value;
+      return val || { active: false };
+    },
+    staleTime: 10_000,
+  });
+}
+
+// ─── Refresh materialized view ───
+export function useRefreshVendorPerformance() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('refresh_vendor_performance' as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Vendor performance data refreshed');
+      queryClient.invalidateQueries({ queryKey: ['vendor-performance-summary'] });
+    },
+    onError: () => {
+      toast.error('Failed to refresh — function may not exist yet');
+    },
   });
 }
