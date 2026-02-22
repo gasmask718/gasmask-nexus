@@ -15,11 +15,21 @@ export interface MarketplacePayout {
   paid_at: string | null;
   hold_reason: string | null;
   reversal_reason: string | null;
+  dispute_flag: boolean;
+  dispute_linked_order_id: string | null;
+  liability_amount: number | null;
+  settlement_start_at: string | null;
+  settlement_release_at: string | null;
   created_at: string | null;
   wholesaler?: {
     id: string;
     business_name: string | null;
     contact_name: string | null;
+  } | null;
+  order?: {
+    id: string;
+    dispute_status: string | null;
+    dispute_reason: string | null;
   } | null;
 }
 
@@ -34,7 +44,8 @@ export function useMarketplacePayouts(statusFilter?: string) {
         .from('wholesaler_payouts')
         .select(`
           *,
-          wholesaler:wholesaler_profiles(id, business_name, contact_name)
+          wholesaler:wholesaler_profiles(id, business_name, contact_name),
+          order:marketplace_orders(id, dispute_status, dispute_reason)
         `)
         .order('created_at', { ascending: false });
 
@@ -48,6 +59,7 @@ export function useMarketplacePayouts(statusFilter?: string) {
       return (data || []).map((p: any) => ({
         ...p,
         wholesaler: Array.isArray(p.wholesaler) ? p.wholesaler[0] : p.wholesaler,
+        order: Array.isArray(p.order) ? p.order[0] : p.order,
       })) as MarketplacePayout[];
     },
   });
@@ -181,6 +193,38 @@ export function useMarketplacePayouts(statusFilter?: string) {
     onError: (e) => toast.error(e.message),
   });
 
+  const openDispute = useMutation({
+    mutationFn: async ({ orderId, reason }: { orderId: string; reason: string }) => {
+      const { error } = await supabase.rpc('handle_order_dispute', {
+        p_order_id: orderId,
+        p_reason: reason,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['marketplace-payouts-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-payout-stats'] });
+      toast.success('Dispute opened — related payouts frozen');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const resolveDispute = useMutation({
+    mutationFn: async ({ orderId, outcome }: { orderId: string; outcome: 'customer_refund' | 'vendor_wins' }) => {
+      const { error } = await supabase.rpc('resolve_dispute', {
+        p_order_id: orderId,
+        p_outcome: outcome,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['marketplace-payouts-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-payout-stats'] });
+      toast.success(vars.outcome === 'customer_refund' ? 'Dispute resolved — customer refunded' : 'Dispute resolved — vendor wins');
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   return {
     payouts: payoutsQuery.data || [],
     stats: statsQuery.data,
@@ -188,6 +232,8 @@ export function useMarketplacePayouts(statusFilter?: string) {
     markPaid: markPaid.mutateAsync,
     holdPayout: holdPayout.mutateAsync,
     reversePayout: reversePayout.mutateAsync,
-    isProcessing: markPaid.isPending || holdPayout.isPending || reversePayout.isPending,
+    openDispute: openDispute.mutateAsync,
+    resolveDispute: resolveDispute.mutateAsync,
+    isProcessing: markPaid.isPending || holdPayout.isPending || reversePayout.isPending || openDispute.isPending || resolveDispute.isPending,
   };
 }

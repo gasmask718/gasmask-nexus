@@ -378,6 +378,17 @@ function PayoutSummaryPanel({
               </p>
               <p className="text-[10px] text-muted-foreground">{summary?.paidCount || 0} payouts</p>
             </div>
+            {(summary?.heldCount || 0) > 0 && (
+              <div className="p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3 text-red-400" /> Under Dispute
+                </p>
+                <p className="text-lg font-bold text-red-400">
+                  ${(summary?.heldPayout || 0).toLocaleString()}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{summary?.heldCount || 0} payouts</p>
+              </div>
+            )}
             <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
               <p className="text-xs text-muted-foreground">Total Earnings</p>
               <p className="text-lg font-bold">
@@ -436,7 +447,7 @@ function PayoutSummaryPanel({
           ) : (
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {payouts.slice(0, 10).map((payout: any) => (
-                <div key={payout.id} className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors">
+                <div key={payout.id} className={`flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors ${payout.dispute_flag ? 'bg-red-500/5 border border-red-500/20' : ''}`}>
                   <div>
                     <p className="text-sm font-medium">
                       {payout.created_at ? format(new Date(payout.created_at), 'MMM d, yyyy') : 'N/A'}
@@ -444,6 +455,16 @@ function PayoutSummaryPanel({
                     <p className="text-xs text-muted-foreground">
                       Gross: ${(payout.amount || 0).toFixed(2)} • Fee: ${(payout.platform_fee || 0).toFixed(2)}
                     </p>
+                    {payout.status === 'held' && payout.dispute_flag && (
+                      <p className="text-xs text-red-400 flex items-center gap-1 mt-0.5">
+                        <AlertCircle className="h-3 w-3" /> Under Dispute Review
+                      </p>
+                    )}
+                    {payout.status === 'reversed' && (
+                      <p className="text-xs text-zinc-400 mt-0.5">
+                        {payout.reversal_reason || 'Reversed'}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-emerald-400">

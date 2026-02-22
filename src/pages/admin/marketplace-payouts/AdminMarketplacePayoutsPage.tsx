@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { ExportButton } from '@/components/crud/ExportButton';
 import {
   DollarSign, CheckCircle2, AlertCircle, Clock, Ban,
-  ShieldAlert, Loader2, Undo2
+  ShieldAlert, Loader2, Undo2, AlertTriangle, Scale
 } from 'lucide-react';
 import { useMarketplacePayouts } from '@/hooks/useMarketplacePayouts';
 
@@ -36,19 +36,33 @@ const statusLabels: Record<string, string> = {
   reversed: 'Reversed',
 };
 
+type ActionDialogType = 'hold' | 'reverse' | 'dispute' | 'resolve_customer' | 'resolve_vendor';
+
 export default function AdminMarketplacePayoutsPage() {
   const [statusFilter, setStatusFilter] = useState('all');
-  const [actionDialog, setActionDialog] = useState<{ type: 'hold' | 'reverse'; payoutId: string } | null>(null);
+  const [actionDialog, setActionDialog] = useState<{ type: ActionDialogType; payoutId: string; orderId?: string } | null>(null);
   const [reason, setReason] = useState('');
 
-  const { payouts, stats, isLoading, markPaid, holdPayout, reversePayout, isProcessing } = useMarketplacePayouts(statusFilter);
+  const { payouts, stats, isLoading, markPaid, holdPayout, reversePayout, openDispute, resolveDispute, isProcessing } = useMarketplacePayouts(statusFilter);
 
   const handleAction = async () => {
-    if (!actionDialog || !reason.trim()) return;
+    if (!actionDialog) return;
+
     if (actionDialog.type === 'hold') {
+      if (!reason.trim()) return;
       await holdPayout({ payoutId: actionDialog.payoutId, reason });
-    } else {
+    } else if (actionDialog.type === 'reverse') {
+      if (!reason.trim()) return;
       await reversePayout({ payoutId: actionDialog.payoutId, reason });
+    } else if (actionDialog.type === 'dispute') {
+      if (!reason.trim() || !actionDialog.orderId) return;
+      await openDispute({ orderId: actionDialog.orderId, reason });
+    } else if (actionDialog.type === 'resolve_customer') {
+      if (!actionDialog.orderId) return;
+      await resolveDispute({ orderId: actionDialog.orderId, outcome: 'customer_refund' });
+    } else if (actionDialog.type === 'resolve_vendor') {
+      if (!actionDialog.orderId) return;
+      await resolveDispute({ orderId: actionDialog.orderId, outcome: 'vendor_wins' });
     }
     setActionDialog(null);
     setReason('');
@@ -62,6 +76,7 @@ export default function AdminMarketplacePayoutsPage() {
     { key: 'platform_fee', label: 'Fee' },
     { key: 'net_amount', label: 'Net' },
     { key: 'status', label: 'Status' },
+    { key: 'dispute_flag', label: 'Disputed' },
     { key: 'approved_at', label: 'Approved At' },
     { key: 'paid_at', label: 'Paid At' },
     { key: 'created_at', label: 'Created At' },
@@ -75,10 +90,21 @@ export default function AdminMarketplacePayoutsPage() {
     platform_fee: p.platform_fee || 0,
     net_amount: p.net_amount,
     status: p.status || '',
+    dispute_flag: p.dispute_flag ? 'Yes' : 'No',
     approved_at: p.approved_at || '',
     paid_at: p.paid_at || '',
     created_at: p.created_at || '',
   }));
+
+  const dialogTitle: Record<ActionDialogType, string> = {
+    hold: 'Hold Payout',
+    reverse: 'Reverse Payout',
+    dispute: 'Open Dispute',
+    resolve_customer: 'Resolve — Customer Refund',
+    resolve_vendor: 'Resolve — Vendor Wins',
+  };
+
+  const needsReason = actionDialog?.type === 'hold' || actionDialog?.type === 'reverse' || actionDialog?.type === 'dispute';
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
@@ -89,7 +115,7 @@ export default function AdminMarketplacePayoutsPage() {
             <DollarSign className="h-8 w-8 text-primary" />
             <div>
               <h1 className="text-3xl font-bold">Marketplace Payouts</h1>
-              <p className="text-muted-foreground">Manage vendor payout lifecycle: approve → pay</p>
+              <p className="text-muted-foreground">Manage vendor payout lifecycle + dispute protection</p>
             </div>
           </div>
           <ExportButton data={exportData} filename="marketplace-payouts" columns={exportColumns} />
@@ -138,7 +164,7 @@ export default function AdminMarketplacePayoutsPage() {
                   <SelectItem value="in_settlement">In Settlement</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="held">Held</SelectItem>
+                  <SelectItem value="held">Held / Disputed</SelectItem>
                   <SelectItem value="reversed">Reversed</SelectItem>
                 </SelectContent>
               </Select>
@@ -167,101 +193,121 @@ export default function AdminMarketplacePayoutsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payouts.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-medium">
-                        {p.wholesaler?.business_name || p.wholesaler?.contact_name || p.wholesaler_id?.slice(0, 8) || '—'}
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {p.order_id?.slice(0, 8) || '—'}
-                      </TableCell>
-                      <TableCell className="text-right">${Number(p.amount).toFixed(2)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">${Number(p.platform_fee || 0).toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-bold">${Number(p.net_amount).toFixed(2)}</TableCell>
-                      <TableCell>
-                        <Badge className={`text-xs ${statusColors[p.status || ''] || ''}`}>
-                          {statusLabels[p.status || ''] || p.status || 'unknown'}
-                        </Badge>
-                        {p.hold_reason && <p className="text-xs text-red-400 mt-1">{p.hold_reason}</p>}
-                        {p.reversal_reason && <p className="text-xs text-zinc-400 mt-1">{p.reversal_reason}</p>}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {p.approved_at ? format(new Date(p.approved_at), 'MMM d, h:mm a') : '—'}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {p.paid_at ? format(new Date(p.paid_at), 'MMM d, h:mm a') : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
-                          {p.status === 'approved' && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              onClick={() => markPaid(p.id)}
-                              disabled={isProcessing}
-                              className="gap-1 text-xs"
-                            >
-                              <CheckCircle2 className="h-3 w-3" /> Pay
-                            </Button>
+                  {payouts.map(p => {
+                    const orderDisputeStatus = p.order?.dispute_status || 'none';
+                    const isDisputed = p.dispute_flag || orderDisputeStatus === 'opened' || orderDisputeStatus === 'under_review';
+
+                    return (
+                      <TableRow key={p.id} className={isDisputed ? 'bg-red-500/5' : ''}>
+                        <TableCell className="font-medium">
+                          {p.wholesaler?.business_name || p.wholesaler?.contact_name || p.wholesaler_id?.slice(0, 8) || '—'}
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-mono text-xs">{p.order_id?.slice(0, 8) || '—'}</span>
+                          {isDisputed && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <AlertTriangle className="h-3 w-3 text-red-400" />
+                              <span className="text-[10px] text-red-400 font-medium">DISPUTED</span>
+                            </div>
                           )}
-                          {(p.status === 'pending' || p.status === 'approved') && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => { setActionDialog({ type: 'hold', payoutId: p.id }); setReason(''); }}
-                              disabled={isProcessing}
-                              className="gap-1 text-xs"
-                            >
-                              <Ban className="h-3 w-3" /> Hold
-                            </Button>
-                          )}
-                          {(p.status === 'approved' || p.status === 'paid') && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => { setActionDialog({ type: 'reverse', payoutId: p.id }); setReason(''); }}
-                              disabled={isProcessing}
-                              className="gap-1 text-xs"
-                            >
-                              <Undo2 className="h-3 w-3" /> Reverse
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell className="text-right">${Number(p.amount).toFixed(2)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">${Number(p.platform_fee || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right font-bold">${Number(p.net_amount).toFixed(2)}</TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${statusColors[p.status || ''] || ''}`}>
+                            {statusLabels[p.status || ''] || p.status || 'unknown'}
+                          </Badge>
+                          {p.hold_reason && <p className="text-xs text-red-400 mt-1">{p.hold_reason}</p>}
+                          {p.reversal_reason && <p className="text-xs text-zinc-400 mt-1">{p.reversal_reason}</p>}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {p.approved_at ? format(new Date(p.approved_at), 'MMM d, h:mm a') : '—'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {p.paid_at ? format(new Date(p.paid_at), 'MMM d, h:mm a') : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1 flex-wrap">
+                            {/* Pay */}
+                            {p.status === 'approved' && (
+                              <Button size="sm" variant="default" onClick={() => markPaid(p.id)} disabled={isProcessing} className="gap-1 text-xs">
+                                <CheckCircle2 className="h-3 w-3" /> Pay
+                              </Button>
+                            )}
+                            {/* Hold */}
+                            {['pending', 'approved_pending_delivery', 'in_settlement', 'approved'].includes(p.status || '') && !p.dispute_flag && (
+                              <Button size="sm" variant="outline" onClick={() => { setActionDialog({ type: 'hold', payoutId: p.id }); setReason(''); }} disabled={isProcessing} className="gap-1 text-xs">
+                                <Ban className="h-3 w-3" /> Hold
+                              </Button>
+                            )}
+                            {/* Open Dispute */}
+                            {p.order_id && !isDisputed && ['pending', 'approved_pending_delivery', 'in_settlement', 'approved'].includes(p.status || '') && (
+                              <Button size="sm" variant="outline" onClick={() => { setActionDialog({ type: 'dispute', payoutId: p.id, orderId: p.order_id! }); setReason(''); }} disabled={isProcessing} className="gap-1 text-xs text-red-400 border-red-500/30 hover:bg-red-500/10">
+                                <AlertTriangle className="h-3 w-3" /> Dispute
+                              </Button>
+                            )}
+                            {/* Resolve Dispute */}
+                            {p.dispute_flag && p.status === 'held' && p.order_id && (
+                              <>
+                                <Button size="sm" variant="destructive" onClick={() => setActionDialog({ type: 'resolve_customer', payoutId: p.id, orderId: p.order_id! })} disabled={isProcessing} className="gap-1 text-xs">
+                                  <Undo2 className="h-3 w-3" /> Refund
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => setActionDialog({ type: 'resolve_vendor', payoutId: p.id, orderId: p.order_id! })} disabled={isProcessing} className="gap-1 text-xs text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10">
+                                  <Scale className="h-3 w-3" /> Vendor Wins
+                                </Button>
+                              </>
+                            )}
+                            {/* Reverse (non-dispute) */}
+                            {(p.status === 'approved' || p.status === 'paid') && !p.dispute_flag && (
+                              <Button size="sm" variant="destructive" onClick={() => { setActionDialog({ type: 'reverse', payoutId: p.id }); setReason(''); }} disabled={isProcessing} className="gap-1 text-xs">
+                                <Undo2 className="h-3 w-3" /> Reverse
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
           </CardContent>
         </Card>
 
-        {/* Hold / Reverse Dialog */}
+        {/* Action Dialog */}
         <Dialog open={!!actionDialog} onOpenChange={() => setActionDialog(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>
-                {actionDialog?.type === 'hold' ? 'Hold Payout' : 'Reverse Payout'}
-              </DialogTitle>
+              <DialogTitle>{actionDialog ? dialogTitle[actionDialog.type] : ''}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Reason (required)</Label>
-                <Textarea
-                  value={reason}
-                  onChange={e => setReason(e.target.value)}
-                  placeholder={actionDialog?.type === 'hold' ? 'Why is this payout being held?' : 'Why is this payout being reversed?'}
-                />
-              </div>
+              {needsReason ? (
+                <div className="space-y-2">
+                  <Label>Reason (required)</Label>
+                  <Textarea
+                    value={reason}
+                    onChange={e => setReason(e.target.value)}
+                    placeholder="Provide a reason..."
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  {actionDialog?.type === 'resolve_customer'
+                    ? 'This will reverse all held payouts for this order and mark the dispute as resolved in the customer\'s favor.'
+                    : 'This will release all held payouts for this order back to approved status and mark the dispute as resolved in the vendor\'s favor.'}
+                </p>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setActionDialog(null)}>Cancel</Button>
               <Button
-                variant={actionDialog?.type === 'reverse' ? 'destructive' : 'default'}
+                variant={actionDialog?.type === 'reverse' || actionDialog?.type === 'resolve_customer' || actionDialog?.type === 'dispute' ? 'destructive' : 'default'}
                 onClick={handleAction}
-                disabled={!reason.trim() || isProcessing}
+                disabled={(needsReason && !reason.trim()) || isProcessing}
               >
-                {actionDialog?.type === 'hold' ? 'Place Hold' : 'Reverse Payout'}
+                {isProcessing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                Confirm
               </Button>
             </DialogFooter>
           </DialogContent>
