@@ -11,6 +11,8 @@ import { CallProvider } from "./components/communication/CallProvider";
 import { MessageProvider } from "./components/communication/MessageProvider";
 import { ViewAsProvider } from "./contexts/ViewAsContext";
 import { ViewAsBanner } from "./components/admin/ViewAsBanner";
+import { BackendFingerprint, BackendMismatchGuard } from "./components/dev/BackendFingerprint";
+import { SchemaSanityChecker } from "./components/dev/SchemaSanityChecker";
 
 // Initialize Dynasty OS Module System - Auto-registers all modules
 import './modules';
@@ -26,21 +28,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <BusinessProvider>
-            <SimulationModeProvider>
-              <ViewAsProvider>
-                <CallProvider>
-                  <MessageProvider>
-                    <ViewAsBanner />
-                    <SimulationModeBanner />
-                    <AppRoutes />
-                  </MessageProvider>
-                </CallProvider>
-              </ViewAsProvider>
-            </SimulationModeProvider>
-          </BusinessProvider>
-        </AuthProvider>
+        <BackendMismatchGuard>
+          <AuthProvider>
+            <BusinessProvider>
+              <SimulationModeProvider>
+                <ViewAsProvider>
+                  <CallProvider>
+                    <MessageProvider>
+                      <BackendFingerprint />
+                      <SchemaSanityChecker />
+                      <ViewAsBanner />
+                      <SimulationModeBanner />
+                      <AppRoutes />
+                    </MessageProvider>
+                  </CallProvider>
+                </ViewAsProvider>
+              </SimulationModeProvider>
+            </BusinessProvider>
+          </AuthProvider>
+        </BackendMismatchGuard>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
