@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Printer, Truck, CheckCircle, Loader2, ArrowUpDown, MapPin, Lock } from 'lucide-react';
+import { Printer, Truck, CheckCircle, Loader2, ArrowUpDown, MapPin, Lock, MessageSquare } from 'lucide-react';
 import { format, differenceInHours } from 'date-fns';
 import { WholesalerFulfillment } from '@/services/wholesaler/useWholesalerFulfillments';
+import { OrderMessageThread } from '@/components/marketplace/OrderMessageThread';
 
 interface Props {
   fulfillments: WholesalerFulfillment[];
@@ -13,6 +14,7 @@ interface Props {
   onMarkShipped: (id: string) => Promise<void>;
   isGeneratingLabel: boolean;
   isMarkingShipped: boolean;
+  currentVendorId?: string | null;
 }
 
 type SortKey = 'created_at' | 'status' | 'sla';
@@ -24,11 +26,13 @@ export function FulfillmentCommandGrid({
   onMarkShipped,
   isGeneratingLabel,
   isMarkingShipped,
+  currentVendorId,
 }: Props) {
   const [sortBy, setSortBy] = useState<SortKey>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [messagingOrderId, setMessagingOrderId] = useState<string | null>(null);
 
   const getSLAHours = (f: WholesalerFulfillment) => {
     if (f.status !== 'pending' && f.status !== 'label_generated') return Infinity;
@@ -231,6 +235,34 @@ export function FulfillmentCommandGrid({
                         </div>
                       )}
                     </div>
+
+                    {/* Message Customer button */}
+                    <div className="col-span-2 pt-2 border-t border-border/20 flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1.5"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setMessagingOrderId(messagingOrderId === f.order_id ? null : f.order_id);
+                        }}
+                      >
+                        <MessageSquare className="h-3 w-3" />
+                        {messagingOrderId === f.order_id ? 'Close Messages' : 'Message Customer'}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Inline messaging panel (outside expanded details) */}
+                {messagingOrderId === f.order_id && (
+                  <div className="px-4 py-3 border-b border-border/20 bg-background/30">
+                    <OrderMessageThread
+                      orderId={f.order_id}
+                      senderRole="vendor"
+                      vendorId={currentVendorId || f.wholesaler_id}
+                      disputeActive={f.dispute_status != null && f.dispute_status !== 'none' && f.dispute_status !== ''}
+                    />
                   </div>
                 )}
               </div>
