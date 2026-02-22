@@ -29958,6 +29958,8 @@ export type Database = {
         Row: {
           billing_address: Json | null
           created_at: string | null
+          customer_email: string | null
+          customer_phone: string | null
           dispute_opened_at: string | null
           dispute_reason: string | null
           dispute_resolved_at: string | null
@@ -29981,6 +29983,8 @@ export type Database = {
         Insert: {
           billing_address?: Json | null
           created_at?: string | null
+          customer_email?: string | null
+          customer_phone?: string | null
           dispute_opened_at?: string | null
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
@@ -30004,6 +30008,8 @@ export type Database = {
         Update: {
           billing_address?: Json | null
           created_at?: string | null
+          customer_email?: string | null
+          customer_phone?: string | null
           dispute_opened_at?: string | null
           dispute_reason?: string | null
           dispute_resolved_at?: string | null
@@ -58019,6 +58025,87 @@ export type Database = {
           state: string | null
         }
         Relationships: []
+      }
+      vendor_fulfillment_view: {
+        Row: {
+          carrier: string | null
+          dispute_opened_at: string | null
+          dispute_reason: string | null
+          dispute_resolved_at: string | null
+          dispute_status: string | null
+          fulfillment_created_at: string | null
+          fulfillment_id: string | null
+          fulfillment_status: string | null
+          fulfillment_updated_at: string | null
+          items_snapshot: Json | null
+          order_created_at: string | null
+          order_fulfillment_status: string | null
+          order_id: string | null
+          payment_status: string | null
+          ship_to_address1: string | null
+          ship_to_address2: string | null
+          ship_to_city: string | null
+          ship_to_country: string | null
+          ship_to_name: string | null
+          ship_to_state: string | null
+          ship_to_zip: string | null
+          shipping_label_url: string | null
+          subtotal: number | null
+          total: number | null
+          tracking_number: string | null
+          wholesaler_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_fulfillments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vendor_order_items_view: {
+        Row: {
+          id: string | null
+          images: Json | null
+          order_id: string | null
+          price_each: number | null
+          product_id: string | null
+          product_name: string | null
+          qty: number | null
+          wholesaler_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products_all"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       wholesaler_marketplace_summary: {
         Row: {
