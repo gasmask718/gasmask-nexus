@@ -53250,6 +53250,8 @@ export type Database = {
           period_start: string | null
           platform_fee: number | null
           reversal_reason: string | null
+          settlement_release_at: string | null
+          settlement_start_at: string | null
           status: string | null
           wholesaler_id: string | null
         }
@@ -53268,6 +53270,8 @@ export type Database = {
           period_start?: string | null
           platform_fee?: number | null
           reversal_reason?: string | null
+          settlement_release_at?: string | null
+          settlement_start_at?: string | null
           status?: string | null
           wholesaler_id?: string | null
         }
@@ -53286,6 +53290,8 @@ export type Database = {
           period_start?: string | null
           platform_fee?: number | null
           reversal_reason?: string | null
+          settlement_release_at?: string | null
+          settlement_start_at?: string | null
           status?: string | null
           wholesaler_id?: string | null
         }
@@ -58748,6 +58754,7 @@ export type Database = {
       }
       process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
+      process_settlement_releases: { Args: never; Returns: number }
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean

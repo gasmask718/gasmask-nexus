@@ -61,20 +61,29 @@ export function useMarketplacePayouts(statusFilter?: string) {
       if (error) throw error;
 
       const rows = data || [];
-      const pending = rows.filter(r => r.status === 'pending');
-      const approved = rows.filter(r => r.status === 'approved');
-      const paid = rows.filter(r => r.status === 'paid');
-      const held = rows.filter(r => r.status === 'held');
+      const byStatus = (s: string) => rows.filter(r => r.status === s);
+      const sumNet = (arr: typeof rows) => arr.reduce((s, r) => s + Number(r.net_amount || 0), 0);
+
+      const pending = byStatus('pending');
+      const approvedPendingDelivery = byStatus('approved_pending_delivery');
+      const inSettlement = byStatus('in_settlement');
+      const approved = byStatus('approved');
+      const paid = byStatus('paid');
+      const held = byStatus('held');
 
       return {
         pendingCount: pending.length,
-        pendingAmount: pending.reduce((s, r) => s + Number(r.net_amount || 0), 0),
+        pendingAmount: sumNet(pending),
+        approvedPendingDeliveryCount: approvedPendingDelivery.length,
+        approvedPendingDeliveryAmount: sumNet(approvedPendingDelivery),
+        inSettlementCount: inSettlement.length,
+        inSettlementAmount: sumNet(inSettlement),
         approvedCount: approved.length,
-        approvedAmount: approved.reduce((s, r) => s + Number(r.net_amount || 0), 0),
+        approvedAmount: sumNet(approved),
         paidCount: paid.length,
-        paidAmount: paid.reduce((s, r) => s + Number(r.net_amount || 0), 0),
+        paidAmount: sumNet(paid),
         heldCount: held.length,
-        heldAmount: held.reduce((s, r) => s + Number(r.net_amount || 0), 0),
+        heldAmount: sumNet(held),
         totalFees: rows.reduce((s, r) => s + Number(r.platform_fee || 0), 0),
       };
     },

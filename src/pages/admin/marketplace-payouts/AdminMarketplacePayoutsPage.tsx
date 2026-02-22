@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Hourglass } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ExportButton } from '@/components/crud/ExportButton';
@@ -17,10 +18,22 @@ import { useMarketplacePayouts } from '@/hooks/useMarketplacePayouts';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  approved_pending_delivery: 'bg-purple-500/15 text-purple-400 border-purple-500/30',
+  in_settlement: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30',
   approved: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
   paid: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30',
   held: 'bg-red-500/15 text-red-400 border-red-500/30',
   reversed: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30',
+};
+
+const statusLabels: Record<string, string> = {
+  pending: 'Pending',
+  approved_pending_delivery: 'Shipped',
+  in_settlement: 'Settlement',
+  approved: 'Approved',
+  paid: 'Paid',
+  held: 'Held',
+  reversed: 'Reversed',
 };
 
 export default function AdminMarketplacePayoutsPage() {
@@ -83,13 +96,15 @@ export default function AdminMarketplacePayoutsPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           {[
             { label: 'Pending', value: stats?.pendingAmount, count: stats?.pendingCount, color: 'text-amber-400', icon: Clock },
+            { label: 'Shipped', value: stats?.approvedPendingDeliveryAmount, count: stats?.approvedPendingDeliveryCount, color: 'text-purple-400', icon: Clock },
+            { label: 'In Settlement', value: stats?.inSettlementAmount, count: stats?.inSettlementCount, color: 'text-cyan-400', icon: Hourglass },
             { label: 'Approved', value: stats?.approvedAmount, count: stats?.approvedCount, color: 'text-blue-400', icon: CheckCircle2 },
             { label: 'Paid', value: stats?.paidAmount, count: stats?.paidCount, color: 'text-emerald-400', icon: DollarSign },
             { label: 'Held', value: stats?.heldAmount, count: stats?.heldCount, color: 'text-red-400', icon: ShieldAlert },
-            { label: 'Platform Fees', value: stats?.totalFees, color: 'text-primary', icon: DollarSign },
+            { label: 'Fees Earned', value: stats?.totalFees, color: 'text-primary', icon: DollarSign },
           ].map(s => (
             <Card key={s.label}>
               <CardHeader className="pb-2">
@@ -119,6 +134,8 @@ export default function AdminMarketplacePayoutsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="approved_pending_delivery">Shipped</SelectItem>
+                  <SelectItem value="in_settlement">In Settlement</SelectItem>
                   <SelectItem value="approved">Approved</SelectItem>
                   <SelectItem value="paid">Paid</SelectItem>
                   <SelectItem value="held">Held</SelectItem>
@@ -163,7 +180,7 @@ export default function AdminMarketplacePayoutsPage() {
                       <TableCell className="text-right font-bold">${Number(p.net_amount).toFixed(2)}</TableCell>
                       <TableCell>
                         <Badge className={`text-xs ${statusColors[p.status || ''] || ''}`}>
-                          {p.status || 'unknown'}
+                          {statusLabels[p.status || ''] || p.status || 'unknown'}
                         </Badge>
                         {p.hold_reason && <p className="text-xs text-red-400 mt-1">{p.hold_reason}</p>}
                         {p.reversal_reason && <p className="text-xs text-zinc-400 mt-1">{p.reversal_reason}</p>}
