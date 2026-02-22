@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,18 +11,25 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Progress } from '@/components/ui/progress';
 import {
   Shield, TrendingUp, AlertTriangle, Clock, DollarSign,
   Eye, MessageSquare, Ban, Loader2, Activity, Zap,
   Package, Scale, FileText, Send, RefreshCw, Power,
   Search, Download, Snowflake, Lock, Unlock, RotateCcw,
-  ShieldAlert, Gauge, Timer, TriangleAlert
+  ShieldAlert, Gauge, Timer, TriangleAlert, ChevronDown,
+  ChevronRight, Lightbulb, Flame, CheckSquare, Keyboard
 } from 'lucide-react';
 
-const UI_VERSION = "Marketplace Command Center v2.0";
+const UI_VERSION = "Marketplace Command Center v3.0";
 console.log("Loaded:", UI_VERSION);
+
 import {
   useMarketplaceKPIs,
+  useFinancialExposure,
+  useSystemMode,
   useOrderLifecycle,
   useOverdueFulfillments,
   useActiveDisputes,
@@ -39,10 +46,15 @@ import {
 } from '@/hooks/useMarketplaceControlTower';
 import { exportData } from '@/utils/exportUtils';
 
-function riskBadge(score: number) {
-  if (score >= 50) return <Badge className="bg-destructive/15 text-destructive border-destructive/30">High Risk</Badge>;
-  if (score >= 20) return <Badge className="bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">Medium</Badge>;
-  return <Badge className="bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/30">Low</Badge>;
+// ─── Risk badge with score ───
+function riskScoreBadge(score: number, level: string) {
+  const styles: Record<string, string> = {
+    critical: 'bg-destructive text-destructive-foreground animate-pulse',
+    high: 'bg-destructive/15 text-destructive border-destructive/30',
+    medium: 'bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30',
+    low: 'bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/30',
+  };
+  return <Badge className={`${styles[level] || styles.low} text-[10px] font-mono gap-1`}>{score} <span className="uppercase">{level}</span></Badge>;
 }
 
 function severityBadge(severity: string) {
@@ -50,25 +62,34 @@ function severityBadge(severity: string) {
   return <Badge className="bg-[hsl(var(--warning))]/15 text-[hsl(var(--warning))] border-[hsl(var(--warning))]/30">Warning</Badge>;
 }
 
-function riskHeatIndicator(heat: string) {
-  const colors: Record<string, string> = {
-    green: 'bg-[hsl(var(--success))]',
-    yellow: 'bg-[hsl(var(--warning))]',
-    red: 'bg-destructive',
-  };
-  return <span className={`inline-block h-3 w-3 rounded-full ${colors[heat] || colors.green} animate-pulse`} />;
+function exposureColor(value: number, thresholds: [number, number]) {
+  if (value >= thresholds[1]) return 'text-destructive';
+  if (value >= thresholds[0]) return 'text-[hsl(var(--warning))]';
+  return 'text-[hsl(var(--success))]';
 }
+
+const systemModeConfig: Record<string, { label: string; color: string; icon: typeof Shield }> = {
+  operational: { label: 'OPERATIONAL', color: 'bg-[hsl(var(--success))]', icon: Shield },
+  heightened: { label: 'HEIGHTENED RISK', color: 'bg-[hsl(var(--warning))]', icon: AlertTriangle },
+  lockdown: { label: 'LOCKDOWN', color: 'bg-destructive', icon: Flame },
+};
 
 export default function MarketplaceControlTowerPage() {
   const [activeTab, setActiveTab] = useState('orders');
   const [deepDiveOrderId, setDeepDiveOrderId] = useState<string | null>(null);
-  const [actionDialog, setActionDialog] = useState<{ type: string; orderId?: string; vendorId?: string } | null>(null);
+  const [actionDialog, setActionDialog] = useState<{ type: string; orderId?: string; vendorId?: string; reason?: string; impact?: string } | null>(null);
   const [actionReason, setActionReason] = useState('');
   const [messageFilters, setMessageFilters] = useState<{ type?: string; orderId?: string; vendorId?: string }>({});
   const [auditFilters, setAuditFilters] = useState<{ actionType?: string; orderId?: string; vendorId?: string }>({});
   const [orderSearch, setOrderSearch] = useState('');
+  const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [dataFreshness] = useState(() => new Date());
 
-  const { data: kpis, isLoading: kpisLoading } = useMarketplaceKPIs();
+  const { data: kpis, isLoading: kpisLoading, dataUpdatedAt: kpisUpdatedAt } = useMarketplaceKPIs();
+  const { data: exposure } = useFinancialExposure();
+  const { data: systemMode } = useSystemMode();
   const { data: orders } = useOrderLifecycle();
   const { data: overdue } = useOverdueFulfillments();
   const { data: disputes } = useActiveDisputes();
@@ -84,6 +105,29 @@ export default function MarketplaceControlTowerPage() {
   const refreshVendor = useRefreshVendorPerformance();
 
   const isMarketplaceFrozen = killSwitch?.active === true;
+  const modeInfo = systemModeConfig[systemMode || 'operational'] || systemModeConfig.operational;
+  const ModeIcon = modeInfo.icon;
+
+  // ─── Keyboard Shortcuts ───
+  const handleKeyboard = useCallback((e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    if (selectedOrders.size === 0) return;
+    const firstSelected = Array.from(selectedOrders)[0];
+    const order = orders?.find(o => o.id === firstSelected);
+    if (!order) return;
+
+    switch (e.key.toLowerCase()) {
+      case 'h': e.preventDefault(); setActionDialog({ type: 'hold_payout', orderId: firstSelected, vendorId: order.wholesaler_id || undefined }); break;
+      case 'e': e.preventDefault(); setActionDialog({ type: 'escalate_fulfillment', orderId: firstSelected, vendorId: order.wholesaler_id || undefined }); break;
+      case 'f': e.preventDefault(); setActionDialog({ type: 'freeze_vendor', vendorId: order.wholesaler_id || undefined }); break;
+      case 'd': e.preventDefault(); setDeepDiveOrderId(firstSelected); break;
+    }
+  }, [selectedOrders, orders]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyboard);
+    return () => window.removeEventListener('keydown', handleKeyboard);
+  }, [handleKeyboard]);
 
   const handleAdminAction = async () => {
     if (!actionDialog || !actionReason.trim()) return;
@@ -95,6 +139,37 @@ export default function MarketplaceControlTowerPage() {
     });
     setActionDialog(null);
     setActionReason('');
+  };
+
+  const handleBulkAction = (actionType: string) => {
+    if (selectedOrders.size === 0) return;
+    const orderIds = Array.from(selectedOrders);
+    orderIds.forEach(async (oid) => {
+      const order = orders?.find(o => o.id === oid);
+      await adminAction.mutateAsync({
+        action_type: actionType,
+        related_order_id: oid,
+        related_vendor_id: order?.wholesaler_id || undefined,
+        reason: `Bulk action: ${actionType} on ${orderIds.length} orders`,
+      });
+    });
+    setSelectedOrders(new Set());
+  };
+
+  const toggleOrderSelect = (id: string) => {
+    setSelectedOrders(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleOrderExpand = (id: string) => {
+    setExpandedOrders(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   };
 
   const filteredOrders = (orders || []).filter(o => {
@@ -118,21 +193,42 @@ export default function MarketplaceControlTowerPage() {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-[1800px] mx-auto space-y-4">
-        {/* ─── Header + Kill Switch ─── */}
+      <div className="max-w-[1800px] mx-auto space-y-3">
+        {/* ─── Header + System Mode + Kill Switch ─── */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Shield className="h-8 w-8 text-primary" />
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Marketplace Command Center — <span className="text-primary">v2.0</span></h1>
-              <p className="text-xs text-muted-foreground">Full operational control — risk, settlement, vendors, disputes</p>
+              <h1 className="text-2xl font-bold tracking-tight">Marketplace Command Center — <span className="text-primary">v3.0</span></h1>
+              <p className="text-xs text-muted-foreground">AI-driven operational control — risk intelligence, financial exposure, predictive warnings</p>
             </div>
-            {kpis?.riskHeat && <div className="flex items-center gap-1.5 ml-4">{riskHeatIndicator(kpis.riskHeat)} <span className="text-xs text-muted-foreground uppercase font-mono">{kpis.riskHeat}</span></div>}
           </div>
           <div className="flex items-center gap-2">
+            {/* System Mode Indicator */}
+            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border ${modeInfo.color === 'bg-destructive' ? 'border-destructive/40 bg-destructive/10' : modeInfo.color === 'bg-[hsl(var(--warning))]' ? 'border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/10' : 'border-[hsl(var(--success))]/40 bg-[hsl(var(--success))]/10'}`}>
+              <span className={`h-2 w-2 rounded-full ${modeInfo.color} animate-pulse`} />
+              <ModeIcon className="h-3 w-3" />
+              <span className="text-[10px] font-mono font-bold">{modeInfo.label}</span>
+            </div>
+            {/* Keyboard shortcuts */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => setShowShortcuts(!showShortcuts)}>
+                  <Keyboard className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                <div className="space-y-1">
+                  <p><kbd className="bg-muted px-1 rounded">H</kbd> Hold payout</p>
+                  <p><kbd className="bg-muted px-1 rounded">E</kbd> Escalate</p>
+                  <p><kbd className="bg-muted px-1 rounded">F</kbd> Freeze vendor</p>
+                  <p><kbd className="bg-muted px-1 rounded">D</kbd> Deep dive</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
             {isMarketplaceFrozen && (
               <Badge className="bg-destructive/20 text-destructive border-destructive/40 text-xs animate-pulse gap-1">
-                <Power className="h-3 w-3" /> MARKETPLACE FROZEN
+                <Power className="h-3 w-3" /> FROZEN
               </Badge>
             )}
             <Button
@@ -146,22 +242,69 @@ export default function MarketplaceControlTowerPage() {
           </div>
         </div>
 
-        {/* ─── Fixed KPI Bar ─── */}
+        {/* ─── Financial Exposure Strip ─── */}
+        {exposure && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="border rounded-lg p-3 bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Pending Revenue</p>
+              <p className={`text-xl font-bold font-mono ${exposureColor(exposure.pendingRevenue, [5000, 20000])}`}>
+                ${exposure.pendingRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[9px] text-muted-foreground mt-1">Unsettled paid orders</p>
+            </div>
+            <div className="border rounded-lg p-3 bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">At-Risk Revenue</p>
+              <p className={`text-xl font-bold font-mono ${exposureColor(exposure.atRiskRevenue, [1000, 5000])}`}>
+                ${exposure.atRiskRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[9px] text-muted-foreground mt-1">{'>'} 48h pending fulfillment</p>
+            </div>
+            <div className="border rounded-lg p-3 bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Potential Liability</p>
+              <p className={`text-xl font-bold font-mono ${exposureColor(exposure.potentialLiability, [2000, 10000])}`}>
+                ${exposure.potentialLiability.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[9px] text-muted-foreground mt-1">Disputes + held payouts</p>
+            </div>
+            <div className="border rounded-lg p-3 bg-card">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Marketplace Float</p>
+              <p className={`text-xl font-bold font-mono ${exposureColor(exposure.marketplaceFloat, [3000, 15000])}`}>
+                ${exposure.marketplaceFloat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[9px] text-muted-foreground mt-1">In-settlement payouts</p>
+            </div>
+          </div>
+        )}
+
+        {/* ─── KPI Bar ─── */}
         {kpisLoading ? (
-          <div className="flex items-center justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+          <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
             {kpiCards.map(k => (
               <Card key={k.label} className="border-border/50">
-                <CardContent className="p-3">
-                  <div className="flex items-center gap-1 mb-1">
+                <CardContent className="p-2.5">
+                  <div className="flex items-center gap-1 mb-0.5">
                     <k.icon className={`h-3 w-3 ${k.accent}`} />
-                    <span className="text-[10px] text-muted-foreground font-medium">{k.label}</span>
+                    <span className="text-[9px] text-muted-foreground font-medium">{k.label}</span>
                   </div>
                   <p className={`text-lg font-bold ${k.accent}`}>{k.value}</p>
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* ─── Bulk Actions Bar ─── */}
+        {selectedOrders.size > 0 && (
+          <div className="flex items-center gap-2 p-2 border rounded-lg bg-primary/5 border-primary/20">
+            <CheckSquare className="h-4 w-4 text-primary" />
+            <span className="text-xs font-medium">{selectedOrders.size} selected</span>
+            <div className="flex gap-1 ml-auto">
+              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleBulkAction('hold_payout')}>Bulk Hold</Button>
+              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleBulkAction('escalate_fulfillment')}>Bulk Escalate</Button>
+              <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setSelectedOrders(new Set())}>Clear</Button>
+            </div>
           </div>
         )}
 
@@ -178,71 +321,163 @@ export default function MarketplaceControlTowerPage() {
             <TabsTrigger value="audit" className="text-xs">Audit Log</TabsTrigger>
           </TabsList>
 
-          {/* ═══════ Orders Tab ═══════ */}
+          {/* ═══════ Orders Tab with Intelligence ═══════ */}
           <TabsContent value="orders">
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base"><Package className="h-4 w-4" /> Order Lifecycle</CardTitle>
-                  <div className="flex gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
-                      <Input className="pl-7 h-8 w-48 text-xs" placeholder="Search orders..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
-                    </div>
+                  <CardTitle className="flex items-center gap-2 text-base"><Package className="h-4 w-4" /> Order Lifecycle — Intelligence View</CardTitle>
+                  <div className="relative">
+                    <Search className="absolute left-2 top-2.5 h-3 w-3 text-muted-foreground" />
+                    <Input className="pl-7 h-8 w-48 text-xs" placeholder="Search orders..." value={orderSearch} onChange={e => setOrderSearch(e.target.value)} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[500px]">
+                <ScrollArea className="h-[550px]">
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-8" />
+                        <TableHead className="w-8" />
                         <TableHead className="text-xs">Order ID</TableHead>
                         <TableHead className="text-xs">Type</TableHead>
                         <TableHead className="text-xs">Payment</TableHead>
                         <TableHead className="text-xs">Fulfillment</TableHead>
                         <TableHead className="text-xs">Dispute</TableHead>
                         <TableHead className="text-xs text-right">Total</TableHead>
-                        <TableHead className="text-xs text-center">Vendors</TableHead>
-                        <TableHead className="text-xs">Created</TableHead>
                         <TableHead className="text-xs text-center">Risk</TableHead>
+                        <TableHead className="text-xs text-center">Intel</TableHead>
                         <TableHead className="text-xs text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredOrders.map(o => (
-                        <TableRow key={o.id} className={o.riskFlag ? 'bg-destructive/5' : ''}>
-                          <TableCell>
-                            <Button variant="link" className="p-0 h-auto text-xs font-mono" onClick={() => setDeepDiveOrderId(o.id)}>
-                              {o.id.slice(0, 8)}
-                            </Button>
-                          </TableCell>
-                          <TableCell className="text-xs">{o.order_type || '—'}</TableCell>
-                          <TableCell><Badge variant="outline" className="text-[10px]">{o.payment_status}</Badge></TableCell>
-                          <TableCell><Badge variant="outline" className="text-[10px]">{o.fulfillment_status || 'pending'}</Badge></TableCell>
-                          <TableCell>
-                            {o.dispute_status && o.dispute_status !== 'none'
-                              ? <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]">{o.dispute_status}</Badge>
-                              : <span className="text-[10px] text-muted-foreground">—</span>}
-                          </TableCell>
-                          <TableCell className="text-right font-mono text-xs">${(o.total || 0).toFixed(2)}</TableCell>
-                          <TableCell className="text-center text-xs">{o.vendorCount}</TableCell>
-                          <TableCell className="text-xs">{o.created_at ? format(new Date(o.created_at), 'MMM d') : '—'}</TableCell>
-                          <TableCell className="text-center">{o.riskFlag ? <TriangleAlert className="h-3 w-3 text-destructive inline" /> : <span className="text-[10px] text-muted-foreground">—</span>}</TableCell>
-                          <TableCell className="text-right">
-                            <Select onValueChange={val => setActionDialog({ type: val, orderId: o.id, vendorId: o.wholesaler_id || undefined })}>
-                              <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue placeholder="Actions" /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="hold_payout">Hold Payout</SelectItem>
-                                <SelectItem value="release_payout">Release Payout</SelectItem>
-                                <SelectItem value="escalate_fulfillment">Escalate Vendor</SelectItem>
-                                <SelectItem value="send_system_message">System Message</SelectItem>
-                                <SelectItem value="convert_to_liability">Add Liability</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {filteredOrders.map(o => {
+                        const isExpanded = expandedOrders.has(o.id);
+                        const isSelected = selectedOrders.has(o.id);
+                        return (
+                          <>
+                            <TableRow key={o.id} className={`${o.riskScore >= 51 ? 'bg-destructive/5' : o.riskScore >= 21 ? 'bg-[hsl(var(--warning))]/5' : ''} ${isSelected ? 'ring-1 ring-primary/30' : ''}`}>
+                              <TableCell className="p-1">
+                                <input type="checkbox" checked={isSelected} onChange={() => toggleOrderSelect(o.id)} className="h-3 w-3 rounded" />
+                              </TableCell>
+                              <TableCell className="p-1">
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => toggleOrderExpand(o.id)}>
+                                  {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                </Button>
+                              </TableCell>
+                              <TableCell>
+                                <Button variant="link" className="p-0 h-auto text-xs font-mono" onClick={() => setDeepDiveOrderId(o.id)}>
+                                  {o.id.slice(0, 8)}
+                                </Button>
+                              </TableCell>
+                              <TableCell className="text-xs">{o.order_type || '—'}</TableCell>
+                              <TableCell><Badge variant="outline" className="text-[10px]">{o.payment_status}</Badge></TableCell>
+                              <TableCell><Badge variant="outline" className="text-[10px]">{o.fulfillment_status || 'pending'}</Badge></TableCell>
+                              <TableCell>
+                                {o.dispute_status && o.dispute_status !== 'none'
+                                  ? <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px]">{o.dispute_status}</Badge>
+                                  : <span className="text-[10px] text-muted-foreground">—</span>}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-xs">${(o.total || 0).toFixed(2)}</TableCell>
+                              <TableCell className="text-center">{riskScoreBadge(o.riskScore, o.riskLevel)}</TableCell>
+                              <TableCell className="text-center">
+                                {o.recommendations.length > 0 && (
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-0.5 cursor-pointer">
+                                        <Lightbulb className="h-2.5 w-2.5" /> {o.recommendations.length}
+                                      </Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left" className="max-w-[280px]">
+                                      <p className="font-semibold text-xs mb-1">Recommended Actions</p>
+                                      {o.recommendations.map((r, i) => (
+                                        <div key={i} className="text-xs border-t py-1">
+                                          <p className="font-medium">{r.action.replace(/_/g, ' ')}</p>
+                                          <p className="text-muted-foreground">{r.reason}</p>
+                                          <p className="text-[10px]">Impact: {r.impact} (−{r.reduction}% risk)</p>
+                                        </div>
+                                      ))}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {o.recommendations.length > 0 ? (
+                                  <Button
+                                    size="sm" variant="outline"
+                                    className="text-[10px] h-7 gap-1 border-primary/30 text-primary"
+                                    onClick={() => {
+                                      const top = o.recommendations[0];
+                                      setActionDialog({ type: top.action, orderId: o.id, vendorId: o.wholesaler_id || undefined, reason: top.reason, impact: top.impact });
+                                      setActionReason(top.reason);
+                                    }}
+                                  >
+                                    <Lightbulb className="h-3 w-3" /> {o.recommendations[0].action.replace(/_/g, ' ')}
+                                  </Button>
+                                ) : (
+                                  <Select onValueChange={val => setActionDialog({ type: val, orderId: o.id, vendorId: o.wholesaler_id || undefined })}>
+                                    <SelectTrigger className="h-7 w-24 text-[10px]"><SelectValue placeholder="Actions" /></SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="hold_payout">Hold Payout</SelectItem>
+                                      <SelectItem value="release_payout">Release Payout</SelectItem>
+                                      <SelectItem value="escalate_fulfillment">Escalate Vendor</SelectItem>
+                                      <SelectItem value="send_system_message">System Message</SelectItem>
+                                      <SelectItem value="convert_to_liability">Add Liability</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                            {/* ─── Expanded Intelligence Row ─── */}
+                            {isExpanded && (
+                              <TableRow key={`${o.id}-expanded`} className="bg-muted/30">
+                                <TableCell colSpan={11} className="p-3">
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                                    <div>
+                                      <p className="text-muted-foreground text-[10px] mb-1">Payment Timeline</p>
+                                      <p className="font-mono">{Math.round(o.hoursSincePaid)}h since payment</p>
+                                      <p className="text-muted-foreground">{o.created_at ? format(new Date(o.created_at), 'MMM d, h:mm a') : '—'}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-[10px] mb-1">Vendor Performance</p>
+                                      {o.vendorPerformance ? (
+                                        <>
+                                          <p>On-Time: <span className={Number(o.vendorPerformance.on_time_percentage) < 90 ? 'text-destructive' : 'text-[hsl(var(--success))]'}>{Number(o.vendorPerformance.on_time_percentage || 0).toFixed(0)}%</span></p>
+                                          <p>Ship Time: {Number(o.vendorPerformance.avg_ship_time_hours || 0).toFixed(1)}h</p>
+                                          <p>Disputes: {Number(o.vendorPerformance.dispute_rate || 0).toFixed(1)}%</p>
+                                        </>
+                                      ) : <p className="text-muted-foreground">No data</p>}
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-[10px] mb-1">Risk Analysis</p>
+                                      <div className="flex items-center gap-2 mb-1">
+                                        {riskScoreBadge(o.riskScore, o.riskLevel)}
+                                      </div>
+                                      <Progress value={o.riskScore} className="h-1.5" />
+                                    </div>
+                                    <div>
+                                      <p className="text-muted-foreground text-[10px] mb-1">Recommended Actions</p>
+                                      {o.recommendations.length > 0 ? o.recommendations.map((r, i) => (
+                                        <Button
+                                          key={i} size="sm" variant="outline"
+                                          className="text-[10px] h-6 gap-1 mb-1 w-full justify-start"
+                                          onClick={() => {
+                                            setActionDialog({ type: r.action, orderId: o.id, vendorId: o.wholesaler_id || undefined });
+                                            setActionReason(r.reason);
+                                          }}
+                                        >
+                                          <Lightbulb className="h-2.5 w-2.5 text-primary" /> {r.action.replace(/_/g, ' ')} (−{r.reduction}%)
+                                        </Button>
+                                      )) : <p className="text-muted-foreground">No actions needed</p>}
+                                    </div>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )}
+                          </>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </ScrollArea>
@@ -294,7 +529,7 @@ export default function MarketplaceControlTowerPage() {
             </Card>
           </TabsContent>
 
-          {/* ═══════ Settlement Tab ═══════ */}
+          {/* ═══════ Settlement Tab with Countdown Bars ═══════ */}
           <TabsContent value="settlement">
             <Card>
               <CardHeader className="pb-3">
@@ -311,9 +546,8 @@ export default function MarketplaceControlTowerPage() {
                         <TableHead className="text-xs">Vendor</TableHead>
                         <TableHead className="text-xs text-right">Net Amount</TableHead>
                         <TableHead className="text-xs">Status</TableHead>
-                        <TableHead className="text-xs">Settlement Start</TableHead>
                         <TableHead className="text-xs">Release Date</TableHead>
-                        <TableHead className="text-xs">Countdown</TableHead>
+                        <TableHead className="text-xs w-40">Countdown</TableHead>
                         <TableHead className="text-xs">Dispute</TableHead>
                         <TableHead className="text-xs text-right">Actions</TableHead>
                       </TableRow>
@@ -321,21 +555,40 @@ export default function MarketplaceControlTowerPage() {
                     <TableBody>
                       {settlement.map(s => {
                         const releaseAt = s.settlement_release_at ? new Date(s.settlement_release_at) : null;
-                        const hoursLeft = releaseAt ? Math.max(0, (releaseAt.getTime() - Date.now()) / 3600000) : null;
+                        const startAt = s.settlement_start_at ? new Date(s.settlement_start_at) : null;
+                        const now = Date.now();
+                        const hoursLeft = releaseAt ? Math.max(0, (releaseAt.getTime() - now) / 3600000) : null;
+                        const totalHours = releaseAt && startAt ? (releaseAt.getTime() - startAt.getTime()) / 3600000 : 72;
+                        const elapsed = totalHours - (hoursLeft || 0);
+                        const progress = Math.min(100, (elapsed / totalHours) * 100);
+                        const barColor = hoursLeft !== null && hoursLeft < 12 ? 'bg-[hsl(var(--success))]' : hoursLeft !== null && hoursLeft < 36 ? 'bg-[hsl(var(--warning))]' : 'bg-primary';
+                        
                         return (
-                          <TableRow key={s.id}>
+                          <TableRow key={s.id} className={s.dispute_flag ? 'bg-destructive/5' : ''}>
                             <TableCell><Button variant="link" className="p-0 h-auto text-xs font-mono" onClick={() => setDeepDiveOrderId(s.order_id)}>{s.order_id?.slice(0, 8)}</Button></TableCell>
                             <TableCell className="text-xs font-mono">{s.wholesaler_id?.slice(0, 8)}</TableCell>
                             <TableCell className="text-right font-mono font-bold text-xs">${(s.net_amount || 0).toFixed(2)}</TableCell>
                             <TableCell><Badge variant="outline" className="text-[10px]">{s.status}</Badge></TableCell>
-                            <TableCell className="text-xs">{s.settlement_start_at ? format(new Date(s.settlement_start_at), 'MMM d, h:mm a') : '—'}</TableCell>
                             <TableCell className="text-xs">{releaseAt ? format(releaseAt, 'MMM d, h:mm a') : '—'}</TableCell>
-                            <TableCell className="text-xs font-mono">
+                            <TableCell>
                               {hoursLeft !== null ? (
-                                <span className={hoursLeft < 12 ? 'text-[hsl(var(--success))]' : ''}>{hoursLeft.toFixed(1)}h</span>
+                                <div className="space-y-1">
+                                  <div className="flex items-center justify-between">
+                                    <span className={`text-[10px] font-mono font-bold ${hoursLeft < 12 ? 'text-[hsl(var(--success))]' : hoursLeft < 36 ? 'text-[hsl(var(--warning))]' : ''}`}>
+                                      {hoursLeft.toFixed(1)}h left
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${progress}%` }} />
+                                  </div>
+                                </div>
                               ) : '—'}
                             </TableCell>
-                            <TableCell>{s.dispute_flag ? <Badge className="bg-destructive/15 text-destructive text-[10px]">Flagged</Badge> : <span className="text-[10px] text-muted-foreground">—</span>}</TableCell>
+                            <TableCell>
+                              {s.dispute_flag ? (
+                                <Badge className="bg-destructive/15 text-destructive text-[10px] animate-pulse">⚠ FLAGGED</Badge>
+                              ) : <span className="text-[10px] text-muted-foreground">—</span>}
+                            </TableCell>
                             <TableCell className="text-right">
                               <Select onValueChange={val => setActionDialog({ type: val, orderId: s.order_id || undefined, vendorId: s.wholesaler_id || undefined })}>
                                 <SelectTrigger className="h-7 w-28 text-[10px]"><SelectValue placeholder="Override" /></SelectTrigger>
@@ -411,7 +664,7 @@ export default function MarketplaceControlTowerPage() {
             </Card>
           </TabsContent>
 
-          {/* ═══════ Vendors Tab ═══════ */}
+          {/* ═══════ Vendors Tab with Health Overlay ═══════ */}
           <TabsContent value="vendors">
             <Card>
               <CardHeader className="pb-3">
@@ -443,8 +696,27 @@ export default function MarketplaceControlTowerPage() {
                     <TableBody>
                       {vendors.map((v: any) => (
                         <TableRow key={v.vendor_id}>
-                          <TableCell className="font-medium text-xs">{v.vendor_name || v.vendor_id?.slice(0, 8)}</TableCell>
-                          <TableCell>{riskBadge(v.risk_score)}</TableCell>
+                          <TableCell className="font-medium text-xs">
+                            <Tooltip>
+                              <TooltipTrigger className="cursor-pointer underline decoration-dotted">
+                                {v.vendor_name || v.vendor_id?.slice(0, 8)}
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-[240px] p-3">
+                                <p className="font-semibold text-xs mb-2">Vendor Health</p>
+                                <div className="space-y-1.5 text-xs">
+                                  <div className="flex justify-between"><span className="text-muted-foreground">Risk Score</span><span className="font-mono font-bold">{Number(v.risk_score || 0).toFixed(0)}</span></div>
+                                  <div className="flex justify-between"><span className="text-muted-foreground">On-Time</span><span className={`font-mono ${Number(v.on_time_percentage) < 90 ? 'text-destructive' : 'text-[hsl(var(--success))]'}`}>{Number(v.on_time_percentage || 0).toFixed(0)}%</span></div>
+                                  <div className="flex justify-between"><span className="text-muted-foreground">Avg Ship</span><span className="font-mono">{Number(v.avg_ship_time_hours || 0).toFixed(1)}h</span></div>
+                                  <div className="flex justify-between"><span className="text-muted-foreground">30d GMV</span><span className="font-mono">${Number(v.total_gmv_30d || 0).toLocaleString()}</span></div>
+                                  <div className="flex justify-between"><span className="text-muted-foreground">Liabilities</span><span className="font-mono text-destructive">${Number(v.total_liability || 0).toFixed(2)}</span></div>
+                                  <div className="flex justify-between"><span className="text-muted-foreground">Dispute Rate</span><span className={`font-mono ${Number(v.dispute_rate) > 5 ? 'text-destructive' : ''}`}>{Number(v.dispute_rate || 0).toFixed(1)}%</span></div>
+                                  <Progress value={100 - Number(v.risk_score || 0)} className="h-1.5 mt-1" />
+                                  <p className="text-[9px] text-muted-foreground text-center">Performance Ring</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>{riskScoreBadge(Number(v.risk_score || 0), Number(v.risk_score || 0) >= 80 ? 'critical' : Number(v.risk_score || 0) >= 50 ? 'high' : Number(v.risk_score || 0) >= 20 ? 'medium' : 'low')}</TableCell>
                           <TableCell className="text-right font-mono text-xs">${Number(v.total_gmv_30d || 0).toLocaleString()}</TableCell>
                           <TableCell className={`text-right font-mono text-xs ${Number(v.avg_ship_time_hours) > 48 ? 'text-destructive' : ''}`}>{Number(v.avg_ship_time_hours || 0).toFixed(1)}</TableCell>
                           <TableCell className={`text-right font-mono text-xs ${Number(v.on_time_percentage) < 90 ? 'text-destructive' : 'text-[hsl(var(--success))]'}`}>{Number(v.on_time_percentage || 0).toFixed(1)}%</TableCell>
@@ -629,6 +901,20 @@ export default function MarketplaceControlTowerPage() {
           </TabsContent>
         </Tabs>
 
+        {/* ─── Data Observability Footer ─── */}
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t pt-2 font-mono">
+          <div className="flex items-center gap-4">
+            <span>Data refreshed: {kpisUpdatedAt ? format(new Date(kpisUpdatedAt), 'h:mm:ss a') : '—'}</span>
+            <span>Orders: {filteredOrders.length}</span>
+            <span>Vendors: {vendors?.length || 0}</span>
+            <span>Anomalies: {anomalies?.length || 0}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--success))] inline-block" /> Live</span>
+            <span>{UI_VERSION}</span>
+          </div>
+        </div>
+
         {/* ─── Order Deep-Dive Dialog ─── */}
         <Dialog open={!!deepDiveOrderId} onOpenChange={() => setDeepDiveOrderId(null)}>
           <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
@@ -723,6 +1009,16 @@ export default function MarketplaceControlTowerPage() {
               <DialogTitle>Admin Action: {actionDialog?.type?.replace(/_/g, ' ')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
+              {actionDialog?.impact && (
+                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Lightbulb className="h-4 w-4 text-primary" />
+                    <span className="text-xs font-semibold">AI Recommendation</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{actionDialog.reason}</p>
+                  <p className="text-xs font-medium mt-1">Impact: {actionDialog.impact}</p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Reason (required)</Label>
                 <Textarea value={actionReason} onChange={e => setActionReason(e.target.value)} placeholder="Provide a reason for this action..." />

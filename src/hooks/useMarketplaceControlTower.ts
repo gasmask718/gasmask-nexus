@@ -40,7 +40,6 @@ export function useMarketplaceKPIs() {
       const refundedOrders = payouts.filter(p => p.status === 'reversed').length;
       const refundRate = totalOrders30d > 0 ? ((refundedOrders / totalOrders30d) * 100) : 0;
 
-      // Avg fulfillment time (use updated_at as proxy for ship time for completed/shipped)
       const shippedFulfillments = fulfillments.filter(f => ['shipped', 'completed'].includes(f.status) && f.updated_at && f.created_at);
       const avgFulfillmentTime = shippedFulfillments.length > 0
         ? shippedFulfillments.reduce((s, f) => s + (new Date(f.updated_at!).getTime() - new Date(f.created_at!).getTime()), 0) / shippedFulfillments.length / 3600000
@@ -55,6 +54,65 @@ export function useMarketplaceKPIs() {
         frozenVendors: (frozenRes.data || []).length,
         shippedCount: shippedFulfillments.length,
       };
+    },
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+}
+
+// ─── Financial Exposure Bar ───
+export function useFinancialExposure() {
+  return useQuery({
+    queryKey: ['marketplace-financial-exposure'],
+    queryFn: async () => {
+      const now = new Date();
+      const h48ago = new Date(now.getTime() - 48 * 3600000).toISOString();
+
+      const [paidOrdersRes, overdueOrdersRes, payoutsRes, disputeOrdersRes] = await Promise.all([
+        supabase.from('marketplace_orders').select('total').eq('payment_status', 'paid'),
+        supabase.from('marketplace_orders').select('total').eq('payment_status', 'paid').lt('created_at', h48ago),
+        supabase.from('wholesaler_payouts').select('net_amount, status, dispute_flag'),
+        supabase.from('marketplace_orders').select('total').neq('dispute_status', 'none').not('dispute_status', 'is', null),
+      ]);
+
+      const pendingRevenue = (paidOrdersRes.data || []).reduce((s, o) => s + (o.total || 0), 0);
+      const atRiskRevenue = (overdueOrdersRes.data || []).reduce((s, o) => s + (o.total || 0), 0);
+      
+      const payouts = payoutsRes.data || [];
+      const heldPayoutTotal = payouts.filter(p => p.status === 'held').reduce((s, p) => s + (p.net_amount || 0), 0);
+      const disputeTotal = (disputeOrdersRes.data || []).reduce((s, o) => s + (o.total || 0), 0);
+      const potentialLiability = heldPayoutTotal + disputeTotal;
+      
+      const marketplaceFloat = payouts.filter(p => p.status === 'in_settlement').reduce((s, p) => s + (p.net_amount || 0), 0);
+
+      return { pendingRevenue, atRiskRevenue, potentialLiability, marketplaceFloat };
+    },
+    staleTime: 15_000,
+    refetchInterval: 30_000,
+  });
+}
+
+// ─── System Mode Detection ───
+export function useSystemMode() {
+  return useQuery({
+    queryKey: ['marketplace-system-mode'],
+    queryFn: async () => {
+      const now = new Date();
+      const h48ago = new Date(now.getTime() - 48 * 3600000).toISOString();
+
+      const [overdueRes, disputesRes, heldRes] = await Promise.all([
+        supabase.from('marketplace_fulfillments').select('id', { count: 'exact', head: true }).eq('status', 'pending').lt('created_at', h48ago),
+        supabase.from('marketplace_orders').select('id', { count: 'exact', head: true }).neq('dispute_status', 'none').not('dispute_status', 'is', null),
+        supabase.from('wholesaler_payouts').select('net_amount').eq('status', 'held'),
+      ]);
+
+      const overdueCount = overdueRes.count || 0;
+      const disputeCount = disputesRes.count || 0;
+      const heldVolume = (heldRes.data || []).reduce((s, p) => s + (p.net_amount || 0), 0);
+
+      if (overdueCount > 10 || disputeCount > 5 || heldVolume > 10000) return 'lockdown' as const;
+      if (overdueCount > 3 || disputeCount > 2 || heldVolume > 3000) return 'heightened' as const;
+      return 'operational' as const;
     },
     staleTime: 30_000,
     refetchInterval: 60_000,
@@ -75,20 +133,69 @@ export function useOrderLifecycle() {
       if (error) throw error;
 
       const orderIds = (data || []).map(o => o.id);
-      const { data: fulfillments } = orderIds.length > 0
-        ? await supabase.from('marketplace_fulfillments').select('order_id, wholesaler_id').in('order_id', orderIds)
-        : { data: [] };
+      const [fulfillmentsRes, vendorPerfRes] = await Promise.all([
+        orderIds.length > 0
+          ? supabase.from('marketplace_fulfillments').select('order_id, wholesaler_id').in('order_id', orderIds)
+          : Promise.resolve({ data: [] }),
+        supabase.from('vendor_performance_summary' as any).select('*'),
+      ]);
 
       const vendorCounts: Record<string, number> = {};
-      (fulfillments || []).forEach(f => {
+      ((fulfillmentsRes as any).data || []).forEach((f: any) => {
         vendorCounts[f.order_id] = (vendorCounts[f.order_id] || 0) + 1;
       });
 
-      return (data || []).map(o => ({
-        ...o,
-        vendorCount: vendorCounts[o.id] || 0,
-        riskFlag: o.dispute_status && o.dispute_status !== 'none',
-      }));
+      const vendorPerf: Record<string, any> = {};
+      ((vendorPerfRes as any).data || []).forEach((v: any) => {
+        vendorPerf[v.vendor_id] = v;
+      });
+
+      const now = Date.now();
+      return (data || []).map(o => {
+        const hoursSincePaid = o.created_at ? (now - new Date(o.created_at).getTime()) / 3600000 : 0;
+        const vPerf = o.wholesaler_id ? vendorPerf[o.wholesaler_id] : null;
+        const hasDispute = o.dispute_status && o.dispute_status !== 'none';
+        
+        // Order Risk Score (0-100)
+        let riskScore = 0;
+        if (hoursSincePaid > 72) riskScore += 30;
+        else if (hoursSincePaid > 48) riskScore += 20;
+        else if (hoursSincePaid > 24) riskScore += 10;
+        if (hasDispute) riskScore += 25;
+        if (vPerf) {
+          if (Number(vPerf.dispute_rate || 0) > 5) riskScore += 15;
+          if (Number(vPerf.avg_ship_time_hours || 0) > 48) riskScore += 10;
+          if (Number(vPerf.on_time_percentage || 100) < 80) riskScore += 10;
+          if (Number(vPerf.total_liability || 0) > 0) riskScore += 10;
+        }
+        riskScore = Math.min(100, riskScore);
+
+        // Recommended actions
+        const recommendations: Array<{ action: string; reason: string; impact: string; reduction: number }> = [];
+        if (hoursSincePaid > 48 && o.fulfillment_status === 'pending') {
+          recommendations.push({ action: 'escalate_fulfillment', reason: `${Math.round(hoursSincePaid)}h since payment, still pending`, impact: 'Reduce fulfillment delay', reduction: 15 });
+        }
+        if (hasDispute) {
+          recommendations.push({ action: 'hold_payout', reason: 'Active dispute on order', impact: `Protect $${(o.total || 0).toFixed(2)} in funds`, reduction: 20 });
+        }
+        if (vPerf && Number(vPerf.dispute_rate || 0) > 10) {
+          recommendations.push({ action: 'freeze_vendor', reason: `Vendor dispute rate at ${Number(vPerf.dispute_rate).toFixed(1)}%`, impact: 'Prevent further exposure', reduction: 25 });
+        }
+        if (vPerf && Number(vPerf.on_time_percentage || 100) < 70 && hoursSincePaid > 24) {
+          recommendations.push({ action: 'escalate_fulfillment', reason: `Vendor on-time rate ${Number(vPerf.on_time_percentage).toFixed(0)}%`, impact: 'Proactive vendor management', reduction: 10 });
+        }
+
+        return {
+          ...o,
+          vendorCount: vendorCounts[o.id] || 0,
+          riskFlag: !!hasDispute,
+          riskScore,
+          riskLevel: riskScore >= 81 ? 'critical' as const : riskScore >= 51 ? 'high' as const : riskScore >= 21 ? 'medium' as const : 'low' as const,
+          hoursSincePaid,
+          vendorPerformance: vPerf,
+          recommendations,
+        };
+      });
     },
     staleTime: 30_000,
   });
@@ -363,6 +470,8 @@ export function useAdminAction() {
       queryClient.invalidateQueries({ queryKey: ['marketplace-admin-action-log'] });
       queryClient.invalidateQueries({ queryKey: ['marketplace-order-lifecycle'] });
       queryClient.invalidateQueries({ queryKey: ['marketplace-kill-switch'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-financial-exposure'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-system-mode'] });
     },
     onError: (err: any) => {
       toast.error(err.message || 'Action failed');
