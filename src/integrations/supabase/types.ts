@@ -29789,6 +29789,60 @@ export type Database = {
           },
         ]
       }
+      marketplace_fulfillments: {
+        Row: {
+          carrier: string | null
+          created_at: string | null
+          id: string
+          items_snapshot: Json | null
+          order_id: string
+          shipping_label_url: string | null
+          status: string
+          tracking_number: string | null
+          updated_at: string | null
+          wholesaler_id: string
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string | null
+          id?: string
+          items_snapshot?: Json | null
+          order_id: string
+          shipping_label_url?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string | null
+          wholesaler_id: string
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string | null
+          id?: string
+          items_snapshot?: Json | null
+          order_id?: string
+          shipping_label_url?: string | null
+          status?: string
+          tracking_number?: string | null
+          updated_at?: string | null
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_fulfillments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "marketplace_fulfillments_wholesaler_id_fkey"
+            columns: ["wholesaler_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       marketplace_inventory: {
         Row: {
           id: string
@@ -53145,6 +53199,7 @@ export type Database = {
           created_at: string | null
           id: string
           net_amount: number
+          order_id: string | null
           paid_at: string | null
           payout_method: string | null
           payout_reference: string | null
@@ -53159,6 +53214,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           net_amount: number
+          order_id?: string | null
           paid_at?: string | null
           payout_method?: string | null
           payout_reference?: string | null
@@ -53173,6 +53229,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           net_amount?: number
+          order_id?: string | null
           paid_at?: string | null
           payout_method?: string | null
           payout_reference?: string | null
@@ -53183,6 +53240,13 @@ export type Database = {
           wholesaler_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "wholesaler_payouts_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "wholesaler_payouts_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
@@ -53273,6 +53337,7 @@ export type Database = {
       }
       wholesaler_profiles: {
         Row: {
+          commission_percent: number | null
           company_name: string
           contact_name: string | null
           created_at: string | null
@@ -53284,10 +53349,12 @@ export type Database = {
           status: string
           tax_id: string | null
           user_id: string
+          warehouse_address: string | null
           website_url: string | null
           wholesaler_type: string | null
         }
         Insert: {
+          commission_percent?: number | null
           company_name: string
           contact_name?: string | null
           created_at?: string | null
@@ -53299,10 +53366,12 @@ export type Database = {
           status?: string
           tax_id?: string | null
           user_id: string
+          warehouse_address?: string | null
           website_url?: string | null
           wholesaler_type?: string | null
         }
         Update: {
+          commission_percent?: number | null
           company_name?: string
           contact_name?: string | null
           created_at?: string | null
@@ -53314,6 +53383,7 @@ export type Database = {
           status?: string
           tax_id?: string | null
           user_id?: string
+          warehouse_address?: string | null
           website_url?: string | null
           wholesaler_type?: string | null
         }
@@ -58626,6 +58696,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      process_paid_order: { Args: { p_order_id: string }; Returns: Json }
       process_recalc_queue: { Args: never; Returns: Json }
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
