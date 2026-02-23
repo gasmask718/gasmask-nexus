@@ -14595,6 +14595,116 @@ export type Database = {
         }
         Relationships: []
       }
+      comm_provider_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          after_value: Json | null
+          before_value: Json | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          after_value?: Json | null
+          before_value?: Json | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      comm_provider_settings: {
+        Row: {
+          biztext_account_id: string | null
+          business_id: string | null
+          created_at: string | null
+          default_sms_provider: string
+          id: string
+          is_enabled_biztext: boolean | null
+          is_enabled_twilio: boolean | null
+          twilio_messaging_service_sid: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          biztext_account_id?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          default_sms_provider?: string
+          id?: string
+          is_enabled_biztext?: boolean | null
+          is_enabled_twilio?: boolean | null
+          twilio_messaging_service_sid?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          biztext_account_id?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          default_sms_provider?: string
+          id?: string
+          is_enabled_biztext?: boolean | null
+          is_enabled_twilio?: boolean | null
+          twilio_messaging_service_sid?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comm_provider_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comm_threads: {
+        Row: {
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          last_provider: string | null
+          primary_phone: string
+          unread_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          last_provider?: string | null
+          primary_phone: string
+          unread_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          last_provider?: string | null
+          primary_phone?: string
+          unread_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       commission_dispute_evidence: {
         Row: {
           created_at: string
@@ -16292,18 +16402,26 @@ export type Database = {
           channel: string
           contact_id: string | null
           content: string | null
+          cost_amount: number | null
           created_at: string | null
+          created_by: string | null
           direction: string
           due_at: string | null
+          error_code: string | null
+          error_message: string | null
           escalated_to: string | null
           escalation_level: number | null
           escalation_reason: string | null
           first_response_at: string | null
+          from_number: string | null
           id: string
+          idempotency_key: string | null
           metadata: Json | null
           owner_user_id: string | null
           phone_number: string | null
           priority: string | null
+          provider: string | null
+          provider_message_id: string | null
           resolved_at: string | null
           sentiment: string | null
           sla_deadline: string | null
@@ -16311,6 +16429,8 @@ export type Database = {
           snoozed_until: string | null
           status: string | null
           store_id: string | null
+          thread_id: string | null
+          to_number: string | null
           updated_at: string | null
         }
         Insert: {
@@ -16322,18 +16442,26 @@ export type Database = {
           channel: string
           contact_id?: string | null
           content?: string | null
+          cost_amount?: number | null
           created_at?: string | null
+          created_by?: string | null
           direction: string
           due_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
           escalated_to?: string | null
           escalation_level?: number | null
           escalation_reason?: string | null
           first_response_at?: string | null
+          from_number?: string | null
           id?: string
+          idempotency_key?: string | null
           metadata?: Json | null
           owner_user_id?: string | null
           phone_number?: string | null
           priority?: string | null
+          provider?: string | null
+          provider_message_id?: string | null
           resolved_at?: string | null
           sentiment?: string | null
           sla_deadline?: string | null
@@ -16341,6 +16469,8 @@ export type Database = {
           snoozed_until?: string | null
           status?: string | null
           store_id?: string | null
+          thread_id?: string | null
+          to_number?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -16352,18 +16482,26 @@ export type Database = {
           channel?: string
           contact_id?: string | null
           content?: string | null
+          cost_amount?: number | null
           created_at?: string | null
+          created_by?: string | null
           direction?: string
           due_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
           escalated_to?: string | null
           escalation_level?: number | null
           escalation_reason?: string | null
           first_response_at?: string | null
+          from_number?: string | null
           id?: string
+          idempotency_key?: string | null
           metadata?: Json | null
           owner_user_id?: string | null
           phone_number?: string | null
           priority?: string | null
+          provider?: string | null
+          provider_message_id?: string | null
           resolved_at?: string | null
           sentiment?: string | null
           sla_deadline?: string | null
@@ -16371,6 +16509,8 @@ export type Database = {
           snoozed_until?: string | null
           status?: string | null
           store_id?: string | null
+          thread_id?: string | null
+          to_number?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -16415,6 +16555,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "fk_comm_messages_thread"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "comm_threads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -44374,12 +44521,16 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          preferred_sms_provider: string | null
           responsive_by_call: boolean | null
           responsive_by_text: boolean | null
           responsiveness_status: string | null
           responsiveness_updated_at: string | null
           role: string | null
           shirt_size: string | null
+          sms_opt_in_at: string | null
+          sms_opt_in_source: string | null
+          sms_opt_in_status: string | null
           store_id: string
           total_calls_answered: number | null
           total_calls_attempted: number | null
@@ -44407,12 +44558,16 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          preferred_sms_provider?: string | null
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
           responsiveness_status?: string | null
           responsiveness_updated_at?: string | null
           role?: string | null
           shirt_size?: string | null
+          sms_opt_in_at?: string | null
+          sms_opt_in_source?: string | null
+          sms_opt_in_status?: string | null
           store_id: string
           total_calls_answered?: number | null
           total_calls_attempted?: number | null
@@ -44440,12 +44595,16 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          preferred_sms_provider?: string | null
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
           responsiveness_status?: string | null
           responsiveness_updated_at?: string | null
           role?: string | null
           shirt_size?: string | null
+          sms_opt_in_at?: string | null
+          sms_opt_in_source?: string | null
+          sms_opt_in_status?: string | null
           store_id?: string
           total_calls_answered?: number | null
           total_calls_attempted?: number | null
@@ -59724,6 +59883,13 @@ export type Database = {
         | "pre_legal"
         | "legal"
         | "closed"
+      comm_direction: "inbound" | "outbound"
+      comm_message_status:
+        | "queued"
+        | "sent"
+        | "delivered"
+        | "failed"
+        | "undelivered"
       commission_dispute_status:
         | "submitted"
         | "under_review"
@@ -59926,6 +60092,7 @@ export type Database = {
         | "offline"
         | "mixed"
       sampling_status_enum: "none" | "samples_given" | "trialing" | "converted"
+      sms_provider: "twilio" | "biztext"
       sticker_status: "none" | "doorOnly" | "inStoreOnly" | "doorAndInStore"
       store_status: "active" | "inactive" | "prospect" | "needsFollowUp"
       store_type:
@@ -60275,6 +60442,14 @@ export const Constants = {
         "legal",
         "closed",
       ],
+      comm_direction: ["inbound", "outbound"],
+      comm_message_status: [
+        "queued",
+        "sent",
+        "delivered",
+        "failed",
+        "undelivered",
+      ],
       commission_dispute_status: [
         "submitted",
         "under_review",
@@ -60501,6 +60676,7 @@ export const Constants = {
         "mixed",
       ],
       sampling_status_enum: ["none", "samples_given", "trialing", "converted"],
+      sms_provider: ["twilio", "biztext"],
       sticker_status: ["none", "doorOnly", "inStoreOnly", "doorAndInStore"],
       store_status: ["active", "inactive", "prospect", "needsFollowUp"],
       store_type: [
