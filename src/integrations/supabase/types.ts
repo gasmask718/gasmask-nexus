@@ -14627,7 +14627,7 @@ export type Database = {
           biztext_account_id: string | null
           business_id: string | null
           created_at: string | null
-          default_sms_provider: string
+          default_sms_provider: Database["public"]["Enums"]["sms_provider"]
           id: string
           is_enabled_biztext: boolean | null
           is_enabled_twilio: boolean | null
@@ -14638,7 +14638,7 @@ export type Database = {
           biztext_account_id?: string | null
           business_id?: string | null
           created_at?: string | null
-          default_sms_provider?: string
+          default_sms_provider?: Database["public"]["Enums"]["sms_provider"]
           id?: string
           is_enabled_biztext?: boolean | null
           is_enabled_twilio?: boolean | null
@@ -14649,7 +14649,7 @@ export type Database = {
           biztext_account_id?: string | null
           business_id?: string | null
           created_at?: string | null
-          default_sms_provider?: string
+          default_sms_provider?: Database["public"]["Enums"]["sms_provider"]
           id?: string
           is_enabled_biztext?: boolean | null
           is_enabled_twilio?: boolean | null
@@ -14669,6 +14669,7 @@ export type Database = {
       comm_threads: {
         Row: {
           created_at: string | null
+          created_by: string | null
           entity_id: string | null
           entity_type: string
           id: string
@@ -14681,6 +14682,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           entity_id?: string | null
           entity_type?: string
           id?: string
@@ -14693,6 +14695,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           entity_id?: string | null
           entity_type?: string
           id?: string
@@ -16420,7 +16423,7 @@ export type Database = {
           owner_user_id: string | null
           phone_number: string | null
           priority: string | null
-          provider: string | null
+          provider: Database["public"]["Enums"]["sms_provider"] | null
           provider_message_id: string | null
           resolved_at: string | null
           sentiment: string | null
@@ -16460,7 +16463,7 @@ export type Database = {
           owner_user_id?: string | null
           phone_number?: string | null
           priority?: string | null
-          provider?: string | null
+          provider?: Database["public"]["Enums"]["sms_provider"] | null
           provider_message_id?: string | null
           resolved_at?: string | null
           sentiment?: string | null
@@ -16500,7 +16503,7 @@ export type Database = {
           owner_user_id?: string | null
           phone_number?: string | null
           priority?: string | null
-          provider?: string | null
+          provider?: Database["public"]["Enums"]["sms_provider"] | null
           provider_message_id?: string | null
           resolved_at?: string | null
           sentiment?: string | null
