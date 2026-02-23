@@ -19,7 +19,7 @@ interface TableCheck {
 
 // Canonical table contract — columns required by BOTH projects
 const SCHEMA_CONTRACT: Record<string, string[]> = {
-  profiles: ['id', 'role', 'full_name', 'email'],
+  profiles: ['id', 'role', 'name', 'email'],
   orders: ['id', 'created_at', 'order_status', 'payment_status'],
   marketplace_orders: ['id', 'wholesaler_id', 'customer_email', 'payment_status', 'fulfillment_status', 'created_at'],
   marketplace_order_items: ['id', 'order_id', 'product_id', 'qty', 'price_each'],
