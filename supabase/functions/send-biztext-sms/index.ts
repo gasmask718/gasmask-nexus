@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ── Configuration ──────────────────────────────────────────────────────
 // Change this constant if Biz Text Solutions uses a different header name
 const BIZTEXT_API_BASE = "https://www.biztextsolutions.com/api/send";
-const BIZTEXT_WEBSITE_ID = "438";
+const BIZTEXT_WEBSITE_ID = "gasmask-os-nexus.lovable.app";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -57,21 +57,17 @@ serve(async (req: Request) => {
 
     console.log(`📱 Sending SMS via Biz Text Solutions to ${formattedTo}`);
 
-    // 5. Call Biz Text Solutions API with URL-encoded params via POST
+    // 5. Call Biz Text Solutions API — query string format per their docs
     const params = new URLSearchParams({
-      to: formattedTo,
+      to: `+1${formattedTo}`,
       txt: message,
       wid: BIZTEXT_WEBSITE_ID,
     });
-    const biztextUrl = `${BIZTEXT_API_BASE}`;
+    const biztextUrl = `${BIZTEXT_API_BASE}?${params.toString()}`;
 
-    console.log(`📡 Calling: ${BIZTEXT_API_BASE} [POST] to=${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
+    console.log(`📡 Calling: ${BIZTEXT_API_BASE}?to=+1${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
 
-    const biztextResponse = await fetch(biztextUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: params.toString(),
-    });
+    const biztextResponse = await fetch(biztextUrl);
     const responseText = await biztextResponse.text();
     console.log("📡 Biz Text Solutions raw response:", responseText.substring(0, 500));
 
