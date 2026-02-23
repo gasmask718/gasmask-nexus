@@ -32,9 +32,10 @@ serve(async (req: Request) => {
     }
 
     // 3. Get Environment Variables
-    const BIZTEXT_API_KEY = Deno.env.get("BIZTEXT_API_KEY");
-    if (!BIZTEXT_API_KEY) {
-      throw new Error("Missing BizText API key in Edge Function secrets");
+    const BIZTEXT_ID = Deno.env.get("BIZTEXT_ID");
+    const BIZTEXT_PW = Deno.env.get("BIZTEXT_PW");
+    if (!BIZTEXT_ID || !BIZTEXT_PW) {
+      throw new Error("Missing BIZTEXT_ID or BIZTEXT_PW in Edge Function secrets");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -55,42 +56,34 @@ serve(async (req: Request) => {
       formattedTo = `+${formattedTo}`;
     }
 
-    console.log(`📱 Sending SMS via BizText to ${formattedTo}`);
+    console.log(`📱 Sending SMS via BizText Basic HTTP to ${formattedTo}`);
 
-    // 5. Call BizText API
-    const biztextUrl = "https://www.biztextsolutions.com/api/conversations/new";
-    const biztextResponse = await fetch(biztextUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "*/*",
-        "X-API-VERSION": "v1",
-        Authorization: `Basic ${BIZTEXT_API_KEY}`,
-      },
-      body: JSON.stringify({
-        to: formattedTo,
-        text: message,
-      }),
-    });
+    // 5. Call BizText Basic HTTP GET API
+    const biztextUrl = new URL("https://textit.biz/sendmsg/");
+    biztextUrl.searchParams.set("id", BIZTEXT_ID);
+    biztextUrl.searchParams.set("pw", BIZTEXT_PW);
+    biztextUrl.searchParams.set("to", formattedTo);
+    biztextUrl.searchParams.set("text", message);
 
+    const biztextResponse = await fetch(biztextUrl.toString());
     const responseText = await biztextResponse.text();
     console.log("📡 BizText raw response:", responseText.substring(0, 500));
 
+    if (!biztextResponse.ok) {
+      console.error("❌ BizText error (HTTP " + biztextResponse.status + "):", responseText);
+      throw new Error(`BizText API returned HTTP ${biztextResponse.status}: ${responseText.substring(0, 200)}`);
+    }
+
+    // Parse response — may be JSON or plain text
     let biztextData: any;
     try {
       biztextData = JSON.parse(responseText);
     } catch {
-      console.error("❌ BizText returned non-JSON:", responseText.substring(0, 300));
-      throw new Error(`BizText API returned non-JSON response (status ${biztextResponse.status}).`);
-    }
-
-    if (!biztextResponse.ok) {
-      console.error("❌ BizText error:", biztextData);
-      throw new Error(biztextData.message || biztextData.error || "Failed to send SMS via BizText");
+      biztextData = { raw_response: responseText.trim() };
     }
 
     console.log("✅ BizText success:", JSON.stringify(biztextData));
-    const dbStatus = biztextData.status === "failed" ? "failed" : "delivered";
+    const dbStatus = responseText.toLowerCase().includes("fail") ? "failed" : "delivered";
 
     // 6. Log to database
     const supabase = createClient(supabaseUrl, supabaseKey);
