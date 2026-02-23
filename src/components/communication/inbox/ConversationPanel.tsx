@@ -123,6 +123,7 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
           message_body: newMessage,
           idempotency_key: crypto.randomUUID(),
           explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
+          skip_cooldown: true,
           metadata: { contact_id: contact.id, contact_name: contact.name },
         },
       });
