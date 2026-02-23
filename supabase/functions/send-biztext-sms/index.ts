@@ -60,13 +60,17 @@ serve(async (req: Request) => {
     console.log(`📱 Sending SMS via BizText Basic HTTP to ${formattedTo}`);
 
     // 5. Call BizText Basic HTTP GET API
-    const biztextUrl = new URL("https://textit.biz/sendmsg/");
-    biztextUrl.searchParams.set("id", BIZTEXT_ID);
-    biztextUrl.searchParams.set("pw", BIZTEXT_PW);
-    biztextUrl.searchParams.set("to", formattedTo);
-    biztextUrl.searchParams.set("text", message);
+    // Strip non-digit chars from ID (remove +, spaces, dashes, parens)
+    const sanitizedId = BIZTEXT_ID.replace(/\D/g, "");
+    // Use URLSearchParams to safely encode password with special chars (e.g. @, #, &)
+    const params = new URLSearchParams();
+    params.set("id", sanitizedId);
+    params.set("pw", BIZTEXT_PW);
+    params.set("to", formattedTo);
+    params.set("text", message);
+    const biztextUrl = `https://textit.biz/sendmsg/?${params.toString()}`;
 
-    const biztextResponse = await fetch(biztextUrl.toString());
+    const biztextResponse = await fetch(biztextUrl);
     const responseText = await biztextResponse.text();
     console.log("📡 BizText raw response:", responseText.substring(0, 500));
 
