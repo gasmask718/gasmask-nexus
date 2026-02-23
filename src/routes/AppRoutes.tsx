@@ -286,7 +286,7 @@ import PortalInfluencer from '@/pages/portal/PortalInfluencer';
 import OpsInboxPage from '@/pages/portal/OpsInboxPage';
 import OpsInboxThreadPage from '@/pages/portal/OpsInboxThreadPage';
 import OpsTaskListPage from '@/pages/portal/OpsTaskListPage';
-import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings, WholesalerMessages } from '@/pages/portal/wholesaler';
+import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings, WholesalerMessages, WholesalerFulfillmentPage } from '@/pages/portal/wholesaler';
 import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings, StoreMessages } from '@/pages/portal/store';
 import StoreTeam from '@/pages/portal/store/StoreTeam';
 import WholesalerTeam from '@/pages/portal/wholesaler/WholesalerTeam';
@@ -1510,6 +1510,7 @@ export default function AppRoutes() {
         <Route path="/portal/wholesaler/products/:productId" element={<WholesalerProductForm />} />
         <Route path="/portal/wholesaler/products/:productId/edit" element={<WholesalerProductForm />} />
         <Route path="/portal/wholesaler/orders" element={<WholesalerOrders />} />
+        <Route path="/portal/wholesaler/fulfillment" element={<WholesalerFulfillmentPage />} />
         <Route path="/portal/wholesaler/finance" element={<WholesalerFinance />} />
         <Route path="/portal/wholesaler/settings" element={<WholesalerSettings />} />
         <Route path="/portal/wholesaler/messages" element={<WholesalerMessages />} />
