@@ -3,158 +3,367 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface SendSMSRequest {
-  to: string;
-  message: string;
-  business_id?: string;
-  store_id?: string;
-  contact_id?: string;
-  contact_name?: string;
+// ── Provider Adapters ──────────────────────────────────────────────────
+
+async function sendViaTwilio(to: string, body: string): Promise<ProviderResult> {
+  const sid = Deno.env.get("TWILIO_ACCOUNT_SID");
+  const token = Deno.env.get("TWILIO_AUTH_TOKEN");
+  const from = Deno.env.get("TWILIO_PHONE_NUMBER") || "+18484004179";
+
+  if (!sid || !token) return { success: false, error_code: "NO_CREDENTIALS", error_message: "Missing Twilio credentials" };
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+  const form = new URLSearchParams();
+  form.append("To", to);
+  form.append("From", from);
+  form.append("Body", body);
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${sid}:${token}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: form,
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      return { success: false, error_code: String(data.code || res.status), error_message: data.message || "Twilio error", raw_response: data };
+    }
+    return { success: true, provider_message_id: data.sid, raw_response: data };
+  } catch (e: any) {
+    return { success: false, error_code: "NETWORK", error_message: e.message };
+  }
 }
 
-const mapTwilioStatus = (twilioStatus: string): string => {
-  const statusMap: Record<string, string> = {
-    queued: "pending",
-    sending: "pending",
-    sent: "delivered",
-    delivered: "delivered",
-    undelivered: "failed",
-    failed: "failed",
-    read: "read",
-  };
-  return statusMap[twilioStatus] || "pending";
-};
+async function sendViaBizText(to: string, body: string): Promise<ProviderResult> {
+  const wid = Deno.env.get("BIZTEXT_ID") || "438";
+  // Normalize to 10 digits for BizText
+  let digits = to.replace(/\D/g, "");
+  if (digits.startsWith("1") && digits.length === 11) digits = digits.substring(1);
+  if (digits.length !== 10) {
+    return { success: false, error_code: "INVALID_PHONE", error_message: `BizText requires 10 digits, got ${digits.length}` };
+  }
 
-const handler = async (req: Request): Promise<Response> => {
+  const params = new URLSearchParams({ to: `+1${digits}`, txt: body, wid });
+  const url = `https://www.biztextsolutions.com/api/send?${params.toString()}`;
+
+  try {
+    const res = await fetch(url, { method: "POST" });
+    const text = await res.text();
+    let data: any;
+    try { data = JSON.parse(text); } catch { data = { raw_response: text.trim() }; }
+
+    const isError = !res.ok || data?.error || data?.auth === false ||
+      text.toLowerCase().includes("fail") || text.toLowerCase().startsWith("err");
+
+    if (isError) {
+      return { success: false, error_code: String(res.status), error_message: text.substring(0, 300), raw_response: data };
+    }
+    return { success: true, provider_message_id: data?.message_id || data?.id || null, raw_response: data };
+  } catch (e: any) {
+    return { success: false, error_code: "NETWORK", error_message: e.message };
+  }
+}
+
+interface ProviderResult {
+  success: boolean;
+  provider_message_id?: string | null;
+  error_code?: string;
+  error_message?: string;
+  raw_response?: any;
+}
+
+interface SendRequest {
+  to_number: string;
+  message_body: string;
+  idempotency_key: string;
+  store_id?: string;
+  campaign_id?: string;
+  explicit_provider?: "twilio" | "biztext";
+  metadata?: Record<string, any>;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+
+function normalizePhone(raw: string): string {
+  let d = raw.replace(/\D/g, "");
+  if (d.startsWith("09") && d.length === 11) d = `63${d.substring(1)}`;
+  if (d.startsWith("63") && d.length === 12) return `+${d}`;
+  if (d.length === 10) return `+1${d}`;
+  if (d.length === 11 && d.startsWith("1")) return `+${d}`;
+  if (!d.startsWith("+")) return `+${d}`;
+  return d;
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const enc = new TextEncoder().encode(input);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// ── Main Handler ───────────────────────────────────────────────────────
+
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
+    // ── 1. Parse & Validate ──────────────────────────────────────────
+    const body: SendRequest = await req.json();
+    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, metadata } = body;
 
-    const TWILIO_FROM_NUMBER = "+18484004179";
-
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
-      throw new Error("Missing Twilio credentials");
+    if (!to_number || !message_body || !idempotency_key) {
+      return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
     }
 
-    const { to, message, business_id, store_id, contact_id, contact_name }: SendSMSRequest = await req.json();
-
-    if (!to || !message) {
-      throw new Error("Missing required fields: to and message");
+    if (message_body.length > 1600) {
+      return respond(400, { error: "message_body exceeds 1600 character limit" });
     }
 
-    let formattedTo = to.replace(/\D/g, "");
-    if (formattedTo.startsWith("09") && formattedTo.length === 11) {
-      formattedTo = `+63${formattedTo.substring(1)}`;
-    } else if (formattedTo.startsWith("63") && formattedTo.length === 12) {
-      formattedTo = `+${formattedTo}`;
-    } else if (formattedTo.length === 10) {
-      formattedTo = `+1${formattedTo}`;
-    } else if (formattedTo.length >= 11 && !formattedTo.startsWith("+")) {
-      formattedTo = `+${formattedTo}`;
-    }
+    const formattedTo = normalizePhone(to_number);
 
-    console.log(`📱 Sending SMS to ${formattedTo}`);
+    // ── 2. Opt-Out Check ─────────────────────────────────────────────
+    const normalizedLookup = formattedTo.replace(/\D/g, "");
+    const { data: optOut } = await supabase
+      .from("opt_out_events")
+      .select("id")
+      .eq("phone_number", normalizedLookup)
+      .maybeSingle();
 
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;
-
-    const formData = new URLSearchParams();
-    formData.append("To", formattedTo);
-    formData.append("Body", message);
-
-    formData.append("From", TWILIO_FROM_NUMBER);
-
-    const twilioResponse = await fetch(twilioUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: formData,
-    });
-
-    const twilioData = await twilioResponse.json();
-
-    if (!twilioResponse.ok) {
-      console.error("❌ Twilio error:", twilioData);
-      throw new Error(twilioData.message || "Failed to send SMS");
-    }
-
-    console.log(`✅ Twilio success: SID=${twilioData.sid}, status=${twilioData.status}`);
-
-    const dbStatus = mapTwilioStatus(twilioData.status || "queued");
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { data: msgData, error: msgError } = await supabase
-      .from("communication_messages")
-      .insert({
-        business_id: business_id || null,
+    if (optOut) {
+      // Log blocked attempt
+      await supabase.from("outbound_messages").insert({
+        idempotency_key,
+        to_number: formattedTo,
+        message_body,
+        provider: explicit_provider || "biztext",
+        status: "blocked",
+        error_message: "Recipient opted out",
         store_id: store_id || null,
-        contact_id: contact_id || null,
-        direction: "outbound",
-        channel: "sms",
-        content: message,
-        phone_number: formattedTo,
-        status: dbStatus,
-        ai_generated: false,
+        campaign_id: campaign_id || null,
+        metadata: metadata || {},
+      });
+      return respond(200, { success: false, status: "blocked", reason: "opted_out" });
+    }
+
+    // ── 3. Idempotency Check ─────────────────────────────────────────
+    const { data: existing } = await supabase
+      .from("outbound_messages")
+      .select("*")
+      .eq("idempotency_key", idempotency_key)
+      .maybeSingle();
+
+    if (existing) {
+      console.log(`♻️ Idempotent hit: ${idempotency_key} → ${existing.status}`);
+      return respond(200, {
+        success: existing.status === "sent",
+        status: existing.status,
+        message_id: existing.id,
+        provider_message_id: existing.provider_message_id,
+        idempotent: true,
+      });
+    }
+
+    // ── 4. Load Settings ─────────────────────────────────────────────
+    const { data: settings } = await supabase
+      .from("messaging_settings")
+      .select("*")
+      .limit(1)
+      .maybeSingle();
+
+    const dailyLimit = settings?.daily_send_limit ?? 1000;
+    const cooldownMinutes = settings?.per_number_cooldown_minutes ?? 60;
+    const defaultProvider = settings?.default_sms_provider ?? "biztext";
+    const fallbackProvider = settings?.fallback_provider ?? null;
+
+    // ── 5. Daily Send Limit ──────────────────────────────────────────
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const { count: todayCount } = await supabase
+      .from("outbound_messages")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", todayStart.toISOString())
+      .in("status", ["sent", "pending"]);
+
+    if ((todayCount ?? 0) >= dailyLimit) {
+      return respond(429, { error: `Daily send limit of ${dailyLimit} reached`, status: "rate_limited" });
+    }
+
+    // ── 6. Per-Number Cooldown ───────────────────────────────────────
+    const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
+    const { data: recentToNumber } = await supabase
+      .from("outbound_messages")
+      .select("id")
+      .eq("to_number", formattedTo)
+      .eq("status", "sent")
+      .gte("created_at", cooldownCutoff)
+      .limit(1);
+
+    if (recentToNumber && recentToNumber.length > 0) {
+      return respond(429, {
+        error: `Cooldown active: last message to ${formattedTo} within ${cooldownMinutes} minutes`,
+        status: "cooldown",
+      });
+    }
+
+    // ── 7. Message Hash (Duplicate content detection) ────────────────
+    const msgHash = await sha256Hex(formattedTo + message_body);
+    const hashCutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const { data: hashDup } = await supabase
+      .from("outbound_messages")
+      .select("id")
+      .eq("message_hash", msgHash)
+      .gte("created_at", hashCutoff)
+      .in("status", ["sent", "pending"])
+      .limit(1);
+
+    if (hashDup && hashDup.length > 0) {
+      return respond(409, {
+        error: "Duplicate message detected within 10-minute window",
+        status: "duplicate",
+      });
+    }
+
+    // ── 8. Resolve Provider ──────────────────────────────────────────
+    const chosenProvider: "twilio" | "biztext" = explicit_provider || (defaultProvider as "twilio" | "biztext");
+
+    // ── 9. Insert Pending Row ────────────────────────────────────────
+    // Extract created_by from auth header if available
+    let createdBy: string | null = null;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+      if (anonKey) {
+        const authClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: { user } } = await authClient.auth.getUser();
+        createdBy = user?.id ?? null;
+      }
+    }
+
+    const costEstimate = chosenProvider === "twilio" ? 0.0079 : 0.005;
+
+    const { data: pendingRow, error: insertErr } = await supabase
+      .from("outbound_messages")
+      .insert({
+        idempotency_key,
+        to_number: formattedTo,
+        message_body,
+        provider: chosenProvider,
+        status: "pending",
+        store_id: store_id || null,
+        campaign_id: campaign_id || null,
+        message_hash: msgHash,
+        created_by: createdBy,
         metadata: {
-          twilio_sid: twilioData.sid,
-          twilio_status: twilioData.status,
-          contact_name: contact_name || null,
-          sent_at: new Date().toISOString(),
-          from_number: TWILIO_FROM_NUMBER,
+          ...(metadata || {}),
+          cost_estimate: costEstimate,
+          provider_rate: chosenProvider === "twilio" ? "twilio_standard" : "biztext_standard",
         },
       })
       .select()
       .single();
 
-    if (msgError) {
-      console.error("❌ Failed to insert into communication_messages:", msgError);
+    if (insertErr) {
+      console.error("❌ Insert pending row failed:", insertErr);
+      return respond(500, { error: insertErr.message });
+    }
+
+    console.log(`📱 Sending SMS via ${chosenProvider} to ${formattedTo} [${pendingRow.id}]`);
+
+    // ── 10. Call Provider ────────────────────────────────────────────
+    let result: ProviderResult;
+    if (chosenProvider === "twilio") {
+      result = await sendViaTwilio(formattedTo, message_body);
     } else {
-      console.log(`✅ Message logged: ${msgData.id}`);
+      result = await sendViaBizText(formattedTo, message_body);
     }
 
-    const { error: logError } = await supabase.from("communication_logs").insert({
-      channel: "sms",
-      direction: "outbound",
-      recipient_phone: formattedTo,
-      message_content: message,
-      delivery_status: dbStatus,
-      performed_by: "va",
-    });
+    // ── 11. Fallback on Failure ──────────────────────────────────────
+    if (!result.success && fallbackProvider && fallbackProvider !== chosenProvider) {
+      console.log(`⚠️ Primary ${chosenProvider} failed, falling back to ${fallbackProvider}`);
+      if (fallbackProvider === "twilio") {
+        result = await sendViaTwilio(formattedTo, message_body);
+      } else {
+        result = await sendViaBizText(formattedTo, message_body);
+      }
 
-    if (logError) {
-      console.error("❌ Failed to insert into communication_logs:", logError);
+      if (result.success) {
+        // Update provider to reflect fallback used
+        await supabase
+          .from("outbound_messages")
+          .update({ provider: fallbackProvider as any })
+          .eq("id", pendingRow.id);
+      }
     }
 
-    return new Response(
-      JSON.stringify({
+    // ── 12. Update Row ───────────────────────────────────────────────
+    if (result.success) {
+      await supabase
+        .from("outbound_messages")
+        .update({
+          status: "sent",
+          provider_message_id: result.provider_message_id || null,
+          sent_at: new Date().toISOString(),
+          metadata: {
+            ...pendingRow.metadata,
+            raw_response: result.raw_response,
+          },
+        })
+        .eq("id", pendingRow.id);
+
+      console.log(`✅ SMS sent: ${pendingRow.id}`);
+      return respond(200, {
         success: true,
-        sid: twilioData.sid,
-        status: twilioData.status,
-        message_id: msgData?.id,
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
-  } catch (error: any) {
-    console.error("❌ Error in send-sms function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  }
-};
+        status: "sent",
+        message_id: pendingRow.id,
+        provider: chosenProvider,
+        provider_message_id: result.provider_message_id,
+      });
+    } else {
+      await supabase
+        .from("outbound_messages")
+        .update({
+          status: "failed",
+          error_code: result.error_code || null,
+          error_message: result.error_message || null,
+          metadata: {
+            ...pendingRow.metadata,
+            raw_response: result.raw_response,
+          },
+        })
+        .eq("id", pendingRow.id);
 
-serve(handler);
+      console.error(`❌ SMS failed: ${result.error_message}`);
+      return respond(500, {
+        success: false,
+        status: "failed",
+        message_id: pendingRow.id,
+        error_code: result.error_code,
+        error_message: result.error_message,
+      });
+    }
+  } catch (error: any) {
+    console.error("❌ Unhandled error in send-sms:", error);
+    return respond(500, { error: error.message });
+  }
+});
+
+function respond(status: number, body: any): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}

@@ -30606,6 +30606,36 @@ export type Database = {
           },
         ]
       }
+      messaging_settings: {
+        Row: {
+          allow_marketing_sms: boolean | null
+          created_at: string | null
+          daily_send_limit: number | null
+          default_sms_provider: Database["public"]["Enums"]["sms_provider"]
+          fallback_provider: Database["public"]["Enums"]["sms_provider"] | null
+          id: string
+          per_number_cooldown_minutes: number | null
+        }
+        Insert: {
+          allow_marketing_sms?: boolean | null
+          created_at?: string | null
+          daily_send_limit?: number | null
+          default_sms_provider?: Database["public"]["Enums"]["sms_provider"]
+          fallback_provider?: Database["public"]["Enums"]["sms_provider"] | null
+          id?: string
+          per_number_cooldown_minutes?: number | null
+        }
+        Update: {
+          allow_marketing_sms?: boolean | null
+          created_at?: string | null
+          daily_send_limit?: number | null
+          default_sms_provider?: Database["public"]["Enums"]["sms_provider"]
+          fallback_provider?: Database["public"]["Enums"]["sms_provider"] | null
+          id?: string
+          per_number_cooldown_minutes?: number | null
+        }
+        Relationships: []
+      }
       mission_assignments: {
         Row: {
           assigned_at: string
@@ -32340,6 +32370,30 @@ export type Database = {
           },
         ]
       }
+      opt_out_events: {
+        Row: {
+          created_at: string | null
+          id: string
+          phone_number: string
+          reason: string | null
+          source: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          phone_number: string
+          reason?: string | null
+          source?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          phone_number?: string
+          reason?: string | null
+          source?: string | null
+        }
+        Relationships: []
+      }
       order_messages: {
         Row: {
           attachment_url: string | null
@@ -33486,6 +33540,63 @@ export type Database = {
           replies?: number | null
           sms?: number | null
           variant_name?: string
+        }
+        Relationships: []
+      }
+      outbound_messages: {
+        Row: {
+          campaign_id: string | null
+          created_at: string | null
+          created_by: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          idempotency_key: string
+          message_body: string
+          message_hash: string | null
+          metadata: Json | null
+          provider: Database["public"]["Enums"]["sms_provider"]
+          provider_message_id: string | null
+          sent_at: string | null
+          status: string
+          store_id: string | null
+          to_number: string
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key: string
+          message_body: string
+          message_hash?: string | null
+          metadata?: Json | null
+          provider: Database["public"]["Enums"]["sms_provider"]
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          store_id?: string | null
+          to_number: string
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          idempotency_key?: string
+          message_body?: string
+          message_hash?: string | null
+          metadata?: Json | null
+          provider?: Database["public"]["Enums"]["sms_provider"]
+          provider_message_id?: string | null
+          sent_at?: string | null
+          status?: string
+          store_id?: string | null
+          to_number?: string
         }
         Relationships: []
       }

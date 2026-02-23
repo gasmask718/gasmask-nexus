@@ -115,12 +115,12 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
     
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-biztext-sms", {
+      const { data, error } = await supabase.functions.invoke("send-sms", {
         body: {
-          to: contact.phone,
-          message: newMessage,
-          contact_id: contact.id,
-          contact_name: contact.name,
+          to_number: contact.phone,
+          message_body: newMessage,
+          idempotency_key: crypto.randomUUID(),
+          metadata: { contact_id: contact.id, contact_name: contact.name },
         },
       });
 

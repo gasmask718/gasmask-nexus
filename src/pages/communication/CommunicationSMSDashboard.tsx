@@ -53,11 +53,12 @@ const CommunicationSMSDashboard = () => {
     if (!canSend) return;
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-biztext-sms', {
+      const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
-          to: cleanPhone,
-          message: message.trim(),
-          business_id: currentBusiness?.id,
+          to_number: cleanPhone,
+          message_body: message.trim(),
+          idempotency_key: crypto.randomUUID(),
+          metadata: { business_id: currentBusiness?.id },
         },
       });
 
