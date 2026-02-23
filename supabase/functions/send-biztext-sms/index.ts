@@ -16,25 +16,34 @@ interface SendBizTextRequest {
   contact_name?: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req: Request) => {
+  // 1. Handle CORS Preflight First
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const BIZTEXT_API_KEY = Deno.env.get("BIZTEXT_API_KEY");
-    if (!BIZTEXT_API_KEY) {
-      throw new Error("Missing BizText API key");
-    }
-
-    const { to, message, business_id, store_id, contact_id, contact_name }: SendBizTextRequest =
-      await req.json();
+    // 2. Parse Request Body
+    const body = await req.json();
+    const { to, message, business_id, store_id, contact_id, contact_name } = body as SendBizTextRequest;
 
     if (!to || !message) {
       throw new Error("Missing required fields: to and message");
     }
 
-    // Normalize phone number
+    // 3. Get Environment Variables
+    const BIZTEXT_API_KEY = Deno.env.get("BIZTEXT_API_KEY");
+    if (!BIZTEXT_API_KEY) {
+      throw new Error("Missing BizText API key in Edge Function secrets");
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Missing Supabase credentials in Edge Function secrets");
+    }
+
+    // 4. Normalize phone number
     let formattedTo = to.replace(/\D/g, "");
     if (formattedTo.startsWith("09") && formattedTo.length === 11) {
       formattedTo = `+63${formattedTo.substring(1)}`;
@@ -48,9 +57,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`📱 Sending SMS via BizText to ${formattedTo}`);
 
-    // Call BizText (textit.biz) API
+    // 5. Call BizText API
     const biztextUrl = "https://api.textit.biz/sms/send";
-
     const biztextResponse = await fetch(biztextUrl, {
       method: "POST",
       headers: {
@@ -72,7 +80,7 @@ const handler = async (req: Request): Promise<Response> => {
       biztextData = JSON.parse(responseText);
     } catch {
       console.error("❌ BizText returned non-JSON:", responseText.substring(0, 300));
-      throw new Error(`BizText API returned non-JSON response (status ${biztextResponse.status}). The API endpoint or key may be incorrect.`);
+      throw new Error(`BizText API returned non-JSON response (status ${biztextResponse.status}).`);
     }
 
     if (!biztextResponse.ok) {
@@ -81,12 +89,9 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("✅ BizText success:", JSON.stringify(biztextData));
-
     const dbStatus = biztextData.status === "failed" ? "failed" : "delivered";
 
-    // Log to database
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    // 6. Log to database
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: msgData, error: msgError } = await supabase
@@ -113,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (msgError) {
       console.error("❌ Failed to insert into communication_messages:", msgError);
     } else {
-      console.log(`✅ Message logged: ${msgData.id}`);
+      console.log(`✅ Message logged: ${msgData?.id}`);
     }
 
     const { error: logError } = await supabase.from("communication_logs").insert({
@@ -129,6 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error("❌ Failed to insert into communication_logs:", logError);
     }
 
+    // 7. Return Success Response
     return new Response(
       JSON.stringify({
         success: true,
@@ -139,7 +145,7 @@ const handler = async (req: Request): Promise<Response> => {
       {
         status: 200,
         headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      },
     );
   } catch (error: any) {
     console.error("❌ Error in send-biztext-sms function:", error);
@@ -148,6 +154,4 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
-};
-
-serve(handler);
+});
