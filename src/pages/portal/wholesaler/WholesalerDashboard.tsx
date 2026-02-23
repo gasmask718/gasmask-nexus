@@ -10,7 +10,8 @@ import { HudCard } from "@/components/portal/HudCard";
 import { HudMetric } from "@/components/portal/HudMetric";
 import { 
   Package, ShoppingCart, Truck, DollarSign, AlertTriangle, 
-  Plus, ArrowRight, Settings, TrendingUp, Clock, CheckCircle 
+  Plus, ArrowRight, Settings, TrendingUp, Clock, CheckCircle,
+  FileText, Warehouse
 } from "lucide-react";
 
 export default function WholesalerDashboard() {
@@ -225,6 +226,18 @@ export default function WholesalerDashboard() {
                 <Link to="/portal/wholesaler/finance">
                   <DollarSign className="h-4 w-4 mr-2" />
                   View Earnings
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link to="/portal/wholesaler/transactions">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Transaction History
+                </Link>
+              </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link to="/portal/wholesaler/inventory">
+                  <Warehouse className="h-4 w-4 mr-2" />
+                  Inventory Workflow
                 </Link>
               </Button>
             </CardContent>
