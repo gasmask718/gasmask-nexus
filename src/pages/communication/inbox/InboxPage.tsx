@@ -3,9 +3,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ContactsPanel } from "@/components/communication/inbox/ContactsPanel";
 import { ConversationPanel } from "@/components/communication/inbox/ConversationPanel";
-import { Users, PanelRightClose, PanelRight } from "lucide-react";
+import { Users, PanelRightClose, PanelRight, Plus, Send, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Contact {
   id: string;
@@ -19,6 +24,45 @@ export default function InboxPage() {
   const [selectedBusinessId, setSelectedBusinessId] = useState<string>("all");
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showContacts, setShowContacts] = useState(true);
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [manualPhone, setManualPhone] = useState("");
+  const [manualMessage, setManualMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSendManual = async () => {
+    const digits = manualPhone.replace(/\D/g, "");
+    if (digits.length < 10) {
+      toast.error("Please enter a valid 10-digit phone number");
+      return;
+    }
+    if (!manualMessage.trim()) {
+      toast.error("Please enter a message");
+      return;
+    }
+    setIsSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-biztext-sms", {
+        body: {
+          to: manualPhone,
+          message: manualMessage.trim(),
+          contact_name: "Manual",
+        },
+      });
+      if (error) throw error;
+      if (data?.success) {
+        toast.success("Message sent!");
+        setManualPhone("");
+        setManualMessage("");
+        setShowNewMessage(false);
+      } else {
+        throw new Error(data?.error || "Failed to send");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send message");
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   const { data: businesses = [] } = useQuery({
     queryKey: ["businesses-list"],
@@ -46,6 +90,10 @@ export default function InboxPage() {
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold">Unified Inbox</h2>
         <div className="flex items-center gap-3">
+          <Button onClick={() => setShowNewMessage(true)} size="sm">
+            <Plus className="h-4 w-4 mr-1" />
+            New Message
+          </Button>
           <Button
             variant="ghost"
             size="icon"
@@ -97,6 +145,46 @@ export default function InboxPage() {
           />
         )}
       </div>
+
+      {/* New Manual Message Dialog */}
+      <Dialog open={showNewMessage} onOpenChange={setShowNewMessage}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send New Message</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="manual-phone">Phone Number</Label>
+              <Input
+                id="manual-phone"
+                placeholder="(555) 555-1234"
+                value={manualPhone}
+                onChange={(e) => setManualPhone(e.target.value)}
+                type="tel"
+              />
+              <p className="text-xs text-muted-foreground">Enter a 10-digit US phone number</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="manual-msg">Message</Label>
+              <Textarea
+                id="manual-msg"
+                placeholder="Type your message..."
+                value={manualMessage}
+                onChange={(e) => setManualMessage(e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground text-right">{manualMessage.length} / 160</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowNewMessage(false)}>Cancel</Button>
+              <Button onClick={handleSendManual} disabled={isSending || !manualMessage.trim()}>
+                {isSending ? <><Loader2 className="h-4 w-4 mr-1 animate-spin" />Sending...</> : <><Send className="h-4 w-4 mr-1" />Send SMS</>}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
