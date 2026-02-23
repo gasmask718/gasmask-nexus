@@ -157,3 +157,6 @@ verify_jwt = false
 
 [functions.process-notification-queue]
 verify_jwt = false
+
+[functions.call-live-handoff]
+verify_jwt = false
