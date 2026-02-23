@@ -39,10 +39,12 @@ serve(async (req: Request) => {
     }
 
     // 3. Read Secrets
-    const BIZTEXT_TOKEN = Deno.env.get("BIZTEXT_TOKEN")?.trim();
+    // Try BIZTEXT_API_KEY first, then fall back to BIZTEXT_TOKEN
+    const BIZTEXT_TOKEN = Deno.env.get("BIZTEXT_API_KEY")?.trim() || Deno.env.get("BIZTEXT_TOKEN")?.trim();
     if (!BIZTEXT_TOKEN) {
-      throw new Error("Missing BIZTEXT_TOKEN in Edge Function secrets");
+      throw new Error("Missing BIZTEXT_API_KEY or BIZTEXT_TOKEN in Edge Function secrets");
     }
+    console.log(`🔑 Using BizText token (first 10 chars): ${BIZTEXT_TOKEN.substring(0, 10)}...`);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
