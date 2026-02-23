@@ -216,7 +216,7 @@ export default function WholesalerDashboard() {
                 </Link>
               </Button>
               <Button variant="outline" className="w-full justify-start" asChild>
-                <Link to="/portal/wholesaler/shipping">
+                <Link to="/portal/wholesaler/fulfillment">
                   <Truck className="h-4 w-4 mr-2" />
                   Print Shipping Labels
                 </Link>
