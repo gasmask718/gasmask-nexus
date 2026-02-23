@@ -28,6 +28,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const url = new URL(req.url);
     const agentId = url.searchParams.get("agent_id");
+    const handoffNumber = url.searchParams.get("handoff_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
 
     if (!agentId) {
       console.error("❌ Missing agent_id query parameter");
@@ -53,7 +54,11 @@ const handler = async (req: Request): Promise<Response> => {
     const toNumber = formData.get("To")?.toString() || "";
     const callSid = formData.get("CallSid")?.toString() || "";
 
-    console.log(`🔗 Bridge: CallSid=${callSid}, From=${fromNumber}, To=${toNumber}, AgentId=${agentId}`);
+    console.log(`🔗 Bridge: CallSid=${callSid}, From=${fromNumber}, To=${toNumber}, AgentId=${agentId}, HandoffNumber=${handoffNumber || '(none)'}`);
+
+    // Build the handoff URL the ElevenLabs agent can call as a server tool
+    const projectId = Deno.env.get("SUPABASE_URL")?.replace("https://", "").split(".")[0] || "";
+    const handoffUrl = `https://${projectId}.supabase.co/functions/v1/call-live-handoff`;
 
     // Call ElevenLabs Register Call API
     const registerResponse = await fetch(
@@ -69,6 +74,13 @@ const handler = async (req: Request): Promise<Response> => {
           from_number: fromNumber,
           to_number: toNumber,
           direction: "outbound",
+          // Pass handoff context so the ElevenLabs agent can trigger live transfer
+          dynamic_variables: {
+            call_sid: callSid,
+            handoff_url: handoffUrl,
+            handoff_number: handoffNumber,
+            interest_keywords: "I am the owner,yes I'm interested,tell me more,sign me up,I'd like to try,how do I start,sounds good,let's do it",
+          },
         }),
       },
     );
