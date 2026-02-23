@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-const MAPBOX_TOKEN = "pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTRraHBmeXEwMDZ3Mm1xdDJhYXc5NHBvIn0.5CCWFu1E1SIrFdLJ0uT5yQ";
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN || "pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbTRraHBmeXEwMDZ3Mm1xdDJhYXc5NHBvIn0.5CCWFu1E1SIrFdLJ0uT5yQ";
 
 const DEMO_TERRITORIES = [
   { name: "Manhattan", saturation: 87, active: 145, prospects: 23, failing: 8, growth: 12 },
