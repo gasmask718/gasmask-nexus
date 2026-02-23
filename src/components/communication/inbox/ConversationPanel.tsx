@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -44,6 +45,7 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
   const queryClient = useQueryClient();
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("default");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Normalize phone for query
@@ -120,6 +122,7 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
           to_number: contact.phone,
           message_body: newMessage,
           idempotency_key: crypto.randomUUID(),
+          explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           metadata: { contact_id: contact.id, contact_name: contact.name },
         },
       });
@@ -265,7 +268,8 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t flex-shrink-0">
+      <div className="p-4 border-t flex-shrink-0 space-y-2">
+        <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} showLabel={false} className="w-40" />
         <div className="flex gap-2">
           <Textarea
             placeholder="Type a message..."

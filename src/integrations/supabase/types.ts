@@ -30612,6 +30612,7 @@ export type Database = {
           created_at: string | null
           daily_send_limit: number | null
           default_sms_provider: Database["public"]["Enums"]["sms_provider"]
+          enable_test_mode: boolean | null
           fallback_provider: Database["public"]["Enums"]["sms_provider"] | null
           id: string
           per_number_cooldown_minutes: number | null
@@ -30621,6 +30622,7 @@ export type Database = {
           created_at?: string | null
           daily_send_limit?: number | null
           default_sms_provider?: Database["public"]["Enums"]["sms_provider"]
+          enable_test_mode?: boolean | null
           fallback_provider?: Database["public"]["Enums"]["sms_provider"] | null
           id?: string
           per_number_cooldown_minutes?: number | null
@@ -30630,6 +30632,7 @@ export type Database = {
           created_at?: string | null
           daily_send_limit?: number | null
           default_sms_provider?: Database["public"]["Enums"]["sms_provider"]
+          enable_test_mode?: boolean | null
           fallback_provider?: Database["public"]["Enums"]["sms_provider"] | null
           id?: string
           per_number_cooldown_minutes?: number | null
@@ -43686,6 +43689,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sms_test_logs: {
+        Row: {
+          created_at: string | null
+          details: Json | null
+          executed_by: string | null
+          id: string
+          result: string
+          test_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          details?: Json | null
+          executed_by?: string | null
+          id?: string
+          result: string
+          test_name: string
+        }
+        Update: {
+          created_at?: string | null
+          details?: Json | null
+          executed_by?: string | null
+          id?: string
+          result?: string
+          test_name?: string
+        }
+        Relationships: []
       }
       speaker_style_profiles: {
         Row: {

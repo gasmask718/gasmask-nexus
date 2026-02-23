@@ -98,6 +98,7 @@ import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxRepor
 import DeletedRecords from '@/pages/admin/DeletedRecords';
 import QACommandCenter from '@/pages/admin/qa/QACommandCenter';
 import AmbassadorApplications from '@/pages/admin/AmbassadorApplications';
+import SmsSystemTests from '@/pages/admin/SmsSystemTests';
 import AmbassadorApplication from '@/pages/apply/AmbassadorApplication';
 import { AmbassadorEarningsPage } from '@/pages/ambassador/reports';
 import { AmbassadorPayoutsPage, AmbassadorPayoutStatementPage, AmbassadorPayoutSettingsPage } from '@/pages/ambassador/payouts';
@@ -2293,6 +2294,15 @@ export default function AppRoutes() {
         <ProtectedRoute>
           <RequireRole allowedRoles={['owner', 'admin']}>
             <Layout><MarketplaceControlTowerPage /></Layout>
+          </RequireRole>
+        </ProtectedRoute>
+      } />
+
+      {/* SMS System Tests - Admin Only */}
+      <Route path="/admin/sms-system-tests" element={
+        <ProtectedRoute>
+          <RequireRole allowedRoles={['admin', 'owner']}>
+            <Layout><SmsSystemTests /></Layout>
           </RequireRole>
         </ProtectedRoute>
       } />

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ interface NewMessageModalProps {
 export function NewMessageModal({ open, onOpenChange, contact, onMessageSent }: NewMessageModalProps) {
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("default");
 
   const handleSend = async () => {
     if (!contact || !message.trim()) return;
@@ -37,6 +39,7 @@ export function NewMessageModal({ open, onOpenChange, contact, onMessageSent }: 
           to_number: contact.phone,
           message_body: message.trim(),
           idempotency_key: crypto.randomUUID(),
+          explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           metadata: { contact_id: contact.id, contact_name: contact.name },
         },
       });
@@ -96,7 +99,8 @@ export function NewMessageModal({ open, onOpenChange, contact, onMessageSent }: 
               </p>
             </div>
 
-            {/* Actions */}
+            {/* Provider Selector */}
+            <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
