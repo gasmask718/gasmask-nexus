@@ -57,17 +57,21 @@ serve(async (req: Request) => {
 
     console.log(`📱 Sending SMS via Biz Text Solutions to ${formattedTo}`);
 
-    // 5. Call Biz Text Solutions GET API with URL-encoded params
+    // 5. Call Biz Text Solutions API with URL-encoded params via POST
     const params = new URLSearchParams({
       to: formattedTo,
       txt: message,
       wid: BIZTEXT_WEBSITE_ID,
     });
-    const biztextUrl = `${BIZTEXT_API_BASE}?${params.toString()}`;
+    const biztextUrl = `${BIZTEXT_API_BASE}`;
 
-    console.log(`📡 Calling: ${BIZTEXT_API_BASE}?to=${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
+    console.log(`📡 Calling: ${BIZTEXT_API_BASE} [POST] to=${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
 
-    const biztextResponse = await fetch(biztextUrl, { method: "GET" });
+    const biztextResponse = await fetch(biztextUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    });
     const responseText = await biztextResponse.text();
     console.log("📡 Biz Text Solutions raw response:", responseText.substring(0, 500));
 
