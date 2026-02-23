@@ -1,74 +1,44 @@
 
 
-# Switch to BizText Basic HTTP GET API
+# Fix Message Storage and History on /communication/inbox
 
-## Overview
+## Problem Summary
 
-Replace the current POST-based API call with a simple **GET request** to `https://textit.biz/sendmsg/`, using query parameters for authentication and message delivery -- matching the BizText Basic HTTP API (Java sample reference).
+Messages sent from the inbox are **not being saved to the database**, so message history appears empty. Three distinct bugs were found:
 
-## What Changes
+## Root Causes
 
-### 1. Add Two New Secrets
+### Bug 1: Invalid channel value "biztext"
+The Edge Function inserts `channel: "biztext"` into `communication_messages`, but the table has a CHECK constraint that only allows: `sms`, `call`, `ai-call`, `ai-sms`, `email`, `whatsapp`. The insert is rejected silently.
 
-Two new secrets are required (the existing `BIZTEXT_API_KEY` can remain for backward compatibility):
+**Fix:** Change `channel: "biztext"` to `channel: "sms"` in the Edge Function insert (line 98).
 
-| Secret Name | Value |
-|---|---|
-| `BIZTEXT_ID` | Your phone number (digits only, no "+" sign) |
-| `BIZTEXT_PW` | Your BizText account password |
+### Bug 2: Missing required "summary" field in communication_logs
+The `communication_logs` insert omits the `summary` column, which is NOT NULL. The insert fails.
 
-You'll be prompted to enter these before the function is deployed.
+**Fix:** Add `summary: "Outbound SMS to {phone}"` to the communication_logs insert (line 118-125).
 
-### 2. Rewrite the API Call in `supabase/functions/send-biztext-sms/index.ts`
+### Bug 3: BizText errors treated as "delivered"
+The response `"Err:Unauthenticated_User"` does not contain the word "fail", so the code marks it as "delivered". This means failed sends appear successful.
 
-**Before (POST with Basic auth):**
-```text
-POST https://www.biztextsolutions.com/api/conversations/new
-Authorization: Basic [key]
-Body: { to, text }
-```
+**Fix:** Expand the error detection to also check for `"err"` in the response text (case-insensitive).
 
-**After (GET with query params):**
-```text
-GET https://textit.biz/sendmsg/?id={phone}&pw={password}&to={recipient}&text={url_encoded_message}
-```
+## Changes
 
-Specific changes to the edge function:
-- Replace `BIZTEXT_API_KEY` with `BIZTEXT_ID` and `BIZTEXT_PW` from environment
-- Build a URL with query parameters: `id`, `pw`, `to`, `text` (URL-encoded via `encodeURIComponent`)
-- Switch from `fetch(..., { method: "POST" })` to a simple `fetch(url)` GET request
-- Keep all existing: CORS handling, phone normalization, database logging, error handling
-- The response parsing will handle both plain text (e.g., "OK" or error string) and JSON gracefully
+### File: `supabase/functions/send-biztext-sms/index.ts`
 
-### 3. No Frontend Changes Needed
+| Line | Current | Fixed |
+|---|---|---|
+| 86 | `responseText.toLowerCase().includes("fail")` | `responseText.toLowerCase().includes("fail") \|\| responseText.toLowerCase().startsWith("err")` |
+| 98 | `channel: "biztext"` | `channel: "sms"` |
+| 119 | `channel: "biztext"` | `channel: "sms"` |
+| 118-125 | No `summary` field | Add `summary: "Outbound SMS to " + formattedTo` |
 
-All three callers (`ConversationPanel`, `NewMessageModal`, `CommunicationSMSDashboard`) use `supabase.functions.invoke("send-biztext-sms")` with the same `{ to, message }` body -- no changes required.
+After editing, the function will be re-deployed.
 
-## Technical Details
+## Outcome
+- Sent messages will be correctly saved to `communication_messages` with `channel: "sms"`
+- Communication logs will include the required summary
+- BizText error responses (like `Err:Unauthenticated_User`) will be correctly flagged as "failed"
+- The conversation panel will fetch and display message history as expected (the query already works -- it was just finding no rows because inserts were failing)
 
-### Edge Function API Call (New Implementation)
-
-```text
-// Build GET URL with query params
-const url = new URL("https://textit.biz/sendmsg/");
-url.searchParams.set("id", BIZTEXT_ID);       // digits-only phone
-url.searchParams.set("pw", BIZTEXT_PW);        // account password
-url.searchParams.set("to", formattedTo);        // destination number
-url.searchParams.set("text", message);          // auto URL-encoded by URLSearchParams
-
-const response = await fetch(url.toString());
-```
-
-Using `URL` and `searchParams.set()` ensures proper URL-encoding of the `text` parameter automatically.
-
-### Files Changed
-
-| File | Action |
-|---|---|
-| `supabase/functions/send-biztext-sms/index.ts` | Edit -- replace POST call with GET to `textit.biz/sendmsg/` |
-
-### Execution Order
-
-1. Request `BIZTEXT_ID` and `BIZTEXT_PW` secrets from user
-2. Update the edge function code
-3. Deploy the updated function
