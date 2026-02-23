@@ -132,8 +132,15 @@ export function useWholesalerFulfillments(statusFilter?: string) {
       queryClient.invalidateQueries({ queryKey: ['wholesaler-payouts'] });
       toast.success('Fulfillment marked as shipped');
     },
-    onError: (error) => {
-      toast.error(`Failed to mark shipped: ${error.message}`);
+    onError: (error: any) => {
+      const msg = error?.message || 'Unknown error';
+      if (msg.includes('shipping label')) {
+        toast.error('Cannot ship: generate a shipping label first.');
+      } else if (msg.includes('tracking')) {
+        toast.error('Cannot ship: no tracking number found.');
+      } else {
+        toast.error(`Failed to mark shipped: ${msg}`);
+      }
     },
   });
 
