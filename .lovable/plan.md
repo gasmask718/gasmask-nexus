@@ -1,66 +1,74 @@
 
 
-# BizText SMS Dashboard - Correct API Integration
+# Switch to BizText Basic HTTP GET API
 
-## Problem
+## Overview
 
-The current `send-biztext-sms` edge function uses the wrong API endpoint (`https://my.biztextsolutions.com/api/v1/sms/send`) and wrong auth format (`Bearer`). The correct API is:
+Replace the current POST-based API call with a simple **GET request** to `https://textit.biz/sendmsg/`, using query parameters for authentication and message delivery -- matching the BizText Basic HTTP API (Java sample reference).
 
-- **Base URL:** `https://api.textit.biz/`
-- **Auth:** `Authorization: Basic [API_KEY]`
-- **Header:** `X-API-VERSION: v1`
+## What Changes
 
-## Changes
+### 1. Add Two New Secrets
 
-### 1. Fix Edge Function: `supabase/functions/send-biztext-sms/index.ts`
+Two new secrets are required (the existing `BIZTEXT_API_KEY` can remain for backward compatibility):
 
-- Change URL to `https://api.textit.biz/sms/send` (or appropriate endpoint)
-- Change auth header from `Bearer` to `Basic`
-- Add `X-API-VERSION: v1` header
-- Keep all existing logging and error handling
+| Secret Name | Value |
+|---|---|
+| `BIZTEXT_ID` | Your phone number (digits only, no "+" sign) |
+| `BIZTEXT_PW` | Your BizText account password |
 
-### 2. Create SMS Dashboard Page: `src/pages/communication/CommunicationSMSDashboard.tsx`
+You'll be prompted to enter these before the function is deployed.
 
-A professional card-based SMS dashboard with:
-- **SMS Composer Card** -- Recipient phone input (international format validation e.g. `9477xxxxxxx`), message textarea with real-time 160-char counter, send button with loading spinner
-- **Message History Card** -- Table showing sent messages from `communication_messages` where `channel = 'biztext'`, with columns: recipient, message preview, status badge, timestamp
-- **Stats Cards** -- Total sent, delivered, failed counts from the database
-- Toast notifications for success/error with API response details
+### 2. Rewrite the API Call in `supabase/functions/send-biztext-sms/index.ts`
 
-### 3. Update Conversation Panel (no changes needed)
+**Before (POST with Basic auth):**
+```text
+POST https://www.biztextsolutions.com/api/conversations/new
+Authorization: Basic [key]
+Body: { to, text }
+```
 
-The `ConversationPanel.tsx` already calls `send-biztext-sms` correctly -- the fix is purely in the edge function.
+**After (GET with query params):**
+```text
+GET https://textit.biz/sendmsg/?id={phone}&pw={password}&to={recipient}&text={url_encoded_message}
+```
 
-### 4. Add Route for Dashboard
+Specific changes to the edge function:
+- Replace `BIZTEXT_API_KEY` with `BIZTEXT_ID` and `BIZTEXT_PW` from environment
+- Build a URL with query parameters: `id`, `pw`, `to`, `text` (URL-encoded via `encodeURIComponent`)
+- Switch from `fetch(..., { method: "POST" })` to a simple `fetch(url)` GET request
+- Keep all existing: CORS handling, phone normalization, database logging, error handling
+- The response parsing will handle both plain text (e.g., "OK" or error string) and JSON gracefully
 
-Wire up the new SMS dashboard page in the router.
+### 3. No Frontend Changes Needed
+
+All three callers (`ConversationPanel`, `NewMessageModal`, `CommunicationSMSDashboard`) use `supabase.functions.invoke("send-biztext-sms")` with the same `{ to, message }` body -- no changes required.
 
 ## Technical Details
 
-### Edge Function Fix
+### Edge Function API Call (New Implementation)
 
 ```text
-Before:
-  URL: https://my.biztextsolutions.com/api/v1/sms/send
-  Auth: Bearer {key}
+// Build GET URL with query params
+const url = new URL("https://textit.biz/sendmsg/");
+url.searchParams.set("id", BIZTEXT_ID);       // digits-only phone
+url.searchParams.set("pw", BIZTEXT_PW);        // account password
+url.searchParams.set("to", formattedTo);        // destination number
+url.searchParams.set("text", message);          // auto URL-encoded by URLSearchParams
 
-After:
-  URL: https://api.textit.biz/sms/send
-  Headers:
-    Content-Type: application/json
-    X-API-VERSION: v1
-    Authorization: Basic {key}
+const response = await fetch(url.toString());
 ```
 
-### Phone Validation
-
-International format validation allowing formats like `9477xxxxxxx` (Sri Lanka) alongside existing PH/US normalization.
+Using `URL` and `searchParams.set()` ensures proper URL-encoding of the `text` parameter automatically.
 
 ### Files Changed
 
 | File | Action |
-|------|--------|
-| `supabase/functions/send-biztext-sms/index.ts` | Edit -- fix URL, auth, add version header |
-| `src/pages/communication/CommunicationSMSDashboard.tsx` | Create -- new SMS dashboard |
-| `src/App.tsx` (or router file) | Edit -- add route for SMS dashboard |
+|---|---|
+| `supabase/functions/send-biztext-sms/index.ts` | Edit -- replace POST call with GET to `textit.biz/sendmsg/` |
 
+### Execution Order
+
+1. Request `BIZTEXT_ID` and `BIZTEXT_PW` secrets from user
+2. Update the edge function code
+3. Deploy the updated function
