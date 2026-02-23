@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ── Configuration ──────────────────────────────────────────────────────
 // Change this constant if Biz Text Solutions uses a different header name
 const BIZTEXT_API_BASE = "https://www.biztextsolutions.com/api/send";
-const BIZTEXT_WEBSITE_ID = "gasmask-os-nexus.lovable.app";
+const BIZTEXT_WEBSITE_ID = "438";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
