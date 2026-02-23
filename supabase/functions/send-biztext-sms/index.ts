@@ -1,6 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ── Configuration ──────────────────────────────────────────────────────
+// Change this constant if Biz Text Solutions uses a different header name
+const AUTH_HEADER_KEY = "Authorization";
+const AUTH_HEADER_PREFIX = "Bearer ";
+const BIZTEXT_API_URL = "https://www.biztextsolutions.com/api/messages?websiteId=438";
+const BIZTEXT_CUSTOMER_ID = 149333;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -17,7 +24,7 @@ interface SendBizTextRequest {
 }
 
 serve(async (req: Request) => {
-  // 1. Handle CORS Preflight First
+  // 1. Handle CORS Preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -31,12 +38,10 @@ serve(async (req: Request) => {
       throw new Error("Missing required fields: to and message");
     }
 
-    // 3. Get Environment Variables & TRIM whitespace (Crucial for auth errors)
-    const BIZTEXT_ID = Deno.env.get("BIZTEXT_ID")?.trim();
-    const BIZTEXT_PW = Deno.env.get("BIZTEXT_PW")?.trim();
-
-    if (!BIZTEXT_ID || !BIZTEXT_PW) {
-      throw new Error("Missing BIZTEXT_ID or BIZTEXT_PW in Edge Function secrets");
+    // 3. Read Secrets
+    const BIZTEXT_TOKEN = Deno.env.get("BIZTEXT_TOKEN")?.trim();
+    if (!BIZTEXT_TOKEN) {
+      throw new Error("Missing BIZTEXT_TOKEN in Edge Function secrets");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
@@ -57,35 +62,26 @@ serve(async (req: Request) => {
       formattedTo = `+${formattedTo}`;
     }
 
-    console.log(`📱 Sending SMS via BizText Basic HTTP to ${formattedTo}`);
+    console.log(`📱 Sending SMS via Biz Text Solutions to ${formattedTo}`);
 
-    // 5. Call BizText Basic HTTP GET API
-    // Strip non-digit chars from ID (remove +, spaces, dashes, parens)
-    const sanitizedId = BIZTEXT_ID.replace(/\D/g, "");
-    // Use URLSearchParams to safely encode password with special chars (e.g. @, #, &)
-    const params = new URLSearchParams();
-    params.set("id", sanitizedId);
-    params.set("pw", BIZTEXT_PW);
-    params.set("to", formattedTo);
-    params.set("text", message);
-    const biztextUrl = `https://textit.biz/sendmsg/?${params.toString()}`;
+    // 5. Call Biz Text Solutions POST API
+    const biztextResponse = await fetch(BIZTEXT_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        [AUTH_HEADER_KEY]: `${AUTH_HEADER_PREFIX}${BIZTEXT_TOKEN}`,
+      },
+      body: JSON.stringify({
+        clientNumber: formattedTo,
+        message: message,
+        customer_id: BIZTEXT_CUSTOMER_ID,
+      }),
+    });
 
-    const biztextResponse = await fetch(biztextUrl);
     const responseText = await biztextResponse.text();
-    console.log("📡 BizText raw response:", responseText.substring(0, 500));
+    console.log("📡 Biz Text Solutions raw response:", responseText.substring(0, 500));
 
-    // 6. Check for Biztext specific text errors (Biztext often returns 200 OK but with "Err:" in the text)
-    if (responseText.toLowerCase().includes("err:")) {
-      console.error("❌ BizText Auth/Format Error:", responseText);
-      throw new Error(`BizText API rejected request: ${responseText.trim()}`);
-    }
-
-    if (!biztextResponse.ok) {
-      console.error("❌ BizText error (HTTP " + biztextResponse.status + "):", responseText);
-      throw new Error(`BizText API returned HTTP ${biztextResponse.status}: ${responseText.substring(0, 200)}`);
-    }
-
-    // Parse response — may be JSON or plain text
+    // 6. Parse & validate response
     let biztextData: any;
     try {
       biztextData = JSON.parse(responseText);
@@ -93,9 +89,16 @@ serve(async (req: Request) => {
       biztextData = { raw_response: responseText.trim() };
     }
 
-    console.log("✅ BizText success:", JSON.stringify(biztextData));
-    const lowerResponse = responseText.toLowerCase();
-    const dbStatus = lowerResponse.includes("fail") || lowerResponse.startsWith("err") ? "failed" : "delivered";
+    const transmissionStatus = biztextData?.transmission_status ?? biztextData?.transmissionStatus ?? "";
+    const isSent = transmissionStatus === "SENT";
+
+    if (!isSent) {
+      console.error("❌ Biz Text Solutions did not return SENT:", JSON.stringify(biztextData));
+      throw new Error(`Biz Text Solutions API rejected request: ${responseText.substring(0, 300).trim()}`);
+    }
+
+    console.log("✅ Biz Text Solutions success:", JSON.stringify(biztextData));
+    const dbStatus = "delivered";
 
     // 7. Log to database
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -141,7 +144,7 @@ serve(async (req: Request) => {
       console.error("❌ Failed to insert into communication_logs:", logError);
     }
 
-    // 8. Return Success Response
+    // 8. Return Success
     return new Response(
       JSON.stringify({
         success: true,
@@ -157,7 +160,7 @@ serve(async (req: Request) => {
   } catch (error: any) {
     console.error("❌ Error in send-biztext-sms function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500, // Returning 500 so the frontend knows it actually failed to send
+      status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
