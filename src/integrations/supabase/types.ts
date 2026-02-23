@@ -12811,6 +12811,67 @@ export type Database = {
           },
         ]
       }
+      campaign_call_queue: {
+        Row: {
+          attempt_number: number
+          call_sid: string | null
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          started_at: string | null
+          status: string
+          store_id: string | null
+        }
+        Insert: {
+          attempt_number?: number
+          call_sid?: string | null
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+        }
+        Update: {
+          attempt_number?: number
+          call_sid?: string | null
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_call_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaign_call_queue_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       campaign_containment_log: {
         Row: {
           campaign_id: string
@@ -29525,6 +29586,8 @@ export type Database = {
           duration_seconds: number | null
           ended_at: string | null
           from_number: string | null
+          handoff_target_number: string | null
+          handoff_triggered_at: string | null
           id: string
           is_test_call: boolean | null
           metadata: Json | null
@@ -29550,6 +29613,8 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           from_number?: string | null
+          handoff_target_number?: string | null
+          handoff_triggered_at?: string | null
           id?: string
           is_test_call?: boolean | null
           metadata?: Json | null
@@ -29575,6 +29640,8 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           from_number?: string | null
+          handoff_target_number?: string | null
+          handoff_triggered_at?: string | null
           id?: string
           is_test_call?: boolean | null
           metadata?: Json | null
