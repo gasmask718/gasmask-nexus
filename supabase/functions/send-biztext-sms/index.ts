@@ -63,7 +63,16 @@ const handler = async (req: Request): Promise<Response> => {
       }),
     });
 
-    const biztextData = await biztextResponse.json();
+    const responseText = await biztextResponse.text();
+    console.log("📡 BizText raw response:", responseText.substring(0, 500));
+
+    let biztextData: any;
+    try {
+      biztextData = JSON.parse(responseText);
+    } catch {
+      console.error("❌ BizText returned non-JSON:", responseText.substring(0, 300));
+      throw new Error(`BizText API returned non-JSON response (status ${biztextResponse.status}). The API endpoint or key may be incorrect.`);
+    }
 
     if (!biztextResponse.ok) {
       console.error("❌ BizText error:", biztextData);
