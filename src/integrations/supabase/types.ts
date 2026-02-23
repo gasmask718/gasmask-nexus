@@ -42993,6 +42993,58 @@ export type Database = {
           },
         ]
       }
+      shipping_label_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          event_type: string
+          fulfillment_id: string
+          id: string
+          label_id: string
+          meta_json: Json | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type: string
+          fulfillment_id: string
+          id?: string
+          label_id: string
+          meta_json?: Json | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          event_type?: string
+          fulfillment_id?: string
+          id?: string
+          label_id?: string
+          meta_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipping_label_events_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_fulfillments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipping_label_events_fulfillment_id_fkey"
+            columns: ["fulfillment_id"]
+            isOneToOne: false
+            referencedRelation: "vendor_fulfillment_view"
+            referencedColumns: ["fulfillment_id"]
+          },
+          {
+            foreignKeyName: "shipping_label_events_label_id_fkey"
+            columns: ["label_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_labels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_labels: {
         Row: {
           carrier: string | null

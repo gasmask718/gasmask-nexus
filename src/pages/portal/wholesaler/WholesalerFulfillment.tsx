@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useWholesalerFulfillments, type WholesalerFulfillment as WholesalerFulfillmentType } from "@/services/wholesaler/useWholesalerFulfillments";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,9 +78,28 @@ function FulfillmentRow({ f, onGenerateLabel, onMarkShipped, isGenerating, isShi
     try { await onMarkShipped(f.id); } finally { setActionId(null); }
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (f.shipping_label_url) {
       window.open(f.shipping_label_url, "_blank", "noopener");
+      // Log print event to audit trail
+      try {
+        const { data: label } = await (supabase as any)
+          .from("shipping_labels")
+          .select("id")
+          .eq("fulfillment_id", f.id)
+          .eq("status", "created")
+          .maybeSingle();
+        if (label) {
+          await (supabase as any).from("shipping_label_events").insert({
+            label_id: label.id,
+            fulfillment_id: f.id,
+            event_type: "printed",
+            meta_json: { carrier: f.carrier, tracking: f.tracking_number },
+          });
+        }
+      } catch (e) {
+        console.error("Failed to log print event:", e);
+      }
     }
   };
 

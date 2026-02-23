@@ -85,6 +85,30 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Guard: check payment status on parent order
+    const order = fulfillment.order;
+    if (!order) {
+      return new Response(
+        JSON.stringify({ error: "Parent order not found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check for existing active label (DB trigger also enforces this)
+    const { data: existingLabel } = await supabase
+      .from("shipping_labels")
+      .select("id")
+      .eq("fulfillment_id", fulfillment_id)
+      .eq("status", "created")
+      .maybeSingle();
+
+    if (existingLabel) {
+      return new Response(
+        JSON.stringify({ error: "An active label already exists for this fulfillment. Void it first." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // ═══════════════════════════════════════════════
     // MOCK LABEL GENERATION
     // Replace this block with Shippo/EasyPost API call
@@ -93,6 +117,24 @@ Deno.serve(async (req) => {
     const mockLabelUrl = `https://labels.mock-shipping.com/${mockTrackingNumber}.pdf`;
     const mockCarrier = "USPS";
     // ═══════════════════════════════════════════════
+
+    // Insert shipping_labels record (triggers guard + auto-event-log)
+    const { error: labelErr } = await supabase
+      .from("shipping_labels")
+      .insert({
+        fulfillment_id,
+        wholesaler_id: profile.id,
+        order_id: fulfillment.order_id,
+        carrier: mockCarrier,
+        service: "Priority",
+        label_format: "PDF",
+        label_url: mockLabelUrl,
+        tracking_number: mockTrackingNumber,
+        mode: "mock",
+        status: "created",
+      });
+
+    if (labelErr) throw labelErr;
 
     // Update fulfillment with label data
     const { error: updateErr } = await supabase
