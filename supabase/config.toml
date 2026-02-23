@@ -160,3 +160,6 @@ verify_jwt = false
 
 [functions.call-live-handoff]
 verify_jwt = false
+
+[functions.send-biztext-sms]
+verify_jwt = false
