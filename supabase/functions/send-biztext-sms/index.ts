@@ -3,10 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // ── Configuration ──────────────────────────────────────────────────────
 // Change this constant if Biz Text Solutions uses a different header name
-const AUTH_HEADER_KEY = "Authorization";
-const AUTH_HEADER_PREFIX = "Bearer ";
-const BIZTEXT_API_URL = "https://www.biztextsolutions.com/api/messages?websiteId=438";
-const BIZTEXT_CUSTOMER_ID = 149333;
+const BIZTEXT_API_BASE = "https://www.biztextsolutions.com/api/send";
+const BIZTEXT_WEBSITE_ID = "438";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,47 +37,37 @@ serve(async (req: Request) => {
     }
 
     // 3. Read Secrets
-    // Try BIZTEXT_API_KEY first, then fall back to BIZTEXT_TOKEN
-    const BIZTEXT_TOKEN = Deno.env.get("BIZTEXT_API_KEY")?.trim() || Deno.env.get("BIZTEXT_TOKEN")?.trim();
-    if (!BIZTEXT_TOKEN) {
-      throw new Error("Missing BIZTEXT_API_KEY or BIZTEXT_TOKEN in Edge Function secrets");
-    }
-    console.log(`🔑 Using BizText token (first 10 chars): ${BIZTEXT_TOKEN.substring(0, 10)}...`);
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Missing Supabase credentials in Edge Function secrets");
     }
 
-    // 4. Normalize phone number
+    // 4. Normalize phone number to 10 digits (strip country code & non-digits)
     let formattedTo = to.replace(/\D/g, "");
-    if (formattedTo.startsWith("09") && formattedTo.length === 11) {
-      formattedTo = `+63${formattedTo.substring(1)}`;
+    if (formattedTo.startsWith("1") && formattedTo.length === 11) {
+      formattedTo = formattedTo.substring(1);
     } else if (formattedTo.startsWith("63") && formattedTo.length === 12) {
-      formattedTo = `+${formattedTo}`;
-    } else if (formattedTo.length === 10) {
-      formattedTo = `+1${formattedTo}`;
-    } else if (formattedTo.length >= 11 && !formattedTo.startsWith("+")) {
-      formattedTo = `+${formattedTo}`;
+      formattedTo = formattedTo.substring(2);
+    }
+    // Ensure 10 digits
+    if (formattedTo.length !== 10) {
+      throw new Error(`Phone number must be 10 digits after normalization, got ${formattedTo.length}: ${formattedTo}`);
     }
 
     console.log(`📱 Sending SMS via Biz Text Solutions to ${formattedTo}`);
 
-    // 5. Call Biz Text Solutions POST API
-    const biztextResponse = await fetch(BIZTEXT_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        [AUTH_HEADER_KEY]: `${AUTH_HEADER_PREFIX}${BIZTEXT_TOKEN}`,
-      },
-      body: JSON.stringify({
-        clientNumber: formattedTo,
-        message: message,
-        customer_id: BIZTEXT_CUSTOMER_ID,
-      }),
+    // 5. Call Biz Text Solutions GET API with URL-encoded params
+    const params = new URLSearchParams({
+      to: formattedTo,
+      txt: message,
+      wid: BIZTEXT_WEBSITE_ID,
     });
+    const biztextUrl = `${BIZTEXT_API_BASE}?${params.toString()}`;
 
+    console.log(`📡 Calling: ${BIZTEXT_API_BASE}?to=${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
+
+    const biztextResponse = await fetch(biztextUrl, { method: "GET" });
     const responseText = await biztextResponse.text();
     console.log("📡 Biz Text Solutions raw response:", responseText.substring(0, 500));
 
@@ -91,12 +79,12 @@ serve(async (req: Request) => {
       biztextData = { raw_response: responseText.trim() };
     }
 
-    const transmissionStatus = biztextData?.transmission_status ?? biztextData?.transmissionStatus ?? "";
-    const isSent = transmissionStatus === "SENT";
+    // Check for success — adapt based on actual API response format
+    const isError = !biztextResponse.ok || biztextData?.error || biztextData?.auth === false;
 
-    if (!isSent) {
-      console.error("❌ Biz Text Solutions did not return SENT:", JSON.stringify(biztextData));
-      throw new Error(`Biz Text Solutions API rejected request: ${responseText.substring(0, 300).trim()}`);
+    if (isError) {
+      console.error("❌ Biz Text Solutions error:", JSON.stringify(biztextData));
+      throw new Error(`Biz Text Solutions API error: ${responseText.substring(0, 300).trim()}`);
     }
 
     console.log("✅ Biz Text Solutions success:", JSON.stringify(biztextData));
