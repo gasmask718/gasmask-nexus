@@ -241,6 +241,7 @@ import CommunicationCampaignNew from '@/pages/communication/CommunicationCampaig
 import CommunicationCampaignDetail from '@/pages/communication/CommunicationCampaignDetail';
 import CommunicationCalls from '@/pages/communication/CommunicationCalls';
 import CommunicationSMS from '@/pages/communication/CommunicationSMS';
+import CommunicationSMSDashboard from '@/pages/communication/CommunicationSMSDashboard';
 import CommunicationEmail from '@/pages/communication/CommunicationEmail';
 import CommunicationAIAgents from '@/pages/communication/CommunicationAIAgents';
 import CommunicationNumbers from '@/pages/communication/CommunicationNumbers';
@@ -1446,6 +1447,7 @@ export default function AppRoutes() {
           <Route path="playbooks" element={<PlaybooksManagement />} />
           <Route path="shadow-mode" element={<ShadowModePage />} />
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
+          <Route path="sms-dashboard" element={<CommunicationSMSDashboard />} />
           <Route path="executive-ai" element={<ExecutiveControlRoomPage />} />
         </Route>
 
