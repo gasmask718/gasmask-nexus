@@ -57,7 +57,7 @@ serve(async (req: Request) => {
 
     console.log(`📱 Sending SMS via Biz Text Solutions to ${formattedTo}`);
 
-    // 5. Call Biz Text Solutions API — query string format per their docs
+    // 5. Call Biz Text Solutions API — POST with query string params
     const params = new URLSearchParams({
       to: `+1${formattedTo}`,
       txt: message,
@@ -65,9 +65,9 @@ serve(async (req: Request) => {
     });
     const biztextUrl = `${BIZTEXT_API_BASE}?${params.toString()}`;
 
-    console.log(`📡 Calling: ${BIZTEXT_API_BASE}?to=+1${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
+    console.log(`📡 Calling POST: ${BIZTEXT_API_BASE}?to=+1${formattedTo}&txt=[redacted]&wid=${BIZTEXT_WEBSITE_ID}`);
 
-    const biztextResponse = await fetch(biztextUrl);
+    const biztextResponse = await fetch(biztextUrl, { method: "POST" });
     const responseText = await biztextResponse.text();
     console.log("📡 Biz Text Solutions raw response:", responseText.substring(0, 500));
 
