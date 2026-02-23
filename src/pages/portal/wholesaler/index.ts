@@ -6,3 +6,5 @@ export { default as WholesalerFinance } from './WholesalerFinance';
 export { default as WholesalerSettings } from './WholesalerSettings';
 export { default as WholesalerMessages } from './WholesalerMessages';
 export { default as WholesalerFulfillmentPage } from './WholesalerFulfillment';
+export { default as WholesalerTransactionHistory } from './WholesalerTransactionHistory';
+export { default as WholesalerInventoryWorkflow } from './WholesalerInventoryWorkflow';

@@ -1,4 +1,5 @@
 import { ModuleDiagnostics } from '@/components/modules';
+import { NoteAuditPanel } from '@/components/diagnostics/NoteAuditPanel';
 
 export default function ModuleDiagnosticsPage() {
   return (
@@ -8,6 +9,7 @@ export default function ModuleDiagnosticsPage() {
         <p className="text-muted-foreground mt-1">Dynasty OS Modular Architecture Status</p>
       </div>
       <ModuleDiagnostics />
+      <NoteAuditPanel />
     </div>
   );
 }
