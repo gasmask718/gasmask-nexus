@@ -1,6 +1,9 @@
 import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 export type ExportFormat = 'csv' | 'excel' | 'json';
+
+export const MAX_EXPORT_ROWS = 10000;
 
 interface ExportOptions {
   filename: string;
@@ -13,6 +16,12 @@ export function exportData({ filename, format, data, columns }: ExportOptions) {
   if (!data || data.length === 0) {
     console.warn('No data to export');
     return;
+  }
+
+  // Enforce export row limit
+  if (data.length > MAX_EXPORT_ROWS) {
+    toast.warning(`Export truncated to ${MAX_EXPORT_ROWS.toLocaleString()} rows (${data.length.toLocaleString()} total)`);
+    data = data.slice(0, MAX_EXPORT_ROWS);
   }
 
   // If columns specified, filter and rename data
