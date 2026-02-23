@@ -32,7 +32,7 @@ export function NewMessageModal({ open, onOpenChange, contact, onMessageSent }: 
 
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-sms", {
+      const { data, error } = await supabase.functions.invoke("send-biztext-sms", {
         body: {
           to: contact.phone,
           message: message.trim(),
