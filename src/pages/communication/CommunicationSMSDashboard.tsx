@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -21,6 +22,7 @@ const CommunicationSMSDashboard = () => {
   const [recipient, setRecipient] = useState('');
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("default");
 
   // Fetch sent messages from communication_messages
   const { data: messages, isLoading } = useQuery({
@@ -58,6 +60,7 @@ const CommunicationSMSDashboard = () => {
           to_number: cleanPhone,
           message_body: message.trim(),
           idempotency_key: crypto.randomUUID(),
+          explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           metadata: { business_id: currentBusiness?.id },
         },
       });
@@ -182,7 +185,9 @@ const CommunicationSMSDashboard = () => {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={handleSend} disabled={!canSend}>
+              <div className="flex items-center gap-3">
+                <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} className="min-w-[160px]" />
+                <Button onClick={handleSend} disabled={!canSend}>
                 {isSending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -195,6 +200,7 @@ const CommunicationSMSDashboard = () => {
                   </>
                 )}
               </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

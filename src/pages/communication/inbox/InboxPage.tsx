@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +29,7 @@ export default function InboxPage() {
   const [manualPhone, setManualPhone] = useState("");
   const [manualMessage, setManualMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("default");
 
   const handleSendManual = async () => {
     const digits = manualPhone.replace(/\D/g, "");
@@ -46,6 +48,7 @@ export default function InboxPage() {
           to_number: manualPhone,
           message_body: manualMessage.trim(),
           idempotency_key: crypto.randomUUID(),
+          explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
           metadata: { contact_name: "Manual" },
         },
       });
@@ -177,6 +180,7 @@ export default function InboxPage() {
               />
               <p className="text-xs text-muted-foreground text-right">{manualMessage.length} / 160</p>
             </div>
+            <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowNewMessage(false)}>Cancel</Button>
               <Button onClick={handleSendManual} disabled={isSending || !manualMessage.trim()}>
