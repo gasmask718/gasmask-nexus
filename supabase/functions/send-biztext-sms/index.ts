@@ -48,14 +48,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`📱 Sending SMS via BizText to ${formattedTo}`);
 
-    // Call BizText API
-    const biztextUrl = "https://my.biztextsolutions.com/api/v1/sms/send";
+    // Call BizText (textit.biz) API
+    const biztextUrl = "https://api.textit.biz/sms/send";
 
     const biztextResponse = await fetch(biztextUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${BIZTEXT_API_KEY}`,
+        "X-API-VERSION": "v1",
+        Authorization: `Basic ${BIZTEXT_API_KEY}`,
       },
       body: JSON.stringify({
         to: formattedTo,
