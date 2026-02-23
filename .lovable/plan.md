@@ -1,44 +1,34 @@
 
 
-# Fix Message Storage and History on /communication/inbox
+# Fix BizText "Err:Unauthenticated_User" Error
 
-## Problem Summary
+## Root Cause
 
-Messages sent from the inbox are **not being saved to the database**, so message history appears empty. Three distinct bugs were found:
+The BizText API is rejecting the credentials stored in your secrets. `Err:Unauthenticated_User` means the `BIZTEXT_ID` (your phone number) or `BIZTEXT_PW` (your password) is incorrect.
 
-## Root Causes
+Additionally, the currently deployed Edge Function does not have the latest error-handling code, so it returns `success: true` even when BizText rejects the request.
 
-### Bug 1: Invalid channel value "biztext"
-The Edge Function inserts `channel: "biztext"` into `communication_messages`, but the table has a CHECK constraint that only allows: `sms`, `call`, `ai-call`, `ai-sms`, `email`, `whatsapp`. The insert is rejected silently.
+## Fix (2 Steps)
 
-**Fix:** Change `channel: "biztext"` to `channel: "sms"` in the Edge Function insert (line 98).
+### Step 1: Update Your BizText Credentials
 
-### Bug 2: Missing required "summary" field in communication_logs
-The `communication_logs` insert omits the `summary` column, which is NOT NULL. The insert fails.
+You will be prompted to re-enter:
 
-**Fix:** Add `summary: "Outbound SMS to {phone}"` to the communication_logs insert (line 118-125).
+- **BIZTEXT_ID** -- Your BizText account phone number, digits only (no "+" sign, no dashes). Example: `18776818621`
+- **BIZTEXT_PW** -- Your BizText account password (the one you use to log into textit.biz)
 
-### Bug 3: BizText errors treated as "delivered"
-The response `"Err:Unauthenticated_User"` does not contain the word "fail", so the code marks it as "delivered". This means failed sends appear successful.
+You can verify your credentials by logging into [textit.biz](https://textit.biz) with them first.
 
-**Fix:** Expand the error detection to also check for `"err"` in the response text (case-insensitive).
+### Step 2: Redeploy the Edge Function
 
-## Changes
+The current deployed version is stale and does not include the error-handling fix from the last edit. Redeploying `send-biztext-sms` will ensure:
 
-### File: `supabase/functions/send-biztext-sms/index.ts`
+- BizText `Err:` responses correctly throw a 500 error (instead of returning `success: true`)
+- The frontend shows a proper error toast when credentials fail
 
-| Line | Current | Fixed |
-|---|---|---|
-| 86 | `responseText.toLowerCase().includes("fail")` | `responseText.toLowerCase().includes("fail") \|\| responseText.toLowerCase().startsWith("err")` |
-| 98 | `channel: "biztext"` | `channel: "sms"` |
-| 119 | `channel: "biztext"` | `channel: "sms"` |
-| 118-125 | No `summary` field | Add `summary: "Outbound SMS to " + formattedTo` |
+### Files Changed
 
-After editing, the function will be re-deployed.
-
-## Outcome
-- Sent messages will be correctly saved to `communication_messages` with `channel: "sms"`
-- Communication logs will include the required summary
-- BizText error responses (like `Err:Unauthenticated_User`) will be correctly flagged as "failed"
-- The conversation panel will fetch and display message history as expected (the query already works -- it was just finding no rows because inserts were failing)
+| File | Action |
+|---|---|
+| `supabase/functions/send-biztext-sms/index.ts` | Redeploy only (no code changes needed -- file already has the fix) |
 
