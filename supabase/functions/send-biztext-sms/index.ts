@@ -31,15 +31,16 @@ serve(async (req: Request) => {
       throw new Error("Missing required fields: to and message");
     }
 
-    // 3. Get Environment Variables
-    const BIZTEXT_ID = Deno.env.get("BIZTEXT_ID");
-    const BIZTEXT_PW = Deno.env.get("BIZTEXT_PW");
+    // 3. Get Environment Variables & TRIM whitespace (Crucial for auth errors)
+    const BIZTEXT_ID = Deno.env.get("BIZTEXT_ID")?.trim();
+    const BIZTEXT_PW = Deno.env.get("BIZTEXT_PW")?.trim();
+
     if (!BIZTEXT_ID || !BIZTEXT_PW) {
       throw new Error("Missing BIZTEXT_ID or BIZTEXT_PW in Edge Function secrets");
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")?.trim();
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")?.trim();
     if (!supabaseUrl || !supabaseKey) {
       throw new Error("Missing Supabase credentials in Edge Function secrets");
     }
@@ -69,6 +70,12 @@ serve(async (req: Request) => {
     const responseText = await biztextResponse.text();
     console.log("📡 BizText raw response:", responseText.substring(0, 500));
 
+    // 6. Check for Biztext specific text errors (Biztext often returns 200 OK but with "Err:" in the text)
+    if (responseText.toLowerCase().includes("err:")) {
+      console.error("❌ BizText Auth/Format Error:", responseText);
+      throw new Error(`BizText API rejected request: ${responseText.trim()}`);
+    }
+
     if (!biztextResponse.ok) {
       console.error("❌ BizText error (HTTP " + biztextResponse.status + "):", responseText);
       throw new Error(`BizText API returned HTTP ${biztextResponse.status}: ${responseText.substring(0, 200)}`);
@@ -86,7 +93,7 @@ serve(async (req: Request) => {
     const lowerResponse = responseText.toLowerCase();
     const dbStatus = lowerResponse.includes("fail") || lowerResponse.startsWith("err") ? "failed" : "delivered";
 
-    // 6. Log to database
+    // 7. Log to database
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { data: msgData, error: msgError } = await supabase
@@ -130,7 +137,7 @@ serve(async (req: Request) => {
       console.error("❌ Failed to insert into communication_logs:", logError);
     }
 
-    // 7. Return Success Response
+    // 8. Return Success Response
     return new Response(
       JSON.stringify({
         success: true,
@@ -146,7 +153,7 @@ serve(async (req: Request) => {
   } catch (error: any) {
     console.error("❌ Error in send-biztext-sms function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+      status: 500, // Returning 500 so the frontend knows it actually failed to send
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   }
