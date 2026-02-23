@@ -83,7 +83,8 @@ serve(async (req: Request) => {
     }
 
     console.log("✅ BizText success:", JSON.stringify(biztextData));
-    const dbStatus = responseText.toLowerCase().includes("fail") ? "failed" : "delivered";
+    const lowerResponse = responseText.toLowerCase();
+    const dbStatus = lowerResponse.includes("fail") || lowerResponse.startsWith("err") ? "failed" : "delivered";
 
     // 6. Log to database
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -95,7 +96,7 @@ serve(async (req: Request) => {
         store_id: store_id || null,
         contact_id: contact_id || null,
         direction: "outbound",
-        channel: "biztext",
+        channel: "sms",
         content: message,
         phone_number: formattedTo,
         status: dbStatus,
@@ -116,10 +117,11 @@ serve(async (req: Request) => {
     }
 
     const { error: logError } = await supabase.from("communication_logs").insert({
-      channel: "biztext",
+      channel: "sms",
       direction: "outbound",
       recipient_phone: formattedTo,
       message_content: message,
+      summary: `Outbound SMS to ${formattedTo}`,
       delivery_status: dbStatus,
       performed_by: "va",
     });
