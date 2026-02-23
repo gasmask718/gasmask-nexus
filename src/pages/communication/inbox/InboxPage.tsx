@@ -41,11 +41,12 @@ export default function InboxPage() {
     }
     setIsSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-biztext-sms", {
+      const { data, error } = await supabase.functions.invoke("send-sms", {
         body: {
-          to: manualPhone,
-          message: manualMessage.trim(),
-          contact_name: "Manual",
+          to_number: manualPhone,
+          message_body: manualMessage.trim(),
+          idempotency_key: crypto.randomUUID(),
+          metadata: { contact_name: "Manual" },
         },
       });
       if (error) throw error;

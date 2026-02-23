@@ -109,15 +109,18 @@ export function InternalMessageModal({
       
       const { data, error } = await supabase.functions.invoke("send-sms", {
         body: {
-          to: destinationPhone,
-          message: message.trim(),
-          business_id: selectedBusinessId || null,
+          to_number: destinationPhone,
+          message_body: message.trim(),
+          idempotency_key: crypto.randomUUID(),
           store_id: storeId || null,
-          contact_id: entityId || null,
-          contact_name: entityName || null,
-          from_number: selectedSenderNumber,
-          initiated_by: user?.id,
-          source_ui: "internal_message_modal",
+          metadata: {
+            business_id: selectedBusinessId || null,
+            contact_id: entityId || null,
+            contact_name: entityName || null,
+            from_number: selectedSenderNumber,
+            initiated_by: user?.id,
+            source_ui: "internal_message_modal",
+          },
         },
       });
 

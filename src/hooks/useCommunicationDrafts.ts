@@ -249,15 +249,18 @@ export function useCommunicationDrafts(options?: {
       if (draft.channel === "sms" && draft.recipient_phone) {
         const { data: sendResult, error: sendError } = await supabase.functions.invoke("send-sms", {
           body: {
-            to: draft.recipient_phone,
-            message: draft.body,
-            business_id: draft.business_id,
+            to_number: draft.recipient_phone,
+            message_body: draft.body,
+            idempotency_key: crypto.randomUUID(),
             store_id: draft.store_id,
-            contact_id: draft.entity_id,
-            contact_name: draft.recipient_name,
-            from_number: draft.from_number,
-            initiated_by: user.id,
-            source_ui: "draft_approval",
+            metadata: {
+              business_id: draft.business_id,
+              contact_id: draft.entity_id,
+              contact_name: draft.recipient_name,
+              from_number: draft.from_number,
+              initiated_by: user.id,
+              source_ui: "draft_approval",
+            },
           },
         });
 

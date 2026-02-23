@@ -123,10 +123,11 @@ export function useAmbassadorThreads() {
       // Call the send-sms edge function
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
-          to: input.phone,
-          message: input.content,
-          contact_id: input.storeId,
-          contact_name: input.contactName,
+          to_number: input.phone,
+          message_body: input.content,
+          idempotency_key: crypto.randomUUID(),
+          store_id: input.storeId,
+          metadata: { contact_name: input.contactName },
         },
       });
 
