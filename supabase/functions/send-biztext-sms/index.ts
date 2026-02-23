@@ -58,7 +58,7 @@ serve(async (req: Request) => {
     console.log(`📱 Sending SMS via BizText to ${formattedTo}`);
 
     // 5. Call BizText API
-    const biztextUrl = "https://www.biztextsolutions.com/api/conversations/new";
+    const biztextUrl = "https://api.textit.biz/";
     const biztextResponse = await fetch(biztextUrl, {
       method: "POST",
       headers: {
