@@ -86,6 +86,7 @@ interface SendRequest {
   store_id?: string;
   campaign_id?: string;
   explicit_provider?: "twilio" | "biztext";
+  skip_cooldown?: boolean;
   metadata?: Record<string, any>;
 }
 
@@ -121,7 +122,7 @@ serve(async (req: Request) => {
   try {
     // ── 1. Parse & Validate ──────────────────────────────────────────
     const body: SendRequest = await req.json();
-    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, metadata } = body;
+    const { to_number, message_body, idempotency_key, store_id, campaign_id, explicit_provider, skip_cooldown, metadata } = body;
 
     if (!to_number || !message_body || !idempotency_key) {
       return respond(400, { error: "Missing required fields: to_number, message_body, idempotency_key" });
@@ -200,21 +201,23 @@ serve(async (req: Request) => {
       return respond(429, { error: `Daily send limit of ${dailyLimit} reached`, status: "rate_limited" });
     }
 
-    // ── 6. Per-Number Cooldown ───────────────────────────────────────
-    const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
-    const { data: recentToNumber } = await supabase
-      .from("outbound_messages")
-      .select("id")
-      .eq("to_number", formattedTo)
-      .eq("status", "sent")
-      .gte("created_at", cooldownCutoff)
-      .limit(1);
+    // ── 6. Per-Number Cooldown (skipped for manual/conversation sends) ─
+    if (!skip_cooldown) {
+      const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString();
+      const { data: recentToNumber } = await supabase
+        .from("outbound_messages")
+        .select("id")
+        .eq("to_number", formattedTo)
+        .eq("status", "sent")
+        .gte("created_at", cooldownCutoff)
+        .limit(1);
 
-    if (recentToNumber && recentToNumber.length > 0) {
-      return respond(429, {
-        error: `Cooldown active: last message to ${formattedTo} within ${cooldownMinutes} minutes`,
-        status: "cooldown",
-      });
+      if (recentToNumber && recentToNumber.length > 0) {
+        return respond(429, {
+          error: `Cooldown active: last message to ${formattedTo} within ${cooldownMinutes} minutes`,
+          status: "cooldown",
+        });
+      }
     }
 
     // ── 7. Message Hash (Duplicate content detection) ────────────────

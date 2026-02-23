@@ -49,6 +49,7 @@ export default function InboxPage() {
           message_body: manualMessage.trim(),
           idempotency_key: crypto.randomUUID(),
           explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
+          skip_cooldown: true,
           metadata: { contact_name: "Manual" },
         },
       });

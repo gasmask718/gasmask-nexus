@@ -40,6 +40,7 @@ export function NewMessageModal({ open, onOpenChange, contact, onMessageSent }: 
           message_body: message.trim(),
           idempotency_key: crypto.randomUUID(),
           explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
+          skip_cooldown: true,
           metadata: { contact_id: contact.id, contact_name: contact.name },
         },
       });
