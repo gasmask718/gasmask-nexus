@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,34 +14,66 @@ export default function VoicePreviewButton({
 }: VoicePreviewButtonProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const stopPlayback = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsPlaying(false);
+  };
 
   const handlePreview = async () => {
+    if (isPlaying) {
+      stopPlayback();
+      return;
+    }
+
     if (!voiceModelId) {
       toast.error('No voice model configured');
       return;
     }
 
-    if (isPlaying) {
-      // Stop playing
-      setIsPlaying(false);
-      return;
-    }
-
     setIsLoading(true);
-    
-    // Mock preview - will integrate with ElevenLabs API later
-    toast.info('Voice preview will be available once API is connected');
-    
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsPlaying(true);
-      
-      // Simulate playback duration
-      setTimeout(() => {
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-tts`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ text: sampleText, voice_id: voiceModelId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`TTS request failed: ${response.status}`);
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
         setIsPlaying(false);
-      }, 3000);
-    }, 500);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      await audio.play();
+      setIsPlaying(true);
+    } catch (err) {
+      console.error('Voice preview error:', err);
+      toast.error('Failed to generate voice preview');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
