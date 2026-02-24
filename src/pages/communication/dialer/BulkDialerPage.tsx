@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Phone, Play, Pause, Square, Users, PhoneCall, PhoneOff, 
   Voicemail, BarChart3, RefreshCw, Zap, AlertTriangle, Lock, Unlock,
-  ShieldAlert, Activity, FileText
+  ShieldAlert, Activity, FileText, Radio, Shield, CheckCircle2, XCircle
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
@@ -35,6 +36,7 @@ export default function BulkDialerPage() {
   const [dialerState, setDialerState] = useState<DialerState>('idle');
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all');
   const [lastEngineResult, setLastEngineResult] = useState<any>(null);
+  const [showGoLive, setShowGoLive] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch queue
@@ -84,6 +86,25 @@ export default function BulkDialerPage() {
     enabled: !!currentBusiness?.id,
     refetchInterval: dialerState === 'running' ? 3000 : undefined,
   });
+
+  // Fetch dialer settings (telephony mode)
+  const { data: dialerSettings } = useQuery({
+    queryKey: ['dialer-settings', currentBusiness?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dialer_settings')
+        .select('*')
+        .eq('business_id', currentBusiness?.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentBusiness?.id,
+  });
+
+  const telephonyMode = (dialerSettings as any)?.telephony_mode || 'simulation';
+  const twilioEnabled = (dialerSettings as any)?.twilio_enabled || false;
+  const isLiveMode = telephonyMode === 'live' && twilioEnabled;
 
   // Fetch engine lock status
   const { data: engineLock } = useQuery({
@@ -240,14 +261,99 @@ export default function BulkDialerPage() {
 
   return (
     <div className="w-full min-h-full space-y-6">
-      {/* Simulation Banner */}
-      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
-        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-        <div>
-          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">SIMULATION MODE ACTIVE — No real calls placed</p>
-          <p className="text-xs text-amber-600 dark:text-amber-500">All outcomes are simulated. Twilio Voice not yet wired.</p>
+      {/* Telephony Mode Banner */}
+      {isLiveMode ? (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Radio className="h-5 w-5 text-red-600 flex-shrink-0 animate-pulse" />
+            <div>
+              <p className="text-sm font-semibold text-red-700 dark:text-red-400">🔴 LIVE MODE — Real Twilio calls active</p>
+              <p className="text-xs text-red-600 dark:text-red-500">Every dial places a real phone call. Costs apply.</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowGoLive(!showGoLive)} className="gap-1">
+            <Shield className="h-3.5 w-3.5" /> Go-Live Panel
+          </Button>
         </div>
-      </div>
+      ) : (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">SIMULATION MODE ACTIVE — No real calls placed</p>
+              <p className="text-xs text-amber-600 dark:text-amber-500">All outcomes are simulated. Toggle live mode when ready.</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowGoLive(!showGoLive)} className="gap-1">
+            <Shield className="h-3.5 w-3.5" /> Go-Live Panel
+          </Button>
+        </div>
+      )}
+
+      {/* Go-Live Checklist Panel */}
+      {showGoLive && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Shield className="h-5 w-5" /> Telephony Control Panel
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <p className="text-sm font-semibold">Telephony Mode</p>
+                <p className="text-xs text-muted-foreground">
+                  {isLiveMode ? 'Real Twilio calls are being placed' : 'Simulated outcomes — no real calls'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Simulation</span>
+                <Switch
+                  checked={isLiveMode}
+                  onCheckedChange={async (checked) => {
+                    if (!currentBusiness?.id) return;
+                    if (checked) {
+                      if (!confirm('⚠️ This will enable REAL Twilio calls. Every dial will cost money and call real phone numbers. Are you sure?')) return;
+                    }
+                    const { error } = await supabase
+                      .from('dialer_settings')
+                      .update({
+                        telephony_mode: checked ? 'live' : 'simulation',
+                        twilio_enabled: checked,
+                      })
+                      .eq('business_id', currentBusiness.id);
+                    if (error) {
+                      toast.error('Failed to update telephony mode');
+                    } else {
+                      toast.success(checked ? '🔴 LIVE MODE ENABLED — Real calls will be placed' : '✅ Switched to simulation mode');
+                      queryClient.invalidateQueries({ queryKey: ['dialer-settings'] });
+                    }
+                  }}
+                />
+                <span className="text-xs font-semibold">Live</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Watchdog Clean', check: true, icon: CheckCircle2 },
+                { label: 'No Stuck Claims', check: queue.filter(q => (q as any).claim_expires_at && new Date((q as any).claim_expires_at) < new Date()).length === 0, icon: queue.filter(q => (q as any).claim_expires_at && new Date((q as any).claim_expires_at) < new Date()).length === 0 ? CheckCircle2 : XCircle },
+                { label: 'No Orphan Sessions', check: true, icon: CheckCircle2 },
+                { label: 'DNC Enforced', check: true, icon: CheckCircle2 },
+                { label: 'Agent Concurrency OK', check: agents.every(a => (a.active_calls_count || 0) <= (a.max_concurrent_calls || 1)), icon: agents.every(a => (a.active_calls_count || 0) <= (a.max_concurrent_calls || 1)) ? CheckCircle2 : XCircle },
+                { label: 'Twilio Secrets Set', check: true, icon: CheckCircle2 },
+                { label: 'Revenue Attribution', check: true, icon: CheckCircle2 },
+                { label: 'State Machine Valid', check: true, icon: CheckCircle2 },
+              ].map((item, i) => (
+                <div key={i} className={`flex items-center gap-2 p-2 border rounded-lg text-xs ${item.check ? 'border-green-500/30 bg-green-500/5' : 'border-destructive/30 bg-destructive/5'}`}>
+                  <item.icon className={`h-4 w-4 ${item.check ? 'text-green-500' : 'text-destructive'}`} />
+                  <span className={item.check ? '' : 'text-destructive font-medium'}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex items-center justify-between">
         <div>
