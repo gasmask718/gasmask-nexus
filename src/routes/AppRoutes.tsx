@@ -227,6 +227,7 @@ import LiveCallPanel from '@/pages/communication/dialer/LiveCallPanel';
 import DialerSettingsPage from '@/pages/communication/dialer/DialerSettingsPage';
 import RepPerformancePage from '@/pages/communication/dialer/RepPerformancePage';
 import CampaignIntelligencePage from '@/pages/communication/dialer/CampaignIntelligencePage';
+import DialerCostDashboard from '@/pages/communication/dialer/DialerCostDashboard';
 import DialerHealthPage from '@/pages/communication/dialer/DialerHealthPage';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
@@ -1462,6 +1463,7 @@ export default function AppRoutes() {
           <Route path="dialer-health" element={<DialerHealthPage />} />
           <Route path="rep-performance" element={<RepPerformancePage />} />
           <Route path="campaign-intelligence" element={<CampaignIntelligencePage />} />
+          <Route path="cost-dashboard" element={<DialerCostDashboard />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />

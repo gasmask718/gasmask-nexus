@@ -168,7 +168,7 @@ Deno.serve(async (req) => {
         // Call ended — update session duration if exists
         const { data: session } = await supabase
           .from("live_call_sessions")
-          .select("id, ended_at")
+          .select("id, ended_at, rep_user_id, campaign_id, store_id")
           .eq("twilio_call_sid", callSid)
           .is("ended_at", null)
           .maybeSingle();
@@ -180,8 +180,75 @@ Deno.serve(async (req) => {
           }).eq("id", session.id);
         }
 
-        // If queue item not yet completed (no disposition yet), leave it for disposition flow
-        // The rep will dispose via LiveCallPanel
+        // ── Cost tracking ──
+        const billableMinutes = Math.ceil(callDuration / 60);
+        const ratePerMinute = 0.0085; // Twilio US local baseline
+        const estimatedCost = billableMinutes * ratePerMinute;
+
+        await supabase.from("call_cost_events").insert({
+          business_id: queueItem.business_id,
+          call_sid: callSid,
+          queue_item_id: queueItem.id,
+          campaign_id: queueItem.campaign_id,
+          rep_user_id: session?.rep_user_id || null,
+          store_id: queueItem.store_id,
+          duration_seconds: callDuration,
+          billable_minutes: billableMinutes,
+          estimated_cost: estimatedCost,
+          rate_per_minute: ratePerMinute,
+        });
+
+        // ── Update store answer profile ──
+        if (queueItem.store_id) {
+          const nowDate = new Date();
+          const hour = nowDate.getHours();
+          const day = nowDate.getDay();
+
+          const { data: profile } = await supabase
+            .from("store_answer_profile")
+            .select("*")
+            .eq("store_id", queueItem.store_id)
+            .maybeSingle();
+
+          if (profile) {
+            const hourDist = (profile.hour_distribution || {}) as Record<string, number>;
+            const dayDist = (profile.day_distribution || {}) as Record<string, number>;
+            hourDist[hour.toString()] = (hourDist[hour.toString()] || 0) + 1;
+            dayDist[day.toString()] = (dayDist[day.toString()] || 0) + 1;
+
+            const newAnswers = (profile.total_answers || 0) + (callDuration > 0 ? 1 : 0);
+            const newAttempts = (profile.total_attempts || 0) + 1;
+
+            await supabase.from("store_answer_profile").update({
+              total_attempts: newAttempts,
+              total_answers: newAnswers,
+              answer_rate: newAttempts > 0 ? newAnswers / newAttempts : 0,
+              hour_distribution: hourDist,
+              day_distribution: dayDist,
+              last_attempt_at: nowDate.toISOString(),
+              ...(callDuration > 0 ? { last_answer_at: nowDate.toISOString() } : {}),
+              updated_at: nowDate.toISOString(),
+            }).eq("store_id", queueItem.store_id);
+          } else {
+            const hourDist: Record<string, number> = {};
+            const dayDist: Record<string, number> = {};
+            hourDist[hour.toString()] = 1;
+            dayDist[day.toString()] = 1;
+
+            await supabase.from("store_answer_profile").insert({
+              store_id: queueItem.store_id,
+              business_id: queueItem.business_id,
+              total_attempts: 1,
+              total_answers: callDuration > 0 ? 1 : 0,
+              answer_rate: callDuration > 0 ? 1 : 0,
+              hour_distribution: hourDist,
+              day_distribution: dayDist,
+              last_attempt_at: nowDate.toISOString(),
+              ...(callDuration > 0 ? { last_answer_at: nowDate.toISOString() } : {}),
+            });
+          }
+        }
+
         break;
       }
 
