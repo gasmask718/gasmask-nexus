@@ -12354,6 +12354,13 @@ export type Database = {
             referencedColumns: ["campaign_id"]
           },
           {
+            foreignKeyName: "call_revenue_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "v_campaign_optimization"
+            referencedColumns: ["campaign_id"]
+          },
+          {
             foreignKeyName: "call_revenue_events_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -20549,8 +20556,10 @@ export type Database = {
       dialer_agent_availability: {
         Row: {
           active_calls_count: number | null
+          base_max_concurrent: number | null
           business_id: string | null
           created_at: string
+          efficiency_score: number | null
           id: string
           last_call_ended_at: string | null
           last_status_change: string | null
@@ -20563,8 +20572,10 @@ export type Database = {
         }
         Insert: {
           active_calls_count?: number | null
+          base_max_concurrent?: number | null
           business_id?: string | null
           created_at?: string
+          efficiency_score?: number | null
           id?: string
           last_call_ended_at?: string | null
           last_status_change?: string | null
@@ -20577,8 +20588,10 @@ export type Database = {
         }
         Update: {
           active_calls_count?: number | null
+          base_max_concurrent?: number | null
           business_id?: string | null
           created_at?: string
+          efficiency_score?: number | null
           id?: string
           last_call_ended_at?: string | null
           last_status_change?: string | null
@@ -20602,7 +20615,10 @@ export type Database = {
       dialer_campaigns: {
         Row: {
           answered_calls: number | null
+          auto_pause_reason: string | null
+          auto_paused: boolean | null
           business_id: string
+          campaign_weight: number | null
           completed_calls: number | null
           created_at: string
           description: string | null
@@ -20620,7 +20636,10 @@ export type Database = {
         }
         Insert: {
           answered_calls?: number | null
+          auto_pause_reason?: string | null
+          auto_paused?: boolean | null
           business_id: string
+          campaign_weight?: number | null
           completed_calls?: number | null
           created_at?: string
           description?: string | null
@@ -20638,7 +20657,10 @@ export type Database = {
         }
         Update: {
           answered_calls?: number | null
+          auto_pause_reason?: string | null
+          auto_paused?: boolean | null
           business_id?: string
+          campaign_weight?: number | null
           completed_calls?: number | null
           created_at?: string
           description?: string | null
@@ -20955,6 +20977,7 @@ export type Database = {
           ai_prescreen_enabled: boolean | null
           ai_voicemail_script: string | null
           amd_sensitivity: string | null
+          auto_profit_protection: boolean | null
           business_hours_end: string | null
           business_hours_end_min: number | null
           business_hours_start: string | null
@@ -20970,19 +20993,23 @@ export type Database = {
           max_calls_per_minute: number | null
           max_concurrent_dials: number | null
           max_simultaneous_dials: number | null
+          negative_profit_days_to_pause: number | null
           predictive_multiplier: number | null
+          profit_throttle_threshold: number | null
           retry_backoff_minutes: number[] | null
           retry_delay_minutes: number | null
           retry_max_days: number | null
           telephony_mode: string | null
           twilio_enabled: boolean | null
           updated_at: string
+          use_dynamic_connect_rate: boolean | null
         }
         Insert: {
           after_hours_behavior?: string | null
           ai_prescreen_enabled?: boolean | null
           ai_voicemail_script?: string | null
           amd_sensitivity?: string | null
+          auto_profit_protection?: boolean | null
           business_hours_end?: string | null
           business_hours_end_min?: number | null
           business_hours_start?: string | null
@@ -20998,19 +21025,23 @@ export type Database = {
           max_calls_per_minute?: number | null
           max_concurrent_dials?: number | null
           max_simultaneous_dials?: number | null
+          negative_profit_days_to_pause?: number | null
           predictive_multiplier?: number | null
+          profit_throttle_threshold?: number | null
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
           retry_max_days?: number | null
           telephony_mode?: string | null
           twilio_enabled?: boolean | null
           updated_at?: string
+          use_dynamic_connect_rate?: boolean | null
         }
         Update: {
           after_hours_behavior?: string | null
           ai_prescreen_enabled?: boolean | null
           ai_voicemail_script?: string | null
           amd_sensitivity?: string | null
+          auto_profit_protection?: boolean | null
           business_hours_end?: string | null
           business_hours_end_min?: number | null
           business_hours_start?: string | null
@@ -21026,13 +21057,16 @@ export type Database = {
           max_calls_per_minute?: number | null
           max_concurrent_dials?: number | null
           max_simultaneous_dials?: number | null
+          negative_profit_days_to_pause?: number | null
           predictive_multiplier?: number | null
+          profit_throttle_threshold?: number | null
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
           retry_max_days?: number | null
           telephony_mode?: string | null
           twilio_enabled?: boolean | null
           updated_at?: string
+          use_dynamic_connect_rate?: boolean | null
         }
         Relationships: [
           {
@@ -29923,6 +29957,13 @@ export type Database = {
             referencedColumns: ["campaign_id"]
           },
           {
+            foreignKeyName: "live_call_sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "v_campaign_optimization"
+            referencedColumns: ["campaign_id"]
+          },
+          {
             foreignKeyName: "live_call_sessions_disposition_code_id_fkey"
             columns: ["disposition_code_id"]
             isOneToOne: false
@@ -33828,6 +33869,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "v_campaign_margin"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "outbound_call_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "v_campaign_optimization"
             referencedColumns: ["campaign_id"]
           },
           {
@@ -45089,6 +45137,8 @@ export type Database = {
           id: string
           last_answer_at: string | null
           last_attempt_at: string | null
+          lifetime_revenue: number | null
+          priority_score: number | null
           store_id: string | null
           total_answers: number | null
           total_attempts: number | null
@@ -45104,6 +45154,8 @@ export type Database = {
           id?: string
           last_answer_at?: string | null
           last_attempt_at?: string | null
+          lifetime_revenue?: number | null
+          priority_score?: number | null
           store_id?: string | null
           total_answers?: number | null
           total_attempts?: number | null
@@ -45119,6 +45171,8 @@ export type Database = {
           id?: string
           last_answer_at?: string | null
           last_attempt_at?: string | null
+          lifetime_revenue?: number | null
+          priority_score?: number | null
           store_id?: string | null
           total_answers?: number | null
           total_attempts?: number | null
@@ -57839,6 +57893,33 @@ export type Database = {
           },
         ]
       }
+      v_campaign_optimization: {
+        Row: {
+          auto_pause_reason: string | null
+          auto_paused: boolean | null
+          business_id: string | null
+          campaign_id: string | null
+          campaign_name: string | null
+          campaign_weight: number | null
+          margin_pct: number | null
+          net_profit: number | null
+          profit_per_dial: number | null
+          revenue: number | null
+          revenue_per_dial: number | null
+          status: string | null
+          total_calls: number | null
+          total_cost: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_commissions_payable: {
         Row: {
           ambassador_id: string | null
@@ -59352,6 +59433,44 @@ export type Database = {
           },
         ]
       }
+      v_store_priority_ranking: {
+        Row: {
+          answer_rate: number | null
+          business_id: string | null
+          do_not_call: boolean | null
+          last_answer_at: string | null
+          last_attempt_at: string | null
+          lifetime_revenue: number | null
+          priority_score: number | null
+          store_id: string | null
+          store_name: string | null
+          total_answers: number | null
+          total_attempts: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_answer_profile_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_answer_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_answer_profile_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       v_store_tube_intel_summary: {
         Row: {
           method_count: number | null
@@ -60224,6 +60343,14 @@ export type Database = {
         Returns: number
       }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
+      calculate_rep_efficiency: {
+        Args: { p_business_id: string }
+        Returns: number
+      }
+      calculate_store_priority: {
+        Args: { p_business_id: string }
+        Returns: number
+      }
       can_access_brand: {
         Args: { _brand: string; _user_id: string }
         Returns: boolean
@@ -60282,8 +60409,10 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: {
           active_calls_count: number | null
+          base_max_concurrent: number | null
           business_id: string | null
           created_at: string
+          efficiency_score: number | null
           id: string
           last_call_ended_at: string | null
           last_status_change: string | null
@@ -60778,6 +60907,10 @@ export type Database = {
       get_payout_statement: { Args: { p_batch_id: string }; Returns: Json }
       get_phase5_mode: { Args: never; Returns: Json }
       get_portal_queue_health: { Args: never; Returns: Json }
+      get_rolling_connect_rate: {
+        Args: { p_business_id: string; p_window?: number }
+        Returns: number
+      }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_assigned_stores: {
         Args: { _user_id: string }
