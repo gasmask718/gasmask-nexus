@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@elevenlabs/react": "^0.14.0",
+    "@elevenlabs/react": "^0.14.1",
     "@hookform/resolvers": "^3.10.0",
     "@lovable.dev/cloud-auth-js": "^0.0.2",
     "@playwright/test": "^1.57.0",
