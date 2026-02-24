@@ -225,6 +225,8 @@ import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
 import BulkDialerPage from '@/pages/communication/dialer/BulkDialerPage';
 import LiveCallPanel from '@/pages/communication/dialer/LiveCallPanel';
 import DialerSettingsPage from '@/pages/communication/dialer/DialerSettingsPage';
+import RepPerformancePage from '@/pages/communication/dialer/RepPerformancePage';
+import CampaignIntelligencePage from '@/pages/communication/dialer/CampaignIntelligencePage';
 import DialerHealthPage from '@/pages/communication/dialer/DialerHealthPage';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
@@ -1458,6 +1460,8 @@ export default function AppRoutes() {
           <Route path="live-panel" element={<LiveCallPanel />} />
           <Route path="dialer-settings" element={<DialerSettingsPage />} />
           <Route path="dialer-health" element={<DialerHealthPage />} />
+          <Route path="rep-performance" element={<RepPerformancePage />} />
+          <Route path="campaign-intelligence" element={<CampaignIntelligencePage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />

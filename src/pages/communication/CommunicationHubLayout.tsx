@@ -56,6 +56,8 @@ const callSystemSettingsItems = [
   { path: "call-diagnostics", label: "Diagnostics & Go-Live", icon: Activity, adminOnly: true, highlight: true },
   { path: "dialer-settings", label: "Dialer Settings", icon: Settings, adminOnly: true, highlight: true },
   { path: "dialer-health", label: "Dialer Health", icon: BarChart3, adminOnly: true },
+  { path: "rep-performance", label: "Rep Performance", icon: Users, adminOnly: true, highlight: true },
+  { path: "campaign-intelligence", label: "Campaign Intelligence", icon: DollarSign, adminOnly: true, highlight: true },
   { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
   { path: "business-hours", label: "Business Hours", icon: Clock, adminOnly: true },
   { path: "after-hours-routing", label: "After-Hours Routing", icon: Moon, adminOnly: true },
