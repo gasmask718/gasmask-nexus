@@ -171,7 +171,7 @@ export default function BulkDialerPage() {
     return () => { supabase.removeChannel(channel); };
   }, [currentBusiness?.id, queryClient]);
 
-  // Watchdog recovery
+  // Watchdog recovery (comprehensive: expired claims, stuck, crashed, DNC)
   const handleWatchdog = async () => {
     if (!currentBusiness?.id) return;
     try {
@@ -179,13 +179,20 @@ export default function BulkDialerPage() {
         body: { business_id: currentBusiness.id },
       });
       if (error) throw error;
-      const recovered = (data?.recovered_dialing || 0) + (data?.recovered_answered || 0);
-      if (recovered > 0) {
-        toast.success(`Watchdog recovered ${recovered} stuck calls`);
+      const total = data?.total_recovered || 0;
+      if (total > 0) {
+        const parts: string[] = [];
+        if (data?.expired_claims > 0) parts.push(`${data.expired_claims} expired claims`);
+        if (data?.stuck_dialing > 0) parts.push(`${data.stuck_dialing} stuck dialing`);
+        if (data?.stuck_answered > 0) parts.push(`${data.stuck_answered} stuck answered`);
+        if (data?.crashed_sessions > 0) parts.push(`${data.crashed_sessions} crashed sessions`);
+        if (data?.dnc_blocked > 0) parts.push(`${data.dnc_blocked} DNC blocked`);
+        toast.success(`Watchdog recovered ${total}: ${parts.join(', ')}`);
       } else {
-        toast.info('No stuck calls found');
+        toast.info('No stuck calls found — system healthy');
       }
       queryClient.invalidateQueries({ queryKey: ['outbound-call-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['dialer-agents'] });
     } catch (err: any) {
       toast.error(`Watchdog failed: ${err.message}`);
     }
@@ -358,7 +365,9 @@ export default function BulkDialerPage() {
               <p className="text-xs text-muted-foreground">{totalProcessed} of {queue.length} processed ({progressPercent.toFixed(0)}%)</p>
               {lastEngineResult && (
                 <p className="text-xs text-muted-foreground">
-                  Last cycle: {lastEngineResult.dialed || 0} dialed, {lastEngineResult.agents_claimed || 0} bridged, ideal={lastEngineResult.ideal_dials || 0}
+                  Last cycle: {lastEngineResult.dialed || 0} dialed, {lastEngineResult.agents_claimed || 0} bridged, 
+                  ideal={lastEngineResult.ideal_dials || 0}, target={lastEngineResult.predictive_target || 0},
+                  CRT={lastEngineResult.connect_rate_target || 0}
                 </p>
               )}
             </div>
@@ -442,6 +451,11 @@ export default function BulkDialerPage() {
                         <span className="text-xs text-muted-foreground">
                           {item.attempt_count > 0 ? `${item.attempt_count} attempts` : 'New'}
                         </span>
+                        {(item as any).claim_expires_at && new Date((item as any).claim_expires_at) > new Date() && (
+                          <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30">
+                            <Lock className="h-2.5 w-2.5 mr-0.5" /> Claimed
+                          </Badge>
+                        )}
                         <Badge variant="outline" className={`text-xs ${statusConfig[item.status as QueueStatus]?.color || ''}`}>
                           {statusConfig[item.status as QueueStatus]?.label || item.status}
                         </Badge>

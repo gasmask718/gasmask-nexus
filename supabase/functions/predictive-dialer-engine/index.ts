@@ -64,25 +64,13 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingLock && new Date(existingLock.locked_until) > new Date()) {
-      // Log skipped cycle
-      await supabase.from("dialer_engine_cycle_logs").insert({
-        business_id,
-        campaign_id,
-        started_at: cycleStartedAt,
-        ended_at: new Date().toISOString(),
-        lock_acquired: false,
-        claimed_count: 0,
-        outcomes: {},
-        agents_claimed: 0,
-        errors: ["engine_locked"],
-      });
+      await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired: false, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["engine_locked"] });
       return new Response(
         JSON.stringify({ success: false, reason: "engine_locked" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Set lock for 10 seconds
     const lockUntil = new Date(Date.now() + 10_000).toISOString();
     if (existingLock) {
       await supabase
@@ -110,8 +98,11 @@ Deno.serve(async (req) => {
     const tz = settings?.business_timezone || "America/New_York";
     const startMin = settings?.business_hours_start_min ?? 540;
     const endMin = settings?.business_hours_end_min ?? 1080;
+    const maxCallsPerMinute = settings?.max_calls_per_minute ?? 30;
+    const maxSimultaneousDials = settings?.max_simultaneous_dials ?? 10;
+    const connectRateTarget = settings?.connect_rate_target ?? 0.18;
 
-    // ── PHASE 2: Numeric business hours ──
+    // ── Business hours check ──
     const nowMin = getLocalMinutesSinceMidnight(tz);
     if (nowMin < startMin || nowMin > endMin) {
       await releaseLock(supabase, business_id);
@@ -167,8 +158,16 @@ Deno.serve(async (req) => {
       .eq("business_id", business_id)
       .eq("status", "dialing");
 
-    // ── Calculate slots ──
-    const idealDials = Math.min(Math.ceil(agentCount * predictiveMultiplier), maxConcurrent);
+    // ── Predictive throttle: calculate slots ──
+    // required_dials = active_agents / connect_rate_target (capped by settings)
+    const predictiveDials = Math.ceil(agentCount / connectRateTarget);
+    const idealDials = Math.min(
+      predictiveDials,
+      Math.ceil(agentCount * predictiveMultiplier),
+      maxConcurrent,
+      maxSimultaneousDials,
+      maxCallsPerMinute // per-cycle cap approximation
+    );
     const slotsAvailable = Math.max(0, idealDials - (currentlyDialing || 0));
 
     if (slotsAvailable <= 0) {
@@ -180,7 +179,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── PHASE 3: Atomic queue claiming via RPC ──
+    // ── Atomic queue claiming via RPC (DNC-safe) ──
     const { data: claimedItems, error: claimErr } = await supabase.rpc("claim_queue_items", {
       p_business_id: business_id,
       p_campaign_id: campaign_id || null,
@@ -207,7 +206,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── PHASE 5: Process each claimed item ──
+    // ── Process each claimed item ──
     const outcomeCounts: Record<string, number> = { answered: 0, voicemail: 0, no_answer: 0, failed: 0, bridged: 0, answered_no_agent: 0 };
     let agentsClaimed = 0;
     const results: Array<{ id: string; outcome: string; session_id?: string }> = [];
@@ -232,7 +231,7 @@ Deno.serve(async (req) => {
         // Set answered_at
         await supabase.from("outbound_call_queue").update({ answered_at: new Date().toISOString() }).eq("id", item.id);
 
-        // ── PHASE 4: Atomic agent claiming via RPC ──
+        // Atomic agent claiming via RPC (concurrency-safe)
         const { data: agentRows, error: agentErr } = await supabase.rpc("claim_available_agent", {
           p_business_id: business_id,
         });
@@ -246,6 +245,35 @@ Deno.serve(async (req) => {
         const agent = agentRows[0];
         agentsClaimed++;
 
+        // Create live_call_session BEFORE bridging (session integrity)
+        const { data: session, error: sessionErr } = await supabase
+          .from("live_call_sessions")
+          .insert({
+            business_id: item.business_id,
+            store_id: item.store_id,
+            queue_item_id: item.id,
+            contact_name: item.contact_name,
+            phone_number: item.phone_number,
+            rep_user_id: agent.user_id,
+            provider: "simulation",
+            connected_at: new Date().toISOString(),
+            outcome: null,
+            campaign_id: item.campaign_id,
+          })
+          .select("id")
+          .single();
+
+        if (sessionErr || !session) {
+          errors.push(`session_create ${item.id}: ${sessionErr?.message || "unknown"}`);
+          // Undo agent claim
+          await supabase.from("dialer_agent_availability").update({
+            status: "available", active_calls_count: Math.max((agent.active_calls_count || 1) - 1, 0), updated_at: new Date().toISOString(),
+          }).eq("id", agent.id);
+          outcomeCounts.failed++;
+          results.push({ id: item.id, outcome: "session_create_error" });
+          continue;
+        }
+
         // Transition answered → bridged via state machine
         const { error: bridgeErr } = await supabase.functions.invoke("dialer-state-transition", {
           body: { queue_item_id: item.id, new_status: "bridged", agent_id: agent.user_id },
@@ -253,7 +281,8 @@ Deno.serve(async (req) => {
 
         if (bridgeErr) {
           errors.push(`transition bridged ${item.id}: ${bridgeErr.message}`);
-          // Undo agent claim
+          // Cleanup: end session and undo agent
+          await supabase.from("live_call_sessions").update({ ended_at: new Date().toISOString(), outcome: "bridge_failed" }).eq("id", session.id);
           await supabase.from("dialer_agent_availability").update({
             status: "available", active_calls_count: Math.max((agent.active_calls_count || 1) - 1, 0), updated_at: new Date().toISOString(),
           }).eq("id", agent.id);
@@ -263,7 +292,7 @@ Deno.serve(async (req) => {
         }
 
         outcomeCounts.bridged++;
-        results.push({ id: item.id, outcome: "bridged" });
+        results.push({ id: item.id, outcome: "bridged", session_id: session.id });
       } else {
         // voicemail, no_answer, failed — transition via state machine
         const { error: transErr } = await supabase.functions.invoke("dialer-state-transition", {
@@ -274,7 +303,15 @@ Deno.serve(async (req) => {
           errors.push(`transition ${outcome} ${item.id}: ${transErr.message}`);
         }
 
-        // ── PHASE 6: Exponential backoff for no_answer ──
+        // Clear claim fields on non-answered outcomes
+        await supabase.from("outbound_call_queue").update({
+          claimed_by_user_id: null,
+          claimed_at: null,
+          claim_expires_at: null,
+          claim_token: null,
+        }).eq("id", item.id);
+
+        // Exponential backoff for no_answer
         if (outcome === "no_answer") {
           const retryMin = getRetryMinutes(item.attempt_count || 1, backoffMinutes);
           await supabase.from("outbound_call_queue").update({
@@ -328,6 +365,8 @@ Deno.serve(async (req) => {
         agents_available: agentCount,
         agents_claimed: agentsClaimed,
         ideal_dials: idealDials,
+        predictive_target: predictiveDials,
+        connect_rate_target: connectRateTarget,
         outcomes: outcomeCounts,
         results,
         errors: errors.length > 0 ? errors : undefined,
