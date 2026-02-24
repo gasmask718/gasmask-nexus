@@ -32,6 +32,15 @@ function getLocalMinutesSinceMidnight(tz: string): number {
   return hour * 60 + minute;
 }
 
+function getCurrentHour(tz: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  return parseInt(parts.find(p => p.type === "hour")?.value || "12");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -100,9 +109,11 @@ Deno.serve(async (req) => {
     const endMin = settings?.business_hours_end_min ?? 1080;
     const maxCallsPerMinute = settings?.max_calls_per_minute ?? 30;
     const maxSimultaneousDials = settings?.max_simultaneous_dials ?? 10;
-    const connectRateTarget = settings?.connect_rate_target ?? 0.18;
+    const staticConnectRate = settings?.connect_rate_target ?? 0.18;
     const telephonyMode = settings?.telephony_mode || "simulation";
     const twilioEnabled = settings?.twilio_enabled || false;
+    const useDynamicConnectRate = settings?.use_dynamic_connect_rate || false;
+    const autoProfitProtection = settings?.auto_profit_protection || false;
 
     // ── Business hours check ──
     const nowMin = getLocalMinutesSinceMidnight(tz);
@@ -123,7 +134,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (globalLimits?.auto_pause_on_limit) {
-      // Count today's calls
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
 
@@ -141,7 +151,6 @@ Deno.serve(async (req) => {
 
       const todayCost = (todayCostData || []).reduce((sum: number, e: any) => sum + (Number(e.estimated_cost) || 0), 0);
 
-      // Hour check
       const hourStart = new Date(Date.now() - 3600_000);
       const { count: hourCalls } = await supabase
         .from("call_cost_events")
@@ -159,7 +168,6 @@ Deno.serve(async (req) => {
       }
 
       if (pauseReason) {
-        // Auto-pause
         await supabase.from("dialer_global_limits").update({
           paused_at: new Date().toISOString(),
           paused_reason: pauseReason,
@@ -172,6 +180,77 @@ Deno.serve(async (req) => {
           JSON.stringify({ success: false, reason: "global_limit_exceeded", pause_reason: pauseReason }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      // ── AUTO-PROFIT PROTECTION (Phase G) ──
+      if (autoProfitProtection) {
+        // Check today's net profit
+        const { data: todayRevenueData } = await supabase
+          .from("call_revenue_events")
+          .select("amount")
+          .eq("business_id", business_id)
+          .gte("created_at", todayStart.toISOString());
+
+        const todayRevenue = (todayRevenueData || []).reduce((s: number, e: any) => s + (Number(e.amount) || 0), 0);
+        const todayNetProfit = todayRevenue - todayCost;
+        const profitThreshold = settings?.profit_throttle_threshold ?? 0;
+
+        if (todayNetProfit < profitThreshold && (todayCalls || 0) > 30) {
+          // Throttle: reduce slots by 50%
+          errors.push(`profit_throttle: net=$${todayNetProfit.toFixed(2)}, reducing volume 50%`);
+        }
+
+        // Check consecutive negative days
+        const negativeDaysToCheck = settings?.negative_profit_days_to_pause || 3;
+        const { data: recentDays } = await supabase
+          .from("dialer_daily_metrics")
+          .select("net_profit")
+          .eq("business_id", business_id)
+          .order("metric_date", { ascending: false })
+          .limit(negativeDaysToCheck);
+
+        if (recentDays && recentDays.length >= negativeDaysToCheck) {
+          const allNegative = recentDays.every((d: any) => Number(d.net_profit) < 0);
+          if (allNegative) {
+            // Auto-pause all campaigns except top 2 profitable
+            const { data: allCampaigns } = await supabase
+              .from("v_campaign_optimization" as any)
+              .select("campaign_id, net_profit")
+              .eq("business_id", business_id)
+              .order("net_profit", { ascending: false });
+
+            if (allCampaigns && allCampaigns.length > 2) {
+              const toPause = allCampaigns.slice(2).map((c: any) => c.campaign_id);
+              for (const cid of toPause) {
+                await supabase.from("dialer_campaigns").update({
+                  auto_paused: true,
+                  auto_pause_reason: `${negativeDaysToCheck}_consecutive_negative_profit_days`,
+                  updated_at: new Date().toISOString(),
+                }).eq("id", cid);
+              }
+              errors.push(`auto_paused_${toPause.length}_underperforming_campaigns`);
+            }
+          }
+        }
+      }
+    }
+
+    // ── PHASE G: Recalculate store priorities periodically ──
+    // Run every ~10th cycle to avoid overhead
+    if (Math.random() < 0.1) {
+      await supabase.rpc("calculate_store_priority", { p_business_id: business_id });
+      await supabase.rpc("calculate_rep_efficiency", { p_business_id: business_id });
+    }
+
+    // ── PHASE G: Dynamic connect rate ──
+    let connectRateTarget = staticConnectRate;
+    if (useDynamicConnectRate) {
+      const { data: rollingRate } = await supabase.rpc("get_rolling_connect_rate", {
+        p_business_id: business_id,
+        p_window: 100,
+      });
+      if (rollingRate && Number(rollingRate) > 0) {
+        connectRateTarget = Number(rollingRate);
       }
     }
 
@@ -220,16 +299,22 @@ Deno.serve(async (req) => {
       .eq("business_id", business_id)
       .eq("status", "dialing");
 
-    // ── Predictive throttle: calculate slots ──
-    // required_dials = active_agents / connect_rate_target (capped by settings)
+    // ── Predictive throttle with dynamic connect rate ──
     const predictiveDials = Math.ceil(agentCount / connectRateTarget);
-    const idealDials = Math.min(
+    let idealDials = Math.min(
       predictiveDials,
       Math.ceil(agentCount * predictiveMultiplier),
       maxConcurrent,
       maxSimultaneousDials,
-      maxCallsPerMinute // per-cycle cap approximation
+      maxCallsPerMinute
     );
+
+    // Apply profit throttle if active
+    const isProfitThrottled = errors.some(e => e.includes("profit_throttle"));
+    if (isProfitThrottled) {
+      idealDials = Math.max(1, Math.floor(idealDials * 0.5));
+    }
+
     const slotsAvailable = Math.max(0, idealDials - (currentlyDialing || 0));
 
     if (slotsAvailable <= 0) {
@@ -241,10 +326,28 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Atomic queue claiming via RPC (DNC-safe) ──
+    // ── PHASE G: Campaign auto-budgeting — skip auto-paused campaigns ──
+    let effectiveCampaignId = campaign_id;
+    if (campaign_id) {
+      const { data: campCheck } = await supabase
+        .from("dialer_campaigns")
+        .select("auto_paused")
+        .eq("id", campaign_id)
+        .maybeSingle();
+      if (campCheck?.auto_paused) {
+        await releaseLock(supabase, business_id);
+        await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["campaign_auto_paused"] });
+        return new Response(
+          JSON.stringify({ success: false, reason: "campaign_auto_paused" }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // ── Atomic queue claiming via RPC (DNC-safe, priority-sorted) ──
     const { data: claimedItems, error: claimErr } = await supabase.rpc("claim_queue_items", {
       p_business_id: business_id,
-      p_campaign_id: campaign_id || null,
+      p_campaign_id: effectiveCampaignId || null,
       p_limit_count: slotsAvailable,
       p_max_attempts: maxAttemptsPerDay,
     });
@@ -271,7 +374,7 @@ Deno.serve(async (req) => {
     // ── Process each claimed item ──
     const outcomeCounts: Record<string, number> = { answered: 0, voicemail: 0, no_answer: 0, failed: 0, bridged: 0, answered_no_agent: 0 };
     let agentsClaimed = 0;
-    const results: Array<{ id: string; outcome: string; session_id?: string }> = [];
+    const results: Array<{ id: string; outcome: string; session_id?: string; call_sid?: string }> = [];
 
     const isLive = telephonyMode === "live" && twilioEnabled;
 
@@ -289,16 +392,13 @@ Deno.serve(async (req) => {
             errors.push(`twilio_call ${item.id}: ${callErr?.message || callResult?.error}`);
             outcomeCounts.failed++;
             results.push({ id: item.id, outcome: "twilio_error" });
-
-            // Reset to queued for retry
             await supabase.from("outbound_call_queue").update({
               status: "queued",
               claimed_by_user_id: null, claimed_at: null,
               claim_expires_at: null, claim_token: null,
             }).eq("id", item.id);
           } else {
-            // Call placed — Twilio webhooks will handle state transitions
-            outcomeCounts.answered++; // placeholder; real outcome comes via webhook
+            outcomeCounts.answered++;
             results.push({ id: item.id, outcome: "twilio_initiated", call_sid: callResult?.call_sid });
           }
         } catch (e) {
@@ -306,14 +406,13 @@ Deno.serve(async (req) => {
           outcomeCounts.failed++;
           results.push({ id: item.id, outcome: "twilio_exception" });
         }
-        continue; // Skip simulation logic
+        continue;
       }
 
       // ── SIMULATION MODE ──
       const outcome = simulateOutcome();
 
       if (outcome === "answered") {
-        // Transition dialing → answered via state machine
         const { error: transErr } = await supabase.functions.invoke("dialer-state-transition", {
           body: { queue_item_id: item.id, new_status: "answered" },
         });
@@ -324,10 +423,8 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Set answered_at
         await supabase.from("outbound_call_queue").update({ answered_at: new Date().toISOString() }).eq("id", item.id);
 
-        // Atomic agent claiming via RPC (concurrency-safe)
         const { data: agentRows, error: agentErr } = await supabase.rpc("claim_available_agent", {
           p_business_id: business_id,
         });
@@ -341,7 +438,6 @@ Deno.serve(async (req) => {
         const agent = agentRows[0];
         agentsClaimed++;
 
-        // Create live_call_session BEFORE bridging (session integrity)
         const { data: session, error: sessionErr } = await supabase
           .from("live_call_sessions")
           .insert({
@@ -361,7 +457,6 @@ Deno.serve(async (req) => {
 
         if (sessionErr || !session) {
           errors.push(`session_create ${item.id}: ${sessionErr?.message || "unknown"}`);
-          // Undo agent claim
           await supabase.from("dialer_agent_availability").update({
             status: "available", active_calls_count: Math.max((agent.active_calls_count || 1) - 1, 0), updated_at: new Date().toISOString(),
           }).eq("id", agent.id);
@@ -370,14 +465,12 @@ Deno.serve(async (req) => {
           continue;
         }
 
-        // Transition answered → bridged via state machine
         const { error: bridgeErr } = await supabase.functions.invoke("dialer-state-transition", {
           body: { queue_item_id: item.id, new_status: "bridged", agent_id: agent.user_id },
         });
 
         if (bridgeErr) {
           errors.push(`transition bridged ${item.id}: ${bridgeErr.message}`);
-          // Cleanup: end session and undo agent
           await supabase.from("live_call_sessions").update({ ended_at: new Date().toISOString(), outcome: "bridge_failed" }).eq("id", session.id);
           await supabase.from("dialer_agent_availability").update({
             status: "available", active_calls_count: Math.max((agent.active_calls_count || 1) - 1, 0), updated_at: new Date().toISOString(),
@@ -390,7 +483,6 @@ Deno.serve(async (req) => {
         outcomeCounts.bridged++;
         results.push({ id: item.id, outcome: "bridged", session_id: session.id });
       } else {
-        // voicemail, no_answer, failed — transition via state machine
         const { error: transErr } = await supabase.functions.invoke("dialer-state-transition", {
           body: { queue_item_id: item.id, new_status: outcome },
         });
@@ -399,20 +491,45 @@ Deno.serve(async (req) => {
           errors.push(`transition ${outcome} ${item.id}: ${transErr.message}`);
         }
 
-        // Clear claim fields on non-answered outcomes
         await supabase.from("outbound_call_queue").update({
-          claimed_by_user_id: null,
-          claimed_at: null,
-          claim_expires_at: null,
-          claim_token: null,
+          claimed_by_user_id: null, claimed_at: null,
+          claim_expires_at: null, claim_token: null,
         }).eq("id", item.id);
 
-        // Exponential backoff for no_answer
         if (outcome === "no_answer") {
           const retryMin = getRetryMinutes(item.attempt_count || 1, backoffMinutes);
           await supabase.from("outbound_call_queue").update({
             next_retry_at: new Date(Date.now() + retryMin * 60 * 1000).toISOString(),
           }).eq("id", item.id);
+        }
+
+        // ── PHASE G: Update store hourly answer stats ──
+        if (item.store_id) {
+          const currentHour = getCurrentHour(tz);
+          const { data: existingStat } = await supabase
+            .from("store_hourly_answer_stats")
+            .select("id, attempts, answers")
+            .eq("store_id", item.store_id)
+            .eq("hour_of_day", currentHour)
+            .maybeSingle();
+
+          if (existingStat) {
+            await supabase.from("store_hourly_answer_stats").update({
+              attempts: (existingStat.attempts || 0) + 1,
+              answers: outcome === "answered" ? (existingStat.answers || 0) + 1 : existingStat.answers,
+              answer_rate: ((existingStat.answers || 0) + (outcome === "answered" ? 1 : 0)) / ((existingStat.attempts || 0) + 1),
+              updated_at: new Date().toISOString(),
+            }).eq("id", existingStat.id);
+          } else {
+            await supabase.from("store_hourly_answer_stats").insert({
+              store_id: item.store_id,
+              business_id: item.business_id,
+              hour_of_day: currentHour,
+              attempts: 1,
+              answers: outcome === "answered" ? 1 : 0,
+              answer_rate: outcome === "answered" ? 1 : 0,
+            });
+          }
         }
 
         outcomeCounts[outcome]++;
@@ -463,6 +580,8 @@ Deno.serve(async (req) => {
         ideal_dials: idealDials,
         predictive_target: predictiveDials,
         connect_rate_target: connectRateTarget,
+        dynamic_connect_rate: useDynamicConnectRate,
+        profit_throttled: isProfitThrottled,
         outcomes: outcomeCounts,
         results,
         errors: errors.length > 0 ? errors : undefined,

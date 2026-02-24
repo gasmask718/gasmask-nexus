@@ -59,6 +59,7 @@ const callSystemSettingsItems = [
   { path: "rep-performance", label: "Rep Performance", icon: Users, adminOnly: true, highlight: true },
   { path: "campaign-intelligence", label: "Campaign Intelligence", icon: DollarSign, adminOnly: true, highlight: true },
   { path: "cost-dashboard", label: "Cost & Compliance", icon: Shield, adminOnly: true, highlight: true },
+  { path: "optimization", label: "Optimization AI", icon: Brain, adminOnly: true, highlight: true },
   { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
   { path: "business-hours", label: "Business Hours", icon: Clock, adminOnly: true },
   { path: "after-hours-routing", label: "After-Hours Routing", icon: Moon, adminOnly: true },
