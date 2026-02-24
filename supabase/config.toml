@@ -190,3 +190,6 @@ verify_jwt = false
 
 [functions.dialer-daily-summary]
 verify_jwt = false
+
+[functions.aws-polly-tts]
+verify_jwt = false
