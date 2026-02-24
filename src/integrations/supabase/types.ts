@@ -20744,6 +20744,48 @@ export type Database = {
           },
         ]
       }
+      dialer_daily_metrics: {
+        Row: {
+          avg_answer_rate: number | null
+          business_id: string
+          created_at: string | null
+          id: string
+          metric_date: string
+          net_profit: number | null
+          new_dnc_count: number | null
+          total_connects: number | null
+          total_cost: number | null
+          total_dials: number | null
+          total_revenue: number | null
+        }
+        Insert: {
+          avg_answer_rate?: number | null
+          business_id: string
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          net_profit?: number | null
+          new_dnc_count?: number | null
+          total_connects?: number | null
+          total_cost?: number | null
+          total_dials?: number | null
+          total_revenue?: number | null
+        }
+        Update: {
+          avg_answer_rate?: number | null
+          business_id?: string
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          net_profit?: number | null
+          new_dnc_count?: number | null
+          total_connects?: number | null
+          total_cost?: number | null
+          total_dials?: number | null
+          total_revenue?: number | null
+        }
+        Relationships: []
+      }
       dialer_disposition_codes: {
         Row: {
           business_id: string | null
@@ -59345,6 +59387,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_revenue_momentum: {
+        Row: {
+          business_id: string | null
+          last_7d_profit: number | null
+          last_7d_revenue: number | null
+          momentum_pct: number | null
+          prev_7d_profit: number | null
+          prev_7d_revenue: number | null
+        }
+        Relationships: []
       }
       v_sales_funnel: {
         Row: {
