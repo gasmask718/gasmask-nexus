@@ -10742,6 +10742,7 @@ export type Database = {
           queue_item_id: string | null
           rate_per_minute: number | null
           rep_user_id: string | null
+          session_id: string | null
           store_id: string | null
         }
         Insert: {
@@ -10758,6 +10759,7 @@ export type Database = {
           queue_item_id?: string | null
           rate_per_minute?: number | null
           rep_user_id?: string | null
+          session_id?: string | null
           store_id?: string | null
         }
         Update: {
@@ -10774,6 +10776,7 @@ export type Database = {
           queue_item_id?: string | null
           rate_per_minute?: number | null
           rep_user_id?: string | null
+          session_id?: string | null
           store_id?: string | null
         }
         Relationships: [
@@ -59095,6 +59098,28 @@ export type Database = {
           success_24h: number | null
         }
         Relationships: []
+      }
+      v_rep_profit_metrics: {
+        Row: {
+          business_id: string | null
+          net_profit: number | null
+          profit_per_hour: number | null
+          rep_user_id: string | null
+          total_connects: number | null
+          total_cost: number | null
+          total_revenue: number | null
+          total_sessions: number | null
+          total_talk_seconds: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_call_sessions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_sell_through_usage_audit: {
         Row: {

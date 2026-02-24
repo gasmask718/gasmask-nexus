@@ -189,6 +189,7 @@ Deno.serve(async (req) => {
           business_id: queueItem.business_id,
           call_sid: callSid,
           queue_item_id: queueItem.id,
+          session_id: session?.id || null,
           campaign_id: queueItem.campaign_id,
           rep_user_id: session?.rep_user_id || null,
           store_id: queueItem.store_id,

@@ -187,3 +187,6 @@ verify_jwt = false
 
 [functions.twilio-status-webhook]
 verify_jwt = false
+
+[functions.dialer-daily-summary]
+verify_jwt = false
