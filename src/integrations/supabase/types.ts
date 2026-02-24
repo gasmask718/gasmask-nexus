@@ -20801,12 +20801,15 @@ export type Database = {
           business_hours_start_min: number | null
           business_id: string
           business_timezone: string | null
+          connect_rate_target: number | null
           created_at: string
           default_voice_provider: string | null
           enable_test_mode: boolean | null
           id: string
           max_attempts_per_day: number | null
+          max_calls_per_minute: number | null
           max_concurrent_dials: number | null
+          max_simultaneous_dials: number | null
           predictive_multiplier: number | null
           retry_backoff_minutes: number[] | null
           retry_delay_minutes: number | null
@@ -20824,12 +20827,15 @@ export type Database = {
           business_hours_start_min?: number | null
           business_id: string
           business_timezone?: string | null
+          connect_rate_target?: number | null
           created_at?: string
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
           id?: string
           max_attempts_per_day?: number | null
+          max_calls_per_minute?: number | null
           max_concurrent_dials?: number | null
+          max_simultaneous_dials?: number | null
           predictive_multiplier?: number | null
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
@@ -20847,12 +20853,15 @@ export type Database = {
           business_hours_start_min?: number | null
           business_id?: string
           business_timezone?: string | null
+          connect_rate_target?: number | null
           created_at?: string
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
           id?: string
           max_attempts_per_day?: number | null
+          max_calls_per_minute?: number | null
           max_concurrent_dials?: number | null
+          max_simultaneous_dials?: number | null
           predictive_multiplier?: number | null
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
@@ -33545,6 +33554,10 @@ export type Database = {
           attempt_count: number | null
           business_id: string | null
           campaign_id: string | null
+          claim_expires_at: string | null
+          claim_token: string | null
+          claimed_at: string | null
+          claimed_by_user_id: string | null
           contact_id: string | null
           contact_name: string | null
           created_at: string
@@ -33566,6 +33579,10 @@ export type Database = {
           attempt_count?: number | null
           business_id?: string | null
           campaign_id?: string | null
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
@@ -33587,6 +33604,10 @@ export type Database = {
           attempt_count?: number | null
           business_id?: string | null
           campaign_id?: string | null
+          claim_expires_at?: string | null
+          claim_token?: string | null
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
@@ -59911,41 +59932,86 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      claim_queue_items: {
-        Args: {
-          p_business_id: string
-          p_campaign_id?: string
-          p_limit_count?: number
-          p_max_attempts?: number
-        }
-        Returns: {
-          answered_at: string | null
-          assigned_agent_id: string | null
-          assigned_campaign_id: string | null
-          attempt_count: number | null
-          business_id: string | null
-          campaign_id: string | null
-          contact_id: string | null
-          contact_name: string | null
-          created_at: string
-          dialing_started_at: string | null
-          id: string
-          last_attempt_at: string | null
-          next_retry_at: string | null
-          notes: string | null
-          phone_number: string
-          priority_score: number | null
-          status: string
-          store_id: string | null
-          updated_at: string
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "outbound_call_queue"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      claim_queue_items:
+        | {
+            Args: {
+              p_business_id: string
+              p_campaign_id?: string
+              p_limit_count?: number
+              p_max_attempts?: number
+            }
+            Returns: {
+              answered_at: string | null
+              assigned_agent_id: string | null
+              assigned_campaign_id: string | null
+              attempt_count: number | null
+              business_id: string | null
+              campaign_id: string | null
+              claim_expires_at: string | null
+              claim_token: string | null
+              claimed_at: string | null
+              claimed_by_user_id: string | null
+              contact_id: string | null
+              contact_name: string | null
+              created_at: string
+              dialing_started_at: string | null
+              id: string
+              last_attempt_at: string | null
+              next_retry_at: string | null
+              notes: string | null
+              phone_number: string
+              priority_score: number | null
+              status: string
+              store_id: string | null
+              updated_at: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "outbound_call_queue"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: {
+              p_agent_user_id?: string
+              p_business_id: string
+              p_campaign_id?: string
+              p_limit_count?: number
+              p_max_attempts?: number
+            }
+            Returns: {
+              answered_at: string | null
+              assigned_agent_id: string | null
+              assigned_campaign_id: string | null
+              attempt_count: number | null
+              business_id: string | null
+              campaign_id: string | null
+              claim_expires_at: string | null
+              claim_token: string | null
+              claimed_at: string | null
+              claimed_by_user_id: string | null
+              contact_id: string | null
+              contact_name: string | null
+              created_at: string
+              dialing_started_at: string | null
+              id: string
+              last_attempt_at: string | null
+              next_retry_at: string | null
+              notes: string | null
+              phone_number: string
+              priority_score: number | null
+              status: string
+              store_id: string | null
+              updated_at: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "outbound_call_queue"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
       cleanup_old_recalc_items: {
         Args: { p_days_old?: number }
         Returns: number
@@ -60051,6 +60117,7 @@ export type Database = {
       }
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
+      dialer_claim_watchdog: { Args: { p_business_id: string }; Returns: Json }
       dialer_watchdog_recover: {
         Args: { p_business_id: string }
         Returns: Json
@@ -60761,6 +60828,10 @@ export type Database = {
       }
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
+      validate_agent_state_transition: {
+        Args: { p_current_status: string; p_new_status: string }
+        Returns: boolean
+      }
       validate_ambassador_invite: { Args: { p_token: string }; Returns: Json }
       validate_intent_autonomy: { Args: { p_intent_id: string }; Returns: Json }
       validate_portal_request: {

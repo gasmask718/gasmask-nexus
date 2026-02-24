@@ -26,7 +26,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data, error } = await supabase.rpc("dialer_watchdog_recover", {
+    // Use the comprehensive claim watchdog RPC
+    const { data, error } = await supabase.rpc("dialer_claim_watchdog", {
       p_business_id: business_id,
     });
 
