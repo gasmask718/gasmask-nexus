@@ -12235,6 +12235,78 @@ export type Database = {
           },
         ]
       }
+      call_revenue_events: {
+        Row: {
+          amount: number
+          business_id: string | null
+          campaign_id: string | null
+          created_at: string | null
+          currency: string | null
+          id: string
+          rep_user_id: string | null
+          session_id: string | null
+          store_id: string | null
+        }
+        Insert: {
+          amount: number
+          business_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          rep_user_id?: string | null
+          session_id?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          amount?: number
+          business_id?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          rep_user_id?: string | null
+          session_id?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_revenue_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_revenue_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_revenue_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_revenue_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "call_revenue_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       call_routing_rules: {
         Row: {
           action: Json
@@ -20469,6 +20541,10 @@ export type Database = {
           id: string
           name: string
           status: string
+          total_followups: number | null
+          total_negative_outcomes: number | null
+          total_positive_outcomes: number | null
+          total_revenue: number | null
           total_targets: number | null
           updated_at: string
           voicemail_count: number | null
@@ -20483,6 +20559,10 @@ export type Database = {
           id?: string
           name: string
           status?: string
+          total_followups?: number | null
+          total_negative_outcomes?: number | null
+          total_positive_outcomes?: number | null
+          total_revenue?: number | null
           total_targets?: number | null
           updated_at?: string
           voicemail_count?: number | null
@@ -20497,6 +20577,10 @@ export type Database = {
           id?: string
           name?: string
           status?: string
+          total_followups?: number | null
+          total_negative_outcomes?: number | null
+          total_positive_outcomes?: number | null
+          total_revenue?: number | null
           total_targets?: number | null
           updated_at?: string
           voicemail_count?: number | null
@@ -20504,6 +20588,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "dialer_campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_disposition_codes: {
+        Row: {
+          business_id: string | null
+          category: string
+          code: string
+          created_at: string | null
+          creates_invoice_draft: boolean | null
+          followup_delay_minutes: number | null
+          id: string
+          label: string
+          marks_do_not_call: boolean | null
+          requires_followup: boolean | null
+          updates_store_stage: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          category?: string
+          code: string
+          created_at?: string | null
+          creates_invoice_draft?: boolean | null
+          followup_delay_minutes?: number | null
+          id?: string
+          label: string
+          marks_do_not_call?: boolean | null
+          requires_followup?: boolean | null
+          updates_store_stage?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          category?: string
+          code?: string
+          created_at?: string | null
+          creates_invoice_draft?: boolean | null
+          followup_delay_minutes?: number | null
+          id?: string
+          label?: string
+          marks_do_not_call?: boolean | null
+          requires_followup?: boolean | null
+          updates_store_stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_disposition_codes_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -20587,6 +20721,71 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_followups: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          id: string
+          reason: string | null
+          rep_user_id: string | null
+          scheduled_for: string
+          session_id: string | null
+          status: string | null
+          store_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          rep_user_id?: string | null
+          scheduled_for: string
+          session_id?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          rep_user_id?: string | null
+          scheduled_for?: string
+          session_id?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_followups_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_followups_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "live_call_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_followups_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_followups_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
           },
         ]
       }
@@ -29431,66 +29630,96 @@ export type Database = {
       }
       live_call_sessions: {
         Row: {
+          best_call_time: string | null
           business_id: string | null
           call_sid: string | null
           campaign_id: string | null
+          competitor_mentioned: string | null
           connected_at: string | null
           contact_name: string | null
           created_at: string
+          decision_maker_name: string | null
+          disposition_code_id: string | null
+          disposition_notes: string | null
           duration_seconds: number | null
           ended_at: string | null
           id: string
+          next_followup_at: string | null
           notes: string | null
+          order_reference: string | null
           outcome: string | null
           phone_number: string | null
           provider: string | null
           queue_item_id: string | null
           recording_url: string | null
           rep_user_id: string | null
+          revenue_amount: number | null
+          revenue_currency: string | null
           sentiment_score: number | null
           store_id: string | null
+          store_stage_after: string | null
           transcript_json: Json | null
         }
         Insert: {
+          best_call_time?: string | null
           business_id?: string | null
           call_sid?: string | null
           campaign_id?: string | null
+          competitor_mentioned?: string | null
           connected_at?: string | null
           contact_name?: string | null
           created_at?: string
+          decision_maker_name?: string | null
+          disposition_code_id?: string | null
+          disposition_notes?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          next_followup_at?: string | null
           notes?: string | null
+          order_reference?: string | null
           outcome?: string | null
           phone_number?: string | null
           provider?: string | null
           queue_item_id?: string | null
           recording_url?: string | null
           rep_user_id?: string | null
+          revenue_amount?: number | null
+          revenue_currency?: string | null
           sentiment_score?: number | null
           store_id?: string | null
+          store_stage_after?: string | null
           transcript_json?: Json | null
         }
         Update: {
+          best_call_time?: string | null
           business_id?: string | null
           call_sid?: string | null
           campaign_id?: string | null
+          competitor_mentioned?: string | null
           connected_at?: string | null
           contact_name?: string | null
           created_at?: string
+          decision_maker_name?: string | null
+          disposition_code_id?: string | null
+          disposition_notes?: string | null
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          next_followup_at?: string | null
           notes?: string | null
+          order_reference?: string | null
           outcome?: string | null
           phone_number?: string | null
           provider?: string | null
           queue_item_id?: string | null
           recording_url?: string | null
           rep_user_id?: string | null
+          revenue_amount?: number | null
+          revenue_currency?: string | null
           sentiment_score?: number | null
           store_id?: string | null
+          store_stage_after?: string | null
           transcript_json?: Json | null
         }
         Relationships: [
@@ -29506,6 +29735,13 @@ export type Database = {
             columns: ["campaign_id"]
             isOneToOne: false
             referencedRelation: "dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_call_sessions_disposition_code_id_fkey"
+            columns: ["disposition_code_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_disposition_codes"
             referencedColumns: ["id"]
           },
           {
@@ -44942,6 +45178,66 @@ export type Database = {
           },
         ]
       }
+      store_call_intelligence: {
+        Row: {
+          id: string
+          interest_score: number | null
+          last_best_call_time: string | null
+          last_competitor_mentioned: string | null
+          last_contacted_at: string | null
+          last_decision_maker_name: string | null
+          last_objection: string | null
+          lifetime_revenue: number | null
+          store_id: string | null
+          total_calls: number | null
+          total_connects: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          interest_score?: number | null
+          last_best_call_time?: string | null
+          last_competitor_mentioned?: string | null
+          last_contacted_at?: string | null
+          last_decision_maker_name?: string | null
+          last_objection?: string | null
+          lifetime_revenue?: number | null
+          store_id?: string | null
+          total_calls?: number | null
+          total_connects?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          interest_score?: number | null
+          last_best_call_time?: string | null
+          last_competitor_mentioned?: string | null
+          last_contacted_at?: string | null
+          last_decision_maker_name?: string | null
+          last_objection?: string | null
+          lifetime_revenue?: number | null
+          store_id?: string | null
+          total_calls?: number | null
+          total_connects?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_call_intelligence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_call_intelligence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       store_check_fields: {
         Row: {
           business_id: string
@@ -45566,6 +45862,7 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           dialect_preference: string | null
+          do_not_call: boolean | null
           email: string | null
           expansion_notes: string | null
           expected_open_dates: string[] | null
@@ -45633,6 +45930,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           dialect_preference?: string | null
+          do_not_call?: boolean | null
           email?: string | null
           expansion_notes?: string | null
           expected_open_dates?: string[] | null
@@ -45700,6 +45998,7 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           dialect_preference?: string | null
+          do_not_call?: boolean | null
           email?: string | null
           expansion_notes?: string | null
           expected_open_dates?: string[] | null
@@ -56481,6 +56780,30 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_ambassador_financial_summary"
             referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
+      rep_performance_metrics: {
+        Row: {
+          business_id: string | null
+          connect_rate: number | null
+          negative_dispositions: number | null
+          positive_dispositions: number | null
+          rep_user_id: string | null
+          revenue_per_100_dials: number | null
+          revenue_per_connect: number | null
+          total_connects: number | null
+          total_dials: number | null
+          total_dispositions: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_call_sessions_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
           },
         ]
       }

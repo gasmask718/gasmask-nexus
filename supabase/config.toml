@@ -178,3 +178,6 @@ verify_jwt = false
 
 [functions.dialer-watchdog]
 verify_jwt = false
+
+[functions.apply-call-disposition]
+verify_jwt = false
