@@ -1,9 +1,29 @@
-import { VoiceOrchestrationTab } from "@/components/communication/VoiceOrchestrationTab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Radio, Settings } from "lucide-react";
+import { VoiceMatrixManager } from "@/components/communication/VoiceMatrixManager";
+import { LiveVoiceMatrix } from "@/components/communication/LiveVoiceMatrix";
 
 export default function VoiceMatrixPage() {
   return (
     <div className="w-full min-h-full space-y-6">
-      <VoiceOrchestrationTab />
+      <Tabs defaultValue="personas" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="personas" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Personas & Providers
+          </TabsTrigger>
+          <TabsTrigger value="live" className="flex items-center gap-2">
+            <Radio className="h-4 w-4" />
+            Live Voice Matrix
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="personas">
+          <VoiceMatrixManager />
+        </TabsContent>
+        <TabsContent value="live">
+          <LiveVoiceMatrix />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

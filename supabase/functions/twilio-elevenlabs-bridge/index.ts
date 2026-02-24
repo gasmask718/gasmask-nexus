@@ -2,17 +2,16 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
- * TWILIO ↔ ELEVENLABS BRIDGE
+ * TWILIO ↔ ELEVENLABS BRIDGE (K.1 Enhanced)
  *
  * Twilio hits this URL when an outbound call connects.
  * This function:
- *  1. Reads the agent_id from the query string
- *  2. Parses From / To from Twilio's form-encoded POST body
- *  3. Calls ElevenLabs Register Call API
- *  4. Returns the TwiML that ElevenLabs provides back to Twilio
- *
- * The TwiML instructs Twilio to open a WebSocket media stream
- * to ElevenLabs so the AI agent speaks directly on the phone call.
+ *  1. Reads the agent_id (or brand_key) from the query string
+ *  2. Looks up the voice_matrix persona for the brand
+ *  3. Parses From / To from Twilio's form-encoded POST body
+ *  4. Calls ElevenLabs Register Call API with the persona's agent/voice config
+ *  5. Logs a tts_event for latency tracking
+ *  6. Returns the TwiML that ElevenLabs provides back to Twilio
  */
 
 const corsHeaders = {
@@ -27,25 +26,52 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id");
+    const agentIdParam = url.searchParams.get("agent_id");
+    const brandKey = url.searchParams.get("brand_key");
     const handoffNumber = url.searchParams.get("handoff_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
-
-    if (!agentId) {
-      console.error("❌ Missing agent_id query parameter");
-      // Return TwiML that says an error occurred
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the AI agent could not be connected. Missing agent configuration.</Say><Hangup/></Response>`,
-        { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
-      );
-    }
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     if (!ELEVENLABS_API_KEY) {
       console.error("❌ ELEVENLABS_API_KEY not configured");
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the AI agent could not be connected. Missing API key.</Say><Hangup/></Response>`,
-        { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
-      );
+      return twimlError("Sorry, the AI agent could not be connected. Missing API key.");
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
+    // --- Persona resolution from voice_matrix ---
+    let agentId = agentIdParam;
+    let personaId: string | null = null;
+
+    if (brandKey) {
+      const { data: persona, error: personaError } = await supabase
+        .from("voice_matrix")
+        .select("id, elevenlabs_agent_id, elevenlabs_voice_id, persona_name, speaking_style")
+        .eq("brand_key", brandKey)
+        .eq("active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (personaError) {
+        console.error("❌ voice_matrix lookup error:", personaError.message);
+      }
+
+      if (persona) {
+        personaId = persona.id;
+        // Prefer the agent_id from voice_matrix if present
+        if (persona.elevenlabs_agent_id) {
+          agentId = persona.elevenlabs_agent_id;
+        }
+        console.log(`🎭 Persona resolved: ${persona.persona_name} (brand=${brandKey}, agentId=${agentId})`);
+      } else {
+        console.warn(`⚠️ No active persona found for brand_key=${brandKey}, falling back to agent_id param`);
+      }
+    }
+
+    if (!agentId) {
+      console.error("❌ Missing agent_id — no query param or voice_matrix match");
+      return twimlError("Sorry, the AI agent could not be connected. Missing agent configuration.");
     }
 
     // Parse Twilio form-encoded body
@@ -54,13 +80,15 @@ const handler = async (req: Request): Promise<Response> => {
     const toNumber = formData.get("To")?.toString() || "";
     const callSid = formData.get("CallSid")?.toString() || "";
 
-    console.log(`🔗 Bridge: CallSid=${callSid}, From=${fromNumber}, To=${toNumber}, AgentId=${agentId}, HandoffNumber=${handoffNumber || '(none)'}`);
+    console.log(`🔗 Bridge: CallSid=${callSid}, From=${fromNumber}, To=${toNumber}, AgentId=${agentId}, Brand=${brandKey || "(none)"}`);
 
-    // Build the handoff URL the ElevenLabs agent can call as a server tool
-    const projectId = Deno.env.get("SUPABASE_URL")?.replace("https://", "").split(".")[0] || "";
+    // Build handoff URL
+    const projectId = supabaseUrl.replace("https://", "").split(".")[0];
     const handoffUrl = `https://${projectId}.supabase.co/functions/v1/call-live-handoff`;
 
-    // Call ElevenLabs Register Call API
+    // --- Call ElevenLabs with latency tracking ---
+    const registerStart = Date.now();
+
     const registerResponse = await fetch(
       "https://api.elevenlabs.io/v1/convai/twilio/register-call",
       {
@@ -74,7 +102,6 @@ const handler = async (req: Request): Promise<Response> => {
           from_number: fromNumber,
           to_number: toNumber,
           direction: "outbound",
-          // Pass handoff context so the ElevenLabs agent can trigger live transfer
           dynamic_variables: {
             call_sid: callSid,
             handoff_url: handoffUrl,
@@ -85,57 +112,63 @@ const handler = async (req: Request): Promise<Response> => {
       },
     );
 
-    if (!registerResponse.ok) {
-      const errorText = await registerResponse.text();
-      console.error(`❌ ElevenLabs Register Call failed (${registerResponse.status}):`, errorText);
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the AI agent could not be connected. Please try again later.</Say><Hangup/></Response>`,
-        { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
-      );
+    const latencyMs = Date.now() - registerStart;
+
+    // Log TTS event for latency monitoring
+    try {
+      await supabase.from("tts_events").insert({
+        provider: "elevenlabs",
+        latency_ms: latencyMs,
+        success: registerResponse.ok,
+        was_fallback: false,
+        persona_id: personaId,
+        error_message: registerResponse.ok ? null : `HTTP ${registerResponse.status}`,
+      });
+    } catch (e) {
+      console.warn("⚠️ Failed to log tts_event:", e);
     }
 
-    // ElevenLabs returns JSON with a twiml field
+    if (!registerResponse.ok) {
+      const errorText = await registerResponse.text();
+      console.error(`❌ ElevenLabs Register Call failed (${registerResponse.status}, ${latencyMs}ms):`, errorText);
+      return twimlError("Sorry, the AI agent could not be connected. Please try again later.");
+    }
+
+    console.log(`⏱️ ElevenLabs register-call latency: ${latencyMs}ms`);
+
+    // Parse response
     const responseData = await registerResponse.json();
     const twiml = responseData.twiml;
     const conversationId = responseData.conversation_id ?? responseData.conversationId ?? null;
 
-    if (conversationId) {
+    // Persist conversation_id + voice_matrix_id on the call recording
+    if (conversationId || personaId) {
       try {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL");
-        const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        const updatePayload: Record<string, unknown> = {};
+        if (conversationId) updatePayload.elevenlabs_conversation_id = conversationId;
 
-        if (supabaseUrl && supabaseServiceRoleKey) {
-          const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-          const { error: convoUpdateError } = await supabase
-            .from("call_recordings")
-            .update({ elevenlabs_conversation_id: conversationId })
-            .eq("provider_call_sid", callSid);
+        const { error: convoUpdateError } = await supabase
+          .from("call_recordings")
+          .update(updatePayload)
+          .eq("provider_call_sid", callSid);
 
-          if (convoUpdateError) {
-            console.error("❌ Failed to persist elevenlabs_conversation_id:", convoUpdateError);
-          } else {
-            console.log(`🧾 Stored ElevenLabs conversation_id=${conversationId} for CallSid=${callSid}`);
-          }
+        if (convoUpdateError) {
+          console.error("❌ Failed to persist conversation data:", convoUpdateError);
         } else {
-          console.warn("⚠️ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY; skipping conversation_id persistence");
+          console.log(`🧾 Stored conversation_id=${conversationId} for CallSid=${callSid}`);
         }
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : String(e);
         console.error("❌ Error persisting conversation_id:", msg);
       }
-    } else {
-      console.warn("⚠️ ElevenLabs response missing conversation_id; transcript logging will be unavailable for this call");
     }
 
     if (!twiml) {
       console.error("❌ ElevenLabs response missing twiml field:", JSON.stringify(responseData));
-      return new Response(
-        `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the AI agent returned an unexpected response.</Say><Hangup/></Response>`,
-        { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
-      );
+      return twimlError("Sorry, the AI agent returned an unexpected response.");
     }
 
-    console.log(`✅ ElevenLabs returned TwiML (${twiml.length} bytes)`);
+    console.log(`✅ ElevenLabs returned TwiML (${twiml.length} bytes, ${latencyMs}ms)`);
 
     return new Response(twiml, {
       status: 200,
@@ -144,11 +177,15 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
     console.error("❌ Bridge error:", msg);
-    return new Response(
-      `<?xml version="1.0" encoding="UTF-8"?><Response><Say>An error occurred connecting the AI agent.</Say><Hangup/></Response>`,
-      { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
-    );
+    return twimlError("An error occurred connecting the AI agent.");
   }
 };
+
+function twimlError(message: string): Response {
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?><Response><Say>${message}</Say><Hangup/></Response>`,
+    { status: 200, headers: { "Content-Type": "text/xml", ...corsHeaders } },
+  );
+}
 
 serve(handler);
