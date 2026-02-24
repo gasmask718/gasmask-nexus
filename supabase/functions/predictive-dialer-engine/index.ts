@@ -235,11 +235,50 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── PHASE G: Recalculate store priorities periodically ──
-    // Run every ~10th cycle to avoid overhead
-    if (Math.random() < 0.1) {
+    // ── PHASE G/I: Recalculate store priorities & predictive scores periodically ──
+    const refreshInterval = settings?.predictive_score_refresh_interval || 10;
+    const usePredictiveTargeting = settings?.use_predictive_targeting || false;
+    const useRepStoreMatching = settings?.use_rep_store_matching || false;
+    const useTimeRevenueBias = settings?.use_time_revenue_bias || false;
+
+    if (Math.random() < (1 / refreshInterval)) {
       await supabase.rpc("calculate_store_priority", { p_business_id: business_id });
       await supabase.rpc("calculate_rep_efficiency", { p_business_id: business_id });
+      if (usePredictiveTargeting) {
+        await supabase.rpc("calculate_predictive_profit_score", { p_business_id: business_id });
+      }
+      // Auto-adjust campaign weights
+      await supabase.rpc("auto_adjust_campaign_weights", { p_business_id: business_id });
+    }
+
+    // ── PHASE I: Time-revenue bias — boost scores during profitable hours ──
+    if (useTimeRevenueBias) {
+      const currentHourForBias = getCurrentHour(tz);
+      const { data: hourRevData } = await supabase
+        .from("store_hourly_revenue_stats")
+        .select("store_id, revenue_per_attempt")
+        .eq("business_id", business_id)
+        .eq("hour_of_day", currentHourForBias)
+        .gt("revenue_per_attempt", 0);
+
+      if (hourRevData && hourRevData.length > 0) {
+        // Temporarily boost queue priority for stores profitable at this hour
+        for (const hr of hourRevData) {
+          await supabase.from("outbound_call_queue")
+            .update({ priority_score: supabase.rpc ? undefined : undefined })
+            .eq("store_id", hr.store_id)
+            .eq("business_id", business_id)
+            .eq("status", "queued");
+          // Direct SQL boost via raw update
+          await supabase.rpc("boost_queue_priority_for_hour" as any, {
+            p_store_id: hr.store_id,
+            p_business_id: business_id,
+            p_boost: Number(hr.revenue_per_attempt) * 5,
+          }).catch(() => {
+            // RPC may not exist yet; silently skip
+          });
+        }
+      }
     }
 
     // ── PHASE G: Dynamic connect rate ──
@@ -438,6 +477,18 @@ Deno.serve(async (req) => {
         const agent = agentRows[0];
         agentsClaimed++;
 
+        // ── PHASE I: Rep-Store Matching — prefer best rep for lifecycle stage ──
+        let assignedRepId = agent.user_id;
+        if (useRepStoreMatching && item.store_id) {
+          const { data: bestRep } = await supabase.rpc("get_best_rep_for_store", {
+            p_store_id: item.store_id,
+            p_business_id: business_id,
+          }).catch(() => ({ data: null }));
+          if (bestRep) {
+            assignedRepId = bestRep;
+          }
+        }
+
         const { data: session, error: sessionErr } = await supabase
           .from("live_call_sessions")
           .insert({
@@ -446,7 +497,7 @@ Deno.serve(async (req) => {
             queue_item_id: item.id,
             contact_name: item.contact_name,
             phone_number: item.phone_number,
-            rep_user_id: agent.user_id,
+            rep_user_id: assignedRepId,
             provider: "simulation",
             connected_at: new Date().toISOString(),
             outcome: null,

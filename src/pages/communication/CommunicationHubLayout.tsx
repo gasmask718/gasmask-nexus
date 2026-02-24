@@ -10,7 +10,7 @@ import {
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus,
   Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail,
-  Clock, Moon, Rocket
+  Clock, Moon, Rocket, Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
@@ -61,6 +61,7 @@ const callSystemSettingsItems = [
   { path: "cost-dashboard", label: "Cost & Compliance", icon: Shield, adminOnly: true, highlight: true },
   { path: "optimization", label: "Optimization AI", icon: Brain, adminOnly: true, highlight: true },
   { path: "revenue-intelligence", label: "Revenue Intelligence", icon: DollarSign, adminOnly: true, highlight: true },
+  { path: "predictive-targeting", label: "Predictive Targeting", icon: Target, adminOnly: true, highlight: true },
   { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
   { path: "business-hours", label: "Business Hours", icon: Clock, adminOnly: true },
   { path: "after-hours-routing", label: "After-Hours Routing", icon: Moon, adminOnly: true },
