@@ -20411,40 +20411,99 @@ export type Database = {
           business_id: string | null
           created_at: string
           id: string
+          last_call_ended_at: string | null
           last_status_change: string | null
           max_concurrent_calls: number | null
           skills: string[] | null
           status: string
           updated_at: string
           user_id: string
+          wrap_up_seconds: number
         }
         Insert: {
           active_calls_count?: number | null
           business_id?: string | null
           created_at?: string
           id?: string
+          last_call_ended_at?: string | null
           last_status_change?: string | null
           max_concurrent_calls?: number | null
           skills?: string[] | null
           status?: string
           updated_at?: string
           user_id: string
+          wrap_up_seconds?: number
         }
         Update: {
           active_calls_count?: number | null
           business_id?: string | null
           created_at?: string
           id?: string
+          last_call_ended_at?: string | null
           last_status_change?: string | null
           max_concurrent_calls?: number | null
           skills?: string[] | null
           status?: string
           updated_at?: string
           user_id?: string
+          wrap_up_seconds?: number
         }
         Relationships: [
           {
             foreignKeyName: "dialer_agent_availability_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_campaigns: {
+        Row: {
+          answered_calls: number | null
+          business_id: string
+          completed_calls: number | null
+          created_at: string
+          description: string | null
+          failed_calls: number | null
+          id: string
+          name: string
+          status: string
+          total_targets: number | null
+          updated_at: string
+          voicemail_count: number | null
+        }
+        Insert: {
+          answered_calls?: number | null
+          business_id: string
+          completed_calls?: number | null
+          created_at?: string
+          description?: string | null
+          failed_calls?: number | null
+          id?: string
+          name: string
+          status?: string
+          total_targets?: number | null
+          updated_at?: string
+          voicemail_count?: number | null
+        }
+        Update: {
+          answered_calls?: number | null
+          business_id?: string
+          completed_calls?: number | null
+          created_at?: string
+          description?: string | null
+          failed_calls?: number | null
+          id?: string
+          name?: string
+          status?: string
+          total_targets?: number | null
+          updated_at?: string
+          voicemail_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_campaigns_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
@@ -29283,6 +29342,7 @@ export type Database = {
         Row: {
           business_id: string | null
           call_sid: string | null
+          campaign_id: string | null
           connected_at: string | null
           contact_name: string | null
           created_at: string
@@ -29291,6 +29351,7 @@ export type Database = {
           id: string
           notes: string | null
           outcome: string | null
+          phone_number: string | null
           provider: string | null
           queue_item_id: string | null
           recording_url: string | null
@@ -29302,6 +29363,7 @@ export type Database = {
         Insert: {
           business_id?: string | null
           call_sid?: string | null
+          campaign_id?: string | null
           connected_at?: string | null
           contact_name?: string | null
           created_at?: string
@@ -29310,6 +29372,7 @@ export type Database = {
           id?: string
           notes?: string | null
           outcome?: string | null
+          phone_number?: string | null
           provider?: string | null
           queue_item_id?: string | null
           recording_url?: string | null
@@ -29321,6 +29384,7 @@ export type Database = {
         Update: {
           business_id?: string | null
           call_sid?: string | null
+          campaign_id?: string | null
           connected_at?: string | null
           contact_name?: string | null
           created_at?: string
@@ -29329,6 +29393,7 @@ export type Database = {
           id?: string
           notes?: string | null
           outcome?: string | null
+          phone_number?: string | null
           provider?: string | null
           queue_item_id?: string | null
           recording_url?: string | null
@@ -29343,6 +29408,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_call_sessions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_campaigns"
             referencedColumns: ["id"]
           },
           {
@@ -33140,9 +33212,11 @@ export type Database = {
       }
       outbound_call_queue: {
         Row: {
+          assigned_agent_id: string | null
           assigned_campaign_id: string | null
           attempt_count: number | null
           business_id: string | null
+          campaign_id: string | null
           contact_id: string | null
           contact_name: string | null
           created_at: string
@@ -33157,9 +33231,11 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
           business_id?: string | null
+          campaign_id?: string | null
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
@@ -33174,9 +33250,11 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
           business_id?: string | null
+          campaign_id?: string | null
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
@@ -33203,6 +33281,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbound_call_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_campaigns"
             referencedColumns: ["id"]
           },
           {

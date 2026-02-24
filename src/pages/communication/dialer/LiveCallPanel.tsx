@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
-  Headphones, Phone, PhoneOff, Clock, MapPin, User, Save, 
-  ThumbsUp, ThumbsDown, CalendarClock, AlertCircle, HelpCircle
+  Headphones, Phone, Clock, User, 
+  ThumbsUp, ThumbsDown, CalendarClock, AlertCircle, HelpCircle, AlertTriangle
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -29,6 +29,7 @@ export default function LiveCallPanel() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
 
+  // Active sessions with 3-second auto-refresh
   const { data: sessions = [] } = useQuery({
     queryKey: ['live-call-sessions', currentBusiness?.id],
     queryFn: async () => {
@@ -42,8 +43,21 @@ export default function LiveCallPanel() {
       return data || [];
     },
     enabled: !!currentBusiness?.id,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
+
+  // Realtime subscription for live sessions
+  useEffect(() => {
+    if (!currentBusiness?.id) return;
+    const channel = supabase
+      .channel('live-sessions-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_call_sessions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['live-call-sessions'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-call-sessions'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentBusiness?.id, queryClient]);
 
   const { data: recentSessions = [] } = useQuery({
     queryKey: ['recent-call-sessions', currentBusiness?.id],
@@ -61,26 +75,58 @@ export default function LiveCallPanel() {
     enabled: !!currentBusiness?.id,
   });
 
+  // Disposition mutation — updates session, queue, and agent wrap-up
   const dispositionMutation = useMutation({
     mutationFn: async ({ sessionId, outcome }: { sessionId: string; outcome: Outcome }) => {
-      const { error } = await supabase
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session) throw new Error('Session not found');
+
+      const connectedAt = new Date(session.connected_at).getTime();
+      const durationSeconds = Math.floor((Date.now() - connectedAt) / 1000);
+
+      // 1. Update live session
+      const { error: sessErr } = await supabase
         .from('live_call_sessions')
-        .update({ 
-          outcome, 
+        .update({
+          outcome,
           notes,
           ended_at: new Date().toISOString(),
-          duration_seconds: 0, // Would be calculated from connected_at
+          duration_seconds: durationSeconds,
         })
         .eq('id', sessionId);
-      if (error) throw error;
+      if (sessErr) throw sessErr;
+
+      // 2. Update queue item → completed (via state machine)
+      if ((session as any).queue_item_id) {
+        await supabase.functions.invoke('dialer-state-transition', {
+          body: { queue_item_id: (session as any).queue_item_id, new_status: 'completed' },
+        });
+      }
+
+      // 3. Set agent to wrap_up
+      if (session.rep_user_id) {
+        await supabase
+          .from('dialer_agent_availability')
+          .update({
+            status: 'wrap_up',
+            active_calls_count: 0,
+            last_call_ended_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', session.rep_user_id)
+          .eq('business_id', currentBusiness?.id);
+      }
     },
     onSuccess: () => {
-      toast.success('Call disposed');
+      toast.success('Call disposed — agent entering wrap-up');
       setNotes('');
       setSelectedSession(null);
       queryClient.invalidateQueries({ queryKey: ['live-call-sessions'] });
       queryClient.invalidateQueries({ queryKey: ['recent-call-sessions'] });
+      queryClient.invalidateQueries({ queryKey: ['dialer-agents'] });
+      queryClient.invalidateQueries({ queryKey: ['outbound-call-queue'] });
     },
+    onError: (err: any) => toast.error(`Disposition failed: ${err.message}`),
   });
 
   const formatDuration = (connectedAt: string) => {
@@ -92,11 +138,17 @@ export default function LiveCallPanel() {
 
   return (
     <div className="w-full min-h-full space-y-6">
+      {/* Simulation Banner */}
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
+        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">SIMULATION MODE — Calls are simulated, no real telephony</p>
+      </div>
+
       <div>
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Headphones className="h-6 w-6" /> Live Call Panel
         </h2>
-        <p className="text-muted-foreground">Active bridged calls — disposition in real-time</p>
+        <p className="text-muted-foreground">Active bridged calls — disposition in real-time (auto-refreshes every 3s)</p>
       </div>
 
       {/* Active Calls */}
@@ -106,9 +158,7 @@ export default function LiveCallPanel() {
             <CardContent className="py-12 text-center">
               <Phone className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-semibold">No Active Calls</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Start the bulk dialer to begin connecting to humans
-              </p>
+              <p className="text-sm text-muted-foreground mt-1">Start the bulk dialer to begin connecting to humans</p>
             </CardContent>
           </Card>
         ) : (
@@ -125,21 +175,18 @@ export default function LiveCallPanel() {
                     {formatDuration(session.connected_at)}
                   </Badge>
                 </div>
+                {(session as any).phone_number && (
+                  <p className="text-xs text-muted-foreground">{(session as any).phone_number}</p>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Notes */}
                 <Textarea
                   placeholder="Call notes..."
                   value={selectedSession === session.id ? notes : ''}
-                  onChange={(e) => {
-                    setSelectedSession(session.id);
-                    setNotes(e.target.value);
-                  }}
+                  onChange={(e) => { setSelectedSession(session.id); setNotes(e.target.value); }}
                   onFocus={() => setSelectedSession(session.id)}
                   rows={2}
                 />
-
-                {/* Disposition Buttons */}
                 <div className="flex flex-wrap gap-2">
                   {outcomeButtons.map(btn => (
                     <Button

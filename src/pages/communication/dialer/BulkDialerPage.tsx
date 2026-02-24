@@ -1,35 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
 import { 
   Phone, Play, Pause, Square, Users, PhoneCall, PhoneOff, 
-  Voicemail, BarChart3, Settings, RefreshCw, Zap, Shield
+  Voicemail, BarChart3, RefreshCw, Zap, Shield, AlertTriangle
 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { toast } from 'sonner';
 
+type DialerState = 'idle' | 'running' | 'paused';
 type QueueStatus = 'queued' | 'dialing' | 'answered' | 'voicemail' | 'no_answer' | 'bridged' | 'failed' | 'completed';
-
-interface QueueItem {
-  id: string;
-  phone_number: string;
-  contact_name: string | null;
-  status: QueueStatus;
-  attempt_count: number;
-  priority_score: number;
-  last_attempt_at: string | null;
-  store_id: string | null;
-  notes: string | null;
-}
 
 const statusConfig: Record<QueueStatus, { label: string; color: string }> = {
   queued: { label: 'Queued', color: 'bg-muted text-muted-foreground' },
@@ -45,10 +33,13 @@ const statusConfig: Record<QueueStatus, { label: string; color: string }> = {
 export default function BulkDialerPage() {
   const { currentBusiness } = useBusiness();
   const queryClient = useQueryClient();
-  const [dialerState, setDialerState] = useState<'idle' | 'running' | 'paused'>('idle');
+  const [dialerState, setDialerState] = useState<DialerState>('idle');
   const [testMode, setTestMode] = useState(true);
+  const [selectedCampaign, setSelectedCampaign] = useState<string>('all');
+  const [lastEngineResult, setLastEngineResult] = useState<any>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch queue
+  // Fetch queue with realtime
   const { data: queue = [], isLoading } = useQuery({
     queryKey: ['outbound-call-queue', currentBusiness?.id],
     queryFn: async () => {
@@ -60,12 +51,43 @@ export default function BulkDialerPage() {
         .order('created_at', { ascending: true })
         .limit(200);
       if (error) throw error;
-      return (data || []) as QueueItem[];
+      return data || [];
+    },
+    enabled: !!currentBusiness?.id,
+    refetchInterval: dialerState === 'running' ? 3000 : undefined,
+  });
+
+  // Fetch campaigns
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ['dialer-campaigns', currentBusiness?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dialer_campaigns')
+        .select('*')
+        .eq('business_id', currentBusiness?.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!currentBusiness?.id,
   });
 
-  // Fetch dialer settings
+  // Fetch agents
+  const { data: agents = [] } = useQuery({
+    queryKey: ['dialer-agents', currentBusiness?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dialer_agent_availability')
+        .select('*')
+        .eq('business_id', currentBusiness?.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!currentBusiness?.id,
+    refetchInterval: dialerState === 'running' ? 3000 : undefined,
+  });
+
+  // Fetch settings
   const { data: settings } = useQuery({
     queryKey: ['dialer-settings', currentBusiness?.id],
     queryFn: async () => {
@@ -80,26 +102,67 @@ export default function BulkDialerPage() {
     enabled: !!currentBusiness?.id,
   });
 
-  // Fetch agent availability
-  const { data: agents = [] } = useQuery({
-    queryKey: ['dialer-agents', currentBusiness?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('dialer_agent_availability')
-        .select('*')
-        .eq('business_id', currentBusiness?.id);
+  // Run simulation engine cycle
+  const runEngineCycle = useCallback(async () => {
+    if (!currentBusiness?.id) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('predictive-dialer-engine', {
+        body: {
+          business_id: currentBusiness.id,
+          campaign_id: selectedCampaign !== 'all' ? selectedCampaign : undefined,
+        },
+      });
       if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentBusiness?.id,
-  });
+      setLastEngineResult(data);
+      
+      // Refresh queries
+      queryClient.invalidateQueries({ queryKey: ['outbound-call-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['dialer-agents'] });
+      queryClient.invalidateQueries({ queryKey: ['live-call-sessions'] });
+    } catch (err: any) {
+      console.error('Engine cycle error:', err);
+    }
+  }, [currentBusiness?.id, selectedCampaign, queryClient]);
+
+  // Engine loop
+  useEffect(() => {
+    if (dialerState === 'running') {
+      // Immediate first cycle
+      runEngineCycle();
+      intervalRef.current = setInterval(runEngineCycle, 4000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [dialerState, runEngineCycle]);
+
+  // Realtime subscription
+  useEffect(() => {
+    if (!currentBusiness?.id) return;
+    const channel = supabase
+      .channel('dialer-queue-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'outbound_call_queue' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['outbound-call-queue'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dialer_agent_availability' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['dialer-agents'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [currentBusiness?.id, queryClient]);
 
   const availableAgents = agents.filter(a => a.status === 'available');
   const busyAgents = agents.filter(a => a.status === 'busy');
+  const wrapUpAgents = agents.filter(a => a.status === 'wrap_up');
 
   const queuedCount = queue.filter(q => q.status === 'queued').length;
   const dialingCount = queue.filter(q => q.status === 'dialing').length;
-  const answeredCount = queue.filter(q => q.status === 'answered' || q.status === 'bridged').length;
+  const answeredCount = queue.filter(q => (q.status as string) === 'answered' || (q.status as string) === 'bridged').length;
   const voicemailCount = queue.filter(q => q.status === 'voicemail').length;
   const failedCount = queue.filter(q => q.status === 'failed' || q.status === 'no_answer').length;
   const completedCount = queue.filter(q => q.status === 'completed').length;
@@ -117,32 +180,50 @@ export default function BulkDialerPage() {
       return;
     }
     setDialerState('running');
-    toast.success(`Dialer started${testMode ? ' (TEST MODE — no real calls)' : ''}. Processing ${queuedCount} queued calls.`);
+    toast.success(`Simulation dialer started. Processing ${queuedCount} queued calls.`);
   };
 
   const handlePauseDialer = () => {
     setDialerState('paused');
-    toast.info('Dialer paused');
+    toast.info('Dialer paused — active bridged sessions remain live');
   };
 
   const handleStopDialer = () => {
     setDialerState('idle');
-    toast.info('Dialer stopped');
+    setLastEngineResult(null);
+    toast.info('Dialer stopped — bridged sessions remain intact');
   };
 
   return (
     <div className="w-full min-h-full space-y-6">
+      {/* Simulation Banner */}
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
+        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">SIMULATION MODE ACTIVE — No real calls placed</p>
+          <p className="text-xs text-amber-600 dark:text-amber-500">All outcomes are simulated. Twilio Voice not yet wired.</p>
+        </div>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Predictive Bulk Dialer</h2>
           <p className="text-muted-foreground">Dial hundreds → connect only to humans → zero wasted time</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-3 py-1.5 border rounded-lg">
-            <Shield className="h-4 w-4 text-amber-500" />
-            <Label htmlFor="test-mode" className="text-sm cursor-pointer">Test Mode</Label>
-            <Switch id="test-mode" checked={testMode} onCheckedChange={setTestMode} />
-          </div>
+          {/* Campaign filter */}
+          <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All campaigns" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Campaigns</SelectItem>
+              {campaigns.filter(c => c.status === 'active').map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {dialerState === 'idle' && (
             <Button onClick={handleStartDialer} className="gap-2 bg-green-600 hover:bg-green-700">
               <Play className="h-4 w-4" /> Start Dialer
@@ -179,82 +260,47 @@ export default function BulkDialerPage() {
               <div className="flex items-center gap-3">
                 <div className={`h-3 w-3 rounded-full ${dialerState === 'running' ? 'bg-green-500 animate-pulse' : 'bg-amber-500'}`} />
                 <span className="font-semibold">
-                  {dialerState === 'running' ? 'Dialer Active' : 'Dialer Paused'}
-                  {testMode && ' — TEST MODE'}
+                  {dialerState === 'running' ? 'Engine Active (Simulation)' : 'Dialer Paused'}
                 </span>
               </div>
               <div className="flex items-center gap-6 text-sm">
-                <span>Agents: <strong>{availableAgents.length}</strong> available</span>
-                <span>Queue: <strong>{queuedCount}</strong> remaining</span>
+                <span>Agents: <strong className="text-green-600">{availableAgents.length}</strong> avail / <strong className="text-yellow-600">{busyAgents.length}</strong> busy / <strong className="text-blue-600">{wrapUpAgents.length}</strong> wrap-up</span>
+                <span>Queue: <strong>{queuedCount}</strong></span>
                 <span>Dialing: <strong>{dialingCount}</strong></span>
               </div>
             </div>
             <Progress value={progressPercent} className="mt-3 h-2" />
-            <p className="text-xs text-muted-foreground mt-1">{totalProcessed} of {queue.length} processed ({progressPercent.toFixed(0)}%)</p>
+            <div className="flex justify-between mt-1">
+              <p className="text-xs text-muted-foreground">{totalProcessed} of {queue.length} processed ({progressPercent.toFixed(0)}%)</p>
+              {lastEngineResult && (
+                <p className="text-xs text-muted-foreground">
+                  Last cycle: {lastEngineResult.dialed || 0} dialed, ideal={lastEngineResult.ideal_dials || 0}
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <Phone className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-            <p className="text-2xl font-bold">{queuedCount}</p>
-            <p className="text-xs text-muted-foreground">Queued</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <PhoneCall className="h-5 w-5 mx-auto mb-1 text-yellow-500" />
-            <p className="text-2xl font-bold">{dialingCount}</p>
-            <p className="text-xs text-muted-foreground">Dialing</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <Users className="h-5 w-5 mx-auto mb-1 text-green-500" />
-            <p className="text-2xl font-bold">{answeredCount}</p>
-            <p className="text-xs text-muted-foreground">Connected</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <Voicemail className="h-5 w-5 mx-auto mb-1 text-purple-500" />
-            <p className="text-2xl font-bold">{voicemailCount}</p>
-            <p className="text-xs text-muted-foreground">Voicemail</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <PhoneOff className="h-5 w-5 mx-auto mb-1 text-destructive" />
-            <p className="text-2xl font-bold">{failedCount}</p>
-            <p className="text-xs text-muted-foreground">Failed / No Answer</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 text-center">
-            <BarChart3 className="h-5 w-5 mx-auto mb-1 text-blue-500" />
-            <p className="text-2xl font-bold">{connectRate}%</p>
-            <p className="text-xs text-muted-foreground">Connect Rate</p>
-          </CardContent>
-        </Card>
+        <Card><CardContent className="pt-4 text-center"><Phone className="h-5 w-5 mx-auto mb-1 text-muted-foreground" /><p className="text-2xl font-bold">{queuedCount}</p><p className="text-xs text-muted-foreground">Queued</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><PhoneCall className="h-5 w-5 mx-auto mb-1 text-yellow-500" /><p className="text-2xl font-bold">{dialingCount}</p><p className="text-xs text-muted-foreground">Dialing</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><Users className="h-5 w-5 mx-auto mb-1 text-green-500" /><p className="text-2xl font-bold">{answeredCount}</p><p className="text-xs text-muted-foreground">Connected</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><Voicemail className="h-5 w-5 mx-auto mb-1 text-purple-500" /><p className="text-2xl font-bold">{voicemailCount}</p><p className="text-xs text-muted-foreground">Voicemail</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><PhoneOff className="h-5 w-5 mx-auto mb-1 text-destructive" /><p className="text-2xl font-bold">{failedCount}</p><p className="text-xs text-muted-foreground">Failed / No Answer</p></CardContent></Card>
+        <Card><CardContent className="pt-4 text-center"><BarChart3 className="h-5 w-5 mx-auto mb-1 text-blue-500" /><p className="text-2xl font-bold">{connectRate}%</p><p className="text-xs text-muted-foreground">Connect Rate</p></CardContent></Card>
       </div>
 
       {/* Agent Availability + Queue */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Agent Panel */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5" /> Agent Availability
-            </CardTitle>
+            <CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5" /> Agent Status</CardTitle>
           </CardHeader>
           <CardContent>
             {agents.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No agents configured. Go to Settings to add agents.
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-8">No agents configured</p>
             ) : (
               <div className="space-y-3">
                 {agents.map(agent => (
@@ -263,12 +309,17 @@ export default function BulkDialerPage() {
                       <div className={`h-2.5 w-2.5 rounded-full ${
                         agent.status === 'available' ? 'bg-green-500' :
                         agent.status === 'busy' ? 'bg-yellow-500' :
-                        agent.status === 'wrap_up' ? 'bg-blue-500' :
+                        agent.status === 'wrap_up' ? 'bg-blue-500 animate-pulse' :
                         'bg-muted-foreground'
                       }`} />
                       <span className="text-sm font-medium">{agent.user_id.slice(0, 8)}...</span>
                     </div>
-                    <Badge variant="outline" className="text-xs capitalize">{agent.status}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs capitalize">{agent.status?.replace('_', ' ')}</Badge>
+                      {agent.status === 'wrap_up' && (
+                        <span className="text-xs text-muted-foreground">{agent.wrap_up_seconds}s</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -276,13 +327,10 @@ export default function BulkDialerPage() {
           </CardContent>
         </Card>
 
-        {/* Call Queue */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Zap className="h-5 w-5" /> Call Queue
-              </CardTitle>
+              <CardTitle className="text-lg flex items-center gap-2"><Zap className="h-5 w-5" /> Call Queue</CardTitle>
               <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['outbound-call-queue'] })}>
                 <RefreshCw className="h-4 w-4 mr-1" /> Refresh
               </Button>
@@ -295,7 +343,6 @@ export default function BulkDialerPage() {
               <div className="text-center py-8">
                 <Phone className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">No calls in queue</p>
-                <p className="text-xs text-muted-foreground mt-1">Import stores or add from CRM to start dialing</p>
               </div>
             ) : (
               <ScrollArea className="h-[400px]">
@@ -303,9 +350,7 @@ export default function BulkDialerPage() {
                   {queue.map(item => (
                     <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex-shrink-0">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                        </div>
+                        <Phone className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{item.contact_name || 'Unknown'}</p>
                           <p className="text-xs text-muted-foreground">{item.phone_number}</p>
@@ -315,8 +360,8 @@ export default function BulkDialerPage() {
                         <span className="text-xs text-muted-foreground">
                           {item.attempt_count > 0 ? `${item.attempt_count} attempts` : 'New'}
                         </span>
-                        <Badge variant="outline" className={`text-xs ${statusConfig[item.status]?.color || ''}`}>
-                          {statusConfig[item.status]?.label || item.status}
+                        <Badge variant="outline" className={`text-xs ${statusConfig[item.status as QueueStatus]?.color || ''}`}>
+                          {statusConfig[item.status as QueueStatus]?.label || item.status}
                         </Badge>
                       </div>
                     </div>
