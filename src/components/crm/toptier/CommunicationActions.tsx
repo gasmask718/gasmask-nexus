@@ -12,6 +12,8 @@ import { Phone, MessageSquare, Mail, Loader2 } from 'lucide-react';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { toast } from '@/hooks/use-toast';
 import { useCall } from '@/components/communication/CallProvider';
+import { SmsProviderSelect } from '@/components/communication/SmsProviderSelect';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContactInfo {
   id: string;
@@ -47,6 +49,7 @@ export function CommunicationActions({
   const [messageContent, setMessageContent] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('default');
 
   const hasPhone = !!contact.phone;
   const hasEmail = !!contact.email;
@@ -113,7 +116,18 @@ export function CommunicationActions({
           description: `Simulated text to ${contact.name}: "${messageContent.slice(0, 50)}..."`,
         });
       } else {
-        // In real mode, call Twilio API
+        const { data, error } = await supabase.functions.invoke('send-sms', {
+          body: {
+            to_number: contact.phone,
+            message_body: messageContent.trim(),
+            idempotency_key: crypto.randomUUID(),
+            explicit_provider: selectedProvider === 'default' ? undefined : selectedProvider,
+            skip_cooldown: true,
+            metadata: { contact_id: contact.id, contact_name: contact.name, source_ui: 'communication_actions' },
+          },
+        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Send failed');
         toast({
           title: '💬 SMS Sent',
           description: `Text sent to ${contact.name}`,
@@ -253,6 +267,7 @@ export function CommunicationActions({
             <div className="text-sm text-muted-foreground">
               {messageContent.length} / 160 characters
             </div>
+            <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSmsModalOpen(false)}>Cancel</Button>

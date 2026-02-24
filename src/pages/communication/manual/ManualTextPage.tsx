@@ -11,6 +11,7 @@ import {
   MessageSquare, Send, Search, User, Phone, Building2, 
   FileText, Sparkles, ChevronDown, Clock, Check, CheckCheck
 } from 'lucide-react';
+import { SmsProviderSelect } from '@/components/communication/SmsProviderSelect';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,6 +47,7 @@ const ManualTextPage = () => {
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messageText, setMessageText] = useState('');
   const [selectedBrandPhone, setSelectedBrandPhone] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('default');
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   // Mock conversations (would come from DB)
@@ -102,19 +104,27 @@ const ManualTextPage = () => {
     setMessages(prev => [...prev, newMessage]);
     setMessageText('');
 
-    // Log to database
+    // Send via hardened router
     try {
-      await supabase.from('communication_messages').insert({
-        business_id: currentBusiness?.id,
-        direction: 'outbound',
-        channel: 'sms',
-        content: messageText,
-        sender_id: selectedConversation?.id,
-        ai_generated: false,
+      const { data, error } = await supabase.functions.invoke('send-sms', {
+        body: {
+          to_number: selectedConversation?.contact_phone || '',
+          message_body: messageText,
+          idempotency_key: crypto.randomUUID(),
+          explicit_provider: selectedProvider === 'default' ? undefined : selectedProvider,
+          skip_cooldown: true,
+          metadata: {
+            business_id: currentBusiness?.id,
+            contact_name: selectedConversation?.contact_name,
+            source_ui: 'manual_text_page',
+          },
+        },
       });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Send failed');
       toast.success('Message sent');
-    } catch (error) {
-      toast.error('Failed to send message');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send message');
     }
   };
 
@@ -303,6 +313,9 @@ const ManualTextPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
+
+                {/* Provider Selector */}
+                <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} showLabel={false} className="w-40" />
 
                 {/* AI Rewrite Buttons */}
                 <div className="flex gap-1 ml-auto">

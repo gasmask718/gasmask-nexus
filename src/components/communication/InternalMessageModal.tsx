@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Send, Loader2, Phone, MessageSquare, Building2, AlertCircle } from "lucide-react";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
@@ -39,6 +40,7 @@ export function InternalMessageModal({
   const [message, setMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [selectedBusinessId, setSelectedBusinessId] = useState(businessId || "");
+  const [selectedProvider, setSelectedProvider] = useState("default");
   const [selectedSenderNumber, setSelectedSenderNumber] = useState("");
 
   const { selectedBusiness, businesses } = useBusinessStore();
@@ -112,6 +114,8 @@ export function InternalMessageModal({
           to_number: destinationPhone,
           message_body: message.trim(),
           idempotency_key: crypto.randomUUID(),
+          explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
+          skip_cooldown: true,
           store_id: storeId || null,
           metadata: {
             business_id: selectedBusinessId || null,
@@ -238,6 +242,9 @@ export function InternalMessageModal({
               <span>{Math.ceil(message.length / 160) || 1} segment(s)</span>
             </div>
           </div>
+
+          {/* Provider Selector */}
+          <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
