@@ -115,6 +115,66 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Global limits check (cost/call kill switch) ──
+    const { data: globalLimits } = await supabase
+      .from("dialer_global_limits")
+      .select("*")
+      .eq("business_id", business_id)
+      .maybeSingle();
+
+    if (globalLimits?.auto_pause_on_limit) {
+      // Count today's calls
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const { count: todayCalls } = await supabase
+        .from("call_cost_events")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business_id)
+        .gte("created_at", todayStart.toISOString());
+
+      const { data: todayCostData } = await supabase
+        .from("call_cost_events")
+        .select("estimated_cost")
+        .eq("business_id", business_id)
+        .gte("created_at", todayStart.toISOString());
+
+      const todayCost = (todayCostData || []).reduce((sum: number, e: any) => sum + (Number(e.estimated_cost) || 0), 0);
+
+      // Hour check
+      const hourStart = new Date(Date.now() - 3600_000);
+      const { count: hourCalls } = await supabase
+        .from("call_cost_events")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business_id)
+        .gte("created_at", hourStart.toISOString());
+
+      let pauseReason: string | null = null;
+      if (globalLimits.max_daily_calls && (todayCalls || 0) >= globalLimits.max_daily_calls) {
+        pauseReason = `daily_call_limit_${todayCalls}/${globalLimits.max_daily_calls}`;
+      } else if (globalLimits.max_daily_cost && todayCost >= globalLimits.max_daily_cost) {
+        pauseReason = `daily_cost_limit_$${todayCost.toFixed(2)}/$${globalLimits.max_daily_cost}`;
+      } else if (globalLimits.max_hourly_calls && (hourCalls || 0) >= globalLimits.max_hourly_calls) {
+        pauseReason = `hourly_call_limit_${hourCalls}/${globalLimits.max_hourly_calls}`;
+      }
+
+      if (pauseReason) {
+        // Auto-pause
+        await supabase.from("dialer_global_limits").update({
+          paused_at: new Date().toISOString(),
+          paused_reason: pauseReason,
+          updated_at: new Date().toISOString(),
+        }).eq("business_id", business_id);
+
+        await releaseLock(supabase, business_id);
+        await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [pauseReason] });
+        return new Response(
+          JSON.stringify({ success: false, reason: "global_limit_exceeded", pause_reason: pauseReason }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // ── Auto-transition wrap_up → available ──
     const { data: wrapUpAgents } = await supabase
       .from("dialer_agent_availability")
