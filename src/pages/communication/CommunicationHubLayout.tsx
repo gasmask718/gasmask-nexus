@@ -26,6 +26,8 @@ const navItems = [
   { path: "deals", label: "Deals & Sales", icon: DollarSign },
   { path: "follow-ups", label: "Follow-Up Manager", icon: Activity },
   { path: "autonomous-director", label: "Autonomous Director", icon: Brain },
+  { path: "bulk-dialer", label: "Bulk Dialer", icon: Zap, highlight: true },
+  { path: "live-panel", label: "Live Call Panel", icon: Headphones, highlight: true },
   { path: "dialer", label: "Dialer (AI)", icon: Phone },
   { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
   { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },
@@ -52,6 +54,8 @@ const navItems = [
 // Call System Settings section (Admin-only)
 const callSystemSettingsItems = [
   { path: "call-diagnostics", label: "Diagnostics & Go-Live", icon: Activity, adminOnly: true, highlight: true },
+  { path: "dialer-settings", label: "Dialer Settings", icon: Settings, adminOnly: true, highlight: true },
+  { path: "dialer-health", label: "Dialer Health", icon: BarChart3, adminOnly: true },
   { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
   { path: "business-hours", label: "Business Hours", icon: Clock, adminOnly: true },
   { path: "after-hours-routing", label: "After-Hours Routing", icon: Moon, adminOnly: true },
