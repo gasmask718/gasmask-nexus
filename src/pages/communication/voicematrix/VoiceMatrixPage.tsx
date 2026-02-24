@@ -1,7 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Radio, Settings } from "lucide-react";
+import { Radio, Settings, Mic } from "lucide-react";
 import { VoiceMatrixManager } from "@/components/communication/VoiceMatrixManager";
 import { LiveVoiceMatrix } from "@/components/communication/LiveVoiceMatrix";
+import { VoiceBrowserTest } from "@/components/communication/VoiceBrowserTest";
 
 export default function VoiceMatrixPage() {
   return (
@@ -12,6 +13,10 @@ export default function VoiceMatrixPage() {
             <Settings className="h-4 w-4" />
             Personas & Providers
           </TabsTrigger>
+          <TabsTrigger value="test" className="flex items-center gap-2">
+            <Mic className="h-4 w-4" />
+            Browser Voice Test
+          </TabsTrigger>
           <TabsTrigger value="live" className="flex items-center gap-2">
             <Radio className="h-4 w-4" />
             Live Voice Matrix
@@ -19,6 +24,9 @@ export default function VoiceMatrixPage() {
         </TabsList>
         <TabsContent value="personas">
           <VoiceMatrixManager />
+        </TabsContent>
+        <TabsContent value="test">
+          <VoiceBrowserTest />
         </TabsContent>
         <TabsContent value="live">
           <LiveVoiceMatrix />
