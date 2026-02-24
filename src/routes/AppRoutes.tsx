@@ -222,6 +222,10 @@ import AICallAgentDashboardPage from '@/pages/communication/call-intelligence/AI
 import ManualCallPage from '@/pages/communication/manual/ManualCallPage';
 import ManualTextPage from '@/pages/communication/manual/ManualTextPage';
 import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
+import BulkDialerPage from '@/pages/communication/dialer/BulkDialerPage';
+import LiveCallPanel from '@/pages/communication/dialer/LiveCallPanel';
+import DialerSettingsPage from '@/pages/communication/dialer/DialerSettingsPage';
+import DialerHealthPage from '@/pages/communication/dialer/DialerHealthPage';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
@@ -1450,6 +1454,10 @@ export default function AppRoutes() {
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
           <Route path="sms-dashboard" element={<CommunicationSMSDashboard />} />
           <Route path="executive-ai" element={<ExecutiveControlRoomPage />} />
+          <Route path="bulk-dialer" element={<BulkDialerPage />} />
+          <Route path="live-panel" element={<LiveCallPanel />} />
+          <Route path="dialer-settings" element={<DialerSettingsPage />} />
+          <Route path="dialer-health" element={<DialerHealthPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
