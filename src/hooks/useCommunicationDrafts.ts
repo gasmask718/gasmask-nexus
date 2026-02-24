@@ -252,6 +252,7 @@ export function useCommunicationDrafts(options?: {
             to_number: draft.recipient_phone,
             message_body: draft.body,
             idempotency_key: crypto.randomUUID(),
+            skip_cooldown: true,
             store_id: draft.store_id,
             metadata: {
               business_id: draft.business_id,

@@ -19,6 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useBusinessStore } from "@/stores/businessStore";
 import { useCommunicationDrafts, DraftChannel } from "@/hooks/useCommunicationDrafts";
 import { cn } from "@/lib/utils";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 
 interface DraftMessageModalProps {
   isOpen: boolean;
@@ -58,6 +59,7 @@ export function DraftMessageModal({
   const [subject, setSubject] = useState("");
   const [selectedBusinessId, setSelectedBusinessId] = useState(businessId || "");
   const [selectedSenderNumber, setSelectedSenderNumber] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState("default");
   const [mode, setMode] = useState<"edit" | "preview">("edit");
 
   const { selectedBusiness, businesses } = useBusinessStore();
@@ -388,6 +390,11 @@ export function DraftMessageModal({
                 </ul>
               </div>
             </div>
+          )}
+
+          {/* Provider Selector */}
+          {channel === "sms" && (
+            <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
           )}
 
           <Separator />

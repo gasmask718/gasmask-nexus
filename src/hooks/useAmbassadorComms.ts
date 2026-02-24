@@ -119,13 +119,15 @@ export function useAmbassadorThreads() {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (input: { storeId: string; phone: string; content: string; contactName: string }) => {
+    mutationFn: async (input: { storeId: string; phone: string; content: string; contactName: string; explicitProvider?: string }) => {
       // Call the send-sms edge function
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
           to_number: input.phone,
           message_body: input.content,
           idempotency_key: crypto.randomUUID(),
+          explicit_provider: input.explicitProvider && input.explicitProvider !== 'default' ? input.explicitProvider : undefined,
+          skip_cooldown: true,
           store_id: input.storeId,
           metadata: { contact_name: input.contactName },
         },

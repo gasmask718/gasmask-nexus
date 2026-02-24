@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Search, Rocket, Store, Loader2 } from "lucide-react";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 
 interface BulkSMSModalProps {
   open: boolean;
@@ -34,6 +35,7 @@ export function BulkSMSModal({ open, onOpenChange, template }: BulkSMSModalProps
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("default");
 
   const { data: stores = [], isLoading } = useQuery({
     queryKey: ["bulk-sms-stores"],
@@ -83,7 +85,8 @@ export function BulkSMSModal({ open, onOpenChange, template }: BulkSMSModalProps
       const results = await bulkSendSMS(
         "default",
         template.category || "cold_outreach",
-        recipients
+        recipients,
+        selectedProvider === "default" ? undefined : selectedProvider as "twilio" | "biztext"
       );
       const success = results.filter((r) => r.success).length;
       const failed = results.length - success;
@@ -163,6 +166,9 @@ export function BulkSMSModal({ open, onOpenChange, template }: BulkSMSModalProps
             )}
           </ScrollArea>
         </div>
+
+        {/* Provider Selector */}
+        <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
 
         {/* Footer */}
         <DialogFooter className="flex items-center justify-between sm:justify-between">

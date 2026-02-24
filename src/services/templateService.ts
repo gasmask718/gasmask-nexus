@@ -62,15 +62,24 @@ export async function sendSMSFromTemplate(
   brand: string,
   category: string,
   phoneNumber: string,
-  variables: TemplateVariables
+  variables: TemplateVariables,
+  explicitProvider?: "twilio" | "biztext"
 ) {
   const template = await getTemplateByCategory(brand, "sms", category);
   const message = renderTemplate(template.content, variables);
 
-  // TODO: Integrate with actual SMS service
-  console.log("Sending SMS:", { phoneNumber, message });
-  
-  return { success: true, message };
+  const { data, error } = await supabase.functions.invoke("send-sms", {
+    body: {
+      to_number: phoneNumber,
+      message_body: message,
+      idempotency_key: crypto.randomUUID(),
+      explicit_provider: explicitProvider,
+      metadata: { brand, category, source: "template_service" },
+    },
+  });
+
+  if (error) throw error;
+  return { success: data?.success ?? false, message, sid: data?.sid };
 }
 
 /**
@@ -133,7 +142,8 @@ export async function getBrandTone(brand: string) {
 export async function bulkSendSMS(
   brand: string,
   category: string,
-  recipients: Array<{ phoneNumber: string; variables: TemplateVariables }>
+  recipients: Array<{ phoneNumber: string; variables: TemplateVariables }>,
+  explicitProvider?: "twilio" | "biztext"
 ) {
   const template = await getTemplateByCategory(brand, "sms", category);
   
@@ -141,9 +151,17 @@ export async function bulkSendSMS(
     recipients.map(async ({ phoneNumber, variables }) => {
       try {
         const message = renderTemplate(template.content, variables);
-        // TODO: Integrate with actual SMS service
-        console.log("Bulk SMS:", { phoneNumber, message });
-        return { phoneNumber, success: true };
+        const { data, error } = await supabase.functions.invoke("send-sms", {
+          body: {
+            to_number: phoneNumber,
+            message_body: message,
+            idempotency_key: crypto.randomUUID(),
+            explicit_provider: explicitProvider,
+            metadata: { brand, category, source: "bulk_template_service" },
+          },
+        });
+        if (error) throw error;
+        return { phoneNumber, success: data?.success ?? false };
       } catch (error) {
         return { phoneNumber, success: false, error };
       }
