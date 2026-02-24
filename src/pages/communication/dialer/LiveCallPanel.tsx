@@ -103,13 +103,21 @@ export default function LiveCallPanel() {
         });
       }
 
-      // 3. Set agent to wrap_up
+      // 3. Set agent to wrap_up with proper decrement
       if (session.rep_user_id) {
+        // Fetch current count for proper decrement
+        const { data: agentData } = await supabase
+          .from('dialer_agent_availability')
+          .select('active_calls_count')
+          .eq('user_id', session.rep_user_id)
+          .eq('business_id', currentBusiness?.id)
+          .maybeSingle();
+
         await supabase
           .from('dialer_agent_availability')
           .update({
             status: 'wrap_up',
-            active_calls_count: 0,
+            active_calls_count: Math.max((agentData?.active_calls_count || 1) - 1, 0),
             last_call_ended_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           })
