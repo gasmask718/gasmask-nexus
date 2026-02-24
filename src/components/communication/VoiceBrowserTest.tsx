@@ -29,7 +29,6 @@ export function VoiceBrowserTest() {
         .from("voice_matrix")
         .select("id, brand_key, persona_name, elevenlabs_agent_id, active")
         .eq("active", true)
-        .not("elevenlabs_agent_id", "is", null)
         .order("brand_key");
       if (currentBusiness?.id) {
         query.or(`business_id.eq.${currentBusiness.id},business_id.is.null`);
@@ -69,6 +68,9 @@ export function VoiceBrowserTest() {
                       <span className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">{p.brand_key}</Badge>
                         {p.persona_name}
+                        {!p.elevenlabs_agent_id && (
+                          <span className="text-xs text-muted-foreground">(no agent ID)</span>
+                        )}
                       </span>
                     </SelectItem>
                   ))}
@@ -88,8 +90,19 @@ export function VoiceBrowserTest() {
           {personas.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               <Radio className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No personas with an ElevenLabs Agent ID configured.</p>
-              <p className="text-sm">Add an Agent ID in the Personas & Providers tab first.</p>
+              <p>No active personas found in the Voice Matrix.</p>
+              <p className="text-sm">Create personas in the Personas & Providers tab first.</p>
+            </div>
+          )}
+
+          {selectedPersona && !selectedPersona.elevenlabs_agent_id && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm">
+              <p className="font-medium text-destructive">Agent ID Missing</p>
+              <p className="text-muted-foreground mt-1">
+                This persona doesn't have an ElevenLabs Agent ID configured. 
+                Go to <strong>Personas & Providers → Edit</strong> and add your Agent ID from the 
+                <a href="https://elevenlabs.io" target="_blank" rel="noopener" className="underline ml-1">ElevenLabs dashboard</a>.
+              </p>
             </div>
           )}
 
