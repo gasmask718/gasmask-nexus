@@ -20814,6 +20814,8 @@ export type Database = {
           retry_backoff_minutes: number[] | null
           retry_delay_minutes: number | null
           retry_max_days: number | null
+          telephony_mode: string | null
+          twilio_enabled: boolean | null
           updated_at: string
         }
         Insert: {
@@ -20840,6 +20842,8 @@ export type Database = {
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
           retry_max_days?: number | null
+          telephony_mode?: string | null
+          twilio_enabled?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -20866,6 +20870,8 @@ export type Database = {
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
           retry_max_days?: number | null
+          telephony_mode?: string | null
+          twilio_enabled?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -29668,6 +29674,7 @@ export type Database = {
           store_id: string | null
           store_stage_after: string | null
           transcript_json: Json | null
+          twilio_call_sid: string | null
         }
         Insert: {
           best_call_time?: string | null
@@ -29699,6 +29706,7 @@ export type Database = {
           store_id?: string | null
           store_stage_after?: string | null
           transcript_json?: Json | null
+          twilio_call_sid?: string | null
         }
         Update: {
           best_call_time?: string | null
@@ -29730,6 +29738,7 @@ export type Database = {
           store_id?: string | null
           store_stage_after?: string | null
           transcript_json?: Json | null
+          twilio_call_sid?: string | null
         }
         Relationships: [
           {
@@ -33570,6 +33579,7 @@ export type Database = {
           priority_score: number | null
           status: string
           store_id: string | null
+          twilio_call_sid: string | null
           updated_at: string
         }
         Insert: {
@@ -33595,6 +33605,7 @@ export type Database = {
           priority_score?: number | null
           status?: string
           store_id?: string | null
+          twilio_call_sid?: string | null
           updated_at?: string
         }
         Update: {
@@ -33620,6 +33631,7 @@ export type Database = {
           priority_score?: number | null
           status?: string
           store_id?: string | null
+          twilio_call_sid?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -50818,6 +50830,56 @@ export type Database = {
         }
         Relationships: []
       }
+      twilio_call_logs: {
+        Row: {
+          business_id: string | null
+          call_sid: string | null
+          created_at: string | null
+          direction: string | null
+          duration: number | null
+          from_number: string | null
+          id: string
+          queue_item_id: string | null
+          raw_payload: Json | null
+          status: string | null
+          to_number: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          call_sid?: string | null
+          created_at?: string | null
+          direction?: string | null
+          duration?: number | null
+          from_number?: string | null
+          id?: string
+          queue_item_id?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          to_number?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          call_sid?: string | null
+          created_at?: string | null
+          direction?: string | null
+          duration?: number | null
+          from_number?: string | null
+          id?: string
+          queue_item_id?: string | null
+          raw_payload?: Json | null
+          status?: string | null
+          to_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "twilio_call_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       universal_activity: {
         Row: {
           action: string
@@ -59963,6 +60025,7 @@ export type Database = {
               priority_score: number | null
               status: string
               store_id: string | null
+              twilio_call_sid: string | null
               updated_at: string
             }[]
             SetofOptions: {
@@ -60003,6 +60066,7 @@ export type Database = {
               priority_score: number | null
               status: string
               store_id: string | null
+              twilio_call_sid: string | null
               updated_at: string
             }[]
             SetofOptions: {

@@ -101,6 +101,8 @@ Deno.serve(async (req) => {
     const maxCallsPerMinute = settings?.max_calls_per_minute ?? 30;
     const maxSimultaneousDials = settings?.max_simultaneous_dials ?? 10;
     const connectRateTarget = settings?.connect_rate_target ?? 0.18;
+    const telephonyMode = settings?.telephony_mode || "simulation";
+    const twilioEnabled = settings?.twilio_enabled || false;
 
     // ── Business hours check ──
     const nowMin = getLocalMinutesSinceMidnight(tz);
@@ -211,9 +213,43 @@ Deno.serve(async (req) => {
     let agentsClaimed = 0;
     const results: Array<{ id: string; outcome: string; session_id?: string }> = [];
 
+    const isLive = telephonyMode === "live" && twilioEnabled;
+
     for (const item of claimedItems) {
       await new Promise((r) => setTimeout(r, 30 + Math.random() * 100));
 
+      // ── LIVE MODE: Dispatch to Twilio ──
+      if (isLive) {
+        try {
+          const { data: callResult, error: callErr } = await supabase.functions.invoke("twilio-outbound-call", {
+            body: { queue_item_id: item.id, business_id: item.business_id },
+          });
+
+          if (callErr || callResult?.error) {
+            errors.push(`twilio_call ${item.id}: ${callErr?.message || callResult?.error}`);
+            outcomeCounts.failed++;
+            results.push({ id: item.id, outcome: "twilio_error" });
+
+            // Reset to queued for retry
+            await supabase.from("outbound_call_queue").update({
+              status: "queued",
+              claimed_by_user_id: null, claimed_at: null,
+              claim_expires_at: null, claim_token: null,
+            }).eq("id", item.id);
+          } else {
+            // Call placed — Twilio webhooks will handle state transitions
+            outcomeCounts.answered++; // placeholder; real outcome comes via webhook
+            results.push({ id: item.id, outcome: "twilio_initiated", call_sid: callResult?.call_sid });
+          }
+        } catch (e) {
+          errors.push(`twilio_exception ${item.id}: ${String(e)}`);
+          outcomeCounts.failed++;
+          results.push({ id: item.id, outcome: "twilio_exception" });
+        }
+        continue; // Skip simulation logic
+      }
+
+      // ── SIMULATION MODE ──
       const outcome = simulateOutcome();
 
       if (outcome === "answered") {

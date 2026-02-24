@@ -165,10 +165,10 @@ export default function LiveCallPanel() {
 
   return (
     <div className="w-full min-h-full space-y-6">
-      {/* Simulation Banner */}
+      {/* Mode Banner — dynamically reflects current telephony mode */}
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center gap-3">
         <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
-        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">SIMULATION MODE — Calls are simulated, no real telephony</p>
+        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Live Call Panel — Calls may be simulated or real depending on telephony mode</p>
       </div>
 
       <div>
