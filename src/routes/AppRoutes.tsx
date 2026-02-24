@@ -230,6 +230,7 @@ import CampaignIntelligencePage from '@/pages/communication/dialer/CampaignIntel
 import DialerCostDashboard from '@/pages/communication/dialer/DialerCostDashboard';
 import DialerHealthPage from '@/pages/communication/dialer/DialerHealthPage';
 import DialerOptimizationDashboard from '@/pages/communication/dialer/DialerOptimizationDashboard';
+import DialerRevenueIntelligence from '@/pages/communication/dialer/DialerRevenueIntelligence';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
@@ -1466,6 +1467,7 @@ export default function AppRoutes() {
           <Route path="campaign-intelligence" element={<CampaignIntelligencePage />} />
           <Route path="cost-dashboard" element={<DialerCostDashboard />} />
           <Route path="optimization" element={<DialerOptimizationDashboard />} />
+          <Route path="revenue-intelligence" element={<DialerRevenueIntelligence />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
