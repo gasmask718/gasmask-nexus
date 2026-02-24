@@ -1677,6 +1677,53 @@ export type Database = {
           },
         ]
       }
+      ai_call_flows: {
+        Row: {
+          active: boolean | null
+          business_id: string | null
+          created_at: string
+          escalation_rules: Json | null
+          extraction_schema: Json | null
+          flow_name: string
+          id: string
+          nodes: Json | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          business_id?: string | null
+          created_at?: string
+          escalation_rules?: Json | null
+          extraction_schema?: Json | null
+          flow_name: string
+          id?: string
+          nodes?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          business_id?: string | null
+          created_at?: string
+          escalation_rules?: Json | null
+          extraction_schema?: Json | null
+          flow_name?: string
+          id?: string
+          nodes?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_call_flows_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_call_logs: {
         Row: {
           ai_summary: string | null
@@ -1864,6 +1911,7 @@ export type Database = {
       }
       ai_call_sessions: {
         Row: {
+          ai_call_flow_id: string | null
           ai_notes: string | null
           assigned_agent_id: string | null
           business_id: string | null
@@ -1872,6 +1920,7 @@ export type Database = {
           campaign_id: string | null
           campaign_run_id: string | null
           contact_id: string | null
+          conversation_structured_data: Json | null
           corridor_id: string | null
           corridor_passed: boolean | null
           created_at: string
@@ -1900,9 +1949,13 @@ export type Database = {
           style_profile_id: string | null
           switchboard_agent_id: string | null
           transcript: string | null
+          tts_fallback_triggered: boolean | null
+          tts_provider_used: string | null
           updated_at: string
+          voice_matrix_id: string | null
         }
         Insert: {
+          ai_call_flow_id?: string | null
           ai_notes?: string | null
           assigned_agent_id?: string | null
           business_id?: string | null
@@ -1911,6 +1964,7 @@ export type Database = {
           campaign_id?: string | null
           campaign_run_id?: string | null
           contact_id?: string | null
+          conversation_structured_data?: Json | null
           corridor_id?: string | null
           corridor_passed?: boolean | null
           created_at?: string
@@ -1939,9 +1993,13 @@ export type Database = {
           style_profile_id?: string | null
           switchboard_agent_id?: string | null
           transcript?: string | null
+          tts_fallback_triggered?: boolean | null
+          tts_provider_used?: string | null
           updated_at?: string
+          voice_matrix_id?: string | null
         }
         Update: {
+          ai_call_flow_id?: string | null
           ai_notes?: string | null
           assigned_agent_id?: string | null
           business_id?: string | null
@@ -1950,6 +2008,7 @@ export type Database = {
           campaign_id?: string | null
           campaign_run_id?: string | null
           contact_id?: string | null
+          conversation_structured_data?: Json | null
           corridor_id?: string | null
           corridor_passed?: boolean | null
           created_at?: string
@@ -1978,9 +2037,19 @@ export type Database = {
           style_profile_id?: string | null
           switchboard_agent_id?: string | null
           transcript?: string | null
+          tts_fallback_triggered?: boolean | null
+          tts_provider_used?: string | null
           updated_at?: string
+          voice_matrix_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_call_sessions_ai_call_flow_id_fkey"
+            columns: ["ai_call_flow_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_flows"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_call_sessions_business_id_fkey"
             columns: ["business_id"]
@@ -2070,6 +2139,13 @@ export type Database = {
             columns: ["switchboard_agent_id"]
             isOneToOne: false
             referencedRelation: "ai_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_call_sessions_voice_matrix_id_fkey"
+            columns: ["voice_matrix_id"]
+            isOneToOne: false
+            referencedRelation: "voice_matrix"
             referencedColumns: ["id"]
           },
         ]
@@ -51100,6 +51176,66 @@ export type Database = {
           },
         ]
       }
+      tts_events: {
+        Row: {
+          ai_call_session_id: string | null
+          business_id: string | null
+          characters_count: number | null
+          created_at: string
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          persona_id: string | null
+          provider: Database["public"]["Enums"]["voice_tts_provider"]
+          success: boolean | null
+          text_hash: string | null
+          was_fallback: boolean | null
+        }
+        Insert: {
+          ai_call_session_id?: string | null
+          business_id?: string | null
+          characters_count?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          persona_id?: string | null
+          provider: Database["public"]["Enums"]["voice_tts_provider"]
+          success?: boolean | null
+          text_hash?: string | null
+          was_fallback?: boolean | null
+        }
+        Update: {
+          ai_call_session_id?: string | null
+          business_id?: string | null
+          characters_count?: number | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          persona_id?: string | null
+          provider?: Database["public"]["Enums"]["voice_tts_provider"]
+          success?: boolean | null
+          text_hash?: string | null
+          was_fallback?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tts_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tts_events_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_matrix"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tube_inventory_ledger: {
         Row: {
           created_at: string
@@ -53375,6 +53511,59 @@ export type Database = {
           },
         ]
       }
+      voice_matrix: {
+        Row: {
+          active: boolean | null
+          aws_voice_id: string | null
+          brand_key: string
+          business_id: string | null
+          created_at: string
+          elevenlabs_agent_id: string | null
+          elevenlabs_voice_id: string | null
+          id: string
+          language_code: string | null
+          persona_name: string
+          speaking_style: Json | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean | null
+          aws_voice_id?: string | null
+          brand_key: string
+          business_id?: string | null
+          created_at?: string
+          elevenlabs_agent_id?: string | null
+          elevenlabs_voice_id?: string | null
+          id?: string
+          language_code?: string | null
+          persona_name: string
+          speaking_style?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean | null
+          aws_voice_id?: string | null
+          brand_key?: string
+          business_id?: string | null
+          created_at?: string
+          elevenlabs_agent_id?: string | null
+          elevenlabs_voice_id?: string | null
+          id?: string
+          language_code?: string | null
+          persona_name?: string
+          speaking_style?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_matrix_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_personas: {
         Row: {
           business_id: string | null
@@ -53493,6 +53682,62 @@ export type Database = {
             foreignKeyName: "voice_profiles_business_id_fkey"
             columns: ["business_id"]
             isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_provider_settings: {
+        Row: {
+          aws_polly_region: string | null
+          aws_polly_voice_id: string | null
+          business_id: string
+          created_at: string
+          default_tts_provider: Database["public"]["Enums"]["voice_tts_provider"]
+          elevenlabs_voice_id: string | null
+          enable_streaming_tts: boolean | null
+          fallback_tts_provider: Database["public"]["Enums"]["voice_tts_provider"]
+          force_provider: string | null
+          id: string
+          max_tts_latency_ms: number | null
+          tts_cache_enabled: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          aws_polly_region?: string | null
+          aws_polly_voice_id?: string | null
+          business_id: string
+          created_at?: string
+          default_tts_provider?: Database["public"]["Enums"]["voice_tts_provider"]
+          elevenlabs_voice_id?: string | null
+          enable_streaming_tts?: boolean | null
+          fallback_tts_provider?: Database["public"]["Enums"]["voice_tts_provider"]
+          force_provider?: string | null
+          id?: string
+          max_tts_latency_ms?: number | null
+          tts_cache_enabled?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          aws_polly_region?: string | null
+          aws_polly_voice_id?: string | null
+          business_id?: string
+          created_at?: string
+          default_tts_provider?: Database["public"]["Enums"]["voice_tts_provider"]
+          elevenlabs_voice_id?: string | null
+          enable_streaming_tts?: boolean | null
+          fallback_tts_provider?: Database["public"]["Enums"]["voice_tts_provider"]
+          force_provider?: string | null
+          id?: string
+          max_tts_latency_ms?: number | null
+          tts_cache_enabled?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_provider_settings_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
             referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
@@ -60192,6 +60437,29 @@ export type Database = {
         }
         Relationships: []
       }
+      v_tts_provider_stats: {
+        Row: {
+          avg_latency_ms: number | null
+          avg_success_latency_ms: number | null
+          business_id: string | null
+          failed: number | null
+          fallback_count: number | null
+          provider: Database["public"]["Enums"]["voice_tts_provider"] | null
+          success_rate: number | null
+          successful: number | null
+          total_characters: number | null
+          total_requests: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tts_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_tube_bag_ratio_per_store: {
         Row: {
           bags_to_tubes_ratio_percent: number | null
@@ -62031,6 +62299,7 @@ export type Database = {
         | "coldLead"
         | "followUp"
         | "order"
+      voice_tts_provider: "elevenlabs" | "aws_polly"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -62623,6 +62892,7 @@ export const Constants = {
         "followUp",
         "order",
       ],
+      voice_tts_provider: ["elevenlabs", "aws_polly"],
     },
   },
 } as const
