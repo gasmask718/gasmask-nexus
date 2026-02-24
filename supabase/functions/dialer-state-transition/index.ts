@@ -6,7 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Strict state machine transitions
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   queued: ["dialing"],
   dialing: ["answered", "voicemail", "no_answer", "failed"],
@@ -67,15 +66,8 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     };
 
-    if (new_status === "dialing") {
-      updatePayload.last_attempt_at = new Date().toISOString();
-      updatePayload.attempt_count = (item.attempt_count || 0) + 1;
-    }
-
-    if (new_status === "no_answer") {
-      // Schedule retry 30 min from now (configurable via settings)
-      const retryAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-      updatePayload.next_retry_at = retryAt;
+    if (new_status === "answered") {
+      updatePayload.answered_at = new Date().toISOString();
     }
 
     // Update queue item
@@ -115,17 +107,6 @@ Deno.serve(async (req) => {
       if (!sessionErr && session) {
         session_id = session.id;
       }
-
-      // Set agent to busy
-      await supabase
-        .from("dialer_agent_availability")
-        .update({
-          status: "busy",
-          active_calls_count: 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", agent_id)
-        .eq("business_id", item.business_id);
     }
 
     return new Response(

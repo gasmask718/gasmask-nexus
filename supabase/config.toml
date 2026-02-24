@@ -169,3 +169,12 @@ verify_jwt = false
 
 [functions.send-sms]
 verify_jwt = false
+
+[functions.dialer-state-transition]
+verify_jwt = false
+
+[functions.predictive-dialer-engine]
+verify_jwt = false
+
+[functions.dialer-watchdog]
+verify_jwt = false

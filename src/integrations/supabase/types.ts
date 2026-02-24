@@ -20511,6 +20511,85 @@ export type Database = {
           },
         ]
       }
+      dialer_engine_cycle_logs: {
+        Row: {
+          agents_claimed: number | null
+          business_id: string | null
+          campaign_id: string | null
+          claimed_count: number | null
+          created_at: string
+          ended_at: string | null
+          errors: Json | null
+          id: string
+          lock_acquired: boolean
+          outcomes: Json | null
+          started_at: string
+        }
+        Insert: {
+          agents_claimed?: number | null
+          business_id?: string | null
+          campaign_id?: string | null
+          claimed_count?: number | null
+          created_at?: string
+          ended_at?: string | null
+          errors?: Json | null
+          id?: string
+          lock_acquired?: boolean
+          outcomes?: Json | null
+          started_at?: string
+        }
+        Update: {
+          agents_claimed?: number | null
+          business_id?: string | null
+          campaign_id?: string | null
+          claimed_count?: number | null
+          created_at?: string
+          ended_at?: string | null
+          errors?: Json | null
+          id?: string
+          lock_acquired?: boolean
+          outcomes?: Json | null
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_engine_cycle_logs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_engine_locks: {
+        Row: {
+          business_id: string
+          locked_by: string | null
+          locked_until: string
+          updated_at: string
+        }
+        Insert: {
+          business_id: string
+          locked_by?: string | null
+          locked_until?: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string
+          locked_by?: string | null
+          locked_until?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_engine_locks_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: true
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dialer_settings: {
         Row: {
           after_hours_behavior: string | null
@@ -20518,7 +20597,9 @@ export type Database = {
           ai_voicemail_script: string | null
           amd_sensitivity: string | null
           business_hours_end: string | null
+          business_hours_end_min: number | null
           business_hours_start: string | null
+          business_hours_start_min: number | null
           business_id: string
           business_timezone: string | null
           created_at: string
@@ -20528,7 +20609,9 @@ export type Database = {
           max_attempts_per_day: number | null
           max_concurrent_dials: number | null
           predictive_multiplier: number | null
+          retry_backoff_minutes: number[] | null
           retry_delay_minutes: number | null
+          retry_max_days: number | null
           updated_at: string
         }
         Insert: {
@@ -20537,7 +20620,9 @@ export type Database = {
           ai_voicemail_script?: string | null
           amd_sensitivity?: string | null
           business_hours_end?: string | null
+          business_hours_end_min?: number | null
           business_hours_start?: string | null
+          business_hours_start_min?: number | null
           business_id: string
           business_timezone?: string | null
           created_at?: string
@@ -20547,7 +20632,9 @@ export type Database = {
           max_attempts_per_day?: number | null
           max_concurrent_dials?: number | null
           predictive_multiplier?: number | null
+          retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
+          retry_max_days?: number | null
           updated_at?: string
         }
         Update: {
@@ -20556,7 +20643,9 @@ export type Database = {
           ai_voicemail_script?: string | null
           amd_sensitivity?: string | null
           business_hours_end?: string | null
+          business_hours_end_min?: number | null
           business_hours_start?: string | null
+          business_hours_start_min?: number | null
           business_id?: string
           business_timezone?: string | null
           created_at?: string
@@ -20566,7 +20655,9 @@ export type Database = {
           max_attempts_per_day?: number | null
           max_concurrent_dials?: number | null
           predictive_multiplier?: number | null
+          retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
+          retry_max_days?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -33212,6 +33303,7 @@ export type Database = {
       }
       outbound_call_queue: {
         Row: {
+          answered_at: string | null
           assigned_agent_id: string | null
           assigned_campaign_id: string | null
           attempt_count: number | null
@@ -33220,6 +33312,7 @@ export type Database = {
           contact_id: string | null
           contact_name: string | null
           created_at: string
+          dialing_started_at: string | null
           id: string
           last_attempt_at: string | null
           next_retry_at: string | null
@@ -33231,6 +33324,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          answered_at?: string | null
           assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
@@ -33239,6 +33333,7 @@ export type Database = {
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
+          dialing_started_at?: string | null
           id?: string
           last_attempt_at?: string | null
           next_retry_at?: string | null
@@ -33250,6 +33345,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          answered_at?: string | null
           assigned_agent_id?: string | null
           assigned_campaign_id?: string | null
           attempt_count?: number | null
@@ -33258,6 +33354,7 @@ export type Database = {
           contact_id?: string | null
           contact_name?: string | null
           created_at?: string
+          dialing_started_at?: string | null
           id?: string
           last_attempt_at?: string | null
           next_retry_at?: string | null
@@ -59468,6 +59565,64 @@ export type Database = {
         Args: { _device_id: string; _endpoint_name: string }
         Returns: boolean
       }
+      claim_available_agent: {
+        Args: { p_business_id: string }
+        Returns: {
+          active_calls_count: number | null
+          business_id: string | null
+          created_at: string
+          id: string
+          last_call_ended_at: string | null
+          last_status_change: string | null
+          max_concurrent_calls: number | null
+          skills: string[] | null
+          status: string
+          updated_at: string
+          user_id: string
+          wrap_up_seconds: number
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "dialer_agent_availability"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      claim_queue_items: {
+        Args: {
+          p_business_id: string
+          p_campaign_id?: string
+          p_limit_count?: number
+          p_max_attempts?: number
+        }
+        Returns: {
+          answered_at: string | null
+          assigned_agent_id: string | null
+          assigned_campaign_id: string | null
+          attempt_count: number | null
+          business_id: string | null
+          campaign_id: string | null
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string
+          dialing_started_at: string | null
+          id: string
+          last_attempt_at: string | null
+          next_retry_at: string | null
+          notes: string | null
+          phone_number: string
+          priority_score: number | null
+          status: string
+          store_id: string | null
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "outbound_call_queue"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       cleanup_old_recalc_items: {
         Args: { p_days_old?: number }
         Returns: number
@@ -59573,6 +59728,10 @@ export type Database = {
       }
       current_ambassador_id: { Args: never; Returns: string }
       detect_intent_conflicts: { Args: { p_intent_id: string }; Returns: Json }
+      dialer_watchdog_recover: {
+        Args: { p_business_id: string }
+        Returns: Json
+      }
       ensure_store_brand_relationships: {
         Args: { p_store_id: string }
         Returns: undefined
