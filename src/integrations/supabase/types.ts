@@ -8195,10 +8195,13 @@ export type Database = {
           labor_model: Database["public"]["Enums"]["labor_model"] | null
           office_id: string | null
           overhead_cost: number | null
+          override_reason: string | null
           packaging_cost: number | null
+          previous_version_id: string | null
           product_type: string
           tobacco_cost: number | null
           total_batch_cost: number | null
+          version: number
           worker_count: number | null
         }
         Insert: {
@@ -8214,10 +8217,13 @@ export type Database = {
           labor_model?: Database["public"]["Enums"]["labor_model"] | null
           office_id?: string | null
           overhead_cost?: number | null
+          override_reason?: string | null
           packaging_cost?: number | null
+          previous_version_id?: string | null
           product_type?: string
           tobacco_cost?: number | null
           total_batch_cost?: number | null
+          version?: number
           worker_count?: number | null
         }
         Update: {
@@ -8233,10 +8239,13 @@ export type Database = {
           labor_model?: Database["public"]["Enums"]["labor_model"] | null
           office_id?: string | null
           overhead_cost?: number | null
+          override_reason?: string | null
           packaging_cost?: number | null
+          previous_version_id?: string | null
           product_type?: string
           tobacco_cost?: number | null
           total_batch_cost?: number | null
+          version?: number
           worker_count?: number | null
         }
         Relationships: [
@@ -8266,6 +8275,13 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "batch_cost_history"
             referencedColumns: ["id"]
           },
         ]

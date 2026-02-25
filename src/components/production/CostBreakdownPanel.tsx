@@ -3,6 +3,9 @@
  * Shows per-batch cost entry form + real-time margin preview.
  * Supports multiple labor models: hourly, per_box, flat_day.
  * Admin/Manager only — never shown to workers.
+ * 
+ * FINANCIAL LOCK: When batch_state = 'approved', all cost fields are locked.
+ * Owner override creates a NEW versioned ledger entry (append-only).
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,11 +19,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useBatchCost, useUpsertBatchCost, type BatchCost } from '@/hooks/useBatchCosts';
+import { useCreateCostSnapshot } from '@/hooks/useBatchCostHistory';
 import { useTodayBatches } from '@/hooks/useProductionPortal';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { DollarSign, TrendingUp, TrendingDown, Save, Info, Package, Loader2, Users, Clock, Boxes, Calendar } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Save, Info, Package, Loader2, Users, Clock, Boxes, Calendar, ShieldAlert, Unlock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface CostBreakdownPanelProps {
@@ -56,6 +72,27 @@ export function CostBreakdownPanel({ officeId }: CostBreakdownPanelProps) {
   const [workerCount, setWorkerCount] = useState(1);
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [useSpecificWorkers, setUseSpecificWorkers] = useState(false);
+
+  // Owner override state
+  const [overrideMode, setOverrideMode] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+  const createSnapshot = useCreateCostSnapshot();
+
+  // Check if current user is owner (can override locked batches)
+  const { data: isOwner = false } = useQuery({
+    queryKey: ['user-is-owner'],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return false;
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userData.user.id)
+        .in('role', ['owner'])
+        .maybeSingle();
+      return !!data;
+    },
+  });
 
   // Fetch workers for this office
   const { data: workers = [] } = useQuery({
@@ -143,7 +180,8 @@ export function CostBreakdownPanel({ officeId }: CostBreakdownPanelProps) {
 
   const selectedBatch = batches.find(b => b.id === selectedBatchId);
   const boxesProduced = (selectedBatch as any)?.boxes_equivalent || selectedBatch?.boxes_produced || 0;
-  const batchLocked = (selectedBatch as any)?.is_locked === true;
+  const batchApproved = (selectedBatch as any)?.batch_state === 'approved' || (selectedBatch as any)?.is_locked === true;
+  const batchLocked = batchApproved && !overrideMode;
 
   // Calculate weighted hourly rate from selected workers
   const weightedHourlyRate = useMemo(() => {
@@ -309,10 +347,59 @@ export function CostBreakdownPanel({ officeId }: CostBreakdownPanelProps) {
               </SelectContent>
             </Select>
           </div>
-          {batchLocked && (
-            <Badge variant="outline" className="text-xs mt-2 border-amber-300 text-amber-700">
-              🔒 This batch is approved — cost data is locked
-            </Badge>
+          {batchApproved && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="outline" className="text-xs border-amber-500/50 text-amber-700">
+                🔒 {overrideMode ? 'Owner Override Active' : 'Approved — cost data locked'}
+              </Badge>
+              {isOwner && !overrideMode && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 text-xs gap-1 text-destructive">
+                      <Unlock className="h-3 w-3" /> Owner Override
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-5 w-5 text-destructive" />
+                        Owner Override — Cost Fields
+                      </AlertDialogTitle>
+                      <AlertDialogDescription asChild>
+                        <div className="space-y-3">
+                          <p>This will temporarily unlock cost fields for editing. A <strong>new versioned ledger entry</strong> will be created — the original record is never overwritten.</p>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Override Reason (required)</Label>
+                            <Textarea
+                              value={overrideReason}
+                              onChange={(e) => setOverrideReason(e.target.value)}
+                              placeholder="Explain why this override is needed..."
+                              className="text-sm"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        disabled={overrideReason.trim().length < 5}
+                        onClick={() => setOverrideMode(true)}
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      >
+                        <Unlock className="h-4 w-4 mr-1" /> Unlock Fields
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+              {overrideMode && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => { setOverrideMode(false); setOverrideReason(''); }}>
+                  Cancel Override
+                </Button>
+              )}
+            </div>
           )}
         </CardHeader>
 
@@ -639,18 +726,61 @@ export function CostBreakdownPanel({ officeId }: CostBreakdownPanelProps) {
               </div>
 
               {/* Save Button */}
-              <Button
-                onClick={handleSave}
-                disabled={!selectedBatchId || upsertCost.isPending || batchLocked}
-                className="w-full"
-              >
-                {upsertCost.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4 mr-2" />
-                )}
-                {batchLocked ? 'Costs Locked (Approved)' : 'Save Cost Data'}
-              </Button>
+              {overrideMode ? (
+                <Button
+                  onClick={async () => {
+                    if (!selectedBatchId) return;
+                    // Save updated cost data first
+                    upsertCost.mutate({ batch_id: selectedBatchId, ...form });
+                    // Update batch with new labor model + snapshots (owner bypass trigger)
+                    let hourlySnap: number | null = null;
+                    let perBoxSnap: number | null = null;
+                    let flatDaySnap: number | null = null;
+                    if (laborModel === 'hourly') hourlySnap = useSpecificWorkers ? weightedHourlyRate : form.labor_rate_per_hour;
+                    if (laborModel === 'per_box') perBoxSnap = useSpecificWorkers ? (weightedPerBoxRate / Math.max(selectedWorkerIds.length, 1)) : form.labor_rate_per_hour;
+                    if (laborModel === 'flat_day') flatDaySnap = useSpecificWorkers ? (weightedFlatDayRate / Math.max(selectedWorkerIds.length, 1)) : form.labor_rate_per_hour;
+                    await supabase
+                      .from('production_batches')
+                      .update({
+                        labor_model: laborModel,
+                        worker_count: useSpecificWorkers ? selectedWorkerIds.length : workerCount,
+                        selected_worker_ids: useSpecificWorkers ? selectedWorkerIds : null,
+                        labor_hourly_rate_snapshot: hourlySnap,
+                        labor_per_box_rate_snapshot: perBoxSnap,
+                        labor_flat_day_rate_snapshot: flatDaySnap,
+                      })
+                      .eq('id', selectedBatchId);
+                    // Create NEW versioned ledger entry
+                    const batch = batches.find(b => b.id === selectedBatchId);
+                    const oid = (batch as any)?.office_id || officeId;
+                    createSnapshot.mutate({ batchId: selectedBatchId, officeId: oid, overrideReason });
+                    setOverrideMode(false);
+                    setOverrideReason('');
+                  }}
+                  disabled={!selectedBatchId || upsertCost.isPending || createSnapshot.isPending}
+                  className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {(upsertCost.isPending || createSnapshot.isPending) ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <ShieldAlert className="h-4 w-4 mr-2" />
+                  )}
+                  Save Override (Creates Ledger v2+)
+                </Button>
+              ) : (
+                <Button
+                  onClick={handleSave}
+                  disabled={!selectedBatchId || upsertCost.isPending || batchLocked}
+                  className="w-full"
+                >
+                  {upsertCost.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  {batchLocked ? 'Costs Locked (Approved)' : 'Save Cost Data'}
+                </Button>
+              )}
             </>
           )}
         </CardContent>
