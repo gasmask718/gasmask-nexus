@@ -29,6 +29,9 @@ import { AmbassadorPurchasesSection } from '@/components/ambassador/purchases/Am
 import { AmbassadorProfitTab } from '@/components/floor8/AmbassadorProfitTab';
 import { ConversationInbox } from '@/components/communication/ConversationInbox';
 import { EntityNotesSection } from '@/components/grabba/EntityNotesSection';
+import { TerritoryCoveragePanel } from '@/components/ambassador/TerritoryCoveragePanel';
+import { ProfileCompletenessScore, computeAmbassadorCompleteness } from '@/components/profile/ProfileCompletenessScore';
+import { useAmbassadorTerritory } from '@/hooks/useAmbassadorTerritory';
 
 export default function AmbassadorProfilePage() {
   const { ambassadorId } = useParams<{ ambassadorId: string }>();
@@ -115,6 +118,7 @@ export default function AmbassadorProfilePage() {
 
   // Fetch separated store data (sourced vs assigned vs pipeline)
   const { sourcedStores, assignedStores, pipeline } = useAmbassadorStoreData(ambassadorId);
+  const { territories } = useAmbassadorTerritory(ambassadorId);
 
   // Calculate metrics
   const pendingCommissions = commissions.filter(c => c.status === 'pending');
@@ -258,6 +262,7 @@ export default function AmbassadorProfilePage() {
             </TabsTrigger>
             <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts">Payouts</TabsTrigger>
+            <TabsTrigger value="territory">Territory ({territories.length})</TabsTrigger>
             <TabsTrigger value="communication">Communication</TabsTrigger>
           </TabsList>
 
@@ -456,6 +461,16 @@ export default function AmbassadorProfilePage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="territory" className="mt-4">
+            <div className="space-y-4">
+              {(() => {
+                const completeness = computeAmbassadorCompleteness(ambassador, territories.length);
+                return <ProfileCompletenessScore score={completeness.score} missingFields={completeness.missingFields} />;
+              })()}
+              <TerritoryCoveragePanel ambassadorId={ambassadorId!} isEditable={true} />
+            </div>
           </TabsContent>
 
           <TabsContent value="communication" className="mt-4">
