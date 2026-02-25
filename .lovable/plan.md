@@ -1,52 +1,72 @@
 
-# Add Store Name Column + Source Filter to Territory Page
+
+# Cross-Database Duplicate Check + Paginated Search Results
 
 ## Overview
-The `territory_addresses` table currently has no `store_name` column. Store names are buried inside the `notes` field (e.g., "OSM: StoreName | phone" or "Yelp: StoreName | Rating..."). This plan adds a proper `store_name` column, updates all ingestion paths to populate it, and adds a source filter to the territory table.
+Two changes to the territory ingestion flow at `/territory/ingestion`:
+1. When ingesting Yelp results, also check the `stores` table (Store Directory) for duplicates -- not just `territory_addresses`. Surface matches through the existing DuplicateResolutionModal.
+2. Increase the Yelp search cap from 20 to 300 results and add pagination below the results grid.
 
-## Database Changes
+---
 
-### Migration: Add `store_name` column to `territory_addresses`
-```sql
-ALTER TABLE territory_addresses ADD COLUMN store_name TEXT;
+## Change 1: Store Directory Duplicate Check
+
+### How it works now
+- `ingestSelected()` in `YelpBusinessSearch.tsx` checks `territory_addresses` by `full_address` match
+- Duplicates go through `DuplicateResolutionModal`
+
+### What changes
+
+**`YelpBusinessSearch.tsx` -- `ingestSelected()` function**
+
+After checking `territory_addresses`, also query the `stores` table:
+
+```
+SELECT id, name, address_street, address_city, address_state, address_zip
+FROM stores
+WHERE deleted_at IS NULL
 ```
 
-Also backfill existing records by parsing the `notes` field:
-- For Yelp records (`discovered_by = 'yelp'`): Extract name before the first `|` from notes (strip "Yelp: " prefix if present from edge function ingestion, or just take before first `|` for YelpBusinessSearch client-side ingestion)
-- For OSM records (`discovered_by = 'openstreetmap'`): Extract name between "OSM: " and first `|` or `[`
+Match logic: compare the Yelp business address against `stores` by building a comparable address string from `address_street, address_city, address_state, address_zip`. Also do a fuzzy name match (case-insensitive `name` comparison).
 
-### Update `ingest_territory_addresses` RPC
-Add `store_name` to the INSERT statement so CSV imports can also include a store name.
+For any matches found in `stores`, create `DuplicateRecord` entries with a source indicator so the user sees "Already in Store Directory" vs "Already in Territory".
 
-## Edge Function Changes
+**`DuplicateResolutionModal.tsx` -- Update interface**
 
-### `ingest-openstreetmap/index.ts`
-Add `store_name: tags.name` to the insert payload (line 274-286). The OSM `tags.name` already contains the business name -- currently it's only written into notes.
+Extend `existingRow` to include an optional `source` field (`'territory' | 'store_directory'`). Display a badge showing which database the duplicate was found in. When the source is `store_directory`, the available actions are limited to `skip` and `add` (since we don't want to update/delete records in the `stores` table from the territory ingestion flow).
 
-### `ingest-yelp/index.ts`
-Add `store_name: biz.name` to the insert payloads in both the neighborhood-scoped loop (line 281-293) and the city-wide fallback loop (line 373-384).
+### Matching strategy
+- Primary: exact `full_address` match against territory_addresses (existing)
+- Secondary: match against stores where `address_street` + `address_city` matches, OR store `name` matches the Yelp business name (case-insensitive)
+- Both checks run in parallel before showing the modal
 
-## Frontend Changes
+---
 
-### `YelpBusinessSearch.tsx` -- `buildRecords` function
-Add `store_name: b.name` to the record object built at line 100-112. This ensures client-side Yelp ingestion (individual business selection) also writes the store name.
+## Change 2: Search Cap 20 to 300 + Pagination
 
-### `TerritoryStoresTable.tsx` -- Add store_name column + source filter
-1. Add `store_name` to the query select clause
-2. Add "Store Name" as the first column before "Full Address"
-3. Replace the current "Notes" column with "Store Name" (notes still accessible elsewhere)
-4. Add a **Source filter** dropdown next to the existing Status filter with options: All Sources, Yelp, OpenStreetMap, Google Places, CSV/Import
-5. Filter logic: match `discovered_by` values (`yelp`, `openstreetmap`, `google_places`, `import`)
-6. Include store_name in the search filter logic
+### Edge function (`yelp-business-search/index.ts`)
+- The Yelp API allows max 50 per request, with an `offset` parameter for pagination
+- Update the `search` action to accept an `offset` parameter
+- Keep `limit` at 50 per request (Yelp max)
 
-### `TerritoryMapView.tsx` -- Show store_name
-1. Add `store_name` to the query select clause
-2. Show store name in marker popups (before full_address)
-3. Show store name in the slide-out panel list items as a bold title above the address
-4. Include store_name in search filtering
+### Frontend (`YelpBusinessSearch.tsx`)
+- Add state: `searchOffset`, `totalResults`, `currentPage`
+- On initial search: fetch first 50 results, store `total` from Yelp response (capped at 300)
+- Add a pagination bar below the results grid using the existing `DataTablePagination` component
+- Page size fixed at 50 (Yelp page size)
+- When user clicks next page, fire another search with `offset = page * 50`
+- Accumulate or replace results per page (replace is simpler -- show current page only)
+- "Select All" applies only to current page; ingestion works on all selected across pages (track selections by Yelp business ID across pages)
+
+---
 
 ## Technical Details
-- The `store_name` column is nullable TEXT -- no constraints needed since not all records will have names (e.g., CSV imports without name data)
-- Backfill SQL uses string parsing to extract names from existing notes, covering both Yelp and OSM patterns
-- No breaking changes -- all existing functionality continues to work
-- The source filter uses `discovered_by` which already exists on all records
+
+### Files modified:
+1. **`supabase/functions/yelp-business-search/index.ts`** -- Add `offset` parameter to search action
+2. **`src/components/territory/YelpBusinessSearch.tsx`** -- Add stores check in `ingestSelected()`, add pagination state and controls, increase cap
+3. **`src/components/territory/DuplicateResolutionModal.tsx`** -- Add `source` field to `existingRow`, show source badge, restrict actions for store_directory matches
+
+### No database migration needed
+- Only reading from existing `stores` table
+- No schema changes required
