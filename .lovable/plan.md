@@ -1,72 +1,31 @@
 
 
-# Cross-Database Duplicate Check + Paginated Search Results
+# Territory Map: Store Name First + Formatted Details
 
-## Overview
-Two changes to the territory ingestion flow at `/territory/ingestion`:
-1. When ingesting Yelp results, also check the `stores` table (Store Directory) for duplicates -- not just `territory_addresses`. Surface matches through the existing DuplicateResolutionModal.
-2. Increase the Yelp search cap from 20 to 300 results and add pagination below the results grid.
+## Problem
+The map markers and slide-out panel currently show `full_address` as the primary label. The `store_name` field exists in `territory_addresses` but isn't being queried or displayed.
 
----
+## Changes
 
-## Change 1: Store Directory Duplicate Check
+### File: `src/components/territory/TerritoryMapView.tsx`
 
-### How it works now
-- `ingestSelected()` in `YelpBusinessSearch.tsx` checks `territory_addresses` by `full_address` match
-- Duplicates go through `DuplicateResolutionModal`
+**1. Add `store_name` to the query (line 144)**
+Add `store_name` to the select fields and the `TerritoryAddress` interface.
 
-### What changes
+**2. Update marker popups (line 351-353)**
+Change from showing `full_address` as the bold title to:
+- Bold: `store_name` (fallback to "Unknown Store")
+- Subheader: `full_address`
+- Third line: status + discovered_by (properly formatted)
 
-**`YelpBusinessSearch.tsx` -- `ingestSelected()` function**
+**3. Update slide-out panel list items (lines 445-471)**
+Restructure each address card:
+- **Primary line**: `store_name` (bold, truncated)
+- **Secondary line**: `full_address` with MapPin icon (muted, smaller)
+- **Details row**: `address_type` badge, `discovered_by` with Eye icon, date added
+- **Right side**: status badge + verified_sells_grabba indicator (unchanged)
 
-After checking `territory_addresses`, also query the `stores` table:
+**4. Update search filter (line 197-201)**
+Also search against `store_name` so users can find stores by name.
 
-```
-SELECT id, name, address_street, address_city, address_state, address_zip
-FROM stores
-WHERE deleted_at IS NULL
-```
-
-Match logic: compare the Yelp business address against `stores` by building a comparable address string from `address_street, address_city, address_state, address_zip`. Also do a fuzzy name match (case-insensitive `name` comparison).
-
-For any matches found in `stores`, create `DuplicateRecord` entries with a source indicator so the user sees "Already in Store Directory" vs "Already in Territory".
-
-**`DuplicateResolutionModal.tsx` -- Update interface**
-
-Extend `existingRow` to include an optional `source` field (`'territory' | 'store_directory'`). Display a badge showing which database the duplicate was found in. When the source is `store_directory`, the available actions are limited to `skip` and `add` (since we don't want to update/delete records in the `stores` table from the territory ingestion flow).
-
-### Matching strategy
-- Primary: exact `full_address` match against territory_addresses (existing)
-- Secondary: match against stores where `address_street` + `address_city` matches, OR store `name` matches the Yelp business name (case-insensitive)
-- Both checks run in parallel before showing the modal
-
----
-
-## Change 2: Search Cap 20 to 300 + Pagination
-
-### Edge function (`yelp-business-search/index.ts`)
-- The Yelp API allows max 50 per request, with an `offset` parameter for pagination
-- Update the `search` action to accept an `offset` parameter
-- Keep `limit` at 50 per request (Yelp max)
-
-### Frontend (`YelpBusinessSearch.tsx`)
-- Add state: `searchOffset`, `totalResults`, `currentPage`
-- On initial search: fetch first 50 results, store `total` from Yelp response (capped at 300)
-- Add a pagination bar below the results grid using the existing `DataTablePagination` component
-- Page size fixed at 50 (Yelp page size)
-- When user clicks next page, fire another search with `offset = page * 50`
-- Accumulate or replace results per page (replace is simpler -- show current page only)
-- "Select All" applies only to current page; ingestion works on all selected across pages (track selections by Yelp business ID across pages)
-
----
-
-## Technical Details
-
-### Files modified:
-1. **`supabase/functions/yelp-business-search/index.ts`** -- Add `offset` parameter to search action
-2. **`src/components/territory/YelpBusinessSearch.tsx`** -- Add stores check in `ingestSelected()`, add pagination state and controls, increase cap
-3. **`src/components/territory/DuplicateResolutionModal.tsx`** -- Add `source` field to `existingRow`, show source badge, restrict actions for store_directory matches
-
-### No database migration needed
-- Only reading from existing `stores` table
-- No schema changes required
+No database changes needed -- `store_name` already exists in the schema.
