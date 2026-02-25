@@ -69,11 +69,18 @@ serve(async (req) => {
         sort_by: 'yelp_sort',
       });
       const resp = await fetch(`${YELP_BASE}/businesses/${encodeURIComponent(business_id)}/reviews?${params}`, { headers });
-      if (!resp.ok) {
-        const err = await resp.text();
-        throw new Error(`Yelp reviews failed [${resp.status}]: ${err}`);
+
+      // Yelp can return 404 for businesses that exist but have no accessible reviews.
+      // Treat this as a valid empty state instead of a server error.
+      if (resp.status === 404) {
+        result = { reviews: [] };
+      } else {
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`Yelp reviews failed [${resp.status}]: ${err}`);
+        }
+        result = await resp.json();
       }
-      result = await resp.json();
 
     } else {
       throw new Error(`Unknown action: ${action}. Use search, details, or reviews.`);
