@@ -63,6 +63,7 @@ import {
   MaterialConsumptionPanel,
   EquipmentAssignmentPanel,
   DailyExecutionDashboard,
+  SupervisorScorecard,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -93,6 +94,7 @@ import {
   Timer,
   Leaf,
   BarChart3,
+  Award,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -421,6 +423,10 @@ export default function ProductionPortalPage() {
                 <BarChart3 className="h-4 w-4" />
                 <span className="hidden sm:inline">Daily Exec</span>
               </TabsTrigger>
+              <TabsTrigger value="supervisor" className="flex items-center gap-2">
+                <Award className="h-4 w-4" />
+                <span className="hidden sm:inline">Supervisor</span>
+              </TabsTrigger>
             </TabsList>
 
             {/* ── OPERATE CONTENT ── */}
@@ -545,6 +551,10 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="daily-exec">
               <DailyExecutionDashboard officeId={selectedOfficeId} dailyGoal={(selectedOffice as any)?.daily_box_goal || 100} />
+            </TabsContent>
+
+            <TabsContent value="supervisor">
+              <SupervisorScorecard officeId={selectedOfficeId} />
             </TabsContent>
           </Tabs>
         </>

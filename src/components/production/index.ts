@@ -77,3 +77,4 @@ export { ProfitPerPoundPanel } from './ProfitPerPoundPanel';
 export { MaterialConsumptionPanel } from './MaterialConsumptionPanel';
 export { EquipmentAssignmentPanel } from './EquipmentAssignmentPanel';
 export { DailyExecutionDashboard } from './DailyExecutionDashboard';
+export { SupervisorScorecard } from './SupervisorScorecard';
