@@ -11,7 +11,7 @@
  * All editing is done via the Manufacturing OS (/portals/production).
  */
 
-import { Factory, ClipboardList, AlertTriangle, Eye, Lock, ArrowRight, Send, DollarSign } from 'lucide-react';
+import { Factory, ClipboardList, AlertTriangle, Eye, Lock, ArrowRight, Send, DollarSign, Flame } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import { useProductionOffices, useTodayBatches, useDailyKPIs } from '@/hooks/use
 import { useWorkerSubmissions } from '@/hooks/useWorkerSubmissions';
 import { WorkerSubmissionForm } from '@/components/production/WorkerSubmissionForm';
 import { WorkerPayDashboard } from '@/components/production/WorkerPayDashboard';
+import { ConversionIntelligencePanel } from '@/components/production/ConversionIntelligencePanel';
 import { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
@@ -168,6 +169,11 @@ export default function ProductionPortal() {
             <TabsTrigger value="my-pay" className="flex items-center gap-1">
               <DollarSign className="h-3 w-3" /> My Pay
             </TabsTrigger>
+            {isManager && (
+              <TabsTrigger value="conversion" className="flex items-center gap-1">
+                <Flame className="h-3 w-3" /> Conversion
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Assigned Batches (Read-Only) */}
@@ -288,6 +294,13 @@ export default function ProductionPortal() {
           <TabsContent value="my-pay">
             <WorkerPayDashboard workerId={productionProfile?.id} />
           </TabsContent>
+
+          {/* Conversion Intelligence (Manager/Admin only) */}
+          {isManager && (
+            <TabsContent value="conversion">
+              <ConversionIntelligencePanel />
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Manager CTA */}

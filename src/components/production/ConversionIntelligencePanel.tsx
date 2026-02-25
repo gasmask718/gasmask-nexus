@@ -1,0 +1,415 @@
+/**
+ * ConversionIntelligencePanel — Tobacco → Box Conversion Engine
+ * 
+ * Displays rolling averages, deviation alerts, batch history,
+ * and admin-level conversion KPIs from production_batches data.
+ */
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
+import { useConversionIntelligence, ConversionBatch } from '@/hooks/useConversionIntelligence';
+import { useProductionOffices } from '@/hooks/useProductionPortal';
+import {
+  Factory, TrendingUp, TrendingDown, AlertTriangle, BarChart3,
+  Weight, Box, Flame, DollarSign, Activity, Trophy, Minus
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+
+export function ConversionIntelligencePanel() {
+  const { data: offices = [] } = useProductionOffices();
+  const [selectedOffice, setSelectedOffice] = useState<string>('all');
+
+  const officeId = selectedOffice === 'all' ? undefined : selectedOffice;
+  const { data, isLoading } = useConversionIntelligence(officeId);
+
+  const stats = data?.stats;
+  const batches = data?.batches || [];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center space-y-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading conversion data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stats || batches.length === 0) {
+    return (
+      <Card className="border-dashed">
+        <CardContent className="py-12 text-center">
+          <Factory className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Conversion Data Yet</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            Start logging batches with tobacco LBS input and boxes output to build your conversion intelligence.
+            After 10+ batches, you'll see rolling averages and deviation alerts.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const deviationAlert = stats.rolling7.deviationPct > 8;
+
+  return (
+    <div className="space-y-6">
+      {/* Office Filter */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+          <Flame className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+          Conversion Intelligence
+        </h2>
+        <Select value={selectedOffice} onValueChange={setSelectedOffice}>
+          <SelectTrigger className="w-full sm:w-[220px]">
+            <SelectValue placeholder="All Offices" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Offices</SelectItem>
+            {offices.filter(o => o.active !== false).map(o => (
+              <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Deviation Alert */}
+      {deviationAlert && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardContent className="flex items-center gap-3 py-4">
+            <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-destructive">Conversion Variance Alert</p>
+              <p className="text-xs text-muted-foreground">
+                Rolling 7-batch average deviates {stats.rolling7.deviationPct}% from your global baseline.
+                Investigate waste, input quality, or worker performance.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Global KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <KpiCard
+          label="Total LBS Used"
+          value={stats.totalLbs.toLocaleString()}
+          icon={<Weight className="h-4 w-4" />}
+          variant="default"
+        />
+        <KpiCard
+          label="Total Boxes"
+          value={stats.totalBoxes.toLocaleString()}
+          icon={<Box className="h-4 w-4" />}
+          variant="default"
+        />
+        <KpiCard
+          label="LBS / Box"
+          value={stats.globalAvgLbsPerBox.toFixed(2)}
+          icon={<TrendingDown className="h-4 w-4" />}
+          variant="amber"
+          subtitle="Global avg"
+        />
+        <KpiCard
+          label="Boxes / LB"
+          value={stats.globalAvgBoxesPerLb.toFixed(2)}
+          icon={<TrendingUp className="h-4 w-4" />}
+          variant="green"
+          subtitle="Global avg"
+        />
+        <KpiCard
+          label="Avg Waste"
+          value={`${stats.avgWastePct}%`}
+          icon={<AlertTriangle className="h-4 w-4" />}
+          variant={stats.avgWastePct > 5 ? 'red' : 'default'}
+        />
+        <KpiCard
+          label="Efficiency"
+          value={`${stats.efficiencyScore}/100`}
+          icon={<Activity className="h-4 w-4" />}
+          variant={stats.efficiencyScore >= 80 ? 'green' : stats.efficiencyScore >= 60 ? 'amber' : 'red'}
+        />
+      </div>
+
+      {/* Rolling 7 + Cost + Best/Worst */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Rolling 7 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Rolling 7-Batch Average
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">LBS / Box</span>
+              <span className="font-mono font-bold">{stats.rolling7.avgLbsPerBox.toFixed(4)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Boxes / LB</span>
+              <span className="font-mono font-bold">{stats.rolling7.avgBoxesPerLb.toFixed(4)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Deviation</span>
+              <Badge variant={deviationAlert ? 'destructive' : 'secondary'}>
+                {stats.rolling7.deviationPct}%
+              </Badge>
+            </div>
+            <div className="pt-2">
+              <div className="text-xs text-muted-foreground mb-1">Baseline match</div>
+              <Progress value={Math.max(0, 100 - stats.rolling7.deviationPct)} className="h-2" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Cost per Box */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              Cost Intelligence
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Avg Cost / Box</span>
+              <span className="font-mono font-bold text-lg">
+                {stats.avgCostPerBox !== null ? `$${stats.avgCostPerBox.toFixed(2)}` : '—'}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Batches with cost data</span>
+              <span className="font-mono">
+                {batches.filter(b => b.cost_per_box !== null).length} / {batches.length}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground pt-2 italic">
+              {stats.avgCostPerBox !== null
+                ? `Projected: 500 lbs → ~${Math.round(500 * stats.globalAvgBoxesPerLb)} boxes @ $${stats.avgCostPerBox.toFixed(2)}/box`
+                : 'Add cost data to batches to unlock margin projections'}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Best / Worst */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Trophy className="h-4 w-4 text-primary" />
+              Performance Extremes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {stats.bestBatch && (
+              <div className="p-2 rounded-md bg-muted/30 border border-muted">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <TrendingUp className="h-3 w-3 text-hud-green" />
+                  Best Batch
+                </div>
+                <div className="text-sm font-medium">
+                  {stats.bestBatch.boxes_per_lb?.toFixed(2)} boxes/lb
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {stats.bestBatch.brand} • {stats.bestBatch.batch_date ? format(new Date(stats.bestBatch.batch_date), 'MMM d') : '—'}
+                  </span>
+                </div>
+              </div>
+            )}
+            {stats.worstBatch && (
+              <div className="p-2 rounded-md bg-muted/30 border border-muted">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <TrendingDown className="h-3 w-3 text-destructive" />
+                  Worst Batch
+                </div>
+                <div className="text-sm font-medium">
+                  {stats.worstBatch.boxes_per_lb?.toFixed(2)} boxes/lb
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {stats.worstBatch.brand} • {stats.worstBatch.batch_date ? format(new Date(stats.worstBatch.batch_date), 'MMM d') : '—'}
+                  </span>
+                </div>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              {stats.batchCount} batches analyzed
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Projection Calculator */}
+      <ProjectionCard
+        avgBoxesPerLb={stats.globalAvgBoxesPerLb}
+        avgCostPerBox={stats.avgCostPerBox}
+      />
+
+      {/* Batch History Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Factory className="h-5 w-5 text-primary" />
+            Batch Conversion History
+          </CardTitle>
+          <CardDescription>
+            All batches with tobacco input and box output recorded
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto -mx-6 px-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Brand</TableHead>
+                  <TableHead className="text-right">LBS In</TableHead>
+                  <TableHead className="text-right">Boxes Out</TableHead>
+                  <TableHead className="text-right">LBS/Box</TableHead>
+                  <TableHead className="text-right">Boxes/LB</TableHead>
+                  <TableHead className="text-right">Waste %</TableHead>
+                  <TableHead className="text-right">Cost/Box</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {batches.slice(0, 50).map((batch) => {
+                  const isHighDeviation = stats && batch.boxes_per_lb !== null && stats.globalAvgBoxesPerLb > 0 &&
+                    Math.abs((batch.boxes_per_lb - stats.globalAvgBoxesPerLb) / stats.globalAvgBoxesPerLb * 100) > 8;
+
+                  return (
+                    <TableRow key={batch.batch_id} className={cn(isHighDeviation && 'bg-destructive/5')}>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {batch.batch_date ? format(new Date(batch.batch_date), 'MMM d, yyyy') : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{batch.brand}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-mono">{batch.tobacco_lbs}</TableCell>
+                      <TableCell className="text-right font-mono font-medium">{batch.boxes_produced ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.lbs_per_box?.toFixed(3) ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.boxes_per_lb?.toFixed(3) ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {batch.waste_pct !== null ? (
+                          <span className={cn(batch.waste_pct > 5 && 'text-destructive font-semibold')}>
+                            {batch.waste_pct}%
+                          </span>
+                        ) : '—'}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {batch.cost_per_box !== null ? `$${batch.cost_per_box.toFixed(2)}` : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Badge variant={batch.is_locked ? 'default' : 'secondary'} className="text-[10px]">
+                            {batch.inventory_state}
+                          </Badge>
+                          {isHighDeviation && (
+                            <AlertTriangle className="h-3 w-3 text-destructive" />
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ═══ Sub-components ═══
+
+function KpiCard({ label, value, icon, variant = 'default', subtitle }: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+  variant?: 'default' | 'green' | 'amber' | 'red';
+  subtitle?: string;
+}) {
+  const borderColor = {
+    default: 'border-border/50',
+    green: 'border-hud-green/30',
+    amber: 'border-hud-amber/30',
+    red: 'border-destructive/30',
+  }[variant];
+
+  const valueColor = {
+    default: 'text-foreground',
+    green: 'text-hud-green',
+    amber: 'text-hud-amber',
+    red: 'text-destructive',
+  }[variant];
+
+  return (
+    <Card className={cn('border', borderColor)}>
+      <CardContent className="pt-4 pb-3 px-3 sm:px-4">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
+          {icon}
+          <span className="truncate">{label}</span>
+        </div>
+        <p className={cn('text-lg sm:text-xl font-mono font-bold', valueColor)}>{value}</p>
+        {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ProjectionCard({ avgBoxesPerLb, avgCostPerBox }: {
+  avgBoxesPerLb: number;
+  avgCostPerBox: number | null;
+}) {
+  const [lbsInput, setLbsInput] = useState('500');
+  const lbs = parseFloat(lbsInput) || 0;
+  const projectedBoxes = Math.round(lbs * avgBoxesPerLb);
+  const projectedCost = avgCostPerBox !== null ? projectedBoxes * avgCostPerBox : null;
+
+  return (
+    <Card className="border-primary/20 bg-primary/5">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <TrendingUp className="h-4 w-4 text-primary" />
+          Production Projector
+        </CardTitle>
+        <CardDescription>Predict output from raw material input</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
+          <div className="w-full sm:w-auto">
+            <label className="text-xs text-muted-foreground block mb-1">LBS Input</label>
+            <input
+              type="number"
+              value={lbsInput}
+              onChange={e => setLbsInput(e.target.value)}
+              className="w-full sm:w-32 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+              min={0}
+              step={1}
+            />
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Minus className="h-4 w-4" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 flex-1">
+            <div>
+              <p className="text-xs text-muted-foreground">Projected Boxes</p>
+              <p className="text-2xl font-mono font-bold text-primary">{projectedBoxes.toLocaleString()}</p>
+            </div>
+            {projectedCost !== null && (
+              <div>
+                <p className="text-xs text-muted-foreground">Projected Cost</p>
+                <p className="text-2xl font-mono font-bold text-foreground">${projectedCost.toLocaleString()}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export default ConversionIntelligencePanel;

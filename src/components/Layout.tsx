@@ -248,6 +248,7 @@ const DYNASTY_NAVIGATION = {
       items: [
         { path: '/grabba/production', label: 'Production Dashboard', icon: Factory },
         { path: '/portals/production', label: 'Manufacturing OS', icon: Factory },
+        { path: '/portals/production/conversion', label: 'Conversion Intelligence', icon: Flame },
         { path: '/portal/production', label: 'Worker View (Read-Only)', icon: Settings },
       ],
     },
