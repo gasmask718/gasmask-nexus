@@ -252,6 +252,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/portals/production/supplier-yield', label: 'Supplier Yield Rankings', icon: Factory },
         { path: '/portals/production/sales-velocity', label: 'Sales Velocity Intelligence', icon: TrendingUp },
         { path: '/portals/production/task-timer', label: 'Task Timer', icon: Clock },
+        { path: '/production/cost-history', label: 'Cost Ledger', icon: Factory },
         { path: '/portal/production', label: 'Worker View (Read-Only)', icon: Settings },
       ],
     },

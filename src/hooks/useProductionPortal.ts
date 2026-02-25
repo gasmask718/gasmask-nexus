@@ -26,6 +26,7 @@ export interface ProductionOffice {
   operating_hours: Record<string, any> | null;
   status: string;
   active: boolean;
+  daily_box_goal?: number | null;
   created_at: string;
 }
 

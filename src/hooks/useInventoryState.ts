@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type InventoryState = 'raw' | 'in_production' | 'boxed' | 'approved' | 'sent_to_office';
+export type InventoryState = 'raw' | 'in_production' | 'completed' | 'boxed' | 'approved' | 'sent_to_office';
 
 export interface InventoryTransition {
   id: string;
@@ -24,7 +24,8 @@ export interface InventoryTransition {
 /** Valid transitions — enforced client-side before DB write */
 const VALID_TRANSITIONS: Record<InventoryState, InventoryState[]> = {
   raw: ['in_production'],
-  in_production: ['boxed'],
+  in_production: ['completed'],
+  completed: ['boxed', 'in_production'], // reopen allowed (supervisor+)
   boxed: ['approved'],
   approved: ['sent_to_office'],
   sent_to_office: [], // terminal state
@@ -33,6 +34,7 @@ const VALID_TRANSITIONS: Record<InventoryState, InventoryState[]> = {
 export const INVENTORY_STATES: { value: InventoryState; label: string; color: string; icon: string }[] = [
   { value: 'raw', label: 'Raw', color: 'bg-amber-100 text-amber-800 border-amber-300', icon: '🍂' },
   { value: 'in_production', label: 'In Production', color: 'bg-blue-100 text-blue-800 border-blue-300', icon: '⚙️' },
+  { value: 'completed', label: 'Completed', color: 'bg-indigo-100 text-indigo-800 border-indigo-300', icon: '✔️' },
   { value: 'boxed', label: 'Boxed', color: 'bg-purple-100 text-purple-800 border-purple-300', icon: '📦' },
   { value: 'approved', label: 'Approved', color: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: '✅' },
   { value: 'sent_to_office', label: 'Sent to Office', color: 'bg-sky-100 text-sky-800 border-sky-300', icon: '🚚' },
@@ -65,6 +67,12 @@ export async function validateTransitionRequirements(
   if (toState === 'in_production') {
     if (!batch.tobacco_lbs || batch.tobacco_lbs <= 0) {
       return { valid: false, error: 'Tobacco LBS must be entered before starting production.' };
+    }
+  }
+
+  if (toState === 'completed') {
+    if (!outputUnits || outputUnits <= 0) {
+      return { valid: false, error: `${productType === 'bags' ? 'Bags' : 'Tubes'} produced must be entered before marking as completed.` };
     }
   }
 
@@ -134,6 +142,11 @@ export function useTransitionBatchState() {
         throw new Error('Manager must confirm material-to-output accuracy before approval.');
       }
 
+      // Require reason for reopen (completed → in_production)
+      if (fromState === 'completed' && toState === 'in_production' && !reason) {
+        throw new Error('Reason is required to reopen a completed batch.');
+      }
+
       // Get current user
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData.user?.id || null;
@@ -159,7 +172,7 @@ export function useTransitionBatchState() {
 
       if (updateError) throw updateError;
 
-      // 2) Log transition
+      // 2) Log transition to production_inventory_transitions
       const { error: logError } = await supabase
         .from('production_inventory_transitions')
         .insert({
@@ -172,14 +185,22 @@ export function useTransitionBatchState() {
 
       if (logError) {
         console.error('Failed to log transition:', logError);
-        // Don't throw — the state change already succeeded
       }
 
-      // 3) Log to production_history
+      // 3) Log to batch_state_history for reopen audit
+      await supabase.from('batch_state_history').insert({
+        batch_id: batchId,
+        from_state: fromState,
+        to_state: toState,
+        reason: reason || null,
+        performed_by: userId,
+      });
+
+      // 4) Log to production_history
       await supabase.from('production_history').insert({
         batch_id: batchId,
         office_id: officeId,
-        event_type: 'state_transition',
+        event_type: fromState === 'completed' && toState === 'in_production' ? 'batch_reopened' : 'state_transition',
         event_data: { from_state: fromState, to_state: toState, reason },
         performed_by: userId,
       });

@@ -72,3 +72,8 @@ export { LaborEfficiencyPanel } from './LaborEfficiencyPanel';
 
 // Phase 11: Profit Per Pound Intelligence
 export { ProfitPerPoundPanel } from './ProfitPerPoundPanel';
+
+// Phase 12: Production Control Hardening
+export { MaterialConsumptionPanel } from './MaterialConsumptionPanel';
+export { EquipmentAssignmentPanel } from './EquipmentAssignmentPanel';
+export { DailyExecutionDashboard } from './DailyExecutionDashboard';
