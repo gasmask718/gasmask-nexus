@@ -5173,6 +5173,42 @@ export type Database = {
         }
         Relationships: []
       }
+      allocation_run_logs: {
+        Row: {
+          alerts_fired: number
+          divergence_ratio: number | null
+          id: string
+          office_id: string | null
+          run_timestamp: string
+          survival_floor_enforced: boolean
+          total_lbs: number | null
+          total_reserved: number | null
+          unallocated_pct: number | null
+        }
+        Insert: {
+          alerts_fired?: number
+          divergence_ratio?: number | null
+          id?: string
+          office_id?: string | null
+          run_timestamp?: string
+          survival_floor_enforced?: boolean
+          total_lbs?: number | null
+          total_reserved?: number | null
+          unallocated_pct?: number | null
+        }
+        Update: {
+          alerts_fired?: number
+          divergence_ratio?: number | null
+          id?: string
+          office_id?: string | null
+          run_timestamp?: string
+          survival_floor_enforced?: boolean
+          total_lbs?: number | null
+          total_reserved?: number | null
+          unallocated_pct?: number | null
+        }
+        Relationships: []
+      }
       ambassador_applications: {
         Row: {
           city: string | null
@@ -38996,6 +39032,35 @@ export type Database = {
           },
         ]
       }
+      product_velocity_ratio_baseline: {
+        Row: {
+          baseline_ratio: number
+          id: string
+          last_updated_at: string
+          office_id: string | null
+        }
+        Insert: {
+          baseline_ratio?: number
+          id?: string
+          last_updated_at?: string
+          office_id?: string | null
+        }
+        Update: {
+          baseline_ratio?: number
+          id?: string
+          last_updated_at?: string
+          office_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_velocity_ratio_baseline_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: true
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_access_denials: {
         Row: {
           attempted_action: string
@@ -59161,6 +59226,7 @@ export type Database = {
           demand_trend: string | null
           is_overstock: boolean | null
           procurement_needed_lbs: number | null
+          product_type: string | null
           raw_inventory_lbs: number | null
           recommended_lbs_to_produce: number | null
           required_boxes_for_30_days: number | null
@@ -60166,6 +60232,7 @@ export type Database = {
           avg_daily_velocity_30d: number | null
           brand: string | null
           demand_trend: string | null
+          product_type: string | null
           units_sold_last_14_days: number | null
           units_sold_last_30_days: number | null
           units_sold_last_7_days: number | null
