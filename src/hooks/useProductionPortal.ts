@@ -69,13 +69,18 @@ export interface ProductionBatch {
   created_by: string | null;
   completed_at: string | null;
   created_at: string | null;
-  // Product type (tubes or bags) — product_output_units = raw units, boxes_produced = floor(units/100)
+  // Product type (tubes or bags) — two-layer model
   product_type: ProductType;
   product_output_units: number | null;
+  boxes_full: number | null;
+  units_remainder: number | null;
+  boxes_equivalent: number | null;
   // Time tracking
   production_start_timestamp: string | null;
   production_end_timestamp: string | null;
   production_time_minutes: number | null;
+  changeover_minutes: number | null;
+  net_production_minutes: number | null;
   // Variance fields
   is_locked: boolean | null;
   locked_at: string | null;
@@ -99,7 +104,11 @@ export interface ProductionBatch {
   // Conversion snapshots
   conversion_units_per_lb_snapshot: number | null;
   conversion_lbs_per_unit_snapshot: number | null;
+  conversion_boxes_per_lb_snapshot: number | null;
   time_per_unit_snapshot: number | null;
+  time_per_box_snapshot: number | null;
+  time_per_unit_net_snapshot: number | null;
+  time_per_box_net_snapshot: number | null;
   office?: { id: string; name: string } | null;
 }
 
@@ -634,6 +643,7 @@ export function useUpdateBatch() {
       if (updates.is_locked !== undefined) cleanUpdates.is_locked = updates.is_locked;
       if (updates.product_type !== undefined) cleanUpdates.product_type = updates.product_type;
       if (updates.product_output_units !== undefined) cleanUpdates.product_output_units = updates.product_output_units;
+      if (updates.changeover_minutes !== undefined) cleanUpdates.changeover_minutes = updates.changeover_minutes;
       if (updates.production_start_timestamp !== undefined) cleanUpdates.production_start_timestamp = updates.production_start_timestamp;
       if (updates.production_end_timestamp !== undefined) cleanUpdates.production_end_timestamp = updates.production_end_timestamp;
       if (updates.locked_at !== undefined) cleanUpdates.locked_at = updates.locked_at;

@@ -39238,8 +39238,11 @@ export type Database = {
           avg_sticker_apply_seconds: number | null
           avg_tube_fill_seconds: number | null
           batch_date: string | null
+          boxes_equivalent: number | null
+          boxes_full: number | null
           boxes_produced: number | null
           brand: string
+          changeover_minutes: number | null
           completed_at: string | null
           conversion_boxes_per_lb_snapshot: number | null
           conversion_confirmed_at: string | null
@@ -39260,6 +39263,7 @@ export type Database = {
           is_locked: boolean | null
           locked_at: string | null
           locked_by: string | null
+          net_production_minutes: number | null
           notes: string | null
           office_id: string | null
           produced_by: string | null
@@ -39275,7 +39279,9 @@ export type Database = {
           supplier_batch_reference: string | null
           supplier_id: string | null
           system_generation_note: string | null
+          time_per_box_net_snapshot: number | null
           time_per_box_snapshot: number | null
+          time_per_unit_net_snapshot: number | null
           time_per_unit_snapshot: number | null
           tobacco_heatup_minutes: number | null
           tobacco_lbs: number | null
@@ -39285,6 +39291,7 @@ export type Database = {
           total_stickers_used: number | null
           total_tubes_used: number | null
           tubes_total: number | null
+          units_remainder: number | null
           updated_at: string | null
           variance_notes: string | null
           variance_tubes: number | null
@@ -39296,8 +39303,11 @@ export type Database = {
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
           batch_date?: string | null
+          boxes_equivalent?: number | null
+          boxes_full?: number | null
           boxes_produced?: number | null
           brand: string
+          changeover_minutes?: number | null
           completed_at?: string | null
           conversion_boxes_per_lb_snapshot?: number | null
           conversion_confirmed_at?: string | null
@@ -39318,6 +39328,7 @@ export type Database = {
           is_locked?: boolean | null
           locked_at?: string | null
           locked_by?: string | null
+          net_production_minutes?: number | null
           notes?: string | null
           office_id?: string | null
           produced_by?: string | null
@@ -39333,7 +39344,9 @@ export type Database = {
           supplier_batch_reference?: string | null
           supplier_id?: string | null
           system_generation_note?: string | null
+          time_per_box_net_snapshot?: number | null
           time_per_box_snapshot?: number | null
+          time_per_unit_net_snapshot?: number | null
           time_per_unit_snapshot?: number | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
@@ -39343,6 +39356,7 @@ export type Database = {
           total_stickers_used?: number | null
           total_tubes_used?: number | null
           tubes_total?: number | null
+          units_remainder?: number | null
           updated_at?: string | null
           variance_notes?: string | null
           variance_tubes?: number | null
@@ -39354,8 +39368,11 @@ export type Database = {
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
           batch_date?: string | null
+          boxes_equivalent?: number | null
+          boxes_full?: number | null
           boxes_produced?: number | null
           brand?: string
+          changeover_minutes?: number | null
           completed_at?: string | null
           conversion_boxes_per_lb_snapshot?: number | null
           conversion_confirmed_at?: string | null
@@ -39376,6 +39393,7 @@ export type Database = {
           is_locked?: boolean | null
           locked_at?: string | null
           locked_by?: string | null
+          net_production_minutes?: number | null
           notes?: string | null
           office_id?: string | null
           produced_by?: string | null
@@ -39391,7 +39409,9 @@ export type Database = {
           supplier_batch_reference?: string | null
           supplier_id?: string | null
           system_generation_note?: string | null
+          time_per_box_net_snapshot?: number | null
           time_per_box_snapshot?: number | null
+          time_per_unit_net_snapshot?: number | null
           time_per_unit_snapshot?: number | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
@@ -39401,6 +39421,7 @@ export type Database = {
           total_stickers_used?: number | null
           total_tubes_used?: number | null
           tubes_total?: number | null
+          units_remainder?: number | null
           updated_at?: string | null
           variance_notes?: string | null
           variance_tubes?: number | null
@@ -39527,6 +39548,7 @@ export type Database = {
           last_updated_at: string
           office_id: string | null
           product_type: string
+          shift_label: string | null
         }
         Insert: {
           baseline_boxes_per_lb?: number
@@ -39540,6 +39562,7 @@ export type Database = {
           last_updated_at?: string
           office_id?: string | null
           product_type?: string
+          shift_label?: string | null
         }
         Update: {
           baseline_boxes_per_lb?: number
@@ -39553,6 +39576,7 @@ export type Database = {
           last_updated_at?: string
           office_id?: string | null
           product_type?: string
+          shift_label?: string | null
         }
         Relationships: [
           {
@@ -60781,9 +60805,12 @@ export type Database = {
         Row: {
           batch_date: string | null
           batch_id: string | null
+          boxes_equivalent: number | null
+          boxes_full: number | null
           boxes_per_lb: number | null
           boxes_produced: number | null
           brand: string | null
+          changeover_minutes: number | null
           cost_per_box: number | null
           cost_per_unit: number | null
           created_at: string | null
@@ -60792,12 +60819,16 @@ export type Database = {
           is_locked: boolean | null
           lbs_per_box: number | null
           lbs_per_unit: number | null
+          net_production_minutes: number | null
+          net_time_per_box: number | null
+          net_time_per_unit: number | null
           notes: string | null
           office_id: string | null
           office_name: string | null
           product_output_units: number | null
           product_type: string | null
           production_time_minutes: number | null
+          shift_label: string | null
           status: string | null
           time_per_box: number | null
           time_per_unit: number | null
@@ -60805,6 +60836,7 @@ export type Database = {
           total_cost: number | null
           tubes_total: number | null
           units_per_lb: number | null
+          units_remainder: number | null
           waste_lbs: number | null
           waste_pct: number | null
         }

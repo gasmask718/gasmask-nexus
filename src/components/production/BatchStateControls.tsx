@@ -41,6 +41,7 @@ interface BatchStateControlsProps {
     product_type?: string;
     product_output_units?: number;
     production_time_minutes?: number;
+    changeover_minutes?: number;
   };
 }
 
@@ -69,20 +70,22 @@ export function BatchStateControls({
   // Compute two-layer conversion preview for approval dialog
   const lbs = batchData?.tobacco_lbs || 0;
   const outputUnits = batchData?.product_output_units || 0;
-  const boxes = Math.floor(outputUnits / 100);
+  const boxesFull = Math.floor(outputUnits / 100);
+  const unitsRemainder = outputUnits % 100;
+  const boxesEquiv = outputUnits / 100.0;
   const productType = batchData?.product_type || 'tubes';
   const unitLabel = productType === 'bags' ? 'bags' : 'tubes';
+  const changeover = batchData?.changeover_minutes || 0;
+  const grossTime = batchData?.production_time_minutes || 0;
+  const netTime = Math.max(grossTime - changeover, 0);
+
   const lbsPerUnit = outputUnits > 0 ? (lbs / outputUnits).toFixed(4) : '—';
   const unitsPerLb = lbs > 0 ? (outputUnits / lbs).toFixed(2) : '—';
-  const lbsPerBox = boxes > 0 ? (lbs / boxes).toFixed(2) : '—';
-  const boxesPerLb = lbs > 0 ? (boxes / lbs).toFixed(3) : '—';
+  const lbsPerBox = boxesEquiv > 0 ? (lbs / boxesEquiv).toFixed(2) : '—';
+  const boxesPerLb = lbs > 0 ? (boxesEquiv / lbs).toFixed(4) : '—';
   const wastePct = lbs > 0 && batchData?.waste_lbs ? ((batchData.waste_lbs / lbs) * 100).toFixed(1) : null;
-  const timePerUnit = batchData?.production_time_minutes && outputUnits > 0
-    ? (batchData.production_time_minutes / outputUnits).toFixed(3)
-    : null;
-  const timePerBox = batchData?.production_time_minutes && boxes > 0
-    ? (batchData.production_time_minutes / boxes).toFixed(1)
-    : null;
+  const timePerUnit = netTime > 0 && outputUnits > 0 ? (netTime / outputUnits).toFixed(3) : null;
+  const timePerBox = netTime > 0 && boxesEquiv > 0 ? (netTime / boxesEquiv).toFixed(1) : null;
 
   const renderApprovalDialog = (ns: InventoryState) => {
     const nsConfig = getStateConfig(ns);
@@ -119,8 +122,10 @@ export function BatchStateControls({
                      <span className="font-medium text-foreground">{lbs} lbs</span>
                      <span className="text-muted-foreground">{unitLabel} produced:</span>
                      <span className="font-medium text-foreground">{outputUnits.toLocaleString()}</span>
-                     <span className="text-muted-foreground">Boxes (100 {unitLabel}/box):</span>
-                     <span className="font-medium text-foreground">{boxes}</span>
+                     <span className="text-muted-foreground">Full Boxes / Remainder:</span>
+                     <span className="font-medium text-foreground">{boxesFull} boxes + {unitsRemainder} units</span>
+                     <span className="text-muted-foreground">Boxes (equivalent):</span>
+                     <span className="font-medium text-foreground">{boxesEquiv.toFixed(2)}</span>
                      <span className="text-muted-foreground">LBS / {unitLabel.slice(0, -1)}:</span>
                      <span className="font-medium text-foreground">{lbsPerUnit}</span>
                      <span className="text-muted-foreground">{unitLabel} / LB:</span>
@@ -129,15 +134,25 @@ export function BatchStateControls({
                      <span className="font-medium text-foreground">{lbsPerBox}</span>
                      <span className="text-muted-foreground">Boxes / LB:</span>
                      <span className="font-medium text-foreground">{boxesPerLb}</span>
+                     {changeover > 0 && (
+                       <>
+                         <span className="text-muted-foreground">Changeover:</span>
+                         <span className="font-medium text-foreground">{changeover} min</span>
+                         <span className="text-muted-foreground">Gross Time:</span>
+                         <span className="font-medium text-foreground">{grossTime} min</span>
+                         <span className="text-muted-foreground">Net Time:</span>
+                         <span className="font-medium text-foreground">{netTime} min</span>
+                       </>
+                     )}
                      {timePerUnit && (
                        <>
-                         <span className="text-muted-foreground">Time / {unitLabel.slice(0, -1)}:</span>
+                         <span className="text-muted-foreground">Net Time / {unitLabel.slice(0, -1)}:</span>
                          <span className="font-medium text-foreground">{timePerUnit} min</span>
                        </>
                      )}
                      {timePerBox && (
                        <>
-                         <span className="text-muted-foreground">Time / box:</span>
+                         <span className="text-muted-foreground">Net Time / box:</span>
                          <span className="font-medium text-foreground">{timePerBox} min</span>
                        </>
                      )}

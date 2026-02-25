@@ -1,38 +1,46 @@
 
-# Product-Aware Box Conversion Engine (Tubes + Bags) — COMPLETED
+# Product-Aware Box Conversion Engine — HARDENED
 
 ## Architecture
 
 Two-layer conversion model:
 - **Layer 1:** lbs → product_output_units (tubes or bags)  
-- **Layer 2:** product_output_units → boxes_produced (auto: floor(units ÷ 100))
+- **Layer 2:** product_output_units → boxes (100 units = 1 box)
 
-The **box** is the economic unit. The **product unit** (tube or bag) captures yield physics.
+### Precision Model
+- `boxes_full` = floor(units / 100) — for packaging/shipments
+- `units_remainder` = units % 100 — tracked, never lost
+- `boxes_equivalent` = units / 100.0 — used for ALL yield math, variance, baselines
 
-## What Was Built
+### Time Model
+- `production_time_minutes` — gross time
+- `changeover_minutes` — setup time when switching product types
+- `net_production_minutes` = gross - changeover — used for time/unit, time/box calculations
+- Both gross and net snapshots stored at approval
 
-### Database Migration
-- `boxes_produced` now auto-calculated via trigger: `floor(product_output_units / 100)`
-- Added `conversion_boxes_per_lb_snapshot`, `time_per_box_snapshot` to `production_batches`
-- Added `baseline_time_per_box` to `production_conversion_baseline`
-- Updated snapshot trigger to capture both unit and box level ratios at approval
-- Backfilled existing tube records: `product_output_units = boxes_produced * 100`
-- Recreated `v_tobacco_conversion_intelligence` with both layers: units_per_lb, boxes_per_lb, time_per_unit, time_per_box
+### Approval Guardrails
+- product_units_produced > 0
+- production_time_minutes > 0
+- boxes_equivalent > 0
+- product_type required
 
-### Hooks Updated
-- `useConversionIntelligence` — tracks both unit and box level stats, time_per_box, fastest/slowest by box
-- `useConversionBaseline` — includes baseline_time_per_box
-- `useInventoryState` — validation now checks product_output_units (boxes auto-derived)
+### Baselines
+- Grouped by: office_id + product_type + shift_label (optional)
+- Uses boxes_equivalent for box-level baselines
+- Separate time baselines: baseline_time_per_unit, baseline_time_per_box
 
-### UI Components Updated
-- `DailyBatchEntry` — Product Type dropdown, Product Units Produced input, auto-calculated Boxes display, real-time two-layer conversion preview (units/lb, boxes/lb, lbs/unit, lbs/box)
-- `BatchStateControls` — Approval dialog shows full two-layer conversion summary with boxes
-- `ConversionIntelligencePanel` — Shows both units/lb and boxes/lb KPIs, batch table with both layers, time/box
-- `ProductionEfficiencyPanel` — Time intelligence now uses time/box as primary metric with unit-level secondary
+## Database Columns Added
+- `boxes_full` (generated stored)
+- `units_remainder` (generated stored)
+- `boxes_equivalent` (generated stored)
+- `changeover_minutes` (integer, default 0)
+- `net_production_minutes` (generated stored)
+- `time_per_unit_net_snapshot`, `time_per_box_net_snapshot`
+- `shift_label` on production_conversion_baseline
 
 ## Still Available for Future
-- War Room product toggle (Section 9)
-- Demand integration per product_type (Section 7)
-- Procurement forecasting per product baseline (Section 8)
-- Raw material allocation discipline (product-reserved pools)
-- Changeover/setup time tracking between product types
+- War Room product toggle
+- Demand integration per product_type
+- Procurement forecasting per product baseline
+- Raw material allocation discipline
+- Per-shift baseline auto-calculation when enough data exists

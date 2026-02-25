@@ -274,7 +274,12 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             <span>
                               {(batch as any).product_output_units || 0} {(batch as any).product_type === 'bags' ? 'bags' : 'tubes'}
                             </span>
-                            <span className="text-primary font-medium">{batch.boxes_produced || 0} boxes</span>
+                            <span className="text-primary font-medium">
+                              {(batch as any).boxes_full || batch.boxes_produced || 0} boxes
+                              {((batch as any).units_remainder || 0) > 0 && (
+                                <span className="text-muted-foreground text-xs ml-1">+{(batch as any).units_remainder}</span>
+                              )}
+                            </span>
                             {(batch.total_defects || 0) > 0 && (
                               <span className="text-destructive flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
@@ -428,9 +433,9 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   Output — {formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced
                 </h4>
                 <p className="text-xs text-muted-foreground mb-3">
-                  100 {formData.product_type === 'bags' ? 'bags' : 'tubes'} = 1 box. Boxes auto-calculated.
+                  100 {formData.product_type === 'bags' ? 'bags' : 'tubes'} = 1 box. Boxes auto-calculated. Remainder tracked separately.
                 </p>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="product_units">{formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced *</Label>
                     <Input
@@ -442,33 +447,43 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                     />
                   </div>
                   <div className="grid gap-2">
-                    <Label>Boxes (auto)</Label>
+                    <Label>Full Boxes</Label>
                     <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-foreground font-mono font-bold">
                       {Math.floor((parseInt(formData.product_output_units) || 0) / 100)}
                     </div>
                   </div>
-                </div>
-                {/* Real-time conversion display */}
-                {proposedLbs > 0 && parseInt(formData.product_output_units) > 0 && (
-                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    <div className="p-2 rounded bg-muted/50 border">
-                      <span className="text-muted-foreground">Units/LB</span>
-                      <p className="font-mono font-bold">{(parseInt(formData.product_output_units) / proposedLbs).toFixed(2)}</p>
-                    </div>
-                    <div className="p-2 rounded bg-muted/50 border">
-                      <span className="text-muted-foreground">Boxes/LB</span>
-                      <p className="font-mono font-bold">{(Math.floor(parseInt(formData.product_output_units) / 100) / proposedLbs).toFixed(2)}</p>
-                    </div>
-                    <div className="p-2 rounded bg-muted/50 border">
-                      <span className="text-muted-foreground">LBS/Unit</span>
-                      <p className="font-mono font-bold">{(proposedLbs / parseInt(formData.product_output_units)).toFixed(4)}</p>
-                    </div>
-                    <div className="p-2 rounded bg-muted/50 border">
-                      <span className="text-muted-foreground">LBS/Box</span>
-                      <p className="font-mono font-bold">{Math.floor(parseInt(formData.product_output_units) / 100) > 0 ? (proposedLbs / Math.floor(parseInt(formData.product_output_units) / 100)).toFixed(2) : '—'}</p>
+                  <div className="grid gap-2">
+                    <Label>Remainder</Label>
+                    <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-muted-foreground font-mono">
+                      {(parseInt(formData.product_output_units) || 0) % 100} units
                     </div>
                   </div>
-                )}
+                </div>
+                {/* Real-time conversion display using boxes_equivalent */}
+                {proposedLbs > 0 && parseInt(formData.product_output_units) > 0 && (() => {
+                  const units = parseInt(formData.product_output_units);
+                  const boxesEquiv = units / 100.0;
+                  return (
+                    <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div className="p-2 rounded bg-muted/50 border">
+                        <span className="text-muted-foreground">Units/LB</span>
+                        <p className="font-mono font-bold">{(units / proposedLbs).toFixed(2)}</p>
+                      </div>
+                      <div className="p-2 rounded bg-muted/50 border">
+                        <span className="text-muted-foreground">Boxes(eq)/LB</span>
+                        <p className="font-mono font-bold">{(boxesEquiv / proposedLbs).toFixed(3)}</p>
+                      </div>
+                      <div className="p-2 rounded bg-muted/50 border">
+                        <span className="text-muted-foreground">LBS/Unit</span>
+                        <p className="font-mono font-bold">{(proposedLbs / units).toFixed(4)}</p>
+                      </div>
+                      <div className="p-2 rounded bg-muted/50 border">
+                        <span className="text-muted-foreground">LBS/Box(eq)</span>
+                        <p className="font-mono font-bold">{(proposedLbs / boxesEquiv).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Per-brand issued materials */}
