@@ -1,49 +1,39 @@
 
 
-# Smart Autocomplete for Yelp Business Search
+# Search History and Enhanced Auto-fill for Yelp Business Search
 
 ## Overview
-Add intelligent autocomplete to both the "Business Name / Keyword" and "Location" fields in the Yelp search form at `/territory/ingestion`. When a business name is recognized, automatically suggest its location.
-
-## How It Works
-
-**Business Name Field:**
-- As user types (debounced 300ms), calls Yelp's `/v3/autocomplete` endpoint which returns matching businesses, categories, and terms
-- Dropdown shows business name suggestions with their city/state
-- Selecting a business auto-fills the location field with that business's city + state
-
-**Location Field:**
-- Uses Mapbox Geocoding API (already configured via `VITE_MAPBOX_PUBLIC_TOKEN`) for place autocomplete
-- As user types, suggests cities/states/neighborhoods
-- No external dependency needed -- Mapbox token is already in the project
+Enhance the `/territory/ingestion` Yelp search page with two improvements: (1) ensure business name autocomplete always auto-fills the location field, and (2) add persistent search history that appears when the input fields are empty/focused.
 
 ## Changes
 
-### 1. Update Edge Function (`yelp-business-search`)
-Add a new `autocomplete` action that calls `GET https://api.yelp.com/v3/autocomplete?text=X&locale=en_US`. Returns business names with locations, category matches, and term suggestions.
+### 1. Search History Hook (`src/hooks/useSearchHistory.ts`)
+A small utility hook that reads/writes search history to `localStorage`.
 
-### 2. New Component: `YelpSearchAutocomplete.tsx`
-A reusable autocomplete input component with:
-- Debounced input (300ms) to avoid excessive API calls
-- Dropdown with grouped results (Businesses, Categories, Terms)
-- Business results show name + city for quick identification
-- Click-outside-to-close behavior
-- Keyboard navigation not required for MVP but structure supports it
+- Stores up to 10 recent searches as `{ term, location, timestamp }` objects
+- Key: `yelp-search-history`
+- Provides `addSearch(term, location)` and `history` array
+- Most recent searches appear first
+- Deduplicates by term+location combo
 
-### 3. New Component: `LocationAutocomplete.tsx`
-A location-specific autocomplete using Mapbox's geocoding API (client-side, no edge function needed):
-- Calls `https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json?types=place,locality,neighborhood`
-- Shows city/state suggestions as user types
-- Selecting a suggestion fills the location field
+### 2. Update `YelpSearchAutocomplete.tsx`
+- Accept a new `searchHistory` prop (array of past search terms)
+- On focus, if the input is empty, show recent business name searches as suggestions under a "Recent Searches" header with a clock icon
+- When user starts typing, switch to live Yelp autocomplete results as before
+- When a business with location data is selected, fire `onBusinessSelect` (already wired to auto-fill location)
+
+### 3. Update `LocationAutocomplete.tsx`
+- Accept a new `searchHistory` prop (array of past location strings)
+- On focus with empty input, show recent locations under a "Recent Locations" header
+- When user starts typing, switch to live Mapbox suggestions
 
 ### 4. Update `YelpBusinessSearch.tsx`
-Replace the two plain `<Input>` fields with the new autocomplete components:
-- Business field uses `YelpSearchAutocomplete` -- on selecting a business suggestion, auto-populates location
-- Location field uses `LocationAutocomplete` -- independent city/state search
-- Search button and all existing functionality unchanged
+- Import and use `useSearchHistory` hook
+- Pass history data down to both autocomplete components
+- After a successful search, call `addSearch(term, location)` to persist the search
+- Both fields now show relevant history on focus when empty
 
 ## Technical Notes
-- Yelp autocomplete endpoint: `GET /v3/autocomplete?text=...&locale=en_US` -- returns `{ businesses, categories, terms }`
-- Mapbox geocoding is already used in `src/services/geocoding.ts` with `VITE_MAPBOX_PUBLIC_TOKEN`
-- Both autocomplete dropdowns dismiss on blur/click-outside and on item selection
-- No database changes required
+- All history is stored client-side in localStorage -- no database changes needed
+- History entries are capped at 10 to keep the dropdown clean
+- The location auto-fill from business selection already works via `onBusinessSelect`; no change needed there
