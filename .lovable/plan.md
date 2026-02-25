@@ -1,93 +1,49 @@
 
 
-# Yelp Places API Integration Plan
+# Smart Autocomplete for Yelp Business Search
 
 ## Overview
-Integrate Yelp Fusion API into the Territory Ingestion Wizard to enable direct business search by name, detailed business info viewing, review browsing, and selective data ingestion into your territory system.
+Add intelligent autocomplete to both the "Business Name / Keyword" and "Location" fields in the Yelp search form at `/territory/ingestion`. When a business name is recognized, automatically suggest its location.
 
-## Current State
-- An `ingest-yelp` edge function already exists for bulk neighborhood-scoped ingestion
-- The `YELP_API_KEY` secret is **not yet configured** -- needs to be added
-- The ingestion page at `/territory/ingestion` supports Yelp as a source but only for bulk area-based ingestion, not individual business search
+## How It Works
 
-## What Changes
+**Business Name Field:**
+- As user types (debounced 300ms), calls Yelp's `/v3/autocomplete` endpoint which returns matching businesses, categories, and terms
+- Dropdown shows business name suggestions with their city/state
+- Selecting a business auto-fills the location field with that business's city + state
 
-### 1. Store Yelp API Key as Secret
-Add `YELP_API_KEY` to your backend secrets so the edge function can authenticate with Yelp.
+**Location Field:**
+- Uses Mapbox Geocoding API (already configured via `VITE_MAPBOX_PUBLIC_TOKEN`) for place autocomplete
+- As user types, suggests cities/states/neighborhoods
+- No external dependency needed -- Mapbox token is already in the project
 
-### 2. New Edge Function: `yelp-business-search`
-A single edge function handling three operations via an `action` parameter:
+## Changes
 
-- **`search`** -- Search businesses by name/term + location. Returns list with name, address, rating, review count, categories, phone, image.
-- **`details`** -- Get full business details by Yelp business ID (hours, photos, price level, transactions, etc.)
-- **`reviews`** -- Get up to 3 reviews per business (Yelp API limit) with reviewer name, rating, text, and date.
+### 1. Update Edge Function (`yelp-business-search`)
+Add a new `autocomplete` action that calls `GET https://api.yelp.com/v3/autocomplete?text=X&locale=en_US`. Returns business names with locations, category matches, and term suggestions.
 
-### 3. Enhanced Ingestion Wizard UI
-When "Yelp Fusion" source is selected, a new **search-first workflow** replaces the current scope form:
+### 2. New Component: `YelpSearchAutocomplete.tsx`
+A reusable autocomplete input component with:
+- Debounced input (300ms) to avoid excessive API calls
+- Dropdown with grouped results (Businesses, Categories, Terms)
+- Business results show name + city for quick identification
+- Click-outside-to-close behavior
+- Keyboard navigation not required for MVP but structure supports it
 
-**Search Panel:**
-- Text input for business name/keyword (e.g., "Smoke Shop")
-- Location input (city, state)  
-- Search button that calls the edge function
-- Results grid showing business cards with: name, address, rating stars, review count, categories, thumbnail
+### 3. New Component: `LocationAutocomplete.tsx`
+A location-specific autocomplete using Mapbox's geocoding API (client-side, no edge function needed):
+- Calls `https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json?types=place,locality,neighborhood`
+- Shows city/state suggestions as user types
+- Selecting a suggestion fills the location field
 
-**Business Detail Drawer:**
-- Click a result to see full details + reviews in a slide-out panel
-- Business info: hours, phone, price level, photos
-- Reviews section: up to 3 Yelp reviews with rating, text, date
-- "Ingest This Business" button to add to territory_addresses
+### 4. Update `YelpBusinessSearch.tsx`
+Replace the two plain `<Input>` fields with the new autocomplete components:
+- Business field uses `YelpSearchAutocomplete` -- on selecting a business suggestion, auto-populates location
+- Location field uses `LocationAutocomplete` -- independent city/state search
+- Search button and all existing functionality unchanged
 
-**Batch Select + Ingest:**
-- Checkbox on each search result card for multi-select
-- "Ingest Selected (N)" button to batch-insert chosen businesses into `territory_addresses`
-- Deduplication check against existing addresses before insert
-
-### 4. Data Flow
-
-```text
-User types search term + location
-        |
-        v
-Frontend calls yelp-business-search (action: search)
-        |
-        v
-Results displayed as cards with checkboxes
-        |
-   [Click card]          [Select + Ingest]
-        |                       |
-        v                       v
-yelp-business-search      Insert selected into
-(action: details)         territory_addresses
-(action: reviews)         via existing supabase
-        |                 client insert
-        v
-Detail drawer with
-reviews displayed
-```
-
-## Technical Details
-
-### Edge Function: `supabase/functions/yelp-business-search/index.ts`
-- Uses `YELP_API_KEY` from `Deno.env.get()`
-- Endpoints hit:
-  - `GET https://api.yelp.com/v3/businesses/search?term=X&location=Y&limit=20`
-  - `GET https://api.yelp.com/v3/businesses/{id}`
-  - `GET https://api.yelp.com/v3/businesses/{id}/reviews?limit=3&sort_by=yelp_sort`
-- Standard CORS headers + error handling per edge function pattern
-
-### Frontend Components
-- **`src/components/territory/YelpBusinessSearch.tsx`** -- Search form + results grid with select/ingest controls
-- **`src/components/territory/YelpBusinessDetail.tsx`** -- Detail drawer with reviews panel
-- **Modified `src/pages/territory/TerritoryIngestion.tsx`** -- When `source === 'yelp'` and `step === 'scope'`, render the new Yelp search UI instead of the generic scope form
-
-### Ingestion into `territory_addresses`
-Each ingested business creates a record with:
-- `full_address`: from Yelp location data
-- `city`, `state`, `zip`: from Yelp
-- `latitude`, `longitude`: from Yelp coordinates
-- `address_type`: Yelp categories joined
-- `notes`: business name, rating, review count, phone
-- `discovery_status`: 'unknown'
-- `discovered_by`: 'yelp'
-- Dedup check on address + city before insert
-
+## Technical Notes
+- Yelp autocomplete endpoint: `GET /v3/autocomplete?text=...&locale=en_US` -- returns `{ businesses, categories, terms }`
+- Mapbox geocoding is already used in `src/services/geocoding.ts` with `VITE_MAPBOX_PUBLIC_TOKEN`
+- Both autocomplete dropdowns dismiss on blur/click-outside and on item selection
+- No database changes required
