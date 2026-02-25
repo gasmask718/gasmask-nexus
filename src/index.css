@@ -93,8 +93,33 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
-  
+
+  /* ═══ Safe-area helpers for iOS notch / home indicator ═══ */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* ═══ Touch-friendly minimum target (Apple HIG: 44px) ═══ */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+    touch-action: manipulation;
+  }
+
+  /* ═══ Responsive container shorthand ═══ */
+  .container-mobile {
+    @apply px-3 sm:px-4 md:px-6;
+  }
+
   /* Smooth animations */
   .hover-lift {
     @apply transition-transform duration-200 hover:translate-y-[-2px];

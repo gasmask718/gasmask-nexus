@@ -11,15 +11,15 @@ export default function PublicLayout() {
   const { canInstall, triggerInstall } = usePwaInstall();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col safe-area-top safe-area-x">
       {/* Marketing Navbar */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-4 h-16">
+      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md safe-area-top">
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-3 sm:px-4 h-14 sm:h-16">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <Crown className="h-5 w-5 text-primary-foreground" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-primary flex items-center justify-center">
+              <Crown className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground" />
             </div>
-            <span className="font-bold text-lg text-foreground tracking-tight">GasMask</span>
+            <span className="font-bold text-base sm:text-lg text-foreground tracking-tight">GasMask</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-6">
@@ -34,20 +34,20 @@ export default function PublicLayout() {
             </Link>
           </nav>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {canInstall && (
-              <Button variant="outline" size="sm" onClick={triggerInstall} className="gap-1.5">
+              <Button variant="outline" size="sm" onClick={triggerInstall} className="gap-1.5 touch-target">
                 <Download className="h-3.5 w-3.5" />
-                Install App
+                <span className="hidden sm:inline">Install App</span>
               </Button>
             )}
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="touch-target">
               <Link to="/cart">
-                <ShoppingBag className="h-4 w-4 mr-1" />
-                Cart
+                <ShoppingBag className="h-4 w-4 sm:mr-1" />
+                <span className="hidden sm:inline">Cart</span>
               </Link>
             </Button>
-            <Button size="sm" asChild>
+            <Button size="sm" asChild className="touch-target">
               <Link to="/auth">Login</Link>
             </Button>
           </div>
@@ -60,8 +60,8 @@ export default function PublicLayout() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card/50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
+      <footer className="border-t border-border bg-card/50 safe-area-bottom">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Crown className="h-4 w-4 text-primary" />

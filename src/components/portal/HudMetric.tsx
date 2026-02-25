@@ -22,9 +22,9 @@ const valueStyles = {
 };
 
 const sizeStyles = {
-  sm: 'text-xl',
-  md: 'text-3xl',
-  lg: 'text-5xl',
+  sm: 'text-lg sm:text-xl',
+  md: 'text-2xl sm:text-3xl',
+  lg: 'text-3xl sm:text-5xl',
 };
 
 export function HudMetric({
