@@ -29648,6 +29648,86 @@ export type Database = {
           },
         ]
       }
+      labor_anomaly_events: {
+        Row: {
+          anomaly_type: string
+          created_at: string
+          details: Json | null
+          id: string
+          office_id: string
+          task_id: string | null
+          worker_user_id: string
+        }
+        Insert: {
+          anomaly_type: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          office_id: string
+          task_id?: string | null
+          worker_user_id: string
+        }
+        Update: {
+          anomaly_type?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          office_id?: string
+          task_id?: string | null
+          worker_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "labor_anomaly_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "production_worker_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      labor_performance_snapshots: {
+        Row: {
+          avg_minutes_per_1000: number
+          id: string
+          office_id: string
+          performance_score: number
+          period_end: string
+          period_start: string
+          snapshot_created_at: string
+          std_dev: number
+          total_hours: number
+          total_units_completed: number
+          worker_user_id: string
+        }
+        Insert: {
+          avg_minutes_per_1000: number
+          id?: string
+          office_id: string
+          performance_score?: number
+          period_end: string
+          period_start: string
+          snapshot_created_at?: string
+          std_dev?: number
+          total_hours?: number
+          total_units_completed?: number
+          worker_user_id: string
+        }
+        Update: {
+          avg_minutes_per_1000?: number
+          id?: string
+          office_id?: string
+          performance_score?: number
+          period_end?: string
+          period_start?: string
+          snapshot_created_at?: string
+          std_dev?: number
+          total_hours?: number
+          total_units_completed?: number
+          worker_user_id?: string
+        }
+        Relationships: []
+      }
       land_bank: {
         Row: {
           acres: number | null
@@ -41300,6 +41380,7 @@ export type Database = {
       }
       production_worker_tasks: {
         Row: {
+          actual_units_completed: number
           batch_id: string | null
           brand: string | null
           created_at: string
@@ -41307,6 +41388,8 @@ export type Database = {
           duration_seconds: number | null
           finished_at: string | null
           id: string
+          normalized_minutes_per_1000: number | null
+          normalized_units_per_hour: number | null
           notes: string | null
           office_id: string
           product_type: string
@@ -41320,6 +41403,7 @@ export type Database = {
           worker_user_id: string
         }
         Insert: {
+          actual_units_completed?: number
           batch_id?: string | null
           brand?: string | null
           created_at?: string
@@ -41327,6 +41411,8 @@ export type Database = {
           duration_seconds?: number | null
           finished_at?: string | null
           id?: string
+          normalized_minutes_per_1000?: number | null
+          normalized_units_per_hour?: number | null
           notes?: string | null
           office_id: string
           product_type?: string
@@ -41340,6 +41426,7 @@ export type Database = {
           worker_user_id: string
         }
         Update: {
+          actual_units_completed?: number
           batch_id?: string | null
           brand?: string | null
           created_at?: string
@@ -41347,6 +41434,8 @@ export type Database = {
           duration_seconds?: number | null
           finished_at?: string | null
           id?: string
+          normalized_minutes_per_1000?: number | null
+          normalized_units_per_hour?: number | null
           notes?: string | null
           office_id?: string
           product_type?: string
@@ -58969,6 +59058,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      v_batch_labor_summary: {
+        Row: {
+          avg_normalized_minutes_per_1000: number | null
+          batch_id: string | null
+          office_id: string | null
+          task_count: number | null
+          total_labor_hours: number | null
+          total_labor_seconds: number | null
+          total_units_completed: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
           },
         ]
       }
