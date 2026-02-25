@@ -1,3 +1,4 @@
+// YelpSearchAutocomplete - business name autocomplete via Yelp API
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
