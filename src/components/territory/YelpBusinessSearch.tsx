@@ -11,6 +11,7 @@ import { toast } from '@/hooks/use-toast';
 import { Search, Star, MapPin, Phone, Loader2, Download, ArrowLeft } from 'lucide-react';
 import { YelpBusinessDetail } from './YelpBusinessDetail';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
+import { DuplicateResolutionModal, DuplicateRecord } from './DuplicateResolutionModal';
 
 interface YelpBusiness {
   id: string;
@@ -48,6 +49,12 @@ export function YelpBusinessSearch({ onBack }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [ingesting, setIngesting] = useState(false);
   const [detailBusiness, setDetailBusiness] = useState<YelpBusiness | null>(null);
+
+  // Duplicate resolution state
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const [duplicateRecords, setDuplicateRecords] = useState<DuplicateRecord[]>([]);
+  const [nonDuplicateRecords, setNonDuplicateRecords] = useState<any[]>([]);
+  const [processingDuplicates, setProcessingDuplicates] = useState(false);
 
   const handleSearch = async () => {
     if (!term || !location) {
@@ -90,52 +97,157 @@ export function YelpBusinessSearch({ onBack }: Props) {
     else setSelected(new Set(results.map(b => b.id)));
   };
 
+  const buildRecords = (businesses: YelpBusiness[]) =>
+    businesses.map(b => ({
+      full_address: b.location.display_address.join(', '),
+      city: b.location.city,
+      state: b.location.state,
+      zip: b.location.zip_code,
+      latitude: b.coordinates.latitude,
+      longitude: b.coordinates.longitude,
+      address_type: 'commercial',
+      notes: `${b.name} | ${b.categories.map(c => c.title).join(', ')} | Rating: ${b.rating}/5 (${b.review_count} reviews) | ${b.display_phone}`,
+      discovery_status: 'unknown',
+      discovered_by: 'yelp',
+    }));
+
   const ingestSelected = async () => {
     const businesses = results.filter(b => selected.has(b.id));
     if (businesses.length === 0) return;
     setIngesting(true);
     try {
-      const records = businesses.map(b => ({
-        full_address: b.location.display_address.join(', '),
-        city: b.location.city,
-        state: b.location.state,
-        zip: b.location.zip_code,
-        latitude: b.coordinates.latitude,
-        longitude: b.coordinates.longitude,
-        address_type: 'commercial',
-        notes: `${b.name} | ${b.categories.map(c => c.title).join(', ')} | Rating: ${b.rating}/5 (${b.review_count} reviews) | ${b.display_phone}`,
-        discovery_status: 'unknown',
-        discovered_by: 'yelp',
-      }));
+      const records = buildRecords(businesses);
 
-      // Dedup check
+      // Check for duplicates by full_address
       const addresses = records.map(r => r.full_address);
       const { data: existing } = await supabase
         .from('territory_addresses')
-        .select('full_address')
+        .select('id, full_address, notes, created_at')
         .in('full_address', addresses);
 
-      const existingSet = new Set((existing || []).map((e: any) => e.full_address));
-      const newRecords = records.filter(r => !existingSet.has(r.full_address));
+      const existingMap = new Map(
+        (existing || []).map((e: any) => [e.full_address, e])
+      );
 
-      if (newRecords.length === 0) {
-        toast({ title: 'All Duplicates', description: 'All selected businesses already exist in your territory.' });
+      const dupes: DuplicateRecord[] = [];
+      const fresh: typeof records = [];
+
+      for (const rec of records) {
+        const match = existingMap.get(rec.full_address);
+        if (match) {
+          dupes.push({
+            newRecord: rec,
+            existingRow: match,
+            action: 'skip', // default
+          });
+        } else {
+          fresh.push(rec);
+        }
+      }
+
+      if (dupes.length > 0) {
+        // Show modal for user to decide
+        setDuplicateRecords(dupes);
+        setNonDuplicateRecords(fresh);
+        setDuplicateModalOpen(true);
         setIngesting(false);
         return;
       }
 
-      const { error } = await supabase.from('territory_addresses').insert(newRecords);
-      if (error) throw error;
+      // No duplicates — insert directly
+      if (fresh.length > 0) {
+        const { error } = await supabase.from('territory_addresses').insert(fresh);
+        if (error) throw error;
+      }
 
       toast({
         title: 'Ingestion Complete',
-        description: `${newRecords.length} new address(es) added. ${records.length - newRecords.length} duplicates skipped.`,
+        description: `${fresh.length} new address(es) added.`,
       });
       setSelected(new Set());
     } catch (err: any) {
       toast({ title: 'Ingestion Failed', description: err.message, variant: 'destructive' });
     } finally {
       setIngesting(false);
+    }
+  };
+
+  const handleDuplicateConfirm = async (items: DuplicateRecord[]) => {
+    setProcessingDuplicates(true);
+    try {
+      let inserted = 0;
+      let updated = 0;
+      let replaced = 0;
+      let skipped = 0;
+
+      for (const item of items) {
+        const { action, newRecord, existingRow } = item;
+
+        if (action === 'skip') {
+          skipped++;
+          continue;
+        }
+
+        if (action === 'add') {
+          const { error } = await supabase.from('territory_addresses').insert(newRecord);
+          if (error) throw error;
+          inserted++;
+        }
+
+        if (action === 'update') {
+          // Update coordinates, notes, discovered_by — keep other details untouched
+          const { error } = await supabase
+            .from('territory_addresses')
+            .update({
+              latitude: newRecord.latitude,
+              longitude: newRecord.longitude,
+              notes: newRecord.notes,
+              discovered_by: newRecord.discovered_by,
+            })
+            .eq('id', existingRow.id);
+          if (error) throw error;
+          updated++;
+        }
+
+        if (action === 'replace') {
+          const { error: delErr } = await supabase
+            .from('territory_addresses')
+            .delete()
+            .eq('id', existingRow.id);
+          if (delErr) throw delErr;
+
+          const { error: insErr } = await supabase.from('territory_addresses').insert(newRecord);
+          if (insErr) throw insErr;
+          replaced++;
+        }
+      }
+
+      // Also insert non-duplicate records
+      if (nonDuplicateRecords.length > 0) {
+        const { error } = await supabase.from('territory_addresses').insert(nonDuplicateRecords);
+        if (error) throw error;
+        inserted += nonDuplicateRecords.length;
+      }
+
+      const parts: string[] = [];
+      if (inserted > 0) parts.push(`${inserted} added`);
+      if (updated > 0) parts.push(`${updated} updated`);
+      if (replaced > 0) parts.push(`${replaced} replaced`);
+      if (skipped > 0) parts.push(`${skipped} skipped`);
+
+      toast({
+        title: 'Ingestion Complete',
+        description: parts.join(', ') + '.',
+      });
+
+      setSelected(new Set());
+      setDuplicateModalOpen(false);
+      setDuplicateRecords([]);
+      setNonDuplicateRecords([]);
+    } catch (err: any) {
+      toast({ title: 'Ingestion Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setProcessingDuplicates(false);
     }
   };
 
@@ -153,7 +265,6 @@ export function YelpBusinessSearch({ onBack }: Props) {
         onIngest={async () => {
           setSelected(new Set([detailBusiness.id]));
           setDetailBusiness(null);
-          // Small delay then trigger ingest
           setTimeout(() => {
             const btn = document.getElementById('yelp-ingest-btn');
             if (btn) btn.click();
@@ -290,6 +401,19 @@ export function YelpBusinessSearch({ onBack }: Props) {
           </div>
         </div>
       )}
+
+      {/* Duplicate Resolution Modal */}
+      <DuplicateResolutionModal
+        open={duplicateModalOpen}
+        duplicates={duplicateRecords}
+        onConfirm={handleDuplicateConfirm}
+        onCancel={() => {
+          setDuplicateModalOpen(false);
+          setDuplicateRecords([]);
+          setNonDuplicateRecords([]);
+        }}
+        processing={processingDuplicates}
+      />
     </div>
   );
 }
