@@ -1,12 +1,15 @@
 import { Outlet, Link } from 'react-router-dom';
-import { Crown, ShoppingBag } from 'lucide-react';
+import { Crown, ShoppingBag, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 
 /**
  * PublicLayout — Marketing wrapper for unauthenticated pages
  * SEO-friendly (no noindex), marketing navbar + footer
  */
 export default function PublicLayout() {
+  const { canInstall, triggerInstall } = usePwaInstall();
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Marketing Navbar */}
@@ -32,6 +35,12 @@ export default function PublicLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
+            {canInstall && (
+              <Button variant="outline" size="sm" onClick={triggerInstall} className="gap-1.5">
+                <Download className="h-3.5 w-3.5" />
+                Install App
+              </Button>
+            )}
             <Button variant="ghost" size="sm" asChild>
               <Link to="/cart">
                 <ShoppingBag className="h-4 w-4 mr-1" />
