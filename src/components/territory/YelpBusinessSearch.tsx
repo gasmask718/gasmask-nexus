@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { Search, Star, MapPin, Phone, Loader2, Download, ArrowLeft } from 'lucide-react';
 import { YelpBusinessDetail } from './YelpBusinessDetail';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
 
 interface YelpBusiness {
   id: string;
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export function YelpBusinessSearch({ onBack }: Props) {
+  const { addSearch, recentTerms, recentLocations } = useSearchHistory();
   const [term, setTerm] = useState('');
   const [location, setLocation] = useState('');
   const [results, setResults] = useState<YelpBusiness[]>([]);
@@ -64,6 +66,8 @@ export function YelpBusinessSearch({ onBack }: Props) {
       setResults(data?.businesses || []);
       if ((data?.businesses || []).length === 0) {
         toast({ title: 'No Results', description: 'No businesses found for that search.' });
+      } else {
+        addSearch(term, location);
       }
     } catch (err: any) {
       toast({ title: 'Search Failed', description: err.message, variant: 'destructive' });
@@ -187,6 +191,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
                 }}
                 placeholder="e.g. Smoke Shop"
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                searchHistory={recentTerms}
               />
             </div>
             <div className="flex-1 space-y-1">
@@ -196,6 +201,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
                 onChange={setLocation}
                 placeholder="e.g. New York, NY"
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                searchHistory={recentLocations}
               />
             </div>
             <div className="flex items-end">

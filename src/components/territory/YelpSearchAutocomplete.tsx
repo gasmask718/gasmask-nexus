@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Building2, Tag, Type, Loader2 } from 'lucide-react';
+import { Search, Building2, Tag, Type, Loader2, Clock } from 'lucide-react';
 
 interface AutocompleteBusiness {
   id: string;
@@ -22,12 +22,14 @@ interface Props {
   onBusinessSelect?: (business: AutocompleteBusiness) => void;
   placeholder?: string;
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  searchHistory?: string[];
 }
 
-export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, placeholder, onKeyDown }: Props) {
+export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, placeholder, onKeyDown, searchHistory }: Props) {
   const [suggestions, setSuggestions] = useState<AutocompleteResult | null>(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -37,6 +39,7 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
       setOpen(false);
       return;
     }
+    setShowHistory(false);
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('yelp-business-search', {
@@ -55,8 +58,22 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
 
   const handleChange = (val: string) => {
     onChange(val);
+    if (!val.trim() && searchHistory && searchHistory.length > 0) {
+      setShowHistory(true);
+      setOpen(false);
+      return;
+    }
+    setShowHistory(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => fetchSuggestions(val), 300);
+  };
+
+  const handleFocus = () => {
+    if (!value.trim() && searchHistory && searchHistory.length > 0) {
+      setShowHistory(true);
+    } else if (hasSuggestions) {
+      setOpen(true);
+    }
   };
 
   // Click outside
@@ -64,6 +81,7 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setShowHistory(false);
       }
     };
     document.addEventListener('mousedown', handler);
@@ -77,12 +95,14 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
   const selectBusiness = (b: AutocompleteBusiness) => {
     onChange(b.name);
     setOpen(false);
+    setShowHistory(false);
     onBusinessSelect?.(b);
   };
 
   const selectTerm = (text: string) => {
     onChange(text);
     setOpen(false);
+    setShowHistory(false);
   };
 
   const hasSuggestions = suggestions &&
@@ -98,16 +118,35 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
           onChange={e => handleChange(e.target.value)}
           placeholder={placeholder}
           onKeyDown={onKeyDown}
-          onFocus={() => hasSuggestions && setOpen(true)}
+          onFocus={handleFocus}
         />
         {loading && (
           <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
         )}
       </div>
 
-      {open && hasSuggestions && (
+      {/* Search history dropdown */}
+      {showHistory && searchHistory && searchHistory.length > 0 && (
+        <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-lg max-h-52 overflow-y-auto">
+          <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            <Clock className="h-3 w-3" /> Recent Searches
+          </div>
+          {searchHistory.map((t, i) => (
+            <button
+              key={i}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer flex items-center gap-2"
+              onClick={() => selectTerm(t)}
+            >
+              <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="truncate">{t}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Live suggestions dropdown */}
+      {open && !showHistory && hasSuggestions && (
         <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover text-popover-foreground shadow-lg max-h-64 overflow-y-auto">
-          {/* Businesses */}
           {suggestions!.businesses && suggestions!.businesses.length > 0 && (
             <div>
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
@@ -130,7 +169,6 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
             </div>
           )}
 
-          {/* Categories */}
           {suggestions!.categories && suggestions!.categories.length > 0 && (
             <div>
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 border-t">
@@ -148,7 +186,6 @@ export function YelpSearchAutocomplete({ value, onChange, onBusinessSelect, plac
             </div>
           )}
 
-          {/* Terms */}
           {suggestions!.terms && suggestions!.terms.length > 0 && (
             <div>
               <div className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5 border-t">
