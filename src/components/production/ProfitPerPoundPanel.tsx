@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useBatchCostHistory, type BatchCostHistoryRecord } from '@/hooks/useBatchCostHistory';
+import { useInventoryCoverage } from '@/hooks/useSalesVelocity';
 import {
   TrendingUp,
   TrendingDown,
@@ -19,6 +20,7 @@ import {
   ArrowDownRight,
   Minus,
   Info,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -50,7 +52,7 @@ interface ConfigProfit {
 
 export function ProfitPerPoundPanel({ officeId }: ProfitPerPoundPanelProps) {
   const { data: history = [], isLoading } = useBatchCostHistory(officeId);
-
+  const { data: coverageData = [] } = useInventoryCoverage();
   // Filter records with profit data
   const profitRecords = useMemo(() =>
     history.filter(r =>
@@ -161,6 +163,24 @@ export function ProfitPerPoundPanel({ officeId }: ProfitPerPoundPanelProps) {
     }
     return null;
   }, [profitRecords]);
+
+  // Economic Throughput Score = Profit/lb × avg daily velocity
+  const economicThroughput = useMemo(() => {
+    if (configProfits.length === 0 || coverageData.length === 0) return [];
+    return configProfits.map(c => {
+      // Match velocity data by product_type (brand maps to product_type in coverage)
+      const velocityMatch = coverageData.find(v =>
+        v.product_type?.toLowerCase() === c.product_type?.toLowerCase()
+      );
+      const dailyVelocity = velocityMatch?.avg_daily_velocity_30d || 0;
+      const score = c.avg_profit_per_lb * dailyVelocity;
+      return {
+        ...c,
+        daily_velocity: dailyVelocity,
+        throughput_score: score,
+      };
+    }).sort((a, b) => b.throughput_score - a.throughput_score);
+  }, [configProfits, coverageData]);
 
   const getComparisonIcon = (value: number, avg: number) => {
     const diff = ((value - avg) / Math.max(avg, 0.01)) * 100;
@@ -346,6 +366,46 @@ export function ProfitPerPoundPanel({ officeId }: ProfitPerPoundPanelProps) {
                     </div>
                   </div>
                 )}
+              </div>
+            </>
+          )}
+
+          {/* Economic Throughput Score */}
+          {economicThroughput.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="text-sm font-semibold mb-1 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-amber-500" />
+                  Economic Throughput Score
+                  <Badge variant="outline" className="text-[9px] font-normal">Display Only</Badge>
+                </h4>
+                <p className="text-[11px] text-muted-foreground mb-3">
+                  Profit/lb × Daily Velocity — identifies which products are both profitable and moving fast.
+                </p>
+                <div className="space-y-1.5">
+                  {economicThroughput.map((et, i) => (
+                    <div key={et.key} className="flex items-center justify-between text-xs px-2.5 py-2 rounded border bg-muted/20">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground font-mono w-4">#{i + 1}</span>
+                        <Badge variant="outline" className="text-[10px] capitalize">{et.product_type}</Badge>
+                        <span className="font-medium">{getConfigLabel(et)}</span>
+                      </div>
+                      <div className="flex items-center gap-4 font-mono">
+                        <span className="text-muted-foreground">${et.avg_profit_per_lb.toFixed(2)}/lb</span>
+                        <span className="text-muted-foreground">×</span>
+                        <span className="text-muted-foreground">{et.daily_velocity.toFixed(1)} units/day</span>
+                        <span className="text-muted-foreground">=</span>
+                        <span className={cn(
+                          'font-bold',
+                          i === 0 ? 'text-emerald-600' : 'text-foreground'
+                        )}>
+                          {et.throughput_score.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           )}
