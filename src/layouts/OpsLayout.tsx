@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { LogOut, Crown } from 'lucide-react';
+import { LogOut, Crown, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import OpsBottomNav from '@/layouts/OpsBottomNav';
 import PwaGate from '@/components/pwa/PwaGate';
 import PwaUpdateToast from '@/components/pwa/PwaUpdateToast';
 import OpsAccessGate from '@/components/security/OpsAccessGate';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 
 /**
  * OpsLayout — Mobile-first layout for portal/field workers
@@ -17,6 +18,7 @@ export default function OpsLayout() {
   const { signOut } = useAuth();
   const { data } = useCurrentUserProfile();
   const navigate = useNavigate();
+  const { canInstall, triggerInstall } = usePwaInstall();
 
   // SEO protection: inject noindex meta tag
   useEffect(() => {
@@ -45,7 +47,13 @@ export default function OpsLayout() {
               <span className="font-bold text-sm text-foreground">GasMask Ops</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {canInstall && (
+                <Button variant="outline" size="sm" onClick={triggerInstall} className="gap-1.5 h-8 text-xs">
+                  <Download className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Install</span>
+                </Button>
+              )}
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-medium text-foreground truncate max-w-[120px]">{userName}</p>
                 <p className="text-[10px] text-muted-foreground capitalize">{userRole}</p>

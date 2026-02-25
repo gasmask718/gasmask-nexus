@@ -1,13 +1,15 @@
 /**
  * GasMask Ops — Service Worker
- * Caches static assets only. No API caching, no background sync.
+ * Caches static assets with network-first strategy.
  * Fail-safe: app works normally if SW fails.
  */
 
-const CACHE_NAME = 'gasmask-ops-v1';
+const CACHE_NAME = 'gasmask-ops-v2';
 const STATIC_ASSETS = [
   '/portal',
   '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
 ];
 
 // Install: pre-cache static shell
@@ -35,14 +37,15 @@ self.addEventListener('message', (event) => {
   }
 });
 
-// Fetch: network-first for everything, fall back to cache for static assets only
+// Fetch: network-first, fall back to cache for static assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Never cache API calls or Supabase requests
+  // Never cache API calls, Supabase requests, or OAuth
   if (
     url.pathname.startsWith('/rest/') ||
     url.pathname.startsWith('/auth/') ||
+    url.pathname.startsWith('/~oauth') ||
     url.hostname.includes('supabase')
   ) {
     return;
