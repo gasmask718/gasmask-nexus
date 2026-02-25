@@ -1,38 +1,30 @@
 
+# Multi-Product Production Intelligence (Tubes + Bags) — COMPLETED
 
-# Fix: territory_addresses_address_type_check Constraint Violation
+## What Was Built
 
-## Root Cause
+### Database Migration
+- Added `product_type`, `product_output_units`, `production_start_timestamp`, `production_end_timestamp`, `production_time_minutes`, `conversion_units_per_lb_snapshot`, `conversion_lbs_per_unit_snapshot`, `time_per_unit_snapshot` to `production_batches`
+- Added `product_type`, `baseline_units_per_lb`, `baseline_lbs_per_unit`, `baseline_time_per_unit` to `production_conversion_baseline`
+- Recreated `v_tobacco_conversion_intelligence` view with product-aware columns
+- Created triggers: auto-calc production time, sync output units for tubes, snapshot on approval
 
-The `territory_addresses` table has a database CHECK constraint:
-```
-address_type IN ('commercial', 'residential', 'unknown')
-```
+### Hooks Updated
+- `useConversionIntelligence` — now accepts `productType` filter, tracks units_per_lb, time_per_unit
+- `useConversionBaseline` — now accepts `productType` filter, includes time baseline
+- `useInventoryState` — validation now checks product_type and product_output_units
+- `useProductionPortal` — ProductBatch type extended, create/update support product_type
 
-The Yelp ingestion code (line 105 of `YelpBusinessSearch.tsx`) sets `address_type` to the Yelp category names joined by comma (e.g., `"Tobacco Shops, Vape Shops"`), which is not one of the three allowed values.
+### UI Components Updated
+- `DailyBatchEntry` — Product Type dropdown (Tubes/Bags), dynamic fields based on selection
+- `BatchStateControls` — Approval dialog shows product-aware conversion summary with time
+- `ConversionIntelligencePanel` — Tubes/Bags tab toggle, product-filtered KPIs/table/baselines
 
-## Fix
+### New Component
+- `ProductionEfficiencyPanel` — Time intelligence per product type with slowdown alerts
 
-In `src/components/territory/YelpBusinessSearch.tsx`, change line 105:
-
-**Before:**
-```typescript
-address_type: b.categories.map(c => c.title).join(', '),
-```
-
-**After:**
-```typescript
-address_type: 'commercial',
-```
-
-Since all Yelp businesses are commercial establishments, `'commercial'` is the correct value. The category details are already captured in the `notes` field alongside the business name, rating, and phone number -- but we should also append categories there for visibility:
-
-**Updated notes field (line 106):**
-```typescript
-notes: `${b.name} | ${b.categories.map(c => c.title).join(', ')} | Rating: ${b.rating}/5 (${b.review_count} reviews) | ${b.display_phone}`,
-```
-
-## Summary
-- One file changed: `src/components/territory/YelpBusinessSearch.tsx`
-- Two lines modified (105-106)
-- No database migration needed
+## Still Available for Future
+- War Room product toggle (Section 9)
+- Demand integration per product_type (Section 7)
+- Procurement forecasting per product baseline (Section 8)
+- Raw material allocation discipline (product-reserved pools)

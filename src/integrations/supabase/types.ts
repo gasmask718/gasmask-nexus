@@ -39245,6 +39245,8 @@ export type Database = {
           conversion_confirmed_at: string | null
           conversion_confirmed_by: string | null
           conversion_lbs_per_box_snapshot: number | null
+          conversion_lbs_per_unit_snapshot: number | null
+          conversion_units_per_lb_snapshot: number | null
           created_at: string | null
           created_by: string | null
           cycle_time_variance_pct: number | null
@@ -39261,6 +39263,11 @@ export type Database = {
           notes: string | null
           office_id: string | null
           produced_by: string | null
+          product_output_units: number | null
+          product_type: string
+          production_end_timestamp: string | null
+          production_start_timestamp: string | null
+          production_time_minutes: number | null
           shift_label: string | null
           status: string | null
           stickers_issued: Json | null
@@ -39268,6 +39275,7 @@ export type Database = {
           supplier_batch_reference: string | null
           supplier_id: string | null
           system_generation_note: string | null
+          time_per_unit_snapshot: number | null
           tobacco_heatup_minutes: number | null
           tobacco_lbs: number | null
           tools_used: Json | null
@@ -39294,6 +39302,8 @@ export type Database = {
           conversion_confirmed_at?: string | null
           conversion_confirmed_by?: string | null
           conversion_lbs_per_box_snapshot?: number | null
+          conversion_lbs_per_unit_snapshot?: number | null
+          conversion_units_per_lb_snapshot?: number | null
           created_at?: string | null
           created_by?: string | null
           cycle_time_variance_pct?: number | null
@@ -39310,6 +39320,11 @@ export type Database = {
           notes?: string | null
           office_id?: string | null
           produced_by?: string | null
+          product_output_units?: number | null
+          product_type?: string
+          production_end_timestamp?: string | null
+          production_start_timestamp?: string | null
+          production_time_minutes?: number | null
           shift_label?: string | null
           status?: string | null
           stickers_issued?: Json | null
@@ -39317,6 +39332,7 @@ export type Database = {
           supplier_batch_reference?: string | null
           supplier_id?: string | null
           system_generation_note?: string | null
+          time_per_unit_snapshot?: number | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
@@ -39343,6 +39359,8 @@ export type Database = {
           conversion_confirmed_at?: string | null
           conversion_confirmed_by?: string | null
           conversion_lbs_per_box_snapshot?: number | null
+          conversion_lbs_per_unit_snapshot?: number | null
+          conversion_units_per_lb_snapshot?: number | null
           created_at?: string | null
           created_by?: string | null
           cycle_time_variance_pct?: number | null
@@ -39359,6 +39377,11 @@ export type Database = {
           notes?: string | null
           office_id?: string | null
           produced_by?: string | null
+          product_output_units?: number | null
+          product_type?: string
+          production_end_timestamp?: string | null
+          production_start_timestamp?: string | null
+          production_time_minutes?: number | null
           shift_label?: string | null
           status?: string | null
           stickers_issued?: Json | null
@@ -39366,6 +39389,7 @@ export type Database = {
           supplier_batch_reference?: string | null
           supplier_id?: string | null
           system_generation_note?: string | null
+          time_per_unit_snapshot?: number | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
@@ -39491,26 +39515,38 @@ export type Database = {
         Row: {
           baseline_boxes_per_lb: number
           baseline_lbs_per_box: number
+          baseline_lbs_per_unit: number | null
+          baseline_time_per_unit: number | null
+          baseline_units_per_lb: number | null
           calculated_from_batch_count: number
           id: string
           last_updated_at: string
           office_id: string | null
+          product_type: string
         }
         Insert: {
           baseline_boxes_per_lb?: number
           baseline_lbs_per_box?: number
+          baseline_lbs_per_unit?: number | null
+          baseline_time_per_unit?: number | null
+          baseline_units_per_lb?: number | null
           calculated_from_batch_count?: number
           id?: string
           last_updated_at?: string
           office_id?: string | null
+          product_type?: string
         }
         Update: {
           baseline_boxes_per_lb?: number
           baseline_lbs_per_box?: number
+          baseline_lbs_per_unit?: number | null
+          baseline_time_per_unit?: number | null
+          baseline_units_per_lb?: number | null
           calculated_from_batch_count?: number
           id?: string
           last_updated_at?: string
           office_id?: string | null
+          product_type?: string
         }
         Relationships: [
           {
@@ -60743,18 +60779,25 @@ export type Database = {
           boxes_produced: number | null
           brand: string | null
           cost_per_box: number | null
+          cost_per_unit: number | null
           created_at: string | null
           created_by: string | null
           inventory_state: string | null
           is_locked: boolean | null
           lbs_per_box: number | null
+          lbs_per_unit: number | null
           notes: string | null
           office_id: string | null
           office_name: string | null
+          product_output_units: number | null
+          product_type: string | null
+          production_time_minutes: number | null
           status: string | null
+          time_per_unit: number | null
           tobacco_lbs: number | null
           total_cost: number | null
           tubes_total: number | null
+          units_per_lb: number | null
           waste_lbs: number | null
           waste_pct: number | null
         }

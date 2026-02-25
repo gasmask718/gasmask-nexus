@@ -20,6 +20,7 @@ export { TrainingModeBanner, TrainingModeToggle } from './TrainingMode';
 export { ActiveBatchBanner } from './ActiveBatchBanner';
 export { WorkerPerformance } from './WorkerPerformance';
 export { CycleTimePanel, DailyCycleTimeSummary } from './CycleTimePanel';
+export { ProductionEfficiencyPanel } from './ProductionEfficiencyPanel';
 export { StaffingForecast } from './StaffingForecast';
 export { DailyCommandView } from './DailyCommandView';
 
