@@ -53,11 +53,14 @@ export async function validateTransitionRequirements(
 ): Promise<{ valid: boolean; error?: string }> {
   const { data: batch, error } = await supabase
     .from('production_batches')
-    .select('tobacco_lbs, boxes_produced, waste_lbs')
+    .select('tobacco_lbs, boxes_produced, waste_lbs, product_type, product_output_units, production_time_minutes')
     .eq('id', batchId)
     .single();
 
   if (error || !batch) return { valid: false, error: 'Batch not found' };
+
+  const productType = (batch as any).product_type || 'tubes';
+  const outputUnits = (batch as any).product_output_units || 0;
 
   if (toState === 'in_production') {
     if (!batch.tobacco_lbs || batch.tobacco_lbs <= 0) {
@@ -66,8 +69,14 @@ export async function validateTransitionRequirements(
   }
 
   if (toState === 'boxed') {
-    if (!batch.boxes_produced || batch.boxes_produced <= 0) {
-      return { valid: false, error: 'Boxes produced must be entered before marking as boxed.' };
+    if (productType === 'tubes') {
+      if (!batch.boxes_produced || batch.boxes_produced <= 0) {
+        return { valid: false, error: 'Boxes produced must be entered before marking as boxed.' };
+      }
+    } else {
+      if (!outputUnits || outputUnits <= 0) {
+        return { valid: false, error: `${productType === 'bags' ? 'Bags' : 'Units'} produced must be entered before marking as boxed.` };
+      }
     }
   }
 
@@ -75,8 +84,11 @@ export async function validateTransitionRequirements(
     if (!batch.tobacco_lbs || batch.tobacco_lbs <= 0) {
       return { valid: false, error: 'Cannot approve: tobacco LBS is missing.' };
     }
-    if (!batch.boxes_produced || batch.boxes_produced <= 0) {
-      return { valid: false, error: 'Cannot approve: boxes produced is missing.' };
+    if (outputUnits <= 0 && (!batch.boxes_produced || batch.boxes_produced <= 0)) {
+      return { valid: false, error: 'Cannot approve: output units are missing.' };
+    }
+    if (!(batch as any).product_type) {
+      return { valid: false, error: 'Cannot approve: product type not selected.' };
     }
   }
 

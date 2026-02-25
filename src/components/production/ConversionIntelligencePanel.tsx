@@ -10,12 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useConversionIntelligence, ConversionBatch } from '@/hooks/useConversionIntelligence';
 import { useConversionBaseline, getVarianceLevel } from '@/hooks/useConversionBaseline';
 import { useProductionOffices } from '@/hooks/useProductionPortal';
+import type { ProductType } from '@/hooks/useProductionPortal';
 import {
   Factory, TrendingUp, TrendingDown, AlertTriangle, BarChart3,
-  Weight, Box, Flame, DollarSign, Activity, Trophy, Minus, Shield, Building2
+  Weight, Box, Flame, DollarSign, Activity, Trophy, Minus, Shield, Building2, Timer
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -23,14 +25,17 @@ import { cn } from '@/lib/utils';
 export function ConversionIntelligencePanel() {
   const { data: offices = [] } = useProductionOffices();
   const [selectedOffice, setSelectedOffice] = useState<string>('all');
+  const [selectedProductType, setSelectedProductType] = useState<ProductType>('tubes');
 
   const officeId = selectedOffice === 'all' ? undefined : selectedOffice;
-  const { data, isLoading } = useConversionIntelligence(officeId);
-  const { data: baselineData } = useConversionBaseline(officeId);
+  const { data, isLoading } = useConversionIntelligence(officeId, selectedProductType);
+  const { data: baselineData } = useConversionBaseline(officeId, selectedProductType);
 
   const stats = data?.stats;
   const batches = data?.batches || [];
   const baseline = baselineData?.active;
+  const unitLabel = selectedProductType === 'bags' ? 'bags' : 'boxes';
+  const unitSingular = selectedProductType === 'bags' ? 'bag' : 'box';
 
   if (isLoading) {
     return (
@@ -62,12 +67,18 @@ export function ConversionIntelligencePanel() {
 
   return (
     <div className="space-y-6">
-      {/* Header + Office Filter */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+      {/* Header + Filters */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 flex-wrap">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           <Flame className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           Conversion Intelligence
         </h2>
+        <Tabs value={selectedProductType} onValueChange={(v) => setSelectedProductType(v as ProductType)}>
+          <TabsList>
+            <TabsTrigger value="tubes">🚬 Tubes</TabsTrigger>
+            <TabsTrigger value="bags">🛍️ Bags</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Select value={selectedOffice} onValueChange={setSelectedOffice}>
           <SelectTrigger className="w-full sm:w-[220px]">
             <SelectValue placeholder="All Offices" />
@@ -87,10 +98,13 @@ export function ConversionIntelligencePanel() {
           <CardContent className="flex items-center gap-3 py-3">
             <Shield className="h-5 w-5 text-primary shrink-0" />
             <div>
-              <p className="text-sm font-semibold">Baseline Active — {baseline.calculated_from_batch_count} batches</p>
+              <p className="text-sm font-semibold">Baseline Active — {baseline.calculated_from_batch_count} batches <span className="capitalize">({selectedProductType})</span></p>
               <p className="text-xs text-muted-foreground">
-                Baseline: <span className="font-mono font-medium">{baseline.baseline_boxes_per_lb}</span> boxes/lb
-                · <span className="font-mono font-medium">{baseline.baseline_lbs_per_box}</span> lbs/box
+                Baseline: <span className="font-mono font-medium">{baseline.baseline_units_per_lb || baseline.baseline_boxes_per_lb}</span> {unitLabel}/lb
+                · <span className="font-mono font-medium">{baseline.baseline_lbs_per_unit || baseline.baseline_lbs_per_box}</span> lbs/{unitSingular}
+                {baseline.baseline_time_per_unit && (
+                  <> · <span className="font-mono font-medium">{baseline.baseline_time_per_unit}</span> min/{unitSingular}</>
+                )}
                 · Updated {format(new Date(baseline.last_updated_at), 'MMM d, yyyy')}
               </p>
             </div>
@@ -115,12 +129,15 @@ export function ConversionIntelligencePanel() {
       )}
 
       {/* Global KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
         <KpiCard label="Total LBS Used" value={stats.totalLbs.toLocaleString()} icon={<Weight className="h-4 w-4" />} variant="default" />
-        <KpiCard label="Total Boxes" value={stats.totalBoxes.toLocaleString()} icon={<Box className="h-4 w-4" />} variant="default" />
-        <KpiCard label="LBS / Box" value={stats.globalAvgLbsPerBox.toFixed(2)} icon={<TrendingDown className="h-4 w-4" />} variant="amber" subtitle="Global avg" />
-        <KpiCard label="Boxes / LB" value={stats.globalAvgBoxesPerLb.toFixed(2)} icon={<TrendingUp className="h-4 w-4" />} variant="green" subtitle="Global avg" />
+        <KpiCard label={`Total ${unitLabel}`} value={stats.totalUnits.toLocaleString()} icon={<Box className="h-4 w-4" />} variant="default" />
+        <KpiCard label={`LBS / ${unitSingular}`} value={stats.globalAvgLbsPerUnit.toFixed(2)} icon={<TrendingDown className="h-4 w-4" />} variant="amber" subtitle="Global avg" />
+        <KpiCard label={`${unitLabel} / LB`} value={stats.globalAvgUnitsPerLb.toFixed(2)} icon={<TrendingUp className="h-4 w-4" />} variant="green" subtitle="Global avg" />
         <KpiCard label="Avg Waste" value={`${stats.avgWastePct}%`} icon={<AlertTriangle className="h-4 w-4" />} variant={stats.avgWastePct > 5 ? 'red' : 'default'} />
+        {stats.avgTimePerUnit !== null && (
+          <KpiCard label={`Min / ${unitSingular}`} value={stats.avgTimePerUnit.toFixed(1)} icon={<Timer className="h-4 w-4" />} variant="default" subtitle="Avg time" />
+        )}
         <KpiCard label="Efficiency" value={`${stats.efficiencyScore}/100`} icon={<Activity className="h-4 w-4" />} variant={stats.efficiencyScore >= 80 ? 'green' : stats.efficiencyScore >= 60 ? 'amber' : 'red'} />
       </div>
 
@@ -136,12 +153,12 @@ export function ConversionIntelligencePanel() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">LBS / Box</span>
-              <span className="font-mono font-bold">{stats.rolling7.avgLbsPerBox.toFixed(4)}</span>
+              <span className="text-muted-foreground">LBS / {unitSingular}</span>
+              <span className="font-mono font-bold">{stats.rolling7.avgLbsPerUnit.toFixed(4)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Boxes / LB</span>
-              <span className="font-mono font-bold">{stats.rolling7.avgBoxesPerLb.toFixed(4)}</span>
+              <span className="text-muted-foreground">{unitLabel} / LB</span>
+              <span className="font-mono font-bold">{stats.rolling7.avgUnitsPerLb.toFixed(4)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Deviation</span>
@@ -201,7 +218,7 @@ export function ConversionIntelligencePanel() {
                   Best Batch
                 </div>
                 <div className="text-sm font-medium">
-                  {stats.bestBatch.boxes_per_lb?.toFixed(2)} boxes/lb
+                  {stats.bestBatch.units_per_lb?.toFixed(2)} {unitLabel}/lb
                   <span className="text-xs text-muted-foreground ml-2">
                     {stats.bestBatch.brand} • {stats.bestBatch.batch_date ? format(new Date(stats.bestBatch.batch_date), 'MMM d') : '—'}
                   </span>
@@ -215,7 +232,7 @@ export function ConversionIntelligencePanel() {
                   Worst Batch
                 </div>
                 <div className="text-sm font-medium">
-                  {stats.worstBatch.boxes_per_lb?.toFixed(2)} boxes/lb
+                  {stats.worstBatch.units_per_lb?.toFixed(2)} {unitLabel}/lb
                   <span className="text-xs text-muted-foreground ml-2">
                     {stats.worstBatch.brand} • {stats.worstBatch.batch_date ? format(new Date(stats.worstBatch.batch_date), 'MMM d') : '—'}
                   </span>
@@ -249,7 +266,7 @@ export function ConversionIntelligencePanel() {
             Batch Conversion History
           </CardTitle>
           <CardDescription>
-            All batches with tobacco input and box output recorded. Locked batches have permanent snapshots.
+            All {selectedProductType} batches with tobacco input and output recorded. Locked batches have permanent snapshots.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -260,20 +277,21 @@ export function ConversionIntelligencePanel() {
                   <TableHead>Date</TableHead>
                   <TableHead>Brand</TableHead>
                   <TableHead className="text-right">LBS In</TableHead>
-                  <TableHead className="text-right">Boxes Out</TableHead>
-                  <TableHead className="text-right">LBS/Box</TableHead>
-                  <TableHead className="text-right">Boxes/LB</TableHead>
+                  <TableHead className="text-right">{unitLabel} Out</TableHead>
+                  <TableHead className="text-right">LBS/{unitSingular}</TableHead>
+                  <TableHead className="text-right">{unitLabel}/LB</TableHead>
                   <TableHead className="text-right">Waste %</TableHead>
-                  <TableHead className="text-right">Cost/Box</TableHead>
+                  <TableHead className="text-right">Cost/{unitSingular}</TableHead>
+                  <TableHead className="text-right">Time/{unitSingular}</TableHead>
                   <TableHead>Variance</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {batches.slice(0, 50).map((batch) => {
-                  const baselineBoxesPerLb = baseline?.baseline_boxes_per_lb || stats.globalAvgBoxesPerLb;
-                  const variance = batch.boxes_per_lb !== null
-                    ? getVarianceLevel(batch.boxes_per_lb, baselineBoxesPerLb)
+                  const baselineUnitsPerLb = baseline?.baseline_units_per_lb || baseline?.baseline_boxes_per_lb || stats.globalAvgUnitsPerLb;
+                  const variance = batch.units_per_lb !== null
+                    ? getVarianceLevel(batch.units_per_lb, baselineUnitsPerLb)
                     : null;
 
                   return (
@@ -285,9 +303,9 @@ export function ConversionIntelligencePanel() {
                         <Badge variant="outline" className="text-xs">{batch.brand}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{batch.tobacco_lbs}</TableCell>
-                      <TableCell className="text-right font-mono font-medium">{batch.boxes_produced ?? '—'}</TableCell>
-                      <TableCell className="text-right font-mono">{batch.lbs_per_box?.toFixed(3) ?? '—'}</TableCell>
-                      <TableCell className="text-right font-mono">{batch.boxes_per_lb?.toFixed(3) ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono font-medium">{batch.product_output_units ?? batch.boxes_produced ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.lbs_per_unit?.toFixed(3) ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.units_per_lb?.toFixed(3) ?? '—'}</TableCell>
                       <TableCell className="text-right font-mono">
                         {batch.waste_pct !== null ? (
                           <span className={cn(batch.waste_pct > 5 && 'text-destructive font-semibold')}>
@@ -296,7 +314,10 @@ export function ConversionIntelligencePanel() {
                         ) : '—'}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {batch.cost_per_box !== null ? `$${batch.cost_per_box.toFixed(2)}` : '—'}
+                        {batch.cost_per_unit !== null ? `$${batch.cost_per_unit.toFixed(2)}` : '—'}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {batch.time_per_unit !== null ? `${batch.time_per_unit.toFixed(1)}m` : '—'}
                       </TableCell>
                       <TableCell>
                         {variance ? (

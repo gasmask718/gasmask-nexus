@@ -77,6 +77,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
     shift_label: 'Morning',
     tobacco_lbs: '',
     tubes_total: '',
+    product_type: 'tubes' as 'tubes' | 'bags',
     stickers_issued: {} as Record<string, number>,
     empty_boxes_issued: {} as Record<string, number>,
     workers_present: [] as string[],
@@ -103,12 +104,13 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       brand: formData.brand,
       shift_label: formData.shift_label,
       tobacco_lbs: proposedLbs,
-      tubes_total: parseInt(formData.tubes_total) || 0,
+      tubes_total: formData.product_type === 'tubes' ? (parseInt(formData.tubes_total) || 0) : 0,
       stickers_issued: formData.stickers_issued,
       empty_boxes_issued: formData.empty_boxes_issued,
       workers_present: formData.workers_present,
       notes: formData.notes,
       status: 'open',
+      product_type: formData.product_type,
     };
 
     const result = await createBatch.mutateAsync(batchData);
@@ -140,6 +142,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       shift_label: 'Morning',
       tobacco_lbs: '',
       tubes_total: '',
+      product_type: 'tubes',
       stickers_issued: {},
       empty_boxes_issued: {},
       workers_present: [],
@@ -255,14 +258,23 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                                 <Bot className="h-3 w-3" /> System Draft
                               </Badge>
                             )}
+                            <Badge variant="outline" className="text-xs capitalize">
+                              {(batch as any).product_type || 'tubes'}
+                            </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
                               <Scale className="h-3 w-3" />
                               {batch.tobacco_lbs ?? 0} lbs
                             </span>
-                            <span>{batch.tubes_total?.toLocaleString() || 0} tubes</span>
-                            <span className="text-primary font-medium">{batch.boxes_produced || 0} boxes</span>
+                            {(batch as any).product_type === 'bags' ? (
+                              <span className="text-primary font-medium">{(batch as any).product_output_units || 0} bags</span>
+                            ) : (
+                              <>
+                                <span>{batch.tubes_total?.toLocaleString() || 0} tubes</span>
+                                <span className="text-primary font-medium">{batch.boxes_produced || 0} boxes</span>
+                              </>
+                            )}
                             {(batch.total_defects || 0) > 0 && (
                               <span className="text-destructive flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
@@ -355,6 +367,23 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
               </div>
             </div>
 
+            {/* Product Type Selection */}
+            <div className="grid gap-2">
+              <Label>Product Type *</Label>
+              <Select
+                value={formData.product_type}
+                onValueChange={(value) => setFormData({ ...formData, product_type: value as 'tubes' | 'bags' })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tubes">🚬 Tubes (Boxed Units)</SelectItem>
+                  <SelectItem value="bags">🛍️ Bags</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Materials Issued Section */}
             <div className="border rounded-lg p-4 bg-muted/30">
               <h4 className="font-medium mb-3 flex items-center gap-2">
@@ -378,16 +407,18 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                   />
                 </div>
 
-                <div className="grid gap-2">
-                  <Label htmlFor="tubes">Tubes (qty) *</Label>
-                  <Input
-                    id="tubes"
-                    type="number"
-                    value={formData.tubes_total}
-                    onChange={(e) => setFormData({ ...formData, tubes_total: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
+                {formData.product_type === 'tubes' && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="tubes">Tubes (qty) *</Label>
+                    <Input
+                      id="tubes"
+                      type="number"
+                      value={formData.tubes_total}
+                      onChange={(e) => setFormData({ ...formData, tubes_total: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Per-brand issued materials */}
