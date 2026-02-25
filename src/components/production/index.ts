@@ -52,3 +52,6 @@ export * from './alerts';
 
 // Scenario Planning (What-If Simulation)
 export * from './scenario';
+
+// Phase 7: Supplier Yield Intelligence
+export { SupplierYieldRankingPanel } from './SupplierYieldRankingPanel';
