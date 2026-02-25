@@ -3,12 +3,12 @@
  * Admin-only view for comparing supervisor performance across all offices.
  */
 
-import { useSupervisorScorecards, useSupervisorSnapshots } from '@/hooks/useSupervisorPerformance';
+import { useSupervisorScorecards, useSupervisorSnapshots, type SupervisorTier } from '@/hooks/useSupervisorPerformance';
 import { useProductionOffices } from '@/hooks/useProductionPortal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Award, TrendingUp, Medal, ArrowUpDown } from 'lucide-react';
+import { Award, TrendingUp, Medal, ArrowUpDown, Shield, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -109,6 +109,8 @@ export default function SupervisorComparisonPage() {
                   </TableHead>
                   <TableHead className="text-right">Reopen %</TableHead>
                   <TableHead className="text-right">Material Δ</TableHead>
+                  <TableHead>Tier</TableHead>
+                  <TableHead className="text-right">Stability σ</TableHead>
                   <TableHead>Badges</TableHead>
                 </TableRow>
               </TableHeader>
@@ -136,7 +138,15 @@ export default function SupervisorComparisonPage() {
                         {((sc.material_efficiency_delta || 0) * 100).toFixed(1)}%
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
+                        <Badge variant="outline" className="text-xs">
+                          <Shield className="h-3 w-3 mr-1" />{sc.tier}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {sc.stability_score !== null ? sc.stability_score : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1 flex-wrap">
                           {isTop && (
                             <Badge className="bg-amber-100 text-amber-800 border-amber-200 text-xs">
                               <Medal className="h-3 w-3 mr-1" />Top
@@ -145,6 +155,11 @@ export default function SupervisorComparisonPage() {
                           {isImproved && (
                             <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-xs">
                               <TrendingUp className="h-3 w-3 mr-1" />Improved
+                            </Badge>
+                          )}
+                          {sc.expansion_ready && (
+                            <Badge className="bg-violet-100 text-violet-800 border-violet-200 text-xs">
+                              <Rocket className="h-3 w-3 mr-1" />Expansion Ready
                             </Badge>
                           )}
                         </div>

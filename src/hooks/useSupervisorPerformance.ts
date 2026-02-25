@@ -20,6 +20,8 @@ export interface SupervisorRawMetrics {
   calculated_at: string;
 }
 
+export type SupervisorTier = 'Elite' | 'Strong' | 'Developing' | 'Needs Support';
+
 export interface SupervisorScorecard extends SupervisorRawMetrics {
   goal_score: number;
   efficiency_score: number;
@@ -28,6 +30,9 @@ export interface SupervisorScorecard extends SupervisorRawMetrics {
   composite_index: number;
   supervisor_name?: string;
   office_name?: string;
+  tier: SupervisorTier;
+  stability_score: number | null;
+  expansion_ready: boolean;
 }
 
 export interface SupervisorSnapshot {
@@ -82,6 +87,34 @@ function computeComposite(
   );
 }
 
+function classifyTier(compositeIndex: number): SupervisorTier {
+  if (compositeIndex >= 100) return 'Elite';
+  if (compositeIndex >= 90) return 'Strong';
+  if (compositeIndex >= 80) return 'Developing';
+  return 'Needs Support';
+}
+
+function computeStabilityScore(composites: number[]): number | null {
+  if (composites.length < 2) return null;
+  const mean = composites.reduce((s, v) => s + v, 0) / composites.length;
+  const variance = composites.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / composites.length;
+  return Math.round(Math.sqrt(variance) * 10) / 10;
+}
+
+function checkExpansionReady(
+  compositeIndex: number,
+  reopenRate: number,
+  goalCompletionRate: number,
+  stabilityScore: number | null
+): boolean {
+  return (
+    compositeIndex >= 95 &&
+    reopenRate < 3 &&
+    goalCompletionRate >= 90 &&
+    (stabilityScore === null || stabilityScore <= 5)
+  );
+}
+
 // ── HOOKS ──
 
 export function useSupervisor30dPerformance(officeId?: string) {
@@ -103,11 +136,11 @@ export function useSupervisor30dPerformance(officeId?: string) {
 
 export function useSupervisorScorecards(officeId?: string) {
   const { data: rawMetrics = [], isLoading, error } = useSupervisor30dPerformance(officeId);
+  const { data: snapshots = [] } = useSupervisorSnapshots(officeId);
 
   const scorecards = useMemo<SupervisorScorecard[]>(() => {
     if (!rawMetrics.length) return [];
 
-    // Compute office-level averages for normalization
     const officeAvgs = new Map<string, number>();
     const officeGroups = new Map<string, SupervisorRawMetrics[]>();
     
@@ -130,6 +163,21 @@ export function useSupervisorScorecards(officeId?: string) {
       const materialScore = normalizeMaterialScore(m.material_efficiency_delta);
       const compositeIndex = computeComposite(goalScore, efficiencyScore, reopenScore, materialScore);
 
+      // Stability: std deviation of composite across last 3 snapshot windows
+      const historicalComposites = snapshots
+        .filter(s => s.supervisor_user_id === m.supervisor_user_id && s.office_id === m.office_id)
+        .slice(0, 3)
+        .map(s => s.composite_index);
+      const stabilityScore = computeStabilityScore([compositeIndex, ...historicalComposites]);
+
+      const tier = classifyTier(compositeIndex);
+      const expansionReady = checkExpansionReady(
+        compositeIndex,
+        m.reopen_rate || 0,
+        m.goal_completion_rate || 0,
+        stabilityScore
+      );
+
       return {
         ...m,
         goal_score: goalScore,
@@ -137,9 +185,12 @@ export function useSupervisorScorecards(officeId?: string) {
         reopen_score: reopenScore,
         material_score: materialScore,
         composite_index: compositeIndex,
+        tier,
+        stability_score: stabilityScore,
+        expansion_ready: expansionReady,
       };
     });
-  }, [rawMetrics]);
+  }, [rawMetrics, snapshots]);
 
   return { data: scorecards, isLoading, error };
 }
