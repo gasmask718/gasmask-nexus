@@ -59,6 +59,7 @@ import {
   LeadTimeConfig,
   ProductionRBACGate,
   WorkerPayrollAdmin,
+  RawAllocationPanel,
 } from '@/components/production';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { useProductionRBAC } from '@/hooks/useProductionRBAC';
@@ -456,6 +457,7 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="inventory">
               <div className="space-y-4">
+                <RawAllocationPanel officeId={selectedOfficeId} />
                 <InventoryPipeline officeId={selectedOfficeId} />
                 <RawMaterialIntake officeId={selectedOfficeId} />
               </div>

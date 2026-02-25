@@ -27,6 +27,7 @@ export { DailyCommandView } from './DailyCommandView';
 // Phase 1: Raw Material Intake + Inventory State Machine
 export { RawMaterialIntake } from './RawMaterialIntake';
 export { InventoryPipeline } from './InventoryPipeline';
+export { RawAllocationPanel } from './RawAllocationPanel';
 export { BatchStateControls } from './BatchStateControls';
 
 // Phase 2: Cost Engine + Margin Tracking
