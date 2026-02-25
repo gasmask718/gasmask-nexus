@@ -14,6 +14,11 @@ export function usePwaInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
+  // Detect iOS Safari for manual install guidance
+  const isIos = typeof navigator !== 'undefined' &&
+    /iphone|ipad|ipod/i.test(navigator.userAgent) &&
+    !(navigator as any).standalone;
+
   useEffect(() => {
     if (isRunningAsInstalledPwa()) {
       setIsInstalled(true);
@@ -28,13 +33,17 @@ export function usePwaInstall() {
 
     window.addEventListener('beforeinstallprompt', handler);
 
-    window.addEventListener('appinstalled', () => {
+    const installedHandler = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
       logPwaEvent('pwa_install_prompt_accepted');
-    });
+    };
+    window.addEventListener('appinstalled', installedHandler);
 
-    return () => window.removeEventListener('beforeinstallprompt', handler);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installedHandler);
+    };
   }, []);
 
   const triggerInstall = useCallback(async () => {
@@ -52,6 +61,7 @@ export function usePwaInstall() {
 
   return {
     canInstall: !isInstalled && !!deferredPrompt,
+    isIos,
     isInstalled,
     triggerInstall,
   };

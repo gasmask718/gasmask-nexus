@@ -107,19 +107,28 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* PWA Install Banner */}
-      {canInstall && (
-        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4">
-          <div>
-            <p className="font-semibold text-sm text-foreground">Install GasMask App</p>
-            <p className="text-xs text-muted-foreground">Add to your home screen for quick access &amp; offline support</p>
+      {/* PWA Install Button — always visible on supported browsers */}
+      <Card className="glass-card border-primary/30 bg-primary/5">
+        <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
+          <div className="space-y-1 text-center sm:text-left">
+            <h3 className="text-lg font-bold text-foreground">Install GASMASK PWA</h3>
+            <p className="text-sm text-muted-foreground">
+              {canInstall
+                ? 'Add to your home screen for quick access & offline support.'
+                : 'Open this page in Safari (iOS) or Chrome (Android) and use "Add to Home Screen" to install.'}
+            </p>
           </div>
-          <Button onClick={triggerInstall} size="sm" className="gap-1.5 shrink-0">
-            <Download className="h-4 w-4" />
-            Install
+          <Button
+            onClick={canInstall ? triggerInstall : undefined}
+            disabled={!canInstall}
+            size="lg"
+            className="gap-2 shrink-0 min-w-[200px]"
+          >
+            <Download className="h-5 w-5" />
+            {canInstall ? 'Install Now' : 'Install via Browser Menu'}
           </Button>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
       {/* Header */}
       <div className="space-y-2">
