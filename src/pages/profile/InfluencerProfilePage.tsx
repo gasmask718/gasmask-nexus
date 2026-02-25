@@ -28,6 +28,8 @@ import { InfluencerPayoutsPanel } from '@/components/influencer/InfluencerPayout
 import { InfluencerCommunicationPanel } from '@/components/influencer/InfluencerCommunicationPanel';
 import { useUnifiedProfileView } from '@/hooks/useUnifiedProfileView';
 import { OpsParticipationSummary } from '@/components/profile/OpsParticipationSummary';
+import { InfluencerContactEdit } from '@/components/influencer/InfluencerContactEdit';
+import { ProfileCompletenessScore, computeInfluencerCompleteness } from '@/components/profile/ProfileCompletenessScore';
 
 export default function InfluencerProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -130,6 +132,8 @@ export default function InfluencerProfilePage() {
     verified: 'bg-blue-500/20 text-blue-600',
     approved: 'bg-green-500/20 text-green-600',
   };
+
+  const influencerCompleteness = computeInfluencerCompleteness(profile);
 
   const tabs = [
     {
@@ -278,6 +282,16 @@ export default function InfluencerProfilePage() {
               </Card>
             </div>
           </div>
+        </div>
+      ),
+    },
+    {
+      id: 'contact',
+      label: 'Contact',
+      content: (
+        <div className="space-y-4">
+          <ProfileCompletenessScore score={influencerCompleteness.score} missingFields={influencerCompleteness.missingFields} />
+          <InfluencerContactEdit influencerId={id!} influencer={profile} isEditable={true} />
         </div>
       ),
     },

@@ -27,6 +27,9 @@ import { useUnifiedProfileView } from '@/hooks/useUnifiedProfileView';
 import { OpsParticipationSummary } from '@/components/profile/OpsParticipationSummary';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield } from 'lucide-react';
+import { TerritoryCoveragePanel } from '@/components/ambassador/TerritoryCoveragePanel';
+import { ProfileCompletenessScore, computeAmbassadorCompleteness } from '@/components/profile/ProfileCompletenessScore';
+import { useAmbassadorTerritory } from '@/hooks/useAmbassadorTerritory';
 
 export default function AmbassadorProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -123,6 +126,8 @@ export default function AmbassadorProfilePage() {
 
   const profile = profileQuery.data;
   const isLoading = profileQuery.isLoading;
+
+  const { territories } = useAmbassadorTerritory(id);
 
   const unifiedProfile = useUnifiedProfileView({
     userId: profile?.user_id,
@@ -444,6 +449,20 @@ export default function AmbassadorProfilePage() {
             </div>
           </CardContent>
         </Card>
+      ),
+    },
+    {
+      id: 'territory',
+      label: 'Territory',
+      count: territories.length,
+      content: (
+        <div className="space-y-4">
+          {(() => {
+            const completeness = computeAmbassadorCompleteness(profile, territories.length);
+            return <ProfileCompletenessScore score={completeness.score} missingFields={completeness.missingFields} />;
+          })()}
+          <TerritoryCoveragePanel ambassadorId={id!} isEditable={true} />
+        </div>
       ),
     },
     {

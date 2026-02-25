@@ -6335,6 +6335,65 @@ export type Database = {
           },
         ]
       }
+      ambassador_region_history: {
+        Row: {
+          ambassador_id: string
+          change_type: string
+          created_at: string
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          updated_by: string | null
+        }
+        Insert: {
+          ambassador_id: string
+          change_type: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          updated_by?: string | null
+        }
+        Update: {
+          ambassador_id?: string
+          change_type?: string
+          created_at?: string
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_region_history_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_region_history_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_region_history_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_region_history_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+        ]
+      }
       ambassador_regions: {
         Row: {
           active: boolean | null
@@ -6418,6 +6477,71 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "people"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassador_territory_coverage: {
+        Row: {
+          ambassador_id: string
+          coverage_radius_miles: number | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          region_type: Database["public"]["Enums"]["territory_region_type"]
+          region_value: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          ambassador_id: string
+          coverage_radius_miles?: number | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          region_type?: Database["public"]["Enums"]["territory_region_type"]
+          region_value: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          ambassador_id?: string
+          coverage_radius_miles?: number | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          region_type?: Database["public"]["Enums"]["territory_region_type"]
+          region_value?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_territory_coverage_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_commission_overview"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_territory_coverage_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "admin_payout_summary"
+            referencedColumns: ["ambassador_id"]
+          },
+          {
+            foreignKeyName: "ambassador_territory_coverage_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambassador_territory_coverage_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "v_ambassador_financial_summary"
+            referencedColumns: ["ambassador_id"]
           },
         ]
       }
@@ -27299,6 +27423,8 @@ export type Database = {
           platform: string
           preferred_contact_method: string | null
           primary_region_id: string | null
+          profile_last_updated_at: string | null
+          profile_last_updated_by: string | null
           score: number | null
           state: string | null
           status: string
@@ -27339,6 +27465,8 @@ export type Database = {
           platform: string
           preferred_contact_method?: string | null
           primary_region_id?: string | null
+          profile_last_updated_at?: string | null
+          profile_last_updated_by?: string | null
           score?: number | null
           state?: string | null
           status?: string
@@ -27379,6 +27507,8 @@ export type Database = {
           platform?: string
           preferred_contact_method?: string | null
           primary_region_id?: string | null
+          profile_last_updated_at?: string | null
+          profile_last_updated_by?: string | null
           score?: number | null
           state?: string | null
           status?: string
@@ -63874,6 +64004,7 @@ export type Database = {
         | "observe"
         | "freeze"
         | "exit"
+      territory_region_type: "state" | "county" | "city" | "custom_zone"
       ut_employment_type:
         | "full_time"
         | "part_time"
@@ -64475,6 +64606,7 @@ export const Constants = {
         "freeze",
         "exit",
       ],
+      territory_region_type: ["state", "county", "city", "custom_zone"],
       ut_employment_type: [
         "full_time",
         "part_time",
