@@ -25,7 +25,7 @@ export default function OpsBottomNav() {
             end={item.path === '/portal/driver' || item.path === '/portal/biker' || item.path === '/portal/store' || item.path === '/portal/wholesaler' || item.path === '/portal/customer' || item.path === '/portal/production' || item.path === '/ambassador/dashboard' || item.path === '/portal/influencer' || item.path === '/portal/inbox'}
             className={({ isActive }) =>
               cn(
-                'flex flex-col items-center justify-center gap-0.5 py-2.5 px-1 min-h-[56px] min-w-[56px] flex-1 text-xs transition-colors relative touch-manipulation',
+                'flex flex-col items-center justify-center gap-0.5 py-2 px-1 min-h-[56px] min-w-[48px] flex-1 text-[11px] sm:text-xs transition-colors relative touch-manipulation',
                 isActive
                   ? 'text-primary font-semibold'
                   : 'text-muted-foreground hover:text-foreground'
@@ -33,7 +33,7 @@ export default function OpsBottomNav() {
             }
           >
             <item.icon className="h-5 w-5" />
-            <span className="truncate max-w-[64px]">{item.label}</span>
+            <span className="truncate max-w-[56px] sm:max-w-[64px]">{item.label}</span>
             {item.path === '/portal/inbox' && unreadCount > 0 && (
               <span className="absolute top-1 right-1/4 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
                 {unreadCount > 9 ? '9+' : unreadCount}

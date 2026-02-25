@@ -781,16 +781,16 @@ const Layout = ({ children }: LayoutProps) => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background safe-area-top safe-area-x">
       {/* 🔐 Dynasty OS Auto-Saver / Reset strip (admin-only) */}
       <SystemCheckpointBar />
       
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="flex h-14 items-center px-4 gap-4">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-area-top">
+        <div className="flex h-14 items-center px-3 sm:px-4 gap-2 sm:gap-4">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
+              <Button variant="ghost" size="icon" className="md:hidden touch-target">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -806,10 +806,10 @@ const Layout = ({ children }: LayoutProps) => {
                 <ScrollArea className="flex-1 px-2">
                   <NavigationContent />
                 </ScrollArea>
-                <div className="px-3 pt-3 border-t border-border/50">
+                <div className="px-3 pt-3 border-t border-border/50 safe-area-bottom">
                   <Button
                     variant="ghost"
-                    className="w-full justify-start text-muted-foreground hover:text-foreground text-sm"
+                    className="w-full justify-start text-muted-foreground hover:text-foreground text-sm touch-target"
                     onClick={signOut}
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -820,15 +820,15 @@ const Layout = ({ children }: LayoutProps) => {
             </SheetContent>
           </Sheet>
 
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
               <Package className="h-4 w-4 text-primary" />
             </div>
-            <h1 className="text-lg font-bold hidden sm:block">🏛️ Dynasty OS</h1>
+            <h1 className="text-base sm:text-lg font-bold hidden sm:block truncate">🏛️ Dynasty OS</h1>
             <EmpireHealthMonitor />
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-1 sm:gap-2">
             {/* Global Simulation Toggle */}
             <GlobalSimulationToggle variant="compact" />
             
@@ -866,9 +866,9 @@ const Layout = ({ children }: LayoutProps) => {
               variant="outline"
               size="sm"
               onClick={() => setSendMessageOpen(true)}
-              className="border-primary/50"
+              className="border-primary/50 touch-target"
             >
-              <MessageSquarePlus className="h-4 w-4 mr-2" />
+              <MessageSquarePlus className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">New Message</span>
             </Button>
             <NotificationCenter />
@@ -876,7 +876,7 @@ const Layout = ({ children }: LayoutProps) => {
               variant="ghost"
               size="sm"
               onClick={signOut}
-              className="hidden md:flex"
+              className="hidden md:flex touch-target"
             >
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
@@ -903,7 +903,7 @@ const Layout = ({ children }: LayoutProps) => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto relative">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-auto relative">
           <SimulationWatermark />
           {children}
         </main>

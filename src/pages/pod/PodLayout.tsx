@@ -36,20 +36,20 @@ export default function PodLayout({ children, title }: PodLayoutProps) {
 
   return (
     <div 
-      className="min-h-screen"
+      className="min-h-screen safe-area-top safe-area-x"
       style={{ backgroundColor: theme.lightBg }}
     >
       <div 
         className="dept-header" 
         style={{ backgroundColor: theme.color }}
       >
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold text-white">{theme.name}</h1>
-          <p className="text-white/90 text-sm">Print-on-demand automation & design</p>
+        <div className="max-w-7xl mx-auto px-3 sm:px-4">
+          <h1 className="text-xl sm:text-2xl font-bold text-white">{theme.name}</h1>
+          <p className="text-white/90 text-xs sm:text-sm">Print-on-demand automation & design</p>
         </div>
       </div>
       
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
         <div 
           className="dept-container"
           style={{ 

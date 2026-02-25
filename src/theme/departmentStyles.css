@@ -1,16 +1,30 @@
 .dept-header {
-  padding: 20px;
+  padding: 16px;
   border-radius: 8px;
   color: white;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
+@media (min-width: 640px) {
+  .dept-header {
+    padding: 20px;
+    font-size: 22px;
+    margin-bottom: 24px;
+  }
+}
+
 .dept-container {
-  padding: 20px;
+  padding: 12px;
   border-radius: 8px;
+}
+
+@media (min-width: 640px) {
+  .dept-container {
+    padding: 20px;
+  }
 }
 
 .dept-tint {
@@ -20,7 +34,13 @@
 
 .dept-border {
   border-left: 4px solid var(--color);
-  padding-left: 16px;
+  padding-left: 12px;
+}
+
+@media (min-width: 640px) {
+  .dept-border {
+    padding-left: 16px;
+  }
 }
 
 .dept-section {

@@ -36,10 +36,10 @@ export default function OpsLayout() {
 
   return (
     <OpsAccessGate>
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col safe-area-top safe-area-x">
         {/* Sticky Top Header */}
-        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md">
-          <div className="flex items-center justify-between px-4 h-14">
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-md safe-area-top">
+          <div className="flex items-center justify-between px-3 sm:px-4 h-14">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Crown className="h-4 w-4 text-primary" />
@@ -47,7 +47,7 @@ export default function OpsLayout() {
               <span className="font-bold text-sm text-foreground">GasMask Ops</span>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {canInstall && (
                 <Button variant="outline" size="sm" onClick={triggerInstall} className="gap-1.5 h-8 text-xs">
                   <Download className="h-3.5 w-3.5" />
@@ -65,7 +65,7 @@ export default function OpsLayout() {
                   signOut();
                   navigate('/auth');
                 }}
-                className="h-8 w-8"
+                className="h-10 w-10 touch-target"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -78,7 +78,7 @@ export default function OpsLayout() {
         <PwaUpdateToast />
 
         {/* Main Content — padding-bottom for bottom nav */}
-        <main className="flex-1 pb-20">
+        <main className="flex-1 pb-20 px-3 sm:px-4 md:px-6">
           <Outlet />
         </main>
 

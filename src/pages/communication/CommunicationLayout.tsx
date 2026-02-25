@@ -42,29 +42,29 @@ const CommunicationLayout = ({ children, title, subtitle }: CommunicationLayoutP
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: theme.lightBg }}>
+    <div className="min-h-screen safe-area-top safe-area-x" style={{ backgroundColor: theme.lightBg }}>
       {/* Header */}
-      <div style={{ backgroundColor: theme.color }} className="p-6 text-white">
+      <div style={{ backgroundColor: theme.color }} className="p-4 sm:p-6 text-white">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 text-sm mb-4 text-white/60">
-            <Link to="/" className="hover:text-white transition-colors flex items-center gap-1">
+          <div className="flex items-center gap-2 text-xs sm:text-sm mb-3 sm:mb-4 text-white/60 flex-wrap">
+            <Link to="/" className="hover:text-white transition-colors flex items-center gap-1 touch-target">
               <Home className="h-3 w-3" />
               Home
             </Link>
             <ChevronRight className="h-3 w-3" />
-            <Link to="/communication" className="hover:text-white transition-colors">
+            <Link to="/communication" className="hover:text-white transition-colors touch-target">
               {theme.name}
             </Link>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-white">{title}</span>
+            <span className="text-white truncate">{title}</span>
           </div>
-          <h1 className="text-3xl font-bold">{title}</h1>
-          {subtitle && <p className="text-white/80 mt-1">{subtitle}</p>}
+          <h1 className="text-2xl sm:text-3xl font-bold">{title}</h1>
+          {subtitle && <p className="text-white/80 mt-1 text-sm sm:text-base">{subtitle}</p>}
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
         {children}
       </div>
     </div>

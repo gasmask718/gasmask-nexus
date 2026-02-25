@@ -62,15 +62,15 @@ export function EnhancedPortalLayout({
   };
 
   return (
-    <div className={cn('min-h-screen bg-background', isRTL ? 'rtl' : 'ltr')} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={cn('min-h-screen bg-background safe-area-top safe-area-x', isRTL ? 'rtl' : 'ltr')} dir={isRTL ? 'rtl' : 'ltr'}>
       {/* Header */}
-      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50 safe-area-top">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               {/* Back button */}
               {backPath && (
-                <Button variant="ghost" size="sm" asChild className="gap-1.5">
+                <Button variant="ghost" size="sm" asChild className="gap-1 shrink-0 touch-target">
                   <Link to={backPath}>
                     <ChevronLeft className="h-4 w-4" />
                     <span className="hidden sm:inline">{backLabel}</span>
@@ -79,7 +79,7 @@ export function EnhancedPortalLayout({
               )}
 
               {/* Logo */}
-              <Link to="/portal/home" className="flex items-center gap-2">
+              <Link to="/portal/home" className="flex items-center gap-2 shrink-0">
                 <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                   {portalIcon || <span className="text-primary-foreground font-bold text-sm">OS</span>}
                 </div>
@@ -89,23 +89,23 @@ export function EnhancedPortalLayout({
               <div className="h-6 w-px bg-border hidden sm:block" />
 
               {/* Title */}
-              <div>
-                <h1 className="text-lg font-medium text-foreground flex items-center gap-2">
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg font-medium text-foreground flex items-center gap-2 truncate">
                   {title}
                   {simulationMode && <SimulationBadge text="Demo" className="text-[10px]" />}
                 </h1>
                 {subtitle && (
-                  <p className="text-xs text-muted-foreground">{subtitle}</p>
+                  <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               {/* Business Selector */}
               {showBusinessSelector && businesses && businesses.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2 max-w-[180px]">
+                    <Button variant="outline" size="sm" className="gap-1.5 max-w-[140px] sm:max-w-[180px] touch-target">
                       <Building2 className="h-4 w-4 shrink-0" />
                       <span className="truncate hidden sm:inline">
                         {currentBusiness?.name || 'All Businesses'}
@@ -119,7 +119,7 @@ export function EnhancedPortalLayout({
                       <DropdownMenuItem 
                         key={b.id} 
                         onClick={() => switchBusiness(b.id)}
-                        className={cn(currentBusiness?.id === b.id && 'bg-accent')}
+                        className={cn(currentBusiness?.id === b.id && 'bg-accent', 'min-h-[40px]')}
                       >
                         {b.name}
                       </DropdownMenuItem>
@@ -132,7 +132,7 @@ export function EnhancedPortalLayout({
               {quickActions.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="touch-target">
                       <Menu className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -140,7 +140,7 @@ export function EnhancedPortalLayout({
                     <DropdownMenuLabel>Quick Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
                     {quickActions.map((action, i) => (
-                      <DropdownMenuItem key={i} asChild>
+                      <DropdownMenuItem key={i} asChild className="min-h-[40px]">
                         <Link to={action.href} className="flex items-center gap-2">
                           {action.icon}
                           {action.label}
@@ -162,13 +162,13 @@ export function EnhancedPortalLayout({
               )}
 
               {/* User Menu */}
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" asChild>
+              <div className="flex items-center gap-0.5">
+                <Button variant="ghost" size="icon" asChild className="touch-target">
                   <Link to="/portal/home">
                     <Home className="h-4 w-4" />
                   </Link>
                 </Button>
-                <Button variant="ghost" size="icon" onClick={handleLogout}>
+                <Button variant="ghost" size="icon" onClick={handleLogout} className="touch-target">
                   <LogOut className="h-4 w-4" />
                 </Button>
               </div>
@@ -178,7 +178,7 @@ export function EnhancedPortalLayout({
       </header>
 
       {/* Main Content */}
-      <main className={cn('container mx-auto px-4 py-6', className)}>
+      <main className={cn('container mx-auto px-3 sm:px-4 py-4 sm:py-6', className)}>
         {children}
       </main>
     </div>
