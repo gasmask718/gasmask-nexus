@@ -26,7 +26,17 @@ serve(async (req) => {
 
     let result: any;
 
-    if (action === 'search') {
+    if (action === 'autocomplete') {
+      if (!term) throw new Error('autocomplete requires term');
+      const params = new URLSearchParams({ text: term, locale: 'en_US' });
+      const resp = await fetch(`${YELP_BASE}/autocomplete?${params}`, { headers });
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`Yelp autocomplete failed [${resp.status}]: ${err}`);
+      }
+      result = await resp.json();
+
+    } else if (action === 'search') {
       if (!term || !location) {
         throw new Error('search requires term and location');
       }

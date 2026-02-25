@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { YelpSearchAutocomplete } from './YelpSearchAutocomplete';
+import { LocationAutocomplete } from './LocationAutocomplete';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
@@ -173,18 +174,26 @@ export function YelpBusinessSearch({ onBack }: Props) {
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 space-y-1">
               <Label className="text-xs">Business Name / Keyword</Label>
-              <Input
+              <YelpSearchAutocomplete
                 value={term}
-                onChange={e => setTerm(e.target.value)}
+                onChange={setTerm}
+                onBusinessSelect={(b) => {
+                  if (b.location?.city) {
+                    const loc = b.location.state
+                      ? `${b.location.city}, ${b.location.state}`
+                      : b.location.city;
+                    setLocation(loc);
+                  }
+                }}
                 placeholder="e.g. Smoke Shop"
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
               />
             </div>
             <div className="flex-1 space-y-1">
               <Label className="text-xs">Location (City, State)</Label>
-              <Input
+              <LocationAutocomplete
                 value={location}
-                onChange={e => setLocation(e.target.value)}
+                onChange={setLocation}
                 placeholder="e.g. New York, NY"
                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
               />
