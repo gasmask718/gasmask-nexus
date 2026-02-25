@@ -1,75 +1,40 @@
 
 
-# Mapbox Territory Map Integration for /territory
+# Switch /territory Map & Table to Territory Addresses (Ingested Data)
 
 ## Overview
-Replace the "Map view coming soon" placeholder on the `/territory` page with a fully functional Mapbox map that displays territory outlines (boroughs). Clicking a territory polygon reveals a slide-out panel listing all stores within that territory, fetched from the database.
+Replace the data source on the `/territory` page from the `stores` table (active CRM stores) to the `territory_addresses` table (ingested discoveries from Yelp, AI, imports). Both the Mapbox map markers and the slide-out panel/table will now show only ingested territory addresses.
 
-## Architecture
+## What Changes
 
-```text
-/territory (TerritoryOverview.tsx)
-  |
-  +-- viewMode === 'list'  -->  existing KPI cards + table
-  |
-  +-- viewMode === 'map'   -->  NEW TerritoryMapView component
-                                  |
-                                  +-- Mapbox GL map (dark style)
-                                  |     - Borough polygon outlines (from territories.ts)
-                                  |     - Store markers (lat/lng from stores table)
-                                  |     - Click polygon --> select territory
-                                  |
-                                  +-- Slide-out panel (right side)
-                                        - Territory name + store count
-                                        - Searchable/filterable store list
-                                        - Store details: name, address, status, phone, health
-```
+### 1. TerritoryMapView.tsx -- Switch data source
+- **Query**: Replace `stores` table query with `territory_addresses` query:
+  ```
+  territory_addresses: id, full_address, city, state, zip, latitude, longitude,
+  discovery_status, discovered_by, address_type, notes, verified_sells_grabba,
+  last_checked_at, created_at
+  ```
+  - Filter: `latitude` and `longitude` not null
+- **Markers**: Color-code by `discovery_status` instead of store status:
+  - `new` = Blue
+  - `verified` = Green
+  - `rejected` = Red
+  - `pending_visit` = Amber
+- **Slide-out panel**: Show territory address details (full address, discovery status, discovered by, notes, verified sells grabba, last checked date) instead of store fields
+- **Borough filtering**: Use `city` column from `territory_addresses` with the same `BOROUGH_CITY_MAP` logic
 
-## Data Flow
+### 2. TerritoryStoresTable.tsx -- Switch data source
+- **Query**: Replace `store_master` with `territory_addresses`
+- **Columns**: Full Address, City/State, Discovery Status, Discovered By, Address Type, Verified Sells Grabba, Last Checked, Notes
+- **Filters**: Status filter uses `discovery_status` values instead of store status
+- Rename component title from "Stores in Territory" to "Ingested Addresses"
 
-1. **Territory Polygons**: Use existing `src/components/map/territories.ts` which already has GeoJSON-ready coordinates for Bronx, Brooklyn, Queens, Manhattan, Staten Island.
-
-2. **Store Data**: Query `stores` table filtered by geographic bounding box of the selected territory:
-   - `stores.lat` / `stores.lng` for map pins
-   - `stores.address_city` for territory grouping (Brooklyn, Bronx, etc.)
-   - Include: name, status, address, phone, health_score, last_visit_date
-
-3. **Territory-to-Stores mapping**: When a user clicks a territory polygon, filter stores where `address_city` matches the borough name (with fallback logic for "New York" mapping to Manhattan).
-
-## Implementation Steps
-
-### Step 1: Create `TerritoryMapView` component
-**File**: `src/components/territory/TerritoryMapView.tsx`
-
-- Initialize Mapbox GL map with dark-v11 style, centered on NYC
-- Add territory polygons as a GeoJSON fill+line layer (reusing `territories.ts` data)
-- Color-code polygons by territory with hover opacity effect
-- Fetch all geocoded stores from `stores` table (lat/lng not null)
-- Render store markers on the map with status-coded colors (green=active, amber=prospect, red=inactive)
-- On territory polygon click: set `selectedTerritory` state, filter stores by matching `address_city` to borough name
-- Display a slide-out right panel with the filtered store list (searchable table with name, address, status, health, phone, last visit)
-- On clicking a store row, fly the map to that store's coordinates and open its popup
-
-### Step 2: Update `TerritoryOverview.tsx`
-- Import and render `TerritoryMapView` when `viewMode === 'map'`
-- Remove the toast placeholder ("Map view coming soon")
-- Pass `cityFilter` and `stateFilter` props so the map respects existing filters
-
-### Step 3: Borough-to-city mapping
-Create a mapping object to handle city name variations in the database:
-- "Brooklyn" --> `address_city IN ('Brooklyn', 'brooklyn')`  
-- "Manhattan" --> `address_city IN ('Manhattan', 'New York')`
-- "Queens" --> `address_city IN ('Queens', 'Jamaica', 'Ridgewood', 'Far Rockaway', 'South Richmond Hill', 'Forest Hills', 'Glendale', 'Middle Village', 'Hollis')`
-- "Bronx" --> `address_city IN ('Bronx')`
-- "Staten Island" --> `address_city IN ('Staten Island')`
-
-This ensures clicking a territory polygon captures all stores belonging to that borough, even when `address_city` uses a neighborhood-level name.
+### 3. Interface updates
+- Replace `StoreRecord` interface with `TerritoryAddress` interface matching the new columns
+- Update status color helpers and badge variants for discovery statuses
 
 ## Technical Details
-
-- **Mapbox Token**: Already available via `VITE_MAPBOX_PUBLIC_TOKEN` env variable
-- **Store query**: `supabase.from('stores').select('id, name, lat, lng, status, address_street, address_city, address_state, phone, health_score, last_visit_date').not('lat', 'is', null).not('lng', 'is', null).is('deleted_at', null)`
-- **No database changes needed** -- all data already exists
-- **Performance**: Stores query limited to geocoded records (~1,852 stores), well within limits
-- **Map interactions**: Cursor changes on hover, polygon opacity increases, click selects territory and opens panel
+- No database changes needed -- `territory_addresses` already has all required columns including `latitude`/`longitude` for map pins
+- The `BOROUGH_CITY_MAP` logic stays the same since `territory_addresses.city` uses the same borough/city naming
+- Popup and fly-to-store interactions remain identical, just pointed at new coordinates
 
