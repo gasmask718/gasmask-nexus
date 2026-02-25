@@ -28,6 +28,7 @@ import {
   ProductionBatch 
 } from '@/hooks/useProductionPortal';
 import { useDeviationGate } from '@/hooks/useDeviationGate';
+import { useAllocationCheck } from '@/hooks/useMaterialAllocations';
 import { supabase } from '@/integrations/supabase/client';
 import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, AlertTriangle, User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -92,8 +93,16 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
   const proposedLbs = parseFloat(formData.tobacco_lbs) || 0;
   const gate = useDeviationGate(formData.brand, proposedLbs);
+  const allocationCheck = useAllocationCheck(officeId);
+  const allocationResult = allocationCheck.canAllocateLbs(proposedLbs);
 
   const handleCreateBatch = async () => {
+    // Check allocation enforcement
+    if (!allocationResult.allowed && proposedLbs > 0) {
+      toast.error(allocationResult.message);
+      return;
+    }
+
     // Check deviation gate
     if (gate.requiresOverride && !showOverrideModal) {
       setShowOverrideModal(true);
@@ -410,6 +419,11 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                     onChange={(e) => setFormData({ ...formData, tobacco_lbs: e.target.value })}
                     placeholder="0.0"
                   />
+                  {!allocationResult.allowed && proposedLbs > 0 && (
+                    <p className="text-xs text-destructive mt-1">
+                      ⚠ Exceeds unallocated inventory ({Number(allocationCheck.overview?.unallocated_lbs || 0).toFixed(1)} lbs available)
+                    </p>
+                  )}
                 </div>
 
                 {formData.product_type === 'tubes' && (

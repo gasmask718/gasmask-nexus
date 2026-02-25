@@ -38,9 +38,45 @@ Two-layer conversion model:
 - `time_per_unit_net_snapshot`, `time_per_box_net_snapshot`
 - `shift_label` on production_conversion_baseline
 
+---
+
+# Product-Reserved Material Pools (IMPLEMENTED)
+
+## Architecture
+
+Logical raw material allocation so tubes and bags maintain independent coverage floors while sharing the same physical tobacco inventory.
+
+### Tables
+- `raw_material_inventory` — single source of truth for physical tobacco per office
+- `raw_material_allocations` — logical reservation per office + product_type
+- `raw_allocation_overrides` — audit trail for manual override changes
+- `v_material_allocation_overview` — computed view with unallocated buffer
+
+### Auto-Reservation Engine
+- Edge function `auto-reserve-materials` calculates demand-based reservations
+- Uses velocity data + baseline_units_per_lb per product_type
+- Proportional scaling when total demand > available inventory
+- Fires "Raw Buffer Risk" alert when unallocated < 10%
+
+### Draft Enforcement
+- `useAllocationCheck` hook validates proposed lbs against unallocated buffer
+- Batch creation blocked if proposed_lbs > unallocated_lbs
+- Warning displayed inline in tobacco input field
+
+### Manual Override
+- Executive can adjust manual_reserved_lbs per product_type
+- All overrides logged to raw_allocation_overrides with reason + user
+
+### UI
+- `RawAllocationPanel` in Inventory tab shows:
+  - Total LBS, Tubes Reserved, Bags Reserved, Unallocated Buffer, Coverage Status
+  - Auto vs Manual breakdown
+  - Override history log
+  - Set Inventory + Auto-Reserve buttons
+
 ## Still Available for Future
 - War Room product toggle
 - Demand integration per product_type
 - Procurement forecasting per product baseline
-- Raw material allocation discipline
+- Demand divergence auto-adaptive allocation (60-day growth curves)
 - Per-shift baseline auto-calculation when enough data exists

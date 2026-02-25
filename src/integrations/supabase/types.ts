@@ -42114,6 +42114,120 @@ export type Database = {
           },
         ]
       }
+      raw_allocation_overrides: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_reserved_lbs: number
+          office_id: string
+          previous_reserved_lbs: number
+          product_type: string
+          reason: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_reserved_lbs: number
+          office_id: string
+          previous_reserved_lbs: number
+          product_type: string
+          reason?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_reserved_lbs?: number
+          office_id?: string
+          previous_reserved_lbs?: number
+          product_type?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_allocation_overrides_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raw_material_allocations: {
+        Row: {
+          auto_reserved_lbs: number
+          coverage_target_days: number
+          id: string
+          last_updated_at: string
+          manual_reserved_lbs: number
+          office_id: string
+          product_type: string
+          reserved_lbs: number
+        }
+        Insert: {
+          auto_reserved_lbs?: number
+          coverage_target_days?: number
+          id?: string
+          last_updated_at?: string
+          manual_reserved_lbs?: number
+          office_id: string
+          product_type: string
+          reserved_lbs?: number
+        }
+        Update: {
+          auto_reserved_lbs?: number
+          coverage_target_days?: number
+          id?: string
+          last_updated_at?: string
+          manual_reserved_lbs?: number
+          office_id?: string
+          product_type?: string
+          reserved_lbs?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_material_allocations_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      raw_material_inventory: {
+        Row: {
+          id: string
+          last_updated_at: string
+          material_type: string
+          office_id: string
+          total_lbs_available: number
+        }
+        Insert: {
+          id?: string
+          last_updated_at?: string
+          material_type?: string
+          office_id: string
+          total_lbs_available?: number
+        }
+        Update: {
+          id?: string
+          last_updated_at?: string
+          material_type?: string
+          office_id?: string
+          total_lbs_available?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_material_inventory_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       real_estate_notifications: {
         Row: {
           action_url: string | null
@@ -59588,6 +59702,33 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_material_allocation_overview: {
+        Row: {
+          bags_auto_reserved: number | null
+          bags_coverage_target: number | null
+          bags_manual_reserved: number | null
+          bags_reserved_lbs: number | null
+          last_updated_at: string | null
+          material_type: string | null
+          office_id: string | null
+          total_lbs_available: number | null
+          tubes_auto_reserved: number | null
+          tubes_coverage_target: number | null
+          tubes_manual_reserved: number | null
+          tubes_reserved_lbs: number | null
+          unallocated_lbs: number | null
+          unallocated_pct: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "raw_material_inventory_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
             referencedColumns: ["id"]
           },
         ]
