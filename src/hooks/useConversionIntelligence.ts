@@ -25,13 +25,16 @@ export interface ConversionBatch {
   notes: string | null;
   created_at: string | null;
   created_by: string | null;
-  // Product-aware conversions
+  // Two-layer conversions: units
   lbs_per_unit: number | null;
   units_per_lb: number | null;
-  time_per_unit: number | null;
-  // Legacy box-specific
+  // Two-layer conversions: boxes
   lbs_per_box: number | null;
   boxes_per_lb: number | null;
+  // Time
+  time_per_unit: number | null;
+  time_per_box: number | null;
+  // Cost & waste
   waste_pct: number | null;
   total_cost: number | null;
   cost_per_unit: number | null;
@@ -43,15 +46,17 @@ export interface ConversionStats {
   totalLbs: number;
   totalUnits: number;
   totalBoxes: number;
+  // Unit-level
   globalAvgLbsPerUnit: number;
   globalAvgUnitsPerLb: number;
-  // Legacy
+  // Box-level
   globalAvgLbsPerBox: number;
   globalAvgBoxesPerLb: number;
   avgWastePct: number;
   avgCostPerUnit: number | null;
   avgCostPerBox: number | null;
   avgTimePerUnit: number | null;
+  avgTimePerBox: number | null;
   batchCount: number;
   bestBatch: ConversionBatch | null;
   worstBatch: ConversionBatch | null;
@@ -94,10 +99,15 @@ function computeStats(batches: ConversionBatch[]): ConversionStats {
     ? boxCostEntries.reduce((s, b) => s + (b.cost_per_box || 0), 0) / boxCostEntries.length
     : null;
 
-  // Time per unit
+  // Time per unit and per box
   const timeEntries = batches.filter(b => b.time_per_unit !== null);
   const avgTimePerUnit = timeEntries.length > 0
     ? timeEntries.reduce((s, b) => s + (b.time_per_unit || 0), 0) / timeEntries.length
+    : null;
+
+  const timeBoxEntries = batches.filter(b => b.time_per_box !== null);
+  const avgTimePerBox = timeBoxEntries.length > 0
+    ? timeBoxEntries.reduce((s, b) => s + (b.time_per_box || 0), 0) / timeBoxEntries.length
     : null;
 
   // Best/worst by units_per_lb
@@ -108,13 +118,13 @@ function computeStats(batches: ConversionBatch[]): ConversionStats {
     if (!worstBatch || (b.units_per_lb || 0) < (worstBatch.units_per_lb || 0)) worstBatch = b;
   }
 
-  // Fastest/slowest by time_per_unit
-  const timeValid = batches.filter(b => b.time_per_unit !== null && b.time_per_unit > 0);
+  // Fastest/slowest by time_per_box (the economic unit)
+  const timeValid = batches.filter(b => b.time_per_box !== null && b.time_per_box > 0);
   let fastestBatch: ConversionBatch | null = null;
   let slowestBatch: ConversionBatch | null = null;
   for (const b of timeValid) {
-    if (!fastestBatch || (b.time_per_unit || Infinity) < (fastestBatch.time_per_unit || Infinity)) fastestBatch = b;
-    if (!slowestBatch || (b.time_per_unit || 0) > (slowestBatch.time_per_unit || 0)) slowestBatch = b;
+    if (!fastestBatch || (b.time_per_box || Infinity) < (fastestBatch.time_per_box || Infinity)) fastestBatch = b;
+    if (!slowestBatch || (b.time_per_box || 0) > (slowestBatch.time_per_box || 0)) slowestBatch = b;
   }
 
   // Rolling 7 batches (most recent)
@@ -150,6 +160,7 @@ function computeStats(batches: ConversionBatch[]): ConversionStats {
     avgCostPerUnit: avgCostPerUnit !== null ? Math.round(avgCostPerUnit * 100) / 100 : null,
     avgCostPerBox: avgCostPerBox !== null ? Math.round(avgCostPerBox * 100) / 100 : null,
     avgTimePerUnit: avgTimePerUnit !== null ? Math.round(avgTimePerUnit * 100) / 100 : null,
+    avgTimePerBox: avgTimePerBox !== null ? Math.round(avgTimePerBox * 100) / 100 : null,
     batchCount: batches.length,
     bestBatch,
     worstBatch,

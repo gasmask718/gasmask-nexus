@@ -39275,6 +39275,7 @@ export type Database = {
           supplier_batch_reference: string | null
           supplier_id: string | null
           system_generation_note: string | null
+          time_per_box_snapshot: number | null
           time_per_unit_snapshot: number | null
           tobacco_heatup_minutes: number | null
           tobacco_lbs: number | null
@@ -39332,6 +39333,7 @@ export type Database = {
           supplier_batch_reference?: string | null
           supplier_id?: string | null
           system_generation_note?: string | null
+          time_per_box_snapshot?: number | null
           time_per_unit_snapshot?: number | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
@@ -39389,6 +39391,7 @@ export type Database = {
           supplier_batch_reference?: string | null
           supplier_id?: string | null
           system_generation_note?: string | null
+          time_per_box_snapshot?: number | null
           time_per_unit_snapshot?: number | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
@@ -39516,6 +39519,7 @@ export type Database = {
           baseline_boxes_per_lb: number
           baseline_lbs_per_box: number
           baseline_lbs_per_unit: number | null
+          baseline_time_per_box: number | null
           baseline_time_per_unit: number | null
           baseline_units_per_lb: number | null
           calculated_from_batch_count: number
@@ -39528,6 +39532,7 @@ export type Database = {
           baseline_boxes_per_lb?: number
           baseline_lbs_per_box?: number
           baseline_lbs_per_unit?: number | null
+          baseline_time_per_box?: number | null
           baseline_time_per_unit?: number | null
           baseline_units_per_lb?: number | null
           calculated_from_batch_count?: number
@@ -39540,6 +39545,7 @@ export type Database = {
           baseline_boxes_per_lb?: number
           baseline_lbs_per_box?: number
           baseline_lbs_per_unit?: number | null
+          baseline_time_per_box?: number | null
           baseline_time_per_unit?: number | null
           baseline_units_per_lb?: number | null
           calculated_from_batch_count?: number
@@ -60793,6 +60799,7 @@ export type Database = {
           product_type: string | null
           production_time_minutes: number | null
           status: string | null
+          time_per_box: number | null
           time_per_unit: number | null
           tobacco_lbs: number | null
           total_cost: number | null

@@ -16,6 +16,7 @@ export interface ConversionBaseline {
   baseline_units_per_lb: number;
   baseline_lbs_per_unit: number;
   baseline_time_per_unit: number | null;
+  baseline_time_per_box: number | null;
   calculated_from_batch_count: number;
   last_updated_at: string;
 }

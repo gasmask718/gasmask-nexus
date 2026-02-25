@@ -69,7 +69,7 @@ export interface ProductionBatch {
   created_by: string | null;
   completed_at: string | null;
   created_at: string | null;
-  // Product type (tubes or bags)
+  // Product type (tubes or bags) — product_output_units = raw units, boxes_produced = floor(units/100)
   product_type: ProductType;
   product_output_units: number | null;
   // Time tracking
