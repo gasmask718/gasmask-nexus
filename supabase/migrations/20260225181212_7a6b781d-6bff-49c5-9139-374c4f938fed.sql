@@ -1,0 +1,2 @@
+ALTER TABLE public.territory_addresses DROP CONSTRAINT territory_addresses_discovered_by_check;
+ALTER TABLE public.territory_addresses ADD CONSTRAINT territory_addresses_discovered_by_check CHECK (discovered_by = ANY (ARRAY['ai','human','import','yelp']));
