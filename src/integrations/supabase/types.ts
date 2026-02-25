@@ -39241,6 +39241,10 @@ export type Database = {
           boxes_produced: number | null
           brand: string
           completed_at: string | null
+          conversion_boxes_per_lb_snapshot: number | null
+          conversion_confirmed_at: string | null
+          conversion_confirmed_by: string | null
+          conversion_lbs_per_box_snapshot: number | null
           created_at: string | null
           created_by: string | null
           cycle_time_variance_pct: number | null
@@ -39282,6 +39286,10 @@ export type Database = {
           boxes_produced?: number | null
           brand: string
           completed_at?: string | null
+          conversion_boxes_per_lb_snapshot?: number | null
+          conversion_confirmed_at?: string | null
+          conversion_confirmed_by?: string | null
+          conversion_lbs_per_box_snapshot?: number | null
           created_at?: string | null
           created_by?: string | null
           cycle_time_variance_pct?: number | null
@@ -39323,6 +39331,10 @@ export type Database = {
           boxes_produced?: number | null
           brand?: string
           completed_at?: string | null
+          conversion_boxes_per_lb_snapshot?: number | null
+          conversion_confirmed_at?: string | null
+          conversion_confirmed_by?: string | null
+          conversion_lbs_per_box_snapshot?: number | null
           created_at?: string | null
           created_by?: string | null
           cycle_time_variance_pct?: number | null
@@ -39452,6 +39464,41 @@ export type Database = {
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_conversion_baseline: {
+        Row: {
+          baseline_boxes_per_lb: number
+          baseline_lbs_per_box: number
+          calculated_from_batch_count: number
+          id: string
+          last_updated_at: string
+          office_id: string | null
+        }
+        Insert: {
+          baseline_boxes_per_lb?: number
+          baseline_lbs_per_box?: number
+          calculated_from_batch_count?: number
+          id?: string
+          last_updated_at?: string
+          office_id?: string | null
+        }
+        Update: {
+          baseline_boxes_per_lb?: number
+          baseline_lbs_per_box?: number
+          calculated_from_batch_count?: number
+          id?: string
+          last_updated_at?: string
+          office_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_conversion_baseline_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: true
+            referencedRelation: "production_offices"
             referencedColumns: ["id"]
           },
         ]

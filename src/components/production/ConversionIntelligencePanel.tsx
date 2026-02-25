@@ -1,8 +1,8 @@
 /**
  * ConversionIntelligencePanel — Tobacco → Box Conversion Engine
  * 
- * Displays rolling averages, deviation alerts, batch history,
- * and admin-level conversion KPIs from production_batches data.
+ * Displays rolling averages, baseline-aware variance detection,
+ * office comparison, batch history, and projection tools.
  */
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { useConversionIntelligence, ConversionBatch } from '@/hooks/useConversionIntelligence';
+import { useConversionBaseline, getVarianceLevel } from '@/hooks/useConversionBaseline';
 import { useProductionOffices } from '@/hooks/useProductionPortal';
 import {
   Factory, TrendingUp, TrendingDown, AlertTriangle, BarChart3,
-  Weight, Box, Flame, DollarSign, Activity, Trophy, Minus
+  Weight, Box, Flame, DollarSign, Activity, Trophy, Minus, Shield, Building2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -25,9 +26,11 @@ export function ConversionIntelligencePanel() {
 
   const officeId = selectedOffice === 'all' ? undefined : selectedOffice;
   const { data, isLoading } = useConversionIntelligence(officeId);
+  const { data: baselineData } = useConversionBaseline(officeId);
 
   const stats = data?.stats;
   const batches = data?.batches || [];
+  const baseline = baselineData?.active;
 
   if (isLoading) {
     return (
@@ -48,7 +51,7 @@ export function ConversionIntelligencePanel() {
           <h3 className="text-lg font-semibold mb-2">No Conversion Data Yet</h3>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
             Start logging batches with tobacco LBS input and boxes output to build your conversion intelligence.
-            After 10+ batches, you'll see rolling averages and deviation alerts.
+            After 10+ approved batches, the baseline engine activates automatically.
           </p>
         </CardContent>
       </Card>
@@ -59,7 +62,7 @@ export function ConversionIntelligencePanel() {
 
   return (
     <div className="space-y-6">
-      {/* Office Filter */}
+      {/* Header + Office Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
         <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
           <Flame className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
@@ -77,6 +80,23 @@ export function ConversionIntelligencePanel() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* Baseline Status */}
+      {baseline && baseline.calculated_from_batch_count >= 10 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex items-center gap-3 py-3">
+            <Shield className="h-5 w-5 text-primary shrink-0" />
+            <div>
+              <p className="text-sm font-semibold">Baseline Active — {baseline.calculated_from_batch_count} batches</p>
+              <p className="text-xs text-muted-foreground">
+                Baseline: <span className="font-mono font-medium">{baseline.baseline_boxes_per_lb}</span> boxes/lb
+                · <span className="font-mono font-medium">{baseline.baseline_lbs_per_box}</span> lbs/box
+                · Updated {format(new Date(baseline.last_updated_at), 'MMM d, yyyy')}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Deviation Alert */}
       {deviationAlert && (
@@ -96,44 +116,12 @@ export function ConversionIntelligencePanel() {
 
       {/* Global KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        <KpiCard
-          label="Total LBS Used"
-          value={stats.totalLbs.toLocaleString()}
-          icon={<Weight className="h-4 w-4" />}
-          variant="default"
-        />
-        <KpiCard
-          label="Total Boxes"
-          value={stats.totalBoxes.toLocaleString()}
-          icon={<Box className="h-4 w-4" />}
-          variant="default"
-        />
-        <KpiCard
-          label="LBS / Box"
-          value={stats.globalAvgLbsPerBox.toFixed(2)}
-          icon={<TrendingDown className="h-4 w-4" />}
-          variant="amber"
-          subtitle="Global avg"
-        />
-        <KpiCard
-          label="Boxes / LB"
-          value={stats.globalAvgBoxesPerLb.toFixed(2)}
-          icon={<TrendingUp className="h-4 w-4" />}
-          variant="green"
-          subtitle="Global avg"
-        />
-        <KpiCard
-          label="Avg Waste"
-          value={`${stats.avgWastePct}%`}
-          icon={<AlertTriangle className="h-4 w-4" />}
-          variant={stats.avgWastePct > 5 ? 'red' : 'default'}
-        />
-        <KpiCard
-          label="Efficiency"
-          value={`${stats.efficiencyScore}/100`}
-          icon={<Activity className="h-4 w-4" />}
-          variant={stats.efficiencyScore >= 80 ? 'green' : stats.efficiencyScore >= 60 ? 'amber' : 'red'}
-        />
+        <KpiCard label="Total LBS Used" value={stats.totalLbs.toLocaleString()} icon={<Weight className="h-4 w-4" />} variant="default" />
+        <KpiCard label="Total Boxes" value={stats.totalBoxes.toLocaleString()} icon={<Box className="h-4 w-4" />} variant="default" />
+        <KpiCard label="LBS / Box" value={stats.globalAvgLbsPerBox.toFixed(2)} icon={<TrendingDown className="h-4 w-4" />} variant="amber" subtitle="Global avg" />
+        <KpiCard label="Boxes / LB" value={stats.globalAvgBoxesPerLb.toFixed(2)} icon={<TrendingUp className="h-4 w-4" />} variant="green" subtitle="Global avg" />
+        <KpiCard label="Avg Waste" value={`${stats.avgWastePct}%`} icon={<AlertTriangle className="h-4 w-4" />} variant={stats.avgWastePct > 5 ? 'red' : 'default'} />
+        <KpiCard label="Efficiency" value={`${stats.efficiencyScore}/100`} icon={<Activity className="h-4 w-4" />} variant={stats.efficiencyScore >= 80 ? 'green' : stats.efficiencyScore >= 60 ? 'amber' : 'red'} />
       </div>
 
       {/* Rolling 7 + Cost + Best/Worst */}
@@ -241,10 +229,16 @@ export function ConversionIntelligencePanel() {
         </Card>
       </div>
 
+      {/* Office Comparison (when viewing all) */}
+      {selectedOffice === 'all' && baselineData?.all && baselineData.all.filter(b => b.office_id !== null).length > 1 && (
+        <OfficeComparisonCard baselines={baselineData.all} offices={offices} />
+      )}
+
       {/* Projection Calculator */}
       <ProjectionCard
-        avgBoxesPerLb={stats.globalAvgBoxesPerLb}
+        avgBoxesPerLb={baseline?.baseline_boxes_per_lb || stats.globalAvgBoxesPerLb}
         avgCostPerBox={stats.avgCostPerBox}
+        isBaseline={!!baseline && baseline.calculated_from_batch_count >= 10}
       />
 
       {/* Batch History Table */}
@@ -255,7 +249,7 @@ export function ConversionIntelligencePanel() {
             Batch Conversion History
           </CardTitle>
           <CardDescription>
-            All batches with tobacco input and box output recorded
+            All batches with tobacco input and box output recorded. Locked batches have permanent snapshots.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -271,16 +265,19 @@ export function ConversionIntelligencePanel() {
                   <TableHead className="text-right">Boxes/LB</TableHead>
                   <TableHead className="text-right">Waste %</TableHead>
                   <TableHead className="text-right">Cost/Box</TableHead>
+                  <TableHead>Variance</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {batches.slice(0, 50).map((batch) => {
-                  const isHighDeviation = stats && batch.boxes_per_lb !== null && stats.globalAvgBoxesPerLb > 0 &&
-                    Math.abs((batch.boxes_per_lb - stats.globalAvgBoxesPerLb) / stats.globalAvgBoxesPerLb * 100) > 8;
+                  const baselineBoxesPerLb = baseline?.baseline_boxes_per_lb || stats.globalAvgBoxesPerLb;
+                  const variance = batch.boxes_per_lb !== null
+                    ? getVarianceLevel(batch.boxes_per_lb, baselineBoxesPerLb)
+                    : null;
 
                   return (
-                    <TableRow key={batch.batch_id} className={cn(isHighDeviation && 'bg-destructive/5')}>
+                    <TableRow key={batch.batch_id} className={cn(variance?.level === 'high' && 'bg-destructive/5')}>
                       <TableCell className="text-sm whitespace-nowrap">
                         {batch.batch_date ? format(new Date(batch.batch_date), 'MMM d, yyyy') : '—'}
                       </TableCell>
@@ -302,13 +299,21 @@ export function ConversionIntelligencePanel() {
                         {batch.cost_per_box !== null ? `$${batch.cost_per_box.toFixed(2)}` : '—'}
                       </TableCell>
                       <TableCell>
+                        {variance ? (
+                          <Badge
+                            variant={variance.level === 'high' ? 'destructive' : variance.level === 'moderate' ? 'outline' : 'secondary'}
+                            className={cn('text-[10px]', variance.level === 'moderate' && 'border-hud-amber text-hud-amber')}
+                          >
+                            {variance.level === 'normal' ? '✓' : `${variance.pct}%`}
+                          </Badge>
+                        ) : '—'}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-1">
                           <Badge variant={batch.is_locked ? 'default' : 'secondary'} className="text-[10px]">
                             {batch.inventory_state}
                           </Badge>
-                          {isHighDeviation && (
-                            <AlertTriangle className="h-3 w-3 text-destructive" />
-                          )}
+                          {batch.is_locked && <Shield className="h-3 w-3 text-primary" />}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -360,14 +365,19 @@ function KpiCard({ label, value, icon, variant = 'default', subtitle }: {
   );
 }
 
-function ProjectionCard({ avgBoxesPerLb, avgCostPerBox }: {
+function ProjectionCard({ avgBoxesPerLb, avgCostPerBox, isBaseline }: {
   avgBoxesPerLb: number;
   avgCostPerBox: number | null;
+  isBaseline: boolean;
 }) {
   const [lbsInput, setLbsInput] = useState('500');
+  const [wholesalePrice, setWholesalePrice] = useState('');
   const lbs = parseFloat(lbsInput) || 0;
   const projectedBoxes = Math.round(lbs * avgBoxesPerLb);
   const projectedCost = avgCostPerBox !== null ? projectedBoxes * avgCostPerBox : null;
+  const wholesale = parseFloat(wholesalePrice) || 0;
+  const projectedRevenue = wholesale > 0 ? projectedBoxes * wholesale : null;
+  const projectedProfit = projectedCost !== null && projectedRevenue !== null ? projectedRevenue - projectedCost : null;
 
   return (
     <Card className="border-primary/20 bg-primary/5">
@@ -375,13 +385,14 @@ function ProjectionCard({ avgBoxesPerLb, avgCostPerBox }: {
         <CardTitle className="text-sm flex items-center gap-2">
           <TrendingUp className="h-4 w-4 text-primary" />
           Production Projector
+          {isBaseline && <Badge variant="secondary" className="text-[10px]">Baseline-Powered</Badge>}
         </CardTitle>
-        <CardDescription>Predict output from raw material input</CardDescription>
+        <CardDescription>Predict output, cost, and profit from raw material input</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4">
           <div className="w-full sm:w-auto">
-            <label className="text-xs text-muted-foreground block mb-1">LBS Input</label>
+            <label className="text-xs text-muted-foreground block mb-1">LBS to Purchase</label>
             <input
               type="number"
               value={lbsInput}
@@ -391,21 +402,86 @@ function ProjectionCard({ avgBoxesPerLb, avgCostPerBox }: {
               step={1}
             />
           </div>
+          <div className="w-full sm:w-auto">
+            <label className="text-xs text-muted-foreground block mb-1">Wholesale $/box (optional)</label>
+            <input
+              type="number"
+              value={wholesalePrice}
+              onChange={e => setWholesalePrice(e.target.value)}
+              className="w-full sm:w-32 rounded-md border border-input bg-background px-3 py-2 text-sm font-mono"
+              min={0}
+              step={0.01}
+              placeholder="0.00"
+            />
+          </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Minus className="h-4 w-4" />
           </div>
-          <div className="grid grid-cols-2 gap-4 flex-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
             <div>
               <p className="text-xs text-muted-foreground">Projected Boxes</p>
-              <p className="text-2xl font-mono font-bold text-primary">{projectedBoxes.toLocaleString()}</p>
+              <p className="text-xl sm:text-2xl font-mono font-bold text-primary">{projectedBoxes.toLocaleString()}</p>
             </div>
             {projectedCost !== null && (
               <div>
                 <p className="text-xs text-muted-foreground">Projected Cost</p>
-                <p className="text-2xl font-mono font-bold text-foreground">${projectedCost.toLocaleString()}</p>
+                <p className="text-xl sm:text-2xl font-mono font-bold text-foreground">${projectedCost.toLocaleString()}</p>
+              </div>
+            )}
+            {projectedRevenue !== null && (
+              <div>
+                <p className="text-xs text-muted-foreground">Projected Revenue</p>
+                <p className="text-xl sm:text-2xl font-mono font-bold text-foreground">${projectedRevenue.toLocaleString()}</p>
+              </div>
+            )}
+            {projectedProfit !== null && (
+              <div>
+                <p className="text-xs text-muted-foreground">Gross Profit</p>
+                <p className={cn('text-xl sm:text-2xl font-mono font-bold', projectedProfit >= 0 ? 'text-hud-green' : 'text-destructive')}>
+                  ${projectedProfit.toLocaleString()}
+                </p>
               </div>
             )}
           </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OfficeComparisonCard({ baselines, offices }: {
+  baselines: any[];
+  offices: any[];
+}) {
+  const officeBaselines = baselines.filter(b => b.office_id !== null && b.calculated_from_batch_count >= 10);
+  if (officeBaselines.length < 2) return null;
+
+  const getOfficeName = (id: string) => offices.find(o => o.id === id)?.name || id.slice(0, 8);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <Building2 className="h-4 w-4 text-primary" />
+          Office Efficiency Comparison
+        </CardTitle>
+        <CardDescription>Side-by-side conversion performance by production office</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {officeBaselines.map(b => (
+            <div key={b.id} className="p-3 rounded-md border bg-muted/20 space-y-2">
+              <p className="text-sm font-semibold">{getOfficeName(b.office_id)}</p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <span className="text-muted-foreground">Boxes/LB:</span>
+                <span className="font-mono font-medium">{b.baseline_boxes_per_lb}</span>
+                <span className="text-muted-foreground">LBS/Box:</span>
+                <span className="font-mono font-medium">{b.baseline_lbs_per_box}</span>
+                <span className="text-muted-foreground">Batches:</span>
+                <span className="font-mono">{b.calculated_from_batch_count}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>
