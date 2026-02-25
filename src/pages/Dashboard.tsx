@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { CommunicationWidget } from '@/components/communication/CommunicationWidget';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { getSimulationDashboardStats } from '@/lib/simulation/coreSimulationData';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 import {
   Store, 
   TrendingUp, 
   DollarSign, 
   AlertCircle,
   Package,
-  Users
+  Users,
+  Download
 } from 'lucide-react';
 
 interface Stats {
@@ -22,6 +25,7 @@ interface Stats {
 
 const Dashboard = () => {
   const { simulationMode, isLoading: isSimLoading } = useSimulationMode();
+  const { canInstall, triggerInstall } = usePwaInstall();
   const [stats, setStats] = useState<Stats>({
     activeStores: 0,
     totalStores: 0,
@@ -103,6 +107,20 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* PWA Install Banner */}
+      {canInstall && (
+        <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <div>
+            <p className="font-semibold text-sm text-foreground">Install GasMask App</p>
+            <p className="text-xs text-muted-foreground">Add to your home screen for quick access &amp; offline support</p>
+          </div>
+          <Button onClick={triggerInstall} size="sm" className="gap-1.5 shrink-0">
+            <Download className="h-4 w-4" />
+            Install
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
