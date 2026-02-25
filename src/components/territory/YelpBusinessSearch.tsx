@@ -12,6 +12,7 @@ import { Search, Star, MapPin, Phone, Loader2, Download, ArrowLeft } from 'lucid
 import { YelpBusinessDetail } from './YelpBusinessDetail';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import { DuplicateResolutionModal, DuplicateRecord } from './DuplicateResolutionModal';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 interface YelpBusiness {
   id: string;
@@ -40,6 +41,9 @@ interface Props {
   onBack: () => void;
 }
 
+const PAGE_SIZE = 50;
+const MAX_RESULTS = 300;
+
 export function YelpBusinessSearch({ onBack }: Props) {
   const { addSearch, recentTerms, recentLocations } = useSearchHistory();
   const [term, setTerm] = useState('');
@@ -50,37 +54,64 @@ export function YelpBusinessSearch({ onBack }: Props) {
   const [ingesting, setIngesting] = useState(false);
   const [detailBusiness, setDetailBusiness] = useState<YelpBusiness | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [lastSearchTerm, setLastSearchTerm] = useState('');
+  const [lastSearchLocation, setLastSearchLocation] = useState('');
+
   // Duplicate resolution state
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
   const [duplicateRecords, setDuplicateRecords] = useState<DuplicateRecord[]>([]);
   const [nonDuplicateRecords, setNonDuplicateRecords] = useState<any[]>([]);
   const [processingDuplicates, setProcessingDuplicates] = useState(false);
 
+  const fetchPage = async (searchTerm: string, searchLocation: string, page: number) => {
+    setSearching(true);
+    try {
+      const offset = (page - 1) * PAGE_SIZE;
+      const { data, error } = await supabase.functions.invoke('yelp-business-search', {
+        body: { action: 'search', term: searchTerm, location: searchLocation, limit: PAGE_SIZE, offset },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      
+      const businesses = data?.businesses || [];
+      const total = Math.min(data?.total || 0, MAX_RESULTS);
+      
+      setResults(businesses);
+      setTotalResults(total);
+      setCurrentPage(page);
+      
+      return businesses.length;
+    } catch (err: any) {
+      toast({ title: 'Search Failed', description: err.message, variant: 'destructive' });
+      return 0;
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (!term || !location) {
       toast({ title: 'Missing Fields', description: 'Enter a search term and location.', variant: 'destructive' });
       return;
     }
-    setSearching(true);
     setResults([]);
-    setSelected(new Set());
-    try {
-      const { data, error } = await supabase.functions.invoke('yelp-business-search', {
-        body: { action: 'search', term, location },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setResults(data?.businesses || []);
-      if ((data?.businesses || []).length === 0) {
-        toast({ title: 'No Results', description: 'No businesses found for that search.' });
-      } else {
-        addSearch(term, location);
-      }
-    } catch (err: any) {
-      toast({ title: 'Search Failed', description: err.message, variant: 'destructive' });
-    } finally {
-      setSearching(false);
+    // Don't clear selections on new search — only clear current page selections
+    setLastSearchTerm(term);
+    setLastSearchLocation(location);
+    
+    const count = await fetchPage(term, location, 1);
+    if (count === 0) {
+      toast({ title: 'No Results', description: 'No businesses found for that search.' });
+    } else {
+      addSearch(term, location);
     }
+  };
+
+  const handlePageChange = async (page: number) => {
+    await fetchPage(lastSearchTerm, lastSearchLocation, page);
   };
 
   const toggleSelect = (id: string) => {
@@ -93,8 +124,17 @@ export function YelpBusinessSearch({ onBack }: Props) {
   };
 
   const selectAll = () => {
-    if (selected.size === results.length) setSelected(new Set());
-    else setSelected(new Set(results.map(b => b.id)));
+    const currentIds = results.map(b => b.id);
+    const allCurrentSelected = currentIds.every(id => selected.has(id));
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (allCurrentSelected) {
+        currentIds.forEach(id => next.delete(id));
+      } else {
+        currentIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
   };
 
   const buildRecords = (businesses: YelpBusiness[]) =>
@@ -112,42 +152,87 @@ export function YelpBusinessSearch({ onBack }: Props) {
       discovered_by: 'yelp',
     }));
 
+  const normalizeAddr = (s: string) => s?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+
   const ingestSelected = async () => {
     const businesses = results.filter(b => selected.has(b.id));
     if (businesses.length === 0) return;
     setIngesting(true);
     try {
       const records = buildRecords(businesses);
-
-      // Check for duplicates by full_address
       const addresses = records.map(r => r.full_address);
-      const { data: existing } = await supabase
-        .from('territory_addresses')
-        .select('id, full_address, notes, created_at')
-        .in('full_address', addresses);
 
-      const existingMap = new Map(
-        (existing || []).map((e: any) => [e.full_address, e])
+      // Run territory + store checks in parallel
+      const [territoryResult, storesResult] = await Promise.all([
+        supabase
+          .from('territory_addresses')
+          .select('id, full_address, notes, created_at')
+          .in('full_address', addresses),
+        supabase
+          .from('stores')
+          .select('id, name, address_street, address_city, address_state, address_zip, created_at')
+          .is('deleted_at', null),
+      ]);
+
+      const existingTerritoryMap = new Map(
+        (territoryResult.data || []).map((e: any) => [e.full_address, e])
       );
+
+      // Build store lookup maps
+      const storesByAddr = new Map<string, any>();
+      const storesByName = new Map<string, any>();
+      for (const store of (storesResult.data || [])) {
+        const storeAddr = normalizeAddr(
+          [store.address_street, store.address_city, store.address_state, store.address_zip]
+            .filter(Boolean).join(', ')
+        );
+        if (storeAddr) storesByAddr.set(storeAddr, store);
+        if (store.name) storesByName.set(store.name.toLowerCase(), store);
+      }
 
       const dupes: DuplicateRecord[] = [];
       const fresh: typeof records = [];
 
       for (const rec of records) {
-        const match = existingMap.get(rec.full_address);
-        if (match) {
+        // Check territory first
+        const territoryMatch = existingTerritoryMap.get(rec.full_address);
+        if (territoryMatch) {
           dupes.push({
             newRecord: rec,
-            existingRow: match,
-            action: 'skip', // default
+            existingRow: { ...territoryMatch, source: 'territory' as const },
+            action: 'skip',
           });
-        } else {
-          fresh.push(rec);
+          continue;
         }
+
+        // Check stores by address or name
+        const recNormAddr = normalizeAddr(rec.full_address);
+        const recName = rec.store_name?.toLowerCase() || '';
+        const storeMatchByAddr = storesByAddr.get(recNormAddr);
+        const storeMatchByName = recName ? storesByName.get(recName) : null;
+        const storeMatch = storeMatchByAddr || storeMatchByName;
+
+        if (storeMatch) {
+          const storeFullAddr = [storeMatch.address_street, storeMatch.address_city, storeMatch.address_state, storeMatch.address_zip]
+            .filter(Boolean).join(', ');
+          dupes.push({
+            newRecord: rec,
+            existingRow: {
+              id: storeMatch.id,
+              full_address: storeFullAddr,
+              notes: storeMatch.name,
+              created_at: storeMatch.created_at || new Date().toISOString(),
+              source: 'store_directory' as const,
+            },
+            action: 'skip',
+          });
+          continue;
+        }
+
+        fresh.push(rec);
       }
 
       if (dupes.length > 0) {
-        // Show modal for user to decide
         setDuplicateRecords(dupes);
         setNonDuplicateRecords(fresh);
         setDuplicateModalOpen(true);
@@ -183,6 +268,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
 
       for (const item of items) {
         const { action, newRecord, existingRow } = item;
+        const source = existingRow.source || 'territory';
 
         if (action === 'skip') {
           skipped++;
@@ -195,8 +281,8 @@ export function YelpBusinessSearch({ onBack }: Props) {
           inserted++;
         }
 
-        if (action === 'update') {
-          // Update coordinates, notes, discovered_by — keep other details untouched
+        // Only allow update/replace for territory source
+        if (action === 'update' && source === 'territory') {
           const { error } = await supabase
             .from('territory_addresses')
             .update({
@@ -211,7 +297,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
           updated++;
         }
 
-        if (action === 'replace') {
+        if (action === 'replace' && source === 'territory') {
           const { error: delErr } = await supabase
             .from('territory_addresses')
             .delete()
@@ -276,6 +362,10 @@ export function YelpBusinessSearch({ onBack }: Props) {
     );
   }
 
+  const totalPages = Math.ceil(totalResults / PAGE_SIZE);
+  const currentPageSelectedCount = results.filter(b => selected.has(b.id)).length;
+  const allCurrentSelected = results.length > 0 && currentPageSelectedCount === results.length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -331,10 +421,13 @@ export function YelpBusinessSearch({ onBack }: Props) {
       {results.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{results.length} results found</p>
+            <p className="text-sm text-muted-foreground">
+              Showing {results.length} of {totalResults} results
+              {selected.size > 0 && ` · ${selected.size} selected total`}
+            </p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={selectAll}>
-                {selected.size === results.length ? 'Deselect All' : 'Select All'}
+                {allCurrentSelected ? 'Deselect Page' : 'Select Page'}
               </Button>
               {selected.size > 0 && (
                 <Button
@@ -401,6 +494,17 @@ export function YelpBusinessSearch({ onBack }: Props) {
               </Card>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <DataTablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={PAGE_SIZE}
+              totalItems={totalResults}
+              onPageChange={handlePageChange}
+            />
+          )}
         </div>
       )}
 

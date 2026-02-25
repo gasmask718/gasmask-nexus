@@ -27,6 +27,7 @@ import {
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
 export type DuplicateAction = 'add' | 'update' | 'replace' | 'skip';
+export type DuplicateSource = 'territory' | 'store_directory';
 
 export interface DuplicateRecord {
   /** The new record about to be ingested */
@@ -43,12 +44,13 @@ export interface DuplicateRecord {
     discovery_status: string;
     discovered_by: string;
   };
-  /** The existing row from territory_addresses */
+  /** The existing row from territory_addresses or stores */
   existingRow: {
     id: string;
     full_address: string;
     notes: string | null;
     created_at: string;
+    source?: DuplicateSource;
   };
   /** User-chosen action for this record */
   action: DuplicateAction;
@@ -68,6 +70,29 @@ function extractName(notes: string | null): string {
   return parts[0]?.trim() || '—';
 }
 
+const ALLOWED_ACTIONS_BY_SOURCE: Record<DuplicateSource, DuplicateAction[]> = {
+  territory: ['skip', 'add', 'update', 'replace'],
+  store_directory: ['skip', 'add'],
+};
+
+const ACTION_LABELS: Record<DuplicateAction, string> = {
+  skip: 'Skip',
+  add: 'Add Another',
+  update: 'Update Existing',
+  replace: 'Delete & Recreate',
+};
+
+function getSource(item: DuplicateRecord): DuplicateSource {
+  return item.existingRow.source || 'territory';
+}
+
+function SourceBadge({ source }: { source: DuplicateSource }) {
+  if (source === 'store_directory') {
+    return <Badge variant="default" className="text-[10px]">Store Directory</Badge>;
+  }
+  return <Badge variant="secondary" className="text-[10px]">Territory</Badge>;
+}
+
 export function DuplicateResolutionModal({ open, duplicates, onConfirm, onCancel, processing }: Props) {
   const [items, setItems] = useState<DuplicateRecord[]>(duplicates);
 
@@ -81,7 +106,11 @@ export function DuplicateResolutionModal({ open, duplicates, onConfirm, onCancel
   };
 
   const setAllAction = (action: DuplicateAction) => {
-    setItems(prev => prev.map(item => ({ ...item, action })));
+    setItems(prev => prev.map(item => {
+      const allowed = ALLOWED_ACTIONS_BY_SOURCE[getSource(item)];
+      if (allowed.includes(action)) return { ...item, action };
+      return item; // keep current if action not allowed for this source
+    }));
   };
 
   const isSingle = items.length === 1;
@@ -96,8 +125,8 @@ export function DuplicateResolutionModal({ open, duplicates, onConfirm, onCancel
           </DialogTitle>
           <DialogDescription>
             {isSingle
-              ? 'This business already exists in your territory. Choose how to proceed.'
-              : 'The following businesses already exist in your territory. Choose an action for each record.'}
+              ? 'This business already exists. Choose how to proceed.'
+              : 'The following businesses already exist. Choose an action for each record.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -120,37 +149,44 @@ export function DuplicateResolutionModal({ open, duplicates, onConfirm, onCancel
                 <TableRow>
                   <TableHead>Business</TableHead>
                   <TableHead>Address</TableHead>
+                  <TableHead>Found In</TableHead>
                   <TableHead>Existing Since</TableHead>
                   <TableHead className="w-[160px]">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item, i) => (
-                  <TableRow key={item.existingRow.id}>
-                    <TableCell className="font-medium text-sm">
-                      {extractName(item.newRecord.notes)}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
-                      {item.newRecord.full_address}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {new Date(item.existingRow.created_at).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Select value={item.action} onValueChange={(v) => setAction(i, v as DuplicateAction)}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="skip">Skip</SelectItem>
-                          <SelectItem value="add">Add Another</SelectItem>
-                          <SelectItem value="update">Update Existing</SelectItem>
-                          <SelectItem value="replace">Delete & Recreate</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {items.map((item, i) => {
+                  const source = getSource(item);
+                  const allowed = ALLOWED_ACTIONS_BY_SOURCE[source];
+                  return (
+                    <TableRow key={`${item.existingRow.id}-${i}`}>
+                      <TableCell className="font-medium text-sm">
+                        {extractName(item.newRecord.notes)}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">
+                        {item.newRecord.full_address}
+                      </TableCell>
+                      <TableCell>
+                        <SourceBadge source={source} />
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(item.existingRow.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <Select value={item.action} onValueChange={(v) => setAction(i, v as DuplicateAction)}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {allowed.map(a => (
+                              <SelectItem key={a} value={a}>{ACTION_LABELS[a]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
@@ -172,43 +208,52 @@ export function DuplicateResolutionModal({ open, duplicates, onConfirm, onCancel
 
 function SingleDuplicateView({ item, onAction }: { item: DuplicateRecord; onAction: (a: DuplicateAction) => void }) {
   const name = extractName(item.newRecord.notes);
+  const source = getSource(item);
+  const allowed = ALLOWED_ACTIONS_BY_SOURCE[source];
+
   return (
     <div className="space-y-4">
       <div className="rounded-md border p-4 space-y-2">
         <p className="font-medium text-sm">{name}</p>
         <p className="text-xs text-muted-foreground">{item.newRecord.full_address}</p>
         <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-[10px]">Existing</Badge>
+          <SourceBadge source={source} />
           <span className="text-xs text-muted-foreground">
             Added {new Date(item.existingRow.created_at).toLocaleDateString()}
           </span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <Button
-          variant={item.action === 'add' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onAction('add')}
-          className="w-full"
-        >
-          Add Another Copy
-        </Button>
-        <Button
-          variant={item.action === 'update' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onAction('update')}
-          className="w-full"
-        >
-          Update Existing
-        </Button>
-        <Button
-          variant={item.action === 'replace' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onAction('replace')}
-          className="w-full"
-        >
-          Delete & Recreate
-        </Button>
+        {allowed.includes('add') && (
+          <Button
+            variant={item.action === 'add' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onAction('add')}
+            className="w-full"
+          >
+            Add Another Copy
+          </Button>
+        )}
+        {allowed.includes('update') && (
+          <Button
+            variant={item.action === 'update' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onAction('update')}
+            className="w-full"
+          >
+            Update Existing
+          </Button>
+        )}
+        {allowed.includes('replace') && (
+          <Button
+            variant={item.action === 'replace' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => onAction('replace')}
+            className="w-full"
+          >
+            Delete & Recreate
+          </Button>
+        )}
         <Button
           variant={item.action === 'skip' ? 'default' : 'outline'}
           size="sm"

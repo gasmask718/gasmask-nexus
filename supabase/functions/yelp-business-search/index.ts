@@ -18,7 +18,7 @@ serve(async (req) => {
       throw new Error('YELP_API_KEY is not configured');
     }
 
-    const { action, term, location, business_id, limit } = await req.json();
+    const { action, term, location, business_id, limit, offset } = await req.json();
     const headers = {
       'Authorization': `Bearer ${YELP_API_KEY}`,
       'Accept': 'application/json',
@@ -43,9 +43,12 @@ serve(async (req) => {
       const params = new URLSearchParams({
         term,
         location,
-        limit: String(limit || 20),
+        limit: String(limit || 50),
         sort_by: 'best_match',
       });
+      if (offset) {
+        params.set('offset', String(offset));
+      }
       const resp = await fetch(`${YELP_BASE}/businesses/search?${params}`, { headers });
       if (!resp.ok) {
         const err = await resp.text();
