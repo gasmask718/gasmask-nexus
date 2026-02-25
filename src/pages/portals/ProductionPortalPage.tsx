@@ -329,7 +329,7 @@ export default function ProductionPortalPage() {
 
           {/* Tabbed Sections */}
           <Tabs defaultValue="command" className="space-y-4">
-            <TabsList className="flex flex-wrap gap-1">
+            <TabsList className="flex flex-wrap gap-1 h-auto">
               {/* ── OPERATE (DO) ── */}
               <TabsTrigger value="command" className="flex items-center gap-2">
                 <Activity className="h-4 w-4" />
