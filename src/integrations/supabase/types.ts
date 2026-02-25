@@ -39264,6 +39264,8 @@ export type Database = {
           status: string | null
           stickers_issued: Json | null
           stickers_used: Json | null
+          supplier_batch_reference: string | null
+          supplier_id: string | null
           tobacco_heatup_minutes: number | null
           tobacco_lbs: number | null
           tools_used: Json | null
@@ -39309,6 +39311,8 @@ export type Database = {
           status?: string | null
           stickers_issued?: Json | null
           stickers_used?: Json | null
+          supplier_batch_reference?: string | null
+          supplier_id?: string | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
@@ -39354,6 +39358,8 @@ export type Database = {
           status?: string | null
           stickers_issued?: Json | null
           stickers_used?: Json | null
+          supplier_batch_reference?: string | null
+          supplier_id?: string | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
@@ -39374,6 +39380,13 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_batches_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -60470,6 +60483,39 @@ export type Database = {
           trend_score: number | null
         }
         Relationships: []
+      }
+      v_supplier_yield_intelligence: {
+        Row: {
+          avg_boxes_per_lb: number | null
+          avg_boxes_per_lb_30d: number | null
+          avg_lbs_per_box: number | null
+          avg_waste_pct: number | null
+          baseline_band: string | null
+          batch_count: number | null
+          batch_count_30d: number | null
+          efficiency_score: number | null
+          first_batch_date: string | null
+          global_avg_boxes_per_lb: number | null
+          last_batch_date: string | null
+          stddev_boxes_per_lb: number | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_boxes_produced: number | null
+          total_lbs_supplied: number | null
+          trend_direction: string | null
+          variance_frequency: number | null
+          yield_rank: number | null
+          yield_stability_score: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_batches_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_territory_address_status_summary: {
         Row: {

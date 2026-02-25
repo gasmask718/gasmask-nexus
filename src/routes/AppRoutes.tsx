@@ -325,6 +325,7 @@ import {
 import OfficesManagementPage from '@/pages/portals/production/OfficesManagementPage';
 import StaffManagementPage from '@/pages/portals/production/StaffManagementPage';
 import ConversionIntelligencePage from '@/pages/portals/ConversionIntelligencePage';
+import SupplierYieldPage from '@/pages/portals/SupplierYieldPage';
 
 // HR
 import HR from '@/pages/HR';
@@ -1564,6 +1565,7 @@ export default function AppRoutes() {
         <Route path="/portals/production/offices" element={<OfficesManagementPage />} />
         <Route path="/portals/production/staff" element={<StaffManagementPage />} />
         <Route path="/portals/production/conversion" element={<ConversionIntelligencePage />} />
+        <Route path="/portals/production/supplier-yield" element={<SupplierYieldPage />} />
         <Route path="/portals/va" element={<VAPortalPage />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
