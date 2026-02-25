@@ -69,3 +69,6 @@ export { AlertHistoryPanel } from './AlertHistoryPanel';
 // Phase 10: Worker Task Timer
 export { WorkerTaskTimer } from './WorkerTaskTimer';
 export { LaborEfficiencyPanel } from './LaborEfficiencyPanel';
+
+// Phase 11: Profit Per Pound Intelligence
+export { ProfitPerPoundPanel } from './ProfitPerPoundPanel';

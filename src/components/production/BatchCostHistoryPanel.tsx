@@ -207,6 +207,29 @@ export function BatchCostHistoryPanel({ officeId }: BatchCostHistoryPanelProps) 
                 <span>Cost Per Box</span>
                 <span className="font-mono text-primary">${selectedRecord.cost_per_box?.toFixed(2)}</span>
               </div>
+              {(selectedRecord.conversion_boxes_per_lb_snapshot || 0) > 0 && (
+                <>
+                  <Separator />
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <span className="text-muted-foreground">Boxes / LB</span>
+                    <span className="font-mono">{selectedRecord.conversion_boxes_per_lb_snapshot?.toFixed(4)}</span>
+                    <span className="text-muted-foreground">Wholesale $/Box</span>
+                    <span className="font-mono">${selectedRecord.wholesale_price_per_box_snapshot?.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Cost / LB</span>
+                    <span className="font-mono">${selectedRecord.cost_per_lb?.toFixed(2)}</span>
+                    <span className="text-muted-foreground">Revenue / LB</span>
+                    <span className="font-mono">${selectedRecord.revenue_per_lb?.toFixed(2)}</span>
+                    <span className="font-semibold">Profit / LB</span>
+                    <span className={cn('font-mono font-semibold', (selectedRecord.profit_per_lb || 0) > 0 ? 'text-emerald-600' : 'text-destructive')}>
+                      ${selectedRecord.profit_per_lb?.toFixed(2)}
+                    </span>
+                    <span className="font-semibold">Margin %</span>
+                    <span className={cn('font-mono font-semibold', (selectedRecord.margin_pct || 0) >= 20 ? 'text-emerald-600' : 'text-destructive')}>
+                      {selectedRecord.margin_pct?.toFixed(1)}%
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                 <Badge variant="outline" className="text-[10px]">
                   {selectedRecord.is_immutable ? '🔒 Immutable' : '⚠️ Editable'}
