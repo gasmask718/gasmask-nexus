@@ -55,3 +55,6 @@ export * from './scenario';
 
 // Phase 7: Supplier Yield Intelligence
 export { SupplierYieldRankingPanel } from './SupplierYieldRankingPanel';
+
+// Phase 8: Sales Velocity Closed-Loop Engine
+export { SalesVelocityPanel } from './SalesVelocityPanel';
