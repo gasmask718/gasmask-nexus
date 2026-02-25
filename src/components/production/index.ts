@@ -64,3 +64,7 @@ export { SalesVelocityPanel } from './SalesVelocityPanel';
 // Phase 9: Production Governance Engines
 export { OverrideAuditPanel } from './OverrideAuditPanel';
 export { AlertHistoryPanel } from './AlertHistoryPanel';
+
+// Phase 10: Worker Task Timer
+export { WorkerTaskTimer } from './WorkerTaskTimer';
+export { LaborEfficiencyPanel } from './LaborEfficiencyPanel';

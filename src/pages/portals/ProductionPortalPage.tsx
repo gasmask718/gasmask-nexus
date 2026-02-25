@@ -61,6 +61,8 @@ import {
   WorkerPayrollAdmin,
   RawAllocationPanel,
 } from '@/components/production';
+import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
+import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
 import { usePendingSubmissionCount } from '@/hooks/useWorkerSubmissions';
 import { useProductionRBAC } from '@/hooks/useProductionRBAC';
 import { 
@@ -85,6 +87,7 @@ import {
   ClipboardCheck,
   Brain,
   Wallet,
+  Timer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -351,6 +354,10 @@ export default function ProductionPortalPage() {
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Attendance</span>
               </TabsTrigger>
+              <TabsTrigger value="timer" className="flex items-center gap-2">
+                <Timer className="h-4 w-4" />
+                <span className="hidden sm:inline">Task Timer</span>
+              </TabsTrigger>
 
               {/* ── REVIEW (CHECK) ── */}
               {rbac.canManagePayroll && (
@@ -433,6 +440,13 @@ export default function ProductionPortalPage() {
 
             <TabsContent value="attendance">
               <WorkerAttendance officeId={selectedOfficeId} isDayLocked={isDayClosed} />
+            </TabsContent>
+
+            <TabsContent value="timer">
+              <div className="grid lg:grid-cols-2 gap-4">
+                <WorkerTaskTimer officeId={selectedOfficeId} />
+                <LaborEfficiencyPanel officeId={selectedOfficeId} />
+              </div>
             </TabsContent>
 
             {/* ── REVIEW CONTENT ── */}
