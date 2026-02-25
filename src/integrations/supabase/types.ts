@@ -8312,10 +8312,47 @@ export type Database = {
             foreignKeyName: "batch_cost_history_previous_version_id_fkey"
             columns: ["previous_version_id"]
             isOneToOne: false
+            referencedRelation: "v_batch_cost_history_latest"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
             referencedRelation: "v_profit_per_lb_analysis"
             referencedColumns: ["id"]
           },
         ]
+      }
+      batch_state_history: {
+        Row: {
+          batch_id: string
+          created_at: string
+          from_state: string
+          id: string
+          performed_by: string | null
+          reason: string | null
+          to_state: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          from_state: string
+          id?: string
+          performed_by?: string | null
+          reason?: string | null
+          to_state: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          from_state?: string
+          id?: string
+          performed_by?: string | null
+          reason?: string | null
+          to_state?: string
+        }
+        Relationships: []
       }
       batch_upload_history: {
         Row: {
@@ -19602,6 +19639,42 @@ export type Database = {
           sport?: string
           success?: boolean | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      daily_production_summary: {
+        Row: {
+          boxes_completed: number
+          created_at: string
+          id: string
+          notes: string | null
+          office_id: string
+          production_date: string
+          supervisor_user_id: string | null
+          tobacco_lbs_used: number
+          workers_present: number
+        }
+        Insert: {
+          boxes_completed?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id: string
+          production_date?: string
+          supervisor_user_id?: string | null
+          tobacco_lbs_used?: number
+          workers_present?: number
+        }
+        Update: {
+          boxes_completed?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          office_id?: string
+          production_date?: string
+          supervisor_user_id?: string | null
+          tobacco_lbs_used?: number
+          workers_present?: number
         }
         Relationships: []
       }
@@ -40171,6 +40244,45 @@ export type Database = {
           },
         ]
       }
+      production_equipment_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_to_user_id: string | null
+          assignment_notes: string | null
+          created_at: string
+          created_by: string | null
+          equipment_name: string
+          equipment_serial: string | null
+          id: string
+          office_id: string
+          unassigned_at: string | null
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_to_user_id?: string | null
+          assignment_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment_name: string
+          equipment_serial?: string | null
+          id?: string
+          office_id: string
+          unassigned_at?: string | null
+        }
+        Update: {
+          assigned_at?: string
+          assigned_to_user_id?: string | null
+          assignment_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          equipment_name?: string
+          equipment_serial?: string | null
+          id?: string
+          office_id?: string
+          unassigned_at?: string | null
+        }
+        Relationships: []
+      }
       production_history: {
         Row: {
           batch_id: string | null
@@ -40370,6 +40482,42 @@ export type Database = {
           },
         ]
       }
+      production_material_usage: {
+        Row: {
+          batch_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          material_type: Database["public"]["Enums"]["material_type_enum"]
+          office_id: string
+          quantity_used: number
+          unit_of_measure: string
+          usage_date: string
+        }
+        Insert: {
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          material_type: Database["public"]["Enums"]["material_type_enum"]
+          office_id: string
+          quantity_used?: number
+          unit_of_measure?: string
+          usage_date?: string
+        }
+        Update: {
+          batch_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          material_type?: Database["public"]["Enums"]["material_type_enum"]
+          office_id?: string
+          quantity_used?: number
+          unit_of_measure?: string
+          usage_date?: string
+        }
+        Relationships: []
+      }
       production_office_managers: {
         Row: {
           assigned_at: string | null
@@ -40511,6 +40659,7 @@ export type Database = {
           address_line_1: string | null
           city: string | null
           created_at: string | null
+          daily_box_goal: number | null
           id: string
           location: string | null
           name: string
@@ -40525,6 +40674,7 @@ export type Database = {
           address_line_1?: string | null
           city?: string | null
           created_at?: string | null
+          daily_box_goal?: number | null
           id?: string
           location?: string | null
           name: string
@@ -40539,6 +40689,7 @@ export type Database = {
           address_line_1?: string | null
           city?: string | null
           created_at?: string | null
+          daily_box_goal?: number | null
           id?: string
           location?: string | null
           name?: string
@@ -59315,6 +59466,89 @@ export type Database = {
           },
         ]
       }
+      v_batch_cost_history_latest: {
+        Row: {
+          approved_by: string | null
+          bag_weight_grams: number | null
+          batch_id: string | null
+          boxes_produced: number | null
+          conversion_boxes_per_lb_snapshot: number | null
+          cost_per_box: number | null
+          cost_per_lb: number | null
+          cost_snapshot_created_at: string | null
+          created_at: string | null
+          id: string | null
+          is_immutable: boolean | null
+          labor_cost: number | null
+          labor_model: Database["public"]["Enums"]["labor_model"] | null
+          margin_pct: number | null
+          office_id: string | null
+          overhead_cost: number | null
+          override_reason: string | null
+          packaging_cost: number | null
+          previous_version_id: string | null
+          product_type: string | null
+          profit_per_lb: number | null
+          revenue_per_lb: number | null
+          tobacco_cost: number | null
+          total_batch_cost: number | null
+          tube_size: string | null
+          version: number | null
+          wholesale_price_per_box_snapshot: number | null
+          worker_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "batch_cost_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "v_batch_cost_history_latest"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "v_profit_per_lb_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_batch_cost_summary: {
         Row: {
           avg_cost_per_box: number | null
@@ -60422,6 +60656,23 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_material_usage_daily: {
+        Row: {
+          material_type: string | null
+          office_id: string | null
+          total_used: number | null
+          usage_date: string | null
+        }
+        Relationships: []
+      }
+      v_material_usage_total: {
+        Row: {
+          lifetime_used: number | null
+          material_type: string | null
+          office_id: string | null
+        }
+        Relationships: []
       }
       v_negative_margin_alerts: {
         Row: {
@@ -63379,6 +63630,13 @@ export type Database = {
         | "moneyline"
         | "player_prop"
         | "fantasy_prop"
+      material_type_enum:
+        | "tobacco_lbs"
+        | "tubes"
+        | "bags"
+        | "stickers"
+        | "boxes"
+        | "other"
       message_sender_role: "customer" | "vendor" | "admin" | "system"
       mission_category:
         | "strategic"
@@ -63955,6 +64213,14 @@ export const Constants = {
         "moneyline",
         "player_prop",
         "fantasy_prop",
+      ],
+      material_type_enum: [
+        "tobacco_lbs",
+        "tubes",
+        "bags",
+        "stickers",
+        "boxes",
+        "other",
       ],
       message_sender_role: ["customer", "vendor", "admin", "system"],
       mission_category: [

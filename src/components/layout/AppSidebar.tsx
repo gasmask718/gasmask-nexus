@@ -348,6 +348,7 @@ export default function AppSidebar() {
               { path: '/production/tools', label: 'Tool Distribution', emoji: '🔧' },
               { path: '/production/machines', label: 'Machine Servicing', emoji: '⚙️' },
               { path: '/production/quality', label: 'Quality Control', emoji: '✅' },
+              { path: '/production/cost-history', label: 'Cost Ledger', emoji: '💰' },
             ])}
 
             {/* Floor 7 - Wholesale */}

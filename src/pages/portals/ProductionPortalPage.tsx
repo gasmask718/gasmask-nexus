@@ -60,6 +60,9 @@ import {
   ProductionRBACGate,
   WorkerPayrollAdmin,
   RawAllocationPanel,
+  MaterialConsumptionPanel,
+  EquipmentAssignmentPanel,
+  DailyExecutionDashboard,
 } from '@/components/production';
 import { WorkerTaskTimer } from '@/components/production/WorkerTaskTimer';
 import { LaborEfficiencyPanel } from '@/components/production/LaborEfficiencyPanel';
@@ -88,6 +91,8 @@ import {
   Brain,
   Wallet,
   Timer,
+  Leaf,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -404,11 +409,23 @@ export default function ProductionPortalPage() {
                 <History className="h-4 w-4" />
                 <span className="hidden sm:inline">History</span>
               </TabsTrigger>
+              <TabsTrigger value="materials" className="flex items-center gap-2">
+                <Leaf className="h-4 w-4" />
+                <span className="hidden sm:inline">Materials</span>
+              </TabsTrigger>
+              <TabsTrigger value="equipment" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Equipment</span>
+              </TabsTrigger>
+              <TabsTrigger value="daily-exec" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Daily Exec</span>
+              </TabsTrigger>
             </TabsList>
 
             {/* ── OPERATE CONTENT ── */}
             <TabsContent value="command">
-              <DailyCommandView officeId={selectedOfficeId} targetBoxes={100} />
+              <DailyCommandView officeId={selectedOfficeId} targetBoxes={selectedOffice?.daily_box_goal || 100} />
             </TabsContent>
 
             <TabsContent value="batches">
@@ -516,6 +533,18 @@ export default function ProductionPortalPage() {
                 <BatchHistoryPanel officeId={selectedOfficeId} />
                 <ProductionHistoryPanel officeId={selectedOfficeId} />
               </div>
+            </TabsContent>
+
+            <TabsContent value="materials">
+              <MaterialConsumptionPanel officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="equipment">
+              <EquipmentAssignmentPanel officeId={selectedOfficeId} />
+            </TabsContent>
+
+            <TabsContent value="daily-exec">
+              <DailyExecutionDashboard officeId={selectedOfficeId} dailyGoal={(selectedOffice as any)?.daily_box_goal || 100} />
             </TabsContent>
           </Tabs>
         </>

@@ -9,6 +9,8 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { ArrowRight, Lock, CheckCircle, ShieldCheck } from 'lucide-react';
+import { ArrowRight, Lock, CheckCircle, ShieldCheck, RotateCcw } from 'lucide-react';
 import {
   getNextStates,
   getStateConfig,
@@ -72,20 +74,22 @@ export function BatchStateControls({
   const nextStates = getNextStates(currentState);
   const [confirmed, setConfirmed] = useState(false);
   const [laborConfirmed, setLaborConfirmed] = useState(false);
+  const [reopenReason, setReopenReason] = useState('');
 
-  const handleTransition = async (toState: InventoryState) => {
+  const handleTransition = async (toState: InventoryState, reason?: string) => {
     transition.mutate({
       batchId,
       fromState: currentState,
       toState,
       officeId,
+      reason,
       conversionConfirmed: toState === 'approved' ? confirmed : undefined,
     }, {
       onSuccess: () => {
-        // Auto-create cost snapshot on approval
         if (toState === 'approved') {
           createSnapshot.mutate({ batchId, officeId });
         }
+        setReopenReason('');
       },
     });
   };
@@ -273,8 +277,61 @@ export function BatchStateControls({
     );
   };
 
+  const renderReopenDialog = (ns: InventoryState) => {
+    return (
+      <AlertDialog key={ns}>
+        <AlertDialogTrigger asChild>
+          <Button
+            size={compact ? 'sm' : 'sm'}
+            variant="outline"
+            className={compact ? 'h-6 text-xs border-amber-300 text-amber-700' : 'border-amber-300 text-amber-700'}
+            disabled={transition.isPending}
+          >
+            <RotateCcw className="h-3 w-3 mr-1" />
+            Reopen Batch
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-amber-600" />
+              Reopen Completed Batch?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>This will revert the batch to <strong>In Production</strong>. A reason is required and will be logged.</p>
+                <div className="grid gap-2">
+                  <Label className="text-xs">Reason for reopening *</Label>
+                  <Input
+                    value={reopenReason}
+                    onChange={e => setReopenReason(e.target.value)}
+                    placeholder="e.g., Incorrect output count needs correction"
+                    className="text-foreground"
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setReopenReason('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleTransition(ns, reopenReason)}
+              disabled={reopenReason.length < 5}
+              className={cn(reopenReason.length < 5 && 'opacity-50 cursor-not-allowed')}
+            >
+              <RotateCcw className="h-4 w-4 mr-1" />
+              Confirm Reopen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    );
+  };
+
   const renderButton = (ns: InventoryState) => {
     if (ns === 'approved') return renderApprovalDialog(ns);
+    // Reopen flow: completed → in_production
+    if (currentState === 'completed' && ns === 'in_production') return renderReopenDialog(ns);
     const nsConfig = getStateConfig(ns);
     return (
       <Button

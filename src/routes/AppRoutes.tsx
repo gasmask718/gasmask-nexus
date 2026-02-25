@@ -329,6 +329,7 @@ import SupplierYieldPage from '@/pages/portals/SupplierYieldPage';
 import SalesVelocityPage from '@/pages/portals/SalesVelocityPage';
 import ProductionWarRoom from '@/pages/portals/production/ProductionWarRoom';
 import WorkerTaskTimerPage from '@/pages/portals/production/WorkerTaskTimerPage';
+import CostHistoryPage from '@/pages/production/CostHistoryPage';
 
 // HR
 import HR from '@/pages/HR';
@@ -1572,6 +1573,7 @@ export default function AppRoutes() {
         <Route path="/portals/production/sales-velocity" element={<SalesVelocityPage />} />
         <Route path="/portals/production/war-room" element={<ProductionWarRoom />} />
         <Route path="/portals/production/task-timer" element={<WorkerTaskTimerPage />} />
+        <Route path="/production/cost-history" element={<CostHistoryPage />} />
         <Route path="/portals/va" element={<VAPortalPage />} />
         <Route path="/portals/customer" element={<CustomerPortalPage />} />
         <Route path="/portals/national-wholesale" element={<NationalWholesalePortalPage />} />
