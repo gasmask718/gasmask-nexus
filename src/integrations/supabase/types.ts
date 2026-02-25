@@ -8184,68 +8184,92 @@ export type Database = {
       batch_cost_history: {
         Row: {
           approved_by: string | null
+          bag_weight_grams: number | null
           batch_id: string
           boxes_produced: number | null
+          conversion_boxes_per_lb_snapshot: number | null
           cost_per_box: number | null
+          cost_per_lb: number | null
           cost_snapshot_created_at: string
           created_at: string
           id: string
           is_immutable: boolean
           labor_cost: number | null
           labor_model: Database["public"]["Enums"]["labor_model"] | null
+          margin_pct: number | null
           office_id: string | null
           overhead_cost: number | null
           override_reason: string | null
           packaging_cost: number | null
           previous_version_id: string | null
           product_type: string
+          profit_per_lb: number | null
+          revenue_per_lb: number | null
           tobacco_cost: number | null
           total_batch_cost: number | null
+          tube_size: string | null
           version: number
+          wholesale_price_per_box_snapshot: number | null
           worker_count: number | null
         }
         Insert: {
           approved_by?: string | null
+          bag_weight_grams?: number | null
           batch_id: string
           boxes_produced?: number | null
+          conversion_boxes_per_lb_snapshot?: number | null
           cost_per_box?: number | null
+          cost_per_lb?: number | null
           cost_snapshot_created_at?: string
           created_at?: string
           id?: string
           is_immutable?: boolean
           labor_cost?: number | null
           labor_model?: Database["public"]["Enums"]["labor_model"] | null
+          margin_pct?: number | null
           office_id?: string | null
           overhead_cost?: number | null
           override_reason?: string | null
           packaging_cost?: number | null
           previous_version_id?: string | null
           product_type?: string
+          profit_per_lb?: number | null
+          revenue_per_lb?: number | null
           tobacco_cost?: number | null
           total_batch_cost?: number | null
+          tube_size?: string | null
           version?: number
+          wholesale_price_per_box_snapshot?: number | null
           worker_count?: number | null
         }
         Update: {
           approved_by?: string | null
+          bag_weight_grams?: number | null
           batch_id?: string
           boxes_produced?: number | null
+          conversion_boxes_per_lb_snapshot?: number | null
           cost_per_box?: number | null
+          cost_per_lb?: number | null
           cost_snapshot_created_at?: string
           created_at?: string
           id?: string
           is_immutable?: boolean
           labor_cost?: number | null
           labor_model?: Database["public"]["Enums"]["labor_model"] | null
+          margin_pct?: number | null
           office_id?: string | null
           overhead_cost?: number | null
           override_reason?: string | null
           packaging_cost?: number | null
           previous_version_id?: string | null
           product_type?: string
+          profit_per_lb?: number | null
+          revenue_per_lb?: number | null
           tobacco_cost?: number | null
           total_batch_cost?: number | null
+          tube_size?: string | null
           version?: number
+          wholesale_price_per_box_snapshot?: number | null
           worker_count?: number | null
         }
         Relationships: [
@@ -8282,6 +8306,13 @@ export type Database = {
             columns: ["previous_version_id"]
             isOneToOne: false
             referencedRelation: "batch_cost_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "v_profit_per_lb_analysis"
             referencedColumns: ["id"]
           },
         ]
@@ -39543,6 +39574,7 @@ export type Database = {
           actual_completion_minutes: number | null
           avg_sticker_apply_seconds: number | null
           avg_tube_fill_seconds: number | null
+          bag_weight_grams: number | null
           batch_date: string | null
           boxes_equivalent: number | null
           boxes_full: number | null
@@ -39601,12 +39633,14 @@ export type Database = {
           total_empty_boxes_used: number | null
           total_stickers_used: number | null
           total_tubes_used: number | null
+          tube_size: string | null
           tubes_total: number | null
           units_remainder: number | null
           updated_at: string | null
           variance_notes: string | null
           variance_tubes: number | null
           waste_lbs: number | null
+          wholesale_price_per_box_snapshot: number | null
           worker_count: number | null
           workers_present: string[] | null
         }
@@ -39614,6 +39648,7 @@ export type Database = {
           actual_completion_minutes?: number | null
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
+          bag_weight_grams?: number | null
           batch_date?: string | null
           boxes_equivalent?: number | null
           boxes_full?: number | null
@@ -39672,12 +39707,14 @@ export type Database = {
           total_empty_boxes_used?: number | null
           total_stickers_used?: number | null
           total_tubes_used?: number | null
+          tube_size?: string | null
           tubes_total?: number | null
           units_remainder?: number | null
           updated_at?: string | null
           variance_notes?: string | null
           variance_tubes?: number | null
           waste_lbs?: number | null
+          wholesale_price_per_box_snapshot?: number | null
           worker_count?: number | null
           workers_present?: string[] | null
         }
@@ -39685,6 +39722,7 @@ export type Database = {
           actual_completion_minutes?: number | null
           avg_sticker_apply_seconds?: number | null
           avg_tube_fill_seconds?: number | null
+          bag_weight_grams?: number | null
           batch_date?: string | null
           boxes_equivalent?: number | null
           boxes_full?: number | null
@@ -39743,12 +39781,14 @@ export type Database = {
           total_empty_boxes_used?: number | null
           total_stickers_used?: number | null
           total_tubes_used?: number | null
+          tube_size?: string | null
           tubes_total?: number | null
           units_remainder?: number | null
           updated_at?: string | null
           variance_notes?: string | null
           variance_tubes?: number | null
           waste_lbs?: number | null
+          wholesale_price_per_box_snapshot?: number | null
           worker_count?: number | null
           workers_present?: string[] | null
         }
@@ -42059,6 +42099,79 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      profit_per_lb_snapshots: {
+        Row: {
+          bag_weight_grams: number | null
+          batch_id: string | null
+          boxes_per_lb: number
+          cost_per_lb: number
+          created_at: string
+          id: string
+          is_immutable: boolean
+          margin_pct: number
+          office_id: string | null
+          product_type: string
+          profit_per_lb: number
+          revenue_per_lb: number
+          snapshot_created_at: string
+          tube_size: string | null
+        }
+        Insert: {
+          bag_weight_grams?: number | null
+          batch_id?: string | null
+          boxes_per_lb?: number
+          cost_per_lb?: number
+          created_at?: string
+          id?: string
+          is_immutable?: boolean
+          margin_pct?: number
+          office_id?: string | null
+          product_type?: string
+          profit_per_lb?: number
+          revenue_per_lb?: number
+          snapshot_created_at?: string
+          tube_size?: string | null
+        }
+        Update: {
+          bag_weight_grams?: number | null
+          batch_id?: string | null
+          boxes_per_lb?: number
+          cost_per_lb?: number
+          created_at?: string
+          id?: string
+          is_immutable?: boolean
+          margin_pct?: number
+          office_id?: string | null
+          product_type?: string
+          profit_per_lb?: number
+          revenue_per_lb?: number
+          snapshot_created_at?: string
+          tube_size?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profit_per_lb_snapshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profit_per_lb_snapshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "profit_per_lb_snapshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+        ]
       }
       promotion_approvals: {
         Row: {
@@ -60612,6 +60725,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "production_batches_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_profit_per_lb_analysis: {
+        Row: {
+          bag_weight_grams: number | null
+          batch_id: string | null
+          boxes_per_lb: number | null
+          boxes_produced: number | null
+          cost_per_box: number | null
+          cost_per_lb: number | null
+          cost_snapshot_created_at: string | null
+          id: string | null
+          labor_cost: number | null
+          labor_model: Database["public"]["Enums"]["labor_model"] | null
+          margin_pct: number | null
+          office_id: string | null
+          product_type: string | null
+          profit_per_lb: number | null
+          revenue_per_lb: number | null
+          total_batch_cost: number | null
+          tube_size: string | null
+          version: number | null
+          wholesale_price_per_box_snapshot: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "production_offices"

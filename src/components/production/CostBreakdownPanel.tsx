@@ -257,7 +257,12 @@ export function CostBreakdownPanel({ officeId }: CostBreakdownPanelProps) {
     if (laborModel === 'per_box') perBoxSnap = useSpecificWorkers ? (weightedPerBoxRate / Math.max(selectedWorkerIds.length, 1)) : form.labor_rate_per_hour;
     if (laborModel === 'flat_day') flatDaySnap = useSpecificWorkers ? (weightedFlatDayRate / Math.max(selectedWorkerIds.length, 1)) : form.labor_rate_per_hour;
 
-    // Update batch with labor model + snapshots
+    // Calculate conversion snapshot (boxes per lb)
+    const tobaccoLbs = (selectedBatch as any)?.tobacco_lbs || 0;
+    const conversionBoxesPerLb = tobaccoLbs > 0 && boxesProduced > 0
+      ? boxesProduced / tobaccoLbs : 0;
+
+    // Update batch with labor model + snapshots + conversion/revenue snapshots
     await supabase
       .from('production_batches')
       .update({
@@ -267,6 +272,8 @@ export function CostBreakdownPanel({ officeId }: CostBreakdownPanelProps) {
         labor_hourly_rate_snapshot: hourlySnap,
         labor_per_box_rate_snapshot: perBoxSnap,
         labor_flat_day_rate_snapshot: flatDaySnap,
+        conversion_boxes_per_lb_snapshot: conversionBoxesPerLb > 0 ? conversionBoxesPerLb : null,
+        wholesale_price_per_box_snapshot: form.wholesale_price_per_box > 0 ? form.wholesale_price_per_box : null,
       })
       .eq('id', selectedBatchId);
   };

@@ -28,6 +28,14 @@ export interface BatchCostHistoryRecord {
   version: number;
   override_reason: string | null;
   previous_version_id: string | null;
+  tube_size: string | null;
+  bag_weight_grams: number | null;
+  conversion_boxes_per_lb_snapshot: number | null;
+  wholesale_price_per_box_snapshot: number | null;
+  cost_per_lb: number;
+  revenue_per_lb: number;
+  profit_per_lb: number;
+  margin_pct: number;
   created_at: string;
 }
 
@@ -97,7 +105,7 @@ export function useCreateCostSnapshot() {
       // Get batch data
       const { data: batch, error: batchErr } = await supabase
         .from('production_batches')
-        .select('id, product_type, boxes_produced, boxes_equivalent, labor_model, worker_count, selected_worker_ids, labor_hourly_rate_snapshot, labor_per_box_rate_snapshot, labor_flat_day_rate_snapshot, production_time_minutes, changeover_minutes')
+        .select('id, product_type, boxes_produced, boxes_equivalent, labor_model, worker_count, selected_worker_ids, labor_hourly_rate_snapshot, labor_per_box_rate_snapshot, labor_flat_day_rate_snapshot, production_time_minutes, changeover_minutes, tube_size, bag_weight_grams, conversion_boxes_per_lb_snapshot, wholesale_price_per_box_snapshot, tobacco_lbs')
         .eq('id', params.batchId)
         .single();
       if (batchErr || !batch) throw new Error('Batch not found');
@@ -162,6 +170,18 @@ export function useCreateCostSnapshot() {
         }
       }
 
+      // Profit per lb calculations
+      const tubeSize = (batch as any).tube_size || null;
+      const bagWeightGrams = (batch as any).bag_weight_grams || null;
+      const conversionBoxesPerLb = (batch as any).conversion_boxes_per_lb_snapshot || 0;
+      const wholesalePricePerBox = (batch as any).wholesale_price_per_box_snapshot || 0;
+
+      const costPerLb = conversionBoxesPerLb > 0 ? costPerBox * conversionBoxesPerLb : 0;
+      const revenuePerLb = conversionBoxesPerLb > 0 && wholesalePricePerBox > 0
+        ? wholesalePricePerBox * conversionBoxesPerLb : 0;
+      const profitPerLb = revenuePerLb - costPerLb;
+      const marginPct = revenuePerLb > 0 ? (profitPerLb / revenuePerLb) * 100 : 0;
+
       const { data, error } = await supabase
         .from('batch_cost_history')
         .insert({
@@ -181,11 +201,36 @@ export function useCreateCostSnapshot() {
           version,
           override_reason: params.overrideReason || null,
           previous_version_id: previousVersionId,
+          tube_size: tubeSize,
+          bag_weight_grams: bagWeightGrams,
+          conversion_boxes_per_lb_snapshot: conversionBoxesPerLb,
+          wholesale_price_per_box_snapshot: wholesalePricePerBox,
+          cost_per_lb: Math.round(costPerLb * 100) / 100,
+          revenue_per_lb: Math.round(revenuePerLb * 100) / 100,
+          profit_per_lb: Math.round(profitPerLb * 100) / 100,
+          margin_pct: Math.round(marginPct * 100) / 100,
         })
         .select()
         .single();
 
       if (error) throw error;
+
+      // Also insert into profit_per_lb_snapshots for historical analysis
+      if (conversionBoxesPerLb > 0) {
+        await supabase.from('profit_per_lb_snapshots' as any).insert({
+          batch_id: params.batchId,
+          office_id: params.officeId,
+          product_type: (batch as any).product_type || 'tubes',
+          tube_size: tubeSize,
+          bag_weight_grams: bagWeightGrams,
+          boxes_per_lb: conversionBoxesPerLb,
+          cost_per_lb: Math.round(costPerLb * 100) / 100,
+          revenue_per_lb: Math.round(revenuePerLb * 100) / 100,
+          profit_per_lb: Math.round(profitPerLb * 100) / 100,
+          margin_pct: Math.round(marginPct * 100) / 100,
+        });
+      }
+
       return data;
     },
     onSuccess: (_, vars) => {
