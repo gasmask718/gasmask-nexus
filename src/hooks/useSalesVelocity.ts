@@ -16,6 +16,7 @@ export interface SkuSalesVelocity {
 
 export interface InventoryCoverage {
   brand: string;
+  product_type: string;
   current_boxes_available: number;
   units_sold_last_7_days: number;
   units_sold_last_14_days: number;
@@ -28,8 +29,13 @@ export interface InventoryCoverage {
   required_boxes_for_30_days: number;
   recommended_lbs_to_produce: number | null;
   raw_inventory_lbs: number;
+  raw_reserved_lbs: number;
+  raw_unallocated_lbs: number;
+  raw_safe_lbs: number;
+  unallocated_pct: number;
   procurement_needed_lbs: number | null;
   is_overstock: boolean;
+  auto_draft_blocked: boolean;
   baseline_boxes_per_lb: number | null;
   baseline_lbs_per_box: number | null;
 }

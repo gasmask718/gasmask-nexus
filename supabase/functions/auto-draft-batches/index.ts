@@ -16,12 +16,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // Query brands needing production
+    // Query brands needing production (stability mode: skip auto_draft_blocked)
     const { data: coverage, error: covError } = await supabase
       .from('v_inventory_coverage_intelligence')
       .select('*')
       .gt('recommended_lbs_to_produce', 0)
-      .in('risk_level', ['red', 'critical']);
+      .in('risk_level', ['red', 'critical'])
+      .eq('auto_draft_blocked', false);
 
     if (covError) throw covError;
 

@@ -38710,6 +38710,53 @@ export type Database = {
           },
         ]
       }
+      procurement_recommendation_logs: {
+        Row: {
+          auto_draft_blocked: boolean
+          brand: string
+          buffer_pct: number
+          created_at: string
+          id: string
+          office_id: string | null
+          procurement_needed_lbs: number
+          product_type: string
+          raw_safe_lbs: number
+          recommended_lbs_to_produce: number
+        }
+        Insert: {
+          auto_draft_blocked?: boolean
+          brand: string
+          buffer_pct?: number
+          created_at?: string
+          id?: string
+          office_id?: string | null
+          procurement_needed_lbs?: number
+          product_type?: string
+          raw_safe_lbs?: number
+          recommended_lbs_to_produce?: number
+        }
+        Update: {
+          auto_draft_blocked?: boolean
+          brand?: string
+          buffer_pct?: number
+          created_at?: string
+          id?: string
+          office_id?: string | null
+          procurement_needed_lbs?: number
+          product_type?: string
+          raw_safe_lbs?: number
+          recommended_lbs_to_produce?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_recommendation_logs_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_conversions: {
         Row: {
           base_unit: string
@@ -59219,6 +59266,7 @@ export type Database = {
       }
       v_inventory_coverage_intelligence: {
         Row: {
+          auto_draft_blocked: boolean | null
           avg_daily_velocity_14d: number | null
           avg_daily_velocity_30d: number | null
           baseline_boxes_per_lb: number | null
@@ -59231,9 +59279,13 @@ export type Database = {
           procurement_needed_lbs: number | null
           product_type: string | null
           raw_inventory_lbs: number | null
+          raw_reserved_lbs: number | null
+          raw_safe_lbs: number | null
+          raw_unallocated_lbs: number | null
           recommended_lbs_to_produce: number | null
           required_boxes_for_30_days: number | null
           risk_level: string | null
+          unallocated_pct: number | null
           units_sold_last_14_days: number | null
           units_sold_last_30_days: number | null
           units_sold_last_7_days: number | null
@@ -60110,6 +60162,18 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      v_raw_inventory_available_by_product: {
+        Row: {
+          available_for_product_lbs: number | null
+          office_id: string | null
+          product_type: string | null
+          reserved_lbs: number | null
+          total_lbs_available: number | null
+          unallocated_lbs: number | null
+          unallocated_pct: number | null
+        }
+        Relationships: []
       }
       v_recalc_queue_health: {
         Row: {
