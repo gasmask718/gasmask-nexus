@@ -99,6 +99,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
 
   const buildRecords = (businesses: YelpBusiness[]) =>
     businesses.map(b => ({
+      store_name: b.name,
       full_address: b.location.display_address.join(', '),
       city: b.location.city,
       state: b.location.state,
@@ -199,6 +200,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
           const { error } = await supabase
             .from('territory_addresses')
             .update({
+              store_name: newRecord.store_name,
               latitude: newRecord.latitude,
               longitude: newRecord.longitude,
               notes: newRecord.notes,

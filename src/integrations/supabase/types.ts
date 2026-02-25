@@ -50228,6 +50228,7 @@ export type Database = {
           neighborhood_id: string | null
           notes: string | null
           state: string
+          store_name: string | null
           updated_at: string
           verified_sells_grabba: boolean | null
           zip: string | null
@@ -50246,6 +50247,7 @@ export type Database = {
           neighborhood_id?: string | null
           notes?: string | null
           state: string
+          store_name?: string | null
           updated_at?: string
           verified_sells_grabba?: boolean | null
           zip?: string | null
@@ -50264,6 +50266,7 @@ export type Database = {
           neighborhood_id?: string | null
           notes?: string | null
           state?: string
+          store_name?: string | null
           updated_at?: string
           verified_sells_grabba?: boolean | null
           zip?: string | null

@@ -23,18 +23,20 @@ const STATUS_COLORS: Record<string, string> = {
 export function TerritoryStoresTable({ cityFilter, stateFilter }: TerritoryStoresTableProps) {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [sourceFilter, setSourceFilter] = useState('all');
 
   const { data: addresses, isLoading } = useQuery({
-    queryKey: ['territory-addresses-table', cityFilter, stateFilter],
+    queryKey: ['territory-addresses-table', cityFilter, stateFilter, sourceFilter],
     queryFn: async () => {
       let query = supabase
         .from('territory_addresses')
-        .select('id, full_address, city, state, zip, discovery_status, discovered_by, address_type, notes, verified_sells_grabba, last_checked_at, created_at')
+        .select('id, store_name, full_address, city, state, zip, discovery_status, discovered_by, address_type, verified_sells_grabba, last_checked_at, created_at')
         .order('created_at', { ascending: false })
         .limit(500);
 
       if (cityFilter !== 'all') query = query.eq('city', cityFilter);
       if (stateFilter !== 'all') query = query.eq('state', stateFilter);
+      if (sourceFilter !== 'all') query = query.eq('discovered_by', sourceFilter);
 
       const { data, error } = await query;
       if (error) throw error;
@@ -47,9 +49,9 @@ export function TerritoryStoresTable({ cityFilter, stateFilter }: TerritoryStore
     if (search.trim()) {
       const q = search.toLowerCase();
       return (
+        (a.store_name || '').toLowerCase().includes(q) ||
         (a.full_address || '').toLowerCase().includes(q) ||
-        (a.discovered_by || '').toLowerCase().includes(q) ||
-        (a.notes || '').toLowerCase().includes(q)
+        (a.discovered_by || '').toLowerCase().includes(q)
       );
     }
     return true;
@@ -58,6 +60,12 @@ export function TerritoryStoresTable({ cityFilter, stateFilter }: TerritoryStore
   const statusCounts = (addresses || []).reduce<Record<string, number>>((acc, a) => {
     const st = a.discovery_status || 'new';
     acc[st] = (acc[st] || 0) + 1;
+    return acc;
+  }, {});
+
+  const sourceCounts = (addresses || []).reduce<Record<string, number>>((acc, a) => {
+    const src = a.discovered_by || 'unknown';
+    acc[src] = (acc[src] || 0) + 1;
     return acc;
   }, {});
 
@@ -74,10 +82,10 @@ export function TerritoryStoresTable({ cityFilter, stateFilter }: TerritoryStore
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Search addresses..."
+                placeholder="Search store name or address..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 h-8 w-[200px] text-sm"
+                className="pl-8 h-8 w-[220px] text-sm"
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -91,6 +99,18 @@ export function TerritoryStoresTable({ cityFilter, stateFilter }: TerritoryStore
                     {status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())} ({count})
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={sourceFilter} onValueChange={setSourceFilter}>
+              <SelectTrigger className="w-[180px] h-8 text-sm">
+                <SelectValue placeholder="Source" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sources ({addresses?.length || 0})</SelectItem>
+                <SelectItem value="yelp">Yelp ({sourceCounts.yelp || 0})</SelectItem>
+                <SelectItem value="openstreetmap">OpenStreetMap ({sourceCounts.openstreetmap || 0})</SelectItem>
+                <SelectItem value="google_places">Google Places ({sourceCounts.google_places || 0})</SelectItem>
+                <SelectItem value="import">CSV/Import ({sourceCounts.import || 0})</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -108,61 +128,59 @@ export function TerritoryStoresTable({ cityFilter, stateFilter }: TerritoryStore
               : 'No addresses match your search/filter criteria.'}
           </p>
         ) : (
-          <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Full Address</TableHead>
-                  <TableHead>City / State</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Discovered By</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Sells Grabba</TableHead>
-                  <TableHead>Last Checked</TableHead>
-                  <TableHead>Notes</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map((addr) => (
-                  <TableRow key={addr.id}>
-                    <TableCell className="font-medium max-w-[220px] truncate">{addr.full_address || '—'}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {addr.city || '—'}, {addr.state || ''} {addr.zip || ''}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={STATUS_COLORS[addr.discovery_status || ''] || ''}>
-                        {(addr.discovery_status || 'new').replace('_', ' ')}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {addr.discovered_by ? (
-                        <span className="flex items-center gap-1 text-sm">
-                          <Eye className="h-3 w-3 text-muted-foreground" />
-                          {addr.discovered_by}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs">{addr.address_type || '—'}</TableCell>
-                    <TableCell>
-                      {addr.verified_sells_grabba ? (
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {addr.last_checked_at ? new Date(addr.last_checked_at).toLocaleDateString() : '—'}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[150px] truncate">
-                      {addr.notes || '—'}
-                    </TableCell>
+            <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Store Name</TableHead>
+                    <TableHead>Full Address</TableHead>
+                    <TableHead>City / State</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Discovered By</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Sells Grabba</TableHead>
+                    <TableHead>Last Checked</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((addr) => (
+                    <TableRow key={addr.id}>
+                      <TableCell className="font-medium max-w-[180px] truncate">{addr.store_name || '—'}</TableCell>
+                      <TableCell className="font-medium max-w-[240px] truncate">{addr.full_address || '—'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {addr.city || '—'}, {addr.state || ''} {addr.zip || ''}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={STATUS_COLORS[addr.discovery_status || ''] || ''}>
+                          {(addr.discovery_status || 'new').replace('_', ' ')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {addr.discovered_by ? (
+                          <span className="flex items-center gap-1 text-sm">
+                            <Eye className="h-3 w-3 text-muted-foreground" />
+                            {addr.discovered_by}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">{addr.address_type || '—'}</TableCell>
+                      <TableCell>
+                        {addr.verified_sells_grabba ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {addr.last_checked_at ? new Date(addr.last_checked_at).toLocaleDateString() : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
         )}
       </CardContent>
     </Card>

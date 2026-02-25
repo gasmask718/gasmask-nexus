@@ -31,6 +31,7 @@ export type DuplicateAction = 'add' | 'update' | 'replace' | 'skip';
 export interface DuplicateRecord {
   /** The new record about to be ingested */
   newRecord: {
+    store_name?: string;
     full_address: string;
     city: string;
     state: string;

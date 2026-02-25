@@ -279,6 +279,7 @@ serve(async (req) => {
             if (existing && existing.length > 0) { result.skipped++; continue; }
 
             const insertData: Record<string, any> = {
+              store_name: biz.name || null,
               full_address: addr,
               city: biz.location?.city || city,
               state: biz.location?.state || state,
@@ -371,6 +372,7 @@ serve(async (req) => {
           if (existing && existing.length > 0) { totalSkipped++; continue; }
 
           const { error } = await supabase.from('territory_addresses').insert({
+            store_name: biz.name || null,
             full_address: addr,
             city: biz.location?.city || city,
             state: biz.location?.state || state,
