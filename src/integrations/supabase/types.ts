@@ -8181,6 +8181,95 @@ export type Database = {
         }
         Relationships: []
       }
+      batch_cost_history: {
+        Row: {
+          approved_by: string | null
+          batch_id: string
+          boxes_produced: number | null
+          cost_per_box: number | null
+          cost_snapshot_created_at: string
+          created_at: string
+          id: string
+          is_immutable: boolean
+          labor_cost: number | null
+          labor_model: Database["public"]["Enums"]["labor_model"] | null
+          office_id: string | null
+          overhead_cost: number | null
+          packaging_cost: number | null
+          product_type: string
+          tobacco_cost: number | null
+          total_batch_cost: number | null
+          worker_count: number | null
+        }
+        Insert: {
+          approved_by?: string | null
+          batch_id: string
+          boxes_produced?: number | null
+          cost_per_box?: number | null
+          cost_snapshot_created_at?: string
+          created_at?: string
+          id?: string
+          is_immutable?: boolean
+          labor_cost?: number | null
+          labor_model?: Database["public"]["Enums"]["labor_model"] | null
+          office_id?: string | null
+          overhead_cost?: number | null
+          packaging_cost?: number | null
+          product_type?: string
+          tobacco_cost?: number | null
+          total_batch_cost?: number | null
+          worker_count?: number | null
+        }
+        Update: {
+          approved_by?: string | null
+          batch_id?: string
+          boxes_produced?: number | null
+          cost_per_box?: number | null
+          cost_snapshot_created_at?: string
+          created_at?: string
+          id?: string
+          is_immutable?: boolean
+          labor_cost?: number | null
+          labor_model?: Database["public"]["Enums"]["labor_model"] | null
+          office_id?: string | null
+          overhead_cost?: number | null
+          packaging_cost?: number | null
+          product_type?: string
+          tobacco_cost?: number | null
+          total_batch_cost?: number | null
+          worker_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "batch_cost_history_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       batch_upload_history: {
         Row: {
           brands_detected: string[] | null
@@ -29689,6 +29778,9 @@ export type Database = {
       labor_performance_snapshots: {
         Row: {
           avg_minutes_per_1000: number
+          compensation_mode:
+            | Database["public"]["Enums"]["compensation_mode"]
+            | null
           id: string
           office_id: string
           performance_score: number
@@ -29702,6 +29794,9 @@ export type Database = {
         }
         Insert: {
           avg_minutes_per_1000: number
+          compensation_mode?:
+            | Database["public"]["Enums"]["compensation_mode"]
+            | null
           id?: string
           office_id: string
           performance_score?: number
@@ -29715,6 +29810,9 @@ export type Database = {
         }
         Update: {
           avg_minutes_per_1000?: number
+          compensation_mode?:
+            | Database["public"]["Enums"]["compensation_mode"]
+            | null
           id?: string
           office_id?: string
           performance_score?: number
@@ -39453,6 +39551,10 @@ export type Database = {
           id: string
           inventory_state: string
           is_locked: boolean | null
+          labor_flat_day_rate_snapshot: number | null
+          labor_hourly_rate_snapshot: number | null
+          labor_model: Database["public"]["Enums"]["labor_model"] | null
+          labor_per_box_rate_snapshot: number | null
           locked_at: string | null
           locked_by: string | null
           net_production_minutes: number | null
@@ -39464,6 +39566,7 @@ export type Database = {
           production_end_timestamp: string | null
           production_start_timestamp: string | null
           production_time_minutes: number | null
+          selected_worker_ids: string[] | null
           shift_label: string | null
           status: string | null
           stickers_issued: Json | null
@@ -39488,6 +39591,7 @@ export type Database = {
           variance_notes: string | null
           variance_tubes: number | null
           waste_lbs: number | null
+          worker_count: number | null
           workers_present: string[] | null
         }
         Insert: {
@@ -39518,6 +39622,10 @@ export type Database = {
           id?: string
           inventory_state?: string
           is_locked?: boolean | null
+          labor_flat_day_rate_snapshot?: number | null
+          labor_hourly_rate_snapshot?: number | null
+          labor_model?: Database["public"]["Enums"]["labor_model"] | null
+          labor_per_box_rate_snapshot?: number | null
           locked_at?: string | null
           locked_by?: string | null
           net_production_minutes?: number | null
@@ -39529,6 +39637,7 @@ export type Database = {
           production_end_timestamp?: string | null
           production_start_timestamp?: string | null
           production_time_minutes?: number | null
+          selected_worker_ids?: string[] | null
           shift_label?: string | null
           status?: string | null
           stickers_issued?: Json | null
@@ -39553,6 +39662,7 @@ export type Database = {
           variance_notes?: string | null
           variance_tubes?: number | null
           waste_lbs?: number | null
+          worker_count?: number | null
           workers_present?: string[] | null
         }
         Update: {
@@ -39583,6 +39693,10 @@ export type Database = {
           id?: string
           inventory_state?: string
           is_locked?: boolean | null
+          labor_flat_day_rate_snapshot?: number | null
+          labor_hourly_rate_snapshot?: number | null
+          labor_model?: Database["public"]["Enums"]["labor_model"] | null
+          labor_per_box_rate_snapshot?: number | null
           locked_at?: string | null
           locked_by?: string | null
           net_production_minutes?: number | null
@@ -39594,6 +39708,7 @@ export type Database = {
           production_end_timestamp?: string | null
           production_start_timestamp?: string | null
           production_time_minutes?: number | null
+          selected_worker_ids?: string[] | null
           shift_label?: string | null
           status?: string | null
           stickers_issued?: Json | null
@@ -39618,6 +39733,7 @@ export type Database = {
           variance_notes?: string | null
           variance_tubes?: number | null
           waste_lbs?: number | null
+          worker_count?: number | null
           workers_present?: string[] | null
         }
         Relationships: [
@@ -41483,13 +41599,16 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string | null
+          flat_day_rate: number | null
           full_name: string
           hire_date: string | null
+          hourly_rate: number | null
           id: string
           notes: string | null
           office_id: string
           pay_rate: number
           pay_type: string
+          per_box_rate: number | null
           person_id: string | null
           phone: string | null
           role: string
@@ -41500,13 +41619,16 @@ export type Database = {
         Insert: {
           created_at?: string | null
           email?: string | null
+          flat_day_rate?: number | null
           full_name: string
           hire_date?: string | null
+          hourly_rate?: number | null
           id?: string
           notes?: string | null
           office_id: string
           pay_rate?: number
           pay_type?: string
+          per_box_rate?: number | null
           person_id?: string | null
           phone?: string | null
           role: string
@@ -41517,13 +41639,16 @@ export type Database = {
         Update: {
           created_at?: string | null
           email?: string | null
+          flat_day_rate?: number | null
           full_name?: string
           hire_date?: string | null
+          hourly_rate?: number | null
           id?: string
           notes?: string | null
           office_id?: string
           pay_rate?: number
           pay_type?: string
+          per_box_rate?: number | null
           person_id?: string | null
           phone?: string | null
           role?: string
@@ -59061,6 +59186,29 @@ export type Database = {
           },
         ]
       }
+      v_batch_cost_summary: {
+        Row: {
+          avg_cost_per_box: number | null
+          batch_count: number | null
+          labor_pct_of_total: number | null
+          office_id: string | null
+          office_name: string | null
+          product_type: string | null
+          rolling_30d_avg_cost_per_box: number | null
+          total_boxes: number | null
+          total_cost: number | null
+          total_labor_cost: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_cost_history_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_batch_labor_summary: {
         Row: {
           avg_normalized_minutes_per_1000: number | null
@@ -62963,6 +63111,7 @@ export type Database = {
         | "approved"
         | "rejected"
         | "resolved"
+      compensation_mode: "none" | "hourly" | "per_box" | "flat"
       conflict_class:
         | "temporal"
         | "resource"
@@ -63027,6 +63176,7 @@ export type Database = {
       inbound_route_type: "user" | "role" | "voicemail"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       invite_status: "sent" | "accepted" | "expired" | "revoked"
+      labor_model: "hourly" | "per_box" | "flat_day"
       lead_source:
         | "probate"
         | "pre_foreclosure"
@@ -63528,6 +63678,7 @@ export const Constants = {
         "rejected",
         "resolved",
       ],
+      compensation_mode: ["none", "hourly", "per_box", "flat"],
       conflict_class: [
         "temporal",
         "resource",
@@ -63600,6 +63751,7 @@ export const Constants = {
       inbound_route_type: ["user", "role", "voicemail"],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       invite_status: ["sent", "accepted", "expired", "revoked"],
+      labor_model: ["hourly", "per_box", "flat_day"],
       lead_source: [
         "probate",
         "pre_foreclosure",
