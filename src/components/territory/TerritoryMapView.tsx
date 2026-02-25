@@ -1,17 +1,18 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { territories } from '@/components/map/territories';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { X, Search, MapPin, CheckCircle, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { X, Search, MapPin, CheckCircle, Eye, Filter } from 'lucide-react';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_PUBLIC_TOKEN;
 
+// Reverse map: given a city name, resolve to its canonical borough
 const BOROUGH_CITY_MAP: Record<string, string[]> = {
   'Bronx': ['Bronx', 'bronx'],
   'Brooklyn': ['Brooklyn', 'brooklyn'],
@@ -19,6 +20,14 @@ const BOROUGH_CITY_MAP: Record<string, string[]> = {
   'Manhattan': ['Manhattan', 'New York', 'New york', 'new york', 'NYC'],
   'Staten Island': ['Staten Island', 'staten island'],
 };
+
+function resolveBoroughForCity(city: string): string {
+  const lower = city.toLowerCase();
+  for (const [borough, cities] of Object.entries(BOROUGH_CITY_MAP)) {
+    if (cities.some(c => c.toLowerCase() === lower)) return borough;
+  }
+  return city; // no match → use city as its own territory name
+}
 
 interface TerritoryAddress {
   id: string;
@@ -36,6 +45,19 @@ interface TerritoryAddress {
   last_checked_at: string | null;
   created_at: string | null;
 }
+
+interface DynamicTerritory {
+  name: string;
+  color: string;
+  coordinates: [number, number][][];
+  center: [number, number];
+  count: number;
+}
+
+const TERRITORY_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#6366f1',
+  '#ec4899', '#14b8a6', '#8b5cf6', '#f43f5e', '#06b6d4',
+];
 
 const statusColor = (s: string | null) => {
   if (!s) return '#6b7280';
@@ -55,12 +77,64 @@ const statusBadgeVariant = (s: string | null): 'default' | 'secondary' | 'destru
   return 'secondary';
 };
 
+/** Compute convex hull of 2D points using Andrew's monotone chain */
+function convexHull(points: [number, number][]): [number, number][] {
+  if (points.length < 3) {
+    // For 1-2 points, create a small buffer polygon
+    if (points.length === 0) return [];
+    const [cx, cy] = points.length === 1
+      ? points[0]
+      : [(points[0][0] + points[1][0]) / 2, (points[0][1] + points[1][1]) / 2];
+    const r = 0.005; // ~500m buffer
+    return [
+      [cx - r, cy - r], [cx + r, cy - r],
+      [cx + r, cy + r], [cx - r, cy + r],
+      [cx - r, cy - r],
+    ];
+  }
+
+  const sorted = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (O: [number, number], A: [number, number], B: [number, number]) =>
+    (A[0] - O[0]) * (B[1] - O[1]) - (A[1] - O[1]) * (B[0] - O[0]);
+
+  const lower: [number, number][] = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: [number, number][] = [];
+  for (const p of sorted.reverse()) {
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  upper.pop();
+  lower.pop();
+  const hull = lower.concat(upper);
+  // Close the ring
+  if (hull.length > 0) hull.push(hull[0]);
+  return hull;
+}
+
+/** Add a small padding to convex hull by expanding outward from centroid */
+function padHull(hull: [number, number][], factor = 0.08): [number, number][] {
+  if (hull.length < 4) return hull;
+  const cx = hull.slice(0, -1).reduce((s, p) => s + p[0], 0) / (hull.length - 1);
+  const cy = hull.slice(0, -1).reduce((s, p) => s + p[1], 0) / (hull.length - 1);
+  return hull.map(([x, y]) => [
+    cx + (x - cx) * (1 + factor),
+    cy + (y - cy) * (1 + factor),
+  ] as [number, number]);
+}
+
 export function TerritoryMapView() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const layerIdsRef = useRef<string[]>([]);
   const [selectedTerritory, setSelectedTerritory] = useState<string | null>(null);
+  const [filterTerritory, setFilterTerritory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   const { data: addresses = [] } = useQuery({
     queryKey: ['territory-map-addresses'],
@@ -75,14 +149,45 @@ export function TerritoryMapView() {
     },
   });
 
-  // Filter addresses for selected territory
+  // Build dynamic territories from address data via convex hull
+  const dynamicTerritories = useMemo((): DynamicTerritory[] => {
+    if (addresses.length === 0) return [];
+
+    // Group addresses by resolved borough/territory
+    const groups: Record<string, [number, number][]> = {};
+    addresses.forEach(a => {
+      if (a.latitude == null || a.longitude == null) return;
+      const territory = resolveBoroughForCity(a.city || 'Unknown');
+      if (!groups[territory]) groups[territory] = [];
+      groups[territory].push([a.longitude, a.latitude]);
+    });
+
+    // Generate convex hull per territory
+    const names = Object.keys(groups).sort();
+    return names.map((name, i) => {
+      const points = groups[name];
+      const hull = padHull(convexHull(points));
+      const cx = points.reduce((s, p) => s + p[0], 0) / points.length;
+      const cy = points.reduce((s, p) => s + p[1], 0) / points.length;
+      return {
+        name,
+        color: TERRITORY_COLORS[i % TERRITORY_COLORS.length],
+        coordinates: [hull],
+        center: [cx, cy] as [number, number],
+        count: points.length,
+      };
+    });
+  }, [addresses]);
+
+  // Available territory names for filter dropdown
+  const territoryNames = useMemo(() => dynamicTerritories.map(t => t.name), [dynamicTerritories]);
+
+  // Filtered addresses for the selected territory panel
   const territoryAddresses = useMemo(() => {
     if (!selectedTerritory) return [];
-    const cities = BOROUGH_CITY_MAP[selectedTerritory] || [selectedTerritory];
-    const citySet = new Set(cities.map(c => c.toLowerCase()));
     return addresses.filter(a => {
-      const city = (a.city || '').toLowerCase();
-      return citySet.has(city);
+      const resolved = resolveBoroughForCity(a.city || 'Unknown');
+      return resolved === selectedTerritory;
     });
   }, [selectedTerritory, addresses]);
 
@@ -109,53 +214,118 @@ export function TerritoryMapView() {
     });
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-
-    map.on('load', () => {
-      territories.forEach((t) => {
-        const sourceId = `territory-${t.id}`;
-        map.addSource(sourceId, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: { name: t.name, id: t.id },
-            geometry: { type: 'Polygon', coordinates: t.coordinates },
-          },
-        });
-
-        map.addLayer({
-          id: `${t.id}-fill`, type: 'fill', source: sourceId,
-          paint: { 'fill-color': t.color, 'fill-opacity': 0.15 },
-        });
-        map.addLayer({
-          id: `${t.id}-line`, type: 'line', source: sourceId,
-          paint: { 'line-color': t.color, 'line-width': 2, 'line-opacity': 0.8 },
-        });
-        map.addLayer({
-          id: `${t.id}-label`, type: 'symbol', source: sourceId,
-          layout: { 'text-field': t.name, 'text-size': 14, 'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'] },
-          paint: { 'text-color': t.color, 'text-halo-color': '#000', 'text-halo-width': 1 },
-        });
-
-        map.on('mouseenter', `${t.id}-fill`, () => {
-          map.getCanvas().style.cursor = 'pointer';
-          map.setPaintProperty(`${t.id}-fill`, 'fill-opacity', 0.35);
-        });
-        map.on('mouseleave', `${t.id}-fill`, () => {
-          map.getCanvas().style.cursor = '';
-          map.setPaintProperty(`${t.id}-fill`, 'fill-opacity', 0.15);
-        });
-        map.on('click', `${t.id}-fill`, () => {
-          setSelectedTerritory(t.name);
-          setSearchQuery('');
-        });
-      });
-    });
+    map.on('load', () => setMapLoaded(true));
 
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Render address markers
+  // Draw dynamic territory polygons whenever territories or filter changes
+  const drawTerritories = useCallback(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    // Remove old layers/sources
+    layerIdsRef.current.forEach(id => {
+      if (map.getLayer(id)) map.removeLayer(id);
+    });
+    layerIdsRef.current.forEach(id => {
+      const srcId = id.replace(/-fill$|-line$|-label$/, '');
+      if (map.getSource(`dyn-${srcId}`) && !layerIdsRef.current.some(
+        lid => lid !== id && lid.startsWith(srcId) && map.getLayer(lid)
+      )) {
+        // Don't remove source yet — handled below
+      }
+    });
+    // Brute remove all dyn sources
+    dynamicTerritories.forEach(t => {
+      const srcId = `dyn-${t.name}`;
+      [`${t.name}-fill`, `${t.name}-line`, `${t.name}-label`].forEach(lid => {
+        if (map.getLayer(lid)) map.removeLayer(lid);
+      });
+      if (map.getSource(srcId)) map.removeSource(srcId);
+    });
+    // Also remove any stale sources from previous renders
+    layerIdsRef.current.forEach(lid => {
+      if (map.getLayer(lid)) map.removeLayer(lid);
+    });
+    layerIdsRef.current = [];
+
+    const visible = filterTerritory === 'all'
+      ? dynamicTerritories
+      : dynamicTerritories.filter(t => t.name === filterTerritory);
+
+    visible.forEach(t => {
+      if (t.coordinates[0].length < 3) return;
+      const srcId = `dyn-${t.name}`;
+
+      // Clean up if somehow exists
+      if (map.getSource(srcId)) {
+        [`${t.name}-fill`, `${t.name}-line`, `${t.name}-label`].forEach(lid => {
+          if (map.getLayer(lid)) map.removeLayer(lid);
+        });
+        map.removeSource(srcId);
+      }
+
+      map.addSource(srcId, {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          properties: { name: t.name },
+          geometry: { type: 'Polygon', coordinates: t.coordinates },
+        },
+      });
+
+      const fillId = `${t.name}-fill`;
+      const lineId = `${t.name}-line`;
+      const labelId = `${t.name}-label`;
+
+      map.addLayer({
+        id: fillId, type: 'fill', source: srcId,
+        paint: { 'fill-color': t.color, 'fill-opacity': 0.15 },
+      });
+      map.addLayer({
+        id: lineId, type: 'line', source: srcId,
+        paint: { 'line-color': t.color, 'line-width': 2, 'line-opacity': 0.8 },
+      });
+      map.addLayer({
+        id: labelId, type: 'symbol', source: srcId,
+        layout: {
+          'text-field': `${t.name} (${t.count})`,
+          'text-size': 13,
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        },
+        paint: { 'text-color': t.color, 'text-halo-color': '#000', 'text-halo-width': 1 },
+      });
+
+      layerIdsRef.current.push(fillId, lineId, labelId);
+
+      // Interactions
+      map.on('mouseenter', fillId, () => {
+        map.getCanvas().style.cursor = 'pointer';
+        map.setPaintProperty(fillId, 'fill-opacity', 0.35);
+      });
+      map.on('mouseleave', fillId, () => {
+        map.getCanvas().style.cursor = '';
+        map.setPaintProperty(fillId, 'fill-opacity', 0.15);
+      });
+      map.on('click', fillId, () => {
+        setSelectedTerritory(t.name);
+        setSearchQuery('');
+      });
+    });
+
+    // Fit map to visible territories
+    if (visible.length > 0 && filterTerritory !== 'all') {
+      const bounds = new mapboxgl.LngLatBounds();
+      visible.forEach(t => t.coordinates[0].forEach(c => bounds.extend(c)));
+      map.fitBounds(bounds, { padding: 60, duration: 800 });
+    }
+  }, [dynamicTerritories, filterTerritory, mapLoaded]);
+
+  useEffect(() => { drawTerritories(); }, [drawTerritories]);
+
+  // Render address markers (filtered by territory filter)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -163,7 +333,11 @@ export function TerritoryMapView() {
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    addresses.forEach(a => {
+    const visibleAddresses = filterTerritory === 'all'
+      ? addresses
+      : addresses.filter(a => resolveBoroughForCity(a.city || 'Unknown') === filterTerritory);
+
+    visibleAddresses.forEach(a => {
       if (a.latitude == null || a.longitude == null) return;
       const el = document.createElement('div');
       el.style.width = '8px';
@@ -182,12 +356,16 @@ export function TerritoryMapView() {
 
       markersRef.current.push(marker);
     });
-  }, [addresses]);
+  }, [addresses, filterTerritory]);
 
   const flyToAddress = (addr: TerritoryAddress) => {
     if (!mapRef.current || !addr.latitude || !addr.longitude) return;
     mapRef.current.flyTo({ center: [addr.longitude, addr.latitude], zoom: 16, duration: 1200 });
-    const idx = addresses.findIndex(a => a.id === addr.id);
+    // Find in currently visible markers
+    const visibleAddresses = filterTerritory === 'all'
+      ? addresses
+      : addresses.filter(a => resolveBoroughForCity(a.city || 'Unknown') === filterTerritory);
+    const idx = visibleAddresses.findIndex(a => a.id === addr.id);
     if (idx >= 0 && markersRef.current[idx]) {
       markersRef.current[idx].togglePopup();
     }
@@ -197,6 +375,35 @@ export function TerritoryMapView() {
     <div className="relative w-full h-[calc(100vh-220px)] rounded-lg overflow-hidden border border-border">
       <div ref={mapContainer} className="w-full h-full" />
 
+      {/* Territory filter dropdown */}
+      <div className="absolute top-3 right-3 z-20">
+        <div className="flex items-center gap-2 bg-background/90 backdrop-blur rounded-lg border border-border p-2 shadow-lg">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Select value={filterTerritory} onValueChange={(val) => {
+            setFilterTerritory(val);
+            if (val !== 'all') {
+              setSelectedTerritory(val);
+              setSearchQuery('');
+            } else {
+              setSelectedTerritory(null);
+            }
+          }}>
+            <SelectTrigger className="w-[180px] h-8 text-sm border-none bg-transparent">
+              <SelectValue placeholder="All Territories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Territories ({addresses.length})</SelectItem>
+              {dynamicTerritories.map(t => (
+                <SelectItem key={t.name} value={t.name}>
+                  {t.name} ({t.count})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Slide-out panel */}
       {selectedTerritory && (
         <div className="absolute top-0 right-0 h-full w-[380px] bg-background/95 backdrop-blur border-l border-border shadow-xl flex flex-col z-10">
           <div className="flex items-center justify-between p-4 border-b border-border">
@@ -204,7 +411,10 @@ export function TerritoryMapView() {
               <h3 className="font-semibold text-lg">{selectedTerritory}</h3>
               <p className="text-xs text-muted-foreground">{territoryAddresses.length} ingested addresses</p>
             </div>
-            <Button variant="ghost" size="icon" onClick={() => setSelectedTerritory(null)}>
+            <Button variant="ghost" size="icon" onClick={() => {
+              setSelectedTerritory(null);
+              if (filterTerritory !== 'all') setFilterTerritory('all');
+            }}>
               <X className="h-4 w-4" />
             </Button>
           </div>
