@@ -50284,6 +50284,74 @@ export type Database = {
         }
         Relationships: []
       }
+      supervisor_performance_snapshots: {
+        Row: {
+          avg_boxes_per_worker: number | null
+          composite_index: number | null
+          created_at: string | null
+          efficiency_score: number | null
+          goal_completion_rate: number | null
+          goal_hit_days: number | null
+          goal_score: number | null
+          id: string
+          material_efficiency_delta: number | null
+          material_score: number | null
+          office_id: string
+          performance_version: number | null
+          reopen_rate: number | null
+          reopen_score: number | null
+          snapshot_month: string
+          supervisor_user_id: string | null
+          total_days: number | null
+        }
+        Insert: {
+          avg_boxes_per_worker?: number | null
+          composite_index?: number | null
+          created_at?: string | null
+          efficiency_score?: number | null
+          goal_completion_rate?: number | null
+          goal_hit_days?: number | null
+          goal_score?: number | null
+          id?: string
+          material_efficiency_delta?: number | null
+          material_score?: number | null
+          office_id: string
+          performance_version?: number | null
+          reopen_rate?: number | null
+          reopen_score?: number | null
+          snapshot_month: string
+          supervisor_user_id?: string | null
+          total_days?: number | null
+        }
+        Update: {
+          avg_boxes_per_worker?: number | null
+          composite_index?: number | null
+          created_at?: string | null
+          efficiency_score?: number | null
+          goal_completion_rate?: number | null
+          goal_hit_days?: number | null
+          goal_score?: number | null
+          id?: string
+          material_efficiency_delta?: number | null
+          material_score?: number | null
+          office_id?: string
+          performance_version?: number | null
+          reopen_rate?: number | null
+          reopen_score?: number | null
+          snapshot_month?: string
+          supervisor_user_id?: string | null
+          total_days?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supervisor_performance_snapshots_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_compliance_scores: {
         Row: {
           complaint_count: number | null
@@ -61479,6 +61547,20 @@ export type Database = {
           product_name: string | null
           store_id: string | null
           tubes_on_hand: number | null
+        }
+        Relationships: []
+      }
+      v_supervisor_30d_performance: {
+        Row: {
+          avg_boxes_per_worker: number | null
+          calculated_at: string | null
+          goal_completion_rate: number | null
+          goal_hit_days: number | null
+          material_efficiency_delta: number | null
+          office_id: string | null
+          reopen_rate: number | null
+          supervisor_user_id: string | null
+          total_days: number | null
         }
         Relationships: []
       }
