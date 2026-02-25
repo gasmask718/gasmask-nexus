@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MapPin, Eye, Store, HelpCircle, XCircle, Target, ListFilter, Map, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
+import { TerritoryStoresTable } from '@/components/territory/TerritoryStoresTable';
 
 export default function TerritoryOverview() {
   const [cityFilter, setCityFilter] = useState<string>('all');
@@ -195,6 +196,9 @@ export default function TerritoryOverview() {
               )}
             </CardContent>
           </Card>
+
+          {/* Stores in Territory */}
+          <TerritoryStoresTable cityFilter={cityFilter} stateFilter={stateFilter} />
         </>
       )}
     </div>
