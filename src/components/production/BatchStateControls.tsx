@@ -2,6 +2,7 @@
  * BATCH STATE CONTROLS
  * Renders state transition buttons for a single production batch.
  * Enforces valid transitions, field validation, and conversion confirmation.
+ * On approval: shows labor model details, requires confirmation, creates cost snapshot.
  */
 
 import { useState } from 'react';
@@ -26,7 +27,14 @@ import {
   useTransitionBatchState,
   type InventoryState,
 } from '@/hooks/useInventoryState';
+import { useCreateCostSnapshot } from '@/hooks/useBatchCostHistory';
 import { cn } from '@/lib/utils';
+
+const LABOR_MODEL_LABELS: Record<string, string> = {
+  hourly: 'Hourly',
+  per_box: 'Per Box (Piece Rate)',
+  flat_day: 'Flat Day Rate',
+};
 
 interface BatchStateControlsProps {
   batchId: string;
@@ -42,6 +50,12 @@ interface BatchStateControlsProps {
     product_output_units?: number;
     production_time_minutes?: number;
     changeover_minutes?: number;
+    labor_model?: string;
+    worker_count?: number;
+    selected_worker_ids?: string[];
+    labor_hourly_rate_snapshot?: number;
+    labor_per_box_rate_snapshot?: number;
+    labor_flat_day_rate_snapshot?: number;
   };
 }
 
@@ -53,17 +67,26 @@ export function BatchStateControls({
   batchData,
 }: BatchStateControlsProps) {
   const transition = useTransitionBatchState();
+  const createSnapshot = useCreateCostSnapshot();
   const config = getStateConfig(currentState);
   const nextStates = getNextStates(currentState);
   const [confirmed, setConfirmed] = useState(false);
+  const [laborConfirmed, setLaborConfirmed] = useState(false);
 
-  const handleTransition = (toState: InventoryState) => {
+  const handleTransition = async (toState: InventoryState) => {
     transition.mutate({
       batchId,
       fromState: currentState,
       toState,
       officeId,
       conversionConfirmed: toState === 'approved' ? confirmed : undefined,
+    }, {
+      onSuccess: () => {
+        // Auto-create cost snapshot on approval
+        if (toState === 'approved') {
+          createSnapshot.mutate({ batchId, officeId });
+        }
+      },
     });
   };
 
@@ -87,8 +110,14 @@ export function BatchStateControls({
   const timePerUnit = netTime > 0 && outputUnits > 0 ? (netTime / outputUnits).toFixed(3) : null;
   const timePerBox = netTime > 0 && boxesEquiv > 0 ? (netTime / boxesEquiv).toFixed(1) : null;
 
+  // Labor model info for approval display
+  const laborModel = batchData?.labor_model;
+  const workerCount = batchData?.worker_count || 1;
+  const selectedWorkers = batchData?.selected_worker_ids || [];
+
   const renderApprovalDialog = (ns: InventoryState) => {
     const nsConfig = getStateConfig(ns);
+    const bothConfirmed = confirmed && (laborModel ? laborConfirmed : true);
     return (
       <AlertDialog key={ns}>
         <AlertDialogTrigger asChild>
@@ -167,26 +196,73 @@ export function BatchStateControls({
                    </div>
                  </div>
 
-                {/* Manager Confirmation Checkbox */}
-                <div className="flex items-start gap-2 pt-1">
-                  <Checkbox
-                    id="confirm-conversion"
-                    checked={confirmed}
-                    onCheckedChange={(v) => setConfirmed(v === true)}
-                  />
-                  <label htmlFor="confirm-conversion" className="text-xs leading-tight cursor-pointer text-foreground">
-                    I confirm material-to-output numbers are accurate and ready for permanent lock.
-                  </label>
+                {/* Labor Cost Summary */}
+                {laborModel && (
+                  <div className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-sm">
+                    <p className="font-semibold text-foreground">Labor Cost Summary</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs">
+                      <span className="text-muted-foreground">Labor Model:</span>
+                      <span className="font-medium text-foreground">{LABOR_MODEL_LABELS[laborModel] || laborModel}</span>
+                      <span className="text-muted-foreground">Worker Count:</span>
+                      <span className="font-medium text-foreground">{workerCount}</span>
+                      <span className="text-muted-foreground">Selected Workers:</span>
+                      <span className="font-medium text-foreground">{selectedWorkers.length > 0 ? `${selectedWorkers.length} specific` : 'Generic'}</span>
+                      {laborModel === 'hourly' && batchData?.labor_hourly_rate_snapshot && (
+                        <>
+                          <span className="text-muted-foreground">Rate Snapshot:</span>
+                          <span className="font-medium text-foreground">${batchData.labor_hourly_rate_snapshot.toFixed(2)}/hr</span>
+                        </>
+                      )}
+                      {laborModel === 'per_box' && batchData?.labor_per_box_rate_snapshot && (
+                        <>
+                          <span className="text-muted-foreground">Rate Snapshot:</span>
+                          <span className="font-medium text-foreground">${batchData.labor_per_box_rate_snapshot.toFixed(2)}/box</span>
+                        </>
+                      )}
+                      {laborModel === 'flat_day' && batchData?.labor_flat_day_rate_snapshot && (
+                        <>
+                          <span className="text-muted-foreground">Rate Snapshot:</span>
+                          <span className="font-medium text-foreground">${batchData.labor_flat_day_rate_snapshot.toFixed(2)}/day</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Manager Confirmation Checkboxes */}
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="confirm-conversion"
+                      checked={confirmed}
+                      onCheckedChange={(v) => setConfirmed(v === true)}
+                    />
+                    <label htmlFor="confirm-conversion" className="text-xs leading-tight cursor-pointer text-foreground">
+                      I confirm material-to-output numbers are accurate and ready for permanent lock.
+                    </label>
+                  </div>
+                  {laborModel && (
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="confirm-labor"
+                        checked={laborConfirmed}
+                        onCheckedChange={(v) => setLaborConfirmed(v === true)}
+                      />
+                      <label htmlFor="confirm-labor" className="text-xs leading-tight cursor-pointer text-foreground">
+                        I confirm labor model and rates are correct.
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmed(false)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => { setConfirmed(false); setLaborConfirmed(false); }}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => handleTransition(ns)}
-              disabled={!confirmed}
-              className={cn(!confirmed && 'opacity-50 cursor-not-allowed')}
+              disabled={!bothConfirmed}
+              className={cn(!bothConfirmed && 'opacity-50 cursor-not-allowed')}
             >
               <CheckCircle className="h-4 w-4 mr-1" />
               Confirm Approval
