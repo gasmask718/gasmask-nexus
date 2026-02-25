@@ -25,6 +25,9 @@ export interface BatchCostHistoryRecord {
   cost_snapshot_created_at: string;
   approved_by: string | null;
   is_immutable: boolean;
+  version: number;
+  override_reason: string | null;
+  previous_version_id: string | null;
   created_at: string;
 }
 
@@ -86,6 +89,8 @@ export function useCreateCostSnapshot() {
     mutationFn: async (params: {
       batchId: string;
       officeId: string;
+      /** If set, this is an owner override — creates a new version */
+      overrideReason?: string;
     }) => {
       const { data: userData } = await supabase.auth.getUser();
 
@@ -123,7 +128,6 @@ export function useCreateCostSnapshot() {
         const rate = (batch as any).labor_flat_day_rate_snapshot || 0;
         laborCost = workerCount * rate;
       } else if (costData) {
-        // Fallback to legacy hourly calculation
         laborCost = (costData.labor_hours || 0) * (costData.labor_rate_per_hour || 0);
       }
 
@@ -141,6 +145,23 @@ export function useCreateCostSnapshot() {
       const totalBatchCost = totalMaterial + laborCost + overheadCost;
       const costPerBox = boxesProduced > 0 ? totalBatchCost / boxesProduced : 0;
 
+      // Determine version — find latest version for this batch
+      let version = 1;
+      let previousVersionId: string | null = null;
+      if (params.overrideReason) {
+        const { data: latest } = await supabase
+          .from('batch_cost_history')
+          .select('id, version')
+          .eq('batch_id', params.batchId)
+          .order('version', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latest) {
+          version = (latest.version || 1) + 1;
+          previousVersionId = latest.id;
+        }
+      }
+
       const { data, error } = await supabase
         .from('batch_cost_history')
         .insert({
@@ -157,6 +178,9 @@ export function useCreateCostSnapshot() {
           labor_model: laborModel as any,
           worker_count: workerCount,
           approved_by: userData.user?.id || null,
+          version,
+          override_reason: params.overrideReason || null,
+          previous_version_id: previousVersionId,
         })
         .select()
         .single();
@@ -167,10 +191,12 @@ export function useCreateCostSnapshot() {
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['batch-cost-history'] });
       queryClient.invalidateQueries({ queryKey: ['batch-cost-summary'] });
+      if (vars.overrideReason) {
+        // Toast only for manual overrides
+      }
     },
     onError: (error: Error) => {
       console.error('Failed to create cost snapshot:', error.message);
-      // Don't toast — this is called as part of approval flow
     },
   });
 }
