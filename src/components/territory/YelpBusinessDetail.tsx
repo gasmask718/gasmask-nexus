@@ -56,7 +56,7 @@ export function YelpBusinessDetail({ business, onBack, onIngest }: Props) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [detailRes, reviewRes] = await Promise.all([
+        const [detailRes, reviewRes] = await Promise.allSettled([
           supabase.functions.invoke('yelp-business-search', {
             body: { action: 'details', business_id: business.id },
           }),
@@ -65,11 +65,11 @@ export function YelpBusinessDetail({ business, onBack, onIngest }: Props) {
           }),
         ]);
 
-        if (detailRes.data && !detailRes.data.error) {
-          setDetails(detailRes.data);
+        if (detailRes.status === 'fulfilled' && detailRes.value.data && !detailRes.value.data.error) {
+          setDetails(detailRes.value.data);
         }
-        if (reviewRes.data && !reviewRes.data.error) {
-          setReviews(reviewRes.data.reviews || []);
+        if (reviewRes.status === 'fulfilled' && reviewRes.value.data && !reviewRes.value.data.error) {
+          setReviews(reviewRes.value.data.reviews || []);
         }
       } catch (err: any) {
         toast({ title: 'Failed to load details', description: err.message, variant: 'destructive' });
