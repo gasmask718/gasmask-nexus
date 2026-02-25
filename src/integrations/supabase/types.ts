@@ -39674,6 +39674,64 @@ export type Database = {
           },
         ]
       }
+      production_demand_overrides: {
+        Row: {
+          acknowledged_by: string | null
+          actual_lbs: number
+          batch_id: string | null
+          brand: string
+          created_at: string | null
+          deviation_pct: number
+          id: string
+          override_reason: string
+          recommended_lbs: number
+        }
+        Insert: {
+          acknowledged_by?: string | null
+          actual_lbs: number
+          batch_id?: string | null
+          brand: string
+          created_at?: string | null
+          deviation_pct: number
+          id?: string
+          override_reason: string
+          recommended_lbs: number
+        }
+        Update: {
+          acknowledged_by?: string | null
+          actual_lbs?: number
+          batch_id?: string | null
+          brand?: string
+          created_at?: string | null
+          deviation_pct?: number
+          id?: string
+          override_reason?: string
+          recommended_lbs?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_demand_overrides_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_demand_overrides_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_demand_overrides_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+        ]
+      }
       production_history: {
         Row: {
           batch_id: string | null
@@ -58854,6 +58912,28 @@ export type Database = {
           },
         ]
       }
+      v_inventory_coverage_intelligence: {
+        Row: {
+          avg_daily_velocity_14d: number | null
+          avg_daily_velocity_30d: number | null
+          baseline_boxes_per_lb: number | null
+          baseline_lbs_per_box: number | null
+          brand: string | null
+          current_boxes_available: number | null
+          days_of_inventory_remaining: number | null
+          demand_trend: string | null
+          is_overstock: boolean | null
+          procurement_needed_lbs: number | null
+          raw_inventory_lbs: number | null
+          recommended_lbs_to_produce: number | null
+          required_boxes_for_30_days: number | null
+          risk_level: string | null
+          units_sold_last_14_days: number | null
+          units_sold_last_30_days: number | null
+          units_sold_last_7_days: number | null
+        }
+        Relationships: []
+      }
       v_inventory_movements: {
         Row: {
           created_at: string | null
@@ -59813,6 +59893,18 @@ export type Database = {
           total_row_clicks: number | null
           trend_related_feedback: number | null
           unique_ambassador_sessions: number | null
+        }
+        Relationships: []
+      }
+      v_sku_sales_velocity: {
+        Row: {
+          avg_daily_velocity_14d: number | null
+          avg_daily_velocity_30d: number | null
+          brand: string | null
+          demand_trend: string | null
+          units_sold_last_14_days: number | null
+          units_sold_last_30_days: number | null
+          units_sold_last_7_days: number | null
         }
         Relationships: []
       }
