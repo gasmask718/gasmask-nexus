@@ -4,11 +4,11 @@
  * Goal + Efficiency weighted. No incentives.
  */
 
-import { useSupervisorScorecards, useSupervisorSnapshots, type SupervisorScorecard as ScorecardType } from '@/hooks/useSupervisorPerformance';
+import { useSupervisorScorecards, useSupervisorSnapshots, type SupervisorScorecard as ScorecardType, type SupervisorTier } from '@/hooks/useSupervisorPerformance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Target, TrendingUp, TrendingDown, Minus, RotateCcw, Leaf, Users, Award, Info } from 'lucide-react';
+import { Target, TrendingUp, TrendingDown, Minus, RotateCcw, Leaf, Users, Award, Info, Shield, Rocket } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -25,6 +25,15 @@ function getScoreBadge(score: number): { label: string; className: string } {
   if (score >= 95) return { label: 'Strong', className: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
   if (score >= 85) return { label: 'Steady', className: 'bg-amber-100 text-amber-800 border-amber-200' };
   return { label: 'Needs Focus', className: 'bg-red-100 text-red-800 border-red-200' };
+}
+
+function getTierBadge(tier: SupervisorTier): { className: string } {
+  switch (tier) {
+    case 'Elite': return { className: 'bg-violet-100 text-violet-800 border-violet-200' };
+    case 'Strong': return { className: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+    case 'Developing': return { className: 'bg-amber-100 text-amber-800 border-amber-200' };
+    case 'Needs Support': return { className: 'bg-red-100 text-red-800 border-red-200' };
+  }
 }
 
 function TrendArrow({ current, previous }: { current: number; previous?: number }) {
@@ -51,6 +60,7 @@ function MiniKPI({ label, value, suffix = '%', icon }: { label: string; value: n
 
 function ScorecardCard({ scorecard, previousIndex }: { scorecard: ScorecardType; previousIndex?: number }) {
   const badge = getScoreBadge(scorecard.composite_index);
+  const tierBadge = getTierBadge(scorecard.tier);
   
   return (
     <Card>
@@ -67,7 +77,27 @@ function ScorecardCard({ scorecard, previousIndex }: { scorecard: ScorecardType;
               <TrendArrow current={scorecard.composite_index} previous={previousIndex} />
             </div>
           </div>
-          <Badge className={cn('text-xs', badge.className)}>{badge.label}</Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge className={cn('text-xs', badge.className)}>{badge.label}</Badge>
+            <Badge variant="outline" className={cn('text-xs', tierBadge.className)}>
+              <Shield className="h-3 w-3 mr-1" />
+              {scorecard.tier}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Stability + Expansion */}
+        <div className="flex items-center gap-2 mb-3">
+          {scorecard.stability_score !== null && (
+            <span className="text-xs text-muted-foreground">
+              Stability σ: <span className={cn('font-medium', scorecard.stability_score <= 5 ? 'text-emerald-600' : 'text-amber-600')}>{scorecard.stability_score}</span>
+            </span>
+          )}
+          {scorecard.expansion_ready && (
+            <Badge className="bg-violet-100 text-violet-800 border-violet-200 text-xs">
+              <Rocket className="h-3 w-3 mr-1" />Expansion Ready
+            </Badge>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
