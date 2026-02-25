@@ -40033,6 +40033,41 @@ export type Database = {
           },
         ]
       }
+      production_labor_baselines: {
+        Row: {
+          baseline_minutes_per_1000: number
+          id: string
+          last_updated_at: string
+          office_id: string | null
+          sample_count: number
+          task_type: Database["public"]["Enums"]["worker_task_type"]
+        }
+        Insert: {
+          baseline_minutes_per_1000?: number
+          id?: string
+          last_updated_at?: string
+          office_id?: string | null
+          sample_count?: number
+          task_type: Database["public"]["Enums"]["worker_task_type"]
+        }
+        Update: {
+          baseline_minutes_per_1000?: number
+          id?: string
+          last_updated_at?: string
+          office_id?: string | null
+          sample_count?: number
+          task_type?: Database["public"]["Enums"]["worker_task_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_labor_baselines_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       production_logs: {
         Row: {
           boxes_packed: number | null
@@ -41224,6 +41259,133 @@ export type Database = {
             columns: ["worker_id"]
             isOneToOne: false
             referencedRelation: "production_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_worker_task_events: {
+        Row: {
+          actor_user_id: string | null
+          event_at: string
+          event_type: Database["public"]["Enums"]["worker_task_event_type"]
+          id: string
+          payload_json: Json | null
+          task_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          event_at?: string
+          event_type: Database["public"]["Enums"]["worker_task_event_type"]
+          id?: string
+          payload_json?: Json | null
+          task_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          event_at?: string
+          event_type?: Database["public"]["Enums"]["worker_task_event_type"]
+          id?: string
+          payload_json?: Json | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_task_events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "production_worker_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      production_worker_tasks: {
+        Row: {
+          batch_id: string | null
+          brand: string | null
+          created_at: string
+          created_by: string | null
+          duration_seconds: number | null
+          finished_at: string | null
+          id: string
+          notes: string | null
+          office_id: string
+          product_type: string
+          standard_unit_label: string
+          standard_unit_quantity: number
+          started_at: string
+          status: Database["public"]["Enums"]["worker_task_status"]
+          task_type: Database["public"]["Enums"]["worker_task_type"]
+          void_reason: string | null
+          worker_display_name: string | null
+          worker_user_id: string
+        }
+        Insert: {
+          batch_id?: string | null
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          office_id: string
+          product_type?: string
+          standard_unit_label?: string
+          standard_unit_quantity?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["worker_task_status"]
+          task_type: Database["public"]["Enums"]["worker_task_type"]
+          void_reason?: string | null
+          worker_display_name?: string | null
+          worker_user_id: string
+        }
+        Update: {
+          batch_id?: string | null
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          duration_seconds?: number | null
+          finished_at?: string | null
+          id?: string
+          notes?: string | null
+          office_id?: string
+          product_type?: string
+          standard_unit_label?: string
+          standard_unit_quantity?: number
+          started_at?: string
+          status?: Database["public"]["Enums"]["worker_task_status"]
+          task_type?: Database["public"]["Enums"]["worker_task_type"]
+          void_reason?: string | null
+          worker_display_name?: string | null
+          worker_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "production_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_production_margin_analysis"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "v_tobacco_conversion_intelligence"
+            referencedColumns: ["batch_id"]
+          },
+          {
+            foreignKeyName: "production_worker_tasks_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "production_offices"
             referencedColumns: ["id"]
           },
         ]
@@ -62988,6 +63150,9 @@ export type Database = {
         | "followUp"
         | "order"
       voice_tts_provider: "elevenlabs" | "aws_polly"
+      worker_task_event_type: "start" | "finish" | "void" | "edit_note"
+      worker_task_status: "running" | "completed" | "voided"
+      worker_task_type: "sleeving" | "sticker" | "sleeving_and_sticker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -63581,6 +63746,9 @@ export const Constants = {
         "order",
       ],
       voice_tts_provider: ["elevenlabs", "aws_polly"],
+      worker_task_event_type: ["start", "finish", "void", "edit_note"],
+      worker_task_status: ["running", "completed", "voided"],
+      worker_task_type: ["sleeving", "sticker", "sleeving_and_sticker"],
     },
   },
 } as const
