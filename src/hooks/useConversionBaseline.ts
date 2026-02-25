@@ -11,6 +11,7 @@ export interface ConversionBaseline {
   id: string;
   office_id: string | null;
   product_type: string;
+  shift_label: string | null;
   baseline_boxes_per_lb: number;
   baseline_lbs_per_box: number;
   baseline_units_per_lb: number;

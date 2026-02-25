@@ -79,10 +79,18 @@ export async function validateTransitionRequirements(
       return { valid: false, error: 'Cannot approve: tobacco LBS is missing.' };
     }
     if (outputUnits <= 0) {
-      return { valid: false, error: 'Cannot approve: product units produced are missing.' };
+      return { valid: false, error: 'Cannot approve: product units produced must be > 0.' };
     }
     if (!(batch as any).product_type) {
       return { valid: false, error: 'Cannot approve: product type not selected.' };
+    }
+    const timeMins = (batch as any).production_time_minutes || 0;
+    if (timeMins <= 0) {
+      return { valid: false, error: 'Cannot approve: production time must be > 0.' };
+    }
+    const boxesEquiv = outputUnits / 100.0;
+    if (boxesEquiv <= 0) {
+      return { valid: false, error: 'Cannot approve: boxes equivalent must be > 0.' };
     }
   }
 

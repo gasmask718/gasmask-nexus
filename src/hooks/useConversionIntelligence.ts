@@ -12,11 +12,17 @@ export interface ConversionBatch {
   office_id: string | null;
   brand: string;
   batch_date: string | null;
+  shift_label: string | null;
   tobacco_lbs: number;
   boxes_produced: number | null;
   product_type: ProductType;
   product_output_units: number | null;
+  boxes_full: number | null;
+  units_remainder: number | null;
+  boxes_equivalent: number | null;
   production_time_minutes: number | null;
+  changeover_minutes: number | null;
+  net_production_minutes: number | null;
   waste_lbs: number | null;
   tubes_total: number | null;
   status: string | null;
@@ -28,12 +34,15 @@ export interface ConversionBatch {
   // Two-layer conversions: units
   lbs_per_unit: number | null;
   units_per_lb: number | null;
-  // Two-layer conversions: boxes
+  // Two-layer conversions: boxes (using boxes_equivalent)
   lbs_per_box: number | null;
   boxes_per_lb: number | null;
-  // Time
+  // Time (gross)
   time_per_unit: number | null;
   time_per_box: number | null;
+  // Time (net, excluding changeover)
+  net_time_per_unit: number | null;
+  net_time_per_box: number | null;
   // Cost & waste
   waste_pct: number | null;
   total_cost: number | null;
