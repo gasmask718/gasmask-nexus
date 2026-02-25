@@ -1,9 +1,8 @@
 /**
  * Worker Task Timer — Shop-floor UI
- * Start/finish/void task timers for sleeving & stickering per 1,000 tubes.
- * Mobile-first, frictionless design.
+ * Supports flexible unit completion, anomaly warnings, normalized metrics.
  */
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,15 +27,8 @@ import {
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Timer,
-  Play,
-  Square,
-  XCircle,
-  CheckCircle,
-  Clock,
-  Trophy,
-  AlertTriangle,
-  Zap,
+  Timer, Play, XCircle, CheckCircle, Clock, Trophy,
+  AlertTriangle, Zap, Shield,
 } from 'lucide-react';
 
 function LiveTimer({ startedAt }: { startedAt: string }) {
@@ -53,7 +45,7 @@ function LiveTimer({ startedAt }: { startedAt: string }) {
   const hours = Math.floor(elapsed / 3600);
   const minutes = Math.floor((elapsed % 3600) / 60);
   const seconds = elapsed % 60;
-  const isLong = elapsed > 6 * 3600; // 6-hour warning
+  const isLong = elapsed > 6 * 3600;
 
   return (
     <div className="text-center">
@@ -71,8 +63,9 @@ function LiveTimer({ startedAt }: { startedAt: string }) {
 }
 
 function TaskSummaryCard({ task, baseline }: { task: WorkerTask; baseline?: number }) {
-  const mins = task.duration_seconds ? (task.duration_seconds / 60) : 0;
-  const variance = getTaskVarianceLevel(mins, baseline);
+  const normMin = task.normalized_minutes_per_1000 ?? (task.duration_seconds ? task.duration_seconds / 60 : 0);
+  const variance = getTaskVarianceLevel(normMin, baseline);
+  const units = task.actual_units_completed || 1000;
 
   return (
     <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
@@ -87,13 +80,14 @@ function TaskSummaryCard({ task, baseline }: { task: WorkerTask; baseline?: numb
           <p className="text-xs text-muted-foreground">
             {new Date(task.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {task.brand && ` · ${task.brand}`}
+            {units !== 1000 && ` · ${units.toLocaleString()} tubes`}
           </p>
         </div>
       </div>
-      <div className="text-right">
+      <div className="text-right flex items-center gap-1">
         {task.status === 'completed' ? (
           <Badge variant={variance === 'red' ? 'destructive' : variance === 'amber' ? 'secondary' : 'default'} className="font-mono">
-            {mins.toFixed(1)} min
+            {normMin.toFixed(1)} min/1k
           </Badge>
         ) : (
           <Badge variant="outline" className="text-xs">Voided</Badge>
@@ -111,26 +105,27 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
   const { data: profile } = useCurrentUserProfile();
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Get auth user ID
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id || null));
   }, []);
 
-  const { data: runningTask, isLoading: runningLoading } = useRunningTask(officeId, userId || undefined);
+  const { data: runningTask } = useRunningTask(officeId, userId || undefined);
   const { data: todayTasks = [] } = useTodayTasks(officeId, userId || undefined);
   const { data: baselines = [] } = useLaborBaselines(officeId);
   const startTask = useStartTask();
   const finishTask = useFinishTask();
   const voidTask = useVoidTask();
 
-  // Start task form state
   const [taskType, setTaskType] = useState<WorkerTaskType>('sleeving');
   const [brand, setBrand] = useState('');
   const [notes, setNotes] = useState('');
-
-  // Void dialog
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
   const [voidReason, setVoidReason] = useState('');
+  
+  // Finish dialog with actual units
+  const [finishDialogOpen, setFinishDialogOpen] = useState(false);
+  const [actualUnits, setActualUnits] = useState(1000);
+
   const profileData = profile as any;
   const displayName = profileData?.profile ? `${profileData.profile.first_name || ''} ${profileData.profile.last_name || ''}`.trim() : undefined;
 
@@ -144,16 +139,16 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
       brand: brand || undefined,
       notes: notes || undefined,
     }, {
-      onSuccess: () => {
-        setBrand('');
-        setNotes('');
-      },
+      onSuccess: () => { setBrand(''); setNotes(''); },
     });
   };
 
-  const handleFinish = () => {
+  const handleFinishConfirm = () => {
     if (!runningTask || !userId) return;
-    finishTask.mutate({ taskId: runningTask.id, officeId, userId });
+    finishTask.mutate(
+      { taskId: runningTask.id, officeId, userId, actualUnits },
+      { onSuccess: () => { setFinishDialogOpen(false); setActualUnits(1000); } }
+    );
   };
 
   const handleVoid = () => {
@@ -164,16 +159,15 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
     );
   };
 
-  // Today's stats
   const completedToday = todayTasks.filter(t => t.status === 'completed');
-  const avgMinutesToday = completedToday.length > 0
-    ? completedToday.reduce((s, t) => s + (t.duration_seconds || 0), 0) / completedToday.length / 60
+  const totalUnitsToday = completedToday.reduce((s, t) => s + (t.actual_units_completed || 1000), 0);
+  const avgNormToday = completedToday.length > 0
+    ? completedToday.reduce((s, t) => s + (t.normalized_minutes_per_1000 ?? (t.duration_seconds || 0) / 60), 0) / completedToday.length
     : 0;
-  const bestToday = completedToday.length > 0
-    ? Math.min(...completedToday.map(t => (t.duration_seconds || Infinity) / 60))
+  const bestNormToday = completedToday.length > 0
+    ? Math.min(...completedToday.map(t => t.normalized_minutes_per_1000 ?? (t.duration_seconds || Infinity) / 60))
     : 0;
 
-  // Get baseline for current task type filter
   const getBaseline = (type: WorkerTaskType) => {
     const b = baselines.find(bl => bl.task_type === type && (bl.office_id === officeId || !bl.office_id));
     return b?.baseline_minutes_per_1000;
@@ -182,9 +176,7 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
   if (!userId) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Loading user session…
-        </CardContent>
+        <CardContent className="py-8 text-center text-muted-foreground">Loading user session…</CardContent>
       </Card>
     );
   }
@@ -200,7 +192,7 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
               Timer Running
             </CardTitle>
             <CardDescription>
-              {TASK_TYPE_LABELS[runningTask.task_type]} · 1 Box = 1,000 Tubes
+              {TASK_TYPE_LABELS[runningTask.task_type]}
               {runningTask.brand && ` · ${runningTask.brand}`}
             </CardDescription>
           </CardHeader>
@@ -209,10 +201,10 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
 
             <div className="flex gap-2">
               <Button
-                onClick={handleFinish}
+                onClick={() => { setActualUnits(1000); setFinishDialogOpen(true); }}
                 disabled={finishTask.isPending}
                 size="lg"
-                className="flex-1 h-14 text-lg touch-target"
+                className="flex-1 h-14 text-lg"
               >
                 <CheckCircle className="h-5 w-5 mr-2" />
                 {finishTask.isPending ? 'Finishing…' : 'FINISH'}
@@ -222,7 +214,7 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
                 onClick={() => setVoidDialogOpen(true)}
                 disabled={voidTask.isPending}
                 size="lg"
-                className="h-14 touch-target"
+                className="h-14"
               >
                 <XCircle className="h-5 w-5" />
               </Button>
@@ -230,7 +222,6 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
           </CardContent>
         </Card>
       ) : (
-        /* Start Task Card */
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -238,16 +229,14 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
               Start Task
             </CardTitle>
             <CardDescription>
-              Time how long it takes to complete 1 box (1,000 tubes)
+              Time how long it takes to complete tubes
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Task Type</Label>
               <Select value={taskType} onValueChange={(v) => setTaskType(v as WorkerTaskType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sleeving">🧤 Sleeving</SelectItem>
                   <SelectItem value="sticker">🏷️ Stickering</SelectItem>
@@ -258,34 +247,20 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
 
             <div className="space-y-2">
               <Label>Brand <span className="text-muted-foreground">(optional)</span></Label>
-              <Input
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                placeholder="e.g. Grabba Leaf"
-              />
+              <Input value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="e.g. Grabba Leaf" />
             </div>
 
             <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground flex items-center gap-2">
               <Zap className="h-4 w-4" />
-              Standard Unit: <strong>1 Box = 1,000 Tubes</strong>
+              Default: <strong>1 Box = 1,000 Tubes</strong> (adjustable on finish)
             </div>
 
             <div className="space-y-2">
               <Label>Notes <span className="text-muted-foreground">(optional)</span></Label>
-              <Textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Any notes for this task…"
-                rows={2}
-              />
+              <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Any notes…" rows={2} />
             </div>
 
-            <Button
-              onClick={handleStart}
-              disabled={startTask.isPending}
-              size="lg"
-              className="w-full h-14 text-lg touch-target"
-            >
+            <Button onClick={handleStart} disabled={startTask.isPending} size="lg" className="w-full h-14 text-lg">
               <Timer className="h-5 w-5 mr-2" />
               {startTask.isPending ? 'Starting…' : 'START TIMER'}
             </Button>
@@ -301,29 +276,28 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
             Today's Tasks
           </CardTitle>
           <CardDescription>
-            {completedToday.length} completed
-            {completedToday.length > 0 && ` · Avg: ${avgMinutesToday.toFixed(1)} min`}
+            {completedToday.length} completed · {totalUnitsToday.toLocaleString()} tubes
+            {completedToday.length > 0 && ` · Avg: ${avgNormToday.toFixed(1)} min/1k`}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Quick stats */}
           {completedToday.length > 0 && (
             <>
               <div className="grid grid-cols-3 gap-2 mb-4">
                 <div className="text-center p-2 bg-muted/50 rounded-md">
-                  <p className="text-xs text-muted-foreground uppercase">Completed</p>
-                  <p className="text-xl font-bold">{completedToday.length}</p>
+                  <p className="text-xs text-muted-foreground uppercase">Total Units</p>
+                  <p className="text-xl font-bold">{totalUnitsToday.toLocaleString()}</p>
                 </div>
                 <div className="text-center p-2 bg-muted/50 rounded-md">
-                  <p className="text-xs text-muted-foreground uppercase">Avg Time</p>
-                  <p className="text-xl font-bold">{avgMinutesToday.toFixed(1)}<span className="text-sm font-normal"> min</span></p>
+                  <p className="text-xs text-muted-foreground uppercase">Avg Min/1k</p>
+                  <p className="text-xl font-bold">{avgNormToday.toFixed(1)}</p>
                 </div>
                 <div className="text-center p-2 bg-emerald-500/10 rounded-md">
                   <div className="flex items-center justify-center gap-1">
                     <Trophy className="h-3 w-3 text-emerald-500" />
                     <p className="text-xs text-muted-foreground uppercase">Best</p>
                   </div>
-                  <p className="text-xl font-bold text-emerald-600">{bestToday.toFixed(1)}<span className="text-sm font-normal"> min</span></p>
+                  <p className="text-xl font-bold text-emerald-600">{bestNormToday.toFixed(1)}</p>
                 </div>
               </div>
               <Separator className="mb-3" />
@@ -337,16 +311,45 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
           ) : (
             <div className="space-y-0">
               {todayTasks.map(task => (
-                <TaskSummaryCard
-                  key={task.id}
-                  task={task}
-                  baseline={getBaseline(task.task_type)}
-                />
+                <TaskSummaryCard key={task.id} task={task} baseline={getBaseline(task.task_type)} />
               ))}
             </div>
           )}
         </CardContent>
       </Card>
+
+      {/* Finish Dialog — actual units input */}
+      <Dialog open={finishDialogOpen} onOpenChange={setFinishDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Complete Task</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Actual Units Completed</Label>
+              <Input
+                type="number"
+                value={actualUnits}
+                onChange={(e) => setActualUnits(Math.max(1, parseInt(e.target.value) || 1))}
+                min={1}
+              />
+              <p className="text-xs text-muted-foreground">Default: 1,000 tubes per box. Adjust if partial or multiple boxes.</p>
+            </div>
+            {actualUnits > 2000 && (
+              <div className="flex items-center gap-2 text-amber-600 text-sm bg-amber-500/10 p-2 rounded-md">
+                <Shield className="h-4 w-4" />
+                High unit count — will be flagged for review.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFinishDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleFinishConfirm} disabled={finishTask.isPending || actualUnits < 1}>
+              {finishTask.isPending ? 'Finishing…' : 'Complete Task'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Void Dialog */}
       <Dialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
@@ -356,20 +359,11 @@ export function WorkerTaskTimer({ officeId }: WorkerTaskTimerProps) {
           </DialogHeader>
           <div className="space-y-2">
             <Label>Reason for voiding</Label>
-            <Textarea
-              value={voidReason}
-              onChange={(e) => setVoidReason(e.target.value)}
-              placeholder="Why is this task being voided?"
-              rows={3}
-            />
+            <Textarea value={voidReason} onChange={(e) => setVoidReason(e.target.value)} placeholder="Why is this task being voided?" rows={3} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setVoidDialogOpen(false)}>Cancel</Button>
-            <Button
-              variant="destructive"
-              onClick={handleVoid}
-              disabled={!voidReason.trim() || voidTask.isPending}
-            >
+            <Button variant="destructive" onClick={handleVoid} disabled={!voidReason.trim() || voidTask.isPending}>
               Void Task
             </Button>
           </DialogFooter>

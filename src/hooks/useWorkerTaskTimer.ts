@@ -1,6 +1,6 @@
 /**
  * Worker Task Timer Hooks
- * CRUD for production_worker_tasks + baselines
+ * CRUD for production_worker_tasks + baselines + anomaly detection
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +18,9 @@ export interface WorkerTask {
   product_type: string;
   standard_unit_label: string;
   standard_unit_quantity: number;
+  actual_units_completed: number;
+  normalized_minutes_per_1000: number | null;
+  normalized_units_per_hour: number | null;
   brand: string | null;
   batch_id: string | null;
   started_at: string;
@@ -65,7 +68,7 @@ export function useRunningTask(officeId: string | undefined, userId: string | un
       return data as unknown as WorkerTask | null;
     },
     enabled: !!officeId && !!userId,
-    refetchInterval: 5000, // Keep timer in sync
+    refetchInterval: 5000,
   });
 }
 
@@ -179,22 +182,35 @@ export function useFinishTask() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async ({ taskId, officeId, userId }: { taskId: string; officeId: string; userId: string }) => {
+    mutationFn: async ({ taskId, officeId, userId, actualUnits }: {
+      taskId: string; officeId: string; userId: string; actualUnits?: number;
+    }) => {
+      const updatePayload: Record<string, any> = { status: 'completed' };
+      if (actualUnits !== undefined && actualUnits > 0) {
+        updatePayload.actual_units_completed = actualUnits;
+      }
       const { data, error } = await supabase
         .from('production_worker_tasks' as any)
-        .update({ status: 'completed' })
+        .update(updatePayload)
         .eq('id', taskId)
         .select()
         .single();
       if (error) throw error;
-      return { task: data as unknown as WorkerTask, officeId, userId };
+      
+      const task = data as unknown as WorkerTask;
+      
+      // Anti-gaming: detect anomalies
+      await detectAnomalies(task, officeId, userId);
+      
+      return { task, officeId, userId };
     },
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: TASK_KEYS.running(result.officeId, result.userId) });
       qc.invalidateQueries({ queryKey: TASK_KEYS.today(result.officeId, result.userId) });
       qc.invalidateQueries({ queryKey: TASK_KEYS.allOffice(result.officeId) });
+      const units = result.task.actual_units_completed || 1000;
       const mins = result.task.duration_seconds ? (result.task.duration_seconds / 60).toFixed(1) : '?';
-      toast({ title: 'Task completed!', description: `Finished 1,000 tubes in ${mins} minutes.` });
+      toast({ title: 'Task completed!', description: `Finished ${units.toLocaleString()} tubes in ${mins} minutes.` });
     },
     onError: (err: Error) => {
       toast({ title: 'Failed to finish', description: err.message, variant: 'destructive' });
@@ -213,6 +229,27 @@ export function useVoidTask() {
         .update({ status: 'voided', void_reason: reason })
         .eq('id', taskId);
       if (error) throw error;
+      
+      // Check excessive voids today
+      const today = new Date().toISOString().split('T')[0];
+      const { data: voidedToday } = await supabase
+        .from('production_worker_tasks' as any)
+        .select('id')
+        .eq('office_id', officeId)
+        .eq('worker_user_id', userId)
+        .eq('status', 'voided')
+        .gte('started_at', `${today}T00:00:00`);
+      
+      if (voidedToday && voidedToday.length >= 3) {
+        await supabase.from('labor_anomaly_events' as any).insert({
+          task_id: taskId,
+          worker_user_id: userId,
+          office_id: officeId,
+          anomaly_type: 'excessive_voids',
+          details: { void_count_today: voidedToday.length, reason },
+        });
+      }
+      
       return { officeId, userId };
     },
     onSuccess: (result) => {
@@ -226,9 +263,39 @@ export function useVoidTask() {
   });
 }
 
+/** Anti-gaming anomaly detection */
+async function detectAnomalies(task: WorkerTask, officeId: string, userId: string) {
+  const anomalies: Array<{ type: string; details: Record<string, any> }> = [];
+  
+  // Short duration: < 5 minutes
+  if (task.duration_seconds && task.duration_seconds < 300) {
+    anomalies.push({
+      type: 'short_duration',
+      details: { duration_seconds: task.duration_seconds, threshold: 300 },
+    });
+  }
+  
+  // High units: > 2000
+  if (task.actual_units_completed > 2000) {
+    anomalies.push({
+      type: 'high_units',
+      details: { actual_units: task.actual_units_completed, threshold: 2000 },
+    });
+  }
+  
+  for (const a of anomalies) {
+    await supabase.from('labor_anomaly_events' as any).insert({
+      task_id: task.id,
+      worker_user_id: userId,
+      office_id: officeId,
+      anomaly_type: a.type,
+      details: a.details,
+    });
+  }
+}
+
 /** Update notes on a running task */
 export function useUpdateTaskNotes() {
-  const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ taskId, notes }: { taskId: string; notes: string }) => {
       const { error } = await supabase
@@ -240,62 +307,91 @@ export function useUpdateTaskNotes() {
   });
 }
 
-/** Compute analytics from completed tasks */
+/** Compute analytics from completed tasks — with normalized metrics + performance score */
 export function computeLaborAnalytics(tasks: WorkerTask[]) {
   const completed = tasks.filter(t => t.status === 'completed' && t.duration_seconds);
   if (completed.length === 0) return null;
 
-  const byType: Record<string, { total: number; count: number; durations: number[] }> = {};
-  const byWorker: Record<string, { name: string; total: number; count: number; durations: number[] }> = {};
+  const byType: Record<string, { totalNorm: number; count: number; durations: number[]; totalUnits: number }> = {};
+  const byWorker: Record<string, {
+    name: string; totalNorm: number; count: number; durations: number[];
+    totalUnits: number; totalHours: number;
+  }> = {};
 
   for (const t of completed) {
     const secs = t.duration_seconds!;
     const mins = secs / 60;
+    const units = t.actual_units_completed || 1000;
+    const normMin = units > 0 ? (mins / units) * 1000 : mins;
 
     // By task type
-    if (!byType[t.task_type]) byType[t.task_type] = { total: 0, count: 0, durations: [] };
-    byType[t.task_type].total += mins;
+    if (!byType[t.task_type]) byType[t.task_type] = { totalNorm: 0, count: 0, durations: [], totalUnits: 0 };
+    byType[t.task_type].totalNorm += normMin;
     byType[t.task_type].count++;
-    byType[t.task_type].durations.push(mins);
+    byType[t.task_type].durations.push(normMin);
+    byType[t.task_type].totalUnits += units;
 
     // By worker
     const wKey = t.worker_user_id;
     const wName = t.worker_display_name || 'Unknown';
-    if (!byWorker[wKey]) byWorker[wKey] = { name: wName, total: 0, count: 0, durations: [] };
-    byWorker[wKey].total += mins;
+    if (!byWorker[wKey]) byWorker[wKey] = { name: wName, totalNorm: 0, count: 0, durations: [], totalUnits: 0, totalHours: 0 };
+    byWorker[wKey].totalNorm += normMin;
     byWorker[wKey].count++;
-    byWorker[wKey].durations.push(mins);
+    byWorker[wKey].durations.push(normMin);
+    byWorker[wKey].totalUnits += units;
+    byWorker[wKey].totalHours += secs / 3600;
   }
 
-  const taskTypeStats = Object.entries(byType).map(([type, data]) => ({
-    task_type: type,
-    avg_minutes: data.total / data.count,
-    count: data.count,
-    total_hours: data.total / 60,
-    min_minutes: Math.min(...data.durations),
-    max_minutes: Math.max(...data.durations),
-  }));
+  const taskTypeStats = Object.entries(byType).map(([type, data]) => {
+    const avg = data.totalNorm / data.count;
+    const unitsPerHour = data.count > 0 && data.totalNorm > 0
+      ? (data.totalUnits / (data.totalNorm * data.count / 60 / 1000 * data.count)) // simplify
+      : 0;
+    return {
+      task_type: type,
+      avg_minutes: avg,
+      count: data.count,
+      total_hours: data.durations.reduce((s, d) => s + d, 0) / 60,
+      total_units: data.totalUnits,
+      units_per_hour: data.totalUnits / (data.durations.reduce((s, d) => s + d, 0) / 60) || 0,
+      min_minutes: Math.min(...data.durations),
+      max_minutes: Math.max(...data.durations),
+    };
+  });
 
   const workerStats = Object.entries(byWorker)
     .map(([id, data]) => {
-      const avg = data.total / data.count;
+      const avg = data.totalNorm / data.count;
       const variance = data.durations.reduce((s, d) => s + Math.pow(d - avg, 2), 0) / data.count;
+      const stdDev = Math.sqrt(variance);
+      const performanceScore = (avg * 0.7) + (stdDev * 0.3);
+      const inconsistent = avg > 0 && stdDev > avg * 0.2;
       return {
         worker_id: id,
         worker_name: data.name,
         avg_minutes: avg,
         count: data.count,
-        total_hours: data.total / 60,
-        std_dev: Math.sqrt(variance),
+        total_hours: data.totalHours,
+        total_units: data.totalUnits,
+        units_per_hour: data.totalHours > 0 ? data.totalUnits / data.totalHours : 0,
+        std_dev: stdDev,
+        performance_score: performanceScore,
+        inconsistent,
       };
     })
-    .sort((a, b) => a.avg_minutes - b.avg_minutes);
+    .sort((a, b) => a.performance_score - b.performance_score);
+
+  // Efficiency trend (30-day)
+  const totalUnits = completed.reduce((s, t) => s + (t.actual_units_completed || 1000), 0);
+  const totalHours = completed.reduce((s, t) => s + (t.duration_seconds! / 3600), 0);
 
   return {
     taskTypeStats,
     workerStats,
     totalCompleted: completed.length,
-    totalHours: completed.reduce((s, t) => s + (t.duration_seconds! / 3600), 0),
+    totalHours,
+    totalUnits,
+    laborEfficiencyRatio: totalHours > 0 ? totalUnits / totalHours : 0,
   };
 }
 
