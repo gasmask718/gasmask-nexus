@@ -39252,6 +39252,7 @@ export type Database = {
           empty_boxes_issued: Json | null
           empty_boxes_used: Json | null
           expected_completion_minutes: number | null
+          generated_by_system: boolean
           id: string
           inventory_state: string
           is_locked: boolean | null
@@ -39266,6 +39267,7 @@ export type Database = {
           stickers_used: Json | null
           supplier_batch_reference: string | null
           supplier_id: string | null
+          system_generation_note: string | null
           tobacco_heatup_minutes: number | null
           tobacco_lbs: number | null
           tools_used: Json | null
@@ -39299,6 +39301,7 @@ export type Database = {
           empty_boxes_issued?: Json | null
           empty_boxes_used?: Json | null
           expected_completion_minutes?: number | null
+          generated_by_system?: boolean
           id?: string
           inventory_state?: string
           is_locked?: boolean | null
@@ -39313,6 +39316,7 @@ export type Database = {
           stickers_used?: Json | null
           supplier_batch_reference?: string | null
           supplier_id?: string | null
+          system_generation_note?: string | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
@@ -39346,6 +39350,7 @@ export type Database = {
           empty_boxes_issued?: Json | null
           empty_boxes_used?: Json | null
           expected_completion_minutes?: number | null
+          generated_by_system?: boolean
           id?: string
           inventory_state?: string
           is_locked?: boolean | null
@@ -39360,6 +39365,7 @@ export type Database = {
           stickers_used?: Json | null
           supplier_batch_reference?: string | null
           supplier_id?: string | null
+          system_generation_note?: string | null
           tobacco_heatup_minutes?: number | null
           tobacco_lbs?: number | null
           tools_used?: Json | null
@@ -39683,6 +39689,7 @@ export type Database = {
           created_at: string | null
           deviation_pct: number
           id: string
+          is_high_override: boolean
           override_reason: string
           recommended_lbs: number
         }
@@ -39694,6 +39701,7 @@ export type Database = {
           created_at?: string | null
           deviation_pct: number
           id?: string
+          is_high_override?: boolean
           override_reason: string
           recommended_lbs: number
         }
@@ -39705,6 +39713,7 @@ export type Database = {
           created_at?: string | null
           deviation_pct?: number
           id?: string
+          is_high_override?: boolean
           override_reason?: string
           recommended_lbs?: number
         }
@@ -49534,6 +49543,54 @@ export type Database = {
             referencedColumns: ["purchase_order_id"]
           },
         ]
+      }
+      system_alerts: {
+        Row: {
+          alert_date: string
+          alert_type: string
+          brand: string | null
+          created_at: string
+          dashboard_link: string | null
+          id: string
+          message: string
+          recommended_action: string | null
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          throttle_key: string | null
+        }
+        Insert: {
+          alert_date?: string
+          alert_type: string
+          brand?: string | null
+          created_at?: string
+          dashboard_link?: string | null
+          id?: string
+          message: string
+          recommended_action?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          throttle_key?: string | null
+        }
+        Update: {
+          alert_date?: string
+          alert_type?: string
+          brand?: string | null
+          created_at?: string
+          dashboard_link?: string | null
+          id?: string
+          message?: string
+          recommended_action?: string | null
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          throttle_key?: string | null
+        }
+        Relationships: []
       }
       system_checkpoints: {
         Row: {

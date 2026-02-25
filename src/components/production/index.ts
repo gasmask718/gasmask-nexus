@@ -58,3 +58,7 @@ export { SupplierYieldRankingPanel } from './SupplierYieldRankingPanel';
 
 // Phase 8: Sales Velocity Closed-Loop Engine
 export { SalesVelocityPanel } from './SalesVelocityPanel';
+
+// Phase 9: Production Governance Engines
+export { OverrideAuditPanel } from './OverrideAuditPanel';
+export { AlertHistoryPanel } from './AlertHistoryPanel';

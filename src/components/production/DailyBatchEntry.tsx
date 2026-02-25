@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
@@ -26,9 +27,12 @@ import {
   useProductionWorkers,
   ProductionBatch 
 } from '@/hooks/useProductionPortal';
-import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, AlertTriangle, User } from 'lucide-react';
+import { useDeviationGate } from '@/hooks/useDeviationGate';
+import { supabase } from '@/integrations/supabase/client';
+import { Boxes, Plus, Play, CheckCircle, XCircle, ChevronRight, Scale, Package, AlertTriangle, User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 interface DailyBatchEntryProps {
   officeId: string;
@@ -79,20 +83,58 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
     notes: '',
   });
 
+  // Deviation gate state
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideAcknowledged, setOverrideAcknowledged] = useState(false);
+
+  const proposedLbs = parseFloat(formData.tobacco_lbs) || 0;
+  const gate = useDeviationGate(formData.brand, proposedLbs);
+
   const handleCreateBatch = async () => {
-    await createBatch.mutateAsync({
+    // Check deviation gate
+    if (gate.requiresOverride && !showOverrideModal) {
+      setShowOverrideModal(true);
+      return;
+    }
+
+    const batchData = {
       office_id: officeId,
       brand: formData.brand,
       shift_label: formData.shift_label,
-      tobacco_lbs: parseFloat(formData.tobacco_lbs) || 0,
+      tobacco_lbs: proposedLbs,
       tubes_total: parseInt(formData.tubes_total) || 0,
       stickers_issued: formData.stickers_issued,
       empty_boxes_issued: formData.empty_boxes_issued,
       workers_present: formData.workers_present,
       notes: formData.notes,
       status: 'open',
-    });
+    };
+
+    const result = await createBatch.mutateAsync(batchData);
+
+    // If override was required, log it
+    if (gate.requiresOverride && overrideReason) {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase
+        .from('production_demand_overrides')
+        .insert({
+          brand: formData.brand,
+          recommended_lbs: gate.recommended,
+          actual_lbs: proposedLbs,
+          deviation_pct: gate.deviationPct,
+          override_reason: overrideReason,
+          acknowledged_by: user?.id || null,
+          is_high_override: gate.isHighOverride,
+          batch_id: (result as any)?.id || null,
+        } as any);
+      toast.info(`Override logged: ${gate.deviationPct}% deviation from recommendation`);
+    }
+
     setIsCreateModalOpen(false);
+    setShowOverrideModal(false);
+    setOverrideReason('');
+    setOverrideAcknowledged(false);
     setFormData({
       brand: 'gasmask',
       shift_label: 'Morning',
@@ -103,6 +145,11 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       workers_present: [],
       notes: '',
     });
+  };
+
+  const handleOverrideConfirm = () => {
+    if (overrideReason.length < 20 || !overrideAcknowledged) return;
+    handleCreateBatch();
   };
 
   const updateStickersIssued = (brand: string, value: string) => {
@@ -203,6 +250,11 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                             <Badge className={cn('text-xs', statusConfig?.color)}>
                               {statusConfig?.label}
                             </Badge>
+                            {(batch as any).generated_by_system && (
+                              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                                <Bot className="h-3 w-3" /> System Draft
+                              </Badge>
+                            )}
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                             <span className="flex items-center gap-1">
@@ -417,6 +469,60 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Override Gate Modal */}
+      <AlertDialog open={showOverrideModal} onOpenChange={setShowOverrideModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Production Override Required
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Production quantity deviates <strong>{gate.deviationPct}%</strong> from the demand-based recommendation of <strong>{gate.recommended} lbs</strong>.
+              {gate.isHighOverride && (
+                <span className="block mt-1 text-destructive font-medium">
+                  ⚠️ HIGH OVERRIDE — This will be flagged for executive review.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="override-reason">Override Reason (min 20 characters) *</Label>
+              <Textarea
+                id="override-reason"
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder="Explain why this override is necessary..."
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{overrideReason.length}/20 characters minimum</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="override-ack"
+                checked={overrideAcknowledged}
+                onCheckedChange={(checked) => setOverrideAcknowledged(checked === true)}
+              />
+              <label htmlFor="override-ack" className="text-sm cursor-pointer">
+                I understand this overrides demand intelligence.
+              </label>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowOverrideModal(false); setOverrideReason(''); setOverrideAcknowledged(false); }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleOverrideConfirm}
+              disabled={overrideReason.length < 20 || !overrideAcknowledged || createBatch.isPending}
+            >
+              Confirm Override & Create Batch
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Batch Detail Modal */}
       {selectedBatch && (
