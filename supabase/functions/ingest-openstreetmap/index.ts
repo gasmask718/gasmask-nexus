@@ -272,6 +272,7 @@ serve(async (req) => {
           if (existing && existing.length > 0) { result.skipped++; continue; }
 
           const insertData: Record<string, any> = {
+            store_name: tags.name || null,
             full_address: addrStr,
             city: tags['addr:city'] || city,
             state: tags['addr:state'] || state,
