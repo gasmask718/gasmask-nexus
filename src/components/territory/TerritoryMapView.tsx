@@ -31,6 +31,7 @@ function resolveBoroughForCity(city: string): string {
 
 interface TerritoryAddress {
   id: string;
+  store_name: string | null;
   full_address: string | null;
   city: string | null;
   state: string | null;
@@ -141,7 +142,7 @@ export function TerritoryMapView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('territory_addresses')
-        .select('id, full_address, city, state, zip, latitude, longitude, discovery_status, discovered_by, address_type, notes, verified_sells_grabba, last_checked_at, created_at')
+        .select('id, store_name, full_address, city, state, zip, latitude, longitude, discovery_status, discovered_by, address_type, notes, verified_sells_grabba, last_checked_at, created_at')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
       if (error) throw error;
@@ -195,6 +196,7 @@ export function TerritoryMapView() {
     if (!searchQuery) return territoryAddresses;
     const q = searchQuery.toLowerCase();
     return territoryAddresses.filter(a =>
+      (a.store_name || '').toLowerCase().includes(q) ||
       (a.full_address || '').toLowerCase().includes(q) ||
       (a.notes || '').toLowerCase().includes(q) ||
       (a.discovered_by || '').toLowerCase().includes(q)
@@ -350,7 +352,7 @@ export function TerritoryMapView() {
         .setLngLat([a.longitude, a.latitude])
         .setPopup(
           new mapboxgl.Popup({ offset: 10, closeButton: false })
-            .setHTML(`<div style="color:#000;font-size:12px"><strong>${a.full_address || 'Unknown'}</strong><br/>${a.discovery_status || 'new'} · ${a.discovered_by || '—'}</div>`)
+            .setHTML(`<div style="color:#000;font-size:12px"><strong>${a.store_name || 'Unknown Store'}</strong><br/><span style="color:#555">${a.full_address || '—'}</span><br/><span style="color:#888;font-size:11px">${(a.discovery_status || 'new').replace('_', ' ')} · ${a.discovered_by || '—'}</span></div>`)
         )
         .addTo(map);
 
@@ -444,20 +446,29 @@ export function TerritoryMapView() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm truncate">{addr.full_address || '—'}</p>
+                        <p className="font-medium text-sm truncate">{addr.store_name || 'Unknown Store'}</p>
                         <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
                           <MapPin className="h-3 w-3 shrink-0" />
-                          {addr.city || ''}, {addr.state || ''} {addr.zip || ''}
+                          {addr.full_address || '—'}
                         </p>
-                        {addr.discovered_by && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Eye className="h-3 w-3 shrink-0" />
-                            {addr.discovered_by}
-                          </p>
-                        )}
-                        {addr.notes && (
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate">{addr.notes}</p>
-                        )}
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          {addr.address_type && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                              {addr.address_type}
+                            </Badge>
+                          )}
+                          {addr.discovered_by && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                              <Eye className="h-3 w-3 shrink-0" />
+                              {addr.discovered_by}
+                            </span>
+                          )}
+                          {addr.created_at && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {new Date(addr.created_at).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Badge variant={statusBadgeVariant(addr.discovery_status)} className="text-[10px] px-1.5 py-0">
