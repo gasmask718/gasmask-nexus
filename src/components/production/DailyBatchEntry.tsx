@@ -78,6 +78,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
     tobacco_lbs: '',
     tubes_total: '',
     product_type: 'tubes' as 'tubes' | 'bags',
+    product_output_units: '',
     stickers_issued: {} as Record<string, number>,
     empty_boxes_issued: {} as Record<string, number>,
     workers_present: [] as string[],
@@ -99,6 +100,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       return;
     }
 
+    const productUnits = parseInt(formData.product_output_units) || 0;
     const batchData = {
       office_id: officeId,
       brand: formData.brand,
@@ -111,6 +113,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       notes: formData.notes,
       status: 'open',
       product_type: formData.product_type,
+      product_output_units: productUnits,
     };
 
     const result = await createBatch.mutateAsync(batchData);
@@ -143,6 +146,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
       tobacco_lbs: '',
       tubes_total: '',
       product_type: 'tubes',
+      product_output_units: '',
       stickers_issued: {},
       empty_boxes_issued: {},
       workers_present: [],
@@ -267,14 +271,10 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                               <Scale className="h-3 w-3" />
                               {batch.tobacco_lbs ?? 0} lbs
                             </span>
-                            {(batch as any).product_type === 'bags' ? (
-                              <span className="text-primary font-medium">{(batch as any).product_output_units || 0} bags</span>
-                            ) : (
-                              <>
-                                <span>{batch.tubes_total?.toLocaleString() || 0} tubes</span>
-                                <span className="text-primary font-medium">{batch.boxes_produced || 0} boxes</span>
-                              </>
-                            )}
+                            <span>
+                              {(batch as any).product_output_units || 0} {(batch as any).product_type === 'bags' ? 'bags' : 'tubes'}
+                            </span>
+                            <span className="text-primary font-medium">{batch.boxes_produced || 0} boxes</span>
                             {(batch.total_defects || 0) > 0 && (
                               <span className="text-destructive flex items-center gap-1">
                                 <AlertTriangle className="h-3 w-3" />
@@ -409,7 +409,7 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
 
                 {formData.product_type === 'tubes' && (
                   <div className="grid gap-2">
-                    <Label htmlFor="tubes">Tubes (qty) *</Label>
+                    <Label htmlFor="tubes">Tubes Issued (qty)</Label>
                     <Input
                       id="tubes"
                       type="number"
@@ -417,6 +417,56 @@ export function DailyBatchEntry({ officeId }: DailyBatchEntryProps) {
                       onChange={(e) => setFormData({ ...formData, tubes_total: e.target.value })}
                       placeholder="0"
                     />
+                  </div>
+                )}
+              </div>
+
+              {/* Product Units Produced + Auto Boxes */}
+              <div className="border rounded-lg p-4 bg-primary/5">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Boxes className="h-4 w-4" />
+                  Output — {formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced
+                </h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  100 {formData.product_type === 'bags' ? 'bags' : 'tubes'} = 1 box. Boxes auto-calculated.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="product_units">{formData.product_type === 'bags' ? 'Bags' : 'Tubes'} Produced *</Label>
+                    <Input
+                      id="product_units"
+                      type="number"
+                      value={formData.product_output_units}
+                      onChange={(e) => setFormData({ ...formData, product_output_units: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>Boxes (auto)</Label>
+                    <div className="flex items-center h-10 px-3 rounded-md border bg-muted text-foreground font-mono font-bold">
+                      {Math.floor((parseInt(formData.product_output_units) || 0) / 100)}
+                    </div>
+                  </div>
+                </div>
+                {/* Real-time conversion display */}
+                {proposedLbs > 0 && parseInt(formData.product_output_units) > 0 && (
+                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="p-2 rounded bg-muted/50 border">
+                      <span className="text-muted-foreground">Units/LB</span>
+                      <p className="font-mono font-bold">{(parseInt(formData.product_output_units) / proposedLbs).toFixed(2)}</p>
+                    </div>
+                    <div className="p-2 rounded bg-muted/50 border">
+                      <span className="text-muted-foreground">Boxes/LB</span>
+                      <p className="font-mono font-bold">{(Math.floor(parseInt(formData.product_output_units) / 100) / proposedLbs).toFixed(2)}</p>
+                    </div>
+                    <div className="p-2 rounded bg-muted/50 border">
+                      <span className="text-muted-foreground">LBS/Unit</span>
+                      <p className="font-mono font-bold">{(proposedLbs / parseInt(formData.product_output_units)).toFixed(4)}</p>
+                    </div>
+                    <div className="p-2 rounded bg-muted/50 border">
+                      <span className="text-muted-foreground">LBS/Box</span>
+                      <p className="font-mono font-bold">{Math.floor(parseInt(formData.product_output_units) / 100) > 0 ? (proposedLbs / Math.floor(parseInt(formData.product_output_units) / 100)).toFixed(2) : '—'}</p>
+                    </div>
                   </div>
                 )}
               </div>

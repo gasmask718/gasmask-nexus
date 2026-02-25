@@ -33,18 +33,18 @@ export function ProductionEfficiencyPanel() {
   const stats = data?.stats;
   const batches = data?.batches || [];
   const baseline = baselineData?.active;
-  const unitLabel = selectedProductType === 'bags' ? 'bags' : 'boxes';
-  const unitSingular = selectedProductType === 'bags' ? 'bag' : 'box';
+  const unitLabel = selectedProductType === 'bags' ? 'bags' : 'tubes';
+  const unitSingular = selectedProductType === 'bags' ? 'bag' : 'tube';
 
   // Filter batches with time data
-  const timeBatches = batches.filter(b => b.time_per_unit !== null && b.time_per_unit > 0);
+  const timeBatches = batches.filter(b => b.time_per_box !== null && b.time_per_box > 0);
   const hasTimeData = timeBatches.length > 0;
 
-  // Slowdown alert
-  const baselineTime = baseline?.baseline_time_per_unit;
-  const avgTime = stats?.avgTimePerUnit;
-  const slowdownAlert = baselineTime && avgTime
-    ? getTimeVarianceLevel(avgTime, baselineTime)
+  // Slowdown alert (based on time per box)
+  const baselineTimeBox = baseline?.baseline_time_per_box;
+  const avgTimeBox = stats?.avgTimePerBox;
+  const slowdownAlert = baselineTimeBox && avgTimeBox
+    ? getTimeVarianceLevel(avgTimeBox, baselineTimeBox)
     : null;
 
   if (isLoading) {
@@ -90,7 +90,7 @@ export function ProductionEfficiencyPanel() {
             <div>
               <p className="text-sm font-semibold text-destructive">Production Slowdown Detected</p>
               <p className="text-xs text-muted-foreground">
-                Average time per {unitSingular} is {slowdownAlert.pct.toFixed(1)}% above baseline.
+                Average time per box is {slowdownAlert.pct.toFixed(1)}% above baseline.
                 Investigate staffing, equipment, or material quality.
               </p>
             </div>
@@ -111,26 +111,33 @@ export function ProductionEfficiencyPanel() {
       ) : (
         <>
           {/* Time KPIs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
             <TimeKpi
-              label={`Avg Min / ${unitSingular}`}
-              value={avgTime?.toFixed(1) || '—'}
+              label="Avg Min/Box"
+              value={avgTimeBox?.toFixed(1) || '—'}
               icon={<Clock className="h-4 w-4" />}
               variant={slowdownAlert?.level === 'critical' ? 'red' : slowdownAlert?.level === 'slow' ? 'amber' : 'default'}
             />
             <TimeKpi
+              label={`Avg Min/${unitSingular}`}
+              value={stats?.avgTimePerUnit?.toFixed(2) || '—'}
+              icon={<Clock className="h-4 w-4" />}
+              variant="default"
+              subtitle="Per unit"
+            />
+            <TimeKpi
               label="Fastest Batch"
-              value={stats?.fastestBatch?.time_per_unit?.toFixed(1) || '—'}
+              value={stats?.fastestBatch?.time_per_box?.toFixed(1) || '—'}
               icon={<Zap className="h-4 w-4" />}
               variant="green"
-              subtitle={stats?.fastestBatch?.brand}
+              subtitle={stats?.fastestBatch ? `${stats.fastestBatch.brand} · min/box` : undefined}
             />
             <TimeKpi
               label="Slowest Batch"
-              value={stats?.slowestBatch?.time_per_unit?.toFixed(1) || '—'}
+              value={stats?.slowestBatch?.time_per_box?.toFixed(1) || '—'}
               icon={<TrendingDown className="h-4 w-4" />}
               variant="red"
-              subtitle={stats?.slowestBatch?.brand}
+              subtitle={stats?.slowestBatch ? `${stats.slowestBatch.brand} · min/box` : undefined}
             />
             <TimeKpi
               label="Batches w/ Time"
@@ -142,18 +149,18 @@ export function ProductionEfficiencyPanel() {
           </div>
 
           {/* Baseline Comparison */}
-          {baselineTime && (
+          {baselineTimeBox && (
             <Card className="border-primary/20 bg-primary/5">
               <CardContent className="py-4">
                 <div className="flex items-center gap-4 flex-wrap">
                   <div>
-                    <p className="text-xs text-muted-foreground">Baseline Time/{unitSingular}</p>
-                    <p className="text-2xl font-mono font-bold text-primary">{baselineTime.toFixed(1)} min</p>
+                    <p className="text-xs text-muted-foreground">Baseline Time/Box</p>
+                    <p className="text-2xl font-mono font-bold text-primary">{baselineTimeBox.toFixed(1)} min</p>
                   </div>
                   <div className="text-muted-foreground">→</div>
                   <div>
                     <p className="text-xs text-muted-foreground">Current Avg</p>
-                    <p className="text-2xl font-mono font-bold">{avgTime?.toFixed(1) || '—'} min</p>
+                    <p className="text-2xl font-mono font-bold">{avgTimeBox?.toFixed(1) || '—'} min</p>
                   </div>
                   {slowdownAlert && (
                     <Badge
@@ -177,8 +184,8 @@ export function ProductionEfficiencyPanel() {
             <CardContent>
               <div className="space-y-2">
                 {timeBatches.slice(0, 10).map(batch => {
-                  const timeVariance = baselineTime
-                    ? getTimeVarianceLevel(batch.time_per_unit!, baselineTime)
+                  const timeVariance = baselineTimeBox
+                    ? getTimeVarianceLevel(batch.time_per_box!, baselineTimeBox)
                     : null;
                   return (
                     <div key={batch.batch_id} className="flex items-center justify-between p-2 rounded bg-muted/30 border">
@@ -188,11 +195,11 @@ export function ProductionEfficiencyPanel() {
                           {batch.batch_date ? format(new Date(batch.batch_date), 'MMM d') : '—'}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {batch.product_output_units} {unitLabel} • {batch.production_time_minutes?.toFixed(0)} min total
+                          {batch.product_output_units?.toLocaleString()} {unitLabel} → {batch.boxes_produced} boxes • {batch.production_time_minutes?.toFixed(0)} min
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-sm">{batch.time_per_unit?.toFixed(1)} min/{unitSingular}</span>
+                        <span className="font-mono font-bold text-sm">{batch.time_per_box?.toFixed(1)} min/box</span>
                         {timeVariance && (
                           <Badge
                             variant={timeVariance.level === 'critical' ? 'destructive' : timeVariance.level === 'slow' ? 'outline' : 'secondary'}

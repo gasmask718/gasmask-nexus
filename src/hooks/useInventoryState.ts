@@ -69,14 +69,8 @@ export async function validateTransitionRequirements(
   }
 
   if (toState === 'boxed') {
-    if (productType === 'tubes') {
-      if (!batch.boxes_produced || batch.boxes_produced <= 0) {
-        return { valid: false, error: 'Boxes produced must be entered before marking as boxed.' };
-      }
-    } else {
-      if (!outputUnits || outputUnits <= 0) {
-        return { valid: false, error: `${productType === 'bags' ? 'Bags' : 'Units'} produced must be entered before marking as boxed.` };
-      }
+    if (!outputUnits || outputUnits <= 0) {
+      return { valid: false, error: `${productType === 'bags' ? 'Bags' : 'Tubes'} produced must be entered before marking as boxed (boxes auto-calculated from units).` };
     }
   }
 
@@ -84,8 +78,8 @@ export async function validateTransitionRequirements(
     if (!batch.tobacco_lbs || batch.tobacco_lbs <= 0) {
       return { valid: false, error: 'Cannot approve: tobacco LBS is missing.' };
     }
-    if (outputUnits <= 0 && (!batch.boxes_produced || batch.boxes_produced <= 0)) {
-      return { valid: false, error: 'Cannot approve: output units are missing.' };
+    if (outputUnits <= 0) {
+      return { valid: false, error: 'Cannot approve: product units produced are missing.' };
     }
     if (!(batch as any).product_type) {
       return { valid: false, error: 'Cannot approve: product type not selected.' };

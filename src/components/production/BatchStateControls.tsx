@@ -66,19 +66,22 @@ export function BatchStateControls({
     });
   };
 
-  // Compute conversion preview for approval dialog
+  // Compute two-layer conversion preview for approval dialog
   const lbs = batchData?.tobacco_lbs || 0;
-  const boxes = batchData?.boxes_produced || 0;
-  const outputUnits = batchData?.product_output_units || boxes;
+  const outputUnits = batchData?.product_output_units || 0;
+  const boxes = Math.floor(outputUnits / 100);
   const productType = batchData?.product_type || 'tubes';
-  const unitLabel = productType === 'bags' ? 'bags' : 'boxes';
-  const lbsPerUnit = outputUnits > 0 ? (lbs / outputUnits).toFixed(3) : '—';
-  const unitsPerLb = lbs > 0 ? (outputUnits / lbs).toFixed(3) : '—';
-  const lbsPerBox = boxes > 0 ? (lbs / boxes).toFixed(3) : '—';
+  const unitLabel = productType === 'bags' ? 'bags' : 'tubes';
+  const lbsPerUnit = outputUnits > 0 ? (lbs / outputUnits).toFixed(4) : '—';
+  const unitsPerLb = lbs > 0 ? (outputUnits / lbs).toFixed(2) : '—';
+  const lbsPerBox = boxes > 0 ? (lbs / boxes).toFixed(2) : '—';
   const boxesPerLb = lbs > 0 ? (boxes / lbs).toFixed(3) : '—';
   const wastePct = lbs > 0 && batchData?.waste_lbs ? ((batchData.waste_lbs / lbs) * 100).toFixed(1) : null;
   const timePerUnit = batchData?.production_time_minutes && outputUnits > 0
-    ? (batchData.production_time_minutes / outputUnits).toFixed(2)
+    ? (batchData.production_time_minutes / outputUnits).toFixed(3)
+    : null;
+  const timePerBox = batchData?.production_time_minutes && boxes > 0
+    ? (batchData.production_time_minutes / boxes).toFixed(1)
     : null;
 
   const renderApprovalDialog = (ns: InventoryState) => {
@@ -114,16 +117,28 @@ export function BatchStateControls({
                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs">
                      <span className="text-muted-foreground">Material Input:</span>
                      <span className="font-medium text-foreground">{lbs} lbs</span>
-                     <span className="text-muted-foreground">Output ({unitLabel}):</span>
-                     <span className="font-medium text-foreground">{outputUnits} {unitLabel}</span>
+                     <span className="text-muted-foreground">{unitLabel} produced:</span>
+                     <span className="font-medium text-foreground">{outputUnits.toLocaleString()}</span>
+                     <span className="text-muted-foreground">Boxes (100 {unitLabel}/box):</span>
+                     <span className="font-medium text-foreground">{boxes}</span>
                      <span className="text-muted-foreground">LBS / {unitLabel.slice(0, -1)}:</span>
                      <span className="font-medium text-foreground">{lbsPerUnit}</span>
                      <span className="text-muted-foreground">{unitLabel} / LB:</span>
                      <span className="font-medium text-foreground">{unitsPerLb}</span>
+                     <span className="text-muted-foreground">LBS / box:</span>
+                     <span className="font-medium text-foreground">{lbsPerBox}</span>
+                     <span className="text-muted-foreground">Boxes / LB:</span>
+                     <span className="font-medium text-foreground">{boxesPerLb}</span>
                      {timePerUnit && (
                        <>
                          <span className="text-muted-foreground">Time / {unitLabel.slice(0, -1)}:</span>
                          <span className="font-medium text-foreground">{timePerUnit} min</span>
+                       </>
+                     )}
+                     {timePerBox && (
+                       <>
+                         <span className="text-muted-foreground">Time / box:</span>
+                         <span className="font-medium text-foreground">{timePerBox} min</span>
                        </>
                      )}
                      {wastePct && (

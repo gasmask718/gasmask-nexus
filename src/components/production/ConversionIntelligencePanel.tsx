@@ -34,8 +34,8 @@ export function ConversionIntelligencePanel() {
   const stats = data?.stats;
   const batches = data?.batches || [];
   const baseline = baselineData?.active;
-  const unitLabel = selectedProductType === 'bags' ? 'bags' : 'boxes';
-  const unitSingular = selectedProductType === 'bags' ? 'bag' : 'box';
+  const unitLabel = selectedProductType === 'bags' ? 'bags' : 'tubes';
+  const unitSingular = selectedProductType === 'bags' ? 'bag' : 'tube';
 
   if (isLoading) {
     return (
@@ -100,10 +100,14 @@ export function ConversionIntelligencePanel() {
             <div>
               <p className="text-sm font-semibold">Baseline Active — {baseline.calculated_from_batch_count} batches <span className="capitalize">({selectedProductType})</span></p>
               <p className="text-xs text-muted-foreground">
-                Baseline: <span className="font-mono font-medium">{baseline.baseline_units_per_lb || baseline.baseline_boxes_per_lb}</span> {unitLabel}/lb
+                <span className="font-mono font-medium">{baseline.baseline_units_per_lb || baseline.baseline_boxes_per_lb}</span> {unitLabel}/lb
                 · <span className="font-mono font-medium">{baseline.baseline_lbs_per_unit || baseline.baseline_lbs_per_box}</span> lbs/{unitSingular}
+                · <span className="font-mono font-medium">{baseline.baseline_boxes_per_lb}</span> boxes/lb
                 {baseline.baseline_time_per_unit && (
                   <> · <span className="font-mono font-medium">{baseline.baseline_time_per_unit}</span> min/{unitSingular}</>
+                )}
+                {baseline.baseline_time_per_box && (
+                  <> · <span className="font-mono font-medium">{baseline.baseline_time_per_box}</span> min/box</>
                 )}
                 · Updated {format(new Date(baseline.last_updated_at), 'MMM d, yyyy')}
               </p>
@@ -129,14 +133,15 @@ export function ConversionIntelligencePanel() {
       )}
 
       {/* Global KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 sm:gap-4">
-        <KpiCard label="Total LBS Used" value={stats.totalLbs.toLocaleString()} icon={<Weight className="h-4 w-4" />} variant="default" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 sm:gap-4">
+        <KpiCard label="Total LBS" value={stats.totalLbs.toLocaleString()} icon={<Weight className="h-4 w-4" />} variant="default" />
         <KpiCard label={`Total ${unitLabel}`} value={stats.totalUnits.toLocaleString()} icon={<Box className="h-4 w-4" />} variant="default" />
-        <KpiCard label={`LBS / ${unitSingular}`} value={stats.globalAvgLbsPerUnit.toFixed(2)} icon={<TrendingDown className="h-4 w-4" />} variant="amber" subtitle="Global avg" />
-        <KpiCard label={`${unitLabel} / LB`} value={stats.globalAvgUnitsPerLb.toFixed(2)} icon={<TrendingUp className="h-4 w-4" />} variant="green" subtitle="Global avg" />
+        <KpiCard label="Total Boxes" value={stats.totalBoxes.toLocaleString()} icon={<Box className="h-4 w-4" />} variant="default" />
+        <KpiCard label={`${unitLabel}/LB`} value={stats.globalAvgUnitsPerLb.toFixed(2)} icon={<TrendingUp className="h-4 w-4" />} variant="green" subtitle="Global avg" />
+        <KpiCard label="Boxes/LB" value={stats.globalAvgBoxesPerLb.toFixed(3)} icon={<TrendingUp className="h-4 w-4" />} variant="green" subtitle="Global avg" />
         <KpiCard label="Avg Waste" value={`${stats.avgWastePct}%`} icon={<AlertTriangle className="h-4 w-4" />} variant={stats.avgWastePct > 5 ? 'red' : 'default'} />
-        {stats.avgTimePerUnit !== null && (
-          <KpiCard label={`Min / ${unitSingular}`} value={stats.avgTimePerUnit.toFixed(1)} icon={<Timer className="h-4 w-4" />} variant="default" subtitle="Avg time" />
+        {stats.avgTimePerBox !== null && (
+          <KpiCard label="Min/Box" value={stats.avgTimePerBox.toFixed(1)} icon={<Timer className="h-4 w-4" />} variant="default" subtitle="Avg time" />
         )}
         <KpiCard label="Efficiency" value={`${stats.efficiencyScore}/100`} icon={<Activity className="h-4 w-4" />} variant={stats.efficiencyScore >= 80 ? 'green' : stats.efficiencyScore >= 60 ? 'amber' : 'red'} />
       </div>
@@ -277,12 +282,13 @@ export function ConversionIntelligencePanel() {
                   <TableHead>Date</TableHead>
                   <TableHead>Brand</TableHead>
                   <TableHead className="text-right">LBS In</TableHead>
-                  <TableHead className="text-right">{unitLabel} Out</TableHead>
-                  <TableHead className="text-right">LBS/{unitSingular}</TableHead>
+                  <TableHead className="text-right">{unitLabel}</TableHead>
+                  <TableHead className="text-right">Boxes</TableHead>
                   <TableHead className="text-right">{unitLabel}/LB</TableHead>
+                  <TableHead className="text-right">Boxes/LB</TableHead>
                   <TableHead className="text-right">Waste %</TableHead>
-                  <TableHead className="text-right">Cost/{unitSingular}</TableHead>
-                  <TableHead className="text-right">Time/{unitSingular}</TableHead>
+                  <TableHead className="text-right">Cost/Box</TableHead>
+                  <TableHead className="text-right">Time/Box</TableHead>
                   <TableHead>Variance</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -303,9 +309,10 @@ export function ConversionIntelligencePanel() {
                         <Badge variant="outline" className="text-xs">{batch.brand}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-mono">{batch.tobacco_lbs}</TableCell>
-                      <TableCell className="text-right font-mono font-medium">{batch.product_output_units ?? batch.boxes_produced ?? '—'}</TableCell>
-                      <TableCell className="text-right font-mono">{batch.lbs_per_unit?.toFixed(3) ?? '—'}</TableCell>
-                      <TableCell className="text-right font-mono">{batch.units_per_lb?.toFixed(3) ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.product_output_units?.toLocaleString() ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono font-medium">{batch.boxes_produced ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.units_per_lb?.toFixed(2) ?? '—'}</TableCell>
+                      <TableCell className="text-right font-mono">{batch.boxes_per_lb?.toFixed(3) ?? '—'}</TableCell>
                       <TableCell className="text-right font-mono">
                         {batch.waste_pct !== null ? (
                           <span className={cn(batch.waste_pct > 5 && 'text-destructive font-semibold')}>
@@ -314,10 +321,10 @@ export function ConversionIntelligencePanel() {
                         ) : '—'}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {batch.cost_per_unit !== null ? `$${batch.cost_per_unit.toFixed(2)}` : '—'}
+                        {batch.cost_per_box !== null ? `$${batch.cost_per_box.toFixed(2)}` : '—'}
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {batch.time_per_unit !== null ? `${batch.time_per_unit.toFixed(1)}m` : '—'}
+                        {batch.time_per_box !== null ? `${batch.time_per_box.toFixed(1)}m` : '—'}
                       </TableCell>
                       <TableCell>
                         {variance ? (
