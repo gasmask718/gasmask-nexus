@@ -196,3 +196,6 @@ verify_jwt = false
 
 [functions.elevenlabs-tts]
 verify_jwt = false
+
+[functions.yelp-business-search]
+verify_jwt = false

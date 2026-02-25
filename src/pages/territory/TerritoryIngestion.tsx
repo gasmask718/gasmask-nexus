@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 import { Upload, FileSpreadsheet, CheckCircle2, MapPin, ArrowRight, Globe, Search, Map, Settings, AlertTriangle, X, Plus, RefreshCw } from 'lucide-react';
+import { YelpBusinessSearch } from '@/components/territory/YelpBusinessSearch';
 import { Progress } from '@/components/ui/progress';
 
 type SourceType = 'csv' | 'google_places' | 'yelp' | 'openstreetmap';
@@ -368,8 +369,13 @@ export default function TerritoryIngestion() {
         </div>
       )}
 
-      {/* STEP: Scope (API sources) */}
-      {step === 'scope' && source && source !== 'csv' && (
+      {/* STEP: Yelp Business Search */}
+      {step === 'scope' && source === 'yelp' && (
+        <YelpBusinessSearch onBack={() => { setSource(null); setStep('source'); }} />
+      )}
+
+      {/* STEP: Scope (API sources — non-Yelp) */}
+      {step === 'scope' && source && source !== 'csv' && source !== 'yelp' && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
