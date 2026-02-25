@@ -102,8 +102,8 @@ export function YelpBusinessSearch({ onBack }: Props) {
         zip: b.location.zip_code,
         latitude: b.coordinates.latitude,
         longitude: b.coordinates.longitude,
-        address_type: b.categories.map(c => c.title).join(', '),
-        notes: `${b.name} | Rating: ${b.rating}/5 (${b.review_count} reviews) | ${b.display_phone}`,
+        address_type: 'commercial',
+        notes: `${b.name} | ${b.categories.map(c => c.title).join(', ')} | Rating: ${b.rating}/5 (${b.review_count} reviews) | ${b.display_phone}`,
         discovery_status: 'unknown',
         discovered_by: 'yelp',
       }));
