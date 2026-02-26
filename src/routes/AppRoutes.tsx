@@ -245,6 +245,7 @@ import ShadowModePage from '@/pages/communication/ShadowModePage';
 import OutboundGrowthPage from '@/pages/communication/OutboundGrowthPage';
 import { ExecutiveControlRoomPage } from '@/pages/executive';
 import ComplianceCenter from '@/pages/compliance/ComplianceCenter';
+import ColdCallBlastPage from '@/pages/communication/cold-calls/ColdCallBlastPage';
 // Legacy Communication imports (kept for other routes)
 import CommunicationOverview from '@/pages/communication/CommunicationOverview';
 import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
@@ -1477,6 +1478,7 @@ export default function AppRoutes() {
           <Route path="optimization" element={<DialerOptimizationDashboard />} />
           <Route path="revenue-intelligence" element={<DialerRevenueIntelligence />} />
           <Route path="predictive-targeting" element={<DialerPredictiveTargeting />} />
+          <Route path="cold-call-blast" element={<ColdCallBlastPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
