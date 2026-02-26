@@ -134,12 +134,12 @@ export function CallModal({
             </div>
           </div>
 
-          {/* Business Selector */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Calling From (Caller ID)
-            </label>
-            {businessPhoneNumbers.length > 0 ? (
+          {/* Business Selector - optional */}
+          {businessPhoneNumbers.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">
+                Calling From (Caller ID)
+              </label>
               <Select
                 value={selectedBusinessId}
                 onValueChange={setSelectedBusinessId}
@@ -166,18 +166,20 @@ export function CallModal({
                   ))}
                 </SelectContent>
               </Select>
-            ) : (
-              <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-                No business phone numbers configured. Please contact an administrator.
-              </div>
-            )}
 
-            {selectedNumber && (
-              <p className="text-sm text-muted-foreground">
-                The recipient will see <strong>{formatPhone(selectedNumber.phone_number)}</strong> as the caller ID.
-              </p>
-            )}
-          </div>
+              {selectedNumber && (
+                <p className="text-sm text-muted-foreground">
+                  The recipient will see <strong>{formatPhone(selectedNumber.phone_number)}</strong> as the caller ID.
+                </p>
+              )}
+            </div>
+          )}
+
+          {businessPhoneNumbers.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              Call will be placed using the default Twilio number.
+            </p>
+          )}
         </div>
 
         <DialogFooter className="flex gap-2 sm:gap-0">
@@ -187,7 +189,7 @@ export function CallModal({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isLoading || !selectedBusinessId || businessPhoneNumbers.length === 0}
+            disabled={isLoading}
           >
             {isLoading ? (
               <>
