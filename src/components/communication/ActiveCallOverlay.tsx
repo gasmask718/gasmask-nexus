@@ -119,10 +119,34 @@ export function ActiveCallOverlay({
             </Button>
           </div>
 
-          {/* Contact info */}
-          <div className="px-4 pb-3 text-center">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-2">
-              <User className="h-7 w-7 text-primary" />
+          {/* Contact info with call animation */}
+          <div className="px-4 pb-3 text-center relative">
+            {/* Pulsing rings animation for ringing/connecting */}
+            <div className="relative w-14 h-14 mx-auto mb-2">
+              {(status === "initiated" || status === "ringing") && (
+                <>
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-primary"
+                    animate={{ scale: [1, 2], opacity: [0.6, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-primary"
+                    animate={{ scale: [1, 2], opacity: [0.6, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+                  />
+                </>
+              )}
+              {(status === "in-progress" || status === "answered") && (
+                <motion.div
+                  className="absolute inset-[-4px] rounded-full border-2 border-green-500/50"
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                />
+              )}
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center relative z-10">
+                <User className="h-7 w-7 text-primary" />
+              </div>
             </div>
             <h3 className="font-semibold text-lg truncate">
               {entityName || formatPhoneDisplay(destinationPhone)}
