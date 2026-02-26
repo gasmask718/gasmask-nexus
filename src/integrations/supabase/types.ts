@@ -18255,6 +18255,59 @@ export type Database = {
           },
         ]
       }
+      contact_compliance: {
+        Row: {
+          business_id: string
+          consent_status: string
+          created_at: string
+          dnc: boolean
+          dnc_reason: string | null
+          dnc_source: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          last_updated_at: string
+          phone_e164: string
+          updated_by: string | null
+        }
+        Insert: {
+          business_id: string
+          consent_status?: string
+          created_at?: string
+          dnc?: boolean
+          dnc_reason?: string | null
+          dnc_source?: string | null
+          entity_id: string
+          entity_type?: string
+          id?: string
+          last_updated_at?: string
+          phone_e164: string
+          updated_by?: string | null
+        }
+        Update: {
+          business_id?: string
+          consent_status?: string
+          created_at?: string
+          dnc?: boolean
+          dnc_reason?: string | null
+          dnc_source?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          last_updated_at?: string
+          phone_e164?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_compliance_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           channel: string
@@ -21157,11 +21210,15 @@ export type Database = {
           base_max_concurrent: number | null
           business_id: string | null
           created_at: string
+          current_session_id: string | null
           efficiency_score: number | null
+          forward_phone_e164: string | null
           id: string
           last_call_ended_at: string | null
+          last_ready_at: string | null
           last_status_change: string | null
           max_concurrent_calls: number | null
+          phone_route_type: Database["public"]["Enums"]["agent_route_type"]
           skills: string[] | null
           status: string
           updated_at: string
@@ -21173,11 +21230,15 @@ export type Database = {
           base_max_concurrent?: number | null
           business_id?: string | null
           created_at?: string
+          current_session_id?: string | null
           efficiency_score?: number | null
+          forward_phone_e164?: string | null
           id?: string
           last_call_ended_at?: string | null
+          last_ready_at?: string | null
           last_status_change?: string | null
           max_concurrent_calls?: number | null
+          phone_route_type?: Database["public"]["Enums"]["agent_route_type"]
           skills?: string[] | null
           status?: string
           updated_at?: string
@@ -21189,11 +21250,15 @@ export type Database = {
           base_max_concurrent?: number | null
           business_id?: string | null
           created_at?: string
+          current_session_id?: string | null
           efficiency_score?: number | null
+          forward_phone_e164?: string | null
           id?: string
           last_call_ended_at?: string | null
+          last_ready_at?: string | null
           last_status_change?: string | null
           max_concurrent_calls?: number | null
+          phone_route_type?: Database["public"]["Enums"]["agent_route_type"]
           skills?: string[] | null
           status?: string
           updated_at?: string
@@ -21207,6 +21272,125 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "businesses"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_call_attempts: {
+        Row: {
+          agent_answered_at: string | null
+          agent_call_sid: string | null
+          agent_user_id: string | null
+          amd_result: Database["public"]["Enums"]["dialer_amd_result"] | null
+          attempt_state: Database["public"]["Enums"]["dialer_attempt_state"]
+          blocked_reason: string | null
+          bridged_at: string | null
+          business_id: string
+          campaign_id: string | null
+          conference_name: string | null
+          conference_sid: string | null
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          engine_run_id: string | null
+          entity_id: string | null
+          id: string
+          outcome_code: string | null
+          queue_item_id: string | null
+          recording_url: string | null
+          started_at: string
+          store_id: string | null
+          target_answered_at: string | null
+          target_call_sid: string | null
+          target_phone_e164: string
+          transcript_url: string | null
+          whisper_played: boolean | null
+        }
+        Insert: {
+          agent_answered_at?: string | null
+          agent_call_sid?: string | null
+          agent_user_id?: string | null
+          amd_result?: Database["public"]["Enums"]["dialer_amd_result"] | null
+          attempt_state?: Database["public"]["Enums"]["dialer_attempt_state"]
+          blocked_reason?: string | null
+          bridged_at?: string | null
+          business_id: string
+          campaign_id?: string | null
+          conference_name?: string | null
+          conference_sid?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          engine_run_id?: string | null
+          entity_id?: string | null
+          id?: string
+          outcome_code?: string | null
+          queue_item_id?: string | null
+          recording_url?: string | null
+          started_at?: string
+          store_id?: string | null
+          target_answered_at?: string | null
+          target_call_sid?: string | null
+          target_phone_e164: string
+          transcript_url?: string | null
+          whisper_played?: boolean | null
+        }
+        Update: {
+          agent_answered_at?: string | null
+          agent_call_sid?: string | null
+          agent_user_id?: string | null
+          amd_result?: Database["public"]["Enums"]["dialer_amd_result"] | null
+          attempt_state?: Database["public"]["Enums"]["dialer_attempt_state"]
+          blocked_reason?: string | null
+          bridged_at?: string | null
+          business_id?: string
+          campaign_id?: string | null
+          conference_name?: string | null
+          conference_sid?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          engine_run_id?: string | null
+          entity_id?: string | null
+          id?: string
+          outcome_code?: string | null
+          queue_item_id?: string | null
+          recording_url?: string | null
+          started_at?: string
+          store_id?: string | null
+          target_answered_at?: string | null
+          target_call_sid?: string | null
+          target_phone_e164?: string
+          transcript_url?: string | null
+          whisper_played?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_call_attempts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_call_attempts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_call_attempts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "v_campaign_margin"
+            referencedColumns: ["campaign_id"]
+          },
+          {
+            foreignKeyName: "dialer_call_attempts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "v_campaign_optimization"
+            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -21690,6 +21874,8 @@ export type Database = {
           twilio_enabled: boolean | null
           updated_at: string
           use_dynamic_connect_rate: boolean | null
+          whisper_enabled: boolean | null
+          whisper_template: string | null
         }
         Insert: {
           after_hours_behavior?: string | null
@@ -21722,6 +21908,8 @@ export type Database = {
           twilio_enabled?: boolean | null
           updated_at?: string
           use_dynamic_connect_rate?: boolean | null
+          whisper_enabled?: boolean | null
+          whisper_template?: string | null
         }
         Update: {
           after_hours_behavior?: string | null
@@ -21754,6 +21942,8 @@ export type Database = {
           twilio_enabled?: boolean | null
           updated_at?: string
           use_dynamic_connect_rate?: boolean | null
+          whisper_enabled?: boolean | null
+          whisper_template?: string | null
         }
         Relationships: [
           {
@@ -62793,11 +62983,15 @@ export type Database = {
           base_max_concurrent: number | null
           business_id: string | null
           created_at: string
+          current_session_id: string | null
           efficiency_score: number | null
+          forward_phone_e164: string | null
           id: string
           last_call_ended_at: string | null
+          last_ready_at: string | null
           last_status_change: string | null
           max_concurrent_calls: number | null
+          phone_route_type: Database["public"]["Enums"]["agent_route_type"]
           skills: string[] | null
           status: string
           updated_at: string
@@ -63752,6 +63946,7 @@ export type Database = {
         | "assigned"
         | "closed"
         | "dead"
+      agent_route_type: "browser" | "forward"
       ambassador_assignment_type: "assigned" | "sourced"
       ambassador_invite_status: "pending" | "accepted" | "expired" | "revoked"
       ambassador_lead_status:
@@ -63860,6 +64055,19 @@ export type Database = {
         | "integrity"
       credit_terms_type: "COD" | "NET7" | "NET14" | "NET30"
       crm_access_role: "view" | "edit" | "admin"
+      dialer_amd_result: "human" | "machine" | "unknown"
+      dialer_attempt_state:
+        | "queued"
+        | "claimed"
+        | "dialing_target"
+        | "answered_human"
+        | "answered_machine"
+        | "dialing_agent"
+        | "bridged"
+        | "completed"
+        | "failed"
+        | "blocked"
+        | "agent_missed"
       dispatch_execution_status: "success" | "partial" | "failed"
       dispatch_priority: "low" | "medium" | "high" | "critical"
       dispatch_proposal_status:
@@ -64318,6 +64526,7 @@ export const Constants = {
         "closed",
         "dead",
       ],
+      agent_route_type: ["browser", "forward"],
       ambassador_assignment_type: ["assigned", "sourced"],
       ambassador_invite_status: ["pending", "accepted", "expired", "revoked"],
       ambassador_lead_status: [
@@ -64436,6 +64645,20 @@ export const Constants = {
       ],
       credit_terms_type: ["COD", "NET7", "NET14", "NET30"],
       crm_access_role: ["view", "edit", "admin"],
+      dialer_amd_result: ["human", "machine", "unknown"],
+      dialer_attempt_state: [
+        "queued",
+        "claimed",
+        "dialing_target",
+        "answered_human",
+        "answered_machine",
+        "dialing_agent",
+        "bridged",
+        "completed",
+        "failed",
+        "blocked",
+        "agent_missed",
+      ],
       dispatch_execution_status: ["success", "partial", "failed"],
       dispatch_priority: ["low", "medium", "high", "critical"],
       dispatch_proposal_status: [

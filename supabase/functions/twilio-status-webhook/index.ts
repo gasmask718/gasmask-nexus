@@ -1,10 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 /**
- * TWILIO STATUS WEBHOOK
+ * TWILIO STATUS WEBHOOK V2
  * 
  * Handles all Twilio status callbacks and AMD results.
  * Routes through dialer-state-transition — NEVER writes status directly.
+ * Now bridges agent via dialer-bridge-agent when human detected.
  * 
  * Events: initiated, ringing, answered, completed, busy, no-answer, failed, canceled
  * AMD: machine_start, machine_end_beep, machine_end_silence, machine_end_other, human, fax, unknown
@@ -13,7 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -80,12 +81,14 @@ Deno.serve(async (req) => {
     }
 
     // ── AMD Result Handling ──
-    // If AMD detected a machine, transition to voicemail
     if (answeredBy && answeredBy !== "human") {
       if (queueItem.status === "dialing" || queueItem.status === "answered") {
         await supabase.functions.invoke("dialer-state-transition", {
           body: { queue_item_id: queueItem.id, new_status: "voicemail" },
         });
+
+        // Log attempt
+        await logAttemptOutcome(supabase, callSid, queueItem, "answered_machine", answeredBy as any);
 
         // Clear claim fields
         await supabase.from("outbound_call_queue").update({
@@ -154,12 +157,32 @@ Deno.serve(async (req) => {
                 },
               });
 
-              // TODO: When Twilio Client SDK is wired for reps, 
-              // update the call TwiML to <Dial> to the agent's client.
-              // For now, the call stays connected and the rep uses the LiveCallPanel.
+              // ── BRIDGE: Invoke dialer-bridge-agent to create conference + dial agent ──
+              const { data: bridgeResult, error: bridgeErr } = await supabase.functions.invoke("dialer-bridge-agent", {
+                body: {
+                  session_id: session.id,
+                  queue_item_id: queueItem.id,
+                  target_call_sid: callSid,
+                  business_id: queueItem.business_id,
+                },
+              });
+
+              if (bridgeErr) {
+                console.error("❌ Bridge agent failed:", bridgeErr);
+                // Log attempt as agent_missed
+                await logAttemptOutcome(supabase, callSid, queueItem, "agent_missed", "human", agent.user_id);
+              } else {
+                console.log("✅ Bridge initiated:", bridgeResult);
+                // Log attempt as bridged
+                await logAttemptOutcome(supabase, callSid, queueItem, "bridged", "human", agent.user_id, bridgeResult?.conference_name);
+              }
             }
+          } else {
+            // No agent available — log as answered_human with no agent
+            await logAttemptOutcome(supabase, callSid, queueItem, "agent_missed", "human");
+            // Apologize and end
+            await updateCallTwiml(callSid, `<Response><Say>We're sorry, no agent is available right now. We'll call you back shortly.</Say><Hangup/></Response>`);
           }
-          // If no agent available, call stays in answered state — watchdog will handle
         }
         break;
       }
@@ -180,9 +203,16 @@ Deno.serve(async (req) => {
           }).eq("id", session.id);
         }
 
+        // Update attempt as completed
+        await supabase.from("dialer_call_attempts").update({
+          attempt_state: "completed",
+          ended_at: new Date().toISOString(),
+          duration_seconds: callDuration,
+        }).eq("target_call_sid", callSid);
+
         // ── Cost tracking ──
         const billableMinutes = Math.ceil(callDuration / 60);
-        const ratePerMinute = 0.0085; // Twilio US local baseline
+        const ratePerMinute = 0.0085;
         const estimatedCost = billableMinutes * ratePerMinute;
 
         await supabase.from("call_cost_events").insert({
@@ -256,10 +286,12 @@ Deno.serve(async (req) => {
       case "busy":
       case "no-answer": {
         if (queueItem.status === "dialing") {
-          const mappedStatus = callStatus === "busy" ? "no_answer" : "no_answer";
           await supabase.functions.invoke("dialer-state-transition", {
-            body: { queue_item_id: queueItem.id, new_status: mappedStatus },
+            body: { queue_item_id: queueItem.id, new_status: "no_answer" },
           });
+
+          // Log attempt
+          await logAttemptOutcome(supabase, callSid, queueItem, "failed", null, undefined, undefined, callStatus === "busy" ? "busy" : "no_answer");
 
           // Clear claim + apply retry backoff
           const { data: settings } = await supabase
@@ -294,6 +326,9 @@ Deno.serve(async (req) => {
             body: { queue_item_id: queueItem.id, new_status: "failed" },
           });
 
+          // Log attempt
+          await logAttemptOutcome(supabase, callSid, queueItem, "failed", null, undefined, undefined, callStatus);
+
           await supabase.from("outbound_call_queue").update({
             claimed_by_user_id: null, claimed_at: null,
             claim_expires_at: null, claim_token: null,
@@ -320,6 +355,52 @@ Deno.serve(async (req) => {
   }
 });
 
+// ── Helper: Log attempt outcome ──
+async function logAttemptOutcome(
+  supabase: any,
+  callSid: string,
+  queueItem: any,
+  state: string,
+  amdResult: string | null,
+  agentUserId?: string,
+  conferenceName?: string,
+  blockedReason?: string,
+) {
+  // Try to update existing attempt first (idempotent)
+  const { data: existing } = await supabase
+    .from("dialer_call_attempts")
+    .select("id")
+    .eq("target_call_sid", callSid)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from("dialer_call_attempts").update({
+      attempt_state: state,
+      amd_result: amdResult,
+      ...(agentUserId ? { agent_user_id: agentUserId } : {}),
+      ...(conferenceName ? { conference_name: conferenceName } : {}),
+      ...(state === "failed" || state === "agent_missed" ? { ended_at: new Date().toISOString() } : {}),
+      ...(blockedReason ? { blocked_reason: blockedReason } : {}),
+    }).eq("id", existing.id);
+  } else {
+    await supabase.from("dialer_call_attempts").insert({
+      business_id: queueItem.business_id,
+      campaign_id: queueItem.campaign_id,
+      queue_item_id: queueItem.id,
+      store_id: queueItem.store_id,
+      target_phone_e164: queueItem.phone_number,
+      agent_user_id: agentUserId || null,
+      attempt_state: state,
+      amd_result: amdResult,
+      target_call_sid: callSid,
+      conference_name: conferenceName || null,
+      ...(state === "answered_human" ? { target_answered_at: new Date().toISOString() } : {}),
+      ...(state === "failed" || state === "agent_missed" ? { ended_at: new Date().toISOString() } : {}),
+      ...(blockedReason ? { blocked_reason: blockedReason } : {}),
+    });
+  }
+}
+
 async function hangupCall(callSid: string) {
   try {
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID")!;
@@ -330,14 +411,30 @@ async function hangupCall(callSid: string) {
       `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${callSid}.json`,
       {
         method: "POST",
-        headers: {
-          "Authorization": authHeader,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { Authorization: authHeader, "Content-Type": "application/x-www-form-urlencoded" },
         body: "Status=completed",
       }
     );
   } catch (e) {
     console.error("Failed to hangup call:", e);
+  }
+}
+
+async function updateCallTwiml(callSid: string, twiml: string) {
+  try {
+    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+
+    await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${callSid}.json`,
+      {
+        method: "POST",
+        headers: { Authorization: authHeader, "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ Twiml: twiml }).toString(),
+      }
+    );
+  } catch (e) {
+    console.error("Failed to update call TwiML:", e);
   }
 }
