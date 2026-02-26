@@ -33,6 +33,7 @@ interface InfluencerDetailProps {
 export default function InfluencerDetail({ isReadOnly = false, viewerContext = 'self' }: InfluencerDetailProps) {
   const { id } = useParams();
   const [logModalOpen, setLogModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("analytics");
 
   const { data: influencer, isLoading, error } = useQuery({
     queryKey: ['influencer', id],
@@ -143,10 +144,7 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </div>
           <div className="flex gap-2">
             {isEditable && (
-              <Button variant="outline" onClick={() => {
-                const el = document.querySelector('[data-value="contact"]') as HTMLElement;
-                el?.click();
-              }}>
+              <Button variant="outline" onClick={() => setActiveTab("contact")}>
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit Profile
               </Button>
@@ -236,7 +234,7 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
         />
 
         {/* Tabs */}
-        <Tabs defaultValue="analytics" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex-wrap">
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
@@ -258,7 +256,7 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
               <Wallet className="h-4 w-4" />
               Payouts
             </TabsTrigger>
-            <TabsTrigger value="contact" data-value="contact" className="flex items-center gap-2">
+            <TabsTrigger value="contact" className="flex items-center gap-2">
               <User className="h-4 w-4" />
               Contact
             </TabsTrigger>
