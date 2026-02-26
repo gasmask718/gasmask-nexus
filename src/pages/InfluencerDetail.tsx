@@ -1,14 +1,14 @@
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import Layout from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Link2, Pencil, User, ChevronDown } from "lucide-react";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Pencil, Save, X, Loader2 } from "lucide-react";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { 
   InfluencerSocialAccounts, 
@@ -18,13 +18,13 @@ import {
 } from "@/components/influencer";
 import { InfluencerCommunicationPanel } from "@/components/influencer/InfluencerCommunicationPanel";
 import { SocialIdentitySection } from "@/components/influencer/SocialIdentitySection";
-import { InfluencerContactEdit } from "@/components/influencer/InfluencerContactEdit";
-import { ProfileCompletenessScore, computeInfluencerCompleteness } from "@/components/profile/ProfileCompletenessScore";
 import { DebugOverlay } from "@/components/ui/DebugOverlay";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useInfluencerMetricsAggregate, useInfluencerSocialAccounts, useInfluencerPosts } from "@/hooks/useInfluencerAnalytics";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 interface InfluencerDetailProps {
   isReadOnly?: boolean;
@@ -33,8 +33,18 @@ interface InfluencerDetailProps {
 
 export default function InfluencerDetail({ isReadOnly = false, viewerContext = 'self' }: InfluencerDetailProps) {
   const { id } = useParams();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [logModalOpen, setLogModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("analytics");
+  const [isEditingContact, setIsEditingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    email: '',
+    phone: '',
+    city: '',
+    niche: '',
+    date_of_birth: '',
+  });
 
   const { data: influencer, isLoading, error } = useQuery({
     queryKey: ['influencer', id],
@@ -49,6 +59,19 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
       return data;
     },
   });
+
+  // Sync form state from influencer data
+  useEffect(() => {
+    if (influencer) {
+      setContactForm({
+        email: influencer.email || '',
+        phone: influencer.phone || '',
+        city: influencer.city || '',
+        niche: influencer.niche || '',
+        date_of_birth: influencer.date_of_birth || '',
+      });
+    }
+  }, [influencer]);
 
   // Fetch assigned ambassador
   const { data: assignment } = useQuery({
@@ -75,10 +98,45 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
   const { data: socialAccounts } = useInfluencerSocialAccounts(id);
   const { data: posts } = useInfluencerPosts(id);
 
-  // Determine if user is admin (for debug overlay)
-  // TODO: Replace with actual role check
   const isAdmin = viewerContext === 'admin';
   const isEditable = !isReadOnly && viewerContext !== 'ambassador';
+
+  const saveContactMutation = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('influencers')
+        .update({
+          email: contactForm.email.trim() || null,
+          phone: contactForm.phone.trim() || null,
+          city: contactForm.city.trim() || null,
+          niche: contactForm.niche.trim() || null,
+          date_of_birth: contactForm.date_of_birth || null,
+          profile_last_updated_at: new Date().toISOString(),
+          profile_last_updated_by: user?.id || null,
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['influencer', id] });
+      toast.success('Contact info updated');
+      setIsEditingContact(false);
+    },
+    onError: (e: Error) => toast.error(`Save failed: ${e.message}`),
+  });
+
+  const cancelEdit = () => {
+    setIsEditingContact(false);
+    if (influencer) {
+      setContactForm({
+        email: influencer.email || '',
+        phone: influencer.phone || '',
+        city: influencer.city || '',
+        niche: influencer.niche || '',
+        date_of_birth: influencer.date_of_birth || '',
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -144,11 +202,27 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
             )}
           </div>
           <div className="flex gap-2">
-            {isEditable && (
-              <Button variant="outline" onClick={() => setActiveTab("contact")}>
+            {isEditable && !isEditingContact && (
+              <Button variant="outline" onClick={() => setIsEditingContact(true)}>
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit Profile
               </Button>
+            )}
+            {isEditingContact && (
+              <>
+                <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                  <X className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+                <Button 
+                  size="sm" 
+                  onClick={() => saveContactMutation.mutate()} 
+                  disabled={saveContactMutation.isPending}
+                >
+                  {saveContactMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                  Save
+                </Button>
+              </>
             )}
             {!isReadOnly && (
               <Button onClick={() => setLogModalOpen(true)}>
@@ -159,7 +233,7 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </div>
         </div>
 
-        {/* Info Cards - Clickable where relevant */}
+        {/* Metrics Row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="text-sm text-muted-foreground">Followers</div>
@@ -183,13 +257,95 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </Card>
         </div>
 
-        {/* Social Identity Section - Always Visible */}
+        {/* Inline Contact Block — Part of Header Identity */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+          {/* Email */}
+          <div className="space-y-1">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5" /> Email
+            </span>
+            {isEditingContact ? (
+              <Input 
+                type="email"
+                value={contactForm.email} 
+                onChange={(e) => setContactForm(p => ({ ...p, email: e.target.value }))}
+                placeholder="email@example.com"
+                className="h-8 text-sm"
+              />
+            ) : (
+              <p className="font-medium text-foreground">
+                {influencer.email ? (
+                  <a href={`mailto:${influencer.email}`} className="text-primary hover:underline">{influencer.email}</a>
+                ) : <span className="text-muted-foreground">—</span>}
+              </p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div className="space-y-1">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5" /> Phone
+            </span>
+            {isEditingContact ? (
+              <Input 
+                value={contactForm.phone} 
+                onChange={(e) => setContactForm(p => ({ ...p, phone: e.target.value }))}
+                placeholder="+1 (555) 123-4567"
+                className="h-8 text-sm"
+              />
+            ) : (
+              <p className="font-medium text-foreground">
+                {influencer.phone ? (
+                  <a href={`tel:${influencer.phone}`} className="text-primary hover:underline">{influencer.phone}</a>
+                ) : <span className="text-muted-foreground">—</span>}
+              </p>
+            )}
+          </div>
+
+          {/* City */}
+          <div className="space-y-1">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" /> City
+            </span>
+            {isEditingContact ? (
+              <Input 
+                value={contactForm.city} 
+                onChange={(e) => setContactForm(p => ({ ...p, city: e.target.value }))}
+                placeholder="City"
+                className="h-8 text-sm"
+              />
+            ) : (
+              <p className="font-medium text-foreground">{influencer.city || <span className="text-muted-foreground">—</span>}</p>
+            )}
+          </div>
+
+          {/* Niche */}
+          <div className="space-y-1">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <TrendingUp className="h-3.5 w-3.5" /> Niche
+            </span>
+            {isEditingContact ? (
+              <Input 
+                value={contactForm.niche} 
+                onChange={(e) => setContactForm(p => ({ ...p, niche: e.target.value }))}
+                placeholder="Niche"
+                className="h-8 text-sm"
+              />
+            ) : (
+              <p className="font-medium text-foreground">
+                {influencer.niche ? <Badge variant="outline">{influencer.niche}</Badge> : <span className="text-muted-foreground">—</span>}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Social Identity Section */}
         <SocialIdentitySection 
           influencerId={id!} 
           isEditable={isEditable}
         />
 
-        {/* Tabs */}
+        {/* Tabs — no Contact tab */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="flex-wrap">
             <TabsTrigger value="analytics" className="flex items-center gap-2">
@@ -212,64 +368,9 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
               <Wallet className="h-4 w-4" />
               Payouts
             </TabsTrigger>
-            <TabsTrigger value="contact" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Contact
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
-            {/* Contact Information — contextual detail in body */}
-            <Collapsible defaultOpen>
-              <Card className="p-6">
-                <CollapsibleTrigger className="flex items-center justify-between w-full">
-                  <h3 className="font-semibold">Contact Information</h3>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4">
-                    {influencer.email ? (
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <a href={`mailto:${influencer.email}`} className="text-primary hover:underline">
-                          {influencer.email}
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Mail className="h-4 w-4" />
-                        <span>No email provided</span>
-                      </div>
-                    )}
-                    {influencer.phone ? (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <a href={`tel:${influencer.phone}`} className="text-primary hover:underline">
-                          {influencer.phone}
-                        </a>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="h-4 w-4" />
-                        <span>No phone provided</span>
-                      </div>
-                    )}
-                    {influencer.city && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span>{influencer.city}</span>
-                      </div>
-                    )}
-                    {influencer.niche && (
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                        <Badge variant="outline">{influencer.niche}</Badge>
-                      </div>
-                    )}
-                  </div>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
             <InfluencerAnalyticsDashboard influencerId={id!} />
           </TabsContent>
 
@@ -291,14 +392,6 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
 
           <TabsContent value="payouts" className="space-y-6">
             <InfluencerPayoutsPanel influencerId={id!} isEditable={isEditable} />
-          </TabsContent>
-
-          <TabsContent value="contact" className="space-y-6">
-            {(() => {
-              const completeness = computeInfluencerCompleteness(influencer);
-              return <ProfileCompletenessScore score={completeness.score} missingFields={completeness.missingFields} />;
-            })()}
-            <InfluencerContactEdit influencerId={id!} influencer={influencer} isEditable={isEditable} />
           </TabsContent>
         </Tabs>
       </div>
