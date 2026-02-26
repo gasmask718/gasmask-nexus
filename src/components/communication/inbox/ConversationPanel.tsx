@@ -53,16 +53,17 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
     return phone.replace(/\D/g, "");
   };
 
-  // Fetch conversation history for this contact's phone
+  // Fetch conversation history from BOTH communication_messages AND outbound_messages
   const { data: messages = [], isLoading, refetch } = useQuery({
     queryKey: ["conversation-messages", contact?.phone],
     queryFn: async () => {
       if (!contact?.phone) return [];
       
       const normalizedPhone = normalizePhone(contact.phone);
+      const last10 = normalizedPhone.slice(-10);
       
-      // Query messages matching this phone number (partial match for formatting differences)
-      const { data, error } = await supabase
+      // Query from communication_messages (legacy + inbound)
+      const { data: commMsgs, error: commErr } = await supabase
         .from("communication_messages")
         .select(`
           id, direction, channel, content, phone_number, 
@@ -70,11 +71,42 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
           store:store_master(id, store_name),
           business:businesses(id, name, primary_color)
         `)
-        .or(`phone_number.ilike.%${normalizedPhone.slice(-10)}%`)
+        .or(`phone_number.ilike.%${last10}%`)
         .order("created_at", { ascending: true });
 
-      if (error) throw error;
-      return (data || []) as Message[];
+      if (commErr) console.error("communication_messages error:", commErr);
+
+      // Query from outbound_messages (canonical sent messages via send-sms)
+      const { data: outMsgs, error: outErr } = await supabase
+        .from("outbound_messages")
+        .select("id, to_number, message_body, status, created_at, provider, store_id, metadata, sent_at")
+        .or(`to_number.ilike.%${last10}%`)
+        .order("created_at", { ascending: true });
+
+      if (outErr) console.error("outbound_messages error:", outErr);
+
+      // Normalize outbound_messages into the same Message shape
+      const outboundNormalized: Message[] = (outMsgs || []).map((m) => ({
+        id: m.id,
+        direction: "outbound" as const,
+        channel: "sms",
+        content: m.message_body,
+        phone_number: m.to_number,
+        status: m.status,
+        ai_generated: false,
+        created_at: m.sent_at || m.created_at || "",
+        store: null,
+        business: null,
+      }));
+
+      // Merge and deduplicate by id, then sort by created_at
+      const allMessages = [...(commMsgs || []) as Message[], ...outboundNormalized];
+      const uniqueMap = new Map<string, Message>();
+      allMessages.forEach((msg) => uniqueMap.set(msg.id, msg));
+      
+      return Array.from(uniqueMap.values()).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
     },
     enabled: !!contact?.phone,
   });
