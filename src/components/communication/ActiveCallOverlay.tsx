@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Phone,
   PhoneOff,
@@ -25,6 +24,8 @@ interface ActiveCallOverlayProps {
   status: string;
   startedAt: Date;
   onEndCall: () => void;
+  onToggleMute?: () => void;
+  isMuted?: boolean;
   formatPhoneDisplay: (phone: string) => string;
 }
 
@@ -35,9 +36,11 @@ export function ActiveCallOverlay({
   status,
   startedAt,
   onEndCall,
+  onToggleMute,
+  isMuted: externalMuted,
   formatPhoneDisplay,
 }: ActiveCallOverlayProps) {
-  const [isMuted, setIsMuted] = useState(false);
+  const isMuted = externalMuted ?? false;
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const [isOnHold, setIsOnHold] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -60,6 +63,7 @@ export function ActiveCallOverlay({
   const statusConfig: Record<string, { label: string; color: string; pulse: boolean }> = {
     initiated: { label: "Connecting...", color: "text-yellow-500", pulse: true },
     ringing: { label: "Ringing...", color: "text-blue-500", pulse: true },
+    connecting: { label: "Connecting...", color: "text-yellow-500", pulse: true },
     "in-progress": { label: "In Progress", color: "text-green-500", pulse: false },
     answered: { label: "Connected", color: "text-green-500", pulse: false },
     completed: { label: "Call Ended", color: "text-muted-foreground", pulse: false },
@@ -108,7 +112,7 @@ export function ActiveCallOverlay({
                 currentStatus.pulse && "animate-pulse",
                 status === "in-progress" || status === "answered" ? "bg-green-500" :
                 status === "ringing" ? "bg-blue-500" :
-                status === "initiated" ? "bg-yellow-500" : "bg-muted-foreground"
+                status === "initiated" || status === "connecting" ? "bg-yellow-500" : "bg-muted-foreground"
               )} />
               <span className={cn("text-xs font-medium", currentStatus.color)}>
                 {currentStatus.label}
@@ -121,9 +125,8 @@ export function ActiveCallOverlay({
 
           {/* Contact info with call animation */}
           <div className="px-4 pb-3 text-center relative">
-            {/* Pulsing rings animation for ringing/connecting */}
             <div className="relative w-14 h-14 mx-auto mb-2">
-              {(status === "initiated" || status === "ringing") && (
+              {(status === "initiated" || status === "ringing" || status === "connecting") && (
                 <>
                   <motion.div
                     className="absolute inset-0 rounded-full border-2 border-primary"
@@ -165,7 +168,7 @@ export function ActiveCallOverlay({
               icon={isMuted ? MicOff : Mic}
               label={isMuted ? "Unmute" : "Mute"}
               active={isMuted}
-              onClick={() => setIsMuted(!isMuted)}
+              onClick={() => onToggleMute?.()}
             />
             <ControlButton
               icon={isSpeakerOn ? Volume2 : VolumeX}

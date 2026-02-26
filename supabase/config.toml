@@ -205,3 +205,9 @@ verify_jwt = false
 
 [functions.cold-call-tts-webhook]
 verify_jwt = false
+
+[functions.twilio-voice-token]
+verify_jwt = false
+
+[functions.twilio-voice-twiml]
+verify_jwt = false
