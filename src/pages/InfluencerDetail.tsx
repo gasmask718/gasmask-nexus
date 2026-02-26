@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Link2 } from "lucide-react";
+import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Link2, Pencil, User } from "lucide-react";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { 
   InfluencerSocialAccounts, 
@@ -17,6 +17,8 @@ import {
 } from "@/components/influencer";
 import { InfluencerCommunicationPanel } from "@/components/influencer/InfluencerCommunicationPanel";
 import { SocialIdentitySection } from "@/components/influencer/SocialIdentitySection";
+import { InfluencerContactEdit } from "@/components/influencer/InfluencerContactEdit";
+import { ProfileCompletenessScore, computeInfluencerCompleteness } from "@/components/profile/ProfileCompletenessScore";
 import { DebugOverlay } from "@/components/ui/DebugOverlay";
 import { LoadingSkeleton } from "@/components/ui/LoadingSkeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -140,6 +142,15 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
             )}
           </div>
           <div className="flex gap-2">
+            {isEditable && (
+              <Button variant="outline" onClick={() => {
+                const el = document.querySelector('[data-value="contact"]') as HTMLElement;
+                el?.click();
+              }}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Profile
+              </Button>
+            )}
             {!isReadOnly && (
               <Button onClick={() => setLogModalOpen(true)}>
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -247,6 +258,10 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
               <Wallet className="h-4 w-4" />
               Payouts
             </TabsTrigger>
+            <TabsTrigger value="contact" data-value="contact" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Contact
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
@@ -271,6 +286,14 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
 
           <TabsContent value="payouts" className="space-y-6">
             <InfluencerPayoutsPanel influencerId={id!} isEditable={isEditable} />
+          </TabsContent>
+
+          <TabsContent value="contact" className="space-y-6">
+            {(() => {
+              const completeness = computeInfluencerCompleteness(influencer);
+              return <ProfileCompletenessScore score={completeness.score} missingFields={completeness.missingFields} />;
+            })()}
+            <InfluencerContactEdit influencerId={id!} influencer={influencer} isEditable={isEditable} />
           </TabsContent>
         </Tabs>
       </div>
