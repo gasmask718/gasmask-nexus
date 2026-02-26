@@ -14889,6 +14889,101 @@ export type Database = {
           },
         ]
       }
+      cold_call_campaigns: {
+        Row: {
+          campaign_type: string
+          completed_count: number
+          created_at: string
+          created_by: string
+          from_number: string | null
+          handoff_number: string
+          id: string
+          status: string
+          total_numbers: number
+          transferred_count: number
+          tts_script: string | null
+          updated_at: string
+          voice_id: string | null
+        }
+        Insert: {
+          campaign_type?: string
+          completed_count?: number
+          created_at?: string
+          created_by: string
+          from_number?: string | null
+          handoff_number: string
+          id?: string
+          status?: string
+          total_numbers?: number
+          transferred_count?: number
+          tts_script?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Update: {
+          campaign_type?: string
+          completed_count?: number
+          created_at?: string
+          created_by?: string
+          from_number?: string | null
+          handoff_number?: string
+          id?: string
+          status?: string
+          total_numbers?: number
+          transferred_count?: number
+          tts_script?: string | null
+          updated_at?: string
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
+      cold_call_items: {
+        Row: {
+          call_sid: string | null
+          campaign_id: string
+          created_at: string
+          disposition: string | null
+          duration: number | null
+          error_message: string | null
+          id: string
+          phone_number: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          call_sid?: string | null
+          campaign_id: string
+          created_at?: string
+          disposition?: string | null
+          duration?: number | null
+          error_message?: string | null
+          id?: string
+          phone_number: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          call_sid?: string | null
+          campaign_id?: string
+          created_at?: string
+          disposition?: string | null
+          duration?: number | null
+          error_message?: string | null
+          id?: string
+          phone_number?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cold_call_items_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "cold_call_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_accounts: {
         Row: {
           assigned_ambassador_id: string | null
