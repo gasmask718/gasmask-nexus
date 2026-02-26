@@ -54,19 +54,23 @@ async function sendViaBizText(to: string, body: string): Promise<ProviderResult>
   const url = `https://www.biztextsolutions.com/api/send?${params.toString()}`;
 
   try {
+    console.log(`📡 BizText API call: POST ${url.replace(/txt=[^&]+/, 'txt=[REDACTED]')}`);
     const res = await fetch(url, { method: "POST" });
     const text = await res.text();
+    console.log(`📡 BizText response status: ${res.status}, body: ${text.substring(0, 500)}`);
     let data: any;
     try { data = JSON.parse(text); } catch { data = { raw_response: text.trim() }; }
 
-    const isError = !res.ok || data?.error || data?.auth === false ||
-      text.toLowerCase().includes("fail") || text.toLowerCase().startsWith("err");
+    // Only flag as error on clear failure signals — not substring matches
+    const isError = !res.ok || data?.error === true || data?.auth === false;
 
     if (isError) {
+      console.error(`❌ BizText API error: status=${res.status} body=${text.substring(0, 300)}`);
       return { success: false, error_code: String(res.status), error_message: text.substring(0, 300), raw_response: data };
     }
     return { success: true, provider_message_id: data?.message_id || data?.id || null, raw_response: data };
   } catch (e: any) {
+    console.error(`❌ BizText network error: ${e.message}`);
     return { success: false, error_code: "NETWORK", error_message: e.message };
   }
 }
