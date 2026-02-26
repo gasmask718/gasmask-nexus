@@ -23,27 +23,85 @@ serve(async (req: Request) => {
     const provider = url.searchParams.get("provider") || "twilio";
 
     let fromNumber = "";
+    let toNumber = "";
     let body = "";
 
     if (provider === "twilio") {
       // Twilio sends form-encoded POST
       const formData = await req.formData();
       fromNumber = (formData.get("From") as string) || "";
+      toNumber = (formData.get("To") as string) || "";
       body = (formData.get("Body") as string) || "";
     } else {
       // BizText or generic JSON
       const json = await req.json();
       fromNumber = json.from || json.phone || json.From || "";
+      toNumber = json.to || json.To || json.recipient || "";
       body = json.body || json.message || json.Body || json.txt || "";
     }
 
     const normalizedPhone = fromNumber.replace(/\D/g, "");
-    const trimmedBody = body.trim().toUpperCase();
+    const normalizedTo = toNumber.replace(/\D/g, "");
+    const trimmedBody = body.trim();
+    const upperBody = trimmedBody.toUpperCase();
 
-    console.log(`📨 Inbound from ${normalizedPhone}: "${trimmedBody}" (provider: ${provider})`);
+    console.log(`📨 Inbound from ${normalizedPhone} to ${normalizedTo}: "${upperBody}" (provider: ${provider})`);
+
+    // Resolve business/contact context so inbound SMS appears in /communication/inbox
+    let businessId: string | null = null;
+    if (normalizedTo) {
+      const toLast10 = normalizedTo.slice(-10);
+      const { data: phoneRoute } = await supabase
+        .from("business_phone_numbers")
+        .select("business_id")
+        .or(`phone_number.ilike.%${toLast10}%`)
+        .limit(1)
+        .maybeSingle();
+      businessId = phoneRoute?.business_id ?? null;
+    }
+
+    let matchedContact: { id: string; store_id: string | null } | null = null;
+    if (normalizedPhone) {
+      const fromLast10 = normalizedPhone.slice(-10);
+      let peopleQuery = supabase
+        .from("people")
+        .select("id, store_id")
+        .or(`phone.ilike.%${fromLast10}%`)
+        .limit(1);
+
+      if (businessId) peopleQuery = peopleQuery.eq("business_id", businessId);
+
+      const { data: contact } = await peopleQuery.maybeSingle();
+      matchedContact = contact || null;
+    }
+
+    const { error: inboundInsertError } = await supabase
+      .from("communication_messages")
+      .insert({
+        direction: "inbound",
+        channel: "sms",
+        content: trimmedBody,
+        phone_number: normalizedPhone || fromNumber,
+        from_number: fromNumber || null,
+        to_number: toNumber || null,
+        status: "received",
+        provider: provider === "twilio" ? "twilio" : "biztext",
+        business_id: businessId,
+        contact_id: matchedContact?.id ?? null,
+        store_id: matchedContact?.store_id ?? null,
+        ai_generated: false,
+        metadata: {
+          source: "sms-inbound-webhook",
+          provider,
+        },
+      });
+
+    if (inboundInsertError) {
+      console.error("❌ Failed to log inbound communication_messages row:", inboundInsertError);
+    }
 
     // Check if STOP word
-    if (STOP_WORDS.includes(trimmedBody)) {
+    if (STOP_WORDS.includes(upperBody)) {
       console.log(`🛑 STOP detected from ${normalizedPhone}`);
 
       // Upsert into opt_out_events
@@ -53,7 +111,7 @@ serve(async (req: Request) => {
           {
             phone_number: normalizedPhone,
             source: provider,
-            reason: `Inbound STOP: "${trimmedBody}"`,
+            reason: `Inbound STOP: "${upperBody}"`,
           },
           { onConflict: "phone_number" }
         );

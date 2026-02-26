@@ -53,7 +53,7 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
     return phone.replace(/\D/g, "");
   };
 
-  // Fetch conversation history from BOTH communication_messages AND outbound_messages
+  // Fetch conversation history from DB + Twilio fallback (for messages not yet ingested)
   const { data: messages = [], isLoading, refetch } = useQuery({
     queryKey: ["conversation-messages", contact?.phone],
     queryFn: async () => {
@@ -85,6 +85,15 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
 
       if (outErr) console.error("outbound_messages error:", outErr);
 
+      // Fetch full Twilio thread as fallback source
+      const { data: twilioData, error: twilioErr } = await supabase.functions.invoke("fetch-twilio-conversation", {
+        body: { phone: normalizedPhone },
+      });
+
+      if (twilioErr) {
+        console.warn("fetch-twilio-conversation warning:", twilioErr.message);
+      }
+
       // Normalize outbound_messages into the same Message shape
       const outboundNormalized: Message[] = (outMsgs || []).map((m) => ({
         id: m.id,
@@ -99,12 +108,37 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
         business: null,
       }));
 
-      // Merge and deduplicate by id, then sort by created_at
-      const allMessages = [...(commMsgs || []) as Message[], ...outboundNormalized];
-      const uniqueMap = new Map<string, Message>();
-      allMessages.forEach((msg) => uniqueMap.set(msg.id, msg));
+      // Normalize Twilio messages into the same Message shape
+      const twilioNormalized: Message[] = ((twilioData?.messages || []) as any[]).map((m) => ({
+        id: `twilio-${m.sid}`,
+        direction: m.direction === "inbound" ? "inbound" : "outbound",
+        channel: "sms",
+        content: m.body || null,
+        phone_number: m.direction === "inbound" ? m.from : m.to,
+        status: m.status || (m.direction === "inbound" ? "received" : "sent"),
+        ai_generated: false,
+        created_at: m.created_at || "",
+        store: null,
+        business: null,
+      }));
+
+      // Merge and dedupe with a semantic fingerprint
+      const allMessages = [...((commMsgs || []) as Message[]), ...outboundNormalized, ...twilioNormalized];
+      const deduped = new Map<string, Message>();
+
+      allMessages.forEach((msg) => {
+        const phoneKey = normalizePhone(msg.phone_number || "").slice(-10);
+        const minuteBucket = Math.floor(new Date(msg.created_at || 0).getTime() / 60000) || 0;
+        const contentKey = (msg.content || "").trim();
+        const fingerprint = `${msg.direction}|${phoneKey}|${contentKey}|${minuteBucket}`;
+
+        const existing = deduped.get(fingerprint);
+        if (!existing || new Date(msg.created_at || 0).getTime() > new Date(existing.created_at || 0).getTime()) {
+          deduped.set(fingerprint, msg);
+        }
+      });
       
-      return Array.from(uniqueMap.values()).sort(
+      return Array.from(deduped.values()).sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
     },
