@@ -1,6 +1,7 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useOutboundCall } from "@/hooks/useOutboundCall";
 import { CallModal } from "./CallModal";
+import { ActiveCallOverlay } from "./ActiveCallOverlay";
 
 /**
  * GLOBAL CALL PROVIDER
@@ -60,6 +61,7 @@ export function CallProvider({ children }: CallProviderProps) {
     placeCallNow,
     confirmCall,
     cancelCall,
+    clearActiveCall,
     formatPhoneDisplay,
   } = useOutboundCall();
 
@@ -87,6 +89,20 @@ export function CallProvider({ children }: CallProviderProps) {
         defaultBusinessId={pendingCall?.businessId}
         isLoading={isPlacingCall}
       />
+
+      {/* Active Call Overlay */}
+      {activeCall && (
+        <ActiveCallOverlay
+          callSid={activeCall.callSid}
+          callLogId={activeCall.callLogId}
+          destinationPhone={activeCall.destinationPhone}
+          entityName={activeCall.entityName}
+          status={activeCall.status}
+          startedAt={activeCall.startedAt}
+          onEndCall={clearActiveCall}
+          formatPhoneDisplay={formatPhoneDisplay}
+        />
+      )}
     </CallContext.Provider>
   );
 }

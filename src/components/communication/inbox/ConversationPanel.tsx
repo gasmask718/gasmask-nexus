@@ -11,6 +11,7 @@ import {
   MessageSquare, Send, RefreshCw, User, ArrowLeft, 
   Phone, Bot, Sparkles, CheckCheck, Clock
 } from "lucide-react";
+import { useCall } from "@/components/communication/CallProvider";
 import { cn } from "@/lib/utils";
 import { format, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
@@ -43,6 +44,7 @@ interface ConversationPanelProps {
 
 export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
   const queryClient = useQueryClient();
+  const { initiateCall } = useCall();
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState("default");
@@ -274,7 +276,16 @@ export function ConversationPanel({ contact, onBack }: ConversationPanelProps) {
           <Badge variant="secondary" className="capitalize">
             {contact.type}
           </Badge>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => contact && initiateCall({
+              destinationPhone: contact.phone,
+              entityName: contact.name,
+              entityType: (contact.type as any) || "other",
+              entityId: contact.id,
+            })}
+          >
             <Phone className="h-4 w-4" />
           </Button>
         </div>
