@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Link2, Pencil, User } from "lucide-react";
+import { Instagram, Mail, Phone, MapPin, TrendingUp, MessageSquare, BarChart3, Wallet, FileText, Users, Eye, AlertCircle, Link2, Pencil, User, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { CommunicationLogModal } from "@/components/CommunicationLogModal";
 import { 
   InfluencerSocialAccounts, 
@@ -182,51 +183,6 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </Card>
         </div>
 
-        {/* Contact Info */}
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">Contact Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            {influencer.email ? (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <a href={`mailto:${influencer.email}`} className="text-primary hover:underline">
-                  {influencer.email}
-                </a>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>No email provided</span>
-              </div>
-            )}
-            {influencer.phone ? (
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <a href={`tel:${influencer.phone}`} className="text-primary hover:underline">
-                  {influencer.phone}
-                </a>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="h-4 w-4" />
-                <span>No phone provided</span>
-              </div>
-            )}
-            {influencer.city && (
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span>{influencer.city}</span>
-              </div>
-            )}
-            {influencer.niche && (
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                <Badge variant="outline">{influencer.niche}</Badge>
-              </div>
-            )}
-          </div>
-        </Card>
-
         {/* Social Identity Section - Always Visible */}
         <SocialIdentitySection 
           influencerId={id!} 
@@ -263,6 +219,57 @@ export default function InfluencerDetail({ isReadOnly = false, viewerContext = '
           </TabsList>
 
           <TabsContent value="analytics" className="space-y-6">
+            {/* Contact Information — contextual detail in body */}
+            <Collapsible defaultOpen>
+              <Card className="p-6">
+                <CollapsibleTrigger className="flex items-center justify-between w-full">
+                  <h3 className="font-semibold">Contact Information</h3>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>&]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-4">
+                    {influencer.email ? (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <a href={`mailto:${influencer.email}`} className="text-primary hover:underline">
+                          {influencer.email}
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="h-4 w-4" />
+                        <span>No email provided</span>
+                      </div>
+                    )}
+                    {influencer.phone ? (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <a href={`tel:${influencer.phone}`} className="text-primary hover:underline">
+                          {influencer.phone}
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="h-4 w-4" />
+                        <span>No phone provided</span>
+                      </div>
+                    )}
+                    {influencer.city && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span>{influencer.city}</span>
+                      </div>
+                    )}
+                    {influencer.niche && (
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                        <Badge variant="outline">{influencer.niche}</Badge>
+                      </div>
+                    )}
+                  </div>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
             <InfluencerAnalyticsDashboard influencerId={id!} />
           </TabsContent>
 
