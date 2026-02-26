@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MessageSquare, Mail, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { SmsProviderSelect } from "@/components/communication/SmsProviderSelect";
 
 interface SendMessageModalProps {
   open: boolean;
@@ -28,6 +29,7 @@ export function SendMessageModal({
   const [channel, setChannel] = useState<"sms" | "email">("sms");
   const [message, setMessage] = useState("");
   const [generatingAI, setGeneratingAI] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState("default");
 
   // Fetch entities based on type
   const { data: entities } = useQuery({
@@ -60,15 +62,39 @@ export function SendMessageModal({
     },
   });
 
-  // Map UI entity types to DB-allowed linked_entity_type values
-  // DB constraint allows: 'store', 'wholesaler', 'influencer', 'prospect'
+  // Get phone number for selected entity
+  const { data: entityPhone } = useQuery({
+    queryKey: ["entity-phone", entityType, entityId],
+    enabled: !!entityId && channel === "sms",
+    queryFn: async () => {
+      let phone: string | null = null;
+      if (entityType === "store") {
+        const { data } = await supabase.from("stores").select("phone").eq("id", entityId).maybeSingle();
+        phone = data?.phone || null;
+      } else if (entityType === "customer") {
+        const { data } = await supabase.from("crm_customers").select("phone").eq("id", entityId).maybeSingle();
+        phone = data?.phone || null;
+      } else if (entityType === "wholesale") {
+        const { data } = await supabase.from("wholesale_hubs").select("phone").eq("id", entityId).maybeSingle();
+        phone = data?.phone || null;
+      } else if (entityType === "driver") {
+        const { data } = await supabase.from("profiles").select("phone").eq("id", entityId).maybeSingle();
+        phone = data?.phone || null;
+      } else if (entityType === "influencer") {
+        const { data } = await supabase.from("influencers").select("phone").eq("id", entityId).maybeSingle();
+        phone = data?.phone || null;
+      }
+      return phone;
+    },
+  });
+
   const mapEntityTypeToDbValue = (uiType: string): string => {
     const mapping: Record<string, string> = {
       store: 'store',
       wholesale: 'wholesaler',
       influencer: 'influencer',
       customer: 'prospect',
-      driver: 'prospect', // drivers treated as prospects in communication context
+      driver: 'prospect',
     };
     return mapping[uiType] || 'prospect';
   };
@@ -80,7 +106,8 @@ export function SendMessageModal({
 
       const dbEntityType = mapEntityTypeToDbValue(entityType);
 
-      const { error } = await supabase.from("communication_events").insert({
+      // Log the communication event
+      const { error: logError } = await supabase.from("communication_events").insert({
         linked_entity_type: dbEntityType,
         linked_entity_id: entityId,
         channel: channel,
@@ -89,12 +116,25 @@ export function SendMessageModal({
         summary: message.substring(0, 100),
         user_id: user.id,
       });
+      if (logError) throw logError;
 
-      if (error) throw error;
+      // For SMS, send via send-sms edge function
+      if (channel === "sms") {
+        if (!entityPhone) throw new Error("No phone number found for this entity");
 
-      // Simulate success/failure (95% success rate)
-      const success = Math.random() > 0.05;
-      if (!success) throw new Error("Message delivery failed (mock)");
+        const { data, error } = await supabase.functions.invoke("send-sms", {
+          body: {
+            to_number: entityPhone,
+            message_body: message.trim(),
+            idempotency_key: crypto.randomUUID(),
+            explicit_provider: selectedProvider === "default" ? undefined : selectedProvider,
+            skip_cooldown: true,
+            metadata: { entity_type: entityType, entity_id: entityId, source_ui: "send_message_modal" },
+          },
+        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || "Failed to send SMS");
+      }
     },
     onSuccess: () => {
       toast.success("Message sent successfully!");
@@ -141,6 +181,10 @@ export function SendMessageModal({
     e.preventDefault();
     if (!entityId || !message.trim()) {
       toast.error("Please fill in all fields");
+      return;
+    }
+    if (channel === "sms" && !entityPhone) {
+      toast.error("No phone number found for this entity");
       return;
     }
     sendMessageMutation.mutate();
@@ -244,6 +288,11 @@ export function SendMessageModal({
               </p>
             )}
           </div>
+
+          {/* SMS Provider Selector */}
+          {channel === "sms" && (
+            <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
+          )}
 
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
