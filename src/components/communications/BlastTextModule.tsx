@@ -9,6 +9,7 @@ import { Send, Calendar, Sparkles, AlertCircle, MessageSquare, Eye } from 'lucid
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SmsProviderSelect } from '@/components/communication/SmsProviderSelect';
 
 interface BlastTextModuleProps {
   brand: string;
@@ -19,6 +20,7 @@ export default function BlastTextModule({ brand, brandColor = '#6366f1' }: Blast
   const [message, setMessage] = useState('');
   const [selectedSegment, setSelectedSegment] = useState('all');
   const [scheduleDate, setScheduleDate] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('default');
 
   const [showPreview, setShowPreview] = useState(false);
 
@@ -111,6 +113,10 @@ export default function BlastTextModule({ brand, brandColor = '#6366f1' }: Blast
               ))}
             </div>
           </div>
+
+          {/* SMS Provider Selector */}
+          <SmsProviderSelect value={selectedProvider} onChange={setSelectedProvider} />
+
           <div className="flex gap-3 flex-wrap">
             <Button onClick={sendBlastText} style={{ backgroundColor: brandColor, color: 'white' }}>
               <Send className="w-4 h-4 mr-2" />
