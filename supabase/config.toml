@@ -199,3 +199,9 @@ verify_jwt = false
 
 [functions.yelp-business-search]
 verify_jwt = false
+
+[functions.cold-call-tts-blast]
+verify_jwt = false
+
+[functions.cold-call-tts-webhook]
+verify_jwt = false

@@ -8,7 +8,7 @@ import {
   MessageSquare, Phone, Headphones, AlertTriangle, Activity, Users, 
   Sparkles, Zap, User, GitBranch, BarChart3, Tag, Brain, Shield, 
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
-  Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus,
+  Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus, Megaphone,
   Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail,
   Clock, Moon, Rocket, Target
 } from "lucide-react";
@@ -47,6 +47,7 @@ const navItems = [
   { path: "agents", label: "AI Agents", icon: Shield },
   { path: "language", label: "Language", icon: Languages },
   { path: "voice-matrix", label: "Voice Matrix", icon: Radio },
+  { path: "cold-call-blast", label: "Cold Call Blast", icon: Megaphone, highlight: true },
   { path: "phone-numbers", label: "Phone Numbers", icon: Phone },
   { path: "settings", label: "Settings", icon: Settings },
 ];
