@@ -127,7 +127,8 @@ async function finalizeRun(
   snapshotBefore: any,
   snapshotAfter: any,
   inventorySeedResult: any,
-  adaptiveState?: { multiplier: number; mode: string; refreshInterval: number; avgImpact: number; negativeRatio: number }
+  adaptiveState?: { multiplier: number; mode: string; refreshInterval: number; avgImpact: number; negativeRatio: number },
+  stabilityState?: { locked: boolean; lockCyclesRemaining: number; stabilityNotes: string[] }
 ) {
   if (!runId) return;
 
@@ -226,6 +227,9 @@ async function finalizeRun(
         rolling_negative_ratio: adaptiveState?.negativeRatio != null
           ? Number((adaptiveState.negativeRatio * 100).toFixed(1))
           : null,
+        adaptive_locked: stabilityState?.locked ?? false,
+        adaptive_lock_cycles_remaining: stabilityState?.lockCyclesRemaining ?? 0,
+        stability_notes: stabilityState?.stabilityNotes?.join("; ") ?? null,
         ended_at: new Date().toISOString(),
       })
       .eq("id", runId);
@@ -551,9 +555,119 @@ Deno.serve(async (req) => {
       negativeRatio: rollingNegativeRatio,
     };
 
+    // ── STABILITY GUARD LAYER ──
+    const stabilityNotes: string[] = [];
+    let adaptiveLocked = false;
+    let lockCyclesRemaining = 0;
+
+    try {
+      // Fetch last run's stability state
+      const { data: lastRun } = await supabase
+        .from("dialer_intelligence_runs")
+        .select("adaptive_mode, adaptive_locked, adaptive_lock_cycles_remaining")
+        .eq("business_id", business_id)
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // 1️⃣ Adaptive Cooldown Lock — prevent mode flip-flopping
+      if (lastRun) {
+        if (lastRun.adaptive_locked && lastRun.adaptive_lock_cycles_remaining > 0) {
+          // Still locked from previous run — decrement and force previous mode
+          adaptiveLocked = true;
+          lockCyclesRemaining = lastRun.adaptive_lock_cycles_remaining - 1;
+          adaptiveMultiplier = 1.0;
+          adaptiveNote = `cooldown_locked (${lockCyclesRemaining} remaining)`;
+          adaptiveStateObj.multiplier = adaptiveMultiplier;
+          adaptiveStateObj.mode = adaptiveNote;
+          stabilityNotes.push(`cooldown_lock_active: ${lockCyclesRemaining} cycles left`);
+        } else if (lastRun.adaptive_mode && !lastRun.adaptive_mode.startsWith("cooldown_locked") &&
+                   lastRun.adaptive_mode !== adaptiveNote &&
+                   !adaptiveNote.startsWith("baseline")) {
+          // Mode changed — engage cooldown lock for 5 runs
+          adaptiveLocked = true;
+          lockCyclesRemaining = 5;
+          stabilityNotes.push(`cooldown_engaged: mode shifted from [${lastRun.adaptive_mode}] to [${adaptiveNote}]`);
+        }
+      }
+
+      // 5️⃣ Oscillation Detector — check last 6 runs for A,B,A,B,A,B pattern
+      const { data: recentModes } = await supabase
+        .from("dialer_intelligence_runs")
+        .select("adaptive_mode")
+        .eq("business_id", business_id)
+        .order("started_at", { ascending: false })
+        .limit(6);
+
+      if (recentModes && recentModes.length >= 6) {
+        const modes = recentModes.map((r: any) => {
+          const m = r.adaptive_mode || "baseline";
+          // Normalize to category
+          if (m.includes("boost")) return "boost";
+          if (m.includes("dampen")) return "dampen";
+          if (m.includes("stable")) return "stable";
+          return "other";
+        });
+        // Check alternation: A,B,A,B,A,B
+        let isOscillating = true;
+        for (let i = 0; i < modes.length - 2; i++) {
+          if (modes[i] !== modes[i + 2]) { isOscillating = false; break; }
+        }
+        if (isOscillating && modes[0] !== modes[1]) {
+          adaptiveLocked = true;
+          lockCyclesRemaining = 5;
+          adaptiveMultiplier = 1.0;
+          adaptiveNote = "oscillation_damped";
+          adaptiveStateObj.multiplier = 1.0;
+          adaptiveStateObj.mode = "oscillation_damped";
+          stabilityNotes.push(`oscillation_detected: pattern=${modes.join(",")}`);
+        }
+      }
+
+      // 2️⃣ Priority Inflation Guard — check queue baseline
+      const { data: baselineData } = await supabase.rpc("snapshot_queue_baseline", {
+        p_business_id: business_id,
+        p_window: 50,
+      });
+      const currentAvgPriority = Number(snapshotBefore?.queue?.avg_priority || 0);
+      const historicalAvg = Number(baselineData?.avg_priority || 0);
+      if (historicalAvg > 0 && currentAvgPriority > historicalAvg * 3) {
+        // Priority inflation detected — will normalize in hour boost step
+        stabilityNotes.push(`priority_inflation: current=${currentAvgPriority.toFixed(1)}, baseline=${historicalAvg.toFixed(1)}, ratio=${(currentAvgPriority / historicalAvg).toFixed(1)}x`);
+      }
+
+      // 3️⃣ Rep Dominance Detection
+      const { data: recentDominance } = await supabase
+        .from("dialer_intelligence_deltas")
+        .select("agent_routing_top_rep_share")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (recentDominance && recentDominance.length >= 5) {
+        const allAbove60 = recentDominance.every((d: any) => Number(d.agent_routing_top_rep_share || 0) > 60);
+        if (allAbove60) {
+          stabilityNotes.push("rep_dominance_dampen: top_rep > 60% for 5 consecutive runs");
+        }
+      }
+    } catch (e) {
+      console.error("Stability guard failed (non-fatal):", e);
+      stabilityNotes.push(`stability_guard_error: ${String(e)}`);
+    }
+
+    const stabilityStateObj = {
+      locked: adaptiveLocked,
+      lockCyclesRemaining,
+      stabilityNotes,
+    };
+
+    // Update adaptive state with final stability-adjusted values
+    adaptiveStateObj.multiplier = adaptiveMultiplier;
+    adaptiveStateObj.mode = adaptiveNote;
+    adaptiveStateObj.refreshInterval = Math.max(2, Math.round(baseRefreshInterval / adaptiveMultiplier));
+
     // ── INTELLIGENCE STEPS (ALL WRAPPED) ──
     // Apply adaptive multiplier to refresh interval (lower = more frequent)
-    const refreshInterval = effectiveRefreshInterval;
+    const refreshInterval = adaptiveStateObj.refreshInterval;
     const usePredictiveTargeting = settings?.use_predictive_targeting || false;
     const useRepStoreMatching = settings?.use_rep_store_matching || false;
     const useTimeRevenueBias = settings?.use_time_revenue_bias || false;
@@ -618,6 +732,34 @@ Deno.serve(async (req) => {
             ? (data.updated_campaigns_count || 0)
             : 0;
           return { rows_affected: rowsAffected, output: data };
+        },
+      });
+
+      // 4️⃣ Campaign Weight Hard Caps — enforce 0.3–3.0 bounds
+      await runStep({
+        supabase,
+        runId,
+        stepName: "Campaign Weight Cap Enforcement",
+        rpcName: "campaign_weight_cap",
+        executor: async () => {
+          // Cap weights above 3.0
+          const { data: overCap } = await supabase
+            .from("dialer_campaigns")
+            .update({ weight: 3.0, updated_at: new Date().toISOString() })
+            .eq("business_id", business_id)
+            .gt("weight", 3.0)
+            .select("id");
+          // Floor weights below 0.3
+          const { data: underFloor } = await supabase
+            .from("dialer_campaigns")
+            .update({ weight: 0.3, updated_at: new Date().toISOString() })
+            .eq("business_id", business_id)
+            .lt("weight", 0.3)
+            .gt("weight", 0)
+            .select("id");
+          const capped = (overCap?.length || 0) + (underFloor?.length || 0);
+          if (capped > 0) stabilityNotes.push(`campaign_weight_capped: ${overCap?.length || 0} over 3.0, ${underFloor?.length || 0} under 0.3`);
+          return { rows_affected: capped, output: { capped_high: overCap?.length || 0, capped_low: underFloor?.length || 0 } };
         },
       });
     }
@@ -718,7 +860,7 @@ Deno.serve(async (req) => {
     if (agentCount === 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["no_agents_available"] });
       return new Response(
         JSON.stringify({ success: false, reason: "no_agents_available", dialed: 0 }),
@@ -753,7 +895,7 @@ Deno.serve(async (req) => {
     if (slotsAvailable <= 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "at_capacity", dialed: 0 }),
@@ -772,7 +914,7 @@ Deno.serve(async (req) => {
       if (campCheck?.auto_paused) {
         await releaseLock(supabase, business_id);
         const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
+        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj);
         await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["campaign_auto_paused"] });
         return new Response(
           JSON.stringify({ success: false, reason: "campaign_auto_paused" }),
@@ -793,7 +935,7 @@ Deno.serve(async (req) => {
       errors.push(`claim_queue_items: ${claimErr.message}`);
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors });
       return new Response(
         JSON.stringify({ error: "Failed to claim queue items", details: claimErr.message }),
@@ -804,7 +946,7 @@ Deno.serve(async (req) => {
     if (!claimedItems || claimedItems.length === 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "queue_empty", dialed: 0 }),
@@ -1046,7 +1188,7 @@ Deno.serve(async (req) => {
     } catch {
       snapshotAfter = snapshotBefore;
     }
-    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
+    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj);
 
     // ── Log cycle ──
     await logCycle(supabase, {
@@ -1075,6 +1217,11 @@ Deno.serve(async (req) => {
         connect_rate_target: connectRateTarget,
         dynamic_connect_rate: useDynamicConnectRate,
         profit_throttled: isProfitThrottled,
+        stability: {
+          adaptive_locked: adaptiveLocked,
+          lock_cycles_remaining: lockCyclesRemaining,
+          notes: stabilityNotes,
+        },
         outcomes: outcomeCounts,
         results,
         errors: errors.length > 0 ? errors : undefined,

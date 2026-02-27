@@ -21909,6 +21909,8 @@ export type Database = {
       }
       dialer_intelligence_runs: {
         Row: {
+          adaptive_lock_cycles_remaining: number | null
+          adaptive_locked: boolean | null
           adaptive_mode: string | null
           adaptive_multiplier: number | null
           business_id: string
@@ -21923,9 +21925,12 @@ export type Database = {
           rolling_avg_impact: number | null
           rolling_negative_ratio: number | null
           run_mode: Database["public"]["Enums"]["intelligence_run_mode"]
+          stability_notes: string | null
           started_at: string
         }
         Insert: {
+          adaptive_lock_cycles_remaining?: number | null
+          adaptive_locked?: boolean | null
           adaptive_mode?: string | null
           adaptive_multiplier?: number | null
           business_id: string
@@ -21940,9 +21945,12 @@ export type Database = {
           rolling_avg_impact?: number | null
           rolling_negative_ratio?: number | null
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
+          stability_notes?: string | null
           started_at?: string
         }
         Update: {
+          adaptive_lock_cycles_remaining?: number | null
+          adaptive_locked?: boolean | null
           adaptive_mode?: string | null
           adaptive_multiplier?: number | null
           business_id?: string
@@ -21957,6 +21965,7 @@ export type Database = {
           rolling_avg_impact?: number | null
           rolling_negative_ratio?: number | null
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
+          stability_notes?: string | null
           started_at?: string
         }
         Relationships: [
@@ -64055,6 +64064,14 @@ export type Database = {
       snapshot_campaign_summary: {
         Args: { p_business_id: string }
         Returns: Json
+      }
+      snapshot_queue_baseline: {
+        Args: { p_business_id: string; p_window?: number }
+        Returns: {
+          avg_max_priority: number
+          avg_priority: number
+          total_runs: number
+        }[]
       }
       snapshot_queue_summary: { Args: { p_business_id: string }; Returns: Json }
       snooze_ops_thread: {
