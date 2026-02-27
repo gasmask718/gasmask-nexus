@@ -62900,6 +62900,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      auto_adjust_campaign_weights: {
+        Args: { p_business_id: string }
+        Returns: Json
+      }
       auto_lock_old_profiles: { Args: { p_days_old?: number }; Returns: number }
       backfill_final_results: { Args: never; Returns: number }
       backfill_invoice_line_item_costs: {
@@ -62909,11 +62913,19 @@ export type Database = {
           updated_count: number
         }[]
       }
+      boost_queue_priority_for_hour: {
+        Args: { p_business_id: string; p_now_ts?: string }
+        Returns: Json
+      }
       bulk_approve_commissions: {
         Args: { p_ambassador_id?: string; p_before_date?: string }
         Returns: number
       }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
+      calculate_predictive_profit_score: {
+        Args: { p_business_id: string; p_store_id: string }
+        Returns: Json
+      }
       calculate_rep_efficiency: {
         Args: { p_business_id: string }
         Returns: number
@@ -63418,6 +63430,10 @@ export type Database = {
           source: string
         }[]
       }
+      get_best_rep_for_store: {
+        Args: { p_business_id: string; p_store_id: string }
+        Returns: Json
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_intent_queue_health: { Args: never; Returns: Json }
       get_managed_office_ids: { Args: { _user_id: string }; Returns: string[] }
@@ -63836,6 +63852,10 @@ export type Database = {
           source: string
           table_name: string
         }[]
+      }
+      seed_outbound_queue_from_inventory: {
+        Args: { p_business_id: string; p_mode?: string }
+        Returns: Json
       }
       set_governance_bypass: {
         Args: { p_authorized: boolean }

@@ -52,18 +52,18 @@ export default function CampaignBuilderPage() {
   const { data: storeCount } = useQuery({
     queryKey: ['store-count-preview', currentBusiness?.id, form.storeFilter, form.region],
     queryFn: async () => {
-      let query = supabase
+      let q = supabase
         .from('store_master')
         .select('id', { count: 'exact', head: true })
-        .eq('do_not_call', false);
+        .eq('do_not_call', false) as any;
 
       if (currentBusiness?.id) {
-        query = query.eq('business_id', currentBusiness.id);
+        q = q.eq('business_id', currentBusiness.id);
       }
       if (form.region) {
-        query = query.ilike('state', `%${form.region}%`);
+        q = q.ilike('state', `%${form.region}%`);
       }
-      const { count } = await query;
+      const { count } = await q;
       return count || 0;
     },
     enabled: !!currentBusiness?.id && step === 'audience',
@@ -248,7 +248,7 @@ export default function CampaignBuilderPage() {
               <Button
                 onClick={() => launchMutation.mutate()}
                 disabled={launchMutation.isPending}
-                className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                className="w-full gap-2"
                 size="lg"
               >
                 <Rocket className="h-5 w-5" />
