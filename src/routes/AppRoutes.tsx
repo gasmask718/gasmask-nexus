@@ -233,6 +233,10 @@ import DialerOptimizationDashboard from '@/pages/communication/dialer/DialerOpti
 import DialerRevenueIntelligence from '@/pages/communication/dialer/DialerRevenueIntelligence';
 import DialerPredictiveTargeting from '@/pages/communication/dialer/DialerPredictiveTargeting';
 import DialerIntegrityPage from '@/pages/communication/dialer/DialerIntegrityPage';
+import AudienceBuilderPage from '@/pages/communication/dialer/AudienceBuilderPage';
+import CampaignWizardPage from '@/pages/communication/dialer/CampaignWizardPage';
+import DialerStartPage from '@/pages/communication/dialer/DialerStartPage';
+import DialerConsolePage from '@/pages/communication/dialer/DialerConsolePage';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
@@ -1480,6 +1484,10 @@ export default function AppRoutes() {
           <Route path="revenue-intelligence" element={<DialerRevenueIntelligence />} />
           <Route path="predictive-targeting" element={<DialerPredictiveTargeting />} />
           <Route path="dialer-integrity" element={<DialerIntegrityPage />} />
+          <Route path="dialer-start" element={<DialerStartPage />} />
+          <Route path="dialer-audience" element={<AudienceBuilderPage />} />
+          <Route path="dialer-console" element={<DialerConsolePage />} />
+          <Route path="campaign-wizard" element={<CampaignWizardPage />} />
           <Route path="cold-call-blast" element={<ColdCallBlastPage />} />
         </Route>
 
