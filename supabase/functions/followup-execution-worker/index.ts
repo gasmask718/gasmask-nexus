@@ -138,6 +138,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Batch-fetch store names for observability
+    const storeIds = [...new Set(targets.map(t => t.store_id).filter(Boolean))];
+    const storeNameMap: Record<string, string> = {};
+    if (storeIds.length > 0) {
+      const { data: stores } = await supabase
+        .from("store_master")
+        .select("id, store_name")
+        .in("id", storeIds);
+      if (stores) {
+        for (const s of stores) storeNameMap[s.id] = s.store_name;
+      }
+    }
+
     let queuedCount = 0;
     let failedCount = 0;
 
@@ -151,22 +164,41 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      const queueMeta = {
+        execution_run_id: run_id,
+        execution_target_id: target.id,
+        source_reason: "followup_execution",
+        voice_engine: run.voice_engine,
+        route_mode: run.mode,
+      };
+
       const { error: qErr } = await supabase.from("outbound_call_queue").insert({
         business_id: run.business_id,
         phone_number: target.resolved_phone,
         store_id: target.store_id,
         status: "queued",
         priority: 5,
-        contact_name: null,
+        contact_name: storeNameMap[target.store_id] || null,
         campaign_id: null,
-        metadata: {
-          execution_run_id: run_id,
-          execution_target_id: target.id,
-          source_reason: "followup_execution",
-          voice_engine: run.voice_engine,
-          route_mode: run.mode,
-        },
+        metadata: queueMeta,
       });
+
+      // Create live_calls entry for observability
+      if (!qErr) {
+        await supabase.from("live_calls").insert({
+          business_id: run.business_id,
+          store_id: target.store_id,
+          phone_number: target.resolved_phone,
+          agent_type: run.mode === "ai" ? "ai" : "human",
+          voice_provider: run.voice_engine || null,
+          state: "queued",
+          entity_name: storeNameMap[target.store_id] || null,
+          run_id: run_id,
+          source_reason: "followup_execution",
+          started_at: new Date().toISOString(),
+          metadata: queueMeta,
+        });
+      }
 
       if (qErr) {
         await supabase
