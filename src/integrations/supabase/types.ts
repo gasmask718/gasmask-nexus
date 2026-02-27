@@ -21852,6 +21852,13 @@ export type Database = {
             referencedRelation: "dialer_intelligence_runs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "dialer_intelligence_deltas_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialer_latest_run"
+            referencedColumns: ["run_id"]
+          },
         ]
       }
       dialer_intelligence_run_steps: {
@@ -21904,6 +21911,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "dialer_intelligence_runs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dialer_intelligence_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "v_dialer_latest_run"
+            referencedColumns: ["run_id"]
           },
         ]
       }
@@ -60686,6 +60700,46 @@ export type Database = {
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_dialer_latest_run: {
+        Row: {
+          adaptive_lock_cycles_remaining: number | null
+          adaptive_locked: boolean | null
+          adaptive_mode: string | null
+          adaptive_multiplier: number | null
+          business_id: string | null
+          effective_refresh_interval: number | null
+          ended_at: string | null
+          forecast_confidence: number | null
+          forecast_inputs: Json | null
+          forecast_window_days: number | null
+          impact_score: number | null
+          overall_status:
+            | Database["public"]["Enums"]["intelligence_run_status"]
+            | null
+          projected_attempts: number | null
+          projected_connects: number | null
+          projected_cost: number | null
+          projected_profit: number | null
+          projected_revenue: number | null
+          rolling_avg_impact: number | null
+          rolling_negative_ratio: number | null
+          run_id: string | null
+          run_mode: Database["public"]["Enums"]["intelligence_run_mode"] | null
+          stability_notes: string | null
+          started_at: string | null
+          target_gap: number | null
+          target_mode_action: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_intelligence_runs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]

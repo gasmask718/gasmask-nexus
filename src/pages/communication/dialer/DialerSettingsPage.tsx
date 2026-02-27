@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Save, Shield, Clock, Phone, Bot } from 'lucide-react';
+import { Settings, Save, Shield, Clock, Phone, Bot, Target } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
@@ -26,6 +26,8 @@ interface DialerSettingsData {
   business_timezone: string;
   after_hours_behavior: string;
   enable_test_mode: boolean;
+  target_mode_enabled: boolean;
+  target_profit_7d: number | null;
 }
 
 const defaults: DialerSettingsData = {
@@ -42,6 +44,8 @@ const defaults: DialerSettingsData = {
   business_timezone: 'America/New_York',
   after_hours_behavior: 'stop',
   enable_test_mode: true,
+  target_mode_enabled: false,
+  target_profit_7d: null,
 };
 
 export default function DialerSettingsPage() {
@@ -79,6 +83,8 @@ export default function DialerSettingsPage() {
         business_timezone: existing.business_timezone || defaults.business_timezone,
         after_hours_behavior: existing.after_hours_behavior || defaults.after_hours_behavior,
         enable_test_mode: existing.enable_test_mode ?? true,
+        target_mode_enabled: (existing as any).target_mode_enabled ?? false,
+        target_profit_7d: (existing as any).target_profit_7d ?? null,
       });
     }
   }, [existing]);
@@ -86,24 +92,30 @@ export default function DialerSettingsPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!currentBusiness?.id) throw new Error('No business selected');
-      const payload = { ...form, business_id: currentBusiness.id, updated_at: new Date().toISOString() };
+      const payload = {
+        ...form,
+        business_id: currentBusiness.id,
+        updated_at: new Date().toISOString(),
+        target_profit_7d: form.target_profit_7d || null,
+      };
       
       if (existing) {
         const { error } = await supabase
           .from('dialer_settings')
-          .update(payload)
+          .update(payload as any)
           .eq('id', existing.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('dialer_settings')
-          .insert(payload);
+          .insert(payload as any);
         if (error) throw error;
       }
     },
     onSuccess: () => {
       toast.success('Dialer settings saved');
       queryClient.invalidateQueries({ queryKey: ['dialer-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['dialer-settings-integrity'] });
     },
     onError: (e: any) => toast.error(`Failed to save: ${e.message}`),
   });
@@ -216,6 +228,39 @@ export default function DialerSettingsPage() {
                 </SelectContent>
               </Select>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Target Mode */}
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Target-Driven Profit Mode</CardTitle>
+            <CardDescription>Set a 7-day profit target and let the engine steer toward it</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between p-3 border rounded-lg">
+              <div>
+                <Label>Enable Target Mode</Label>
+                <p className="text-xs text-muted-foreground">Engine will accelerate or stabilize to hit your target</p>
+              </div>
+              <Switch checked={form.target_mode_enabled} onCheckedChange={v => update('target_mode_enabled', v)} />
+            </div>
+            {form.target_mode_enabled && (
+              <div className="space-y-2">
+                <Label>7-Day Profit Target ($)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="e.g. 5000"
+                  value={form.target_profit_7d ?? ''}
+                  onChange={e => update('target_profit_7d', e.target.value ? Number(e.target.value) : null)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  The engine will compare projected profit against this target each cycle and adjust intensity accordingly.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
