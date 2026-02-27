@@ -5,7 +5,7 @@
 // Dynasty OS Pagination & Verification Contract compliant
 // ═══════════════════════════════════════════════════════════════════════════════
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,7 @@ import {
   PAGE_SIZE_OPTIONS,
 } from '@/hooks/useContactCadence';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 
@@ -109,13 +110,19 @@ interface ContactCadenceBoardProps {
   externalFilter?: CadenceFilter;
   onFilterChange?: (filter: CadenceFilter) => void;
   storeId?: string; // Store filter from URL or prop
+  selectable?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
 export function ContactCadenceBoard({ 
   initialFilter = 'all', 
   externalFilter,
   onFilterChange,
-  storeId: propStoreId
+  storeId: propStoreId,
+  selectable = false,
+  selectedIds = new Set(),
+  onSelectionChange,
 }: ContactCadenceBoardProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -175,6 +182,25 @@ export function ContactCadenceBoard({
     searchParams.delete('store');
     setSearchParams(searchParams);
   };
+
+  const toggleRow = useCallback((contactId: string) => {
+    if (!onSelectionChange) return;
+    const next = new Set(selectedIds);
+    if (next.has(contactId)) next.delete(contactId);
+    else next.add(contactId);
+    onSelectionChange(next);
+  }, [selectedIds, onSelectionChange]);
+
+  const toggleAll = useCallback(() => {
+    if (!onSelectionChange) return;
+    const allIds = filteredContacts.map(c => c.contact_id);
+    const allSelected = allIds.every(id => selectedIds.has(id));
+    if (allSelected) {
+      onSelectionChange(new Set());
+    } else {
+      onSelectionChange(new Set(allIds));
+    }
+  }, [filteredContacts, selectedIds, onSelectionChange]);
 
   return (
     <div className="space-y-4">
@@ -281,6 +307,14 @@ export function ContactCadenceBoard({
             <Table>
               <TableHeader>
                 <TableRow>
+                  {selectable && (
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={filteredContacts.length > 0 && filteredContacts.every(c => selectedIds.has(c.contact_id))}
+                        onCheckedChange={toggleAll}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead>Contact</TableHead>
                   <TableHead>Store</TableHead>
                   <TableHead className="text-center">📞 Last Call</TableHead>
@@ -293,7 +327,15 @@ export function ContactCadenceBoard({
               </TableHeader>
               <TableBody>
                 {filteredContacts.map((contact) => (
-                  <TableRow key={contact.contact_id} className="hover:bg-muted/50">
+                  <TableRow key={contact.contact_id} className={`hover:bg-muted/50 ${selectable && selectedIds.has(contact.contact_id) ? 'bg-primary/5' : ''}`}>
+                    {selectable && (
+                      <TableCell className="w-10">
+                        <Checkbox
+                          checked={selectedIds.has(contact.contact_id)}
+                          onCheckedChange={() => toggleRow(contact.contact_id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
