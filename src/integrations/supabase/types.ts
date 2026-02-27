@@ -21798,6 +21798,159 @@ export type Database = {
           },
         ]
       }
+      dialer_intelligence_deltas: {
+        Row: {
+          agent_routing_gini: number | null
+          agent_routing_top_rep_share: number | null
+          campaign_weight_avg_delta: number | null
+          campaign_weights_changed: number | null
+          id: string
+          inventory_seed_blocked: number | null
+          inventory_seed_inserted: number | null
+          inventory_seed_updated: number | null
+          notes: Json | null
+          queue_priority_avg_delta: number | null
+          queue_priority_max_delta: number | null
+          queue_priority_rows_changed: number | null
+          run_id: string
+        }
+        Insert: {
+          agent_routing_gini?: number | null
+          agent_routing_top_rep_share?: number | null
+          campaign_weight_avg_delta?: number | null
+          campaign_weights_changed?: number | null
+          id?: string
+          inventory_seed_blocked?: number | null
+          inventory_seed_inserted?: number | null
+          inventory_seed_updated?: number | null
+          notes?: Json | null
+          queue_priority_avg_delta?: number | null
+          queue_priority_max_delta?: number | null
+          queue_priority_rows_changed?: number | null
+          run_id: string
+        }
+        Update: {
+          agent_routing_gini?: number | null
+          agent_routing_top_rep_share?: number | null
+          campaign_weight_avg_delta?: number | null
+          campaign_weights_changed?: number | null
+          id?: string
+          inventory_seed_blocked?: number | null
+          inventory_seed_inserted?: number | null
+          inventory_seed_updated?: number | null
+          notes?: Json | null
+          queue_priority_avg_delta?: number | null
+          queue_priority_max_delta?: number | null
+          queue_priority_rows_changed?: number | null
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_intelligence_deltas_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_intelligence_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_intelligence_run_steps: {
+        Row: {
+          duration_ms: number | null
+          ended_at: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          output_json: Json | null
+          rows_affected: number | null
+          rpc_name: string
+          run_id: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["intelligence_step_status"]
+          step_name: string
+        }
+        Insert: {
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          output_json?: Json | null
+          rows_affected?: number | null
+          rpc_name: string
+          run_id: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["intelligence_step_status"]
+          step_name: string
+        }
+        Update: {
+          duration_ms?: number | null
+          ended_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          output_json?: Json | null
+          rows_affected?: number | null
+          rpc_name?: string
+          run_id?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["intelligence_step_status"]
+          step_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_intelligence_run_steps_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "dialer_intelligence_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dialer_intelligence_runs: {
+        Row: {
+          business_id: string
+          created_at: string
+          ended_at: string | null
+          engine_cycle_id: string | null
+          id: string
+          notes: string | null
+          overall_status: Database["public"]["Enums"]["intelligence_run_status"]
+          run_mode: Database["public"]["Enums"]["intelligence_run_mode"]
+          started_at: string
+        }
+        Insert: {
+          business_id: string
+          created_at?: string
+          ended_at?: string | null
+          engine_cycle_id?: string | null
+          id?: string
+          notes?: string | null
+          overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
+          run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
+          started_at?: string
+        }
+        Update: {
+          business_id?: string
+          created_at?: string
+          ended_at?: string | null
+          engine_cycle_id?: string | null
+          id?: string
+          notes?: string | null
+          overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
+          run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dialer_intelligence_runs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dialer_opt_out_events: {
         Row: {
           business_id: string | null
@@ -64142,6 +64295,9 @@ export type Database = {
         | "virtual"
         | "digital"
       inbound_route_type: "user" | "role" | "voicemail"
+      intelligence_run_mode: "dry_run" | "live"
+      intelligence_run_status: "ok" | "warn" | "error"
+      intelligence_step_status: "ok" | "warn" | "error" | "skipped"
       inventory_level: "empty" | "quarter" | "half" | "threeQuarters" | "full"
       invite_status: "sent" | "accepted" | "expired" | "revoked"
       labor_model: "hourly" | "per_box" | "flat_day"
@@ -64740,6 +64896,9 @@ export const Constants = {
         "digital",
       ],
       inbound_route_type: ["user", "role", "voicemail"],
+      intelligence_run_mode: ["dry_run", "live"],
+      intelligence_run_status: ["ok", "warn", "error"],
+      intelligence_step_status: ["ok", "warn", "error", "skipped"],
       inventory_level: ["empty", "quarter", "half", "threeQuarters", "full"],
       invite_status: ["sent", "accepted", "expired", "revoked"],
       labor_model: ["hourly", "per_box", "flat_day"],

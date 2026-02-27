@@ -300,6 +300,7 @@ export default function AppSidebar() {
               { path: '/communication/voice-matrix', label: 'Voice Matrix', emoji: '🔊' },
               { path: '/communication/heatmap', label: 'Heatmap', emoji: '🔥' },
               ...(isAdmin ? [{ path: '/communication/business-numbers', label: 'Caller IDs & Routing', emoji: '📲' }] : []),
+              ...(isAdmin ? [{ path: '/communication/dialer-integrity', label: 'Dialer Integrity', emoji: '🔍' }] : []),
               { path: '/communication/settings', label: 'Settings', emoji: '⚙️' },
             ])}
 

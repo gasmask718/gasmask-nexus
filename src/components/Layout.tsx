@@ -195,6 +195,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/communication/voice-matrix', label: 'Voice Matrix', icon: Radio },
         { path: '/communication/heatmap', label: 'Heatmap', icon: Flame },
         { path: '/communication/business-numbers', label: 'Caller IDs & Routing', icon: Phone, adminOnly: true },
+        { path: '/communication/dialer-integrity', label: 'Dialer Integrity', icon: Activity, adminOnly: true },
         { path: '/communication/settings', label: 'Settings', icon: Settings },
       ],
     },
