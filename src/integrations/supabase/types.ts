@@ -21935,6 +21935,8 @@ export type Database = {
           run_mode: Database["public"]["Enums"]["intelligence_run_mode"]
           stability_notes: string | null
           started_at: string
+          target_gap: number | null
+          target_mode_action: string | null
         }
         Insert: {
           adaptive_lock_cycles_remaining?: number | null
@@ -21963,6 +21965,8 @@ export type Database = {
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
           stability_notes?: string | null
           started_at?: string
+          target_gap?: number | null
+          target_mode_action?: string | null
         }
         Update: {
           adaptive_lock_cycles_remaining?: number | null
@@ -21991,6 +21995,8 @@ export type Database = {
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
           stability_notes?: string | null
           started_at?: string
+          target_gap?: number | null
+          target_mode_action?: string | null
         }
         Relationships: [
           {
@@ -22074,6 +22080,8 @@ export type Database = {
           retry_backoff_minutes: number[] | null
           retry_delay_minutes: number | null
           retry_max_days: number | null
+          target_mode_enabled: boolean | null
+          target_profit_7d: number | null
           telephony_mode: string | null
           twilio_enabled: boolean | null
           updated_at: string
@@ -22108,6 +22116,8 @@ export type Database = {
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
           retry_max_days?: number | null
+          target_mode_enabled?: boolean | null
+          target_profit_7d?: number | null
           telephony_mode?: string | null
           twilio_enabled?: boolean | null
           updated_at?: string
@@ -22142,6 +22152,8 @@ export type Database = {
           retry_backoff_minutes?: number[] | null
           retry_delay_minutes?: number | null
           retry_max_days?: number | null
+          target_mode_enabled?: boolean | null
+          target_profit_7d?: number | null
           telephony_mode?: string | null
           twilio_enabled?: boolean | null
           updated_at?: string

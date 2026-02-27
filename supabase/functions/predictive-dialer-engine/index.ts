@@ -129,7 +129,8 @@ async function finalizeRun(
   inventorySeedResult: any,
   adaptiveState?: { multiplier: number; mode: string; refreshInterval: number; avgImpact: number; negativeRatio: number },
   stabilityState?: { locked: boolean; lockCyclesRemaining: number; stabilityNotes: string[] },
-  forecastData?: { window_days: number; projected_attempts: number; projected_connects: number; projected_revenue: number; projected_cost: number; projected_profit: number; confidence: number; inputs: any } | null
+  forecastData?: { window_days: number; projected_attempts: number; projected_connects: number; projected_revenue: number; projected_cost: number; projected_profit: number; confidence: number; inputs: any } | null,
+  targetData?: { gap: number; action: string } | null
 ) {
   if (!runId) return;
 
@@ -239,6 +240,8 @@ async function finalizeRun(
         projected_profit: forecastData?.projected_profit ?? null,
         forecast_confidence: forecastData?.confidence ?? null,
         forecast_inputs: forecastData?.inputs ?? null,
+        target_gap: targetData?.gap ?? null,
+        target_mode_action: targetData?.action ?? null,
         ended_at: new Date().toISOString(),
       })
       .eq("id", runId);
@@ -683,6 +686,53 @@ Deno.serve(async (req) => {
       console.error("Forecast failed (non-fatal):", e);
     }
 
+    // ── TARGET-DRIVEN PROFIT MODE (Layer 8) ──
+    const targetModeEnabled = settings?.target_mode_enabled || false;
+    const targetProfit7d = Number(settings?.target_profit_7d || 0);
+    let targetGap = 0;
+    let targetAction = "none";
+
+    if (targetModeEnabled && targetProfit7d > 0 && forecastResult) {
+      const projectedProfit = Number(forecastResult.projected_profit || 0);
+      targetGap = targetProfit7d - projectedProfit;
+      const gapRatio = targetGap / targetProfit7d;
+
+      if (gapRatio > 0.05) {
+        // Behind target — accelerate within stability bounds
+        targetAction = `target_acceleration: gap=$${targetGap.toFixed(0)} (${(gapRatio * 100).toFixed(0)}% behind)`;
+        // Temporarily boost campaign weights by up to 20% (within 3.0 cap)
+        if (!adaptiveLocked) {
+          const boostFactor = Math.min(1.2, 1 + gapRatio * 0.5);
+          const { data: activeCampaigns } = await supabase
+            .from("dialer_campaigns")
+            .select("id, weight")
+            .eq("business_id", business_id)
+            .eq("auto_paused", false);
+          if (activeCampaigns) {
+            for (const c of activeCampaigns) {
+              const newWeight = Math.min(3.0, (Number(c.weight) || 1) * boostFactor);
+              await supabase.from("dialer_campaigns").update({
+                weight: newWeight,
+                updated_at: new Date().toISOString(),
+              }).eq("id", c.id);
+            }
+            targetAction += `, boosted ${activeCampaigns.length} campaigns by ${((boostFactor - 1) * 100).toFixed(0)}%`;
+          }
+        } else {
+          targetAction += " (locked—no boost applied)";
+        }
+        stabilityNotes.push(targetAction);
+      } else if (gapRatio < -0.20) {
+        // Ahead of target by >20% — stabilize
+        targetAction = `target_stabilization: ahead by $${Math.abs(targetGap).toFixed(0)} (${(Math.abs(gapRatio) * 100).toFixed(0)}% over)`;
+        stabilityNotes.push(targetAction);
+      } else {
+        targetAction = `target_on_track: gap=$${targetGap.toFixed(0)}`;
+      }
+    }
+
+    const targetDataObj = targetModeEnabled ? { gap: targetGap, action: targetAction } : null;
+
     // Update adaptive state with final stability-adjusted values
     adaptiveStateObj.multiplier = adaptiveMultiplier;
     adaptiveStateObj.mode = adaptiveNote;
@@ -883,7 +933,7 @@ Deno.serve(async (req) => {
     if (agentCount === 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult, targetDataObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["no_agents_available"] });
       return new Response(
         JSON.stringify({ success: false, reason: "no_agents_available", dialed: 0 }),
@@ -918,7 +968,7 @@ Deno.serve(async (req) => {
     if (slotsAvailable <= 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult, targetDataObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "at_capacity", dialed: 0 }),
@@ -937,7 +987,7 @@ Deno.serve(async (req) => {
       if (campCheck?.auto_paused) {
         await releaseLock(supabase, business_id);
         const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult);
+        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult, targetDataObj);
         await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["campaign_auto_paused"] });
         return new Response(
           JSON.stringify({ success: false, reason: "campaign_auto_paused" }),
@@ -958,7 +1008,7 @@ Deno.serve(async (req) => {
       errors.push(`claim_queue_items: ${claimErr.message}`);
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult, targetDataObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors });
       return new Response(
         JSON.stringify({ error: "Failed to claim queue items", details: claimErr.message }),
@@ -969,7 +1019,7 @@ Deno.serve(async (req) => {
     if (!claimedItems || claimedItems.length === 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult, targetDataObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "queue_empty", dialed: 0 }),
@@ -1211,7 +1261,7 @@ Deno.serve(async (req) => {
     } catch {
       snapshotAfter = snapshotBefore;
     }
-    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult);
+    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj, stabilityStateObj, forecastResult, targetDataObj);
 
     // ── Log cycle ──
     await logCycle(supabase, {
@@ -1251,6 +1301,12 @@ Deno.serve(async (req) => {
           projected_revenue: forecastResult.projected_revenue,
           projected_attempts: forecastResult.projected_attempts,
           confidence: forecastResult.confidence,
+        } : null,
+        target_mode: targetDataObj ? {
+          enabled: true,
+          target_profit_7d: targetProfit7d,
+          gap: targetGap,
+          action: targetAction,
         } : null,
         results,
         errors: errors.length > 0 ? errors : undefined,

@@ -304,6 +304,30 @@ export default function DialerIntegrityPage() {
               <Progress value={Number(latestForecast.forecast_confidence || 0) * 100} className="h-2" />
             </div>
 
+            {/* Target Mode Status */}
+            {latestForecast.target_mode_action && latestForecast.target_mode_action !== 'none' && (
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/50">
+                <Target className="h-5 w-5 text-primary shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">Target Mode</span>
+                    <Badge variant={
+                      String(latestForecast.target_mode_action).includes('acceleration') ? 'destructive' :
+                      String(latestForecast.target_mode_action).includes('stabilization') ? 'secondary' :
+                      'outline'
+                    } className="text-xs">
+                      {String(latestForecast.target_mode_action).includes('acceleration') ? 'Accelerating' :
+                       String(latestForecast.target_mode_action).includes('stabilization') ? 'Stabilizing' :
+                       'On Track'}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    Gap: ${Number(latestForecast.target_gap || 0).toFixed(0)} · {latestForecast.target_mode_action}
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Key inputs */}
             {latestForecast.forecast_inputs && (
               <details className="text-xs">
