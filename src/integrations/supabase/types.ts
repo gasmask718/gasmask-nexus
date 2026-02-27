@@ -21914,6 +21914,7 @@ export type Database = {
           ended_at: string | null
           engine_cycle_id: string | null
           id: string
+          impact_score: number | null
           notes: string | null
           overall_status: Database["public"]["Enums"]["intelligence_run_status"]
           run_mode: Database["public"]["Enums"]["intelligence_run_mode"]
@@ -21925,6 +21926,7 @@ export type Database = {
           ended_at?: string | null
           engine_cycle_id?: string | null
           id?: string
+          impact_score?: number | null
           notes?: string | null
           overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
@@ -21936,6 +21938,7 @@ export type Database = {
           ended_at?: string | null
           engine_cycle_id?: string | null
           id?: string
+          impact_score?: number | null
           notes?: string | null
           overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
