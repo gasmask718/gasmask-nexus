@@ -60,6 +60,19 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     const rp = executionRun.runProgress;
     const processed = (rp.queued_targets || 0) + (rp.completed_targets || 0) + (rp.failed_targets || 0);
     const pct = rp.callable_targets > 0 ? Math.round((processed / rp.callable_targets) * 100) : 0;
+    const isWaiting = rp.notes?.includes('Waiting');
+
+    const handleForceWave = async () => {
+      // Clear stale queue items to unblock
+      const client = supabase as any;
+      await client.from('outbound_call_queue')
+        .update({ status: 'failed' })
+        .eq('business_id', rp.business_id || '')
+        .in('status', ['queued', 'dialing']);
+      // Trigger worker immediately
+      await supabase.functions.invoke('followup-execution-worker', { body: { run_id: rp.id } });
+      toast.info('Forced next wave — cleared stale queue');
+    };
 
     return (
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[500px] max-w-[760px] animate-in slide-in-from-bottom-4">
@@ -72,11 +85,24 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
             <Badge variant={rp.status === 'running' ? 'default' : rp.status === 'paused' ? 'secondary' : 'outline'} className="text-sm">
               {rp.status.toUpperCase()}
             </Badge>
+            {isWaiting && (
+              <Badge variant="outline" className="text-sm text-amber-600 border-amber-400">
+                🟡 Waiting — Concurrency Limit
+              </Badge>
+            )}
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { executionRun.cancelRun(); onClear(); }}>
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Waiting explanation */}
+        {isWaiting && (
+          <div className="mb-3 flex items-center gap-2 text-xs bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1.5 text-amber-700">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{rp.notes}</span>
+          </div>
+        )}
 
         {/* Progress */}
         <div className="mb-3">
@@ -121,6 +147,11 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
           {executionRun.isPaused && (
             <Button size="sm" variant="default" onClick={executionRun.resumeRun} className="gap-1.5">
               <Play className="h-3.5 w-3.5" /> Resume
+            </Button>
+          )}
+          {isWaiting && (
+            <Button size="sm" variant="outline" onClick={handleForceWave} className="gap-1.5 border-amber-500 text-amber-600">
+              <Zap className="h-3.5 w-3.5" /> Force Next Wave
             </Button>
           )}
           <Button size="sm" variant="destructive" onClick={() => { executionRun.cancelRun(); onClear(); }} className="gap-1.5">
