@@ -1425,64 +1425,74 @@ export default function AppRoutes() {
       <Route element={<ProtectedNoLayout />}>
         {/* Communication Center - Full-screen floor with own layout (no main Layout wrapper) */}
         <Route path="/communication" element={<CommunicationHubLayout />}>
-          <Route index element={<InboxPage />} />
-          <Route path="inbox" element={<InboxPage />} />
-          <Route path="dialer" element={<DialerPage />} />
+          {/* Default → Unified Inbox */}
+          <Route index element={<Navigate to="/communication/unified-inbox" replace />} />
+          
+          {/* ═══ FLOOR 1: OPERATIONS HUB ═══ */}
+          <Route path="unified-inbox" element={<UnifiedInboxV3Page />} />
+          <Route path="auto-dialer" element={<AutoDialerPage />} />
           <Route path="manual-calls" element={<ManualCallPage />} />
           <Route path="manual-text" element={<ManualTextPage />} />
-          <Route path="ai-auto-dialer" element={<AIAutoDialerPage />} />
-          <Route path="ai-auto-text" element={<AIAutoTextPage />} />
-          <Route path="outbound-engine" element={<OutboundEnginePage />} />
-          <Route path="autonomous-director" element={<AutonomousDirectorPage />} />
-          <Route path="voice-library" element={<VoiceLibraryPage />} />
-          <Route path="deals" element={<DealsSalesPage />} />
-          <Route path="live" element={<LiveCallsPage />} />
           <Route path="escalations" element={<EscalationsPage />} />
-          <Route path="engagement" element={<EngagementPage />} />
-          <Route path="routing" element={<RoutingPage />} />
-          <Route path="outreach" element={<OutreachPage />} />
+          <Route path="deals" element={<DealsSalesPage />} />
+          <Route path="follow-ups" element={<FollowUpManagerPage />} />
+          <Route path="voicemail-inbox" element={<VoicemailInboxPage />} />
+          <Route path="missed-calls" element={<MissedCallsDashboardPage />} />
+          <Route path="unresolved-queue" element={<UnresolvedCallsQueuePage />} />
+          <Route path="field-submissions" element={<FieldSubmissionsPage />} />
+
+          {/* ═══ FLOOR 2: AUTOMATION ENGINE ═══ */}
+          <Route path="outbound-growth" element={<OutboundGrowthPage />} />
           <Route path="campaigns" element={<CampaignsPage />} />
+          <Route path="ai-auto-text" element={<AIAutoTextPage />} />
           <Route path="personas" element={<PersonasPage />} />
           <Route path="call-flows" element={<CallFlowsPage />} />
+          <Route path="playbooks" element={<PlaybooksManagement />} />
+
+          {/* ═══ FLOOR 3: INTELLIGENCE ═══ */}
+          <Route path="call-intelligence" element={<CallIntelligencePage />} />
           <Route path="heatmap" element={<HeatmapPage />} />
-          <Route path="call-reasons" element={<CallReasonsPage />} />
           <Route path="predictions" element={<PredictionsPage />} />
+          <Route path="rep-performance" element={<RepPerformancePage />} />
+          <Route path="revenue-intelligence" element={<DialerRevenueIntelligence />} />
+          <Route path="optimization" element={<DialerOptimizationDashboard />} />
+          <Route path="predictive-targeting" element={<DialerPredictiveTargeting />} />
+          <Route path="engagement" element={<EngagementPage />} />
+          <Route path="cost-dashboard" element={<DialerCostDashboard />} />
+          <Route path="call-reasons" element={<CallReasonsPage />} />
+          <Route path="dialer-integrity" element={<DialerIntegrityPage />} />
+          <Route path="campaign-intelligence" element={<CampaignIntelligencePage />} />
+
+          {/* ═══ FLOOR 4: VOICE SYSTEM ═══ */}
           <Route path="agents" element={<AgentsPage />} />
-          <Route path="language" element={<LanguagePage />} />
           <Route path="voice-matrix" element={<VoiceMatrixPage />} />
+          <Route path="language" element={<LanguagePage />} />
+
+          {/* ═══ FLOOR 5: SYSTEM CONTROL ═══ */}
           <Route path="settings" element={<CommSettingsPage />} />
           <Route path="phone-numbers" element={<PhoneNumbersSettingsPage />} />
           <Route path="business-numbers" element={<BusinessPhoneNumbersPage />} />
-          <Route path="user-call-settings" element={<UserCallSettingsPage />} />
-          <Route path="business-hours" element={<BusinessHoursPage />} />
-          <Route path="after-hours" element={<AfterHoursRoutingPage />} />
+          <Route path="routing" element={<RoutingPage />} />
           <Route path="call-diagnostics" element={<CallSystemDiagnosticsPage />} />
-          <Route path="follow-ups" element={<FollowUpManagerPage />} />
-          <Route path="field-submissions" element={<FieldSubmissionsPage />} />
-          <Route path="unified-inbox" element={<UnifiedInboxV3Page />} />
-          <Route path="voicemail-inbox" element={<VoicemailInboxPage />} />
-          <Route path="missed-calls" element={<MissedCallsDashboardPage />} />
-          <Route path="call-intelligence" element={<CallIntelligencePage />} />
-          <Route path="unresolved-queue" element={<UnresolvedCallsQueuePage />} />
-          <Route path="ai-call-agent" element={<AICallAgentDashboardPage />} />
-          <Route path="playbooks" element={<PlaybooksManagement />} />
-          <Route path="shadow-mode" element={<ShadowModePage />} />
-          <Route path="outbound-growth" element={<OutboundGrowthPage />} />
-          <Route path="sms-dashboard" element={<CommunicationSMSDashboard />} />
-          <Route path="executive-ai" element={<ExecutiveControlRoomPage />} />
-          <Route path="bulk-dialer" element={<BulkDialerPage />} />
-          <Route path="live-panel" element={<LiveCallPanel />} />
-          <Route path="dialer-settings" element={<DialerSettingsPage />} />
           <Route path="dialer-health" element={<DialerHealthPage />} />
-          <Route path="rep-performance" element={<RepPerformancePage />} />
-          <Route path="campaign-intelligence" element={<CampaignIntelligencePage />} />
-          <Route path="cost-dashboard" element={<DialerCostDashboard />} />
-          <Route path="optimization" element={<DialerOptimizationDashboard />} />
-          <Route path="revenue-intelligence" element={<DialerRevenueIntelligence />} />
-          <Route path="predictive-targeting" element={<DialerPredictiveTargeting />} />
-          <Route path="dialer-integrity" element={<DialerIntegrityPage />} />
-          <Route path="auto-dialer" element={<AutoDialerPage />} />
-          {/* Redirect old sprawl routes to consolidated page */}
+          <Route path="shadow-mode" element={<ShadowModePage />} />
+
+          {/* ═══ LEGACY REDIRECTS — Safe, no broken links ═══ */}
+          <Route path="inbox" element={<Navigate to="/communication/unified-inbox" replace />} />
+          <Route path="bulk-dialer" element={<Navigate to="/communication/auto-dialer" replace />} />
+          <Route path="ai-auto-dialer" element={<Navigate to="/communication/auto-dialer" replace />} />
+          <Route path="live" element={<Navigate to="/communication/auto-dialer" replace />} />
+          <Route path="live-panel" element={<Navigate to="/communication/auto-dialer" replace />} />
+          <Route path="dialer" element={<Navigate to="/communication/auto-dialer" replace />} />
+          <Route path="outbound-engine" element={<Navigate to="/communication/outbound-growth?tab=engine" replace />} />
+          <Route path="outreach" element={<Navigate to="/communication/outbound-growth?tab=ai-outreach" replace />} />
+          <Route path="autonomous-director" element={<Navigate to="/communication/outbound-growth?tab=director" replace />} />
+          <Route path="cold-call-blast" element={<Navigate to="/communication/campaigns?tab=cold-blast" replace />} />
+          <Route path="dialer-settings" element={<Navigate to="/communication/settings?tab=dialer" replace />} />
+          <Route path="user-call-settings" element={<Navigate to="/communication/settings?tab=user" replace />} />
+          <Route path="business-hours" element={<Navigate to="/communication/settings?tab=hours" replace />} />
+          <Route path="after-hours" element={<Navigate to="/communication/settings?tab=afterhours" replace />} />
+          <Route path="ai-call-agent" element={<Navigate to="/communication/agents?tab=ai-call-agent" replace />} />
           <Route path="dialer-start" element={<Navigate to="/communication/auto-dialer" replace />} />
           <Route path="dialer-stores" element={<Navigate to="/communication/auto-dialer" replace />} />
           <Route path="dialer-prospects" element={<Navigate to="/communication/auto-dialer" replace />} />
@@ -1490,7 +1500,11 @@ export default function AppRoutes() {
           <Route path="dialer-console" element={<Navigate to="/communication/auto-dialer" replace />} />
           <Route path="dialer-history" element={<Navigate to="/communication/auto-dialer" replace />} />
           <Route path="campaign-wizard" element={<Navigate to="/communication/auto-dialer" replace />} />
-          <Route path="cold-call-blast" element={<ColdCallBlastPage />} />
+
+          {/* Kept for now but not in sidebar */}
+          <Route path="voice-library" element={<VoiceLibraryPage />} />
+          <Route path="sms-dashboard" element={<CommunicationSMSDashboard />} />
+          <Route path="executive-ai" element={<ExecutiveControlRoomPage />} />
         </Route>
 
         <Route path="/messages" element={<MessagesPage />} />
