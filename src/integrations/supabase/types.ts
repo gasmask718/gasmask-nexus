@@ -55418,6 +55418,61 @@ export type Database = {
           },
         ]
       }
+      voice_cost_events: {
+        Row: {
+          business_id: string | null
+          characters_generated: number
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          persona_id: string | null
+          provider: string
+          session_id: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          characters_generated?: number
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          persona_id?: string | null
+          provider?: string
+          session_id?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          characters_generated?: number
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          persona_id?: string | null
+          provider?: string
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_cost_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_cost_events_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "voice_personas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_cost_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "ai_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voice_matrix: {
         Row: {
           active: boolean | null
