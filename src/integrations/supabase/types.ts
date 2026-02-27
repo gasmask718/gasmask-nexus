@@ -21918,10 +21918,18 @@ export type Database = {
           effective_refresh_interval: number | null
           ended_at: string | null
           engine_cycle_id: string | null
+          forecast_confidence: number | null
+          forecast_inputs: Json | null
+          forecast_window_days: number | null
           id: string
           impact_score: number | null
           notes: string | null
           overall_status: Database["public"]["Enums"]["intelligence_run_status"]
+          projected_attempts: number | null
+          projected_connects: number | null
+          projected_cost: number | null
+          projected_profit: number | null
+          projected_revenue: number | null
           rolling_avg_impact: number | null
           rolling_negative_ratio: number | null
           run_mode: Database["public"]["Enums"]["intelligence_run_mode"]
@@ -21938,10 +21946,18 @@ export type Database = {
           effective_refresh_interval?: number | null
           ended_at?: string | null
           engine_cycle_id?: string | null
+          forecast_confidence?: number | null
+          forecast_inputs?: Json | null
+          forecast_window_days?: number | null
           id?: string
           impact_score?: number | null
           notes?: string | null
           overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
+          projected_attempts?: number | null
+          projected_connects?: number | null
+          projected_cost?: number | null
+          projected_profit?: number | null
+          projected_revenue?: number | null
           rolling_avg_impact?: number | null
           rolling_negative_ratio?: number | null
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
@@ -21958,10 +21974,18 @@ export type Database = {
           effective_refresh_interval?: number | null
           ended_at?: string | null
           engine_cycle_id?: string | null
+          forecast_confidence?: number | null
+          forecast_inputs?: Json | null
+          forecast_window_days?: number | null
           id?: string
           impact_score?: number | null
           notes?: string | null
           overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
+          projected_attempts?: number | null
+          projected_connects?: number | null
+          projected_cost?: number | null
+          projected_profit?: number | null
+          projected_revenue?: number | null
           rolling_avg_impact?: number | null
           rolling_negative_ratio?: number | null
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
@@ -63462,6 +63486,10 @@ export type Database = {
       force_portal_logout: {
         Args: { _reason?: string; _target_user_id: string }
         Returns: boolean
+      }
+      forecast_revenue_trajectory: {
+        Args: { p_business_id: string; p_window_days?: number }
+        Returns: Json
       }
       freeze_portal_access: {
         Args: { _reason: string; _target_user_id: string }
