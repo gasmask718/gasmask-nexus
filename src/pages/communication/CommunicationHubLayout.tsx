@@ -10,7 +10,7 @@ import {
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus, Megaphone,
   Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail,
-  Clock, Moon, Rocket, Target
+  Clock, Moon, Rocket, Target, Bot, Hash, FileText, Eye, Gauge
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
@@ -18,64 +18,105 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { toast } from "sonner";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
 
-const navItems = [
-  { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
-  { path: "inbox", label: "Inbox (Legacy)", icon: MessageSquare },
-  { path: "outbound-growth", label: "Outbound Growth", icon: Zap, highlight: true, badge: undefined },
-  { path: "outbound-engine", label: "Outbound Engine", icon: Zap, badge: undefined },
-  { path: "deals", label: "Deals & Sales", icon: DollarSign },
-  { path: "follow-ups", label: "Follow-Up Manager", icon: Activity },
-  { path: "autonomous-director", label: "Autonomous Director", icon: Brain },
-  { path: "auto-dialer", label: "⚡ Auto Dialer", icon: Rocket, highlight: true },
-  { path: "bulk-dialer", label: "Bulk Dialer (Legacy)", icon: Zap },
-  { path: "live-panel", label: "Live Call Panel", icon: Headphones, highlight: true },
-  { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
-  { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },
-  { path: "ai-auto-dialer", label: "AI Auto Dialer", icon: PhoneCall },
-  { path: "ai-auto-text", label: "AI Auto Text", icon: MessageCircle },
-  { path: "live", label: "Live Calls", icon: Headphones, badge: 3 },
-  { path: "escalations", label: "Escalations", icon: AlertTriangle, badge: 2 },
-  { path: "engagement", label: "Engagement", icon: Activity },
-  { path: "routing", label: "Routing", icon: Users },
-  { path: "outreach", label: "AI Outreach", icon: Sparkles },
-  { path: "campaigns", label: "Campaigns", icon: Zap },
-  { path: "personas", label: "Personas", icon: User },
-  { path: "call-flows", label: "Call Flows", icon: GitBranch },
-  { path: "heatmap", label: "Heatmap", icon: BarChart3 },
-  { path: "call-reasons", label: "Call Reasons", icon: Tag },
-  { path: "predictions", label: "Predictions", icon: Brain },
-  { path: "agents", label: "AI Agents", icon: Shield },
-  { path: "language", label: "Language", icon: Languages },
-  { path: "voice-matrix", label: "Voice Matrix", icon: Radio },
-  { path: "cold-call-blast", label: "Cold Call Blast", icon: Megaphone, highlight: true },
-  { path: "phone-numbers", label: "Phone Numbers", icon: Phone },
-  { path: "settings", label: "Settings", icon: Settings },
-];
+// ═══ 5-FLOOR SIDEBAR STRUCTURE ═══
 
-// Call System Settings section (Admin-only)
-const callSystemSettingsItems = [
-  { path: "call-diagnostics", label: "Diagnostics & Go-Live", icon: Activity, adminOnly: true, highlight: true },
-  { path: "dialer-settings", label: "Dialer Settings", icon: Settings, adminOnly: true, highlight: true },
-  { path: "dialer-health", label: "Dialer Health", icon: BarChart3, adminOnly: true },
-  { path: "rep-performance", label: "Rep Performance", icon: Users, adminOnly: true, highlight: true },
-  { path: "campaign-intelligence", label: "Campaign Intelligence", icon: DollarSign, adminOnly: true, highlight: true },
-  { path: "cost-dashboard", label: "Cost & Compliance", icon: Shield, adminOnly: true, highlight: true },
-  { path: "optimization", label: "Optimization AI", icon: Brain, adminOnly: true, highlight: true },
-  { path: "revenue-intelligence", label: "Revenue Intelligence", icon: DollarSign, adminOnly: true, highlight: true },
-  { path: "predictive-targeting", label: "Predictive Targeting", icon: Target, adminOnly: true, highlight: true },
-  { path: "user-call-settings", label: "User Call Settings", icon: UserCog, adminOnly: true },
-  { path: "business-hours", label: "Business Hours", icon: Clock, adminOnly: true },
-  { path: "after-hours-routing", label: "After-Hours Routing", icon: Moon, adminOnly: true },
-  { path: "business-numbers", label: "Caller IDs & Routing", icon: PhoneForwarded, adminOnly: true },
-];
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+  badge?: number;
+  highlight?: boolean;
+  adminOnly?: boolean;
+}
 
-// Call Intelligence section
-const callIntelligenceItems = [
-  { path: "call-intelligence", label: "Call Intelligence", icon: Brain, highlight: true },
-  { path: "ai-call-agent", label: "AI Call Agent", icon: Rocket, highlight: true, adminOnly: true },
-  { path: "voicemail-inbox", label: "Voicemail Inbox", icon: Voicemail },
-  { path: "missed-calls", label: "Missed Calls", icon: Phone },
-  { path: "unresolved-queue", label: "Unresolved Queue", icon: AlertTriangle },
+interface FloorSection {
+  label: string;
+  icon: any;
+  items: NavItem[];
+  adminOnly?: boolean;
+}
+
+const FLOOR_1_OPS: FloorSection = {
+  label: "Operations Hub",
+  icon: Headphones,
+  items: [
+    { path: "unified-inbox", label: "Unified Inbox", icon: MessageSquare, badge: 12, highlight: true },
+    { path: "auto-dialer", label: "Auto Dialer", icon: Rocket, highlight: true },
+    { path: "manual-calls", label: "Manual Calls", icon: PhoneOutgoing },
+    { path: "manual-text", label: "Manual Text", icon: MessageSquarePlus },
+    { path: "escalations", label: "Escalations", icon: AlertTriangle, badge: 2 },
+    { path: "deals", label: "Deals & Sales", icon: DollarSign },
+    { path: "follow-ups", label: "Follow-Up Manager", icon: Activity },
+    { path: "voicemail-inbox", label: "Voicemail Inbox", icon: Voicemail },
+    { path: "missed-calls", label: "Missed Calls", icon: Phone },
+    { path: "unresolved-queue", label: "Unresolved Queue", icon: AlertTriangle },
+    { path: "field-submissions", label: "Field Submissions", icon: FileText },
+  ],
+};
+
+const FLOOR_2_AUTOMATION: FloorSection = {
+  label: "Automation Engine",
+  icon: Zap,
+  items: [
+    { path: "outbound-growth", label: "Outbound Growth", icon: Rocket, highlight: true },
+    { path: "campaigns", label: "Campaigns", icon: Megaphone },
+    { path: "ai-auto-text", label: "AI Auto Text", icon: MessageCircle },
+    { path: "personas", label: "Personas", icon: User },
+    { path: "call-flows", label: "Call Flows", icon: GitBranch },
+    { path: "playbooks", label: "Playbooks", icon: FileText },
+  ],
+};
+
+const FLOOR_3_INTELLIGENCE: FloorSection = {
+  label: "Intelligence",
+  icon: Brain,
+  items: [
+    { path: "call-intelligence", label: "Call Intelligence", icon: Brain, highlight: true },
+    { path: "heatmap", label: "Heatmap", icon: BarChart3 },
+    { path: "predictions", label: "Predictions", icon: Brain },
+    { path: "rep-performance", label: "Rep Performance", icon: Users },
+    { path: "revenue-intelligence", label: "Revenue Intelligence", icon: DollarSign },
+    { path: "optimization", label: "Optimization AI", icon: Sparkles },
+    { path: "predictive-targeting", label: "Predictive Targeting", icon: Target },
+    { path: "engagement", label: "Engagement", icon: Activity },
+    { path: "cost-dashboard", label: "Cost & Compliance", icon: Shield },
+    { path: "call-reasons", label: "Call Reasons", icon: Tag },
+    { path: "dialer-integrity", label: "Dialer Integrity", icon: Gauge },
+    { path: "campaign-intelligence", label: "Campaign Intelligence", icon: BarChart3 },
+  ],
+};
+
+const FLOOR_4_VOICE: FloorSection = {
+  label: "Voice System",
+  icon: Radio,
+  items: [
+    { path: "agents", label: "AI Agents", icon: Bot },
+    { path: "voice-matrix", label: "Voice Matrix", icon: Radio },
+    { path: "language", label: "Language", icon: Languages },
+  ],
+};
+
+const FLOOR_5_CONTROL: FloorSection = {
+  label: "System Control",
+  icon: Settings,
+  adminOnly: true,
+  items: [
+    { path: "settings", label: "Settings", icon: Settings, highlight: true },
+    { path: "phone-numbers", label: "Phone Numbers", icon: Hash },
+    { path: "business-numbers", label: "Caller IDs & Routing", icon: PhoneForwarded },
+    { path: "routing", label: "Routing", icon: Route },
+    { path: "call-diagnostics", label: "Diagnostics", icon: Wrench },
+    { path: "dialer-health", label: "Dialer Health", icon: BarChart3 },
+    { path: "shadow-mode", label: "Shadow Mode", icon: Eye },
+  ],
+};
+
+const ALL_FLOORS: FloorSection[] = [
+  FLOOR_1_OPS,
+  FLOOR_2_AUTOMATION,
+  FLOOR_3_INTELLIGENCE,
+  FLOOR_4_VOICE,
+  FLOOR_5_CONTROL,
 ];
 
 export default function CommunicationHubLayout() {
@@ -83,38 +124,30 @@ export default function CommunicationHubLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [smsModalOpen, setSmsModalOpen] = useState(false);
-  const [callModalOpen, setCallModalOpen] = useState(false);
+  const [expandedFloors, setExpandedFloors] = useState<number[]>([0, 1]); // Ops + Automation open by default
 
-  // Check if user is admin for showing admin-only nav items
   const { data: profileData } = useCurrentUserProfile();
   const userRole = profileData?.profile?.primary_role || '';
   const isAdmin = ['admin', 'ceo', 'owner', 'va'].includes(userRole);
 
-  // Admin sees call system settings section
-  const showCallSystemSettings = isAdmin;
+  const toggleFloor = (index: number) => {
+    setExpandedFloors(prev =>
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
 
   const handleNewCall = () => {
-    // Navigate to manual calls page or open dialer
     navigate("/communication/manual-calls");
     toast.info("Opening call dialer...");
   };
 
   const handleQuickAction = (action: string) => {
     switch (action) {
-      case "log-call":
-        navigate("/communication/manual-calls");
-        break;
-      case "send-email":
-        navigate("/grabba/email-center");
-        break;
-      case "create-campaign":
-        navigate("/communication/campaigns");
-        break;
-      case "view-escalations":
-        navigate("/communication/escalations");
-        break;
-      default:
-        toast.info(`Action: ${action}`);
+      case "log-call": navigate("/communication/manual-calls"); break;
+      case "send-email": navigate("/grabba/email-center"); break;
+      case "create-campaign": navigate("/communication/campaigns"); break;
+      case "view-escalations": navigate("/communication/escalations"); break;
+      default: toast.info(`Action: ${action}`);
     }
   };
 
@@ -154,120 +187,80 @@ export default function CommunicationHubLayout() {
           )}
         </button>
         
-        {/* Navigation */}
+        {/* Navigation - 5 Floors */}
         <ScrollArea className="flex-1">
           <nav className="p-2 space-y-1">
-            {/* Main nav items */}
-            {navItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={`/communication/${item.path}`}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : (item as any).highlight 
-                        ? "text-foreground bg-muted/50 hover:bg-muted font-medium border border-primary/20"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                    collapsed && "justify-center px-2"
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                {!collapsed && (
-                  <>
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {(item as any).badge && (
-                      <Badge 
-                        variant="destructive" 
-                        className="h-5 min-w-5 flex items-center justify-center text-xs px-1.5"
+            {ALL_FLOORS.map((floor, floorIdx) => {
+              // Hide admin-only floors for non-admins
+              if (floor.adminOnly && !isAdmin) return null;
+
+              const isExpanded = expandedFloors.includes(floorIdx);
+              const FloorIcon = floor.icon;
+
+              return (
+                <div key={floor.label}>
+                  {/* Floor Header */}
+                  {!collapsed ? (
+                    <button
+                      onClick={() => toggleFloor(floorIdx)}
+                      className="w-full flex items-center justify-between px-3 py-2 mt-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FloorIcon className="h-3 w-3" />
+                        {floor.label}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronLeft className="h-3 w-3 rotate-[-90deg]" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </button>
+                  ) : (
+                    <div className="border-t my-2" />
+                  )}
+
+                  {/* Floor Items */}
+                  {(collapsed || isExpanded) && floor.items.map((item) => {
+                    if (item.adminOnly && !isAdmin) return null;
+                    return (
+                      <NavLink
+                        key={item.path}
+                        to={`/communication/${item.path}`}
+                        className={({ isActive }) =>
+                          cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : item.highlight
+                                ? "text-foreground bg-muted/50 hover:bg-muted font-medium border border-primary/20"
+                                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                            collapsed && "justify-center px-2"
+                          )
+                        }
                       >
-                        {(item as any).badge}
-                      </Badge>
-                    )}
-                  </>
-                )}
-                {collapsed && (item as any).badge && (
-                  <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
-                )}
-              </NavLink>
-            ))}
-
-            {/* Call Intelligence Section */}
-            {!collapsed && (
-              <div className="pt-4 pb-2">
-                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                  <Brain className="h-3 w-3" />
-                  Call Intelligence
-                </p>
-              </div>
-            )}
-            {collapsed && (
-              <div className="border-t my-2" />
-            )}
-            {callIntelligenceItems.map((item) => (
-              <NavLink
-                key={item.path}
-                to={`/communication/${item.path}`}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
-                    isActive
-                      ? "bg-primary text-primary-foreground"
-                      : item.highlight
-                      ? "text-primary hover:bg-primary/10"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted",
-                    collapsed && "justify-center px-2"
-                  )
-                }
-              >
-                <item.icon className="h-4 w-4 flex-shrink-0" />
-                {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
-              </NavLink>
-            ))}
-
-            {/* Call System Settings Section (Admin only) */}
-            {showCallSystemSettings && (
-              <>
-                {!collapsed && (
-                  <div className="pt-4 pb-2">
-                    <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                      <Wrench className="h-3 w-3" />
-                      Call System Settings
-                    </p>
-                  </div>
-                )}
-                {collapsed && (
-                  <div className="border-t my-2" />
-                )}
-                {callSystemSettingsItems.map((item) => (
-                  <NavLink
-                    key={item.path}
-                    to={`/communication/${item.path}`}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors relative",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/20",
-                        collapsed && "justify-center px-2"
-                      )
-                    }
-                  >
-                    <item.icon className="h-4 w-4 flex-shrink-0" />
-                    {!collapsed && (
-                      <>
-                        <span className="flex-1 truncate">{item.label}</span>
-                        <Badge variant="outline" className="text-[10px] px-1 py-0 border-amber-500 text-amber-600">
-                          Admin
-                        </Badge>
-                      </>
-                    )}
-                  </NavLink>
-                ))}
-              </>
-            )}
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {!collapsed && (
+                          <>
+                            <span className="flex-1 truncate">{item.label}</span>
+                            {item.badge && (
+                              <Badge 
+                                variant="destructive" 
+                                className="h-5 min-w-5 flex items-center justify-center text-xs px-1.5"
+                              >
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                        {collapsed && item.badge && (
+                          <span className="absolute -top-1 -right-1 h-2 w-2 rounded-full bg-destructive" />
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </div>
+              );
+            })}
           </nav>
         </ScrollArea>
       </aside>
