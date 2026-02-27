@@ -47,6 +47,7 @@ import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import type { ExecutionTarget } from '@/components/communication/followups/FollowUpExecutionBar';
 
 const CADENCE_FILTERS: { value: CadenceFilter; label: string; color?: string }[] = [
   { value: 'all', label: 'All Contacts' },
@@ -112,7 +113,7 @@ interface ContactCadenceBoardProps {
   storeId?: string; // Store filter from URL or prop
   selectable?: boolean;
   selectedIds?: Set<string>;
-  onSelectionChange?: (ids: Set<string>) => void;
+  onSelectionChange?: (targets: ExecutionTarget[]) => void;
 }
 
 export function ContactCadenceBoard({ 
@@ -183,24 +184,84 @@ export function ContactCadenceBoard({
     setSearchParams(searchParams);
   };
 
-  const toggleRow = useCallback((contactId: string) => {
+  const { data: allSelectionTargets = [] } = useQuery({
+    queryKey: ['cadence-selection-targets', filter, storeId, searchQuery],
+    queryFn: async () => {
+      const batchSize = 1000;
+      let from = 0;
+      const collected: ExecutionTarget[] = [];
+
+      while (true) {
+        let query = supabase
+          .from('v_contact_cadence_intelligence')
+          .select('contact_id, store_id, phone, cadence_status')
+          .order('days_since_last_touch', { ascending: false })
+          .range(from, from + batchSize - 1);
+
+        if (filter === 'escalation') {
+          query = query.eq('escalation_flag', true);
+        } else if (filter !== 'all') {
+          query = query.eq('cadence_status', filter);
+        }
+
+        if (storeId) {
+          query = query.eq('store_id', storeId);
+        }
+
+        if (searchQuery.trim()) {
+          const term = `%${searchQuery.trim()}%`;
+          query = query.or(`contact_name.ilike.${term},store_name.ilike.${term},phone.ilike.${term}`);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const rows = (data || []) as Array<{ contact_id: string; store_id: string; phone: string | null; cadence_status: string }>;
+        collected.push(
+          ...rows.map((row) => ({
+            store_id: row.store_id,
+            phone: row.phone,
+            contact_id: row.contact_id,
+            source: 'cadence' as const,
+            reason: row.cadence_status,
+          }))
+        );
+
+        if (!data || data.length < batchSize) break;
+        from += batchSize;
+      }
+
+      return collected;
+    },
+    enabled: selectable,
+  });
+
+  const toggleRow = useCallback((contact: ContactCadenceItem) => {
     if (!onSelectionChange) return;
-    const next = new Set(selectedIds);
-    if (next.has(contactId)) next.delete(contactId);
-    else next.add(contactId);
-    onSelectionChange(next);
-  }, [selectedIds, onSelectionChange]);
+
+    const exists = selectedIds.has(contact.contact_id);
+    const nextTargets = exists
+      ? allSelectionTargets.filter((target) => target.contact_id !== contact.contact_id)
+      : [
+          ...allSelectionTargets,
+          {
+            store_id: contact.store_id,
+            phone: contact.phone,
+            contact_id: contact.contact_id,
+            source: 'cadence' as const,
+            reason: contact.cadence_status,
+          },
+        ];
+
+    onSelectionChange(nextTargets);
+  }, [selectedIds, onSelectionChange, allSelectionTargets]);
 
   const toggleAll = useCallback(() => {
     if (!onSelectionChange) return;
-    const allIds = filteredContacts.map(c => c.contact_id);
-    const allSelected = allIds.every(id => selectedIds.has(id));
-    if (allSelected) {
-      onSelectionChange(new Set());
-    } else {
-      onSelectionChange(new Set(allIds));
-    }
-  }, [filteredContacts, selectedIds, onSelectionChange]);
+
+    const allSelected = allSelectionTargets.length > 0 && allSelectionTargets.every(target => selectedIds.has(target.contact_id || ''));
+    onSelectionChange(allSelected ? [] : allSelectionTargets);
+  }, [allSelectionTargets, selectedIds, onSelectionChange]);
 
   return (
     <div className="space-y-4">
@@ -332,7 +393,7 @@ export function ContactCadenceBoard({
                       <TableCell className="w-10">
                         <Checkbox
                           checked={selectedIds.has(contact.contact_id)}
-                          onCheckedChange={() => toggleRow(contact.contact_id)}
+                          onCheckedChange={() => toggleRow(contact)}
                         />
                       </TableCell>
                     )}
@@ -345,6 +406,9 @@ export function ContactCadenceBoard({
                         </div>
                         {contact.is_primary && (
                           <Badge variant="secondary" className="text-xs">Primary</Badge>
+                        )}
+                        {selectedIds.has(contact.contact_id) && (
+                          <Badge variant="default" className="text-xs">Selected for Outreach</Badge>
                         )}
                       </div>
                     </TableCell>

@@ -19,7 +19,7 @@ import {
   type FollowUpQueueItem,
 } from '@/hooks/useFollowUps';
 import { FollowUpCard } from '@/components/communication/followups/FollowUpCard';
-import { FollowUpExecutionBar } from '@/components/communication/followups/FollowUpExecutionBar';
+import { FollowUpExecutionBar, type ExecutionTarget } from '@/components/communication/followups/FollowUpExecutionBar';
 import { RescheduleDialog } from '@/components/communication/followups/RescheduleDialog';
 import { triggerFollowUp as triggerFollowUpAction } from '@/services/followUpTriggerService';
 import { toast } from 'sonner';
@@ -61,8 +61,7 @@ export default function FollowUpManagerPage() {
   const [sortBy, setSortBy] = useState('due_at');
   const [rescheduleItem, setRescheduleItem] = useState<FollowUpQueueItem | null>(null);
   const [cadenceFilter, setCadenceFilter] = useState<CadenceFilter>('all');
-  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
-  const [selectedFollowUpIds, setSelectedFollowUpIds] = useState<Set<string>>(new Set());
+  const [executionTargets, setExecutionTargets] = useState<ExecutionTarget[]>([]);
 
   const { data: stats } = useFollowUpQueueStats();
   const { data: cadenceStats } = useContactCadenceStats();
@@ -103,32 +102,46 @@ export default function FollowUpManagerPage() {
     return Array.from(new Map(all.map(item => [item.id, item])).values());
   }, [pendingFollowUps, dueTodayFollowUps, overdueFollowUps]);
 
-  // Build selected items for execution bar
-  const selectedFollowUpsForExecution = useMemo(() => {
-    // From follow-up queue selections
-    const fromQueue = allFollowUps.filter(f => selectedFollowUpIds.has(f.id));
-    // From cadence board selections — create synthetic follow-up items
-    // These get handled via queue insertion in the execution bar
-    return fromQueue;
-  }, [allFollowUps, selectedFollowUpIds]);
+  const selectedContactIds = useMemo(
+    () => new Set(executionTargets.filter(t => t.source === 'cadence' && t.contact_id).map(t => t.contact_id as string)),
+    [executionTargets]
+  );
+
+  const selectedFollowUpIds = useMemo(
+    () => new Set(executionTargets.filter(t => t.source === 'followup' && t.follow_up_id).map(t => t.follow_up_id as string)),
+    [executionTargets]
+  );
 
   const handleClearSelection = useCallback(() => {
-    setSelectedContactIds(new Set());
-    setSelectedFollowUpIds(new Set());
+    setExecutionTargets([]);
   }, []);
 
   const handleExecutionComplete = useCallback(() => {
     handleClearSelection();
-    // Refetch data
   }, [handleClearSelection]);
 
-  // Toggle follow-up selection
-  const toggleFollowUpSelection = useCallback((id: string) => {
-    setSelectedFollowUpIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const handleCadenceSelectionChange = useCallback((targets: ExecutionTarget[]) => {
+    setExecutionTargets(prev => [...prev.filter(t => t.source !== 'cadence'), ...targets]);
+  }, []);
+
+  const toggleFollowUpSelection = useCallback((item: FollowUpQueueItem) => {
+    if (!item.store_id) return;
+
+    setExecutionTargets(prev => {
+      const exists = prev.some(t => t.source === 'followup' && t.follow_up_id === item.id);
+      if (exists) return prev.filter(t => !(t.source === 'followup' && t.follow_up_id === item.id));
+
+      return [
+        ...prev,
+        {
+          store_id: item.store_id,
+          source: 'followup',
+          reason: item.reason,
+          follow_up_id: item.id,
+          priority: item.priority,
+          business_id: item.business_id,
+        },
+      ];
     });
   }, []);
 
@@ -210,23 +223,28 @@ export default function FollowUpManagerPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                const allIds = new Set(filtered.map(f => f.id));
-                const allSelected = filtered.every(f => selectedFollowUpIds.has(f.id));
-                if (allSelected) {
-                  setSelectedFollowUpIds(prev => {
-                    const next = new Set(prev);
-                    allIds.forEach(id => next.delete(id));
-                    return next;
-                  });
-                } else {
-                  setSelectedFollowUpIds(prev => new Set([...prev, ...allIds]));
-                }
+                const selectableTargets = filtered
+                  .filter(f => !!f.store_id)
+                  .map((f) => ({
+                    store_id: f.store_id as string,
+                    source: 'followup' as const,
+                    reason: f.reason,
+                    follow_up_id: f.id,
+                    priority: f.priority,
+                    business_id: f.business_id,
+                  }));
+
+                const allSelected = selectableTargets.every(f => selectedFollowUpIds.has(f.follow_up_id as string));
+                setExecutionTargets(prev => {
+                  const withoutFollowUps = prev.filter(t => t.source !== 'followup');
+                  return allSelected ? withoutFollowUps : [...withoutFollowUps, ...selectableTargets];
+                });
               }}
             >
               {filtered.every(f => selectedFollowUpIds.has(f.id)) ? 'Deselect All' : `Select All (${filtered.length})`}
             </Button>
-            {selectedFollowUpIds.size > 0 && (
-              <Badge variant="secondary">{selectedFollowUpIds.size} selected</Badge>
+            {Array.from(selectedFollowUpIds).length > 0 && (
+              <Badge variant="secondary">{Array.from(selectedFollowUpIds).length} selected</Badge>
             )}
           </div>
         )}
@@ -237,7 +255,7 @@ export default function FollowUpManagerPage() {
                 type="checkbox"
                 className="mt-5 h-4 w-4 rounded border-border accent-primary"
                 checked={selectedFollowUpIds.has(fu.id)}
-                onChange={() => toggleFollowUpSelection(fu.id)}
+                onChange={() => toggleFollowUpSelection(fu)}
               />
             )}
             <div className="flex-1">
@@ -460,7 +478,7 @@ export default function FollowUpManagerPage() {
             onFilterChange={setCadenceFilter}
             selectable
             selectedIds={selectedContactIds}
-            onSelectionChange={setSelectedContactIds}
+            onSelectionChange={handleCadenceSelectionChange}
           />
         </TabsContent>
 
@@ -506,7 +524,7 @@ export default function FollowUpManagerPage() {
 
       {/* Floating Execution Bar */}
       <FollowUpExecutionBar
-        selectedItems={selectedFollowUpsForExecution}
+        executionTargets={executionTargets}
         onClear={handleClearSelection}
         onExecutionComplete={handleExecutionComplete}
       />
