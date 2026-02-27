@@ -31344,6 +31344,132 @@ export type Database = {
           },
         ]
       }
+      live_call_transcripts: {
+        Row: {
+          call_sid: string
+          created_at: string
+          id: string
+          live_call_id: string | null
+          speaker: string
+          text: string
+        }
+        Insert: {
+          call_sid: string
+          created_at?: string
+          id?: string
+          live_call_id?: string | null
+          speaker: string
+          text: string
+        }
+        Update: {
+          call_sid?: string
+          created_at?: string
+          id?: string
+          live_call_id?: string | null
+          speaker?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_call_transcripts_live_call_id_fkey"
+            columns: ["live_call_id"]
+            isOneToOne: false
+            referencedRelation: "live_calls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_calls: {
+        Row: {
+          agent_type: string
+          answered_at: string | null
+          business_id: string | null
+          call_sid: string | null
+          created_at: string
+          duration_seconds: number | null
+          ended_at: string | null
+          entity_name: string | null
+          id: string
+          metadata: Json | null
+          phone_number: string | null
+          recording_sid: string | null
+          recording_url: string | null
+          run_id: string | null
+          source_reason: string | null
+          started_at: string
+          state: string
+          store_id: string | null
+          updated_at: string
+          voice_provider: string | null
+        }
+        Insert: {
+          agent_type?: string
+          answered_at?: string | null
+          business_id?: string | null
+          call_sid?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          entity_name?: string | null
+          id?: string
+          metadata?: Json | null
+          phone_number?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          run_id?: string | null
+          source_reason?: string | null
+          started_at?: string
+          state?: string
+          store_id?: string | null
+          updated_at?: string
+          voice_provider?: string | null
+        }
+        Update: {
+          agent_type?: string
+          answered_at?: string | null
+          business_id?: string | null
+          call_sid?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          entity_name?: string | null
+          id?: string
+          metadata?: Json | null
+          phone_number?: string | null
+          recording_sid?: string | null
+          recording_url?: string | null
+          run_id?: string | null
+          source_reason?: string | null
+          started_at?: string
+          state?: string
+          store_id?: string | null
+          updated_at?: string
+          voice_provider?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_calls_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       loan_analysis: {
         Row: {
           ai_analysis: string | null

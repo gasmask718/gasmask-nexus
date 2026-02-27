@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle } from 'lucide-react';
+import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
@@ -12,6 +12,7 @@ import DialerProspectsTab from './tabs/DialerProspectsTab';
 import DialerConsoleTab from './tabs/DialerConsoleTab';
 import DialerHistoryTab from './tabs/DialerHistoryTab';
 import DialerCampaignsTab from './tabs/DialerCampaignsTab';
+import DialerLiveCallsTab from './tabs/DialerLiveCallsTab';
 
 export default function AutoDialerPage() {
   const { currentBusiness } = useBusiness();
@@ -112,6 +113,9 @@ export default function AutoDialerPage() {
           <TabsTrigger value="history" className="gap-1.5 text-xs">
             <History className="h-3.5 w-3.5" /> History
           </TabsTrigger>
+          <TabsTrigger value="live" className="gap-1.5 text-xs">
+            <Radio className="h-3.5 w-3.5" /> Live Calls
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="console" className="mt-4">
@@ -128,6 +132,9 @@ export default function AutoDialerPage() {
         </TabsContent>
         <TabsContent value="history" className="mt-4">
           <DialerHistoryTab />
+        </TabsContent>
+        <TabsContent value="live" className="mt-4">
+          <DialerLiveCallsTab />
         </TabsContent>
       </Tabs>
     </div>
