@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 import {
   Activity, AlertTriangle, CheckCircle, XCircle, Clock, Zap, BarChart3,
-  ChevronRight, RefreshCw, ShieldAlert, TrendingUp, TrendingDown
+  ChevronRight, RefreshCw, ShieldAlert, TrendingUp, TrendingDown, Target, DollarSign
 } from 'lucide-react';
 import { format, subHours, differenceInMilliseconds } from 'date-fns';
 
@@ -136,9 +137,18 @@ export default function DialerIntegrityPage() {
         .order('started_at', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data || []) as RunRow[];
+      return (data || []) as any[];
     },
   });
+
+  // Latest forecast from most recent run
+  const latestForecast = runs.find((r: any) => r.projected_profit != null);
+
+  // Forecast trend: last 30 runs with forecast data
+  const forecastTrend = runs
+    .filter((r: any) => r.projected_profit != null)
+    .slice(0, 30)
+    .reverse();
 
   const { data: allSteps = [] } = useQuery({
     queryKey: ['integrity-all-steps', runs.map(r => r.id).join(',')],
@@ -253,6 +263,85 @@ export default function DialerIntegrityPage() {
           </Card>
         ))}
       </div>
+
+      {/* Revenue Forecast Panel */}
+      {latestForecast && (
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              7-Day Revenue Forecast
+              <Badge variant="outline" className="ml-auto text-xs">
+                {format(new Date(latestForecast.started_at), 'MMM d HH:mm')}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[
+                { label: 'Projected Profit', value: `$${Number(latestForecast.projected_profit || 0).toFixed(0)}`, icon: DollarSign, accent: Number(latestForecast.projected_profit || 0) >= 0 ? 'text-green-400' : 'text-red-400' },
+                { label: 'Projected Revenue', value: `$${Number(latestForecast.projected_revenue || 0).toFixed(0)}`, icon: TrendingUp, accent: 'text-blue-400' },
+                { label: 'Projected Cost', value: `$${Number(latestForecast.projected_cost || 0).toFixed(0)}`, icon: TrendingDown, accent: 'text-orange-400' },
+                { label: 'Projected Attempts', value: Number(latestForecast.projected_attempts || 0).toFixed(0), icon: Activity, accent: 'text-cyan-400' },
+                { label: 'Projected Connects', value: Number(latestForecast.projected_connects || 0).toFixed(0), icon: Zap, accent: 'text-purple-400' },
+              ].map(m => (
+                <Card key={m.label} className="border-border/50">
+                  <CardContent className="p-3 flex flex-col items-center text-center">
+                    <m.icon className={`h-4 w-4 mb-1 ${m.accent}`} />
+                    <span className="text-lg font-bold">{m.value}</span>
+                    <span className="text-xs text-muted-foreground">{m.label}</span>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Confidence meter */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Forecast Confidence</span>
+                <span className="font-mono font-semibold">{(Number(latestForecast.forecast_confidence || 0) * 100).toFixed(0)}%</span>
+              </div>
+              <Progress value={Number(latestForecast.forecast_confidence || 0) * 100} className="h-2" />
+            </div>
+
+            {/* Key inputs */}
+            {latestForecast.forecast_inputs && (
+              <details className="text-xs">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">Forecast Inputs</summary>
+                <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {Object.entries(latestForecast.forecast_inputs as Record<string, any>).map(([k, v]) => (
+                    <div key={k} className="bg-muted p-2 rounded">
+                      <span className="text-muted-foreground">{k.replace(/_/g, ' ')}</span>
+                      <p className="font-mono font-semibold">{typeof v === 'number' ? v.toFixed(4) : String(v)}</p>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+
+            {/* Trend warning */}
+            {forecastTrend.length >= 5 && (() => {
+              const recent5 = forecastTrend.slice(-5);
+              const profitTrend = recent5.map((r: any) => Number(r.projected_profit || 0));
+              const isDecline = profitTrend.every((v: number, i: number) => i === 0 || v <= profitTrend[i - 1]);
+              const impactTrend = recent5.map((r: any) => Number(r.impact_score || 0));
+              const impactUp = impactTrend.every((v: number, i: number) => i === 0 || v >= impactTrend[i - 1]);
+              if (isDecline && impactUp) {
+                return (
+                  <Alert variant="destructive" className="border">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Trajectory Warning</AlertTitle>
+                    <AlertDescription>
+                      Short-term optimization may be masking long-term decline — projected profit is trending down while impact scores are trending up.
+                    </AlertDescription>
+                  </Alert>
+                );
+              }
+              return null;
+            })()}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 flex-wrap">
