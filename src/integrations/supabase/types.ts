@@ -24751,6 +24751,115 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_up_execution_runs: {
+        Row: {
+          batch_size: number
+          business_id: string | null
+          callable_targets: number
+          completed_targets: number
+          concurrency_limit: number
+          created_at: string
+          created_by: string | null
+          failed_targets: number
+          id: string
+          mode: string
+          notes: string | null
+          queued_targets: number
+          status: string
+          throttle_ms: number
+          total_targets: number
+          voice_engine: string
+        }
+        Insert: {
+          batch_size?: number
+          business_id?: string | null
+          callable_targets?: number
+          completed_targets?: number
+          concurrency_limit?: number
+          created_at?: string
+          created_by?: string | null
+          failed_targets?: number
+          id?: string
+          mode?: string
+          notes?: string | null
+          queued_targets?: number
+          status?: string
+          throttle_ms?: number
+          total_targets?: number
+          voice_engine?: string
+        }
+        Update: {
+          batch_size?: number
+          business_id?: string | null
+          callable_targets?: number
+          completed_targets?: number
+          concurrency_limit?: number
+          created_at?: string
+          created_by?: string | null
+          failed_targets?: number
+          id?: string
+          mode?: string
+          notes?: string | null
+          queued_targets?: number
+          status?: string
+          throttle_ms?: number
+          total_targets?: number
+          voice_engine?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_execution_runs_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follow_up_execution_targets: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          last_error: string | null
+          resolved_phone: string | null
+          run_id: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          resolved_phone?: string | null
+          run_id: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          resolved_phone?: string | null
+          run_id?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_execution_targets_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_execution_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follow_up_logs: {
         Row: {
           channel: string
