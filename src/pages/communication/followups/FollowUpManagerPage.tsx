@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import {
   type FollowUpQueueItem,
 } from '@/hooks/useFollowUps';
 import { FollowUpCard } from '@/components/communication/followups/FollowUpCard';
+import { FollowUpExecutionBar } from '@/components/communication/followups/FollowUpExecutionBar';
 import { RescheduleDialog } from '@/components/communication/followups/RescheduleDialog';
 import { triggerFollowUp as triggerFollowUpAction } from '@/services/followUpTriggerService';
 import { toast } from 'sonner';
@@ -60,6 +61,8 @@ export default function FollowUpManagerPage() {
   const [sortBy, setSortBy] = useState('due_at');
   const [rescheduleItem, setRescheduleItem] = useState<FollowUpQueueItem | null>(null);
   const [cadenceFilter, setCadenceFilter] = useState<CadenceFilter>('all');
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  const [selectedFollowUpIds, setSelectedFollowUpIds] = useState<Set<string>>(new Set());
 
   const { data: stats } = useFollowUpQueueStats();
   const { data: cadenceStats } = useContactCadenceStats();
@@ -99,6 +102,35 @@ export default function FollowUpManagerPage() {
     // Remove duplicates
     return Array.from(new Map(all.map(item => [item.id, item])).values());
   }, [pendingFollowUps, dueTodayFollowUps, overdueFollowUps]);
+
+  // Build selected items for execution bar
+  const selectedFollowUpsForExecution = useMemo(() => {
+    // From follow-up queue selections
+    const fromQueue = allFollowUps.filter(f => selectedFollowUpIds.has(f.id));
+    // From cadence board selections — create synthetic follow-up items
+    // These get handled via queue insertion in the execution bar
+    return fromQueue;
+  }, [allFollowUps, selectedFollowUpIds]);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedContactIds(new Set());
+    setSelectedFollowUpIds(new Set());
+  }, []);
+
+  const handleExecutionComplete = useCallback(() => {
+    handleClearSelection();
+    // Refetch data
+  }, [handleClearSelection]);
+
+  // Toggle follow-up selection
+  const toggleFollowUpSelection = useCallback((id: string) => {
+    setSelectedFollowUpIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
 
   // Filter and sort function
   const filterAndSort = (items: FollowUpQueueItem[] | undefined) => {
@@ -172,16 +204,53 @@ export default function FollowUpManagerPage() {
     if (!filtered.length) return <div className="text-center py-8 text-muted-foreground">{emptyMessage}</div>;
     return (
       <div className="grid gap-4">
+        {showActions && filtered.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const allIds = new Set(filtered.map(f => f.id));
+                const allSelected = filtered.every(f => selectedFollowUpIds.has(f.id));
+                if (allSelected) {
+                  setSelectedFollowUpIds(prev => {
+                    const next = new Set(prev);
+                    allIds.forEach(id => next.delete(id));
+                    return next;
+                  });
+                } else {
+                  setSelectedFollowUpIds(prev => new Set([...prev, ...allIds]));
+                }
+              }}
+            >
+              {filtered.every(f => selectedFollowUpIds.has(f.id)) ? 'Deselect All' : `Select All (${filtered.length})`}
+            </Button>
+            {selectedFollowUpIds.size > 0 && (
+              <Badge variant="secondary">{selectedFollowUpIds.size} selected</Badge>
+            )}
+          </div>
+        )}
         {filtered.map((fu) => (
-          <FollowUpCard 
-            key={fu.id} 
-            followUp={fu} 
-            onTrigger={showActions ? handleTrigger : undefined}
-            onComplete={showActions ? handleComplete : undefined}
-            onCancel={showActions ? handleCancel : undefined}
-            onReschedule={showActions ? handleReschedule : undefined}
-            isLoading={triggerFollowUp.isPending}
-          />
+          <div key={fu.id} className="flex items-start gap-3">
+            {showActions && (
+              <input
+                type="checkbox"
+                className="mt-5 h-4 w-4 rounded border-border accent-primary"
+                checked={selectedFollowUpIds.has(fu.id)}
+                onChange={() => toggleFollowUpSelection(fu.id)}
+              />
+            )}
+            <div className="flex-1">
+              <FollowUpCard 
+                followUp={fu} 
+                onTrigger={showActions ? handleTrigger : undefined}
+                onComplete={showActions ? handleComplete : undefined}
+                onCancel={showActions ? handleCancel : undefined}
+                onReschedule={showActions ? handleReschedule : undefined}
+                isLoading={triggerFollowUp.isPending}
+              />
+            </div>
+          </div>
         ))}
       </div>
     );
@@ -380,7 +449,7 @@ export default function FollowUpManagerPage() {
           </TabsTrigger>
         </TabsList>
 
-        {/* NEW: Contact Cadence Tab */}
+        {/* Contact Cadence Tab */}
         <TabsContent value="cadence" className="mt-4 space-y-6">
           <CadenceQuickStats 
             onFilterChange={setCadenceFilter} 
@@ -388,7 +457,10 @@ export default function FollowUpManagerPage() {
           />
           <ContactCadenceBoard 
             externalFilter={cadenceFilter} 
-            onFilterChange={setCadenceFilter} 
+            onFilterChange={setCadenceFilter}
+            selectable
+            selectedIds={selectedContactIds}
+            onSelectionChange={setSelectedContactIds}
           />
         </TabsContent>
 
@@ -430,6 +502,13 @@ export default function FollowUpManagerPage() {
         followUp={rescheduleItem}
         open={!!rescheduleItem}
         onOpenChange={(open) => !open && setRescheduleItem(null)}
+      />
+
+      {/* Floating Execution Bar */}
+      <FollowUpExecutionBar
+        selectedItems={selectedFollowUpsForExecution}
+        onClear={handleClearSelection}
+        onExecutionComplete={handleExecutionComplete}
       />
     </div>
   );
