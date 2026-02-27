@@ -64026,6 +64026,15 @@ export type Database = {
         Args: { p_item_id: string; p_reason: string }
         Returns: undefined
       }
+      snapshot_agent_distribution: {
+        Args: { p_business_id: string }
+        Returns: Json
+      }
+      snapshot_campaign_summary: {
+        Args: { p_business_id: string }
+        Returns: Json
+      }
+      snapshot_queue_summary: { Args: { p_business_id: string }; Returns: Json }
       snooze_ops_thread: {
         Args: { p_thread_id: string; p_until: string }
         Returns: undefined

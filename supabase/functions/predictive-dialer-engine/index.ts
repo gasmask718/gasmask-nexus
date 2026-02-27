@@ -6,6 +6,220 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// ── INSTRUMENTATION UTILITIES ──
+
+interface StepResult {
+  rows_affected: number;
+  output: any;
+}
+
+async function createIntelligenceRun(
+  supabase: any,
+  businessId: string,
+  runMode: string
+): Promise<string | null> {
+  try {
+    const { data: run, error } = await supabase
+      .from("dialer_intelligence_runs")
+      .insert({
+        business_id: businessId,
+        run_mode: runMode,
+        started_at: new Date().toISOString(),
+        overall_status: "ok",
+      })
+      .select("id")
+      .single();
+
+    if (error || !run) {
+      console.error("Failed to create intelligence run:", error?.message);
+      return null;
+    }
+    return run.id;
+  } catch (e) {
+    console.error("Intelligence run creation exception:", e);
+    return null;
+  }
+}
+
+async function runStep({
+  supabase,
+  runId,
+  stepName,
+  rpcName,
+  executor,
+}: {
+  supabase: any;
+  runId: string | null;
+  stepName: string;
+  rpcName: string;
+  executor: () => Promise<StepResult>;
+}): Promise<any> {
+  const startedAt = new Date();
+  let stepId: string | null = null;
+
+  // Insert initial step record
+  if (runId) {
+    try {
+      const { data: step } = await supabase
+        .from("dialer_intelligence_run_steps")
+        .insert({
+          run_id: runId,
+          step_name: stepName,
+          rpc_name: rpcName,
+          status: "skipped",
+          started_at: startedAt.toISOString(),
+        })
+        .select("id")
+        .single();
+      stepId = step?.id || null;
+    } catch (e) {
+      console.error(`Failed to insert step record for ${stepName}:`, e);
+    }
+  }
+
+  try {
+    const result = await executor();
+    const endedAt = new Date();
+    const durationMs = endedAt.getTime() - startedAt.getTime();
+    const rowsAffected = result?.rows_affected ?? 0;
+    const status = rowsAffected > 0 ? "ok" : "warn";
+
+    if (stepId) {
+      await supabase
+        .from("dialer_intelligence_run_steps")
+        .update({
+          status,
+          ended_at: endedAt.toISOString(),
+          duration_ms: durationMs,
+          rows_affected: rowsAffected,
+          output_json: result?.output ?? null,
+          error_message: rowsAffected === 0 ? "No impact detected" : null,
+        })
+        .eq("id", stepId);
+    }
+
+    return result?.output ?? null;
+  } catch (err: any) {
+    const endedAt = new Date();
+    const durationMs = endedAt.getTime() - startedAt.getTime();
+
+    if (stepId) {
+      await supabase
+        .from("dialer_intelligence_run_steps")
+        .update({
+          status: "error",
+          ended_at: endedAt.toISOString(),
+          duration_ms: durationMs,
+          rows_affected: 0,
+          error_message: String(err?.message || err),
+        })
+        .eq("id", stepId);
+    }
+
+    console.error(`Step ${stepName} failed:`, err);
+    return null;
+  }
+}
+
+async function finalizeRun(
+  supabase: any,
+  runId: string | null,
+  snapshotBefore: any,
+  snapshotAfter: any,
+  inventorySeedResult: any
+) {
+  if (!runId) return;
+
+  try {
+    // Compute deltas
+    const queueBefore = snapshotBefore?.queue || { count: 0, avg_priority: 0, max_priority: 0 };
+    const queueAfter = snapshotAfter?.queue || { count: 0, avg_priority: 0, max_priority: 0 };
+    const campBefore = snapshotBefore?.campaign || { count: 0, avg_weight: 1, max_weight: 1 };
+    const campAfter = snapshotAfter?.campaign || { count: 0, avg_weight: 1, max_weight: 1 };
+    const routeBefore = snapshotBefore?.routing || { top_rep_share: 0 };
+    const routeAfter = snapshotAfter?.routing || { top_rep_share: 0 };
+
+    await supabase.from("dialer_intelligence_deltas").insert({
+      run_id: runId,
+      queue_priority_rows_changed: Math.abs(
+        Number(queueAfter.count || 0) - Number(queueBefore.count || 0)
+      ),
+      queue_priority_avg_delta: Number(
+        (Number(queueAfter.avg_priority || 0) - Number(queueBefore.avg_priority || 0)).toFixed(2)
+      ),
+      queue_priority_max_delta: Number(
+        (Number(queueAfter.max_priority || 0) - Number(queueBefore.max_priority || 0)).toFixed(2)
+      ),
+      campaign_weights_changed: Math.abs(
+        Number(campAfter.count || 0) - Number(campBefore.count || 0)
+      ),
+      campaign_weight_avg_delta: Number(
+        (Number(campAfter.avg_weight || 0) - Number(campBefore.avg_weight || 0)).toFixed(3)
+      ),
+      inventory_seed_inserted: inventorySeedResult?.inserted_count ?? 0,
+      inventory_seed_updated: inventorySeedResult?.updated_count ?? 0,
+      inventory_seed_blocked: inventorySeedResult?.blocked_count ?? 0,
+      agent_routing_top_rep_share: Number(routeAfter.top_rep_share || 0),
+      notes: {
+        queue_before: queueBefore,
+        queue_after: queueAfter,
+        campaign_before: campBefore,
+        campaign_after: campAfter,
+        routing_before: routeBefore,
+        routing_after: routeAfter,
+      },
+    });
+
+    // Compute overall status from steps
+    const { data: steps } = await supabase
+      .from("dialer_intelligence_run_steps")
+      .select("status")
+      .eq("run_id", runId);
+
+    let overallStatus = "ok";
+    if (steps?.some((s: any) => s.status === "error")) {
+      overallStatus = "error";
+    } else if (steps?.some((s: any) => s.status === "warn")) {
+      overallStatus = "warn";
+    }
+
+    await supabase
+      .from("dialer_intelligence_runs")
+      .update({
+        overall_status: overallStatus,
+        ended_at: new Date().toISOString(),
+      })
+      .eq("id", runId);
+  } catch (e) {
+    console.error("Failed to finalize intelligence run:", e);
+    // Still close the run
+    await supabase
+      .from("dialer_intelligence_runs")
+      .update({
+        overall_status: "error",
+        ended_at: new Date().toISOString(),
+        notes: `Finalization error: ${String(e)}`,
+      })
+      .eq("id", runId);
+  }
+}
+
+async function captureSnapshot(supabase: any, businessId: string) {
+  const [queueRes, campaignRes, routingRes] = await Promise.all([
+    supabase.rpc("snapshot_queue_summary", { p_business_id: businessId }),
+    supabase.rpc("snapshot_campaign_summary", { p_business_id: businessId }),
+    supabase.rpc("snapshot_agent_distribution", { p_business_id: businessId }),
+  ]);
+
+  return {
+    queue: queueRes.data || { count: 0, avg_priority: 0, max_priority: 0 },
+    campaign: campaignRes.data || { count: 0, avg_weight: 1, max_weight: 1 },
+    routing: routingRes.data || { total_attempts: 0, top_rep_calls: 0, top_rep_share: 0 },
+  };
+}
+
+// ── ORIGINAL UTILITIES ──
+
 function simulateOutcome(): "answered" | "voicemail" | "no_answer" | "failed" {
   const rand = Math.random();
   if (rand < 0.20) return "answered";
@@ -41,6 +255,8 @@ function getCurrentHour(tz: string): number {
   return parseInt(parts.find(p => p.type === "hour")?.value || "12");
 }
 
+// ── MAIN ENGINE ──
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -65,6 +281,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── INTELLIGENCE: Create run + capture before snapshot ──
+    const runMode = "live";
+    const runId = await createIntelligenceRun(supabase, business_id, runMode);
+    let snapshotBefore: any = null;
+    let inventorySeedResult: any = null;
+
+    try {
+      snapshotBefore = await captureSnapshot(supabase, business_id);
+    } catch (e) {
+      console.error("Before snapshot failed:", e);
+      snapshotBefore = { queue: {}, campaign: {}, routing: {} };
+    }
+
     // ── PHASE 1: Acquire engine lock ──
     const { data: existingLock } = await supabase
       .from("dialer_engine_locks")
@@ -73,6 +302,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (existingLock && new Date(existingLock.locked_until) > new Date()) {
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotBefore, null);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired: false, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["engine_locked"] });
       return new Response(
         JSON.stringify({ success: false, reason: "engine_locked" }),
@@ -119,6 +349,7 @@ Deno.serve(async (req) => {
     const nowMin = getLocalMinutesSinceMidnight(tz);
     if (nowMin < startMin || nowMin > endMin) {
       await releaseLock(supabase, business_id);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotBefore, null);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["outside_business_hours"] });
       return new Response(
         JSON.stringify({ success: false, reason: "outside_business_hours", nowMin, window: `${startMin}-${endMin}` }),
@@ -175,6 +406,7 @@ Deno.serve(async (req) => {
         }).eq("business_id", business_id);
 
         await releaseLock(supabase, business_id);
+        await finalizeRun(supabase, runId, snapshotBefore, snapshotBefore, null);
         await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [pauseReason] });
         return new Response(
           JSON.stringify({ success: false, reason: "global_limit_exceeded", pause_reason: pauseReason }),
@@ -182,9 +414,8 @@ Deno.serve(async (req) => {
         );
       }
 
-      // ── AUTO-PROFIT PROTECTION (Phase G) ──
+      // ── AUTO-PROFIT PROTECTION ──
       if (autoProfitProtection) {
-        // Check today's net profit
         const { data: todayRevenueData } = await supabase
           .from("call_revenue_events")
           .select("amount")
@@ -196,11 +427,9 @@ Deno.serve(async (req) => {
         const profitThreshold = settings?.profit_throttle_threshold ?? 0;
 
         if (todayNetProfit < profitThreshold && (todayCalls || 0) > 30) {
-          // Throttle: reduce slots by 50%
           errors.push(`profit_throttle: net=$${todayNetProfit.toFixed(2)}, reducing volume 50%`);
         }
 
-        // Check consecutive negative days
         const negativeDaysToCheck = settings?.negative_profit_days_to_pause || 3;
         const { data: recentDays } = await supabase
           .from("dialer_daily_metrics")
@@ -212,7 +441,6 @@ Deno.serve(async (req) => {
         if (recentDays && recentDays.length >= negativeDaysToCheck) {
           const allNegative = recentDays.every((d: any) => Number(d.net_profit) < 0);
           if (allNegative) {
-            // Auto-pause all campaigns except top 2 profitable
             const { data: allCampaigns } = await supabase
               .from("v_campaign_optimization" as any)
               .select("campaign_id, net_profit")
@@ -235,53 +463,129 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── PHASE G/I: Recalculate store priorities & predictive scores periodically ──
+    // ── INTELLIGENCE STEPS (ALL WRAPPED) ──
     const refreshInterval = settings?.predictive_score_refresh_interval || 10;
     const usePredictiveTargeting = settings?.use_predictive_targeting || false;
     const useRepStoreMatching = settings?.use_rep_store_matching || false;
     const useTimeRevenueBias = settings?.use_time_revenue_bias || false;
 
-    if (Math.random() < (1 / refreshInterval)) {
-      await supabase.rpc("calculate_store_priority", { p_business_id: business_id });
-      await supabase.rpc("calculate_rep_efficiency", { p_business_id: business_id });
+    const shouldRefresh = Math.random() < (1 / refreshInterval);
+
+    if (shouldRefresh) {
+      // Step 1: Store priority calculation
+      await runStep({
+        supabase,
+        runId,
+        stepName: "Store Priority Calculation",
+        rpcName: "calculate_store_priority",
+        executor: async () => {
+          const { data, error } = await supabase.rpc("calculate_store_priority", { p_business_id: business_id });
+          if (error) throw error;
+          return { rows_affected: data ? 1 : 0, output: data };
+        },
+      });
+
+      // Step 2: Rep efficiency calculation
+      await runStep({
+        supabase,
+        runId,
+        stepName: "Rep Efficiency Calculation",
+        rpcName: "calculate_rep_efficiency",
+        executor: async () => {
+          const { data, error } = await supabase.rpc("calculate_rep_efficiency", { p_business_id: business_id });
+          if (error) throw error;
+          return { rows_affected: data ? 1 : 0, output: data };
+        },
+      });
+
+      // Step 3: Predictive profit scoring
       if (usePredictiveTargeting) {
-        await supabase.rpc("calculate_predictive_profit_score", { p_business_id: business_id });
+        await runStep({
+          supabase,
+          runId,
+          stepName: "Profit Scoring",
+          rpcName: "calculate_predictive_profit_score",
+          executor: async () => {
+            const { data, error } = await supabase.rpc("calculate_predictive_profit_score", { p_business_id: business_id });
+            if (error) throw error;
+            const rowsAffected = typeof data === "object" && data !== null
+              ? (data.stores_scored || data.rows_affected || 0)
+              : (data ? 1 : 0);
+            return { rows_affected: rowsAffected, output: data };
+          },
+        });
       }
-      // Auto-adjust campaign weights
-      await supabase.rpc("auto_adjust_campaign_weights", { p_business_id: business_id });
+
+      // Step 4: Campaign weight auto-adjustment
+      await runStep({
+        supabase,
+        runId,
+        stepName: "Campaign Weight Adjustment",
+        rpcName: "auto_adjust_campaign_weights",
+        executor: async () => {
+          const { data, error } = await supabase.rpc("auto_adjust_campaign_weights", { p_business_id: business_id });
+          if (error) throw error;
+          const rowsAffected = typeof data === "object" && data !== null
+            ? (data.updated_campaigns_count || 0)
+            : 0;
+          return { rows_affected: rowsAffected, output: data };
+        },
+      });
     }
 
-    // ── PHASE I: Time-revenue bias — boost scores during profitable hours ──
+    // Step 5: Time-revenue bias (hour boost)
     if (useTimeRevenueBias) {
-      const currentHourForBias = getCurrentHour(tz);
-      const { data: hourRevData } = await supabase
-        .from("store_hourly_revenue_stats")
-        .select("store_id, revenue_per_attempt")
-        .eq("business_id", business_id)
-        .eq("hour_of_day", currentHourForBias)
-        .gt("revenue_per_attempt", 0);
-
-      if (hourRevData && hourRevData.length > 0) {
-        // Temporarily boost queue priority for stores profitable at this hour
-        for (const hr of hourRevData) {
-          await supabase.from("outbound_call_queue")
-            .update({ priority_score: supabase.rpc ? undefined : undefined })
-            .eq("store_id", hr.store_id)
+      await runStep({
+        supabase,
+        runId,
+        stepName: "Hour Priority Boost",
+        rpcName: "boost_queue_priority_for_hour",
+        executor: async () => {
+          const currentHourForBias = getCurrentHour(tz);
+          const { data: hourRevData } = await supabase
+            .from("store_hourly_revenue_stats")
+            .select("store_id, revenue_per_attempt")
             .eq("business_id", business_id)
-            .eq("status", "queued");
-          // Direct SQL boost via raw update
-          await supabase.rpc("boost_queue_priority_for_hour" as any, {
-            p_store_id: hr.store_id,
-            p_business_id: business_id,
-            p_boost: Number(hr.revenue_per_attempt) * 5,
-          }).catch(() => {
-            // RPC may not exist yet; silently skip
-          });
-        }
-      }
+            .eq("hour_of_day", currentHourForBias)
+            .gt("revenue_per_attempt", 0);
+
+          let totalBoosted = 0;
+          if (hourRevData && hourRevData.length > 0) {
+            for (const hr of hourRevData) {
+              const { error } = await supabase.rpc("boost_queue_priority_for_hour", {
+                p_store_id: hr.store_id,
+                p_business_id: business_id,
+                p_boost: Number(hr.revenue_per_attempt) * 5,
+              });
+              if (!error) totalBoosted++;
+            }
+          }
+          return {
+            rows_affected: totalBoosted,
+            output: { stores_checked: hourRevData?.length || 0, boosted: totalBoosted },
+          };
+        },
+      });
     }
 
-    // ── PHASE G: Dynamic connect rate ──
+    // Step 6: Inventory seeding (if applicable)
+    inventorySeedResult = await runStep({
+      supabase,
+      runId,
+      stepName: "Inventory Queue Seeding",
+      rpcName: "seed_outbound_queue_from_inventory",
+      executor: async () => {
+        const { data, error } = await supabase.rpc("seed_outbound_queue_from_inventory", {
+          p_business_id: business_id,
+          p_mode: "commit",
+        });
+        if (error) throw error;
+        const inserted = typeof data === "object" && data !== null ? (data.inserted_count || 0) : 0;
+        return { rows_affected: inserted, output: data };
+      },
+    });
+
+    // ── Dynamic connect rate ──
     let connectRateTarget = staticConnectRate;
     if (useDynamicConnectRate) {
       const { data: rollingRate } = await supabase.rpc("get_rolling_connect_rate", {
@@ -324,6 +628,8 @@ Deno.serve(async (req) => {
 
     if (agentCount === 0) {
       await releaseLock(supabase, business_id);
+      const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["no_agents_available"] });
       return new Response(
         JSON.stringify({ success: false, reason: "no_agents_available", dialed: 0 }),
@@ -348,7 +654,6 @@ Deno.serve(async (req) => {
       maxCallsPerMinute
     );
 
-    // Apply profit throttle if active
     const isProfitThrottled = errors.some(e => e.includes("profit_throttle"));
     if (isProfitThrottled) {
       idealDials = Math.max(1, Math.floor(idealDials * 0.5));
@@ -358,6 +663,8 @@ Deno.serve(async (req) => {
 
     if (slotsAvailable <= 0) {
       await releaseLock(supabase, business_id);
+      const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "at_capacity", dialed: 0 }),
@@ -365,7 +672,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── PHASE G: Campaign auto-budgeting — skip auto-paused campaigns ──
+    // ── Campaign auto-pause check ──
     let effectiveCampaignId = campaign_id;
     if (campaign_id) {
       const { data: campCheck } = await supabase
@@ -375,6 +682,8 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (campCheck?.auto_paused) {
         await releaseLock(supabase, business_id);
+        const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
+        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
         await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["campaign_auto_paused"] });
         return new Response(
           JSON.stringify({ success: false, reason: "campaign_auto_paused" }),
@@ -383,7 +692,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Atomic queue claiming via RPC (DNC-safe, priority-sorted) ──
+    // ── Atomic queue claiming ──
     const { data: claimedItems, error: claimErr } = await supabase.rpc("claim_queue_items", {
       p_business_id: business_id,
       p_campaign_id: effectiveCampaignId || null,
@@ -394,6 +703,8 @@ Deno.serve(async (req) => {
     if (claimErr) {
       errors.push(`claim_queue_items: ${claimErr.message}`);
       await releaseLock(supabase, business_id);
+      const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors });
       return new Response(
         JSON.stringify({ error: "Failed to claim queue items", details: claimErr.message }),
@@ -403,6 +714,8 @@ Deno.serve(async (req) => {
 
     if (!claimedItems || claimedItems.length === 0) {
       await releaseLock(supabase, business_id);
+      const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "queue_empty", dialed: 0 }),
@@ -464,28 +777,55 @@ Deno.serve(async (req) => {
 
         await supabase.from("outbound_call_queue").update({ answered_at: new Date().toISOString() }).eq("id", item.id);
 
-        const { data: agentRows, error: agentErr } = await supabase.rpc("claim_available_agent", {
-          p_business_id: business_id,
+        // ── INSTRUMENTED: Agent claiming logged as step ──
+        const agentResult = await runStep({
+          supabase,
+          runId,
+          stepName: `Agent Claim (item ${item.id.slice(0, 8)})`,
+          rpcName: "claim_available_agent",
+          executor: async () => {
+            const { data: agentRows, error: agentErr } = await supabase.rpc("claim_available_agent", {
+              p_business_id: business_id,
+            });
+            if (agentErr) throw agentErr;
+            return {
+              rows_affected: agentRows?.length || 0,
+              output: agentRows?.[0] || null,
+            };
+          },
         });
 
-        if (agentErr || !agentRows || agentRows.length === 0) {
+        if (!agentResult) {
           outcomeCounts.answered_no_agent++;
           results.push({ id: item.id, outcome: "answered_no_agent" });
           continue;
         }
 
-        const agent = agentRows[0];
+        const agent = agentResult;
         agentsClaimed++;
 
-        // ── PHASE I: Rep-Store Matching — prefer best rep for lifecycle stage ──
+        // ── Rep-Store Matching (instrumented) ──
         let assignedRepId = agent.user_id;
         if (useRepStoreMatching && item.store_id) {
-          const { data: bestRep } = await supabase.rpc("get_best_rep_for_store", {
-            p_store_id: item.store_id,
-            p_business_id: business_id,
-          }).catch(() => ({ data: null }));
-          if (bestRep) {
-            assignedRepId = bestRep;
+          const bestRepResult = await runStep({
+            supabase,
+            runId,
+            stepName: `Best Rep Match (store ${(item.store_id || "").slice(0, 8)})`,
+            rpcName: "get_best_rep_for_store",
+            executor: async () => {
+              const { data: bestRep, error } = await supabase.rpc("get_best_rep_for_store", {
+                p_store_id: item.store_id,
+                p_business_id: business_id,
+              });
+              if (error) throw error;
+              return {
+                rows_affected: bestRep ? 1 : 0,
+                output: bestRep,
+              };
+            },
+          });
+          if (bestRepResult) {
+            assignedRepId = bestRepResult;
           }
         }
 
@@ -554,7 +894,7 @@ Deno.serve(async (req) => {
           }).eq("id", item.id);
         }
 
-        // ── PHASE G: Update store hourly answer stats ──
+        // ── Update store hourly answer stats ──
         if (item.store_id) {
           const currentHour = getCurrentHour(tz);
           const { data: existingStat } = await supabase
@@ -610,6 +950,15 @@ Deno.serve(async (req) => {
     // ── Release lock ──
     await releaseLock(supabase, business_id);
 
+    // ── INTELLIGENCE: After snapshot + finalize run ──
+    let snapshotAfter: any;
+    try {
+      snapshotAfter = await captureSnapshot(supabase, business_id);
+    } catch {
+      snapshotAfter = snapshotBefore;
+    }
+    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+
     // ── Log cycle ──
     await logCycle(supabase, {
       business_id,
@@ -625,6 +974,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
+        intelligence_run_id: runId,
         dialed: claimedItems.length,
         agents_available: agentCount,
         agents_claimed: agentsClaimed,
