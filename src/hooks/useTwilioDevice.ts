@@ -3,12 +3,12 @@ import { Device, Call } from "@twilio/voice-sdk";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-/**
- * TWILIO VOICE DEVICE HOOK
- * 
- * Manages the Twilio Voice SDK Device for browser-based calling.
- * Handles token fetching, device initialization, and call management.
- */
+export interface VoiceHealth {
+  TWILIO_ACCOUNT_SID?: boolean;
+  TWILIO_API_SID?: boolean;
+  TWILIO_API_SECRET?: boolean;
+  TWILIO_TWIML_APP_SID?: boolean;
+}
 
 interface UseTwilioDeviceReturn {
   isReady: boolean;
@@ -16,10 +16,14 @@ interface UseTwilioDeviceReturn {
   activeCall: Call | null;
   callStatus: string;
   isMuted: boolean;
+  voiceHealth: VoiceHealth | null;
+  tokenExpiresAt: string | null;
+  deviceError: string | null;
   makeCall: (to: string, params?: Record<string, string>) => Promise<Call | null>;
   hangUp: () => void;
   toggleMute: () => void;
   destroy: () => void;
+  refreshToken: () => Promise<void>;
 }
 
 export function useTwilioDevice(): UseTwilioDeviceReturn {
@@ -28,15 +32,19 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
   const [activeCall, setActiveCall] = useState<Call | null>(null);
   const [callStatus, setCallStatus] = useState("idle");
   const [isMuted, setIsMuted] = useState(false);
+  const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
+  const [tokenExpiresAt, setTokenExpiresAt] = useState<string | null>(null);
+  const [deviceError, setDeviceError] = useState<string | null>(null);
   const deviceRef = useRef<Device | null>(null);
   const initializingRef = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Fetch a voice token from our edge function
   const fetchToken = useCallback(async (): Promise<string | null> => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         console.error("❌ No auth session for voice token");
+        setDeviceError("Not authenticated");
         return null;
       }
 
@@ -55,24 +63,52 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
       if (!response.ok) {
         const err = await response.json();
         console.error("❌ Voice token error:", err);
-        if (err.details) {
-          console.error("🔑 Credential issues:", err.details);
-        }
-        if (err.hint) {
-          console.warn("💡", err.hint);
-        }
+        if (err.details) console.error("🔑 Credential issues:", err.details);
+        if (err.hint) console.warn("💡", err.hint);
+        if (err.health) setVoiceHealth(err.health);
+        setDeviceError(err.code === "VOICE_CONFIG_INVALID"
+          ? "Voice credentials misconfigured"
+          : err.error || "Token fetch failed");
         return null;
       }
 
-      const { token } = await response.json();
+      const data = await response.json();
+      const { token, health, expires_at } = data;
+
+      // Pre-flight: token must be a real JWT (3 segments, > 200 chars)
+      if (!token || token.length < 200 || token.split(".").length !== 3) {
+        console.error("❌ Token pre-flight failed: invalid JWT format");
+        setDeviceError("Invalid token format received");
+        return null;
+      }
+
+      if (health) setVoiceHealth(health);
+      if (expires_at) setTokenExpiresAt(expires_at);
+      setDeviceError(null);
+
+      // Schedule auto-refresh 10 min before expiry
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
+      const ttlMs = expires_at
+        ? new Date(expires_at).getTime() - Date.now() - 10 * 60 * 1000
+        : 50 * 60 * 1000;
+      if (ttlMs > 0) {
+        refreshTimerRef.current = setTimeout(async () => {
+          console.log("🔄 Auto-refreshing voice token...");
+          const newToken = await fetchToken();
+          if (newToken && deviceRef.current) {
+            deviceRef.current.updateToken(newToken);
+          }
+        }, ttlMs);
+      }
+
       return token;
     } catch (err) {
       console.error("❌ Failed to fetch voice token:", err);
+      setDeviceError("Network error fetching token");
       return null;
     }
   }, []);
 
-  // Initialize or refresh the Twilio Device
   const initDevice = useCallback(async () => {
     if (initializingRef.current) return;
     initializingRef.current = true;
@@ -84,7 +120,6 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
         return;
       }
 
-      // If device exists, just update token
       if (deviceRef.current) {
         deviceRef.current.updateToken(token);
         console.log("🔄 Twilio Device token refreshed");
@@ -99,10 +134,12 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
       device.on("registered", () => {
         console.log("✅ Twilio Device registered");
         setIsReady(true);
+        setDeviceError(null);
       });
 
       device.on("error", (err) => {
         console.error("❌ Twilio Device error:", err);
+        setDeviceError(err.message);
         toast.error(`Call error: ${err.message}`);
       });
 
@@ -116,7 +153,6 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
 
       device.on("incoming", (call: Call) => {
         console.log("📞 Incoming call from:", call.parameters.From);
-        // Auto-accept for now (can add UI later)
         call.accept();
         setupCallHandlers(call);
       });
@@ -125,65 +161,42 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
       deviceRef.current = device;
     } catch (err) {
       console.error("❌ Device init error:", err);
+      setDeviceError(err instanceof Error ? err.message : String(err));
     } finally {
       initializingRef.current = false;
     }
   }, [fetchToken]);
 
-  // Set up event handlers on a Call object
   const setupCallHandlers = useCallback((call: Call) => {
     setActiveCall(call);
     setIsConnecting(false);
 
-    call.on("accept", () => {
-      console.log("✅ Call accepted / connected");
-      setCallStatus("in-progress");
-    });
-
-    call.on("ringing", () => {
-      console.log("🔔 Call ringing");
-      setCallStatus("ringing");
-    });
-
+    call.on("accept", () => { setCallStatus("in-progress"); });
+    call.on("ringing", () => { setCallStatus("ringing"); });
     call.on("disconnect", () => {
-      console.log("📞 Call disconnected");
       setCallStatus("completed");
       setActiveCall(null);
       setIsMuted(false);
       setIsConnecting(false);
     });
-
     call.on("cancel", () => {
-      console.log("❌ Call cancelled");
       setCallStatus("cancelled");
       setActiveCall(null);
       setIsMuted(false);
       setIsConnecting(false);
     });
-
-    call.on("error", (err) => {
-      console.error("❌ Call error:", err);
+    call.on("error", () => {
       setCallStatus("failed");
       setActiveCall(null);
       setIsMuted(false);
       setIsConnecting(false);
     });
-
-    call.on("reconnecting", () => {
-      console.log("🔄 Call reconnecting...");
-      setCallStatus("reconnecting");
-    });
-
-    call.on("reconnected", () => {
-      console.log("✅ Call reconnected");
-      setCallStatus("in-progress");
-    });
+    call.on("reconnecting", () => { setCallStatus("reconnecting"); });
+    call.on("reconnected", () => { setCallStatus("in-progress"); });
   }, []);
 
-  // Make an outbound call
   const makeCall = useCallback(async (to: string, params?: Record<string, string>): Promise<Call | null> => {
     if (!deviceRef.current) {
-      // Try to init on-demand
       await initDevice();
       if (!deviceRef.current) {
         toast.error("Voice calling not ready. Please try again.");
@@ -194,13 +207,7 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
     try {
       setIsConnecting(true);
       setCallStatus("connecting");
-
-      const connectOptions: Record<string, string> = {
-        To: to,
-        ...params,
-      };
-
-      const call = await deviceRef.current.connect({ params: connectOptions });
+      const call = await deviceRef.current.connect({ params: { To: to, ...params } });
       setupCallHandlers(call);
       return call;
     } catch (err: unknown) {
@@ -213,7 +220,6 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
     }
   }, [initDevice, setupCallHandlers]);
 
-  // Hang up current call
   const hangUp = useCallback(() => {
     if (activeCall) {
       activeCall.disconnect();
@@ -223,7 +229,6 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
     }
   }, [activeCall]);
 
-  // Toggle mute
   const toggleMute = useCallback(() => {
     if (activeCall) {
       const newMuted = !isMuted;
@@ -232,7 +237,6 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
     }
   }, [activeCall, isMuted]);
 
-  // Destroy device
   const destroy = useCallback(() => {
     if (deviceRef.current) {
       deviceRef.current.destroy();
@@ -241,9 +245,16 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
       setActiveCall(null);
       setCallStatus("idle");
     }
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
   }, []);
 
-  // Init device on mount
+  const refreshToken = useCallback(async () => {
+    const token = await fetchToken();
+    if (token && deviceRef.current) {
+      deviceRef.current.updateToken(token);
+    }
+  }, [fetchToken]);
+
   useEffect(() => {
     initDevice();
     return () => {
@@ -251,6 +262,7 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
         deviceRef.current.destroy();
         deviceRef.current = null;
       }
+      if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
     };
   }, [initDevice]);
 
@@ -260,9 +272,13 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
     activeCall,
     callStatus,
     isMuted,
+    voiceHealth,
+    tokenExpiresAt,
+    deviceError,
     makeCall,
     hangUp,
     toggleMute,
     destroy,
+    refreshToken,
   };
 }

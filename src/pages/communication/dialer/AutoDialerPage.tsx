@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio } from 'lucide-react';
+import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
+import { VoiceSystemStatus } from '@/components/communication/VoiceSystemStatus';
 
 // Tab content components (inline to avoid more file sprawl)
 import DialerStoresTab from './tabs/DialerStoresTab';
@@ -116,6 +117,9 @@ export default function AutoDialerPage() {
           <TabsTrigger value="live" className="gap-1.5 text-xs">
             <Radio className="h-3.5 w-3.5" /> Live Calls
           </TabsTrigger>
+          <TabsTrigger value="voice-status" className="gap-1.5 text-xs">
+            <Mic className="h-3.5 w-3.5" /> Voice Status
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="console" className="mt-4">
@@ -135,6 +139,11 @@ export default function AutoDialerPage() {
         </TabsContent>
         <TabsContent value="live" className="mt-4">
           <DialerLiveCallsTab />
+        </TabsContent>
+        <TabsContent value="voice-status" className="mt-4">
+          <div className="max-w-md">
+            <VoiceSystemStatus />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
