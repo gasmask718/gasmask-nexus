@@ -18,6 +18,7 @@ import {
   FileText, Ban, CalendarClock, Send, ShoppingCart, Zap
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
@@ -54,6 +55,8 @@ export default function DialerConsolePage() {
   const [dispositionModal, setDispositionModal] = useState<{ sessionId: string; contactName: string; storeId?: string } | null>(null);
   const [screenPopSession, setScreenPopSession] = useState<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [voiceProvider, setVoiceProvider] = useState('auto');
 
   const [dispForm, setDispForm] = useState({
     disposition_code_id: '',
@@ -344,6 +347,13 @@ export default function DialerConsolePage() {
               ))}
             </SelectContent>
           </Select>
+
+          {/* Voice Engine */}
+          <VoiceProviderSelector
+            provider={voiceProvider}
+            onProviderChange={setVoiceProvider}
+            compact
+          />
 
           {/* Agent Status */}
           <Select value={myAgentStatus} onValueChange={(v) => updateMyStatus(v as AgentStatus)}>

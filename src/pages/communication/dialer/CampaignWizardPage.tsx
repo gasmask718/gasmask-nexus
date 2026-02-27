@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
 
 const STEPS = [
   { label: 'Campaign Info', icon: Target },
@@ -46,6 +47,8 @@ export default function CampaignWizardPage() {
     talk_track: '',
     state_filter: 'all',
     callable_only: true,
+    voice_provider: 'auto',
+    voice_mode: 'balanced',
   });
 
   // Fetch audience count
@@ -243,6 +246,15 @@ export default function CampaignWizardPage() {
               <div className="flex items-center gap-2">
                 <Switch checked={form.amd_enabled} onCheckedChange={v => update('amd_enabled', v)} />
                 <Label className="text-sm">AMD (Answering Machine Detection)</Label>
+              </div>
+              <div className="p-3 border rounded-lg">
+                <VoiceProviderSelector
+                  provider={form.voice_provider}
+                  onProviderChange={v => update('voice_provider', v)}
+                  mode={form.voice_mode}
+                  onModeChange={v => update('voice_mode', v)}
+                  label="Voice Engine for Campaign"
+                />
               </div>
             </>
           )}

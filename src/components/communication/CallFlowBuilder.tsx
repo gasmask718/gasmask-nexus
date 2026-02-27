@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, GitBranch, Play, MessageCircle, HelpCircle, StopCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Switch } from '@/components/ui/switch';
+import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
 
 interface CallFlow {
   id: string;
@@ -51,7 +52,7 @@ export default function CallFlowBuilder({ businessId }: CallFlowBuilderProps) {
   const [isNodeDialogOpen, setIsNodeDialogOpen] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<CallFlow | null>(null);
   const [editingFlow, setEditingFlow] = useState<CallFlow | null>(null);
-  const [flowForm, setFlowForm] = useState({ name: '', description: '', persona_id: '', is_active: true });
+  const [flowForm, setFlowForm] = useState({ name: '', description: '', persona_id: '', is_active: true, voice_provider: 'auto' });
   const [nodeForm, setNodeForm] = useState({ node_type: 'message', content: '', expected_input: '' });
 
   const { data: flows, isLoading } = useQuery({
@@ -102,7 +103,7 @@ export default function CallFlowBuilder({ businessId }: CallFlowBuilderProps) {
       queryClient.invalidateQueries({ queryKey: ['call-flows'] });
       toast.success('Flow created');
       setIsFlowDialogOpen(false);
-      setFlowForm({ name: '', description: '', persona_id: '', is_active: true });
+    setFlowForm({ name: '', description: '', persona_id: '', is_active: true, voice_provider: 'auto' });
     },
     onError: () => toast.error('Failed to create flow'),
   });
@@ -169,6 +170,7 @@ export default function CallFlowBuilder({ businessId }: CallFlowBuilderProps) {
       description: flow.description || '',
       persona_id: flow.persona_id || '',
       is_active: flow.is_active,
+      voice_provider: 'auto',
     });
     setIsFlowDialogOpen(true);
   };
@@ -190,7 +192,7 @@ export default function CallFlowBuilder({ businessId }: CallFlowBuilderProps) {
           </CardTitle>
           <Dialog open={isFlowDialogOpen} onOpenChange={setIsFlowDialogOpen}>
             <DialogTrigger asChild>
-              <Button size="sm" onClick={() => { setEditingFlow(null); setFlowForm({ name: '', description: '', persona_id: '', is_active: true }); }}>
+              <Button size="sm" onClick={() => { setEditingFlow(null); setFlowForm({ name: '', description: '', persona_id: '', is_active: true, voice_provider: 'auto' }); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Flow
               </Button>
@@ -229,6 +231,12 @@ export default function CallFlowBuilder({ businessId }: CallFlowBuilderProps) {
                     </SelectContent>
                   </Select>
                 </div>
+                <VoiceProviderSelector
+                  provider={flowForm.voice_provider}
+                  onProviderChange={(v) => setFlowForm({ ...flowForm, voice_provider: v })}
+                  showMode={false}
+                  label="Voice Engine"
+                />
                 <div className="flex items-center justify-between">
                   <Label>Active</Label>
                   <Switch checked={flowForm.is_active} onCheckedChange={(v) => setFlowForm({ ...flowForm, is_active: v })} />
