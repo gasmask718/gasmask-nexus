@@ -64201,16 +64201,13 @@ export type Database = {
           p_state?: string
         }
         Returns: {
-          address: string
           city: string
           do_not_call: boolean
           id: string
           last_order_date: string
-          notes: string
           owner_name: string
           phone: string
           state: string
-          status: string
           store_name: string
           total_count: number
         }[]
