@@ -40,12 +40,28 @@ export default function DialerStartPage() {
 
   const tiles = [
     {
-      title: 'Build Audience',
-      description: 'Filter stores & prospects into callable lists',
-      icon: Users,
-      path: '/communication/dialer-audience',
+      title: 'Active Stores',
+      description: 'Browse & filter all CRM stores with server pagination',
+      icon: Phone,
+      path: '/communication/dialer-stores',
       color: 'text-blue-600',
       bg: 'bg-blue-500/10 border-blue-500/20',
+    },
+    {
+      title: 'Prospects',
+      description: 'Territory-extracted leads from Yelp, Google, etc.',
+      icon: Users,
+      path: '/communication/dialer-prospects',
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-500/10 border-indigo-500/20',
+    },
+    {
+      title: 'Audience Builder',
+      description: 'Mix stores + prospects into callable lists',
+      icon: Users,
+      path: '/communication/dialer-audience',
+      color: 'text-purple-600',
+      bg: 'bg-purple-500/10 border-purple-500/20',
     },
     {
       title: 'Create Campaign',
@@ -65,20 +81,12 @@ export default function DialerStartPage() {
       primary: true,
     },
     {
-      title: 'Bulk Dialer',
-      description: 'Legacy predictive bulk dialer interface',
-      icon: Phone,
-      path: '/communication/bulk-dialer',
+      title: 'Call History',
+      description: 'View all past call attempts and outcomes',
+      icon: BarChart3,
+      path: '/communication/dialer-history',
       color: 'text-amber-600',
       bg: 'bg-amber-500/10 border-amber-500/20',
-    },
-    {
-      title: 'Analytics & Intelligence',
-      description: 'Revenue, cost, optimization dashboards',
-      icon: BarChart3,
-      path: '/communication/revenue-intelligence',
-      color: 'text-indigo-600',
-      bg: 'bg-indigo-500/10 border-indigo-500/20',
     },
     {
       title: 'Settings',

@@ -21207,6 +21207,7 @@ export type Database = {
       dialer_agent_availability: {
         Row: {
           active_calls_count: number | null
+          ai_agent_id: string | null
           base_max_concurrent: number | null
           business_id: string | null
           created_at: string
@@ -21227,6 +21228,7 @@ export type Database = {
         }
         Insert: {
           active_calls_count?: number | null
+          ai_agent_id?: string | null
           base_max_concurrent?: number | null
           business_id?: string | null
           created_at?: string
@@ -21247,6 +21249,7 @@ export type Database = {
         }
         Update: {
           active_calls_count?: number | null
+          ai_agent_id?: string | null
           base_max_concurrent?: number | null
           business_id?: string | null
           created_at?: string
@@ -63293,6 +63296,7 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: {
           active_calls_count: number | null
+          ai_agent_id: string | null
           base_max_concurrent: number | null
           business_id: string | null
           created_at: string
@@ -64166,6 +64170,49 @@ export type Database = {
           record_id: string
           source: string
           table_name: string
+        }[]
+      }
+      search_callable_prospects: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+          p_source?: string
+          p_state?: string
+        }
+        Returns: {
+          city: string
+          created_at: string
+          discovered_by: string
+          full_address: string
+          id: string
+          state: string
+          store_name: string
+          total_count: number
+        }[]
+      }
+      search_callable_stores: {
+        Args: {
+          p_has_phone?: boolean
+          p_limit?: number
+          p_not_dnc?: boolean
+          p_offset?: number
+          p_search?: string
+          p_state?: string
+        }
+        Returns: {
+          address: string
+          city: string
+          do_not_call: boolean
+          id: string
+          last_order_date: string
+          notes: string
+          owner_name: string
+          phone: string
+          state: string
+          status: string
+          store_name: string
+          total_count: number
         }[]
       }
       seed_outbound_queue_from_inventory: {
