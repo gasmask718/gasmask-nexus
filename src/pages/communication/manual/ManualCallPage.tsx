@@ -14,6 +14,7 @@ import { useBusiness } from '@/contexts/BusinessContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
 
 const ManualCallPage = () => {
   const [searchParams] = useSearchParams();
@@ -27,6 +28,7 @@ const ManualCallPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedContact, setSelectedContact] = useState<any>(null);
   const [aiWhisperEnabled, setAiWhisperEnabled] = useState(false);
+  const [voiceProvider, setVoiceProvider] = useState('auto');
   
   // Call notes
   const [callSummary, setCallSummary] = useState('');
@@ -302,6 +304,16 @@ const ManualCallPage = () => {
                   End Call
                 </Button>
               )}
+            </div>
+
+            {/* Voice Provider for this call */}
+            <div className="p-3 border rounded-lg">
+              <VoiceProviderSelector
+                provider={voiceProvider}
+                onProviderChange={setVoiceProvider}
+                showMode={false}
+                label="Voice For This Call"
+              />
             </div>
 
             {/* AI Whisper Toggle */}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Phone, UserCog, Clock, Moon, Shield } from 'lucide-react';
+import { Settings, Phone, UserCog, Clock, Moon, Mic } from 'lucide-react';
 import CommSettingsPanel from "@/components/communication/CommSettingsPanel";
 
 // Lazy-import the merged settings pages (they render as full components)
@@ -9,6 +9,7 @@ import DialerSettingsPage from '@/pages/communication/dialer/DialerSettingsPage'
 import { UserCallSettingsPage } from '@/pages/communication/call-settings';
 import { BusinessHoursPage } from '@/pages/communication/call-settings';
 import { AfterHoursRoutingPage } from '@/pages/communication/call-settings';
+import { VoiceSystemSettings } from '@/components/communication/VoiceSystemSettings';
 
 export default function SettingsPage() {
   const [searchParams] = useSearchParams();
@@ -41,6 +42,9 @@ export default function SettingsPage() {
           <TabsTrigger value="afterhours" className="gap-1.5 text-xs">
             <Moon className="h-3.5 w-3.5" /> After-Hours Routing
           </TabsTrigger>
+          <TabsTrigger value="voice-system" className="gap-1.5 text-xs">
+            <Mic className="h-3.5 w-3.5" /> Voice System
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-4">
@@ -57,6 +61,9 @@ export default function SettingsPage() {
         </TabsContent>
         <TabsContent value="afterhours" className="mt-4">
           <AfterHoursRoutingPage />
+        </TabsContent>
+        <TabsContent value="voice-system" className="mt-4">
+          <VoiceSystemSettings />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Bot, Shield, Radio } from 'lucide-react';
+import { Bot, Shield, Mic } from 'lucide-react';
 import { AIAgentsTab } from "@/components/communication/AIAgentsTab";
 import AICallAgentDashboardPage from '@/pages/communication/call-intelligence/AICallAgentDashboardPage';
+import { AgentVoiceSettingsTab } from '@/components/communication/AgentVoiceSettingsTab';
 
 export default function AgentsPage() {
   const [searchParams] = useSearchParams();
@@ -27,6 +28,9 @@ export default function AgentsPage() {
           <TabsTrigger value="ai-call-agent" className="gap-1.5 text-xs">
             <Shield className="h-3.5 w-3.5" /> AI Call Agent
           </TabsTrigger>
+          <TabsTrigger value="voice-settings" className="gap-1.5 text-xs">
+            <Mic className="h-3.5 w-3.5" /> Voice Engine
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="agents" className="mt-4">
@@ -34,6 +38,9 @@ export default function AgentsPage() {
         </TabsContent>
         <TabsContent value="ai-call-agent" className="mt-4">
           <AICallAgentDashboardPage />
+        </TabsContent>
+        <TabsContent value="voice-settings" className="mt-4">
+          <AgentVoiceSettingsTab />
         </TabsContent>
       </Tabs>
     </div>

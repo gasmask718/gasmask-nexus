@@ -1089,6 +1089,8 @@ export type Database = {
           role: string
           success_rate: number | null
           tasks_completed: number | null
+          voice_mode: string | null
+          voice_provider: string | null
         }
         Insert: {
           active?: boolean | null
@@ -1104,6 +1106,8 @@ export type Database = {
           role: string
           success_rate?: number | null
           tasks_completed?: number | null
+          voice_mode?: string | null
+          voice_provider?: string | null
         }
         Update: {
           active?: boolean | null
@@ -1119,6 +1123,8 @@ export type Database = {
           role?: string
           success_rate?: number | null
           tasks_completed?: number | null
+          voice_mode?: string | null
+          voice_provider?: string | null
         }
         Relationships: [
           {
@@ -1488,6 +1494,8 @@ export type Database = {
           variant_a_flow_id: string | null
           variant_b_flow_id: string | null
           vertical_id: string | null
+          voice_mode_override: string | null
+          voice_provider_override: string | null
           voicemail_count: number | null
         }
         Insert: {
@@ -1530,6 +1538,8 @@ export type Database = {
           variant_a_flow_id?: string | null
           variant_b_flow_id?: string | null
           vertical_id?: string | null
+          voice_mode_override?: string | null
+          voice_provider_override?: string | null
           voicemail_count?: number | null
         }
         Update: {
@@ -1572,6 +1582,8 @@ export type Database = {
           variant_a_flow_id?: string | null
           variant_b_flow_id?: string | null
           vertical_id?: string | null
+          voice_mode_override?: string | null
+          voice_provider_override?: string | null
           voicemail_count?: number | null
         }
         Relationships: [
@@ -22084,6 +22096,7 @@ export type Database = {
           business_timezone: string | null
           connect_rate_target: number | null
           created_at: string
+          default_voice_mode: string | null
           default_voice_provider: string | null
           enable_test_mode: boolean | null
           id: string
@@ -22120,6 +22133,7 @@ export type Database = {
           business_timezone?: string | null
           connect_rate_target?: number | null
           created_at?: string
+          default_voice_mode?: string | null
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
           id?: string
@@ -22156,6 +22170,7 @@ export type Database = {
           business_timezone?: string | null
           connect_rate_target?: number | null
           created_at?: string
+          default_voice_mode?: string | null
           default_voice_provider?: string | null
           enable_test_mode?: boolean | null
           id?: string
@@ -35019,6 +35034,8 @@ export type Database = {
           store_id: string | null
           twilio_call_sid: string | null
           updated_at: string
+          voice_mode: string | null
+          voice_provider: string | null
         }
         Insert: {
           answered_at?: string | null
@@ -35048,6 +35065,8 @@ export type Database = {
           store_id?: string | null
           twilio_call_sid?: string | null
           updated_at?: string
+          voice_mode?: string | null
+          voice_provider?: string | null
         }
         Update: {
           answered_at?: string | null
@@ -35077,6 +35096,8 @@ export type Database = {
           store_id?: string | null
           twilio_call_sid?: string | null
           updated_at?: string
+          voice_mode?: string | null
+          voice_provider?: string | null
         }
         Relationships: [
           {
@@ -63413,6 +63434,8 @@ export type Database = {
               store_id: string | null
               twilio_call_sid: string | null
               updated_at: string
+              voice_mode: string | null
+              voice_provider: string | null
             }[]
             SetofOptions: {
               from: "*"
@@ -63457,6 +63480,8 @@ export type Database = {
               store_id: string | null
               twilio_call_sid: string | null
               updated_at: string
+              voice_mode: string | null
+              voice_provider: string | null
             }[]
             SetofOptions: {
               from: "*"

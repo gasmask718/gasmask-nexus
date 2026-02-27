@@ -8,12 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings, Save, Shield, Clock, Phone, Bot, Target } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { toast } from 'sonner';
 
 interface DialerSettingsData {
   default_voice_provider: string;
+  default_voice_mode: string;
   amd_sensitivity: string;
   predictive_multiplier: number;
   max_concurrent_dials: number;
@@ -31,7 +33,8 @@ interface DialerSettingsData {
 }
 
 const defaults: DialerSettingsData = {
-  default_voice_provider: 'twilio',
+  default_voice_provider: 'auto',
+  default_voice_mode: 'balanced',
   amd_sensitivity: 'medium',
   predictive_multiplier: 5,
   max_concurrent_dials: 10,
@@ -71,6 +74,7 @@ export default function DialerSettingsPage() {
     if (existing) {
       setForm({
         default_voice_provider: existing.default_voice_provider || defaults.default_voice_provider,
+        default_voice_mode: (existing as any).default_voice_mode || defaults.default_voice_mode,
         amd_sensitivity: existing.amd_sensitivity || defaults.amd_sensitivity,
         predictive_multiplier: Number(existing.predictive_multiplier) || defaults.predictive_multiplier,
         max_concurrent_dials: existing.max_concurrent_dials || defaults.max_concurrent_dials,
@@ -144,15 +148,13 @@ export default function DialerSettingsPage() {
             <CardDescription>Core dialing parameters</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Default Voice Provider</Label>
-              <Select value={form.default_voice_provider} onValueChange={v => update('default_voice_provider', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="twilio">Twilio</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <VoiceProviderSelector
+              provider={form.default_voice_provider}
+              onProviderChange={v => update('default_voice_provider', v)}
+              mode={form.default_voice_mode}
+              onModeChange={v => update('default_voice_mode', v)}
+              label="Default Voice Provider"
+            />
             <div className="space-y-2">
               <Label>AMD Sensitivity</Label>
               <Select value={form.amd_sensitivity} onValueChange={v => update('amd_sensitivity', v)}>
