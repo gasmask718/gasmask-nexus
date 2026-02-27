@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Phone, PhoneOff, UserCheck, Bot, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { LiveCallSession } from "@/hooks/useLiveCallSessions";
+import { VoiceProviderBadge } from "@/components/communication/VoiceProviderSelector";
 import { formatDistanceToNow } from "date-fns";
 
 interface LiveCallCardProps {
@@ -75,9 +76,17 @@ export function LiveCallCard({
             </Badge>
             {getHandoffBadge(session.handoff_state)}
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Clock className="h-4 w-4" />
-            {elapsedTime}
+          <div className="flex items-center gap-2">
+            {(session as any).voice_provider_used && (
+              <VoiceProviderBadge
+                provider={(session as any).voice_provider_used}
+                wasFallback={(session as any).fallback_triggered}
+              />
+            )}
+            <span className="flex items-center gap-1 text-muted-foreground text-sm">
+              <Clock className="h-4 w-4" />
+              {elapsedTime}
+            </span>
           </div>
         </div>
         <CardTitle className="text-lg mt-2">
