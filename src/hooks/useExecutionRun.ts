@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
@@ -11,6 +11,17 @@ interface StartRunParams {
   mode: 'human' | 'ai' | 'hybrid';
   voiceEngine: string;
   speedPreset: SpeedPreset;
+}
+
+export interface FlowState {
+  state: 'waiting' | 'flowing' | 'completed' | 'unknown';
+  active_calls: number;
+  capacity: number;
+  available_slots: number;
+  remaining_targets: number;
+  wave_size: number;
+  last_wave_queued?: number;
+  last_wave_failed?: number;
 }
 
 interface RunProgress {
@@ -27,12 +38,33 @@ interface RunProgress {
   notes: string | null;
 }
 
+function parseFlowState(notes: string | null): FlowState {
+  if (!notes) return { state: 'unknown', active_calls: 0, capacity: 0, available_slots: 0, remaining_targets: 0, wave_size: 0 };
+  try {
+    const parsed = JSON.parse(notes);
+    return {
+      state: parsed.state || 'unknown',
+      active_calls: parsed.active_calls || 0,
+      capacity: parsed.capacity || 0,
+      available_slots: parsed.available_slots || 0,
+      remaining_targets: parsed.remaining_targets || 0,
+      wave_size: parsed.wave_size || 0,
+      last_wave_queued: parsed.last_wave_queued,
+      last_wave_failed: parsed.last_wave_failed,
+    };
+  } catch {
+    // Legacy string notes
+    return { state: notes.includes('Waiting') ? 'waiting' : 'unknown', active_calls: 0, capacity: 0, available_slots: 0, remaining_targets: 0, wave_size: 0 };
+  }
+}
+
 export function useExecutionRun() {
   const { currentBusiness } = useBusiness();
   const bizId = currentBusiness?.id;
   const queryClient = useQueryClient();
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const workerTickRef = useRef(0);
 
   // Poll active run progress
   const { data: runProgress } = useQuery({
@@ -50,26 +82,29 @@ export function useExecutionRun() {
     refetchInterval: 2000,
   });
 
-  // Auto-trigger worker when run is active
+  const flowState = parseFlowState(runProgress?.notes || null);
+
+  // Wave heartbeat — triggers worker every 5s
   useEffect(() => {
     if (!activeRunId || !runProgress) return;
     if (runProgress.status !== 'running') return;
 
     const interval = setInterval(async () => {
+      workerTickRef.current++;
       try {
         await supabase.functions.invoke('followup-execution-worker', {
           body: { run_id: activeRunId },
         });
         queryClient.invalidateQueries({ queryKey: ['execution-run-progress', activeRunId] });
       } catch (e) {
-        console.error('Worker tick failed', e);
+        console.error('Worker wave tick failed', e);
       }
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [activeRunId, runProgress?.status, queryClient]);
 
-  // Clear run when completed
+  // Notify on completion
   useEffect(() => {
     if (runProgress?.status === 'completed') {
       toast.success(`Execution run completed: ${runProgress.queued_targets} queued, ${runProgress.failed_targets} failed`);
@@ -125,13 +160,27 @@ export function useExecutionRun() {
     toast.info('Run cancelled');
   }, [activeRunId, queryClient]);
 
+  const forceWave = useCallback(async () => {
+    if (!activeRunId || !runProgress) return;
+    const client = supabase as any;
+    await client.from('outbound_call_queue')
+      .update({ status: 'failed' })
+      .eq('business_id', runProgress.business_id)
+      .in('status', ['queued', 'dialing']);
+    await supabase.functions.invoke('followup-execution-worker', { body: { run_id: activeRunId } });
+    queryClient.invalidateQueries({ queryKey: ['execution-run-progress', activeRunId] });
+    toast.info('Forced next wave — cleared stale queue');
+  }, [activeRunId, runProgress, queryClient]);
+
   return {
     startRun,
     pauseRun,
     resumeRun,
     cancelRun,
+    forceWave,
     activeRunId,
     runProgress,
+    flowState,
     isStarting,
     isRunning: runProgress?.status === 'running',
     isPaused: runProgress?.status === 'paused',

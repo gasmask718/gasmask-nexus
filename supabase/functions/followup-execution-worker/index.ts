@@ -46,34 +46,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Fetch next batch of pending targets ──
-    const { data: targets, error: tErr } = await supabase
-      .from("follow_up_execution_targets")
-      .select("*")
-      .eq("run_id", run_id)
-      .eq("status", "pending")
-      .limit(run.batch_size || 25);
-
-    if (tErr) {
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch targets", details: tErr.message }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (!targets || targets.length === 0) {
-      // No more pending — mark run completed
-      await supabase
-        .from("follow_up_execution_runs")
-        .update({ status: "completed" })
-        .eq("id", run_id);
-
-      return new Response(
-        JSON.stringify({ message: "Run completed — no more pending targets", queued: 0 }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     // ── Clean stale queue items (stuck > 30 min) ──
     await supabase
       .from("outbound_call_queue")
@@ -82,37 +54,94 @@ Deno.serve(async (req) => {
       .in("status", ["queued", "dialing"])
       .lt("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString());
 
-    // ── Check current queue depth to respect concurrency ──
+    // ── Compute active capacity ──
     const { count: activeInQueue } = await supabase
       .from("outbound_call_queue")
       .select("id", { count: "exact", head: true })
       .eq("business_id", run.business_id)
-      .in("status", ["queued", "dialing"]);
+      .in("status", ["queued", "dialing", "ringing", "answered"]);
 
-    const currentActive = activeInQueue || 0;
-    // AI mode gets minimum 10 concurrency, human gets at least 1
+    const activeCalls = activeInQueue || 0;
+
+    // AI mode: minimum 10 concurrency; human: minimum 1
     const effectiveConcurrency = run.mode === "ai"
       ? Math.max(run.concurrency_limit || 10, 10)
       : Math.max(run.concurrency_limit || 1, 1);
-    const maxToQueue = Math.max(0, effectiveConcurrency - currentActive);
 
-    if (maxToQueue === 0) {
+    // Wave size: never more than batch_size per tick
+    const waveSize = run.mode === "ai" ? 25 : Math.min(run.batch_size || 5, 10);
+    const availableSlots = Math.max(0, effectiveConcurrency - activeCalls);
+    const toQueueThisWave = Math.min(availableSlots, waveSize);
+
+    // ── Count remaining pending targets ──
+    const { count: remainingCount } = await supabase
+      .from("follow_up_execution_targets")
+      .select("id", { count: "exact", head: true })
+      .eq("run_id", run_id)
+      .eq("status", "pending");
+
+    const remaining = remainingCount || 0;
+
+    if (remaining === 0) {
+      // No more pending — mark run completed
       await supabase
         .from("follow_up_execution_runs")
-        .update({ notes: `Waiting — concurrency limit reached (active: ${currentActive}, limit: ${effectiveConcurrency})` })
+        .update({ status: "completed", notes: "All targets processed" })
         .eq("id", run_id);
 
       return new Response(
-        JSON.stringify({ status: "waiting", reason: "concurrency_limit", active: currentActive, limit: effectiveConcurrency }),
+        JSON.stringify({ status: "completed", message: "Run completed — no more pending targets" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const toProcess = targets.slice(0, maxToQueue);
+    if (toQueueThisWave === 0) {
+      // Capacity full — update notes with flow state
+      await supabase
+        .from("follow_up_execution_runs")
+        .update({
+          notes: JSON.stringify({
+            state: "waiting",
+            active_calls: activeCalls,
+            capacity: effectiveConcurrency,
+            available_slots: 0,
+            remaining_targets: remaining,
+            wave_size: waveSize,
+          }),
+        })
+        .eq("id", run_id);
+
+      return new Response(
+        JSON.stringify({
+          status: "waiting",
+          active_calls: activeCalls,
+          capacity: effectiveConcurrency,
+          available_slots: 0,
+          remaining: remaining,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // ── Fetch wave of pending targets ──
+    const { data: targets, error: tErr } = await supabase
+      .from("follow_up_execution_targets")
+      .select("*")
+      .eq("run_id", run_id)
+      .eq("status", "pending")
+      .limit(toQueueThisWave);
+
+    if (tErr || !targets) {
+      return new Response(
+        JSON.stringify({ error: "Failed to fetch targets", details: tErr?.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     let queuedCount = 0;
     let failedCount = 0;
 
-    for (const target of toProcess) {
+    for (const target of targets) {
       if (!target.resolved_phone) {
         await supabase
           .from("follow_up_execution_targets")
@@ -122,7 +151,6 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Insert into outbound_call_queue
       const { error: qErr } = await supabase.from("outbound_call_queue").insert({
         business_id: run.business_id,
         phone_number: target.resolved_phone,
@@ -155,17 +183,39 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── Update run counters ──
+    // ── Update run counters + flow state notes ──
+    const newQueued = (run.queued_targets || 0) + queuedCount;
+    const newFailed = (run.failed_targets || 0) + failedCount;
+    const newRemaining = remaining - targets.length;
+
     await supabase
       .from("follow_up_execution_runs")
       .update({
-        queued_targets: (run.queued_targets || 0) + queuedCount,
-        failed_targets: (run.failed_targets || 0) + failedCount,
+        queued_targets: newQueued,
+        failed_targets: newFailed,
+        notes: JSON.stringify({
+          state: "flowing",
+          active_calls: activeCalls + queuedCount,
+          capacity: effectiveConcurrency,
+          available_slots: availableSlots - queuedCount,
+          remaining_targets: newRemaining,
+          wave_size: waveSize,
+          last_wave_queued: queuedCount,
+          last_wave_failed: failedCount,
+        }),
       })
       .eq("id", run_id);
 
     return new Response(
-      JSON.stringify({ success: true, queued: queuedCount, failed: failedCount, remaining: targets.length - toProcess.length }),
+      JSON.stringify({
+        status: "flowing",
+        queued: queuedCount,
+        failed: failedCount,
+        active_calls: activeCalls + queuedCount,
+        capacity: effectiveConcurrency,
+        remaining: newRemaining,
+        wave_size: waveSize,
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
