@@ -6,6 +6,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Strict SID format validators
+const SID_PATTERNS: Record<string, RegExp> = {
+  TWILIO_ACCOUNT_SID: /^AC[a-f0-9]{32}$/i,
+  TWILIO_API_SID: /^SK[a-f0-9]{32}$/i,
+  TWILIO_TWIML_APP_SID: /^AP[a-f0-9]{32}$/i,
+};
+
 function base64url(input: Uint8Array): string {
   return btoa(String.fromCharCode(...input))
     .replace(/\+/g, "-")
@@ -68,7 +75,7 @@ async function createTwilioAccessToken(
   return `${signingInput}.${base64url(new Uint8Array(signature))}`;
 }
 
-/** Mask a credential for safe logging: show prefix + last 4 chars */
+/** Mask a credential for safe logging */
 function mask(val: string | undefined): string {
   if (!val) return "MISSING";
   if (val.length <= 8) return `${val.substring(0, 2)}***`;
@@ -86,38 +93,50 @@ serve(async (req: Request) => {
     const TWILIO_API_SECRET = Deno.env.get("TWILIO_API_SECRET");
     const TWILIO_TWIML_APP_SID = Deno.env.get("TWILIO_TWIML_APP_SID");
 
-    // Diagnostic logging — shows masked prefixes to identify wrong credentials
+    // Diagnostic logging
     console.log("🔑 Twilio credential check:", {
       ACCOUNT_SID: mask(TWILIO_ACCOUNT_SID),
       API_SID: mask(TWILIO_API_SID),
       API_SECRET: mask(TWILIO_API_SECRET),
       TWIML_APP_SID: mask(TWILIO_TWIML_APP_SID),
-      account_sid_valid: TWILIO_ACCOUNT_SID?.startsWith("AC") ?? false,
-      api_sid_valid: TWILIO_API_SID?.startsWith("SK") ?? false,
-      twiml_app_valid: TWILIO_TWIML_APP_SID?.startsWith("AP") ?? false,
     });
 
-    // Validate credential format BEFORE attempting token generation
+    // STRICT regex validation — no partial matches
     const errors: string[] = [];
-    if (!TWILIO_ACCOUNT_SID) errors.push("TWILIO_ACCOUNT_SID missing");
-    else if (!TWILIO_ACCOUNT_SID.startsWith("AC")) errors.push(`TWILIO_ACCOUNT_SID must start with 'AC', got '${TWILIO_ACCOUNT_SID.substring(0, 2)}'`);
-    
-    if (!TWILIO_API_SID) errors.push("TWILIO_API_SID missing");
-    else if (!TWILIO_API_SID.startsWith("SK")) errors.push(`TWILIO_API_SID must start with 'SK', got '${TWILIO_API_SID.substring(0, 2)}'`);
-    
-    if (!TWILIO_API_SECRET) errors.push("TWILIO_API_SECRET missing");
-    else if (TWILIO_API_SECRET.length < 20) errors.push("TWILIO_API_SECRET looks too short");
-    
-    if (!TWILIO_TWIML_APP_SID) errors.push("TWILIO_TWIML_APP_SID missing");
-    else if (!TWILIO_TWIML_APP_SID.startsWith("AP")) errors.push(`TWILIO_TWIML_APP_SID must start with 'AP', got '${TWILIO_TWIML_APP_SID.substring(0, 2)}'`);
+    const health: Record<string, boolean> = {};
+
+    for (const [envKey, pattern] of Object.entries(SID_PATTERNS)) {
+      const val = Deno.env.get(envKey);
+      if (!val) {
+        errors.push(`${envKey} is MISSING`);
+        health[envKey] = false;
+      } else if (!pattern.test(val)) {
+        errors.push(`${envKey} format invalid — expected ${pattern.toString()}, got prefix '${val.substring(0, 2)}' (${val.length} chars)`);
+        health[envKey] = false;
+      } else {
+        health[envKey] = true;
+      }
+    }
+
+    if (!TWILIO_API_SECRET) {
+      errors.push("TWILIO_API_SECRET is MISSING");
+      health["TWILIO_API_SECRET"] = false;
+    } else if (TWILIO_API_SECRET.length < 20) {
+      errors.push("TWILIO_API_SECRET looks too short (< 20 chars)");
+      health["TWILIO_API_SECRET"] = false;
+    } else {
+      health["TWILIO_API_SECRET"] = true;
+    }
 
     if (errors.length > 0) {
       console.error("❌ Credential validation failed:", errors);
       return new Response(
-        JSON.stringify({ 
-          error: "Twilio Voice credentials invalid", 
+        JSON.stringify({
+          code: "VOICE_CONFIG_INVALID",
+          error: "Twilio Voice credentials invalid",
           details: errors,
-          hint: "Check Lovable Cloud secrets — ACCOUNT_SID must start with AC, API_SID with SK, TWIML_APP_SID with AP"
+          health,
+          hint: "Update Lovable Cloud secrets: ACCOUNT_SID must start with AC (34 chars), API_SID with SK, TWIML_APP_SID with AP",
         }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
@@ -148,6 +167,7 @@ serve(async (req: Request) => {
     }
 
     const identity = `user_${user.id.replace(/-/g, "")}`;
+    const ttl = 3600;
 
     const accessToken = await createTwilioAccessToken(
       TWILIO_ACCOUNT_SID!,
@@ -155,13 +175,21 @@ serve(async (req: Request) => {
       TWILIO_API_SECRET!,
       identity,
       TWILIO_TWIML_APP_SID!,
-      3600,
+      ttl,
     );
 
-    console.log(`✅ Voice token generated for ${identity} (expires in 3600s)`);
+    const expiresAt = new Date(Date.now() + ttl * 1000).toISOString();
+
+    console.log(`✅ Voice token generated for ${identity} (expires ${expiresAt})`);
 
     return new Response(
-      JSON.stringify({ token: accessToken, identity }),
+      JSON.stringify({
+        token: accessToken,
+        identity,
+        expires_at: expiresAt,
+        ttl,
+        health,
+      }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (error: unknown) {
