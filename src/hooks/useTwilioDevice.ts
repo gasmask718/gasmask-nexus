@@ -55,6 +55,12 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
       if (!response.ok) {
         const err = await response.json();
         console.error("❌ Voice token error:", err);
+        if (err.details) {
+          console.error("🔑 Credential issues:", err.details);
+        }
+        if (err.hint) {
+          console.warn("💡", err.hint);
+        }
         return null;
       }
 
