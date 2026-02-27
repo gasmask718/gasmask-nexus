@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { CallModal } from "./CallModal";
 import { ActiveCallOverlay } from "./ActiveCallOverlay";
+import { GlobalCallHUD } from "./GlobalCallHUD";
 
 /**
  * GLOBAL CALL PROVIDER (Twilio Voice SDK)
@@ -226,6 +227,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
           formatPhoneDisplay={formatPhoneDisplay}
         />
       )}
+
+      <GlobalCallHUD />
     </CallContext.Provider>
   );
 }
