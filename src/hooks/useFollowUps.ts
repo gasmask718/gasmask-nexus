@@ -5,6 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { normalizeStore } from '@/lib/safeQuery';
 
 export interface FollowUpQueueItem {
   id: string;
@@ -28,11 +29,20 @@ export interface FollowUpQueueItem {
 
 const QUERY_KEY = 'follow-up-queue';
 
+const FOLLOW_UP_SELECT = `*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`;
+
+function mapRow(item: any): FollowUpQueueItem {
+  return {
+    ...item,
+    store: normalizeStore(item.store),
+  };
+}
+
 async function fetchFollowUps(status?: string | string[]): Promise<FollowUpQueueItem[]> {
   const client = supabase as any;
   let query = client
     .from('follow_up_queue')
-    .select(`*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
+    .select(FOLLOW_UP_SELECT)
     .order('priority', { ascending: true })
     .order('due_at', { ascending: true });
 
@@ -45,11 +55,11 @@ async function fetchFollowUps(status?: string | string[]): Promise<FollowUpQueue
   }
 
   const { data, error } = await query;
-  if (error) return [];
-  return (data || []).map((item: any) => ({
-    ...item,
-    store: item.store ? { id: item.store.id, name: item.store.store_name } : null,
-  }));
+  if (error) {
+    console.error('FOLLOW_UP_QUERY_FAILED', error);
+    throw new Error(`FOLLOW_UP_QUERY_FAILED: ${error.message}`);
+  }
+  return (data || []).map(mapRow);
 }
 
 export function usePendingFollowUps() {
@@ -68,18 +78,19 @@ export function useDueTodayFollowUps() {
       const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
       
-      const { data } = await client
+      const { data, error } = await client
         .from('follow_up_queue')
-        .select(`*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
+        .select(FOLLOW_UP_SELECT)
         .in('status', ['pending', 'in_progress'])
         .gte('due_at', startOfDay)
         .lte('due_at', endOfDay)
         .order('priority', { ascending: true });
       
-      return (data || []).map((item: any) => ({
-        ...item,
-        store: item.store ? { id: item.store.id, name: item.store.store_name } : null,
-      }));
+      if (error) {
+        console.error('FOLLOW_UP_DUE_TODAY_FAILED', error);
+        throw new Error(`FOLLOW_UP_DUE_TODAY_FAILED: ${error.message}`);
+      }
+      return (data || []).map(mapRow);
     },
   });
 }
@@ -96,16 +107,18 @@ export function useCompletedFollowUps(limit = 50) {
     queryKey: [QUERY_KEY, 'completed', limit],
     queryFn: async () => {
       const client = supabase as any;
-      const { data } = await client
+      const { data, error } = await client
         .from('follow_up_queue')
-        .select(`*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
+        .select(FOLLOW_UP_SELECT)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .limit(limit);
-      return (data || []).map((item: any) => ({
-        ...item,
-        store: item.store ? { id: item.store.id, name: item.store.store_name } : null,
-      }));
+      
+      if (error) {
+        console.error('FOLLOW_UP_COMPLETED_FAILED', error);
+        throw new Error(`FOLLOW_UP_COMPLETED_FAILED: ${error.message}`);
+      }
+      return (data || []).map(mapRow);
     },
   });
 }
@@ -119,7 +132,12 @@ export function useFollowUpQueueStats() {
       const startOfDay = new Date(today.setHours(0, 0, 0, 0)).toISOString();
       const endOfDay = new Date(today.setHours(23, 59, 59, 999)).toISOString();
 
-      const { data: all } = await client.from('follow_up_queue').select('status');
+      const { data: all, error: allError } = await client.from('follow_up_queue').select('status');
+      if (allError) {
+        console.error('FOLLOW_UP_STATS_FAILED', allError);
+        throw new Error(`FOLLOW_UP_STATS_FAILED: ${allError.message}`);
+      }
+
       const { data: dueToday } = await client
         .from('follow_up_queue')
         .select('id')
@@ -141,7 +159,8 @@ export function useCompleteFollowUp() {
   return useMutation({
     mutationFn: async (id: string) => {
       const client = supabase as any;
-      await client.from('follow_up_queue').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
+      const { error } = await client.from('follow_up_queue').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
+      if (error) throw new Error(`COMPLETE_FOLLOW_UP_FAILED: ${error.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
@@ -155,7 +174,8 @@ export function useCancelFollowUp() {
   return useMutation({
     mutationFn: async (id: string) => {
       const client = supabase as any;
-      await client.from('follow_up_queue').update({ status: 'canceled' }).eq('id', id);
+      const { error } = await client.from('follow_up_queue').update({ status: 'canceled' }).eq('id', id);
+      if (error) throw new Error(`CANCEL_FOLLOW_UP_FAILED: ${error.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
@@ -169,7 +189,8 @@ export function useTriggerFollowUpNow() {
   return useMutation({
     mutationFn: async (id: string) => {
       const client = supabase as any;
-      await client.from('follow_up_queue').update({ status: 'in_progress', due_at: new Date().toISOString() }).eq('id', id);
+      const { error } = await client.from('follow_up_queue').update({ status: 'in_progress', due_at: new Date().toISOString() }).eq('id', id);
+      if (error) throw new Error(`TRIGGER_FOLLOW_UP_FAILED: ${error.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
@@ -203,7 +224,7 @@ export function useRescheduleFollowUp() {
       if (recommended_action) updates.recommended_action = recommended_action;
       
       const { error } = await client.from('follow_up_queue').update(updates).eq('id', id);
-      if (error) throw error;
+      if (error) throw new Error(`RESCHEDULE_FAILED: ${error.message}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
@@ -240,7 +261,10 @@ export function useFollowUpsByDateRange(startDate: Date, endDate: Date) {
         .order('due_at', { ascending: true })
         .order('priority', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('FOLLOW_UP_DATE_RANGE_FAILED', error);
+        throw new Error(`FOLLOW_UP_DATE_RANGE_FAILED: ${error.message}`);
+      }
       return (data || []).map((item: any) => ({
         ...item,
         store: item.store ? { id: item.store.id, name: item.store.store_name, address: item.store.address } : null,
@@ -266,7 +290,10 @@ export function useAllActiveFollowUps() {
         .order('due_at', { ascending: true })
         .order('priority', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('FOLLOW_UP_ALL_ACTIVE_FAILED', error);
+        throw new Error(`FOLLOW_UP_ALL_ACTIVE_FAILED: ${error.message}`);
+      }
       return (data || []).map((item: any) => ({
         ...item,
         store: item.store ? { id: item.store.id, name: item.store.store_name, address: item.store.address } : null,

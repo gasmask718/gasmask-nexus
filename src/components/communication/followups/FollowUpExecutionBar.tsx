@@ -4,11 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
-import { Phone, Zap, MessageSquare, ListPlus, X, Bot, User, AlertTriangle, CheckCircle, Loader2, Wrench } from 'lucide-react';
+import { Phone, Zap, MessageSquare, ListPlus, X, Bot, User, AlertTriangle, CheckCircle, Loader2, Wrench, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { triggerFollowUp } from '@/services/followUpTriggerService';
 import { useExecutionReadiness } from '@/hooks/useExecutionReadiness';
+import type { ExecutionHealthStatus } from '@/hooks/useExecutionReadiness';
 import type { FollowUpQueueItem } from '@/hooks/useFollowUps';
 
 type CallRoute = 'human' | 'ai' | 'hybrid';
@@ -58,6 +59,7 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
 
   // Compute execution state
   const executionState: ExecutionState = (() => {
+    if (readiness.healthStatus === 'data_error') return 'NO_SELECTION';
     if (!readiness.hasTargets) return 'NO_SELECTION';
     if (!readiness.hasCallableNumbers) return 'NO_PHONES';
     if (readiness.agentReady) return 'READY_IMMEDIATE';
@@ -248,8 +250,19 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
           </Button>
         </div>
 
+        {/* Data Error Banner */}
+        {readiness.healthStatus === 'data_error' && (
+          <div className="mb-3 flex items-center gap-2 text-xs bg-destructive/10 border border-destructive/30 rounded px-2 py-1.5 text-destructive">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            <span className="font-medium">Data Sync Error — Dialing disabled until resolved.</span>
+          </div>
+        )}
+
         {/* Readiness Status */}
         <div className="mb-3 flex items-center gap-2 text-xs">
+          {/* Execution Health Badge */}
+          <ExecutionHealthBadge status={readiness.healthStatus} />
+          <span className="text-muted-foreground">•</span>
           {readiness.hasCallableNumbers ? (
             <span className="flex items-center gap-1 text-green-600">
               <CheckCircle className="h-3.5 w-3.5" />
@@ -389,4 +402,29 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
       </Dialog>
     </>
   );
+}
+
+/** Small badge showing execution data health */
+function ExecutionHealthBadge({ status }: { status: ExecutionHealthStatus }) {
+  switch (status) {
+    case 'data_error':
+      return (
+        <span className="flex items-center gap-1 text-destructive font-medium">
+          🚫 Data Error
+        </span>
+      );
+    case 'partial':
+      return (
+        <span className="flex items-center gap-1 text-amber-500 font-medium">
+          ⚠ Partial
+        </span>
+      );
+    case 'ok':
+    default:
+      return (
+        <span className="flex items-center gap-1 text-green-600">
+          ✅ Data OK
+        </span>
+      );
+  }
 }
