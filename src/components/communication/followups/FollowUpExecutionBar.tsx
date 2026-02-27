@@ -55,39 +55,35 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
 
   if (executionTargets.length === 0 && !executionRun.activeRunId) return null;
 
-  // If a run is active, show run progress UI
+  // If a run is active, show flow HUD
   if (executionRun.activeRunId && executionRun.runProgress) {
     const rp = executionRun.runProgress;
+    const fs = executionRun.flowState;
     const processed = (rp.queued_targets || 0) + (rp.completed_targets || 0) + (rp.failed_targets || 0);
     const pct = rp.callable_targets > 0 ? Math.round((processed / rp.callable_targets) * 100) : 0;
-    const isWaiting = rp.notes?.includes('Waiting');
-
-    const handleForceWave = async () => {
-      // Clear stale queue items to unblock
-      const client = supabase as any;
-      await client.from('outbound_call_queue')
-        .update({ status: 'failed' })
-        .eq('business_id', rp.business_id || '')
-        .in('status', ['queued', 'dialing']);
-      // Trigger worker immediately
-      await supabase.functions.invoke('followup-execution-worker', { body: { run_id: rp.id } });
-      toast.info('Forced next wave — cleared stale queue');
-    };
+    const isWaiting = fs.state === 'waiting';
+    const isFlowing = fs.state === 'flowing';
 
     return (
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[500px] max-w-[760px] animate-in slide-in-from-bottom-4">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[540px] max-w-[780px] animate-in slide-in-from-bottom-4">
+        {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Badge variant="default" className="text-sm bg-primary">
               <Rocket className="h-3 w-3 mr-1" />
-              Execution Run
+              Flow Dialer
             </Badge>
             <Badge variant={rp.status === 'running' ? 'default' : rp.status === 'paused' ? 'secondary' : 'outline'} className="text-sm">
               {rp.status.toUpperCase()}
             </Badge>
+            {isFlowing && (
+              <Badge variant="outline" className="text-sm border-green-500 text-green-600">
+                🟢 Flowing
+              </Badge>
+            )}
             {isWaiting && (
-              <Badge variant="outline" className="text-sm text-amber-600 border-amber-400">
-                🟡 Waiting — Concurrency Limit
+              <Badge variant="outline" className="text-sm border-amber-400 text-amber-600">
+                🟡 Waiting
               </Badge>
             )}
           </div>
@@ -96,15 +92,27 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
           </Button>
         </div>
 
-        {/* Waiting explanation */}
-        {isWaiting && (
-          <div className="mb-3 flex items-center gap-2 text-xs bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1.5 text-amber-700">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{rp.notes}</span>
+        {/* Flow Status — the key visibility panel */}
+        <div className="grid grid-cols-4 gap-2 mb-3 text-center text-xs">
+          <div className="bg-green-500/10 border border-green-500/20 rounded p-2">
+            <div className="font-bold text-lg text-green-600">{fs.active_calls}</div>
+            <div className="text-muted-foreground">Active Calls</div>
           </div>
-        )}
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded p-2">
+            <div className="font-bold text-lg text-blue-600">{fs.available_slots}</div>
+            <div className="text-muted-foreground">Available</div>
+          </div>
+          <div className="bg-purple-500/10 border border-purple-500/20 rounded p-2">
+            <div className="font-bold text-lg text-purple-600">{fs.remaining_targets}</div>
+            <div className="text-muted-foreground">Remaining</div>
+          </div>
+          <div className="bg-muted/50 rounded p-2">
+            <div className="font-bold text-lg">{fs.wave_size}</div>
+            <div className="text-muted-foreground">Wave Size</div>
+          </div>
+        </div>
 
-        {/* Progress */}
+        {/* Progress bar */}
         <div className="mb-3">
           <div className="flex justify-between text-xs text-muted-foreground mb-1">
             <span>{processed} / {rp.callable_targets} processed</span>
@@ -113,29 +121,34 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
           <Progress value={pct} className="h-2" />
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-5 gap-2 mb-3 text-center text-xs">
-          <div className="bg-muted/50 rounded p-1.5">
-            <div className="font-semibold text-sm">{rp.total_targets}</div>
-            <div className="text-muted-foreground">Total</div>
-          </div>
-          <div className="bg-muted/50 rounded p-1.5">
-            <div className="font-semibold text-sm">{rp.callable_targets}</div>
-            <div className="text-muted-foreground">Callable</div>
-          </div>
-          <div className="bg-muted/50 rounded p-1.5">
-            <div className="font-semibold text-sm text-blue-600">{rp.queued_targets}</div>
-            <div className="text-muted-foreground">Queued</div>
-          </div>
-          <div className="bg-muted/50 rounded p-1.5">
-            <div className="font-semibold text-sm text-green-600">{rp.completed_targets}</div>
-            <div className="text-muted-foreground">Done</div>
-          </div>
-          <div className="bg-muted/50 rounded p-1.5">
-            <div className="font-semibold text-sm text-destructive">{rp.failed_targets}</div>
-            <div className="text-muted-foreground">Failed</div>
-          </div>
+        {/* Compact stats row */}
+        <div className="flex items-center gap-3 mb-3 text-xs text-muted-foreground">
+          <span>Total: <strong className="text-foreground">{rp.total_targets}</strong></span>
+          <span>•</span>
+          <span>Queued: <strong className="text-blue-600">{rp.queued_targets}</strong></span>
+          <span>•</span>
+          <span>Done: <strong className="text-green-600">{rp.completed_targets}</strong></span>
+          <span>•</span>
+          <span>Failed: <strong className="text-destructive">{rp.failed_targets}</strong></span>
+          <span>•</span>
+          <span>Capacity: <strong>{fs.capacity}</strong></span>
         </div>
+
+        {/* Waiting explanation */}
+        {isWaiting && (
+          <div className="mb-3 flex items-center gap-2 text-xs bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1.5 text-amber-700">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>Queue full — waiting for {fs.active_calls} active calls to complete before next wave</span>
+          </div>
+        )}
+
+        {/* Last wave info */}
+        {isFlowing && fs.last_wave_queued !== undefined && (
+          <div className="mb-3 flex items-center gap-2 text-xs bg-green-500/10 border border-green-500/30 rounded px-2 py-1.5 text-green-700">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            <span>Last wave: {fs.last_wave_queued} queued{fs.last_wave_failed ? `, ${fs.last_wave_failed} failed` : ''} — next wave in ~5s</span>
+          </div>
+        )}
 
         {/* Controls */}
         <div className="flex items-center gap-2">
@@ -150,8 +163,8 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
             </Button>
           )}
           {isWaiting && (
-            <Button size="sm" variant="outline" onClick={handleForceWave} className="gap-1.5 border-amber-500 text-amber-600">
-              <Zap className="h-3.5 w-3.5" /> Force Next Wave
+            <Button size="sm" variant="outline" onClick={executionRun.forceWave} className="gap-1.5 border-amber-500 text-amber-600">
+              <Zap className="h-3.5 w-3.5" /> Force Wave
             </Button>
           )}
           <Button size="sm" variant="destructive" onClick={() => { executionRun.cancelRun(); onClear(); }} className="gap-1.5">
