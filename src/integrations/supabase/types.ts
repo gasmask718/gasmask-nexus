@@ -35003,12 +35003,15 @@ export type Database = {
           contact_name: string | null
           created_at: string
           dialing_started_at: string | null
+          entity_id: string | null
+          entity_type: string | null
           id: string
           last_attempt_at: string | null
           next_retry_at: string | null
           notes: string | null
           phone_number: string
           priority_score: number | null
+          source_reason: string | null
           status: string
           store_id: string | null
           twilio_call_sid: string | null
@@ -35029,12 +35032,15 @@ export type Database = {
           contact_name?: string | null
           created_at?: string
           dialing_started_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           last_attempt_at?: string | null
           next_retry_at?: string | null
           notes?: string | null
           phone_number: string
           priority_score?: number | null
+          source_reason?: string | null
           status?: string
           store_id?: string | null
           twilio_call_sid?: string | null
@@ -35055,12 +35061,15 @@ export type Database = {
           contact_name?: string | null
           created_at?: string
           dialing_started_at?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           last_attempt_at?: string | null
           next_retry_at?: string | null
           notes?: string | null
           phone_number?: string
           priority_score?: number | null
+          source_reason?: string | null
           status?: string
           store_id?: string | null
           twilio_call_sid?: string | null
@@ -60326,6 +60335,28 @@ export type Database = {
           },
         ]
       }
+      v_callable_entities: {
+        Row: {
+          address: string | null
+          answer_profile_score: number | null
+          business_id: string | null
+          callable_now: boolean | null
+          city: string | null
+          display_name: string | null
+          entity_id: string | null
+          entity_type: string | null
+          is_dnc: boolean | null
+          last_contacted_at: string | null
+          last_order_at: string | null
+          phone_e164: string | null
+          region: string | null
+          state: string | null
+          status: string | null
+          tags: Json | null
+          territory_id: string | null
+        }
+        Relationships: []
+      }
       v_campaign_margin: {
         Row: {
           business_id: string | null
@@ -63310,12 +63341,15 @@ export type Database = {
               contact_name: string | null
               created_at: string
               dialing_started_at: string | null
+              entity_id: string | null
+              entity_type: string | null
               id: string
               last_attempt_at: string | null
               next_retry_at: string | null
               notes: string | null
               phone_number: string
               priority_score: number | null
+              source_reason: string | null
               status: string
               store_id: string | null
               twilio_call_sid: string | null
@@ -63351,12 +63385,15 @@ export type Database = {
               contact_name: string | null
               created_at: string
               dialing_started_at: string | null
+              entity_id: string | null
+              entity_type: string | null
               id: string
               last_attempt_at: string | null
               next_retry_at: string | null
               notes: string | null
               phone_number: string
               priority_score: number | null
+              source_reason: string | null
               status: string
               store_id: string | null
               twilio_call_sid: string | null
