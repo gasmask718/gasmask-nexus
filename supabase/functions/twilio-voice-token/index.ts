@@ -1,19 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-/**
- * TWILIO VOICE TOKEN GENERATOR
- * 
- * Generates a Twilio AccessToken with a VoiceGrant so the browser
- * can use the Twilio Voice JS SDK for two-way calling.
- */
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Minimal JWT builder for Twilio Access Tokens (no npm dependency needed)
 function base64url(input: Uint8Array): string {
   return btoa(String.fromCharCode(...input))
     .replace(/\+/g, "-")
@@ -76,6 +68,13 @@ async function createTwilioAccessToken(
   return `${signingInput}.${base64url(new Uint8Array(signature))}`;
 }
 
+/** Mask a credential for safe logging: show prefix + last 4 chars */
+function mask(val: string | undefined): string {
+  if (!val) return "MISSING";
+  if (val.length <= 8) return `${val.substring(0, 2)}***`;
+  return `${val.substring(0, 4)}...${val.slice(-4)} (${val.length} chars)`;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -87,10 +86,39 @@ serve(async (req: Request) => {
     const TWILIO_API_SECRET = Deno.env.get("TWILIO_API_SECRET");
     const TWILIO_TWIML_APP_SID = Deno.env.get("TWILIO_TWIML_APP_SID");
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_API_SID || !TWILIO_API_SECRET || !TWILIO_TWIML_APP_SID) {
-      console.error("❌ Missing Twilio Voice config");
+    // Diagnostic logging — shows masked prefixes to identify wrong credentials
+    console.log("🔑 Twilio credential check:", {
+      ACCOUNT_SID: mask(TWILIO_ACCOUNT_SID),
+      API_SID: mask(TWILIO_API_SID),
+      API_SECRET: mask(TWILIO_API_SECRET),
+      TWIML_APP_SID: mask(TWILIO_TWIML_APP_SID),
+      account_sid_valid: TWILIO_ACCOUNT_SID?.startsWith("AC") ?? false,
+      api_sid_valid: TWILIO_API_SID?.startsWith("SK") ?? false,
+      twiml_app_valid: TWILIO_TWIML_APP_SID?.startsWith("AP") ?? false,
+    });
+
+    // Validate credential format BEFORE attempting token generation
+    const errors: string[] = [];
+    if (!TWILIO_ACCOUNT_SID) errors.push("TWILIO_ACCOUNT_SID missing");
+    else if (!TWILIO_ACCOUNT_SID.startsWith("AC")) errors.push(`TWILIO_ACCOUNT_SID must start with 'AC', got '${TWILIO_ACCOUNT_SID.substring(0, 2)}'`);
+    
+    if (!TWILIO_API_SID) errors.push("TWILIO_API_SID missing");
+    else if (!TWILIO_API_SID.startsWith("SK")) errors.push(`TWILIO_API_SID must start with 'SK', got '${TWILIO_API_SID.substring(0, 2)}'`);
+    
+    if (!TWILIO_API_SECRET) errors.push("TWILIO_API_SECRET missing");
+    else if (TWILIO_API_SECRET.length < 20) errors.push("TWILIO_API_SECRET looks too short");
+    
+    if (!TWILIO_TWIML_APP_SID) errors.push("TWILIO_TWIML_APP_SID missing");
+    else if (!TWILIO_TWIML_APP_SID.startsWith("AP")) errors.push(`TWILIO_TWIML_APP_SID must start with 'AP', got '${TWILIO_TWIML_APP_SID.substring(0, 2)}'`);
+
+    if (errors.length > 0) {
+      console.error("❌ Credential validation failed:", errors);
       return new Response(
-        JSON.stringify({ error: "Twilio Voice not fully configured" }),
+        JSON.stringify({ 
+          error: "Twilio Voice credentials invalid", 
+          details: errors,
+          hint: "Check Lovable Cloud secrets — ACCOUNT_SID must start with AC, API_SID with SK, TWIML_APP_SID with AP"
+        }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -119,19 +147,18 @@ serve(async (req: Request) => {
       );
     }
 
-    // Use user ID as identity for the Twilio client
     const identity = `user_${user.id.replace(/-/g, "")}`;
 
     const accessToken = await createTwilioAccessToken(
-      TWILIO_ACCOUNT_SID,
-      TWILIO_API_SID,
-      TWILIO_API_SECRET,
+      TWILIO_ACCOUNT_SID!,
+      TWILIO_API_SID!,
+      TWILIO_API_SECRET!,
       identity,
-      TWILIO_TWIML_APP_SID,
+      TWILIO_TWIML_APP_SID!,
       3600,
     );
 
-    console.log(`✅ Voice token generated for ${identity}`);
+    console.log(`✅ Voice token generated for ${identity} (expires in 3600s)`);
 
     return new Response(
       JSON.stringify({ token: accessToken, identity }),
