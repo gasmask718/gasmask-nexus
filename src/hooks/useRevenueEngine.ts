@@ -98,7 +98,7 @@ export function useTopRevenueTargets(businessId?: string, verticalId?: string, l
         .from('store_revenue_scores')
         .select(`
           *,
-          store_master(id, name, city, state, status)
+          store_master(id, store_name, city, state, status)
         `)
         .eq('snapshot_date', today)
         .order('heat_score', { ascending: false })

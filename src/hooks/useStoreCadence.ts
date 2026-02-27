@@ -152,12 +152,15 @@ export function useStoresDueCadence() {
         .from('store_cadence_policy')
         .select(`
           *,
-          store:store_master(id, name, address)
+          store:store_master(id, store_name, address)
         `)
         .eq('enabled', true);
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map((item: any) => ({
+        ...item,
+        store: item.store ? { id: item.store.id, name: item.store.store_name, address: item.store.address } : null,
+      }));
     },
   });
 }
