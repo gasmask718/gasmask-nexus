@@ -74,6 +74,14 @@ Deno.serve(async (req) => {
       );
     }
 
+    // ── Clean stale queue items (stuck > 30 min) ──
+    await supabase
+      .from("outbound_call_queue")
+      .update({ status: "failed" })
+      .eq("business_id", run.business_id)
+      .in("status", ["queued", "dialing"])
+      .lt("created_at", new Date(Date.now() - 30 * 60 * 1000).toISOString());
+
     // ── Check current queue depth to respect concurrency ──
     const { count: activeInQueue } = await supabase
       .from("outbound_call_queue")
@@ -82,11 +90,20 @@ Deno.serve(async (req) => {
       .in("status", ["queued", "dialing"]);
 
     const currentActive = activeInQueue || 0;
-    const maxToQueue = Math.max(0, (run.concurrency_limit || 1) - currentActive);
+    // AI mode gets minimum 10 concurrency, human gets at least 1
+    const effectiveConcurrency = run.mode === "ai"
+      ? Math.max(run.concurrency_limit || 10, 10)
+      : Math.max(run.concurrency_limit || 1, 1);
+    const maxToQueue = Math.max(0, effectiveConcurrency - currentActive);
 
     if (maxToQueue === 0) {
+      await supabase
+        .from("follow_up_execution_runs")
+        .update({ notes: `Waiting — concurrency limit reached (active: ${currentActive}, limit: ${effectiveConcurrency})` })
+        .eq("id", run_id);
+
       return new Response(
-        JSON.stringify({ message: "Concurrency limit reached, waiting", active: currentActive }),
+        JSON.stringify({ status: "waiting", reason: "concurrency_limit", active: currentActive, limit: effectiveConcurrency }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

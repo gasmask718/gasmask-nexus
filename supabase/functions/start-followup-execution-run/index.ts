@@ -75,7 +75,9 @@ Deno.serve(async (req) => {
     let concurrency = agents;
     let batchSize = 25;
     if (speed_preset === "fast") { concurrency = agents * 2; batchSize = 50; }
-    if (speed_preset === "ai_burst") { concurrency = Math.min(20, 10); batchSize = 50; }
+    if (speed_preset === "ai_burst") { concurrency = 20; batchSize = 50; }
+    // AI mode always gets minimum 10 concurrency
+    if ((mode === "ai" || mode === "hybrid") && concurrency < 10) { concurrency = 10; }
 
     // ── Build targets ──
     const targets = store_ids.map((sid: string) => {

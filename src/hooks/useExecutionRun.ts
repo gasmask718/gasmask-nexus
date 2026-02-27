@@ -15,6 +15,7 @@ interface StartRunParams {
 
 interface RunProgress {
   id: string;
+  business_id: string;
   status: string;
   total_targets: number;
   callable_targets: number;
@@ -23,6 +24,7 @@ interface RunProgress {
   failed_targets: number;
   concurrency_limit: number;
   batch_size: number;
+  notes: string | null;
 }
 
 export function useExecutionRun() {
