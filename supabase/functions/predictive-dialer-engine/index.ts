@@ -126,7 +126,8 @@ async function finalizeRun(
   runId: string | null,
   snapshotBefore: any,
   snapshotAfter: any,
-  inventorySeedResult: any
+  inventorySeedResult: any,
+  adaptiveState?: { multiplier: number; mode: string; refreshInterval: number; avgImpact: number; negativeRatio: number }
 ) {
   if (!runId) return;
 
@@ -218,6 +219,13 @@ async function finalizeRun(
       .update({
         overall_status: overallStatus,
         impact_score: runImpactScore,
+        adaptive_multiplier: adaptiveState?.multiplier ?? null,
+        adaptive_mode: adaptiveState?.mode ?? null,
+        effective_refresh_interval: adaptiveState?.refreshInterval ?? null,
+        rolling_avg_impact: adaptiveState?.avgImpact ?? null,
+        rolling_negative_ratio: adaptiveState?.negativeRatio != null
+          ? Number((adaptiveState.negativeRatio * 100).toFixed(1))
+          : null,
         ended_at: new Date().toISOString(),
       })
       .eq("id", runId);
@@ -496,8 +504,10 @@ Deno.serve(async (req) => {
 
     // ── ADAPTIVE INTELLIGENCE CONTROLLER ──
     // Fetch rolling impact stats to tune aggressiveness
-    let adaptiveMultiplier = 1.0; // neutral
+    let adaptiveMultiplier = 1.0;
     let adaptiveNote = "baseline";
+    let rollingAvgImpact = 0;
+    let rollingNegativeRatio = 0;
     try {
       const { data: impactStats } = await supabase.rpc("get_rolling_impact_stats", {
         p_business_id: business_id,
@@ -506,9 +516,11 @@ Deno.serve(async (req) => {
 
       if (impactStats && impactStats.total_runs >= 10) {
         const avgImpact = Number(impactStats.avg_impact || 0);
+        rollingAvgImpact = avgImpact;
         const negativeRatio = impactStats.total_runs > 0
           ? Number(impactStats.negative_runs || 0) / impactStats.total_runs
           : 0;
+        rollingNegativeRatio = negativeRatio;
 
         if (avgImpact < 1 && negativeRatio <= 0.3) {
           // Low impact, not destabilizing → optimize more aggressively
@@ -528,10 +540,20 @@ Deno.serve(async (req) => {
       console.error("Adaptive controller failed (non-fatal):", e);
     }
 
+    // ── Build adaptive state object for run persistence ──
+    const baseRefreshInterval = settings?.predictive_score_refresh_interval || 10;
+    const effectiveRefreshInterval = Math.max(2, Math.round(baseRefreshInterval / adaptiveMultiplier));
+    const adaptiveStateObj = {
+      multiplier: adaptiveMultiplier,
+      mode: adaptiveNote,
+      refreshInterval: effectiveRefreshInterval,
+      avgImpact: rollingAvgImpact,
+      negativeRatio: rollingNegativeRatio,
+    };
+
     // ── INTELLIGENCE STEPS (ALL WRAPPED) ──
     // Apply adaptive multiplier to refresh interval (lower = more frequent)
-    const baseRefreshInterval = settings?.predictive_score_refresh_interval || 10;
-    const refreshInterval = Math.max(2, Math.round(baseRefreshInterval / adaptiveMultiplier));
+    const refreshInterval = effectiveRefreshInterval;
     const usePredictiveTargeting = settings?.use_predictive_targeting || false;
     const useRepStoreMatching = settings?.use_rep_store_matching || false;
     const useTimeRevenueBias = settings?.use_time_revenue_bias || false;
@@ -696,7 +718,7 @@ Deno.serve(async (req) => {
     if (agentCount === 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["no_agents_available"] });
       return new Response(
         JSON.stringify({ success: false, reason: "no_agents_available", dialed: 0 }),
@@ -731,7 +753,7 @@ Deno.serve(async (req) => {
     if (slotsAvailable <= 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "at_capacity", dialed: 0 }),
@@ -750,7 +772,7 @@ Deno.serve(async (req) => {
       if (campCheck?.auto_paused) {
         await releaseLock(supabase, business_id);
         const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+        await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
         await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: ["campaign_auto_paused"] });
         return new Response(
           JSON.stringify({ success: false, reason: "campaign_auto_paused" }),
@@ -771,7 +793,7 @@ Deno.serve(async (req) => {
       errors.push(`claim_queue_items: ${claimErr.message}`);
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors });
       return new Response(
         JSON.stringify({ error: "Failed to claim queue items", details: claimErr.message }),
@@ -782,7 +804,7 @@ Deno.serve(async (req) => {
     if (!claimedItems || claimedItems.length === 0) {
       await releaseLock(supabase, business_id);
       const snapshotAfter = await captureSnapshot(supabase, business_id).catch(() => snapshotBefore);
-      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+      await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
       await logCycle(supabase, { business_id, campaign_id, cycleStartedAt, lockAcquired, claimed: 0, outcomes: {}, agentsClaimed: 0, errors: [] });
       return new Response(
         JSON.stringify({ success: true, reason: "queue_empty", dialed: 0 }),
@@ -1024,7 +1046,7 @@ Deno.serve(async (req) => {
     } catch {
       snapshotAfter = snapshotBefore;
     }
-    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult);
+    await finalizeRun(supabase, runId, snapshotBefore, snapshotAfter, inventorySeedResult, adaptiveStateObj);
 
     // ── Log cycle ──
     await logCycle(supabase, {

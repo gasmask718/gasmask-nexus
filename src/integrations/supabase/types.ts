@@ -21909,38 +21909,53 @@ export type Database = {
       }
       dialer_intelligence_runs: {
         Row: {
+          adaptive_mode: string | null
+          adaptive_multiplier: number | null
           business_id: string
           created_at: string
+          effective_refresh_interval: number | null
           ended_at: string | null
           engine_cycle_id: string | null
           id: string
           impact_score: number | null
           notes: string | null
           overall_status: Database["public"]["Enums"]["intelligence_run_status"]
+          rolling_avg_impact: number | null
+          rolling_negative_ratio: number | null
           run_mode: Database["public"]["Enums"]["intelligence_run_mode"]
           started_at: string
         }
         Insert: {
+          adaptive_mode?: string | null
+          adaptive_multiplier?: number | null
           business_id: string
           created_at?: string
+          effective_refresh_interval?: number | null
           ended_at?: string | null
           engine_cycle_id?: string | null
           id?: string
           impact_score?: number | null
           notes?: string | null
           overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
+          rolling_avg_impact?: number | null
+          rolling_negative_ratio?: number | null
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
           started_at?: string
         }
         Update: {
+          adaptive_mode?: string | null
+          adaptive_multiplier?: number | null
           business_id?: string
           created_at?: string
+          effective_refresh_interval?: number | null
           ended_at?: string | null
           engine_cycle_id?: string | null
           id?: string
           impact_score?: number | null
           notes?: string | null
           overall_status?: Database["public"]["Enums"]["intelligence_run_status"]
+          rolling_avg_impact?: number | null
+          rolling_negative_ratio?: number | null
           run_mode?: Database["public"]["Enums"]["intelligence_run_mode"]
           started_at?: string
         }
