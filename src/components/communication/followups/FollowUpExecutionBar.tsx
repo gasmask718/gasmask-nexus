@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
-import { Phone, Zap, MessageSquare, ListPlus, X, Bot, User, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Phone, Zap, MessageSquare, ListPlus, X, Bot, User, AlertTriangle, CheckCircle, Loader2, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { triggerFollowUp } from '@/services/followUpTriggerService';
@@ -23,6 +24,8 @@ export type ExecutionTarget = {
   business_id?: string | null;
 };
 
+type ExecutionState = 'NO_SELECTION' | 'RESOLVING' | 'NO_PHONES' | 'READY_IMMEDIATE' | 'READY_QUEUE_ONLY';
+
 interface FollowUpExecutionBarProps {
   executionTargets: ExecutionTarget[];
   onClear: () => void;
@@ -33,6 +36,7 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
   const [voiceProvider, setVoiceProvider] = useState('auto');
   const [callRoute, setCallRoute] = useState<CallRoute>('human');
   const [isExecuting, setIsExecuting] = useState(false);
+  const [showFixPhones, setShowFixPhones] = useState(false);
 
   const readiness = useExecutionReadiness({
     executionTargets,
@@ -44,7 +48,21 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     [executionTargets]
   );
 
+  // Stores missing phones for the Fix dialog
+  const storesWithoutPhones = useMemo(
+    () => readiness.enrichedTargets.filter(t => !t.phone?.replace(/\D/g, '')),
+    [readiness.enrichedTargets]
+  );
+
   if (executionTargets.length === 0) return null;
+
+  // Compute execution state
+  const executionState: ExecutionState = (() => {
+    if (!readiness.hasTargets) return 'NO_SELECTION';
+    if (!readiness.hasCallableNumbers) return 'NO_PHONES';
+    if (readiness.agentReady) return 'READY_IMMEDIATE';
+    return 'READY_QUEUE_ONLY';
+  })();
 
   const buildFollowUpPayload = (target: ExecutionTarget, recommendedAction: FollowUpQueueItem['recommended_action']) => {
     return {
@@ -78,59 +96,73 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     }
     setIsExecuting(true);
     try {
-      let successCount = 0;
-      for (const target of readiness.enrichedTargets.filter(t => !!t.phone)) {
-        const action = callRoute === 'ai' ? 'ai_call' : 'manual_call';
-        const result = await triggerFollowUp(buildFollowUpPayload(target, action));
-        if (result.success) successCount++;
+      if (executionState === 'READY_IMMEDIATE') {
+        // Direct call
+        let successCount = 0;
+        for (const target of readiness.enrichedTargets.filter(t => !!t.phone)) {
+          const action = callRoute === 'ai' ? 'ai_call' : 'manual_call';
+          const result = await triggerFollowUp(buildFollowUpPayload(target, action));
+          if (result.success) successCount++;
+        }
+        toast.success(`${successCount}/${readiness.callableCount} calls initiated`);
+      } else {
+        // Queue calls (no agent available)
+        await insertToQueue();
+        toast.success(`${readiness.callableCount} calls queued — waiting for available agent`);
       }
-      toast.success(`${successCount}/${readiness.callableCount} calls initiated`);
       onClear();
       onExecutionComplete?.();
-    } catch {
-      toast.error('Failed to start calls');
+    } catch (err: any) {
+      toast.error(`Failed: ${err?.message || 'Unknown error'}`);
     } finally {
       setIsExecuting(false);
     }
   };
 
-  const handleAddToQueue = async () => {
-    setIsExecuting(true);
-    try {
-      const client = supabase as any;
-      const entries = readiness.enrichedTargets.map((target) => ({
+  const insertToQueue = async () => {
+    const client = supabase as any;
+    const entries = readiness.enrichedTargets
+      .filter(t => !!t.phone?.replace(/\D/g, ''))
+      .map((target) => ({
         entity_type: 'store',
         entity_id: target.store_id,
         phone_number: target.phone || null,
         priority: target.priority || 3,
         status: 'queued',
-        source_reason: 'followup_cadence',
+        source_reason: 'followup_execution',
         voice_provider: voiceProvider === 'auto' ? null : voiceProvider,
         metadata: {
           execution_source: 'follow_up_manager',
           source: target.source,
           follow_up_id: target.follow_up_id,
           reason: target.reason,
+          route_type: callRoute,
         },
       }));
 
-      if (entries.length > 0) {
-        const { error } = await client.from('outbound_call_queue').insert(entries);
-        if (error) throw error;
-      }
+    if (entries.length > 0) {
+      const { error } = await client.from('outbound_call_queue').insert(entries);
+      if (error) throw error;
+    }
 
-      if (followUpIds.length > 0) {
-        await client
-          .from('follow_up_queue')
-          .update({ status: 'in_progress' })
-          .in('id', followUpIds);
-      }
+    if (followUpIds.length > 0) {
+      await client
+        .from('follow_up_queue')
+        .update({ status: 'in_progress' })
+        .in('id', followUpIds);
+    }
+    return entries.length;
+  };
 
-      toast.success(`${entries.length} stores added to dialer queue`);
+  const handleAddToQueue = async () => {
+    setIsExecuting(true);
+    try {
+      const count = await insertToQueue();
+      toast.success(`${count} stores added to dialer queue`);
       onClear();
       onExecutionComplete?.();
-    } catch {
-      toast.error('Failed to add to queue');
+    } catch (err: any) {
+      toast.error(`Queue failed: ${err?.message || 'Unknown error'}`);
     } finally {
       setIsExecuting(false);
     }
@@ -155,118 +187,206 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     }
   };
 
-  // Readiness indicator colors
-  const getCallButtonVariant = () => {
-    if (!readiness.hasCallableNumbers) return 'destructive' as const;
-    if (!readiness.agentReady) return 'secondary' as const;
-    return 'default' as const;
-  };
+
+  // Primary button config based on execution state
+  const primaryButton = (() => {
+    switch (executionState) {
+      case 'NO_PHONES':
+        return {
+          label: 'No Phones Found',
+          disabled: true,
+          variant: 'destructive' as const,
+          icon: <AlertTriangle className="h-3.5 w-3.5" />,
+        };
+      case 'READY_IMMEDIATE':
+        return {
+          label: `Call Now (${readiness.callableCount})`,
+          disabled: false,
+          variant: 'default' as const,
+          icon: <Phone className="h-3.5 w-3.5" />,
+        };
+      case 'READY_QUEUE_ONLY':
+        return {
+          label: `Queue Calls (${readiness.callableCount})`,
+          disabled: false,
+          variant: 'secondary' as const,
+          icon: <ListPlus className="h-3.5 w-3.5" />,
+        };
+      default:
+        return {
+          label: 'No Selection',
+          disabled: true,
+          variant: 'secondary' as const,
+          icon: <Phone className="h-3.5 w-3.5" />,
+        };
+    }
+  })();
+
+  // Status line
+  const statusText = (() => {
+    if (executionState === 'NO_PHONES') return `${readiness.totalCount} stores selected — none have phone numbers`;
+    if (executionState === 'READY_QUEUE_ONLY') return `${readiness.callableCount} callable — agents offline, calls will queue`;
+    if (executionState === 'READY_IMMEDIATE') return `${readiness.callableCount} callable — ready to call`;
+    return 'Select stores to begin';
+  })();
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[500px] max-w-[760px] animate-in slide-in-from-bottom-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Badge variant="default" className="text-sm bg-primary">
-            ⚡ Execution Mode Active
-          </Badge>
-          <Badge variant="secondary" className="text-sm">
-            {readiness.totalCount} Store{readiness.totalCount !== 1 ? 's' : ''} Selected
-          </Badge>
+    <>
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[500px] max-w-[760px] animate-in slide-in-from-bottom-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="text-sm bg-primary">
+              ⚡ Execution Mode Active
+            </Badge>
+            <Badge variant="secondary" className="text-sm">
+              {readiness.totalCount} Store{readiness.totalCount !== 1 ? 's' : ''} Selected
+            </Badge>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClear}>
+            <X className="h-4 w-4" />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClear}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
 
-      {/* Readiness Status */}
-      <div className="mb-3 flex items-center gap-2 text-xs">
-        {readiness.hasCallableNumbers ? (
-          <span className="flex items-center gap-1 text-green-600">
-            <CheckCircle className="h-3.5 w-3.5" />
-            {readiness.callableCount} callable
+        {/* Readiness Status */}
+        <div className="mb-3 flex items-center gap-2 text-xs">
+          {readiness.hasCallableNumbers ? (
+            <span className="flex items-center gap-1 text-green-600">
+              <CheckCircle className="h-3.5 w-3.5" />
+              {readiness.callableCount} callable
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-destructive">
+              <AlertTriangle className="h-3.5 w-3.5" />
+              0 callable
+            </span>
+          )}
+          <span className="text-muted-foreground">•</span>
+          <span className={`flex items-center gap-1 ${readiness.agentReady ? 'text-green-600' : 'text-amber-500'}`}>
+            {readiness.agentReady ? '🟢 Agent online' : '🟡 Agents offline (will queue)'}
           </span>
-        ) : (
-          <span className="flex items-center gap-1 text-destructive">
-            <AlertTriangle className="h-3.5 w-3.5" />
-            0 callable
-          </span>
-        )}
-        <span className="text-muted-foreground">•</span>
-        <span className={`flex items-center gap-1 ${readiness.agentReady ? 'text-green-600' : 'text-amber-500'}`}>
-          {readiness.agentReady ? '🟢 Agent online' : '🟡 No agents online'}
-        </span>
-        <span className="text-muted-foreground">•</span>
-        <span className="text-muted-foreground">🎙 {voiceProvider === 'auto' ? 'Auto' : voiceProvider === 'elevenlabs' ? 'ElevenLabs' : 'AWS Polly'}</span>
-      </div>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-muted-foreground">🎙 {voiceProvider === 'auto' ? 'Auto' : voiceProvider === 'elevenlabs' ? 'ElevenLabs' : 'AWS Polly'}</span>
+        </div>
 
-      {/* Reason text when not fully ready */}
-      {readiness.reason && (
+        {/* Status text */}
         <div className="mb-3 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
-          {readiness.reason}
+          {statusText}
         </div>
-      )}
 
-      {/* Controls Row */}
-      <div className="flex flex-wrap items-center gap-3 mb-3">
-        <VoiceProviderSelector
-          provider={voiceProvider}
-          onProviderChange={setVoiceProvider}
-          showMode={false}
-          compact
-        />
+        {/* Controls Row */}
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <VoiceProviderSelector
+            provider={voiceProvider}
+            onProviderChange={setVoiceProvider}
+            showMode={false}
+            compact
+          />
 
-        <Select value={callRoute} onValueChange={(v) => setCallRoute(v as CallRoute)}>
-          <SelectTrigger className="h-8 w-[150px] text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="human" className="text-xs">
-              <span className="flex items-center gap-1.5"><User className="h-3 w-3" /> Human Agent</span>
-            </SelectItem>
-            <SelectItem value="ai" className="text-xs">
-              <span className="flex items-center gap-1.5"><Bot className="h-3 w-3" /> AI Agent</span>
-            </SelectItem>
-            <SelectItem value="hybrid" className="text-xs">
-              <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" /> AI → Human</span>
-            </SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={callRoute} onValueChange={(v) => setCallRoute(v as CallRoute)}>
+            <SelectTrigger className="h-8 w-[150px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="human" className="text-xs">
+                <span className="flex items-center gap-1.5"><User className="h-3 w-3" /> Human Agent</span>
+              </SelectItem>
+              <SelectItem value="ai" className="text-xs">
+                <span className="flex items-center gap-1.5"><Bot className="h-3 w-3" /> AI Agent</span>
+              </SelectItem>
+              <SelectItem value="hybrid" className="text-xs">
+                <span className="flex items-center gap-1.5"><Zap className="h-3 w-3" /> AI → Human</span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant={primaryButton.variant}
+            onClick={handleCallNow}
+            disabled={isExecuting || primaryButton.disabled}
+            className="gap-1.5"
+          >
+            {isExecuting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : primaryButton.icon}
+            {primaryButton.label}
+          </Button>
+
+          {/* Fix Missing Phones CTA — only when NO_PHONES */}
+          {executionState === 'NO_PHONES' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowFixPhones(true)}
+              className="gap-1.5 border-amber-500 text-amber-600 hover:bg-amber-50"
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              Fix Missing Phones ({storesWithoutPhones.length})
+            </Button>
+          )}
+
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={handleAddToQueue}
+            disabled={isExecuting || !readiness.hasTargets}
+            className="gap-1.5"
+          >
+            <ListPlus className="h-3.5 w-3.5" />
+            Add to Dialer ({readiness.totalCount})
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleTextOutreach}
+            disabled={isExecuting || !readiness.hasCallableNumbers}
+            className="gap-1.5"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            Text {readiness.hasCallableNumbers && `(${readiness.callableCount})`}
+          </Button>
+        </div>
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant={getCallButtonVariant()}
-          onClick={handleCallNow}
-          disabled={isExecuting || !readiness.hasCallableNumbers}
-          className="gap-1.5"
-        >
-          <Phone className="h-3.5 w-3.5" />
-          Call Now {readiness.hasCallableNumbers && `(${readiness.callableCount})`}
-        </Button>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={handleAddToQueue}
-          disabled={isExecuting || !readiness.hasTargets}
-          className="gap-1.5"
-        >
-          <ListPlus className="h-3.5 w-3.5" />
-          Add to Dialer ({readiness.totalCount})
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={handleTextOutreach}
-          disabled={isExecuting || !readiness.hasCallableNumbers}
-          className="gap-1.5"
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
-          Text {readiness.hasCallableNumbers && `(${readiness.callableCount})`}
-        </Button>
-      </div>
-    </div>
+      {/* Fix Missing Phones Dialog */}
+      <Dialog open={showFixPhones} onOpenChange={setShowFixPhones}>
+        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-amber-500" />
+              Fix Missing Phone Numbers
+            </DialogTitle>
+            <DialogDescription>
+              {storesWithoutPhones.length} selected store{storesWithoutPhones.length !== 1 ? 's' : ''} have no phone number on file.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-4">
+            {storesWithoutPhones.slice(0, 50).map((target) => (
+              <div key={target.store_id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
+                <span className="font-medium truncate max-w-[200px]">
+                  {target.store_id.slice(0, 8)}...
+                </span>
+                <span className="text-muted-foreground text-xs">No phone</span>
+              </div>
+            ))}
+            {storesWithoutPhones.length > 50 && (
+              <p className="text-xs text-muted-foreground text-center">
+                ...and {storesWithoutPhones.length - 50} more
+              </p>
+            )}
+          </div>
+          <div className="mt-4 space-y-2">
+            <p className="text-sm text-muted-foreground">
+              To fix: Add phone numbers to these stores in the Store Master or Store Contacts table.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setShowFixPhones(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
