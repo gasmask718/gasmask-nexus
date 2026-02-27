@@ -276,8 +276,32 @@ export function LiveCallObserver() {
     setDrawerOpen(true);
   };
 
+  // Pipeline health check: if queue has items but live_calls is empty, show warning
+  const [queueCount, setQueueCount] = useState(0);
+  useEffect(() => {
+    if (stats.total === 0) {
+      import("@/integrations/supabase/client").then(({ supabase }) => {
+        supabase
+          .from("outbound_call_queue")
+          .select("id", { count: "exact", head: true })
+          .in("status", ["queued", "dialing", "ringing", "answered"])
+          .then(({ count }) => setQueueCount(count || 0));
+      });
+    }
+  }, [stats.total]);
+
   return (
     <div className="space-y-4">
+      {/* Pipeline health failsafe */}
+      {stats.total === 0 && queueCount > 0 && (
+        <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-sm">
+          <Activity className="h-4 w-4 text-yellow-600 shrink-0" />
+          <span className="text-yellow-700 dark:text-yellow-300">
+            <strong>{queueCount} calls in queue</strong> but no live call entries detected. New calls will auto-populate — existing queue items have been backfilled.
+          </span>
+        </div>
+      )}
+
       {/* Radar HUD */}
       <RadarHUD stats={stats} activeCalls={activeCalls} recentCalls={recentCalls} />
 
