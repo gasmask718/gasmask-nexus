@@ -17,6 +17,8 @@ import { SendMessageModal } from "@/components/communication/SendMessageModal";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
+import { CommunicationRuntimeProvider } from "@/contexts/CommunicationRuntimeContext";
+import { SystemHealthBar } from "@/components/communication/SystemHealthBar";
 
 // ═══ 5-FLOOR SIDEBAR STRUCTURE ═══
 
@@ -152,6 +154,7 @@ export default function CommunicationHubLayout() {
   };
 
   return (
+    <CommunicationRuntimeProvider>
     <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Sidebar */}
       <aside 
@@ -329,6 +332,9 @@ export default function CommunicationHubLayout() {
           </div>
         </header>
 
+        {/* System Health Bar */}
+        <SystemHealthBar />
+
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="w-full min-h-full p-6">
@@ -343,5 +349,6 @@ export default function CommunicationHubLayout() {
         onOpenChange={setSmsModalOpen}
       />
     </div>
+    </CommunicationRuntimeProvider>
   );
 }
