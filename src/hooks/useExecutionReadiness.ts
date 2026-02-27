@@ -125,9 +125,9 @@ export function useExecutionReadiness({ executionTargets, voiceEngine }: Executi
   const callableCount = callableTargets.length;
   const hasCallableNumbers = callableCount > 0;
   const agentReady = agentStatus ?? false;
-  const voiceReady = !!voiceEngine;
+  const voiceReady = !!voiceEngine || voiceEngine === 'auto';
 
-  // For "Call Now" we need callable numbers. For "Add to Dialer" we just need targets.
+  // canExecute = has targets (agent availability only changes label, never blocks)
   const canExecute = hasTargets;
   
   const reason = useMemo(() => {

@@ -32,7 +32,7 @@ async function fetchFollowUps(status?: string | string[]): Promise<FollowUpQueue
   const client = supabase as any;
   let query = client
     .from('follow_up_queue')
-    .select(`*, store:store_master(id, name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
+    .select(`*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
     .order('priority', { ascending: true })
     .order('due_at', { ascending: true });
 
@@ -46,7 +46,10 @@ async function fetchFollowUps(status?: string | string[]): Promise<FollowUpQueue
 
   const { data, error } = await query;
   if (error) return [];
-  return data || [];
+  return (data || []).map((item: any) => ({
+    ...item,
+    store: item.store ? { id: item.store.id, name: item.store.store_name } : null,
+  }));
 }
 
 export function usePendingFollowUps() {
@@ -67,13 +70,16 @@ export function useDueTodayFollowUps() {
       
       const { data } = await client
         .from('follow_up_queue')
-        .select(`*, store:store_master(id, name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
+        .select(`*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
         .in('status', ['pending', 'in_progress'])
         .gte('due_at', startOfDay)
         .lte('due_at', endOfDay)
         .order('priority', { ascending: true });
       
-      return data || [];
+      return (data || []).map((item: any) => ({
+        ...item,
+        store: item.store ? { id: item.store.id, name: item.store.store_name } : null,
+      }));
     },
   });
 }
@@ -92,11 +98,14 @@ export function useCompletedFollowUps(limit = 50) {
       const client = supabase as any;
       const { data } = await client
         .from('follow_up_queue')
-        .select(`*, store:store_master(id, name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
+        .select(`*, store:store_master(id, store_name), business:businesses(id, name), vertical:brand_verticals(id, name, slug)`)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false })
         .limit(limit);
-      return data || [];
+      return (data || []).map((item: any) => ({
+        ...item,
+        store: item.store ? { id: item.store.id, name: item.store.store_name } : null,
+      }));
     },
   });
 }
@@ -221,7 +230,7 @@ export function useFollowUpsByDateRange(startDate: Date, endDate: Date) {
         .from('follow_up_queue')
         .select(`
           *,
-          store:store_master(id, name, address),
+          store:store_master(id, store_name, address),
           business:businesses(id, name),
           vertical:brand_verticals(id, name, slug)
         `)
@@ -232,7 +241,10 @@ export function useFollowUpsByDateRange(startDate: Date, endDate: Date) {
         .order('priority', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []).map((item: any) => ({
+        ...item,
+        store: item.store ? { id: item.store.id, name: item.store.store_name, address: item.store.address } : null,
+      }));
     },
   });
 }
@@ -246,7 +258,7 @@ export function useAllActiveFollowUps() {
         .from('follow_up_queue')
         .select(`
           *,
-          store:store_master(id, name, address),
+          store:store_master(id, store_name, address),
           business:businesses(id, name),
           vertical:brand_verticals(id, name, slug)
         `)
@@ -255,7 +267,10 @@ export function useAllActiveFollowUps() {
         .order('priority', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []).map((item: any) => ({
+        ...item,
+        store: item.store ? { id: item.store.id, name: item.store.store_name, address: item.store.address } : null,
+      }));
     },
   });
 }
