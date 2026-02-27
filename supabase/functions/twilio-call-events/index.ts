@@ -87,14 +87,66 @@ Deno.serve(async (req) => {
       updatePayload.recording_sid = recordingSid;
     }
 
-    const { error } = await supabase
+    // Try to update existing live_calls row by call_sid
+    const { data: updated, error } = await supabase
       .from("live_calls")
       .update(updatePayload)
-      .eq("call_sid", callSid);
+      .eq("call_sid", callSid)
+      .select("id");
 
     if (error) {
       console.error("[twilio-call-events] Update failed:", error);
-      // Try insert if no existing row (call may have been created externally)
+    }
+
+    // If no row matched by call_sid, try matching by phone from outbound_call_queue
+    if (!updated || updated.length === 0) {
+      // Look up the queue entry to find the phone and link it
+      const { data: queueEntry } = await supabase
+        .from("outbound_call_queue")
+        .select("phone_number, business_id, store_id, metadata")
+        .eq("call_sid", callSid)
+        .single();
+
+      if (queueEntry) {
+        // Try to update a queued live_calls row with matching phone + no call_sid yet
+        const { data: linked } = await supabase
+          .from("live_calls")
+          .update({ ...updatePayload, call_sid: callSid })
+          .eq("phone_number", queueEntry.phone_number)
+          .eq("business_id", queueEntry.business_id)
+          .is("call_sid", null)
+          .in("state", ["queued", "dialing"])
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .select("id");
+
+        if (!linked || linked.length === 0) {
+          // Create a new live_calls entry as fallback
+          await supabase.from("live_calls").insert({
+            call_sid: callSid,
+            business_id: queueEntry.business_id,
+            store_id: queueEntry.store_id,
+            phone_number: queueEntry.phone_number,
+            agent_type: (queueEntry.metadata as any)?.route_mode === "ai" ? "ai" : "human",
+            voice_provider: (queueEntry.metadata as any)?.voice_engine || null,
+            state: newState,
+            source_reason: "twilio_webhook",
+            started_at: new Date().toISOString(),
+            ...(updatePayload.answered_at ? { answered_at: updatePayload.answered_at } : {}),
+            ...(updatePayload.ended_at ? { ended_at: updatePayload.ended_at } : {}),
+            ...(updatePayload.duration_seconds ? { duration_seconds: updatePayload.duration_seconds } : {}),
+            ...(updatePayload.recording_url ? { recording_url: updatePayload.recording_url } : {}),
+          });
+        }
+      }
+    }
+
+    // Also update outbound_call_queue status to keep them in sync
+    if (callStatus === "completed" || callStatus === "failed" || callStatus === "busy" || callStatus === "no-answer" || callStatus === "canceled") {
+      await supabase
+        .from("outbound_call_queue")
+        .update({ status: callStatus === "completed" ? "completed" : "failed" })
+        .eq("call_sid", callSid);
     }
 
     // Return TwiML-compatible empty response for Twilio webhooks
