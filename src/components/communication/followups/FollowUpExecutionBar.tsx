@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
-import { Phone, Zap, MessageSquare, ListPlus, X, Bot, User } from 'lucide-react';
+import { Phone, Zap, MessageSquare, ListPlus, X, Bot, User, AlertTriangle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { triggerFollowUp } from '@/services/followUpTriggerService';
+import { useExecutionReadiness } from '@/hooks/useExecutionReadiness';
 import type { FollowUpQueueItem } from '@/hooks/useFollowUps';
 
 type CallRoute = 'human' | 'ai' | 'hybrid';
@@ -33,13 +34,10 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
   const [callRoute, setCallRoute] = useState<CallRoute>('human');
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const uniqueStoreTargets = useMemo(() => {
-    const map = new Map<string, ExecutionTarget>();
-    executionTargets.forEach((target) => {
-      if (!map.has(target.store_id)) map.set(target.store_id, target);
-    });
-    return Array.from(map.values());
-  }, [executionTargets]);
+  const readiness = useExecutionReadiness({
+    executionTargets,
+    voiceEngine: voiceProvider,
+  });
 
   const followUpIds = useMemo(
     () => executionTargets.map((t) => t.follow_up_id).filter((id): id is string => !!id),
@@ -74,15 +72,19 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
   };
 
   const handleCallNow = async () => {
+    if (!readiness.hasCallableNumbers) {
+      toast.error(`No callable phone numbers found among ${readiness.totalCount} selected stores`);
+      return;
+    }
     setIsExecuting(true);
     try {
       let successCount = 0;
-      for (const target of uniqueStoreTargets) {
+      for (const target of readiness.enrichedTargets.filter(t => !!t.phone)) {
         const action = callRoute === 'ai' ? 'ai_call' : 'manual_call';
         const result = await triggerFollowUp(buildFollowUpPayload(target, action));
         if (result.success) successCount++;
       }
-      toast.success(`${successCount}/${uniqueStoreTargets.length} calls initiated`);
+      toast.success(`${successCount}/${readiness.callableCount} calls initiated`);
       onClear();
       onExecutionComplete?.();
     } catch {
@@ -96,7 +98,7 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     setIsExecuting(true);
     try {
       const client = supabase as any;
-      const entries = uniqueStoreTargets.map((target) => ({
+      const entries = readiness.enrichedTargets.map((target) => ({
         entity_type: 'store',
         entity_id: target.store_id,
         phone_number: target.phone || null,
@@ -138,12 +140,12 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     setIsExecuting(true);
     try {
       let successCount = 0;
-      for (const target of uniqueStoreTargets) {
+      for (const target of readiness.enrichedTargets.filter(t => !!t.phone)) {
         const action = callRoute === 'ai' ? 'ai_text' : 'manual_text';
         const result = await triggerFollowUp(buildFollowUpPayload(target, action));
         if (result.success) successCount++;
       }
-      toast.success(`${successCount}/${uniqueStoreTargets.length} text outreach triggered`);
+      toast.success(`${successCount}/${readiness.callableCount} text outreach triggered`);
       onClear();
       onExecutionComplete?.();
     } catch {
@@ -153,15 +155,23 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     }
   };
 
+  // Readiness indicator colors
+  const getCallButtonVariant = () => {
+    if (!readiness.hasCallableNumbers) return 'destructive' as const;
+    if (!readiness.agentReady) return 'secondary' as const;
+    return 'default' as const;
+  };
+
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[500px] max-w-[760px] animate-in slide-in-from-bottom-4">
+      {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Badge variant="default" className="text-sm">
+          <Badge variant="default" className="text-sm bg-primary">
             ⚡ Execution Mode Active
           </Badge>
           <Badge variant="secondary" className="text-sm">
-            {uniqueStoreTargets.length} Store{uniqueStoreTargets.length !== 1 ? 's' : ''} Selected
+            {readiness.totalCount} Store{readiness.totalCount !== 1 ? 's' : ''} Selected
           </Badge>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClear}>
@@ -169,8 +179,35 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
         </Button>
       </div>
 
-      <div className="mb-3 text-xs text-muted-foreground">Execution Targets: {executionTargets.length}</div>
+      {/* Readiness Status */}
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        {readiness.hasCallableNumbers ? (
+          <span className="flex items-center gap-1 text-green-600">
+            <CheckCircle className="h-3.5 w-3.5" />
+            {readiness.callableCount} callable
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            0 callable
+          </span>
+        )}
+        <span className="text-muted-foreground">•</span>
+        <span className={`flex items-center gap-1 ${readiness.agentReady ? 'text-green-600' : 'text-amber-500'}`}>
+          {readiness.agentReady ? '🟢 Agent online' : '🟡 No agents online'}
+        </span>
+        <span className="text-muted-foreground">•</span>
+        <span className="text-muted-foreground">🎙 {voiceProvider === 'auto' ? 'Auto' : voiceProvider === 'elevenlabs' ? 'ElevenLabs' : 'AWS Polly'}</span>
+      </div>
 
+      {/* Reason text when not fully ready */}
+      {readiness.reason && (
+        <div className="mb-3 text-xs text-muted-foreground bg-muted/50 rounded px-2 py-1">
+          {readiness.reason}
+        </div>
+      )}
+
+      {/* Controls Row */}
       <div className="flex flex-wrap items-center gap-3 mb-3">
         <VoiceProviderSelector
           provider={voiceProvider}
@@ -197,18 +234,37 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
         </Select>
       </div>
 
+      {/* Action Buttons */}
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={handleCallNow} disabled={isExecuting} className="gap-1.5">
+        <Button
+          size="sm"
+          variant={getCallButtonVariant()}
+          onClick={handleCallNow}
+          disabled={isExecuting || !readiness.hasCallableNumbers}
+          className="gap-1.5"
+        >
           <Phone className="h-3.5 w-3.5" />
-          Call Now
+          Call Now {readiness.hasCallableNumbers && `(${readiness.callableCount})`}
         </Button>
-        <Button size="sm" variant="secondary" onClick={handleAddToQueue} disabled={isExecuting} className="gap-1.5">
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={handleAddToQueue}
+          disabled={isExecuting || !readiness.hasTargets}
+          className="gap-1.5"
+        >
           <ListPlus className="h-3.5 w-3.5" />
-          Add to Dialer
+          Add to Dialer ({readiness.totalCount})
         </Button>
-        <Button size="sm" variant="outline" onClick={handleTextOutreach} disabled={isExecuting} className="gap-1.5">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleTextOutreach}
+          disabled={isExecuting || !readiness.hasCallableNumbers}
+          className="gap-1.5"
+        >
           <MessageSquare className="h-3.5 w-3.5" />
-          Text
+          Text {readiness.hasCallableNumbers && `(${readiness.callableCount})`}
         </Button>
       </div>
     </div>
