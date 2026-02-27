@@ -63658,6 +63658,10 @@ export type Database = {
         Args: { p_business_id: string; p_window?: number }
         Returns: number
       }
+      get_rolling_impact_stats: {
+        Args: { p_business_id: string; p_window?: number }
+        Returns: Json
+      }
       get_store_full_address: { Args: { p_store_id: string }; Returns: string }
       get_user_assigned_stores: {
         Args: { _user_id: string }

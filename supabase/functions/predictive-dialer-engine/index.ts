@@ -494,8 +494,44 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── ADAPTIVE INTELLIGENCE CONTROLLER ──
+    // Fetch rolling impact stats to tune aggressiveness
+    let adaptiveMultiplier = 1.0; // neutral
+    let adaptiveNote = "baseline";
+    try {
+      const { data: impactStats } = await supabase.rpc("get_rolling_impact_stats", {
+        p_business_id: business_id,
+        p_window: 10,
+      });
+
+      if (impactStats && impactStats.total_runs >= 10) {
+        const avgImpact = Number(impactStats.avg_impact || 0);
+        const negativeRatio = impactStats.total_runs > 0
+          ? Number(impactStats.negative_runs || 0) / impactStats.total_runs
+          : 0;
+
+        if (avgImpact < 1 && negativeRatio <= 0.3) {
+          // Low impact, not destabilizing → optimize more aggressively
+          adaptiveMultiplier = 1.3;
+          adaptiveNote = `low_impact_boost: avg=${avgImpact}`;
+        } else if (negativeRatio > 0.3) {
+          // Too many negative runs → pull back
+          adaptiveMultiplier = 0.7;
+          adaptiveNote = `negative_ratio_dampen: ${(negativeRatio * 100).toFixed(0)}% negative`;
+        } else if (avgImpact > 10) {
+          // High sustained impact → hold steady
+          adaptiveMultiplier = 1.0;
+          adaptiveNote = `high_impact_stable: avg=${avgImpact}`;
+        }
+      }
+    } catch (e) {
+      console.error("Adaptive controller failed (non-fatal):", e);
+    }
+
     // ── INTELLIGENCE STEPS (ALL WRAPPED) ──
-    const refreshInterval = settings?.predictive_score_refresh_interval || 10;
+    // Apply adaptive multiplier to refresh interval (lower = more frequent)
+    const baseRefreshInterval = settings?.predictive_score_refresh_interval || 10;
+    const refreshInterval = Math.max(2, Math.round(baseRefreshInterval / adaptiveMultiplier));
     const usePredictiveTargeting = settings?.use_predictive_targeting || false;
     const useRepStoreMatching = settings?.use_rep_store_matching || false;
     const useTimeRevenueBias = settings?.use_time_revenue_bias || false;
@@ -1006,6 +1042,9 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         intelligence_run_id: runId,
+        adaptive_mode: adaptiveNote,
+        adaptive_multiplier: adaptiveMultiplier,
+        refresh_interval: refreshInterval,
         dialed: claimedItems.length,
         agents_available: agentCount,
         agents_claimed: agentsClaimed,
