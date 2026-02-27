@@ -1,0 +1,1 @@
+ALTER TABLE dialer_intelligence_runs ADD COLUMN IF NOT EXISTS impact_score numeric;

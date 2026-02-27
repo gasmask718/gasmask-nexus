@@ -139,24 +139,32 @@ async function finalizeRun(
     const routeBefore = snapshotBefore?.routing || { top_rep_share: 0 };
     const routeAfter = snapshotAfter?.routing || { top_rep_share: 0 };
 
+    const queuePriorityAvgDelta = Number(
+      (Number(queueAfter.avg_priority || 0) - Number(queueBefore.avg_priority || 0)).toFixed(2)
+    );
+    const queuePriorityMaxDelta = Number(
+      (Number(queueAfter.max_priority || 0) - Number(queueBefore.max_priority || 0)).toFixed(2)
+    );
+    const campaignWeightAvgDelta = Number(
+      (Number(campAfter.avg_weight || 0) - Number(campBefore.avg_weight || 0)).toFixed(3)
+    );
+    const inventorySeedInserted = inventorySeedResult?.inserted_count ?? 0;
+    const routingDelta = Math.abs(
+      Number(routeAfter.top_rep_share || 0) - Number(routeBefore.top_rep_share || 0)
+    );
+
     await supabase.from("dialer_intelligence_deltas").insert({
       run_id: runId,
       queue_priority_rows_changed: Math.abs(
         Number(queueAfter.count || 0) - Number(queueBefore.count || 0)
       ),
-      queue_priority_avg_delta: Number(
-        (Number(queueAfter.avg_priority || 0) - Number(queueBefore.avg_priority || 0)).toFixed(2)
-      ),
-      queue_priority_max_delta: Number(
-        (Number(queueAfter.max_priority || 0) - Number(queueBefore.max_priority || 0)).toFixed(2)
-      ),
+      queue_priority_avg_delta: queuePriorityAvgDelta,
+      queue_priority_max_delta: queuePriorityMaxDelta,
       campaign_weights_changed: Math.abs(
         Number(campAfter.count || 0) - Number(campBefore.count || 0)
       ),
-      campaign_weight_avg_delta: Number(
-        (Number(campAfter.avg_weight || 0) - Number(campBefore.avg_weight || 0)).toFixed(3)
-      ),
-      inventory_seed_inserted: inventorySeedResult?.inserted_count ?? 0,
+      campaign_weight_avg_delta: campaignWeightAvgDelta,
+      inventory_seed_inserted: inventorySeedInserted,
       inventory_seed_updated: inventorySeedResult?.updated_count ?? 0,
       inventory_seed_blocked: inventorySeedResult?.blocked_count ?? 0,
       agent_routing_top_rep_share: Number(routeAfter.top_rep_share || 0),
@@ -170,33 +178,56 @@ async function finalizeRun(
       },
     });
 
-    // Compute overall status from steps
+    // Compute overall status + impact score from steps
     const { data: steps } = await supabase
       .from("dialer_intelligence_run_steps")
       .select("status")
       .eq("run_id", runId);
 
     let overallStatus = "ok";
-    if (steps?.some((s: any) => s.status === "error")) {
+    const warnCount = (steps || []).filter((s: any) => s.status === "warn").length;
+    const errorCount = (steps || []).filter((s: any) => s.status === "error").length;
+
+    if (errorCount > 0) {
       overallStatus = "error";
-    } else if (steps?.some((s: any) => s.status === "warn")) {
+    } else if (warnCount > 0) {
       overallStatus = "warn";
     }
+
+    // ── RUN IMPACT SCORE ──
+    const priorityImpact = Math.abs(queuePriorityAvgDelta) * 2;
+    const campaignImpact = Math.abs(campaignWeightAvgDelta) * 3;
+    const inventoryImpact = inventorySeedInserted * 0.5;
+    const routingImpact = routingDelta * 0.1;
+    const warnPenalty = warnCount * 1.5;
+    const errorPenalty = errorCount * 5;
+
+    let rawImpact =
+      priorityImpact +
+      campaignImpact +
+      inventoryImpact +
+      routingImpact -
+      warnPenalty -
+      errorPenalty;
+
+    if (rawImpact < -50) rawImpact = -50;
+    const runImpactScore = Number(rawImpact.toFixed(2));
 
     await supabase
       .from("dialer_intelligence_runs")
       .update({
         overall_status: overallStatus,
+        impact_score: runImpactScore,
         ended_at: new Date().toISOString(),
       })
       .eq("id", runId);
   } catch (e) {
     console.error("Failed to finalize intelligence run:", e);
-    // Still close the run
     await supabase
       .from("dialer_intelligence_runs")
       .update({
         overall_status: "error",
+        impact_score: -50,
         ended_at: new Date().toISOString(),
         notes: `Finalization error: ${String(e)}`,
       })
