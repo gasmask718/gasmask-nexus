@@ -69,10 +69,17 @@ serve(async (req: Request) => {
     <Number>${to}</Number>
   </Dial>
 </Response>`;
-      console.log(`✅ PSTN TEST TwiML generated for call to ${to}`);
+      console.log(JSON.stringify({
+        verification: "PSTN_DIAL",
+        to,
+        callerId,
+        test_call: true,
+        isE164: /^\+\d{10,15}$/.test(to),
+        caller_valid: callerId.startsWith("+"),
+      }));
       return new Response(twiml, {
         status: 200,
-        headers: { "Content-Type": "text/xml", ...corsHeaders },
+        headers: { "Content-Type": "text/xml", "X-Call-Mode": "PSTN_TEST", ...corsHeaders },
       });
     }
 
@@ -87,11 +94,18 @@ serve(async (req: Request) => {
   </Dial>
 </Response>`;
 
-    console.log(`✅ TwiML generated for call to ${to}`);
+    console.log(JSON.stringify({
+      verification: "PSTN_DIAL",
+      to,
+      callerId,
+      test_call: false,
+      isE164: /^\+\d{10,15}$/.test(to),
+      caller_valid: callerId.startsWith("+"),
+    }));
 
     return new Response(twiml, {
       status: 200,
-      headers: { "Content-Type": "text/xml", ...corsHeaders },
+      headers: { "Content-Type": "text/xml", "X-Call-Mode": "ROUTED", ...corsHeaders },
     });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
