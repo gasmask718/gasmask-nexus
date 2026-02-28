@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,14 @@ import { Switch } from "@/components/ui/switch";
 import {
   Phone, PhoneOff, Bot, User, Clock, Eye, Radio,
   Headphones, Activity, Shield, Play, BarChart3,
-  Zap, TrendingUp
+  Zap, TrendingUp, Flame, AlertTriangle
 } from "lucide-react";
 import { useLiveCalls, useLiveTranscripts, type LiveCall } from "@/hooks/useLiveCalls";
+import { useBusiness } from "@/contexts/BusinessContext";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 // State color config
 const stateConfig: Record<string, { label: string; dotColor: string; bgColor: string; borderColor: string; pulse: boolean; icon: typeof Phone }> = {
@@ -264,10 +267,63 @@ function RadarHUD({ stats, activeCalls, recentCalls }: {
 
 export function LiveCallObserver() {
   const { activeCalls, recentCalls, isLoading, stats } = useLiveCalls();
+  const { currentBusiness } = useBusiness();
   const [selectedCall, setSelectedCall] = useState<LiveCall | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [tab, setTab] = useState("active");
   const [supervisorMode, setSupervisorMode] = useState(false);
+  const [recovering, setRecovering] = useState(false);
+
+  // Stale call detection
+  const [staleCounts, setStaleCounts] = useState({ queue: 0, live: 0 });
+  useEffect(() => {
+    if (!currentBusiness?.id) return;
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    
+    Promise.all([
+      supabase
+        .from("outbound_call_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", currentBusiness.id)
+        .in("status", ["queued", "dialing"])
+        .lt("created_at", fiveMinAgo),
+      (supabase as any)
+        .from("live_calls")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", currentBusiness.id)
+        .not("state", "in", '("completed","failed")')
+        .lt("started_at", fiveMinAgo),
+    ]).then(([qRes, lRes]) => {
+      setStaleCounts({
+        queue: qRes.count || 0,
+        live: lRes.count || 0,
+      });
+    });
+  }, [currentBusiness?.id, activeCalls.length]);
+
+  const totalStale = staleCounts.queue + staleCounts.live;
+
+  const handleRecover = useCallback(async () => {
+    if (!currentBusiness?.id) return;
+    setRecovering(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("recover-dialer", {
+        body: { business_id: currentBusiness.id },
+      });
+      if (error) throw error;
+      const qr = data?.queue_recovered || 0;
+      const lr = data?.live_recovered || 0;
+      toast({
+        title: "Dialer Recovered",
+        description: `Cleared ${qr} queue items and ${lr} live call ghosts.`,
+      });
+      setStaleCounts({ queue: 0, live: 0 });
+    } catch (err: any) {
+      toast({ title: "Recovery failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRecovering(false);
+    }
+  }, [currentBusiness?.id]);
 
   const displayCalls = tab === "active" ? activeCalls : recentCalls;
 
@@ -280,20 +336,40 @@ export function LiveCallObserver() {
   const [queueCount, setQueueCount] = useState(0);
   useEffect(() => {
     if (stats.total === 0) {
-      import("@/integrations/supabase/client").then(({ supabase }) => {
-        supabase
-          .from("outbound_call_queue")
-          .select("id", { count: "exact", head: true })
-          .in("status", ["queued", "dialing", "ringing", "answered"])
-          .then(({ count }) => setQueueCount(count || 0));
-      });
+      supabase
+        .from("outbound_call_queue")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["queued", "dialing", "ringing", "answered"])
+        .then(({ count }) => setQueueCount(count || 0));
     }
   }, [stats.total]);
 
   return (
     <div className="space-y-4">
+      {/* Stale call recovery banner */}
+      {totalStale > 0 && (
+        <div className="flex items-center justify-between gap-3 bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-3">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+            <span className="text-destructive font-medium">
+              Dialer blocked by {totalStale} stale call{totalStale !== 1 ? "s" : ""} ({staleCounts.queue} queue, {staleCounts.live} live)
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={handleRecover}
+            disabled={recovering}
+            className="gap-1.5 shrink-0"
+          >
+            <Flame className="h-3.5 w-3.5" />
+            {recovering ? "Recovering…" : "Clear Stuck Calls"}
+          </Button>
+        </div>
+      )}
+
       {/* Pipeline health failsafe */}
-      {stats.total === 0 && queueCount > 0 && (
+      {stats.total === 0 && queueCount > 0 && totalStale === 0 && (
         <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-4 py-3 text-sm">
           <Activity className="h-4 w-4 text-yellow-600 shrink-0" />
           <span className="text-yellow-700 dark:text-yellow-300">
