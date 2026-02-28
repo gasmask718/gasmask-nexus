@@ -476,7 +476,7 @@ export function VoiceGoLiveReport() {
 
   const handleTestCall = useCallback(async () => {
     if (!testPhone.match(/^\+\d{10,15}$/)) return;
-    const call = await device.makeCall(testPhone);
+    const call = await device.makeCall(testPhone, { test_call: "true" });
     if (call) {
       setGateE(prev => ({
         ...prev,

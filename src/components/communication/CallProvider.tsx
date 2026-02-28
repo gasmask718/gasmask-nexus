@@ -21,6 +21,7 @@ interface CallParams {
   entityName?: string;
   notes?: string;
   agentId?: string;
+  isTestCall?: boolean;
 }
 
 interface ActiveCallInfo {
@@ -135,7 +136,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
     setIsPlacingCall(true);
     try {
-      const call = await twilioDevice.makeCall(formattedPhone);
+      const call = await twilioDevice.makeCall(formattedPhone, params.isTestCall ? { test_call: "true" } : undefined);
       if (call) {
         setActiveCallInfo({
           callSid: (call as any).parameters?.CallSid || `browser-${Date.now()}`,
