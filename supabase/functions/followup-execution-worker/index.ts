@@ -388,6 +388,7 @@ Deno.serve(async (req) => {
           temporal_optimization: true,
           best_time_matches: bestTimeMatches,
           avg_temporal_boost: avgTemporalBoost,
+          wave_timestamp: waveNow.toISOString(),
         }),
       })
       .eq("id", run_id);
