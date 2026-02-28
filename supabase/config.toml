@@ -220,3 +220,6 @@ verify_jwt = false
 
 [functions.discover-twiml-apps]
 verify_jwt = false
+
+[functions.system-health]
+verify_jwt = false
