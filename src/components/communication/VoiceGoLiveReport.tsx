@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioDevice } from "@/hooks/useTwilioDevice";
+import { TwilioCredentialInstaller } from "./TwilioCredentialInstaller";
 
 type GateStatus = "idle" | "running" | "pass" | "fail";
 
@@ -512,6 +513,9 @@ export function VoiceGoLiveReport() {
           </Button>
         </div>
       </div>
+
+      {/* Credential installer */}
+      <TwilioCredentialInstaller />
 
       {/* Server-side pipeline audit */}
       <PipelineAuditPanel />

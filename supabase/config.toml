@@ -214,3 +214,6 @@ verify_jwt = false
 
 [functions.voice-token-selftest]
 verify_jwt = false
+
+[functions.validate-twilio-credentials]
+verify_jwt = false
