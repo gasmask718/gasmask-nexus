@@ -3,8 +3,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+const json = (body: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
@@ -12,14 +19,11 @@ serve(async (req: Request) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const business_id = body?.business_id;
 
     if (!business_id) {
-      return new Response(
-        JSON.stringify({ success: false, error: "business_id required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
-      );
+      return json({ success: false, error: "business_id required" }, 200);
     }
 
     const supabase = createClient(
@@ -32,33 +36,22 @@ serve(async (req: Request) => {
     // Clear stale queue items
     const { data: clearedQueue, error: qErr } = await supabase
       .from("outbound_call_queue")
-      .update({
-        status: "failed",
-        updated_at: now,
-      })
+      .update({ status: "failed", updated_at: now })
       .eq("business_id", business_id)
       .in("status", ["queued", "dialing"])
       .select("id");
 
-    if (qErr) {
-      console.error("Queue recovery error:", JSON.stringify(qErr));
-    }
+    if (qErr) console.error("Queue recovery error:", JSON.stringify(qErr));
 
     // Clear stale live calls
     const { data: clearedLive, error: lErr } = await supabase
       .from("live_calls")
-      .update({
-        state: "failed",
-        ended_at: now,
-        updated_at: now,
-      })
+      .update({ state: "failed", ended_at: now, updated_at: now })
       .eq("business_id", business_id)
       .not("state", "in", '("completed","failed")')
       .select("id");
 
-    if (lErr) {
-      console.error("Live calls recovery error:", JSON.stringify(lErr));
-    }
+    if (lErr) console.error("Live calls recovery error:", JSON.stringify(lErr));
 
     const result = {
       success: true,
@@ -68,17 +61,13 @@ serve(async (req: Request) => {
 
     console.log(JSON.stringify({ action: "DIALER_RECOVERY", business_id, ...result }));
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    // Always return 200 so the UI unlocks
+    return json(result, 200);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : JSON.stringify(err);
-    console.error("recover-dialer error:", message);
+    console.error("recover-dialer fatal:", message);
 
-    return new Response(
-      JSON.stringify({ success: false, error: message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
-    );
+    // Still return 200 so the UI is never permanently blocked
+    return json({ success: false, recovered: false, error: message }, 200);
   }
 });
