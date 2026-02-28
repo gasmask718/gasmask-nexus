@@ -1,5 +1,5 @@
 import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from "react";
-import { useTwilioDevice } from "@/hooks/useTwilioDevice";
+import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -52,7 +52,7 @@ export function useCall() {
 
 export function CallProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  const twilioDevice = useTwilioDevice();
+  const twilioDevice = useVoiceDevice();
 
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [pendingCall, setPendingCall] = useState<CallParams | null>(null);

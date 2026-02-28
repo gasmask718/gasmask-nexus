@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { BusinessProvider } from "./contexts/BusinessContext";
 import { SimulationModeProvider } from "./contexts/SimulationModeContext";
 import { SimulationModeBanner } from "./components/simulation/SimulationModeBanner";
+import { VoiceDeviceProvider } from "./contexts/VoiceDeviceProvider";
 import { CallProvider } from "./components/communication/CallProvider";
 import { MessageProvider } from "./components/communication/MessageProvider";
 import { ViewAsProvider } from "./contexts/ViewAsContext";
@@ -33,15 +34,17 @@ const App = () => (
             <BusinessProvider>
               <SimulationModeProvider>
                 <ViewAsProvider>
-                  <CallProvider>
-                    <MessageProvider>
-                      <BackendFingerprint />
-                      <SchemaSanityChecker />
-                      <ViewAsBanner />
-                      <SimulationModeBanner />
-                      <AppRoutes />
-                    </MessageProvider>
-                  </CallProvider>
+                  <VoiceDeviceProvider>
+                    <CallProvider>
+                      <MessageProvider>
+                        <BackendFingerprint />
+                        <SchemaSanityChecker />
+                        <ViewAsBanner />
+                        <SimulationModeBanner />
+                        <AppRoutes />
+                      </MessageProvider>
+                    </CallProvider>
+                  </VoiceDeviceProvider>
                 </ViewAsProvider>
               </SimulationModeProvider>
             </BusinessProvider>

@@ -1,4 +1,4 @@
-import { useTwilioDevice, DeviceLifecycleState } from "@/hooks/useTwilioDevice";
+import { useVoiceDevice, DeviceLifecycleState } from "@/contexts/VoiceDeviceProvider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mic, Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
@@ -54,7 +54,7 @@ function StateBeacon({ state, error }: { state: DeviceLifecycleState; error: str
 }
 
 export function VoiceDeviceReadiness({ showDebug = false }: { showDebug?: boolean }) {
-  const { isReady, deviceState, deviceError, tokenExpiresAt, registeredAt, voiceHealth, refreshToken } = useTwilioDevice();
+  const { isReady, deviceState, deviceError, tokenExpiresAt, registeredAt, voiceHealth, refreshToken } = useVoiceDevice();
   const [debugOpen, setDebugOpen] = useState(false);
 
   return (
