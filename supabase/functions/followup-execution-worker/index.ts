@@ -136,35 +136,52 @@ Deno.serve(async (req) => {
       ? pendingProbs.reduce((a: number, b: number) => a + b, 0) / pendingProbs.length
       : 0.35;
 
-    // ── Temporal Intelligence: fetch best_hour + best_day_of_week ──
+    // ── Temporal Intelligence: fetch best_hour + best_day_of_week + timezone ──
     const pendingStoreIds = [...new Set((allPending || []).map((t: any) => t.store_id).filter(Boolean))];
     const temporalMap: Record<string, { best_hour: number | null; best_day_of_week: number | null }> = {};
+    const timezoneMap: Record<string, string> = {};
+
     for (let i = 0; i < pendingStoreIds.length; i += 50) {
       const chunk = pendingStoreIds.slice(i, i + 50);
-      const { data: profiles } = await supabase
-        .from("store_answer_profile")
-        .select("store_id, best_hour, best_day_of_week")
-        .in("store_id", chunk);
+      const [{ data: profiles }, { data: stores }] = await Promise.all([
+        supabase.from("store_answer_profile").select("store_id, best_hour, best_day_of_week").in("store_id", chunk),
+        supabase.from("store_master").select("id, timezone").in("id", chunk),
+      ]);
       (profiles || []).forEach((p: any) => {
         temporalMap[p.store_id] = { best_hour: p.best_hour, best_day_of_week: p.best_day_of_week };
       });
+      (stores || []).forEach((s: any) => {
+        if (s.timezone) timezoneMap[s.id] = s.timezone;
+      });
     }
 
-    const currentHour = new Date().getUTCHours();
-    const currentDay = new Date().getUTCDay(); // 0=Sun
+    // Helper: get current hour & day in a store's local timezone
+    const getLocalTime = (tz: string | undefined) => {
+      const fallbackTz = tz || "America/New_York";
+      try {
+        const now = new Date();
+        const hour = parseInt(now.toLocaleString("en-US", { timeZone: fallbackTz, hour: "numeric", hour12: false }), 10);
+        const day = new Date(now.toLocaleString("en-US", { timeZone: fallbackTz })).getDay();
+        return { hour, day };
+      } catch {
+        return { hour: new Date().getUTCHours(), day: new Date().getUTCDay() };
+      }
+    };
 
-    // Compute temporal scores per target
+    // Compute temporal scores per target (timezone-aware + soft cap)
     const computeTemporalScore = (storeId: string) => {
       const t = temporalMap[storeId];
       if (!t) return { temporal_score: 1.0, day_score: 1.0 };
+      const { hour: localHour, day: localDay } = getLocalTime(timezoneMap[storeId]);
+
       let temporal_score = 1.0;
       if (t.best_hour != null) {
-        const diff = Math.abs(currentHour - t.best_hour);
+        const diff = Math.abs(localHour - t.best_hour);
         temporal_score = diff === 0 ? 1.25 : diff <= 1 ? 1.10 : 1.0;
       }
       let day_score = 1.0;
       if (t.best_day_of_week != null) {
-        day_score = currentDay === t.best_day_of_week ? 1.15 : 1.0;
+        day_score = localDay === t.best_day_of_week ? 1.15 : 1.0;
       }
       return { temporal_score, day_score };
     };
@@ -253,7 +270,9 @@ Deno.serve(async (req) => {
       const isExploration = uniqueExplore.some((e: any) => e.id === target.id);
       const { temporal_score, day_score } = computeTemporalScore(target.store_id);
       const prob = target.pickup_probability ?? 0.35;
-      const finalPriorityScore = prob * temporal_score * day_score;
+      // Soft cap: timing helps but cannot overpower probability
+      const temporalModifier = 1 + ((temporal_score * day_score - 1) * 0.6);
+      const finalPriorityScore = prob * temporalModifier;
 
       const queueMeta = {
         execution_run_id: run_id,
