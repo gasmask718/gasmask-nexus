@@ -24751,6 +24751,61 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_up_audit_log: {
+        Row: {
+          action_taken: string
+          details: Json | null
+          event_id: string | null
+          id: string
+          new_state: string | null
+          previous_state: string | null
+          processed_at: string
+          store_id: string | null
+        }
+        Insert: {
+          action_taken: string
+          details?: Json | null
+          event_id?: string | null
+          id?: string
+          new_state?: string | null
+          previous_state?: string | null
+          processed_at?: string
+          store_id?: string | null
+        }
+        Update: {
+          action_taken?: string
+          details?: Json | null
+          event_id?: string | null
+          id?: string
+          new_state?: string | null
+          previous_state?: string | null
+          processed_at?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_audit_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "follow_up_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_audit_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       follow_up_events: {
         Row: {
           answered_at: string | null
