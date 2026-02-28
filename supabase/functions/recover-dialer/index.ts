@@ -34,7 +34,6 @@ serve(async (req: Request) => {
       .from("outbound_call_queue")
       .update({
         status: "failed",
-        failure_reason: "manual_recovery",
         updated_at: now,
       })
       .eq("business_id", business_id)
