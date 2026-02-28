@@ -10,6 +10,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioDevice } from "@/hooks/useTwilioDevice";
 import { TwilioCredentialInstaller } from "./TwilioCredentialInstaller";
+import { VoiceInfrastructureAudit } from "./VoiceInfrastructureAudit";
 
 type GateStatus = "idle" | "running" | "pass" | "fail";
 
@@ -513,6 +514,9 @@ export function VoiceGoLiveReport() {
           </Button>
         </div>
       </div>
+
+      {/* Voice Infrastructure Discovery (read-only) */}
+      <VoiceInfrastructureAudit />
 
       {/* Credential installer */}
       <TwilioCredentialInstaller />
