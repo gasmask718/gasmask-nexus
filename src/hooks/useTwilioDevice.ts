@@ -8,7 +8,7 @@
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 
 // Re-export types from the provider
-export type { VoiceHealth, DeviceLifecycleState, VoiceDeviceContextValue } from "@/contexts/VoiceDeviceProvider";
+export type { VoiceHealth, DeviceLifecycleState, MicPermission, VoiceDeviceContextValue } from "@/contexts/VoiceDeviceProvider";
 
 export function useTwilioDevice() {
   return useVoiceDevice();

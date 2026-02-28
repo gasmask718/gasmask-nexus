@@ -14,6 +14,8 @@ export interface VoiceHealth {
 
 export type DeviceLifecycleState = "idle" | "token_fetching" | "creating" | "registering" | "registered" | "error";
 
+export type MicPermission = "granted" | "denied" | "prompt" | "checking";
+
 export interface VoiceDeviceContextValue {
   isReady: boolean;
   isConnecting: boolean;
@@ -25,11 +27,14 @@ export interface VoiceDeviceContextValue {
   deviceError: string | null;
   deviceState: DeviceLifecycleState;
   registeredAt: string | null;
+  micPermission: MicPermission;
   makeCall: (to: string, params?: Record<string, string>) => Promise<Call | null>;
   hangUp: () => void;
   toggleMute: () => void;
   destroy: () => void;
   refreshToken: () => Promise<void>;
+  reinitialize: () => Promise<void>;
+  requestMicPermission: () => Promise<void>;
 }
 
 // ── Context ──
@@ -57,10 +62,33 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   const [deviceError, setDeviceError] = useState<string | null>(null);
   const [deviceState, setDeviceState] = useState<DeviceLifecycleState>("idle");
   const [registeredAt, setRegisteredAt] = useState<string | null>(null);
+  const [micPermission, setMicPermission] = useState<MicPermission>("checking");
 
   const deviceRef = useRef<Device | null>(null);
   const initializingRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Microphone permission ──
+  const checkMicPermission = useCallback(async () => {
+    try {
+      const result = await navigator.permissions.query({ name: "microphone" as PermissionName });
+      setMicPermission(result.state as MicPermission);
+      result.onchange = () => setMicPermission(result.state as MicPermission);
+    } catch {
+      // Permissions API not supported, try getUserMedia
+      setMicPermission("prompt");
+    }
+  }, []);
+
+  const requestMicPermission = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+      setMicPermission("granted");
+    } catch {
+      setMicPermission("denied");
+    }
+  }, []);
 
   // ── Token fetch ──
 
@@ -294,6 +322,12 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
   }, []);
 
+  const reinitialize = useCallback(async () => {
+    destroy();
+    initializingRef.current = false;
+    await initDevice();
+  }, [destroy, initDevice]);
+
   const refreshToken = useCallback(async () => {
     const token = await fetchToken();
     if (token && deviceRef.current) {
@@ -304,6 +338,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   // ── Init on mount, cleanup on unmount ──
 
   useEffect(() => {
+    checkMicPermission();
     initDevice();
     return () => {
       if (deviceRef.current) {
@@ -326,11 +361,14 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     deviceError,
     deviceState,
     registeredAt,
+    micPermission,
     makeCall,
     hangUp,
     toggleMute,
     destroy,
     refreshToken,
+    reinitialize,
+    requestMicPermission,
   };
 
   return (
