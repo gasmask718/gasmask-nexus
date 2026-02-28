@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { ContactCadenceBoard, CadenceQuickStats } from '@/components/communication/cadence';
 import { useContactCadenceStats } from '@/hooks/useContactCadence';
 import type { CadenceFilter } from '@/hooks/useContactCadence';
+import { useStoreContactIntelligence } from '@/hooks/useStoreContactIntelligence';
 
 const REASON_OPTIONS = [
   { value: 'all', label: 'All Reasons' },
@@ -101,6 +102,14 @@ export default function FollowUpManagerPage() {
     // Remove duplicates
     return Array.from(new Map(all.map(item => [item.id, item])).values());
   }, [pendingFollowUps, dueTodayFollowUps, overdueFollowUps]);
+
+  // Fetch contact intelligence for all visible stores
+  const storeIds = useMemo(() => {
+    const ids = new Set<string>();
+    allFollowUps.forEach(f => { if (f.store_id) ids.add(f.store_id); });
+    return Array.from(ids);
+  }, [allFollowUps]);
+  const { data: intelligenceMap } = useStoreContactIntelligence(storeIds);
 
   const selectedContactIds = useMemo(
     () => new Set(executionTargets.filter(t => t.source === 'cadence' && t.contact_id).map(t => t.contact_id as string)),
@@ -266,6 +275,7 @@ export default function FollowUpManagerPage() {
                 onCancel={showActions ? handleCancel : undefined}
                 onReschedule={showActions ? handleReschedule : undefined}
                 isLoading={triggerFollowUp.isPending}
+                pickupProbability={fu.store_id ? intelligenceMap?.get(fu.store_id)?.pickup_probability ?? null : null}
               />
             </div>
           </div>
@@ -293,6 +303,7 @@ export default function FollowUpManagerPage() {
                 onCancel={handleCancel}
                 onReschedule={handleReschedule}
                 isLoading={triggerFollowUp.isPending}
+                pickupProbability={fu.store_id ? intelligenceMap?.get(fu.store_id)?.pickup_probability ?? null : null}
               />
             ))}
           </div>

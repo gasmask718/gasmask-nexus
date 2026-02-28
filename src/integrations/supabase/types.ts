@@ -47540,57 +47540,84 @@ export type Database = {
       store_answer_profile: {
         Row: {
           answer_rate: number | null
+          avg_call_duration: number | null
           best_day_of_week: number | null
           best_hour: number | null
           business_id: string | null
+          busy_rate: number | null
           day_distribution: Json | null
           hour_distribution: Json | null
           id: string
+          intelligence_calculated_at: string | null
           last_answer_at: string | null
           last_attempt_at: string | null
           lifecycle_stage: string | null
           lifetime_revenue: number | null
+          no_answer_rate: number | null
+          pickup_probability: number | null
           priority_score: number | null
           store_id: string | null
           total_answers: number | null
           total_attempts: number | null
+          total_busy: number | null
+          total_no_answer: number | null
+          total_voicemails: number | null
           updated_at: string | null
+          voicemail_rate: number | null
         }
         Insert: {
           answer_rate?: number | null
+          avg_call_duration?: number | null
           best_day_of_week?: number | null
           best_hour?: number | null
           business_id?: string | null
+          busy_rate?: number | null
           day_distribution?: Json | null
           hour_distribution?: Json | null
           id?: string
+          intelligence_calculated_at?: string | null
           last_answer_at?: string | null
           last_attempt_at?: string | null
           lifecycle_stage?: string | null
           lifetime_revenue?: number | null
+          no_answer_rate?: number | null
+          pickup_probability?: number | null
           priority_score?: number | null
           store_id?: string | null
           total_answers?: number | null
           total_attempts?: number | null
+          total_busy?: number | null
+          total_no_answer?: number | null
+          total_voicemails?: number | null
           updated_at?: string | null
+          voicemail_rate?: number | null
         }
         Update: {
           answer_rate?: number | null
+          avg_call_duration?: number | null
           best_day_of_week?: number | null
           best_hour?: number | null
           business_id?: string | null
+          busy_rate?: number | null
           day_distribution?: Json | null
           hour_distribution?: Json | null
           id?: string
+          intelligence_calculated_at?: string | null
           last_answer_at?: string | null
           last_attempt_at?: string | null
           lifecycle_stage?: string | null
           lifetime_revenue?: number | null
+          no_answer_rate?: number | null
+          pickup_probability?: number | null
           priority_score?: number | null
           store_id?: string | null
           total_answers?: number | null
           total_attempts?: number | null
+          total_busy?: number | null
+          total_no_answer?: number | null
+          total_voicemails?: number | null
           updated_at?: string | null
+          voicemail_rate?: number | null
         }
         Relationships: [
           {
@@ -64492,6 +64519,10 @@ export type Database = {
       quarantine_portal_device: {
         Args: { _device_id: string; _reason: string }
         Returns: boolean
+      }
+      recalculate_store_contact_intelligence: {
+        Args: { p_store_id: string }
+        Returns: undefined
       }
       recalculate_worker_skill_profiles: {
         Args: { p_for_date?: string; p_office_id: string }
