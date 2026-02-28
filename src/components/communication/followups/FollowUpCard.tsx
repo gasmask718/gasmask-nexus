@@ -1,10 +1,11 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Phone, MessageSquare, User, Clock, Play, CheckCircle, X, AlertTriangle, Building2, CalendarClock, Star } from 'lucide-react';
+import { Phone, MessageSquare, User, Clock, Play, CheckCircle, X, AlertTriangle, Building2, CalendarClock, Star, Signal } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { FollowUpReasonBadge } from './FollowUpReasonBadge';
 import type { FollowUpQueueItem } from '@/hooks/useFollowUps';
+import { type ContactScoreTier, getContactScoreTier } from '@/hooks/useStoreContactIntelligence';
 
 interface FollowUpCardProps {
   followUp: FollowUpQueueItem;
@@ -13,9 +14,10 @@ interface FollowUpCardProps {
   onCancel?: (id: string) => void;
   onReschedule?: (item: FollowUpQueueItem) => void;
   isLoading?: boolean;
+  pickupProbability?: number | null;
 }
 
-export function FollowUpCard({ followUp, onTrigger, onComplete, onCancel, onReschedule, isLoading }: FollowUpCardProps) {
+export function FollowUpCard({ followUp, onTrigger, onComplete, onCancel, onReschedule, isLoading, pickupProbability }: FollowUpCardProps) {
   const isOverdue = followUp.status === 'overdue' || (followUp.status === 'pending' && isPast(new Date(followUp.due_at)));
   
   const getActionIcon = () => {
@@ -79,6 +81,20 @@ export function FollowUpCard({ followUp, onTrigger, onComplete, onCancel, onResc
                 {getActionIcon()}
                 {getActionLabel()}
               </Badge>
+              {pickupProbability != null && (
+                <Badge
+                  variant="outline"
+                  className={`flex items-center gap-1 ${
+                    getContactScoreTier(pickupProbability) === 'high' ? 'border-green-500 text-green-600' :
+                    getContactScoreTier(pickupProbability) === 'medium' ? 'border-yellow-500 text-yellow-600' :
+                    getContactScoreTier(pickupProbability) === 'low' ? 'border-destructive text-destructive' :
+                    'border-muted text-muted-foreground'
+                  }`}
+                >
+                  <Signal className="h-3 w-3" />
+                  {Math.round(pickupProbability * 100)}%
+                </Badge>
+              )}
             </div>
 
             {/* Context Info */}
