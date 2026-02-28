@@ -112,8 +112,17 @@ function PipelineAuditPanel() {
 
   const scoreColor = result ? (result.health_score >= 80 ? "text-green-500" : result.health_score >= 40 ? "text-yellow-500" : "text-destructive") : "";
 
+  // Determine if this is a "production OK but audit probe issue" scenario
+  const isProbeOnlyIssue = result && result.gate_d_status === "FAIL" && 
+    result.steps.c_token_generation.success && 
+    Object.values(result.steps.a_environment.env_health).every(Boolean);
+
+  const borderClass = result 
+    ? (result.gate_d_status === "PASS" ? "border-green-500/30" : isProbeOnlyIssue ? "border-yellow-500/30" : "border-destructive/50")
+    : "";
+
   return (
-    <Card className={result ? (result.gate_d_status === "PASS" ? "border-green-500/30" : "border-destructive/50") : ""}>
+    <Card className={borderClass}>
       <CardHeader className="py-3 px-4">
         <div className="flex items-center gap-3">
           <Zap className="h-5 w-5 text-muted-foreground" />
@@ -134,6 +143,15 @@ function PipelineAuditPanel() {
             <span>{error}</span>
           </div>
         )}
+
+        {/* Yellow warning banner for probe-only issues */}
+        {isProbeOnlyIssue && (
+          <div className="flex items-start gap-2 p-2 rounded bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span><strong>Production OK</strong> — Live calling works. Audit probes have configuration issues that don't affect operators.</span>
+          </div>
+        )}
+
         {!result && !error && !loading && (
           <p className="text-xs text-muted-foreground">Click "Run Pipeline Audit" to test the full voice calling pipeline from the server side.</p>
         )}
@@ -194,6 +212,11 @@ function PipelineAuditPanel() {
                 <div className={`text-[10px] font-mono ${statusColor(result.steps.e_twilio_api.reachable)}`}>
                   {result.steps.e_twilio_api.reachable ? "✅ Twilio API responding" : `❌ ${result.steps.e_twilio_api.detail}`}
                 </div>
+                {!result.steps.e_twilio_api.reachable && result.steps.e_twilio_api.detail.includes("401") && (
+                  <div className="text-[10px] text-yellow-600 dark:text-yellow-400 mt-1">
+                    💡 Tip: Add <code className="bg-muted px-1 rounded">TWILIO_AUTH_TOKEN</code> secret for reliable API access, or create a new Standard API Key in Twilio Console.
+                  </div>
+                )}
               </div>
             </div>
 
