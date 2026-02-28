@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   CheckCircle2, XCircle, Loader2, Play, RefreshCw, ShieldCheck, Mic,
-  Phone, Radio, AlertTriangle, ChevronDown, ChevronUp, Activity,
+  Phone, Radio, AlertTriangle, ChevronDown, ChevronUp, Activity, Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioDevice } from "@/hooks/useTwilioDevice";
@@ -64,7 +64,157 @@ function GateCard({ label, icon, gate, children }: {
   );
 }
 
-// ── Pipeline Reachability Card (auto-ping) ──
+// ── Full Pipeline Audit Panel (server-side) ──
+interface AuditResult {
+  gate_d_status: string;
+  health_score: number;
+  steps: {
+    a_environment: { env_health: Record<string, boolean>; env_masked: Record<string, string> };
+    b_sid_validation: Record<string, { valid: boolean; detail: string }>;
+    c_token_generation: { success: boolean; error?: string };
+    d_function_reachability: Record<string, { status: string; code: number | null; detail: string }>;
+    e_twilio_api: { reachable: boolean; detail: string };
+  };
+  failures: string[];
+  recommendations: string[];
+  timestamp: string;
+}
+
+function statusColor(ok: boolean) {
+  return ok ? "text-green-500" : "text-destructive";
+}
+
+function PipelineAuditPanel() {
+  const [result, setResult] = useState<AuditResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const runAudit = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: invokeErr } = await supabase.functions.invoke("voice-pipeline-audit", { body: {} });
+      if (invokeErr) {
+        setError(invokeErr.message || String(invokeErr));
+        return;
+      }
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
+      setResult(data as AuditResult);
+    } catch (err) {
+      setError(String(err));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const scoreColor = result ? (result.health_score >= 80 ? "text-green-500" : result.health_score >= 40 ? "text-yellow-500" : "text-destructive") : "";
+
+  return (
+    <Card className={result ? (result.gate_d_status === "PASS" ? "border-green-500/30" : "border-destructive/50") : ""}>
+      <CardHeader className="py-3 px-4">
+        <div className="flex items-center gap-3">
+          <Zap className="h-5 w-5 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium flex-1">Voice Pipeline Audit (Server-Side)</CardTitle>
+          {result && (
+            <span className={`text-lg font-bold ${scoreColor}`}>{result.health_score}%</span>
+          )}
+          <Button size="sm" variant="outline" onClick={runAudit} disabled={loading} className="gap-1.5 text-xs h-7">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+            Run Pipeline Audit
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0 px-4 pb-3 space-y-3">
+        {error && (
+          <div className="flex items-start gap-2 p-2 rounded bg-destructive/10 text-destructive text-xs">
+            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+        {!result && !error && !loading && (
+          <p className="text-xs text-muted-foreground">Click "Run Pipeline Audit" to test the full voice calling pipeline from the server side.</p>
+        )}
+        {result && (
+          <>
+            {/* Step cards */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Environment */}
+              <div className="rounded border p-2 space-y-1">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" /> Environment
+                </div>
+                {Object.entries(result.steps.a_environment.env_health).map(([k, v]) => (
+                  <div key={k} className="text-[10px] font-mono flex justify-between">
+                    <span className="truncate">{k.replace("TWILIO_", "").replace("SUPABASE_", "SB_")}</span>
+                    <span className={statusColor(v)}>{v ? "✅" : "❌"}</span>
+                  </div>
+                ))}
+              </div>
+              {/* SID Validation */}
+              <div className="rounded border p-2 space-y-1">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <ShieldCheck className="h-3.5 w-3.5" /> SID Format
+                </div>
+                {Object.entries(result.steps.b_sid_validation).map(([k, v]) => (
+                  <div key={k} className="text-[10px] font-mono flex justify-between gap-1">
+                    <span className="truncate">{k.replace("TWILIO_", "")}</span>
+                    <span className={statusColor(v.valid)}>{v.valid ? "✅" : "❌"}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Token Gen */}
+              <div className="rounded border p-2 space-y-1">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <RefreshCw className="h-3.5 w-3.5" /> Token Authority
+                </div>
+                <div className={`text-[10px] font-mono ${statusColor(result.steps.c_token_generation.success)}`}>
+                  {result.steps.c_token_generation.success ? "✅ Token generated" : `❌ ${result.steps.c_token_generation.error || "Failed"}`}
+                </div>
+              </div>
+              {/* Function Reachability */}
+              <div className="rounded border p-2 space-y-1">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5" /> Edge Functions
+                </div>
+                {Object.entries(result.steps.d_function_reachability).map(([name, r]) => (
+                  <div key={name} className="text-[10px] font-mono flex justify-between gap-1">
+                    <span className="truncate">{name.replace("twilio-", "")}</span>
+                    <span className={statusColor(r.status === "OK")}>{r.status === "OK" ? "✅" : `❌ ${r.status}`}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Twilio API */}
+              <div className="rounded border p-2 space-y-1 col-span-2">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <Radio className="h-3.5 w-3.5" /> Twilio API
+                </div>
+                <div className={`text-[10px] font-mono ${statusColor(result.steps.e_twilio_api.reachable)}`}>
+                  {result.steps.e_twilio_api.reachable ? "✅ Twilio API responding" : `❌ ${result.steps.e_twilio_api.detail}`}
+                </div>
+              </div>
+            </div>
+
+            {/* Recommendations */}
+            {result.recommendations.length > 0 && (
+              <div className="space-y-1">
+                <div className="text-xs font-medium text-muted-foreground">Recommendations:</div>
+                {result.recommendations.map((r, i) => (
+                  <div key={i} className="text-xs bg-muted/50 rounded px-2 py-1 font-mono">{r}</div>
+                ))}
+              </div>
+            )}
+            <div className="text-[10px] text-muted-foreground">Audited at {result.timestamp}</div>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Always-on pipeline reachability (client-side pings) ──
 type FnStatus = "checking" | "reachable" | "auth_required" | "not_deployed" | "error";
 
 interface FnPing {
@@ -96,7 +246,6 @@ function PipelineReachabilityCard() {
             if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized")) {
               return { name, status: "auth_required", lastCheck: now, detail: msg };
             }
-            // Even if error, if we got a response the function is deployed
             return { name, status: "reachable", lastCheck: now, detail: `Response with error: ${msg}` };
           }
           return { name, status: "reachable", lastCheck: now, detail: data ? "OK" : "Empty response" };
@@ -145,7 +294,7 @@ function PipelineReachabilityCard() {
             <span className="text-muted-foreground">{p.status}</span>
           </div>
         ))}
-        <div className="text-[10px] text-muted-foreground mt-1">Auto-refreshes every 15s via supabase.functions.invoke()</div>
+        <div className="text-[10px] text-muted-foreground mt-1">Auto-refreshes every 15s</div>
       </CardContent>
     </Card>
   );
@@ -169,7 +318,6 @@ export function VoiceGoLiveReport() {
     setGateD(DEFAULT_GATE);
     setGateE(DEFAULT_GATE);
 
-    // ── GATE A: Secrets (via token endpoint health) ──
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
@@ -180,10 +328,7 @@ export function VoiceGoLiveReport() {
 
       setGateB({ ...DEFAULT_GATE, status: "running" });
 
-      // Use supabase.functions.invoke instead of raw fetch
-      const { data, error: invokeError } = await supabase.functions.invoke("twilio-voice-token", {
-        body: {},
-      });
+      const { data, error: invokeError } = await supabase.functions.invoke("twilio-voice-token", { body: {} });
 
       if (invokeError && !data) {
         setGateA({ status: "fail", evidence: [String(invokeError)], error: "Edge function unreachable or errored" });
@@ -192,7 +337,6 @@ export function VoiceGoLiveReport() {
         return;
       }
 
-      // Gate A: check health map
       if (data?.health) {
         const allOk = Object.values(data.health).every(Boolean);
         const evidence = Object.entries(data.health).map(([k, v]) => `${k}: ${v ? "✅" : "❌"}`);
@@ -215,7 +359,7 @@ export function VoiceGoLiveReport() {
         setGateA({ status: "pass", evidence: ["Health map not returned but token succeeded"] });
       }
 
-      // ── GATE B: Token validation ──
+      // Gate B
       const token = data?.token;
       if (!token || token.length < 200 || token.split(".").length !== 3) {
         setGateB({ status: "fail", evidence: [`Token length: ${token?.length || 0}`, `Segments: ${token?.split(".").length || 0}`], error: "Invalid JWT format" });
@@ -249,7 +393,7 @@ export function VoiceGoLiveReport() {
         return;
       }
 
-      // ── GATE C: Device Registration ──
+      // Gate C
       setGateC({ ...DEFAULT_GATE, status: "running" });
       await new Promise(r => setTimeout(r, 2000));
       setGateC({
@@ -262,23 +406,18 @@ export function VoiceGoLiveReport() {
         error: device.isReady ? undefined : device.deviceError || "Device not registered — check browser microphone permissions",
       });
 
-      // ── GATE D: Pipeline check via invoke ──
+      // Gate D
       setGateD({ ...DEFAULT_GATE, status: "running" });
       const fnNames = ["twilio-outbound-call", "twilio-voice-token", "health-check"];
       const pipelineChecks: string[] = [];
-
       await Promise.all(fnNames.map(async (name) => {
         try {
-          const { error } = await supabase.functions.invoke(name, {
-            method: "POST",
-            body: name === "health-check" ? undefined : {},
-          });
+          const { error } = await supabase.functions.invoke(name, { method: "POST", body: name === "health-check" ? undefined : {} });
           if (error) {
             const msg = error.message || String(error);
             if (msg.includes("404") || msg.includes("not found")) {
               pipelineChecks.push(`${name}: ❌ not deployed`);
             } else {
-              // Got a response (even error means function IS deployed and reachable)
               pipelineChecks.push(`${name}: ✅ reachable`);
             }
           } else {
@@ -288,7 +427,6 @@ export function VoiceGoLiveReport() {
           pipelineChecks.push(`${name}: ❌ unreachable (network error)`);
         }
       }));
-
       const allReachable = pipelineChecks.every(c => c.includes("✅"));
       setGateD({
         status: allReachable ? "pass" : "fail",
@@ -296,7 +434,7 @@ export function VoiceGoLiveReport() {
         error: allReachable ? undefined : "Some edge functions unreachable — check deployment",
       });
 
-      // ── GATE E: Test Call readiness ──
+      // Gate E
       setGateE({
         status: device.isReady ? "pass" : "fail",
         evidence: [device.isReady ? "Device ready — enter a test number and click Test Call" : "Device not ready — cannot place test calls"],
@@ -352,7 +490,10 @@ export function VoiceGoLiveReport() {
         </div>
       </div>
 
-      {/* Always-on pipeline monitor */}
+      {/* Server-side pipeline audit */}
+      <PipelineAuditPanel />
+
+      {/* Always-on client-side monitor */}
       <PipelineReachabilityCard />
 
       <div className="space-y-2">
