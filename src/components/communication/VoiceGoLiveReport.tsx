@@ -8,7 +8,7 @@ import {
   Phone, Radio, AlertTriangle, ChevronDown, ChevronUp, Activity, Zap,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useTwilioDevice } from "@/hooks/useTwilioDevice";
+import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { TwilioCredentialInstaller } from "./TwilioCredentialInstaller";
 import { VoiceInfrastructureAudit } from "./VoiceInfrastructureAudit";
 import { VoiceDeviceReadiness } from "./VoiceDeviceReadiness";
@@ -327,7 +327,7 @@ function PipelineReachabilityCard() {
 }
 
 export function VoiceGoLiveReport() {
-  const device = useTwilioDevice();
+  const device = useVoiceDevice();
   const [gateA, setGateA] = useState<GateResult>(DEFAULT_GATE);
   const [gateB, setGateB] = useState<GateResult>(DEFAULT_GATE);
   const [gateC, setGateC] = useState<GateResult>(DEFAULT_GATE);

@@ -18,6 +18,8 @@ export type MicPermission = "granted" | "denied" | "prompt" | "checking";
 
 export interface VoiceDeviceContextValue {
   isReady: boolean;
+  canMakeCalls: boolean;
+  disabledReason: string | null;
   isConnecting: boolean;
   activeCall: Call | null;
   callStatus: string;
@@ -256,7 +258,11 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       await device.register();
       deviceRef.current = device;
 
-      // Debug access
+      // Debug access + duplicate assertion
+      if ((window as any).__VOICE_DEVICE_CREATED) {
+        console.warn("⚠️ Duplicate Voice Device detected — only one should exist");
+      }
+      (window as any).__VOICE_DEVICE_CREATED = true;
       (window as any).voiceDevice = device;
     } catch (err) {
       console.error("❌ Device init error:", err);
@@ -350,8 +356,17 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     };
   }, [initDevice]);
 
+  const canMakeCalls = deviceState === "registered" && micPermission === "granted";
+  const disabledReason = deviceState !== "registered"
+    ? "Voice device not registered"
+    : micPermission !== "granted"
+      ? "Microphone permission required"
+      : null;
+
   const value: VoiceDeviceContextValue = {
     isReady,
+    canMakeCalls,
+    disabledReason,
     isConnecting,
     activeCall,
     callStatus,

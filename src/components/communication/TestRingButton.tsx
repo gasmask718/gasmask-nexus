@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PhoneCall, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { TestRingResultModal, type TestRingResult } from "./TestRingResultModal";
-import { useTwilioDevice } from "@/hooks/useTwilioDevice";
+import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 
 interface TestRingButtonProps {
   routeId?: string;
@@ -30,27 +30,19 @@ export function TestRingButton({
 }: TestRingButtonProps) {
   const [result, setResult] = useState<TestRingResult | null>(null);
   const [showResult, setShowResult] = useState(false);
-  const { isReady: deviceReady } = useTwilioDevice();
+  const { canMakeCalls, disabledReason } = useVoiceDevice();
 
   const testRingMutation = useMutation({
     mutationFn: async () => {
-      // Use supabase.functions.invoke for better reliability
       const { data, error } = await supabase.functions.invoke('test-ring', {
-        body: {
-          routeId,
-          businessId,
-          phoneNumberId,
-          userId,
-        },
+        body: { routeId, businessId, phoneNumberId, userId },
       });
 
       if (error) {
-        // Handle edge function errors with detailed info
         console.error("Test Ring error details:", error);
         throw new Error(error.message || "Test Ring failed");
       }
 
-      // Check if the response indicates an application-level error
       if (data?.error) {
         throw new Error(data.error);
       }
@@ -71,19 +63,15 @@ export function TestRingButton({
     },
   });
 
-  const handleClick = () => {
-    testRingMutation.mutate();
-  };
-
   return (
     <>
       <Button
         variant={variant}
         size={size}
-        onClick={handleClick}
-        disabled={testRingMutation.isPending || !deviceReady}
+        onClick={() => testRingMutation.mutate()}
+        disabled={testRingMutation.isPending || !canMakeCalls}
         className={className}
-        title={deviceReady ? "Place a real test call to verify routing" : "Voice device not registered — waiting for Twilio Device"}
+        title={canMakeCalls ? "Place a real test call to verify routing" : disabledReason ?? "Voice not ready"}
       >
         {testRingMutation.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />

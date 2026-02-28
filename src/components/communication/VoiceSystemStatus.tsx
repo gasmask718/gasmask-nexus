@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Mic, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
-import { useTwilioDevice, VoiceHealth } from "@/hooks/useTwilioDevice";
+import { useVoiceDevice, VoiceHealth } from "@/contexts/VoiceDeviceProvider";
 
 function HealthRow({ label, ok }: { label: string; ok?: boolean }) {
   if (ok === undefined) return null;
@@ -19,7 +19,7 @@ function HealthRow({ label, ok }: { label: string; ok?: boolean }) {
 }
 
 export function VoiceSystemStatus() {
-  const { isReady, voiceHealth, tokenExpiresAt, deviceError, refreshToken } = useTwilioDevice();
+  const { isReady, voiceHealth, tokenExpiresAt, deviceError, refreshToken } = useVoiceDevice();
 
   const allHealthy = voiceHealth && Object.values(voiceHealth).every(Boolean);
   const hasError = deviceError || (voiceHealth && !allHealthy);
