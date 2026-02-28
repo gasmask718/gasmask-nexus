@@ -25,10 +25,21 @@ serve(async (req: Request) => {
     // Twilio sends form-encoded POST data
     const formData = await req.formData();
     const to = formData.get("To")?.toString() || "";
-    const callerId = formData.get("From")?.toString() || 
-                     Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+    const rawFrom = formData.get("From")?.toString() || "";
+    const isTestCall = formData.get("test_call")?.toString() === "true";
+    
+    // For callerId: ALWAYS use TWILIO_PHONE_NUMBER for PSTN calls.
+    // The browser SDK sends the client identity as "From", which is NOT
+    // a valid callerId for outbound PSTN <Dial>.
+    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+    const callerId = twilioPhoneNumber || rawFrom;
 
-    console.log(`📞 TwiML request: To=${to}, CallerId=${callerId}`);
+    console.log(JSON.stringify({
+      mode: isTestCall ? "PSTN_TEST" : "ROUTED",
+      to,
+      callerId,
+      rawFrom,
+    }));
 
     if (!to) {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -47,7 +58,25 @@ serve(async (req: Request) => {
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
     const statusCallbackUrl = `https://${projectId}.supabase.co/functions/v1/twilio-call-status`;
 
-    // Return TwiML that dials the destination number
+    // ── TEST CALL: Direct PSTN dial, no AI/agent routing ──
+    if (isTestCall) {
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${callerId}" record="record-from-answer-dual"
+        statusCallbackEvent="initiated ringing answered completed"
+        statusCallback="${statusCallbackUrl}"
+        statusCallbackMethod="POST">
+    <Number>${to}</Number>
+  </Dial>
+</Response>`;
+      console.log(`✅ PSTN TEST TwiML generated for call to ${to}`);
+      return new Response(twiml, {
+        status: 200,
+        headers: { "Content-Type": "text/xml", ...corsHeaders },
+      });
+    }
+
+    // ── NORMAL ROUTING ──
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="${callerId}" record="record-from-answer-dual"
