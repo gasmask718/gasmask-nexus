@@ -98,6 +98,17 @@ Deno.serve(async (req) => {
 
         // Hang up the call via Twilio API
         await hangupCall(callSid);
+
+        // Update store contact memory for voicemail
+        if (queueItem.store_id) {
+          await supabase
+            .from("store_master")
+            .update({ last_contacted_at: new Date().toISOString() })
+            .eq("id", queueItem.store_id);
+
+          // Auto follow-up for voicemail (48h)
+          await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
+        }
       }
 
       return new Response(
@@ -342,6 +353,39 @@ Deno.serve(async (req) => {
         break;
     }
 
+    // ── PART 1: Update store contact memory ──
+    const terminalForContact = ["completed", "busy", "no-answer", "failed", "canceled"];
+    if (queueItem?.store_id && terminalForContact.includes(callStatus)) {
+      const { error: storeErr } = await supabase
+        .from("store_master")
+        .update({ last_contacted_at: new Date().toISOString() })
+        .eq("id", queueItem.store_id);
+      if (storeErr) console.error("store_master update error:", storeErr);
+    }
+
+    // ── PART 2: Auto follow-up for retriable outcomes ──
+    const followUpDelays: Record<string, number> = {
+      busy: 2 * 60,        // 2 hours in minutes
+      "no-answer": 24 * 60, // 24 hours
+      voicemail: 48 * 60,   // 48 hours (handled in AMD section too)
+    };
+    const outcomeForFollowUp = callStatus === "no-answer" ? "no-answer" : callStatus;
+    const delayMinutes = followUpDelays[outcomeForFollowUp];
+
+    if (queueItem?.store_id && delayMinutes) {
+      await createAutoFollowUp(supabase, queueItem, callSid, outcomeForFollowUp, delayMinutes);
+    }
+
+    const storeUpdated = !!(queueItem?.store_id && terminalForContact.includes(callStatus));
+    const followUpCreated = !!(queueItem?.store_id && delayMinutes);
+    console.log(JSON.stringify({
+      event: "CALL_OUTCOME_PROCESSED",
+      call_sid: callSid,
+      outcome: callStatus,
+      follow_up_created: followUpCreated,
+      store_updated: storeUpdated,
+    }));
+
     return new Response(
       JSON.stringify({ ok: true, call_sid: callSid, status: callStatus }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -354,6 +398,63 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// ── Helper: Create auto follow-up with dedup ──
+async function createAutoFollowUp(
+  supabase: any,
+  queueItem: any,
+  callSid: string,
+  reason: string,
+  delayMinutes: number,
+) {
+  try {
+    const followUpAt = new Date(Date.now() + delayMinutes * 60 * 1000).toISOString();
+    const windowStart = new Date().toISOString();
+    const windowEnd = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+    // Dedup: skip if a pending follow-up already exists for this store within 24h
+    const { data: existing } = await supabase
+      .from("follow_up_queue")
+      .select("id")
+      .eq("store_id", queueItem.store_id)
+      .eq("status", "pending")
+      .gte("due_at", windowStart)
+      .lte("due_at", windowEnd)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      console.log(`⏭ Skipped duplicate follow-up for store ${queueItem.store_id}`);
+      return;
+    }
+
+    const priorityMap: Record<string, number> = { busy: 2, "no-answer": 3, voicemail: 4 };
+
+    const { error } = await supabase.from("follow_up_queue").insert({
+      store_id: queueItem.store_id,
+      business_id: queueItem.business_id,
+      reason: reason.replace("-", "_"),
+      status: "pending",
+      due_at: followUpAt,
+      priority: priorityMap[reason] || 3,
+      recommended_action: "ai_call",
+      context: {
+        source: "call_outcome_engine",
+        call_sid: callSid,
+        original_outcome: reason,
+        queue_item_id: queueItem.id,
+      },
+    });
+
+    if (error) {
+      console.error("follow_up_queue insert error:", error);
+    } else {
+      console.log(`✅ Auto follow-up created for store ${queueItem.store_id} (${reason}) at ${followUpAt}`);
+    }
+  } catch (e) {
+    console.error("createAutoFollowUp error:", e);
+  }
+}
 
 // ── Helper: Log attempt outcome ──
 async function logAttemptOutcome(
