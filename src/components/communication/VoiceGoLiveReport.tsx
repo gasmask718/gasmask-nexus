@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   CheckCircle2, XCircle, Loader2, Play, RefreshCw, ShieldCheck, Mic,
-  Phone, Radio, AlertTriangle, ChevronDown, ChevronUp,
+  Phone, Radio, AlertTriangle, ChevronDown, ChevronUp, Activity,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTwilioDevice } from "@/hooks/useTwilioDevice";
@@ -64,6 +64,93 @@ function GateCard({ label, icon, gate, children }: {
   );
 }
 
+// ── Pipeline Reachability Card (auto-ping) ──
+type FnStatus = "checking" | "reachable" | "auth_required" | "not_deployed" | "error";
+
+interface FnPing {
+  name: string;
+  status: FnStatus;
+  lastCheck: string | null;
+  detail?: string;
+}
+
+function PipelineReachabilityCard() {
+  const FUNCTIONS = ["twilio-voice-token", "twilio-outbound-call", "health-check"];
+  const [pings, setPings] = useState<FnPing[]>(FUNCTIONS.map(name => ({ name, status: "checking", lastCheck: null })));
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const checkAll = useCallback(async () => {
+    const results = await Promise.all(
+      FUNCTIONS.map(async (name): Promise<FnPing> => {
+        try {
+          const { data, error } = await supabase.functions.invoke(name, {
+            method: "POST",
+            body: name === "health-check" ? undefined : {},
+          });
+          const now = new Date().toISOString();
+          if (error) {
+            const msg = error.message || String(error);
+            if (msg.includes("404") || msg.includes("not found")) {
+              return { name, status: "not_deployed", lastCheck: now, detail: msg };
+            }
+            if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized")) {
+              return { name, status: "auth_required", lastCheck: now, detail: msg };
+            }
+            // Even if error, if we got a response the function is deployed
+            return { name, status: "reachable", lastCheck: now, detail: `Response with error: ${msg}` };
+          }
+          return { name, status: "reachable", lastCheck: now, detail: data ? "OK" : "Empty response" };
+        } catch (err) {
+          return { name, status: "error", lastCheck: new Date().toISOString(), detail: String(err) };
+        }
+      })
+    );
+    setPings(results);
+  }, []);
+
+  useEffect(() => {
+    checkAll();
+    intervalRef.current = setInterval(checkAll, 15000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [checkAll]);
+
+  const statusIcon = (s: FnStatus) => {
+    switch (s) {
+      case "reachable": return "🟢";
+      case "auth_required": return "🟡";
+      case "not_deployed": return "🔴";
+      case "error": return "🔴";
+      default: return "⏳";
+    }
+  };
+
+  const allGreen = pings.every(p => p.status === "reachable");
+
+  return (
+    <Card className={allGreen ? "border-green-500/30" : "border-destructive/50"}>
+      <CardHeader className="py-3 px-4">
+        <div className="flex items-center gap-3">
+          <Activity className="h-5 w-5 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium flex-1">Pipeline Reachability (Live)</CardTitle>
+          <Badge variant={allGreen ? "outline" : "destructive"} className="text-xs">
+            {allGreen ? "ALL GREEN" : "ISSUES"}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0 px-4 pb-3 space-y-1.5">
+        {pings.map(p => (
+          <div key={p.name} className="flex items-center gap-2 text-xs font-mono bg-muted/50 rounded px-2 py-1.5">
+            <span>{statusIcon(p.status)}</span>
+            <span className="flex-1">{p.name}</span>
+            <span className="text-muted-foreground">{p.status}</span>
+          </div>
+        ))}
+        <div className="text-[10px] text-muted-foreground mt-1">Auto-refreshes every 15s via supabase.functions.invoke()</div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export function VoiceGoLiveReport() {
   const device = useTwilioDevice();
   const [gateA, setGateA] = useState<GateResult>(DEFAULT_GATE);
@@ -93,22 +180,20 @@ export function VoiceGoLiveReport() {
 
       setGateB({ ...DEFAULT_GATE, status: "running" });
 
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twilio-voice-token`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({}),
-        },
-      );
+      // Use supabase.functions.invoke instead of raw fetch
+      const { data, error: invokeError } = await supabase.functions.invoke("twilio-voice-token", {
+        body: {},
+      });
 
-      const data = await res.json();
+      if (invokeError && !data) {
+        setGateA({ status: "fail", evidence: [String(invokeError)], error: "Edge function unreachable or errored" });
+        setGateB({ status: "fail", evidence: [], error: "Blocked by Gate A failure" });
+        setRunning(false);
+        return;
+      }
 
       // Gate A: check health map
-      if (data.health) {
+      if (data?.health) {
         const allOk = Object.values(data.health).every(Boolean);
         const evidence = Object.entries(data.health).map(([k, v]) => `${k}: ${v ? "✅" : "❌"}`);
         setGateA({
@@ -121,8 +206,8 @@ export function VoiceGoLiveReport() {
           setRunning(false);
           return;
         }
-      } else if (!res.ok) {
-        setGateA({ status: "fail", evidence: [JSON.stringify(data)], error: data.error || "Token endpoint error" });
+      } else if (invokeError) {
+        setGateA({ status: "fail", evidence: [JSON.stringify(data)], error: data?.error || "Token endpoint error" });
         setGateB({ status: "fail", evidence: [], error: "Blocked by Gate A failure" });
         setRunning(false);
         return;
@@ -131,14 +216,13 @@ export function VoiceGoLiveReport() {
       }
 
       // ── GATE B: Token validation ──
-      const token = data.token;
+      const token = data?.token;
       if (!token || token.length < 200 || token.split(".").length !== 3) {
         setGateB({ status: "fail", evidence: [`Token length: ${token?.length || 0}`, `Segments: ${token?.split(".").length || 0}`], error: "Invalid JWT format" });
         setRunning(false);
         return;
       }
 
-      // Decode payload
       try {
         const payloadB64 = token.split(".")[1];
         const payload = JSON.parse(atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/")));
@@ -167,7 +251,6 @@ export function VoiceGoLiveReport() {
 
       // ── GATE C: Device Registration ──
       setGateC({ ...DEFAULT_GATE, status: "running" });
-      // Give device a moment to register if not already
       await new Promise(r => setTimeout(r, 2000));
       setGateC({
         status: device.isReady ? "pass" : "fail",
@@ -179,22 +262,39 @@ export function VoiceGoLiveReport() {
         error: device.isReady ? undefined : device.deviceError || "Device not registered — check browser microphone permissions",
       });
 
-      // ── GATE D: Pipeline check (edge functions exist) ──
+      // ── GATE D: Pipeline check via invoke ──
       setGateD({ ...DEFAULT_GATE, status: "running" });
+      const fnNames = ["twilio-outbound-call", "twilio-voice-token", "health-check"];
       const pipelineChecks: string[] = [];
-      // Just verify the outbound call function responds to OPTIONS
-      try {
-        const outboundRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twilio-outbound-call`, { method: "OPTIONS" });
-        pipelineChecks.push(`twilio-outbound-call: ${outboundRes.ok ? "✅ reachable" : "❌ " + outboundRes.status}`);
-      } catch { pipelineChecks.push("twilio-outbound-call: ❌ unreachable"); }
 
-      try {
-        const tokenRes = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twilio-voice-token`, { method: "OPTIONS" });
-        pipelineChecks.push(`twilio-voice-token: ${tokenRes.ok ? "✅ reachable" : "❌ " + tokenRes.status}`);
-      } catch { pipelineChecks.push("twilio-voice-token: ❌ unreachable"); }
+      await Promise.all(fnNames.map(async (name) => {
+        try {
+          const { error } = await supabase.functions.invoke(name, {
+            method: "POST",
+            body: name === "health-check" ? undefined : {},
+          });
+          if (error) {
+            const msg = error.message || String(error);
+            if (msg.includes("404") || msg.includes("not found")) {
+              pipelineChecks.push(`${name}: ❌ not deployed`);
+            } else {
+              // Got a response (even error means function IS deployed and reachable)
+              pipelineChecks.push(`${name}: ✅ reachable`);
+            }
+          } else {
+            pipelineChecks.push(`${name}: ✅ reachable`);
+          }
+        } catch {
+          pipelineChecks.push(`${name}: ❌ unreachable (network error)`);
+        }
+      }));
 
       const allReachable = pipelineChecks.every(c => c.includes("✅"));
-      setGateD({ status: allReachable ? "pass" : "fail", evidence: pipelineChecks, error: allReachable ? undefined : "Some edge functions unreachable" });
+      setGateD({
+        status: allReachable ? "pass" : "fail",
+        evidence: [...pipelineChecks, "Method: supabase.functions.invoke()"],
+        error: allReachable ? undefined : "Some edge functions unreachable — check deployment",
+      });
 
       // ── GATE E: Test Call readiness ──
       setGateE({
@@ -219,7 +319,6 @@ export function VoiceGoLiveReport() {
         status: "pass",
         evidence: [...prev.evidence, `Test call initiated at ${new Date().toISOString()}`],
       }));
-      // Auto hang up after 10s for test
       setTimeout(() => device.hangUp(), 10000);
     } else {
       setGateE(prev => ({
@@ -252,6 +351,9 @@ export function VoiceGoLiveReport() {
           </Button>
         </div>
       </div>
+
+      {/* Always-on pipeline monitor */}
+      <PipelineReachabilityCard />
 
       <div className="space-y-2">
         <GateCard label="Gate A — Secrets & Credentials" icon={<ShieldCheck className="h-4 w-4" />} gate={gateA} />

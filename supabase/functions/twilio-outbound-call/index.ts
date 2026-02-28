@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  console.log("FUNCTION ONLINE:", { name: "twilio-outbound-call", project: Deno.env.get("SUPABASE_URL"), time: new Date().toISOString() });
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

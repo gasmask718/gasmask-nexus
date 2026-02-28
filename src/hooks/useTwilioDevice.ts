@@ -48,31 +48,21 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
         return null;
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/twilio-voice-token`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({}),
-        },
-      );
+      const { data, error: invokeError } = await supabase.functions.invoke("twilio-voice-token", {
+        body: {},
+      });
 
-      if (!response.ok) {
-        const err = await response.json();
-        console.error("❌ Voice token error:", err);
-        if (err.details) console.error("🔑 Credential issues:", err.details);
-        if (err.hint) console.warn("💡", err.hint);
-        if (err.health) setVoiceHealth(err.health);
-        setDeviceError(err.code === "VOICE_CONFIG_INVALID"
+      if (invokeError || !data) {
+        console.error("❌ Voice token error:", invokeError);
+        const errData = data || {};
+        if (errData.details) console.error("🔑 Credential issues:", errData.details);
+        if (errData.hint) console.warn("💡", errData.hint);
+        if (errData.health) setVoiceHealth(errData.health);
+        setDeviceError(errData.code === "VOICE_CONFIG_INVALID"
           ? "Voice credentials misconfigured"
-          : err.error || "Token fetch failed");
+          : errData.error || invokeError?.message || "Token fetch failed");
         return null;
       }
-
-      const data = await response.json();
       const { token, health, expires_at } = data;
 
       // Pre-flight: token must be a real JWT (3 segments, > 200 chars)
