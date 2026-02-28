@@ -123,12 +123,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Fetch wave of pending targets ──
+    // ── Fetch wave of pending targets — intelligence-ordered ──
+    // Order by pickup_probability DESC so high-probability stores dial first
     const { data: targets, error: tErr } = await supabase
       .from("follow_up_execution_targets")
       .select("*")
       .eq("run_id", run_id)
       .eq("status", "pending")
+      .order("pickup_probability", { ascending: false, nullsFirst: false })
       .limit(toQueueThisWave);
 
     if (tErr || !targets) {
@@ -172,15 +174,19 @@ Deno.serve(async (req) => {
         route_mode: run.mode,
       };
 
+      // Adaptive priority: high-probability stores get higher priority (lower number)
+      const prob = target.pickup_probability ?? 0.35;
+      const adaptivePriority = prob > 0.6 ? 3 : prob > 0.3 ? 5 : 7;
+
       const { error: qErr } = await supabase.from("outbound_call_queue").insert({
         business_id: run.business_id,
         phone_number: target.resolved_phone,
         store_id: target.store_id,
         status: "queued",
-        priority: 5,
+        priority: adaptivePriority,
         contact_name: storeNameMap[target.store_id] || null,
         campaign_id: null,
-        metadata: queueMeta,
+        metadata: { ...queueMeta, pickup_probability: prob },
       });
 
       // Create live_calls entry for observability
@@ -215,6 +221,11 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Compute wave intelligence diagnostics ──
+    const waveProbs = targets.map(t => t.pickup_probability ?? 0.35);
+    const avgProbability = waveProbs.length > 0 ? waveProbs.reduce((a, b) => a + b, 0) / waveProbs.length : 0;
+    const predictedConnections = Math.round(queuedCount * avgProbability);
+
     // ── Update run counters + flow state notes ──
     const newQueued = (run.queued_targets || 0) + queuedCount;
     const newFailed = (run.failed_targets || 0) + failedCount;
@@ -234,6 +245,9 @@ Deno.serve(async (req) => {
           wave_size: waveSize,
           last_wave_queued: queuedCount,
           last_wave_failed: failedCount,
+          smart_dial: true,
+          avg_pickup_probability: Math.round(avgProbability * 100),
+          predicted_connections: predictedConnections,
         }),
       })
       .eq("id", run_id);

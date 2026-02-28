@@ -24944,6 +24944,7 @@ export type Database = {
           created_at: string
           id: string
           last_error: string | null
+          pickup_probability: number | null
           resolved_phone: string | null
           run_id: string
           status: string
@@ -24955,6 +24956,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_error?: string | null
+          pickup_probability?: number | null
           resolved_phone?: string | null
           run_id: string
           status?: string
@@ -24966,6 +24968,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_error?: string | null
+          pickup_probability?: number | null
           resolved_phone?: string | null
           run_id?: string
           status?: string
