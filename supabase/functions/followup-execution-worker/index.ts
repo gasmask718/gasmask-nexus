@@ -123,15 +123,46 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Fetch wave of pending targets — intelligence-ordered ──
-    // Order by pickup_probability DESC so high-probability stores dial first
-    const { data: targets, error: tErr } = await supabase
+    // ── Adaptive Exploration: 85% exploitation, 15% exploration ──
+    const EXPLORATION_RATIO = 0.15;
+    const exploitCount = Math.max(1, Math.ceil(toQueueThisWave * (1 - EXPLORATION_RATIO)));
+    const exploreCount = Math.max(0, toQueueThisWave - exploitCount);
+
+    // Exploitation: high-confidence targets ordered by probability DESC
+    const { data: exploitTargets, error: tErr1 } = await supabase
       .from("follow_up_execution_targets")
       .select("*")
       .eq("run_id", run_id)
       .eq("status", "pending")
+      .or("pickup_probability.gte.0.35,pickup_probability.is.null")
       .order("pickup_probability", { ascending: false, nullsFirst: false })
-      .limit(toQueueThisWave);
+      .limit(exploitCount);
+
+    // Exploration: low-confidence targets, random sample
+    let exploreTargets: any[] = [];
+    if (exploreCount > 0) {
+      const { data: pool } = await supabase
+        .from("follow_up_execution_targets")
+        .select("*")
+        .eq("run_id", run_id)
+        .eq("status", "pending")
+        .lt("pickup_probability", 0.35)
+        .limit(exploreCount * 3); // oversample then shuffle
+      if (pool && pool.length > 0) {
+        // Fisher-Yates shuffle for true random sampling
+        for (let i = pool.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        exploreTargets = pool.slice(0, exploreCount);
+      }
+    }
+
+    // Deduplicate (exploration pool might overlap if NULL probability)
+    const seenIds = new Set((exploitTargets || []).map((t: any) => t.id));
+    const uniqueExplore = exploreTargets.filter((t: any) => !seenIds.has(t.id));
+    const targets = [...(exploitTargets || []), ...uniqueExplore];
+    const tErr = tErr1;
 
     if (tErr || !targets) {
       return new Response(
@@ -166,12 +197,15 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      const isExploration = uniqueExplore.some((e: any) => e.id === target.id);
+
       const queueMeta = {
         execution_run_id: run_id,
         execution_target_id: target.id,
         source_reason: "followup_execution",
         voice_engine: run.voice_engine,
         route_mode: run.mode,
+        exploration_call: isExploration,
       };
 
       // Adaptive priority: high-probability stores get higher priority (lower number)
@@ -225,6 +259,9 @@ Deno.serve(async (req) => {
     const waveProbs = targets.map(t => t.pickup_probability ?? 0.35);
     const avgProbability = waveProbs.length > 0 ? waveProbs.reduce((a, b) => a + b, 0) / waveProbs.length : 0;
     const predictedConnections = Math.round(queuedCount * avgProbability);
+    const exploitationCalls = targets.length - uniqueExplore.length;
+    const explorationCalls = uniqueExplore.length;
+    const learningRate = targets.length > 0 ? Math.round((explorationCalls / targets.length) * 100) : 0;
 
     // ── Update run counters + flow state notes ──
     const newQueued = (run.queued_targets || 0) + queuedCount;
@@ -248,6 +285,9 @@ Deno.serve(async (req) => {
           smart_dial: true,
           avg_pickup_probability: Math.round(avgProbability * 100),
           predicted_connections: predictedConnections,
+          exploitation_calls: exploitationCalls,
+          exploration_calls: explorationCalls,
+          learning_rate: learningRate,
         }),
       })
       .eq("id", run_id);

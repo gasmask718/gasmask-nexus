@@ -25,6 +25,9 @@ export interface FlowState {
   smart_dial?: boolean;
   avg_pickup_probability?: number;
   predicted_connections?: number;
+  exploitation_calls?: number;
+  exploration_calls?: number;
+  learning_rate?: number;
 }
 
 interface RunProgress {
@@ -57,6 +60,9 @@ function parseFlowState(notes: string | null): FlowState {
       smart_dial: parsed.smart_dial,
       avg_pickup_probability: parsed.avg_pickup_probability,
       predicted_connections: parsed.predicted_connections,
+      exploitation_calls: parsed.exploitation_calls,
+      exploration_calls: parsed.exploration_calls,
+      learning_rate: parsed.learning_rate,
     };
   } catch {
     // Legacy string notes
