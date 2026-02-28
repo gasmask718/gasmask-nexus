@@ -109,8 +109,8 @@ Deno.serve(async (req) => {
           // Auto follow-up for voicemail (48h)
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
 
-          // Emit outcome event for voicemail
-          await supabase.from("follow_up_events").insert({
+          // Emit outcome event for voicemail (idempotent via unique constraint)
+          const { error: vmEventErr } = await supabase.from("follow_up_events").insert({
             store_id: queueItem.store_id,
             business_id: queueItem.business_id,
             call_sid: callSid,
@@ -119,6 +119,9 @@ Deno.serve(async (req) => {
             source: "dialer",
             queue_item_id: queueItem.id,
           });
+          if (vmEventErr && !vmEventErr.code?.includes("23505")) {
+            console.error("voicemail follow_up_events insert error:", vmEventErr);
+          }
         }
       }
 
@@ -398,7 +401,8 @@ Deno.serve(async (req) => {
     const normalizedOutcome = outcomeMap[callStatus] || callStatus;
 
     if (queueItem?.store_id && terminalForContact.includes(callStatus)) {
-      await supabase.from("follow_up_events").insert({
+      // Idempotent: unique constraint on (call_sid, outcome) prevents duplicates
+      const { error: eventErr } = await supabase.from("follow_up_events").insert({
         store_id: queueItem.store_id,
         business_id: queueItem.business_id,
         call_sid: callSid,
@@ -408,6 +412,10 @@ Deno.serve(async (req) => {
         source: "dialer",
         queue_item_id: queueItem.id,
       });
+      // 23505 = unique_violation — safe to ignore (duplicate webhook)
+      if (eventErr && !eventErr.code?.includes("23505")) {
+        console.error("follow_up_events insert error:", eventErr);
+      }
     }
 
     const storeUpdated = !!(queueItem?.store_id && terminalForContact.includes(callStatus));
