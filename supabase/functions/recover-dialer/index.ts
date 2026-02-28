@@ -3,12 +3,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -29,7 +29,13 @@ serve(async (req: Request) => {
       p_business_id: business_id,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error("RPC error:", JSON.stringify(error));
+      return new Response(JSON.stringify({ error: error.message || "RPC failed" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
 
     console.log(JSON.stringify({ action: "DIALER_RECOVERY", business_id, result: data }));
 
@@ -37,8 +43,8 @@ serve(async (req: Request) => {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : JSON.stringify(err);
     console.error("Recovery error:", msg);
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
