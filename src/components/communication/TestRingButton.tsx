@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { PhoneCall, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { TestRingResultModal, type TestRingResult } from "./TestRingResultModal";
+import { useTwilioDevice } from "@/hooks/useTwilioDevice";
 
 interface TestRingButtonProps {
   routeId?: string;
@@ -29,6 +30,7 @@ export function TestRingButton({
 }: TestRingButtonProps) {
   const [result, setResult] = useState<TestRingResult | null>(null);
   const [showResult, setShowResult] = useState(false);
+  const { isReady: deviceReady } = useTwilioDevice();
 
   const testRingMutation = useMutation({
     mutationFn: async () => {
@@ -79,9 +81,9 @@ export function TestRingButton({
         variant={variant}
         size={size}
         onClick={handleClick}
-        disabled={testRingMutation.isPending}
+        disabled={testRingMutation.isPending || !deviceReady}
         className={className}
-        title="Place a real test call to verify routing"
+        title={deviceReady ? "Place a real test call to verify routing" : "Voice device not registered — waiting for Twilio Device"}
       >
         {testRingMutation.isPending ? (
           <Loader2 className="h-4 w-4 animate-spin" />
