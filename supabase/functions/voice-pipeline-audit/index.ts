@@ -132,69 +132,105 @@ serve(async (req: Request) => {
     }
 
     // ── STEP D: Function Self-Reachability ──
+    // Use voice-token-selftest instead of calling twilio-voice-token directly
+    // (which requires a user JWT and would always fail from server context)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const fnNames = ["twilio-voice-token", "twilio-outbound-call"];
     const function_reachability: Record<string, { status: string; code: number | null; detail: string }> = {};
 
-    await Promise.all(
-      fnNames.map(async (name) => {
+    // Test voice-token via the selftest endpoint (no user JWT needed)
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/voice-token-selftest`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+      const code = res.status;
+      if (code === 404) {
+        function_reachability["twilio-voice-token"] = { status: "NOT_DEPLOYED", code, detail: "selftest function not deployed" };
+      } else {
         try {
-          const res = await fetch(`${supabaseUrl}/functions/v1/${name}`, {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${serviceKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({}),
-          });
-          const code = res.status;
-          let detail = `HTTP ${code}`;
-          try {
-            const body = await res.json();
-            detail = `HTTP ${code}: ${body?.error || body?.code || "OK"}`;
-          } catch {
-            await res.text();
-          }
-
-          if (code === 404) {
-            function_reachability[name] = { status: "NOT_DEPLOYED", code, detail };
-          } else if (code === 401 || code === 403) {
-            function_reachability[name] = { status: "AUTH_REQUIRED", code, detail };
-          } else if (code >= 500) {
-            function_reachability[name] = { status: "RUNTIME_ERROR", code, detail };
+          const body = await res.json();
+          if (body?.ok === true) {
+            function_reachability["twilio-voice-token"] = { status: "OK", code, detail: `Selftest passed (identity: ${body.identity})` };
           } else {
-            function_reachability[name] = { status: "OK", code, detail };
+            function_reachability["twilio-voice-token"] = { status: "SELFTEST_FAIL", code, detail: body?.reason || "selftest returned ok=false" };
           }
-        } catch (err) {
-          function_reachability[name] = {
-            status: "UNREACHABLE",
-            code: null,
-            detail: err instanceof Error ? err.message : String(err),
-          };
+        } catch {
+          function_reachability["twilio-voice-token"] = { status: "RUNTIME_ERROR", code, detail: `HTTP ${code} (non-JSON response)` };
         }
-      }),
-    );
+      }
+    } catch (err) {
+      function_reachability["twilio-voice-token"] = {
+        status: "UNREACHABLE", code: null,
+        detail: err instanceof Error ? err.message : String(err),
+      };
+    }
+
+    // Test outbound-call directly (it handles service-role auth)
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/twilio-outbound-call`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({}),
+      });
+      const code = res.status;
+      let detail = `HTTP ${code}`;
+      try {
+        const body = await res.json();
+        detail = `HTTP ${code}: ${body?.error || body?.code || "OK"}`;
+      } catch { await res.text(); }
+
+      if (code === 404) {
+        function_reachability["twilio-outbound-call"] = { status: "NOT_DEPLOYED", code, detail };
+      } else if (code >= 500) {
+        function_reachability["twilio-outbound-call"] = { status: "RUNTIME_ERROR", code, detail };
+      } else {
+        // Any non-404 response (including 400/401 for missing params) means it's deployed & reachable
+        function_reachability["twilio-outbound-call"] = { status: "OK", code, detail };
+      }
+    } catch (err) {
+      function_reachability["twilio-outbound-call"] = {
+        status: "UNREACHABLE", code: null,
+        detail: err instanceof Error ? err.message : String(err),
+      };
+    }
 
     // ── STEP E: Twilio API Ping ──
+    // Use Account SID + Auth Token for Accounts API (API Keys can't always read /Accounts)
+    // Fall back to API Key Basic Auth if Auth Token unavailable
     let twilio_api_reachable = false;
     let twilio_api_detail = "Skipped";
     if (sids_ok) {
+      const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+      const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+      const apiSid = Deno.env.get("TWILIO_API_SID")!;
+      const apiSecretVal = Deno.env.get("TWILIO_API_SECRET")!;
+
+      // Prefer Account SID + Auth Token (full access), fall back to API Key
+      const authPair = authToken && authToken.length >= 20
+        ? `${accountSid}:${authToken}`
+        : `${apiSid}:${apiSecretVal}`;
+
       try {
-        const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
-        const apiSid = Deno.env.get("TWILIO_API_SID")!;
-        const apiSecretVal = Deno.env.get("TWILIO_API_SECRET")!;
         const res = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${accountSid}.json`,
-          {
-            headers: {
-              "Authorization": "Basic " + btoa(`${apiSid}:${apiSecretVal}`),
-            },
-          },
+          { headers: { "Authorization": "Basic " + btoa(authPair) } },
         );
         twilio_api_reachable = res.status === 200;
         twilio_api_detail = `HTTP ${res.status}`;
-        await res.text(); // consume body
+        if (res.status === 401) {
+          const usedMethod = authPair.startsWith("AC") ? "AccountSID+AuthToken" : "APIKey+Secret";
+          console.log(`Twilio 401 with ${usedMethod}. AC prefix: ${accountSid.substring(0, 4)}, Key prefix: ${apiSid.substring(0, 4)}`);
+          twilio_api_detail = `HTTP 401 (auth: ${usedMethod})`;
+        }
+        await res.text();
       } catch (err) {
         twilio_api_detail = err instanceof Error ? err.message : String(err);
       }
@@ -222,16 +258,20 @@ serve(async (req: Request) => {
         failures.push(`${name}: ${r.status} (${r.detail})`);
         if (r.status === "NOT_DEPLOYED") {
           recommendations.push(`Edge function '${name}' not deployed. Redeploy via Lovable.`);
-        } else if (r.status === "AUTH_REQUIRED") {
-          recommendations.push(`${name}: Auth header not accepted. Check verify_jwt config.`);
+        } else if (r.status === "SELFTEST_FAIL") {
+          recommendations.push(`${name}: Token self-test failed — check TWILIO_API_SID and TWILIO_API_SECRET match an active API Key.`);
         } else {
-          recommendations.push(`${name}: Runtime error — check function logs.`);
+          recommendations.push(`${name}: ${r.detail} — check function logs.`);
         }
       }
     }
     if (!twilio_api_reachable) {
-      failures.push(`Twilio API unreachable: ${twilio_api_detail}`);
-      recommendations.push("Verify API Key has Account read permissions in Twilio Console");
+      failures.push(`Twilio API: ${twilio_api_detail}`);
+      recommendations.push(
+        twilio_api_detail.includes("401")
+          ? "API Key/Secret mismatch OR key belongs to a different account/subaccount. Create a new Standard API Key under the same account in Twilio Console, then update TWILIO_API_SID and TWILIO_API_SECRET secrets. Alternatively, add TWILIO_AUTH_TOKEN secret for full account-level access."
+          : "Verify Twilio API connectivity and API Key permissions in Twilio Console"
+      );
     }
 
     const total_checks = 5;
