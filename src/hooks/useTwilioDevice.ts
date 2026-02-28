@@ -1,15 +1,13 @@
 /**
- * useTwilioDevice — thin subscriber to the global VoiceDeviceProvider.
- * 
- * NO device creation happens here. All state comes from context.
- * Kept for backward-compatibility with existing consumers.
+ * useTwilioDevice — DEPRECATED thin re-export of VoiceDeviceProvider.
+ * Prefer importing useVoiceDevice directly from @/contexts/VoiceDeviceProvider.
  */
 
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 
-// Re-export types from the provider
 export type { VoiceHealth, DeviceLifecycleState, MicPermission, VoiceDeviceContextValue } from "@/contexts/VoiceDeviceProvider";
 
+/** @deprecated Use useVoiceDevice() from @/contexts/VoiceDeviceProvider */
 export function useTwilioDevice() {
   return useVoiceDevice();
 }
