@@ -10,6 +10,8 @@ export interface VoiceHealth {
   TWILIO_TWIML_APP_SID?: boolean;
 }
 
+export type DeviceLifecycleState = "idle" | "token_fetching" | "creating" | "registering" | "registered" | "error";
+
 interface UseTwilioDeviceReturn {
   isReady: boolean;
   isConnecting: boolean;
@@ -19,6 +21,8 @@ interface UseTwilioDeviceReturn {
   voiceHealth: VoiceHealth | null;
   tokenExpiresAt: string | null;
   deviceError: string | null;
+  deviceState: DeviceLifecycleState;
+  registeredAt: string | null;
   makeCall: (to: string, params?: Record<string, string>) => Promise<Call | null>;
   hangUp: () => void;
   toggleMute: () => void;
@@ -35,12 +39,15 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
   const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
   const [tokenExpiresAt, setTokenExpiresAt] = useState<string | null>(null);
   const [deviceError, setDeviceError] = useState<string | null>(null);
+  const [deviceState, setDeviceState] = useState<DeviceLifecycleState>("idle");
+  const [registeredAt, setRegisteredAt] = useState<string | null>(null);
   const deviceRef = useRef<Device | null>(null);
   const initializingRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchToken = useCallback(async (): Promise<string | null> => {
     try {
+      setDeviceState("token_fetching");
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         console.error("❌ No auth session for voice token");
@@ -107,6 +114,7 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
       const token = await fetchToken();
       if (!token) {
         initializingRef.current = false;
+        setDeviceState("error");
         return;
       }
 
@@ -117,19 +125,24 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
         return;
       }
 
+      setDeviceState("creating");
       const device = new Device(token, {
         codecPreferences: [Call.Codec.Opus, Call.Codec.PCMU],
+        logLevel: 1,
       });
 
       device.on("registered", () => {
         console.log("✅ Twilio Device registered");
         setIsReady(true);
         setDeviceError(null);
+        setDeviceState("registered");
+        setRegisteredAt(new Date().toISOString());
       });
 
       device.on("error", (err) => {
         console.error("❌ Twilio Device error:", err);
         setDeviceError(err.message);
+        setDeviceState("error");
         toast.error(`Call error: ${err.message}`);
       });
 
@@ -147,11 +160,13 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
         setupCallHandlers(call);
       });
 
+      setDeviceState("registering");
       await device.register();
       deviceRef.current = device;
     } catch (err) {
       console.error("❌ Device init error:", err);
       setDeviceError(err instanceof Error ? err.message : String(err));
+      setDeviceState("error");
     } finally {
       initializingRef.current = false;
     }
@@ -265,6 +280,8 @@ export function useTwilioDevice(): UseTwilioDeviceReturn {
     voiceHealth,
     tokenExpiresAt,
     deviceError,
+    deviceState,
+    registeredAt,
     makeCall,
     hangUp,
     toggleMute,
