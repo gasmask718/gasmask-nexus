@@ -123,9 +123,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Adaptive Exploration: 85% exploitation, 15% exploration ──
-    const EXPLORATION_RATIO = 0.15;
-    const exploitCount = Math.max(1, Math.ceil(toQueueThisWave * (1 - EXPLORATION_RATIO)));
+    // ── Dynamic Exploration: ratio adapts to run confidence ──
+    // Fetch all pending targets' probabilities to compute confidence score
+    const { data: allPending } = await supabase
+      .from("follow_up_execution_targets")
+      .select("pickup_probability")
+      .eq("run_id", run_id)
+      .eq("status", "pending");
+
+    const pendingProbs = (allPending || []).map((t: any) => t.pickup_probability ?? 0.35);
+    const confidenceScore = pendingProbs.length > 0
+      ? pendingProbs.reduce((a: number, b: number) => a + b, 0) / pendingProbs.length
+      : 0.35;
+
+    // Dynamic exploration ratio based on confidence
+    const explorationRatio = confidenceScore < 0.35 ? 0.30
+      : confidenceScore < 0.55 ? 0.20
+      : 0.10;
+
+    const explorationMode = explorationRatio >= 0.25 ? 'HIGH'
+      : explorationRatio >= 0.15 ? 'BALANCED'
+      : 'PRECISION';
+
+    const exploitCount = Math.max(1, Math.ceil(toQueueThisWave * (1 - explorationRatio)));
     const exploreCount = Math.max(0, toQueueThisWave - exploitCount);
 
     // Exploitation: high-confidence targets ordered by probability DESC
@@ -288,6 +308,10 @@ Deno.serve(async (req) => {
           exploitation_calls: exploitationCalls,
           exploration_calls: explorationCalls,
           learning_rate: learningRate,
+          adaptive_exploration: true,
+          exploration_ratio: Math.round(explorationRatio * 100),
+          confidence_score: Math.round(confidenceScore * 100),
+          exploration_mode: explorationMode,
         }),
       })
       .eq("id", run_id);

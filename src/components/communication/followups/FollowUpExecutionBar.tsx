@@ -104,6 +104,24 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
         {smartDial && avgProb !== null && (
           <div className="mb-3 flex items-center gap-3 text-xs bg-purple-500/10 border border-purple-500/20 rounded px-3 py-2 flex-wrap">
             <span className="font-medium text-purple-700">🧠 Adaptive Learning:</span>
+            {fs.confidence_score != null && (
+              <>
+                <span>Confidence <strong className={fs.confidence_score > 55 ? 'text-green-600' : fs.confidence_score > 35 ? 'text-amber-600' : 'text-destructive'}>{fs.confidence_score}%</strong></span>
+                <span className="text-muted-foreground">•</span>
+              </>
+            )}
+            {fs.exploration_mode && (
+              <>
+                <Badge variant="outline" className={`text-[10px] py-0 ${
+                  fs.exploration_mode === 'PRECISION' ? 'border-green-500 text-green-600' :
+                  fs.exploration_mode === 'BALANCED' ? 'border-amber-400 text-amber-600' :
+                  'border-purple-500 text-purple-600'
+                }`}>
+                  {fs.exploration_mode === 'PRECISION' ? '🎯' : fs.exploration_mode === 'BALANCED' ? '⚖️' : '🔬'} {fs.exploration_mode}
+                </Badge>
+                <span className="text-muted-foreground">•</span>
+              </>
+            )}
             <span>Avg Pickup <strong className={avgProb > 60 ? 'text-green-600' : avgProb > 30 ? 'text-amber-600' : 'text-destructive'}>{avgProb}%</strong></span>
             <span className="text-muted-foreground">•</span>
             <span>Predicted <strong className="text-foreground">{predictedConns ?? '—'}</strong> connects</span>
@@ -113,8 +131,12 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
                 <span>Exploit <strong className="text-foreground">{fs.exploitation_calls}</strong></span>
                 <span className="text-muted-foreground">/</span>
                 <span>Explore <strong className="text-purple-600">{fs.exploration_calls ?? 0}</strong></span>
-                <span className="text-muted-foreground">•</span>
-                <span>Learn Rate <strong className="text-purple-600">{fs.learning_rate ?? 0}%</strong></span>
+                {fs.exploration_ratio != null && (
+                  <>
+                    <span className="text-muted-foreground">•</span>
+                    <span>Ratio <strong className="text-purple-600">{fs.exploration_ratio}%</strong></span>
+                  </>
+                )}
               </>
             )}
           </div>
