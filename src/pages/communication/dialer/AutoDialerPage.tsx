@@ -5,7 +5,7 @@ import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriang
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
-import { VoiceSystemStatus } from '@/components/communication/VoiceSystemStatus';
+import { VoiceGoLiveReport } from '@/components/communication/VoiceGoLiveReport';
 
 // Tab content components (inline to avoid more file sprawl)
 import DialerStoresTab from './tabs/DialerStoresTab';
@@ -141,8 +141,8 @@ export default function AutoDialerPage() {
           <DialerLiveCallsTab />
         </TabsContent>
         <TabsContent value="voice-status" className="mt-4">
-          <div className="max-w-md">
-            <VoiceSystemStatus />
+          <div className="max-w-2xl">
+            <VoiceGoLiveReport />
           </div>
         </TabsContent>
       </Tabs>
