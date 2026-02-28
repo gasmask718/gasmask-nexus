@@ -102,11 +102,21 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
 
         {/* Smart Dial Intelligence Panel */}
         {smartDial && avgProb !== null && (
-          <div className="mb-3 flex items-center gap-3 text-xs bg-purple-500/10 border border-purple-500/20 rounded px-3 py-2">
-            <span className="font-medium text-purple-700">🧠 Intelligence:</span>
+          <div className="mb-3 flex items-center gap-3 text-xs bg-purple-500/10 border border-purple-500/20 rounded px-3 py-2 flex-wrap">
+            <span className="font-medium text-purple-700">🧠 Adaptive Learning:</span>
             <span>Avg Pickup <strong className={avgProb > 60 ? 'text-green-600' : avgProb > 30 ? 'text-amber-600' : 'text-destructive'}>{avgProb}%</strong></span>
             <span className="text-muted-foreground">•</span>
-            <span>Predicted Connections <strong className="text-foreground">{predictedConns ?? '—'}</strong></span>
+            <span>Predicted <strong className="text-foreground">{predictedConns ?? '—'}</strong> connects</span>
+            {fs.exploitation_calls != null && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span>Exploit <strong className="text-foreground">{fs.exploitation_calls}</strong></span>
+                <span className="text-muted-foreground">/</span>
+                <span>Explore <strong className="text-purple-600">{fs.exploration_calls ?? 0}</strong></span>
+                <span className="text-muted-foreground">•</span>
+                <span>Learn Rate <strong className="text-purple-600">{fs.learning_rate ?? 0}%</strong></span>
+              </>
+            )}
           </div>
         )}
 
