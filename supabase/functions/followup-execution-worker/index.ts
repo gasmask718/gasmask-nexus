@@ -156,18 +156,18 @@ Deno.serve(async (req) => {
     }
 
     // Helper: get current hour & day in a store's local timezone (cached per zone per wave)
+    const waveNow = new Date(); // single timestamp lock — all decisions in this wave share one moment
     const tzCache: Record<string, { hour: number; day: number }> = {};
     const getLocalTime = (tz: string | undefined) => {
       const zone = tz || "America/New_York";
       if (tzCache[zone]) return tzCache[zone];
       try {
-        const now = new Date();
-        const hour = parseInt(now.toLocaleString("en-US", { timeZone: zone, hour: "numeric", hour12: false }), 10);
-        const day = new Date(now.toLocaleString("en-US", { timeZone: zone })).getDay();
+        const hour = parseInt(waveNow.toLocaleString("en-US", { timeZone: zone, hour: "numeric", hour12: false }), 10);
+        const day = new Date(waveNow.toLocaleString("en-US", { timeZone: zone })).getDay();
         tzCache[zone] = { hour, day };
         return tzCache[zone];
       } catch {
-        const fallback = { hour: new Date().getUTCHours(), day: new Date().getUTCDay() };
+        const fallback = { hour: waveNow.getUTCHours(), day: waveNow.getUTCDay() };
         tzCache[zone] = fallback;
         return fallback;
       }
