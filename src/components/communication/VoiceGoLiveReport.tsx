@@ -260,7 +260,7 @@ function PipelineReachabilityCard() {
         try {
           const { data, error } = await supabase.functions.invoke(name, {
             method: "POST",
-            body: name === "health-check" ? undefined : {},
+            body: name === "health-check" ? undefined : { dry_run: true },
           });
           const now = new Date().toISOString();
           if (error) {
@@ -437,7 +437,7 @@ export function VoiceGoLiveReport() {
       const pipelineChecks: string[] = [];
       await Promise.all(fnNames.map(async (name) => {
         try {
-          const { error } = await supabase.functions.invoke(name, { method: "POST", body: name === "health-check" ? undefined : {} });
+          const { error } = await supabase.functions.invoke(name, { method: "POST", body: name === "health-check" ? undefined : { dry_run: true } });
           if (error) {
             const msg = error.message || String(error);
             if (msg.includes("404") || msg.includes("not found")) {

@@ -18,7 +18,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { queue_item_id, business_id } = await req.json();
+    const body = await req.json();
+
+    // ── Dry-run / health probe mode ──
+    if (body.dry_run === true) {
+      return new Response(
+        JSON.stringify({ status: "ok", mode: "dry_run", reachable: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { queue_item_id, business_id } = body;
 
     if (!queue_item_id || !business_id) {
       return new Response(
