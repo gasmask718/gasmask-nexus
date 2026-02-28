@@ -12,12 +12,14 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { business_id } = await req.json();
+    const body = await req.json();
+    const business_id = body?.business_id;
+
     if (!business_id) {
-      return new Response(JSON.stringify({ error: "business_id required" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(
+        JSON.stringify({ success: false, error: "business_id required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
     }
 
     const supabase = createClient(
@@ -25,30 +27,59 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data, error } = await supabase.rpc("recover_stale_calls", {
-      p_business_id: business_id,
-    });
+    const now = new Date().toISOString();
 
-    if (error) {
-      console.error("RPC error:", JSON.stringify(error));
-      return new Response(JSON.stringify({ error: error.message || "RPC failed" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+    // Clear stale queue items
+    const { data: clearedQueue, error: qErr } = await supabase
+      .from("outbound_call_queue")
+      .update({
+        status: "failed",
+        failure_reason: "manual_recovery",
+        updated_at: now,
+      })
+      .eq("business_id", business_id)
+      .in("status", ["queued", "dialing"])
+      .select("id");
+
+    if (qErr) {
+      console.error("Queue recovery error:", JSON.stringify(qErr));
     }
 
-    console.log(JSON.stringify({ action: "DIALER_RECOVERY", business_id, result: data }));
+    // Clear stale live calls
+    const { data: clearedLive, error: lErr } = await supabase
+      .from("live_calls")
+      .update({
+        state: "failed",
+        ended_at: now,
+        updated_at: now,
+      })
+      .eq("business_id", business_id)
+      .not("state", "in", '("completed","failed")')
+      .select("id");
 
-    return new Response(JSON.stringify(data), {
+    if (lErr) {
+      console.error("Live calls recovery error:", JSON.stringify(lErr));
+    }
+
+    const result = {
+      success: true,
+      queue_recovered: clearedQueue?.length ?? 0,
+      live_recovered: clearedLive?.length ?? 0,
+    };
+
+    console.log(JSON.stringify({ action: "DIALER_RECOVERY", business_id, ...result }));
+
+    return new Response(JSON.stringify(result), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : JSON.stringify(err);
-    console.error("Recovery error:", msg);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    const message = err instanceof Error ? err.message : JSON.stringify(err);
+    console.error("recover-dialer error:", message);
+
+    return new Response(
+      JSON.stringify({ success: false, error: message }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
+    );
   }
 });
