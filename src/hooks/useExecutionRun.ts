@@ -28,6 +28,10 @@ export interface FlowState {
   exploitation_calls?: number;
   exploration_calls?: number;
   learning_rate?: number;
+  adaptive_exploration?: boolean;
+  exploration_ratio?: number;
+  confidence_score?: number;
+  exploration_mode?: 'HIGH' | 'BALANCED' | 'PRECISION';
 }
 
 interface RunProgress {
@@ -63,6 +67,10 @@ function parseFlowState(notes: string | null): FlowState {
       exploitation_calls: parsed.exploitation_calls,
       exploration_calls: parsed.exploration_calls,
       learning_rate: parsed.learning_rate,
+      adaptive_exploration: parsed.adaptive_exploration,
+      exploration_ratio: parsed.exploration_ratio,
+      confidence_score: parsed.confidence_score,
+      exploration_mode: parsed.exploration_mode,
     };
   } catch {
     // Legacy string notes
