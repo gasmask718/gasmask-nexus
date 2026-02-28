@@ -64384,6 +64384,7 @@ export type Database = {
         }
         Returns: Json
       }
+      recover_stale_calls: { Args: { p_business_id: string }; Returns: Json }
       redeem_portal_invite: {
         Args: { p_token_hash: string; p_user_id: string }
         Returns: Json
