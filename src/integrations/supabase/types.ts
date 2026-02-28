@@ -24751,6 +24751,73 @@ export type Database = {
         }
         Relationships: []
       }
+      follow_up_events: {
+        Row: {
+          answered_at: string | null
+          business_id: string | null
+          call_duration: number | null
+          call_sid: string | null
+          created_at: string
+          id: string
+          outcome: string
+          processed: boolean
+          processed_at: string | null
+          queue_item_id: string | null
+          source: string
+          store_id: string | null
+        }
+        Insert: {
+          answered_at?: string | null
+          business_id?: string | null
+          call_duration?: number | null
+          call_sid?: string | null
+          created_at?: string
+          id?: string
+          outcome: string
+          processed?: boolean
+          processed_at?: string | null
+          queue_item_id?: string | null
+          source?: string
+          store_id?: string | null
+        }
+        Update: {
+          answered_at?: string | null
+          business_id?: string | null
+          call_duration?: number | null
+          call_sid?: string | null
+          created_at?: string
+          id?: string
+          outcome?: string
+          processed?: boolean
+          processed_at?: string | null
+          queue_item_id?: string | null
+          source?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_events_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follow_up_events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       follow_up_execution_runs: {
         Row: {
           batch_size: number

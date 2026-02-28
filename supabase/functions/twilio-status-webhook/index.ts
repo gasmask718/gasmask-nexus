@@ -108,6 +108,17 @@ Deno.serve(async (req) => {
 
           // Auto follow-up for voicemail (48h)
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
+
+          // Emit outcome event for voicemail
+          await supabase.from("follow_up_events").insert({
+            store_id: queueItem.store_id,
+            business_id: queueItem.business_id,
+            call_sid: callSid,
+            outcome: "voicemail",
+            call_duration: 0,
+            source: "dialer",
+            queue_item_id: queueItem.id,
+          });
         }
       }
 
@@ -365,9 +376,9 @@ Deno.serve(async (req) => {
 
     // ── PART 2: Auto follow-up for retriable outcomes ──
     const followUpDelays: Record<string, number> = {
-      busy: 2 * 60,        // 2 hours in minutes
-      "no-answer": 24 * 60, // 24 hours
-      voicemail: 48 * 60,   // 48 hours (handled in AMD section too)
+      busy: 2 * 60,
+      "no-answer": 24 * 60,
+      voicemail: 48 * 60,
     };
     const outcomeForFollowUp = callStatus === "no-answer" ? "no-answer" : callStatus;
     const delayMinutes = followUpDelays[outcomeForFollowUp];
@@ -376,14 +387,38 @@ Deno.serve(async (req) => {
       await createAutoFollowUp(supabase, queueItem, callSid, outcomeForFollowUp, delayMinutes);
     }
 
+    // ── PART 3: Emit outcome event to follow_up_events ──
+    const outcomeMap: Record<string, string> = {
+      completed: "answered",
+      busy: "busy",
+      "no-answer": "no_answer",
+      failed: "failed",
+      canceled: "failed",
+    };
+    const normalizedOutcome = outcomeMap[callStatus] || callStatus;
+
+    if (queueItem?.store_id && terminalForContact.includes(callStatus)) {
+      await supabase.from("follow_up_events").insert({
+        store_id: queueItem.store_id,
+        business_id: queueItem.business_id,
+        call_sid: callSid,
+        outcome: normalizedOutcome,
+        call_duration: callDuration || 0,
+        answered_at: callStatus === "completed" && callDuration > 0 ? new Date().toISOString() : null,
+        source: "dialer",
+        queue_item_id: queueItem.id,
+      });
+    }
+
     const storeUpdated = !!(queueItem?.store_id && terminalForContact.includes(callStatus));
     const followUpCreated = !!(queueItem?.store_id && delayMinutes);
     console.log(JSON.stringify({
       event: "CALL_OUTCOME_PROCESSED",
       call_sid: callSid,
-      outcome: callStatus,
+      outcome: normalizedOutcome,
       follow_up_created: followUpCreated,
       store_updated: storeUpdated,
+      event_emitted: !!(queueItem?.store_id && terminalForContact.includes(callStatus)),
     }));
 
     return new Response(

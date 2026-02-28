@@ -83,11 +83,33 @@ export function FollowUpCard({ followUp, onTrigger, onComplete, onCancel, onResc
 
             {/* Context Info */}
             {contextInfo && Object.keys(contextInfo).length > 0 && (
-              <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-2">
-                <span className="font-medium">Context: </span>
+              <div className="text-sm text-muted-foreground bg-muted/50 rounded-md p-2 space-y-1">
+                {contextInfo.source === 'call_outcome_engine' && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-3 w-3" />
+                    <span className="font-medium">Last outcome:</span>
+                    <Badge variant={
+                      contextInfo.last_outcome === 'busy' ? 'default' :
+                      contextInfo.last_outcome === 'no_answer' ? 'secondary' :
+                      contextInfo.last_outcome === 'voicemail' ? 'outline' :
+                      contextInfo.technical_retry ? 'destructive' : 'secondary'
+                    } className="text-xs">
+                      {String(contextInfo.last_outcome || contextInfo.original_outcome || 'unknown').replace(/_/g, ' ')}
+                    </Badge>
+                    {contextInfo.technical_retry && (
+                      <Badge variant="destructive" className="text-xs">⚡ Tech Retry</Badge>
+                    )}
+                  </div>
+                )}
                 {contextInfo.sentiment && <span>Sentiment: {String(contextInfo.sentiment)} </span>}
                 {contextInfo.days_since_order && <span>• No order in {String(contextInfo.days_since_order)} days </span>}
                 {contextInfo.message && <span>"{String(contextInfo.message)}"</span>}
+                {contextInfo.auto_completed_reason && (
+                  <div className="flex items-center gap-1 text-green-600">
+                    <CheckCircle className="h-3 w-3" />
+                    <span className="text-xs">Auto-completed: {String(contextInfo.auto_completed_reason).replace(/_/g, ' ')}</span>
+                  </div>
+                )}
               </div>
             )}
 
