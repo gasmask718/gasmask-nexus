@@ -79,13 +79,36 @@ Deno.serve(async (req) => {
     // AI mode always gets minimum 10 concurrency
     if ((mode === "ai" || mode === "hybrid") && concurrency < 10) { concurrency = 10; }
 
-    // ── Build targets ──
+    // ── Fetch pickup probabilities for intelligence ordering ──
+    const probMap: Record<string, number> = {};
+    for (let i = 0; i < store_ids.length; i += 50) {
+      const chunk = store_ids.slice(i, i + 50);
+      const { data } = await supabase
+        .from("store_answer_profile")
+        .select("store_id, pickup_probability")
+        .in("store_id", chunk);
+      (data || []).forEach((r: any) => {
+        if (r.pickup_probability != null) probMap[r.store_id] = r.pickup_probability;
+      });
+    }
+
+    // ── Build targets with intelligence ──
     const targets = store_ids.map((sid: string) => {
       const phone = normalize(phoneMap[sid] || null);
-      return { store_id: sid, resolved_phone: phone, status: phone ? "pending" : "skipped" };
+      const prob = probMap[sid] ?? null;
+      return { store_id: sid, resolved_phone: phone, status: phone ? "pending" : "skipped", pickup_probability: prob };
+    });
+
+    // Sort targets by pickup_probability descending (nulls last treated as 0.35)
+    targets.sort((a: any, b: any) => {
+      const pa = a.pickup_probability ?? 0.35;
+      const pb = b.pickup_probability ?? 0.35;
+      return pb - pa;
     });
 
     const callableCount = targets.filter((t: any) => t.status === "pending").length;
+    const callableProbs = targets.filter((t: any) => t.status === "pending").map((t: any) => t.pickup_probability ?? 0.35);
+    const avgProb = callableProbs.length > 0 ? callableProbs.reduce((a: number, b: number) => a + b, 0) / callableProbs.length : 0;
 
     // ── Create run ──
     const { data: run, error: runErr } = await supabase
@@ -112,13 +135,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ── Insert targets in batches ──
+    // ── Insert targets in batches (pre-sorted by probability) ──
     for (let i = 0; i < targets.length; i += 100) {
       const batch = targets.slice(i, i + 100).map((t: any) => ({
         run_id: run.id,
         store_id: t.store_id,
         resolved_phone: t.resolved_phone,
         status: t.status,
+        pickup_probability: t.pickup_probability,
       }));
       await supabase.from("follow_up_execution_targets").insert(batch);
     }
@@ -138,6 +162,9 @@ Deno.serve(async (req) => {
         skipped: store_ids.length - callableCount,
         concurrency,
         batch_size: batchSize,
+        smart_dial: true,
+        avg_pickup_probability: Math.round(avgProb * 100),
+        predicted_connections: Math.round(callableCount * avgProb),
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

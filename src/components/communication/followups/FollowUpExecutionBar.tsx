@@ -63,6 +63,9 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
     const pct = rp.callable_targets > 0 ? Math.round((processed / rp.callable_targets) * 100) : 0;
     const isWaiting = fs.state === 'waiting';
     const isFlowing = fs.state === 'flowing';
+    const smartDial = fs.smart_dial === true;
+    const avgProb = fs.avg_pickup_probability ?? null;
+    const predictedConns = fs.predicted_connections ?? null;
 
     return (
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card border border-border rounded-xl shadow-2xl p-4 min-w-[540px] max-w-[780px] animate-in slide-in-from-bottom-4">
@@ -76,6 +79,11 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
             <Badge variant={rp.status === 'running' ? 'default' : rp.status === 'paused' ? 'secondary' : 'outline'} className="text-sm">
               {rp.status.toUpperCase()}
             </Badge>
+            {smartDial && (
+              <Badge variant="outline" className="text-sm border-purple-500 text-purple-600">
+                🧠 Smart Dial
+              </Badge>
+            )}
             {isFlowing && (
               <Badge variant="outline" className="text-sm border-green-500 text-green-600">
                 🟢 Flowing
@@ -91,6 +99,16 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
             <X className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Smart Dial Intelligence Panel */}
+        {smartDial && avgProb !== null && (
+          <div className="mb-3 flex items-center gap-3 text-xs bg-purple-500/10 border border-purple-500/20 rounded px-3 py-2">
+            <span className="font-medium text-purple-700">🧠 Intelligence:</span>
+            <span>Avg Pickup <strong className={avgProb > 60 ? 'text-green-600' : avgProb > 30 ? 'text-amber-600' : 'text-destructive'}>{avgProb}%</strong></span>
+            <span className="text-muted-foreground">•</span>
+            <span>Predicted Connections <strong className="text-foreground">{predictedConns ?? '—'}</strong></span>
+          </div>
+        )}
 
         {/* Flow Status — the key visibility panel */}
         <div className="grid grid-cols-4 gap-2 mb-3 text-center text-xs">

@@ -22,6 +22,9 @@ export interface FlowState {
   wave_size: number;
   last_wave_queued?: number;
   last_wave_failed?: number;
+  smart_dial?: boolean;
+  avg_pickup_probability?: number;
+  predicted_connections?: number;
 }
 
 interface RunProgress {
@@ -51,6 +54,9 @@ function parseFlowState(notes: string | null): FlowState {
       wave_size: parsed.wave_size || 0,
       last_wave_queued: parsed.last_wave_queued,
       last_wave_failed: parsed.last_wave_failed,
+      smart_dial: parsed.smart_dial,
+      avg_pickup_probability: parsed.avg_pickup_probability,
+      predicted_connections: parsed.predicted_connections,
     };
   } catch {
     // Legacy string notes
