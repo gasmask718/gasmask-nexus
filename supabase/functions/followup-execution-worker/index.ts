@@ -155,16 +155,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Helper: get current hour & day in a store's local timezone
+    // Helper: get current hour & day in a store's local timezone (cached per zone per wave)
+    const tzCache: Record<string, { hour: number; day: number }> = {};
     const getLocalTime = (tz: string | undefined) => {
-      const fallbackTz = tz || "America/New_York";
+      const zone = tz || "America/New_York";
+      if (tzCache[zone]) return tzCache[zone];
       try {
         const now = new Date();
-        const hour = parseInt(now.toLocaleString("en-US", { timeZone: fallbackTz, hour: "numeric", hour12: false }), 10);
-        const day = new Date(now.toLocaleString("en-US", { timeZone: fallbackTz })).getDay();
-        return { hour, day };
+        const hour = parseInt(now.toLocaleString("en-US", { timeZone: zone, hour: "numeric", hour12: false }), 10);
+        const day = new Date(now.toLocaleString("en-US", { timeZone: zone })).getDay();
+        tzCache[zone] = { hour, day };
+        return tzCache[zone];
       } catch {
-        return { hour: new Date().getUTCHours(), day: new Date().getUTCDay() };
+        const fallback = { hour: new Date().getUTCHours(), day: new Date().getUTCDay() };
+        tzCache[zone] = fallback;
+        return fallback;
       }
     };
 
