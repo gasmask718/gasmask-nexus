@@ -32,6 +32,9 @@ export interface FlowState {
   exploration_ratio?: number;
   confidence_score?: number;
   exploration_mode?: 'HIGH' | 'BALANCED' | 'PRECISION';
+  temporal_optimization?: boolean;
+  best_time_matches?: number;
+  avg_temporal_boost?: number;
 }
 
 interface RunProgress {
@@ -71,6 +74,9 @@ function parseFlowState(notes: string | null): FlowState {
       exploration_ratio: parsed.exploration_ratio,
       confidence_score: parsed.confidence_score,
       exploration_mode: parsed.exploration_mode,
+      temporal_optimization: parsed.temporal_optimization,
+      best_time_matches: parsed.best_time_matches,
+      avg_temporal_boost: parsed.avg_temporal_boost,
     };
   } catch {
     // Legacy string notes
