@@ -142,6 +142,21 @@ export function FollowUpExecutionBar({ executionTargets, onClear, onExecutionCom
           </div>
         )}
 
+        {/* Temporal Intelligence Panel */}
+        {fs.temporal_optimization && (
+          <div className="mb-3 flex items-center gap-3 text-xs bg-blue-500/10 border border-blue-500/20 rounded px-3 py-2">
+            <span className="font-medium text-blue-700">🕒 Temporal Optimization Active</span>
+            <span className="text-muted-foreground">•</span>
+            <span>Best-Time Matches: <strong className="text-blue-600">{fs.best_time_matches ?? 0}</strong></span>
+            {fs.avg_temporal_boost != null && fs.avg_temporal_boost > 1.0 && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span>Boost: <strong className="text-green-600">+{Math.round((fs.avg_temporal_boost - 1) * 100)}%</strong></span>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Flow Status — the key visibility panel */}
         <div className="grid grid-cols-4 gap-2 mb-3 text-center text-xs">
           <div className="bg-green-500/10 border border-green-500/20 rounded p-2">

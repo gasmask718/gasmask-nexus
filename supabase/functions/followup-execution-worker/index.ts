@@ -124,10 +124,10 @@ Deno.serve(async (req) => {
     }
 
     // ── Dynamic Exploration: ratio adapts to run confidence ──
-    // Fetch all pending targets' probabilities to compute confidence score
+    // Fetch all pending targets' store_ids + probabilities
     const { data: allPending } = await supabase
       .from("follow_up_execution_targets")
-      .select("pickup_probability")
+      .select("id, store_id, pickup_probability")
       .eq("run_id", run_id)
       .eq("status", "pending");
 
@@ -135,6 +135,39 @@ Deno.serve(async (req) => {
     const confidenceScore = pendingProbs.length > 0
       ? pendingProbs.reduce((a: number, b: number) => a + b, 0) / pendingProbs.length
       : 0.35;
+
+    // ── Temporal Intelligence: fetch best_hour + best_day_of_week ──
+    const pendingStoreIds = [...new Set((allPending || []).map((t: any) => t.store_id).filter(Boolean))];
+    const temporalMap: Record<string, { best_hour: number | null; best_day_of_week: number | null }> = {};
+    for (let i = 0; i < pendingStoreIds.length; i += 50) {
+      const chunk = pendingStoreIds.slice(i, i + 50);
+      const { data: profiles } = await supabase
+        .from("store_answer_profile")
+        .select("store_id, best_hour, best_day_of_week")
+        .in("store_id", chunk);
+      (profiles || []).forEach((p: any) => {
+        temporalMap[p.store_id] = { best_hour: p.best_hour, best_day_of_week: p.best_day_of_week };
+      });
+    }
+
+    const currentHour = new Date().getUTCHours();
+    const currentDay = new Date().getUTCDay(); // 0=Sun
+
+    // Compute temporal scores per target
+    const computeTemporalScore = (storeId: string) => {
+      const t = temporalMap[storeId];
+      if (!t) return { temporal_score: 1.0, day_score: 1.0 };
+      let temporal_score = 1.0;
+      if (t.best_hour != null) {
+        const diff = Math.abs(currentHour - t.best_hour);
+        temporal_score = diff === 0 ? 1.25 : diff <= 1 ? 1.10 : 1.0;
+      }
+      let day_score = 1.0;
+      if (t.best_day_of_week != null) {
+        day_score = currentDay === t.best_day_of_week ? 1.15 : 1.0;
+      }
+      return { temporal_score, day_score };
+    };
 
     // Dynamic exploration ratio based on confidence
     const explorationRatio = confidenceScore < 0.35 ? 0.30
@@ -218,6 +251,9 @@ Deno.serve(async (req) => {
       }
 
       const isExploration = uniqueExplore.some((e: any) => e.id === target.id);
+      const { temporal_score, day_score } = computeTemporalScore(target.store_id);
+      const prob = target.pickup_probability ?? 0.35;
+      const finalPriorityScore = prob * temporal_score * day_score;
 
       const queueMeta = {
         execution_run_id: run_id,
@@ -226,11 +262,14 @@ Deno.serve(async (req) => {
         voice_engine: run.voice_engine,
         route_mode: run.mode,
         exploration_call: isExploration,
+        pickup_probability: prob,
+        temporal_score,
+        day_score,
+        final_priority_score: Math.round(finalPriorityScore * 100) / 100,
       };
 
-      // Adaptive priority: high-probability stores get higher priority (lower number)
-      const prob = target.pickup_probability ?? 0.35;
-      const adaptivePriority = prob > 0.6 ? 3 : prob > 0.3 ? 5 : 7;
+      // Adaptive priority: boosted by temporal score
+      const adaptivePriority = finalPriorityScore > 0.6 ? 3 : finalPriorityScore > 0.3 ? 5 : 7;
 
       const { error: qErr } = await supabase.from("outbound_call_queue").insert({
         business_id: run.business_id,
@@ -240,7 +279,7 @@ Deno.serve(async (req) => {
         priority: adaptivePriority,
         contact_name: storeNameMap[target.store_id] || null,
         campaign_id: null,
-        metadata: { ...queueMeta, pickup_probability: prob },
+        metadata: queueMeta,
       });
 
       // Create live_calls entry for observability
@@ -283,6 +322,16 @@ Deno.serve(async (req) => {
     const explorationCalls = uniqueExplore.length;
     const learningRate = targets.length > 0 ? Math.round((explorationCalls / targets.length) * 100) : 0;
 
+    // Temporal diagnostics
+    const temporalScores = targets.map(t => {
+      const { temporal_score, day_score } = computeTemporalScore(t.store_id);
+      return temporal_score * day_score;
+    });
+    const bestTimeMatches = temporalScores.filter(s => s > 1.0).length;
+    const avgTemporalBoost = temporalScores.length > 0
+      ? Math.round((temporalScores.reduce((a, b) => a + b, 0) / temporalScores.length) * 100) / 100
+      : 1.0;
+
     // ── Update run counters + flow state notes ──
     const newQueued = (run.queued_targets || 0) + queuedCount;
     const newFailed = (run.failed_targets || 0) + failedCount;
@@ -312,6 +361,9 @@ Deno.serve(async (req) => {
           exploration_ratio: Math.round(explorationRatio * 100),
           confidence_score: Math.round(confidenceScore * 100),
           exploration_mode: explorationMode,
+          temporal_optimization: true,
+          best_time_matches: bestTimeMatches,
+          avg_temporal_boost: avgTemporalBoost,
         }),
       })
       .eq("id", run_id);
