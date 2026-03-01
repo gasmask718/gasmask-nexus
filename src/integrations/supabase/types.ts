@@ -33046,6 +33046,157 @@ export type Database = {
           },
         ]
       }
+      messaging_campaigns: {
+        Row: {
+          ai_enabled: boolean | null
+          business_id: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          mode: string
+          name: string
+          opt_out_count: number | null
+          persona: string | null
+          reply_count: number | null
+          scheduled_at: string | null
+          script: string | null
+          sent_count: number | null
+          started_at: string | null
+          status: string
+          target_filter: Json | null
+          throttle_per_minute: number | null
+          total_targets: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_enabled?: boolean | null
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mode?: string
+          name: string
+          opt_out_count?: number | null
+          persona?: string | null
+          reply_count?: number | null
+          scheduled_at?: string | null
+          script?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          target_filter?: Json | null
+          throttle_per_minute?: number | null
+          total_targets?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_enabled?: boolean | null
+          business_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mode?: string
+          name?: string
+          opt_out_count?: number | null
+          persona?: string | null
+          reply_count?: number | null
+          scheduled_at?: string | null
+          script?: string | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string
+          target_filter?: Json | null
+          throttle_per_minute?: number | null
+          total_targets?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaging_campaigns_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messaging_messages: {
+        Row: {
+          ai_generated: boolean | null
+          biztext_response: Json | null
+          body: string
+          campaign_id: string | null
+          created_at: string
+          direction: string
+          id: string
+          phone: string | null
+          status: string
+          store_id: string | null
+          target_id: string | null
+          twilio_sid: string | null
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          biztext_response?: Json | null
+          body: string
+          campaign_id?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          store_id?: string | null
+          target_id?: string | null
+          twilio_sid?: string | null
+        }
+        Update: {
+          ai_generated?: boolean | null
+          biztext_response?: Json | null
+          body?: string
+          campaign_id?: string | null
+          created_at?: string
+          direction?: string
+          id?: string
+          phone?: string | null
+          status?: string
+          store_id?: string | null
+          target_id?: string | null
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaging_messages_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_messages_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "messaging_messages_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_targets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messaging_settings: {
         Row: {
           allow_marketing_sms: boolean | null
@@ -33078,6 +33229,73 @@ export type Database = {
           per_number_cooldown_minutes?: number | null
         }
         Relationships: []
+      }
+      messaging_targets: {
+        Row: {
+          campaign_id: string
+          contact_name: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          opt_out: boolean | null
+          personalized_message: string | null
+          phone: string
+          reply_received: boolean | null
+          sent_at: string | null
+          status: string
+          store_id: string | null
+        }
+        Insert: {
+          campaign_id: string
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          opt_out?: boolean | null
+          personalized_message?: string | null
+          phone: string
+          reply_received?: boolean | null
+          sent_at?: string | null
+          status?: string
+          store_id?: string | null
+        }
+        Update: {
+          campaign_id?: string
+          contact_name?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          opt_out?: boolean | null
+          personalized_message?: string | null
+          phone?: string
+          reply_received?: boolean | null
+          sent_at?: string | null
+          status?: string
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messaging_targets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "messaging_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_targets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messaging_targets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
       }
       mission_assignments: {
         Row: {

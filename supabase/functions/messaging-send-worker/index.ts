@@ -1,0 +1,156 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const BIZTEXT_API_BASE = "https://www.biztextsolutions.com/api/send";
+const BIZTEXT_WEBSITE_ID = "438";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { campaign_id, batch_size = 50 } = await req.json();
+    if (!campaign_id) throw new Error("campaign_id is required");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // 1. Get campaign
+    const { data: campaign, error: campaignError } = await supabase
+      .from("messaging_campaigns")
+      .select("*")
+      .eq("id", campaign_id)
+      .single();
+
+    if (campaignError || !campaign) throw new Error("Campaign not found");
+    if (campaign.status !== "active") {
+      return new Response(JSON.stringify({ success: true, message: "Campaign not active" }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // 2. Get pending targets
+    const { data: targets, error: targetError } = await supabase
+      .from("messaging_targets")
+      .select("*")
+      .eq("campaign_id", campaign_id)
+      .eq("status", "pending")
+      .limit(batch_size);
+
+    if (targetError) throw new Error(`Failed to fetch targets: ${targetError.message}`);
+    if (!targets || targets.length === 0) {
+      // All done — mark campaign complete
+      await supabase.from("messaging_campaigns").update({
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }).eq("id", campaign_id);
+
+      return new Response(JSON.stringify({ success: true, message: "Campaign complete", sent: 0 }), {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.log(`📱 Processing ${targets.length} targets for campaign ${campaign.name}`);
+
+    let sentCount = 0;
+    let failCount = 0;
+
+    for (const target of targets) {
+      try {
+        // Normalize phone
+        let phone = (target.phone || "").replace(/\D/g, "");
+        if (phone.startsWith("1") && phone.length === 11) phone = phone.substring(1);
+        if (phone.length !== 10) {
+          await supabase.from("messaging_targets").update({ status: "failed" }).eq("id", target.id);
+          failCount++;
+          continue;
+        }
+
+        const message = target.personalized_message || campaign.script || "";
+        if (!message) {
+          await supabase.from("messaging_targets").update({ status: "failed" }).eq("id", target.id);
+          failCount++;
+          continue;
+        }
+
+        // Send via BizText
+        const params = new URLSearchParams({
+          to: `+1${phone}`,
+          txt: message,
+          wid: BIZTEXT_WEBSITE_ID,
+        });
+
+        const response = await fetch(`${BIZTEXT_API_BASE}?${params.toString()}`, { method: "POST" });
+        const responseText = await response.text();
+
+        let responseData: any;
+        try { responseData = JSON.parse(responseText); } catch { responseData = { raw: responseText.trim() }; }
+
+        const isError = !response.ok || responseData?.error || responseData?.auth === false;
+
+        // Update target status
+        await supabase.from("messaging_targets").update({
+          status: isError ? "failed" : "sent",
+          sent_at: isError ? null : new Date().toISOString(),
+        }).eq("id", target.id);
+
+        // Insert message record
+        await supabase.from("messaging_messages").insert({
+          campaign_id,
+          store_id: target.store_id,
+          target_id: target.id,
+          direction: "outbound",
+          body: message,
+          ai_generated: campaign.mode === "ai_campaign",
+          status: isError ? "failed" : "sent",
+          phone,
+          biztext_response: responseData,
+        });
+
+        if (isError) {
+          failCount++;
+          console.error(`❌ Failed to send to ${phone}:`, responseText.substring(0, 200));
+        } else {
+          sentCount++;
+        }
+
+        // Throttle delay
+        const delayMs = Math.max(60000 / (campaign.throttle_per_minute || 50), 100);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+
+      } catch (sendError: any) {
+        console.error(`❌ Error processing target ${target.id}:`, sendError);
+        await supabase.from("messaging_targets").update({ status: "failed" }).eq("id", target.id);
+        failCount++;
+      }
+    }
+
+    // Update campaign counters
+    await supabase.from("messaging_campaigns").update({
+      sent_count: (campaign.sent_count || 0) + sentCount,
+      updated_at: new Date().toISOString(),
+    }).eq("id", campaign_id);
+
+    console.log(`✅ Batch complete: ${sentCount} sent, ${failCount} failed`);
+
+    return new Response(
+      JSON.stringify({ success: true, sent: sentCount, failed: failCount, remaining: targets.length - sentCount - failCount }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
+  } catch (error: any) {
+    console.error("❌ messaging-send-worker error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+});

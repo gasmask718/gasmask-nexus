@@ -235,6 +235,7 @@ import DialerPredictiveTargeting from '@/pages/communication/dialer/DialerPredic
 import DialerIntegrityPage from '@/pages/communication/dialer/DialerIntegrityPage';
 import AutoDialerPage from '@/pages/communication/dialer/AutoDialerPage';
 import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
+import { MessagingHubPage } from '@/pages/communication/messaging';
 import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
 import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
 import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
@@ -1445,6 +1446,7 @@ export default function AppRoutes() {
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
           <Route path="campaigns" element={<CampaignsPage />} />
           <Route path="ai-auto-text" element={<AIAutoTextPage />} />
+          <Route path="messaging-hub" element={<MessagingHubPage />} />
           <Route path="personas" element={<PersonasPage />} />
           <Route path="call-flows" element={<CallFlowsPage />} />
           <Route path="playbooks" element={<PlaybooksManagement />} />
