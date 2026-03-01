@@ -79,16 +79,13 @@ export default function AudienceBuilderTab() {
     },
   });
 
-  // Preview count query
-  const { data: previewCount, isFetching: countLoading } = useQuery({
+  // Preview members query using invoice-aware RPC
+  const { data: previewMembers, isFetching: countLoading } = useQuery({
     queryKey: ["audience-preview", previewSegmentId],
     queryFn: async () => {
-      // For now, count stores from store_master as baseline
-      const { count, error } = await supabase
-        .from("store_master")
-        .select("id", { count: "exact", head: true });
+      const { data, error } = await supabase.rpc("resolve_audience_segment", { p_segment_id: previewSegmentId! });
       if (error) throw error;
-      return count || 0;
+      return data || [];
     },
     enabled: !!previewSegmentId,
   });
@@ -118,8 +115,9 @@ export default function AudienceBuilderTab() {
 
   const refreshMutation = useMutation({
     mutationFn: async (segmentId: string) => {
-      // Refresh cached count
-      const { count } = await supabase.from("store_master").select("id", { count: "exact", head: true });
+      // Use invoice-aware RPC to get real count
+      const { data: count, error: rpcError } = await supabase.rpc("resolve_audience_count", { p_segment_id: segmentId });
+      if (rpcError) throw rpcError;
       const { error } = await supabase
         .from("audience_segments")
         .update({ cached_count: count || 0, cached_at: new Date().toISOString() })
@@ -288,12 +286,43 @@ export default function AudienceBuilderTab() {
             {countLoading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
-              <div className="flex items-center gap-6">
-                <div>
-                  <p className="text-3xl font-bold">{previewCount?.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">Total recipients matched</p>
+              <div className="space-y-4">
+                <div className="flex items-center gap-6">
+                  <div>
+                    <p className="text-3xl font-bold">{(previewMembers?.length || 0).toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Total recipients matched</p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => setPreviewSegmentId(null)}>Close</Button>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setPreviewSegmentId(null)}>Close</Button>
+                {previewMembers && previewMembers.length > 0 && (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Store</TableHead>
+                        <TableHead>Phone</TableHead>
+                        <TableHead className="text-right">Orders</TableHead>
+                        <TableHead className="text-right">Lifetime Spend</TableHead>
+                        <TableHead>Last Order</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {previewMembers.slice(0, 20).map((m: any) => (
+                        <TableRow key={m.store_id}>
+                          <TableCell className="font-medium">{m.store_name}</TableCell>
+                          <TableCell className="text-muted-foreground text-xs">{m.phone}</TableCell>
+                          <TableCell className="text-right font-mono">{m.total_orders}</TableCell>
+                          <TableCell className="text-right font-mono">${Number(m.lifetime_spend || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-xs text-muted-foreground">
+                            {m.last_order_date ? format(new Date(m.last_order_date), "MMM d, yyyy") : "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                {previewMembers && previewMembers.length > 20 && (
+                  <p className="text-xs text-muted-foreground text-center">Showing 20 of {previewMembers.length} recipients</p>
+                )}
               </div>
             )}
           </CardContent>
