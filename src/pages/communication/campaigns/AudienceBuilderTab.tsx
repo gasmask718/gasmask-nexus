@@ -84,7 +84,7 @@ export default function AudienceBuilderTab() {
   const { data: previewMembers, isFetching: countLoading } = useQuery({
     queryKey: ["audience-preview", previewSegmentId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("resolve_audience_segment", { p_segment_id: previewSegmentId! });
+      const { data, error } = await supabase.rpc("resolve_audience_segment" as any, { p_segment_id: previewSegmentId! });
       if (error) throw error;
       return data || [];
     },
@@ -95,9 +95,9 @@ export default function AudienceBuilderTab() {
   const { data: diagnostics, refetch: refetchDiagnostics } = useQuery({
     queryKey: ["audience-diagnostics"],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc("audience_diagnostics");
+      const { data, error } = await supabase.rpc("audience_diagnostics" as any);
       if (error) throw error;
-      return data?.[0] || null;
+      return data as any;
     },
   });
 
@@ -127,11 +127,11 @@ export default function AudienceBuilderTab() {
   const refreshMutation = useMutation({
     mutationFn: async (segmentId: string) => {
       // Use invoice-aware RPC to get real count
-      const { data: count, error: rpcError } = await supabase.rpc("resolve_audience_count", { p_segment_id: segmentId });
+      const { data: count, error: rpcError } = await supabase.rpc("resolve_audience_count" as any, { p_segment_id: segmentId });
       if (rpcError) throw rpcError;
       const { error } = await supabase
         .from("audience_segments")
-        .update({ cached_count: count || 0, cached_at: new Date().toISOString() })
+        .update({ cached_count: Number(count) || 0, cached_at: new Date().toISOString() })
         .eq("id", segmentId);
       if (error) throw error;
     },
@@ -297,34 +297,43 @@ export default function AudienceBuilderTab() {
           <CardContent>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
               <div className="text-center">
-                <p className="text-2xl font-bold">{Number(diagnostics.total_invoices_scanned || 0).toLocaleString()}</p>
+                <p className="text-2xl font-bold">{Number(diagnostics.total_invoices || 0).toLocaleString()}</p>
                 <p className="text-[10px] text-muted-foreground">Invoices Scanned</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{Number(diagnostics.matched_by_id || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Matched by ID</p>
+                <p className="text-2xl font-bold text-primary">{Number(diagnostics.distinct_store_ids || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Stores with Invoices</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-secondary-foreground">{Number(diagnostics.matched_by_phone || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Matched by Phone</p>
+                <p className="text-2xl font-bold text-secondary-foreground">{Number(diagnostics.distinct_phones || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Distinct Phones</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-accent-foreground">{Number(diagnostics.matched_by_name || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Matched by Name</p>
+                <p className="text-2xl font-bold text-accent-foreground">{Number(diagnostics.resolved_customers || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Resolved Customers</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-destructive">{Number(diagnostics.unmatched_invoices || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Unmatched</p>
+                <p className="text-2xl font-bold text-destructive">{Number(diagnostics.invoices_no_identity || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">No Identity</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-primary">{Number(diagnostics.unique_customers || 0).toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Unique Customers</p>
+                <p className="text-2xl font-bold text-primary">${Number(diagnostics.total_revenue || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Total Revenue</p>
               </div>
             </div>
-            {Number(diagnostics.unmatched_invoices || 0) > 0 && (
+            {diagnostics.source_summary && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(diagnostics.source_summary as any[]).map((s: any) => (
+                  <Badge key={s.source} variant="outline" className="text-xs">
+                    {s.source}: {s.count} (${Number(s.revenue || 0).toLocaleString()})
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {Number(diagnostics.invoices_no_identity || 0) > 0 && (
               <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
                 <Database className="h-3 w-3" />
-                {Number(diagnostics.unmatched_invoices || 0).toLocaleString()} invoices from stores missing phone numbers in store master
+                {Number(diagnostics.invoices_no_identity || 0).toLocaleString()} invoices have no store_id, phone, or name
               </p>
             )}
           </CardContent>
@@ -350,12 +359,12 @@ export default function AudienceBuilderTab() {
               <div className="space-y-4">
                 <div className="flex items-center gap-6">
                   <div>
-                    <p className="text-3xl font-bold">{(previewMembers?.length || 0).toLocaleString()}</p>
+                    <p className="text-3xl font-bold">{(Array.isArray(previewMembers) ? previewMembers.length : 0).toLocaleString()}</p>
                     <p className="text-xs text-muted-foreground">Total recipients matched</p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setPreviewSegmentId(null)}>Close</Button>
                 </div>
-                {previewMembers && previewMembers.length > 0 && (
+                {Array.isArray(previewMembers) && previewMembers.length > 0 && (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -369,7 +378,7 @@ export default function AudienceBuilderTab() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {previewMembers.slice(0, 20).map((m: any) => (
+                      {(previewMembers as any[]).slice(0, 20).map((m: any) => (
                         <TableRow key={m.store_id}>
                           <TableCell className="font-medium">{m.store_name}</TableCell>
                           <TableCell className="text-muted-foreground text-xs">{m.phone}</TableCell>
@@ -395,7 +404,7 @@ export default function AudienceBuilderTab() {
                     </TableBody>
                   </Table>
                 )}
-                {previewMembers && previewMembers.length > 20 && (
+                {Array.isArray(previewMembers) && previewMembers.length > 20 && (
                   <p className="text-xs text-muted-foreground text-center">Showing 20 of {previewMembers.length} recipients</p>
                 )}
               </div>

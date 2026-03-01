@@ -60123,6 +60123,31 @@ export type Database = {
           },
         ]
       }
+      invoice_source_summary: {
+        Row: {
+          invoice_count: number | null
+          invoice_source: string | null
+          total_revenue: number | null
+        }
+        Relationships: []
+      }
+      invoices_unified: {
+        Row: {
+          created_at: string | null
+          due_date: string | null
+          invoice_id: string | null
+          invoice_source: string | null
+          invoice_uid: string | null
+          paid_at: string | null
+          phone: string | null
+          raw: Json | null
+          status: string | null
+          store_id: string | null
+          store_name: string | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
       payout_eligible_commissions: {
         Row: {
           ambassador_id: string | null
@@ -60414,21 +60439,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      unified_customer_orders: {
-        Row: {
-          address: string | null
-          created_at: string | null
-          invoice_source: string | null
-          order_id: string | null
-          paid_at: string | null
-          phone: string | null
-          status: string | null
-          store_id: string | null
-          store_name: string | null
-          total_amount: number | null
-        }
-        Relationships: []
       }
       v_ai_denial_summary: {
         Row: {
@@ -64015,17 +64025,7 @@ export type Database = {
         Args: { p_promotion_id: string }
         Returns: string
       }
-      audience_diagnostics: {
-        Args: never
-        Returns: {
-          matched_by_id: number
-          matched_by_name: number
-          matched_by_phone: number
-          total_invoices_scanned: number
-          unique_customers: number
-          unmatched_invoices: number
-        }[]
-      }
+      audience_diagnostics: { Args: never; Returns: Json }
       audit_actor_role: { Args: never; Returns: string }
       audit_compute_hash: {
         Args: { payload: Json; prev: string }
@@ -64869,7 +64869,7 @@ export type Database = {
         Returns: undefined
       }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
-      normalize_phone: { Args: { raw_phone: string }; Returns: string }
+      normalize_phone: { Args: { input: string }; Returns: string }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
@@ -64973,14 +64973,9 @@ export type Database = {
       resolve_audience_segment: {
         Args: { p_segment_id: string }
         Returns: {
-          last_order_date: string
-          lifetime_spend: number
-          match_method: string
           phone: string
-          sources_used: string[]
           store_id: string
           store_name: string
-          total_orders: number
         }[]
       }
       resolve_dispute: {
@@ -64994,7 +64989,7 @@ export type Database = {
         Returns: undefined
       }
       resolve_previous_customers: {
-        Args: never
+        Args: { p_days?: number }
         Returns: {
           last_order_date: string
           lifetime_spend: number
