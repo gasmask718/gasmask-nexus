@@ -33,36 +33,43 @@ serve(async (req: Request) => {
 
     console.log(`📱 Launching messaging campaign: ${campaign.name} (mode: ${campaign.mode})`);
 
-    // 2. Expand audience — get stores based on target_filter
-    const segment = campaign.target_filter?.segment || "all";
-    // Use audience segment resolver if audience_id is provided, otherwise fallback to store_master
-    const audienceId = campaign.target_filter?.audience_id;
+    // 2. Resolve audience via unified customer identity RPC
+    // NEVER query store_master directly — always use the resolver
     let stores: any[] = [];
     let storeError: any = null;
+
+    const audienceId = campaign.target_filter?.audience_id;
 
     if (audienceId) {
       console.log(`🎯 Resolving audience segment: ${audienceId}`);
       const { data, error } = await supabase.rpc("resolve_audience_segment", {
         p_segment_id: audienceId,
       });
-      stores = data || [];
+      stores = (data || []).map((r: any) => ({
+        id: r.store_id,
+        store_name: r.store_name,
+        phone: r.phone,
+        contact_name: r.store_name,
+      }));
       storeError = error;
     } else {
-      const { data, error } = await supabase
-        .from("store_master")
-        .select("id, store_name, phone, contact_name")
-        .not("phone", "is", null)
-        .limit(5000);
-      stores = data || [];
+      // Fallback: resolve all previous customers
+      console.log(`🎯 Resolving all previous customers`);
+      const { data, error } = await supabase.rpc("resolve_previous_customers");
+      stores = (data || []).map((r: any) => ({
+        id: r.store_id,
+        store_name: r.store_name,
+        phone: r.phone,
+        contact_name: r.store_name,
+      }));
       storeError = error;
     }
 
     if (storeError) {
-      throw new Error(`Failed to fetch stores: ${storeError.message}`);
+      throw new Error(`Failed to resolve audience: ${storeError.message}`);
     }
 
     if (!stores || stores.length === 0) {
-      // Update campaign status
       await supabase.from("messaging_campaigns").update({
         status: "completed",
         total_targets: 0,
