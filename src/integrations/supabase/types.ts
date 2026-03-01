@@ -64865,6 +64865,21 @@ export type Database = {
         Args: { _device_id: string }
         Returns: boolean
       }
+      resolve_audience_count: {
+        Args: { p_segment_id: string }
+        Returns: number
+      }
+      resolve_audience_segment: {
+        Args: { p_segment_id: string }
+        Returns: {
+          last_order_date: string
+          lifetime_spend: number
+          phone: string
+          store_id: string
+          store_name: string
+          total_orders: number
+        }[]
+      }
       resolve_dispute: {
         Args: { p_order_id: string; p_outcome: string }
         Returns: undefined
