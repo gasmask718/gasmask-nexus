@@ -13,7 +13,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { campaign_id } = await req.json();
+    const { campaign_id, dry_run } = await req.json();
     if (!campaign_id) throw new Error("campaign_id is required");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -53,9 +53,9 @@ serve(async (req: Request) => {
       }));
       storeError = error;
     } else {
-      // Fallback: resolve all previous customers
+      // Fallback: resolve all previous customers via invoices_unified
       console.log(`🎯 Resolving all previous customers`);
-      const { data, error } = await supabase.rpc("resolve_previous_customers");
+      const { data, error } = await supabase.rpc("resolve_previous_customers", { p_days: 3650 });
       stores = (data || []).map((r: any) => ({
         id: r.store_id,
         store_name: r.store_name,
@@ -81,8 +81,22 @@ serve(async (req: Request) => {
       });
     }
 
+    // DRY RUN: return counts without inserting
+    if (dry_run) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          dry_run: true,
+          campaign_id,
+          targets: stores.length,
+          mode: campaign.mode,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     // 3. Insert targets
-    const targets = stores.map(store => ({
+    const targets = stores.map((store: any) => ({
       campaign_id,
       store_id: store.id,
       phone: store.phone,
