@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -15,10 +16,10 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Send, Zap, Users, Calendar, Loader2, Wand2, Sparkles, Shield, AlertTriangle,
+  Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, RefreshCw, Eye,
 } from "lucide-react";
 
-const SEGMENTS = [
+const QUICK_SEGMENTS = [
   { value: "all", label: "All Stores" },
   { value: "borough_manhattan", label: "Manhattan" },
   { value: "borough_brooklyn", label: "Brooklyn" },
@@ -37,11 +38,15 @@ const TEMPLATES = [
   { name: "Reactivation", category: "Win Back", msg: "Hi {{contact_name}}, we miss {{store_name}}! It's been a while — got a minute to catch up?" },
 ];
 
+type RecipientMode = "quick_segment" | "audience_segment";
+
 export default function ManualBulkTab() {
   const { toast } = useToast();
   const { currentBusiness } = useBusiness();
   const [campaignName, setCampaignName] = useState("");
+  const [recipientMode, setRecipientMode] = useState<RecipientMode>("quick_segment");
   const [selectedSegment, setSelectedSegment] = useState("");
+  const [selectedAudienceId, setSelectedAudienceId] = useState("");
   const [messageContent, setMessageContent] = useState("");
   const [throttle, setThrottle] = useState("50");
   const [jitterEnabled, setJitterEnabled] = useState(true);
@@ -50,9 +55,26 @@ export default function ManualBulkTab() {
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [isScheduling, setIsScheduling] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"send" | "schedule" | null>(null);
 
-  // Get store count for selected segment
-  const { data: storeCount } = useQuery({
+  // Fetch audience segments from shared table
+  const { data: audiences = [] } = useQuery({
+    queryKey: ["audience-segments-for-bulk"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("audience_segments")
+        .select("id, name, description, cached_count, cached_at, is_dynamic, engagement_rate")
+        .order("name");
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const selectedAudience = audiences.find(a => a.id === selectedAudienceId);
+
+  // Store count for quick segment mode
+  const { data: quickCount } = useQuery({
     queryKey: ["store-count-segment", selectedSegment, currentBusiness?.id],
     queryFn: async () => {
       const { count } = await supabase
@@ -60,79 +82,84 @@ export default function ManualBulkTab() {
         .select("id", { count: "exact", head: true });
       return count || 0;
     },
-    enabled: !!selectedSegment,
+    enabled: recipientMode === "quick_segment" && !!selectedSegment,
   });
 
-  const handleSendNow = async () => {
-    if (!campaignName || !messageContent || !selectedSegment) {
+  const recipientCount = recipientMode === "audience_segment"
+    ? (selectedAudience?.cached_count ?? 0)
+    : (quickCount ?? 0);
+
+  const hasRecipients = recipientMode === "audience_segment" ? !!selectedAudienceId : !!selectedSegment;
+  const canSend = !!campaignName && !!messageContent && hasRecipients;
+
+  const confirmThreshold = 500;
+
+  const triggerSend = (action: "send" | "schedule") => {
+    if (!canSend) {
       toast({ title: "Missing Information", description: "Fill in all required fields.", variant: "destructive" });
       return;
     }
-    setIsSending(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const { data, error } = await supabase.from("messaging_campaigns").insert({
-        business_id: currentBusiness?.id || null,
-        mode: "manual_bulk",
-        name: campaignName,
-        script: messageContent,
-        ai_enabled: false,
-        status: "active",
-        target_filter: { segment: selectedSegment, throttle: parseInt(throttle), jitter: jitterEnabled },
-        throttle_per_minute: parseInt(throttle),
-        total_targets: storeCount || 0,
-        created_by: user.id,
-      }).select().single();
-
-      if (error) throw error;
-
-      // Launch via edge function
-      await supabase.functions.invoke("messaging-launch", {
-        body: { campaign_id: data.id },
-      });
-
-      toast({ title: "Campaign Launched!", description: `"${campaignName}" is now sending to ${storeCount || 0} recipients.` });
-      setCampaignName(""); setMessageContent(""); setSelectedSegment("");
-    } catch (error: any) {
-      toast({ title: "Send Failed", description: error.message, variant: "destructive" });
-    } finally {
-      setIsSending(false);
+    if (action === "schedule" && (!scheduleDate || !scheduleTime)) {
+      // open schedule modal first
+      setShowScheduleModal(true);
+      return;
+    }
+    if (recipientCount > confirmThreshold) {
+      setPendingAction(action);
+      setShowConfirmModal(true);
+    } else {
+      executeSend(action);
     }
   };
 
-  const handleSchedule = async () => {
-    if (!scheduleDate || !scheduleTime) {
-      toast({ title: "Select Date & Time", variant: "destructive" });
-      return;
-    }
-    setIsScheduling(true);
+  const executeSend = async (action: "send" | "schedule") => {
+    const isSchedule = action === "schedule";
+    isSchedule ? setIsScheduling(true) : setIsSending(true);
+    setShowConfirmModal(false);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
 
-      await supabase.from("messaging_campaigns").insert({
+      const targetFilter = recipientMode === "audience_segment"
+        ? { audience_id: selectedAudienceId, throttle: parseInt(throttle), jitter: jitterEnabled }
+        : { segment: selectedSegment, throttle: parseInt(throttle), jitter: jitterEnabled };
+
+      const campaignPayload: any = {
         business_id: currentBusiness?.id || null,
         mode: "manual_bulk",
         name: campaignName,
         script: messageContent,
         ai_enabled: false,
-        status: "pending",
-        target_filter: { segment: selectedSegment, throttle: parseInt(throttle), jitter: jitterEnabled },
+        status: isSchedule ? "pending" : "active",
+        target_filter: targetFilter,
         throttle_per_minute: parseInt(throttle),
-        total_targets: storeCount || 0,
-        scheduled_at: scheduledAt,
+        total_targets: recipientCount,
         created_by: user.id,
-      });
+      };
 
-      toast({ title: "Campaign Scheduled", description: `"${campaignName}" scheduled for ${scheduleDate} at ${scheduleTime}.` });
+      if (isSchedule) {
+        campaignPayload.scheduled_at = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
+      }
+
+      const { data, error } = await supabase.from("messaging_campaigns").insert(campaignPayload).select().single();
+      if (error) throw error;
+
+      if (!isSchedule) {
+        await supabase.functions.invoke("messaging-launch", { body: { campaign_id: data.id } });
+      }
+
+      const msg = isSchedule
+        ? `"${campaignName}" scheduled for ${scheduleDate} at ${scheduleTime}.`
+        : `"${campaignName}" is now sending to ${recipientCount.toLocaleString()} recipients.`;
+
+      toast({ title: isSchedule ? "Campaign Scheduled" : "Campaign Launched!", description: msg });
+      setCampaignName(""); setMessageContent(""); setSelectedSegment(""); setSelectedAudienceId("");
       setShowScheduleModal(false);
-      setCampaignName(""); setMessageContent(""); setSelectedSegment("");
     } catch (error: any) {
-      toast({ title: "Schedule Failed", description: error.message, variant: "destructive" });
+      toast({ title: isSchedule ? "Schedule Failed" : "Send Failed", description: error.message, variant: "destructive" });
     } finally {
+      setIsSending(false);
       setIsScheduling(false);
     }
   };
@@ -154,18 +181,86 @@ export default function ManualBulkTab() {
             <Input placeholder="e.g., Monday Inventory Check" value={campaignName} onChange={e => setCampaignName(e.target.value)} />
           </div>
 
-          <div className="space-y-2">
-            <Label>Target Audience</Label>
-            <Select value={selectedSegment} onValueChange={setSelectedSegment}>
-              <SelectTrigger><SelectValue placeholder="Select target stores" /></SelectTrigger>
-              <SelectContent>
-                {SEGMENTS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {selectedSegment && (
+          {/* Recipient Mode Selector */}
+          <div className="space-y-3">
+            <Label>Recipients</Label>
+            <RadioGroup value={recipientMode} onValueChange={(v) => setRecipientMode(v as RecipientMode)} className="flex gap-4">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="quick_segment" id="mode-quick" />
+                <Label htmlFor="mode-quick" className="text-sm cursor-pointer">Quick Filter</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="audience_segment" id="mode-audience" />
+                <Label htmlFor="mode-audience" className="text-sm cursor-pointer">Audience Segment</Label>
+              </div>
+            </RadioGroup>
+
+            {recipientMode === "quick_segment" && (
+              <Select value={selectedSegment} onValueChange={setSelectedSegment}>
+                <SelectTrigger><SelectValue placeholder="Select target stores" /></SelectTrigger>
+                <SelectContent>
+                  {QUICK_SEGMENTS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
+
+            {recipientMode === "audience_segment" && (
+              <div className="space-y-2">
+                <Select value={selectedAudienceId} onValueChange={setSelectedAudienceId}>
+                  <SelectTrigger><SelectValue placeholder="Choose an audience segment" /></SelectTrigger>
+                  <SelectContent>
+                    {audiences.map(a => (
+                      <SelectItem key={a.id} value={a.id}>
+                        <span className="flex items-center gap-2">
+                          {a.name}
+                          {a.cached_count != null && (
+                            <span className="text-xs text-muted-foreground">({a.cached_count.toLocaleString()})</span>
+                          )}
+                        </span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {selectedAudience && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardContent className="p-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{selectedAudience.name}</span>
+                        {selectedAudience.is_dynamic && <Badge variant="default" className="text-[10px]">Dynamic</Badge>}
+                      </div>
+                      {selectedAudience.description && (
+                        <p className="text-xs text-muted-foreground">{selectedAudience.description}</p>
+                      )}
+                      <div className="flex items-center gap-4 pt-1">
+                        <div>
+                          <p className="text-lg font-bold text-primary">{selectedAudience.cached_count?.toLocaleString() ?? "—"}</p>
+                          <p className="text-[10px] text-muted-foreground">Estimated Recipients</p>
+                        </div>
+                        {selectedAudience.engagement_rate != null && (
+                          <div>
+                            <p className="text-lg font-bold">{selectedAudience.engagement_rate}%</p>
+                            <p className="text-[10px] text-muted-foreground">Engagement Rate</p>
+                          </div>
+                        )}
+                        <div className="text-[10px] text-muted-foreground">
+                          Last refreshed: {selectedAudience.cached_at ? new Date(selectedAudience.cached_at).toLocaleString() : "Never"}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {audiences.length === 0 && (
+                  <p className="text-xs text-muted-foreground">No audience segments created yet. Build one in Campaigns → Audience Builder.</p>
+                )}
+              </div>
+            )}
+
+            {hasRecipients && (
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-primary">{storeCount?.toLocaleString() || "..."} recipients selected</span>
+                <span className="text-sm font-medium text-primary">{recipientCount.toLocaleString()} recipients selected</span>
               </div>
             )}
           </div>
@@ -220,12 +315,12 @@ export default function ManualBulkTab() {
           </Card>
 
           <div className="pt-2 flex gap-2">
-            <Button className="flex-1 gap-2" onClick={handleSendNow} disabled={!campaignName || !messageContent || !selectedSegment || isSending}>
+            <Button className="flex-1 gap-2" onClick={() => triggerSend("send")} disabled={!canSend || isSending}>
               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {isSending ? "Launching..." : "Send Now"}
             </Button>
             <Button variant="outline" className="gap-2" onClick={() => {
-              if (!campaignName || !messageContent || !selectedSegment) {
+              if (!canSend) {
                 toast({ title: "Fill all fields first", variant: "destructive" });
                 return;
               }
@@ -277,6 +372,27 @@ export default function ManualBulkTab() {
         </Card>
       </div>
 
+      {/* Confirmation Modal (>500 recipients) */}
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Confirm Bulk Send
+            </DialogTitle>
+            <DialogDescription>
+              You are about to send to <span className="font-bold text-foreground">{recipientCount.toLocaleString()}</span> recipients. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+            <Button onClick={() => pendingAction && executeSend(pendingAction)} className="gap-2">
+              <Send className="h-4 w-4" /> Confirm Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Schedule Modal */}
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
         <DialogContent>
@@ -296,7 +412,13 @@ export default function ManualBulkTab() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowScheduleModal(false)}>Cancel</Button>
-            <Button onClick={handleSchedule} disabled={isScheduling} className="gap-2">
+            <Button onClick={() => {
+              if (!scheduleDate || !scheduleTime) {
+                toast({ title: "Select Date & Time", variant: "destructive" });
+                return;
+              }
+              triggerSend("schedule");
+            }} disabled={isScheduling} className="gap-2">
               {isScheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
               {isScheduling ? "Scheduling..." : "Confirm Schedule"}
             </Button>
