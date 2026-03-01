@@ -18376,6 +18376,60 @@ export type Database = {
           },
         ]
       }
+      contact_enrichment_candidates: {
+        Row: {
+          confidence: number
+          created_at: string
+          id: string
+          normalized_phone: string
+          proposed_phone: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          status: string
+          store_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          normalized_phone: string
+          proposed_phone: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source: string
+          status?: string
+          store_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          id?: string
+          normalized_phone?: string
+          proposed_phone?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          status?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_enrichment_candidates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_enrichment_candidates_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       contact_interactions: {
         Row: {
           channel: string
@@ -60329,6 +60383,16 @@ export type Database = {
           },
         ]
       }
+      store_contact_signals: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          raw_phone: string | null
+          source: string | null
+          store_id: string | null
+        }
+        Relationships: []
+      }
       tube_counter: {
         Row: {
           brand: string | null
@@ -63939,6 +64003,10 @@ export type Database = {
         Returns: Json
       }
       approve_commission: { Args: { p_ledger_id: string }; Returns: undefined }
+      approve_enrichment_candidate: {
+        Args: { p_candidate_id: string }
+        Returns: undefined
+      }
       approve_payout_batch: {
         Args: { p_approved_by?: string; p_batch_id: string }
         Returns: undefined
@@ -63997,6 +64065,7 @@ export type Database = {
         Args: { p_ambassador_id?: string; p_before_date?: string }
         Returns: number
       }
+      bulk_approve_enrichment: { Args: never; Returns: number }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
       calculate_predictive_profit_score: {
         Args: { p_business_id: string; p_store_id: string }
@@ -64296,6 +64365,7 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: Json
       }
+      enrich_store_contacts: { Args: never; Returns: Json }
       ensure_store_brand_relationships: {
         Args: { p_store_id: string }
         Returns: undefined
@@ -64856,6 +64926,10 @@ export type Database = {
         Returns: Json
       }
       reinstate_user_access: { Args: { _invite_id: string }; Returns: boolean }
+      reject_enrichment_candidate: {
+        Args: { p_candidate_id: string }
+        Returns: undefined
+      }
       reject_store_promotion: {
         Args: { p_promotion_id: string; p_rejection_reason?: string }
         Returns: undefined

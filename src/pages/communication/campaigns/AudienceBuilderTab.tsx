@@ -15,6 +15,7 @@ import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
 import { Users, Plus, Pencil, Trash2, RefreshCw, Eye, Loader2, Sparkles, Filter, Activity, Database } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { ContactEnrichmentPanel } from "@/components/communication/ContactEnrichmentPanel";
 
 interface AudienceSegment {
   id: string;
@@ -329,6 +330,9 @@ export default function AudienceBuilderTab() {
           </CardContent>
         </Card>
       )}
+
+      {/* Contact Enrichment Engine */}
+      <ContactEnrichmentPanel />
 
       {/* Preview Card */}
       {previewSegmentId && (
