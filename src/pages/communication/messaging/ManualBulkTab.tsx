@@ -16,7 +16,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, RefreshCw, Eye,
+  Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, RefreshCw, Eye, Database,
 } from "lucide-react";
 
 const QUICK_SEGMENTS = [
@@ -73,21 +73,29 @@ export default function ManualBulkTab() {
 
   const selectedAudience = audiences.find(a => a.id === selectedAudienceId);
 
-  // Store count for quick segment mode
-  const { data: quickCount } = useQuery({
-    queryKey: ["store-count-segment", selectedSegment, currentBusiness?.id],
+  // RESOLVER-BASED count: NEVER query store_master directly
+  const { data: resolverCount, isLoading: resolverLoading } = useQuery({
+    queryKey: ["resolver-count"],
     queryFn: async () => {
-      const { count } = await supabase
-        .from("store_master")
-        .select("id", { count: "exact", head: true });
-      return count || 0;
+      const { data, error } = await supabase.rpc("resolve_previous_customers_count" as any);
+      if (error) throw error;
+      return (data as number) ?? 0;
     },
-    enabled: recipientMode === "quick_segment" && !!selectedSegment,
+  });
+
+  // Diagnostics from unified invoice engine
+  const { data: diagnostics } = useQuery({
+    queryKey: ["messaging-diagnostics"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("audience_diagnostics" as any);
+      if (error) throw error;
+      return data as any;
+    },
   });
 
   const recipientCount = recipientMode === "audience_segment"
-    ? (selectedAudience?.cached_count ?? 0)
-    : (quickCount ?? 0);
+    ? (selectedAudience?.cached_count ?? resolverCount ?? 0)
+    : (resolverCount ?? 0);
 
   const hasRecipients = recipientMode === "audience_segment" ? !!selectedAudienceId : !!selectedSegment;
   const canSend = !!campaignName && !!messageContent && hasRecipients;
@@ -260,7 +268,13 @@ export default function ManualBulkTab() {
             {hasRecipients && (
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-primary">{recipientCount.toLocaleString()} recipients selected</span>
+                <span className="text-sm font-medium text-primary">
+                  {resolverLoading ? "Resolving..." : `${recipientCount.toLocaleString()} recipients`}
+                </span>
+                <Badge variant="secondary" className="text-[10px]">
+                  <Database className="h-2.5 w-2.5 mr-0.5" />
+                  Unified Customers
+                </Badge>
               </div>
             )}
           </div>
@@ -332,8 +346,45 @@ export default function ManualBulkTab() {
         </CardContent>
       </Card>
 
-      {/* Preview & Templates */}
+      {/* Preview & Diagnostics */}
       <div className="space-y-6">
+        {/* Unified Identity Diagnostics */}
+        {diagnostics && (
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Database className="h-4 w-4 text-primary" />
+                Recipients Source: Unified Customers (Invoices)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-primary">{diagnostics.total_invoices?.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">Invoices Scanned</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-primary">{diagnostics.resolved_customers?.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">Resolved Customers</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-primary">{diagnostics.distinct_phones?.toLocaleString()}</p>
+                  <p className="text-[10px] text-muted-foreground">Distinct Phones</p>
+                </div>
+              </div>
+              {diagnostics.source_summary && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {(diagnostics.source_summary as any[]).map((s: any, i: number) => (
+                    <Badge key={i} variant="outline" className="text-[10px]">
+                      {s.source}: {s.count}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Message Preview</CardTitle>

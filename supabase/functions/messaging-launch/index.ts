@@ -7,6 +7,14 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Phone normalizer — mirrors SQL normalize_phone()
+function normalizePhone(raw: string | null): string | null {
+  if (!raw) return null;
+  const digits = raw.replace(/\D/g, "");
+  const trimmed = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  return trimmed.length >= 10 ? trimmed : null;
+}
+
 serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -33,14 +41,15 @@ serve(async (req: Request) => {
 
     console.log(`📱 Launching messaging campaign: ${campaign.name} (mode: ${campaign.mode})`);
 
-    // 2. Resolve audience via unified customer identity RPC
-    // NEVER query store_master directly — always use the resolver
+    // 2. Resolve audience via unified customer identity RPCs
+    // RULE: NEVER query store_master directly — ALWAYS use resolver RPCs
     let stores: any[] = [];
     let storeError: any = null;
 
     const audienceId = campaign.target_filter?.audience_id;
 
     if (audienceId) {
+      // Resolve via audience segment (which internally uses resolve_previous_customers for previous_customers type)
       console.log(`🎯 Resolving audience segment: ${audienceId}`);
       const { data, error } = await supabase.rpc("resolve_audience_segment", {
         p_segment_id: audienceId,
@@ -53,8 +62,9 @@ serve(async (req: Request) => {
       }));
       storeError = error;
     } else {
-      // Fallback: resolve all previous customers via invoices_unified
-      console.log(`🎯 Resolving all previous customers`);
+      // Fallback: resolve ALL previous customers from unified invoices
+      // This is the "Previous Customers" segment — always live resolution
+      console.log(`🎯 Resolving all previous customers via unified invoice identity`);
       const { data, error } = await supabase.rpc("resolve_previous_customers", { p_days: 3650 });
       stores = (data || []).map((r: any) => ({
         id: r.store_id,
@@ -69,34 +79,57 @@ serve(async (req: Request) => {
       throw new Error(`Failed to resolve audience: ${storeError.message}`);
     }
 
-    if (!stores || stores.length === 0) {
+    console.log(`RESOLVER_CUSTOMERS_FOUND: ${stores.length}`);
+
+    // 3. Deduplicate by normalized phone — one message per phone number
+    const phoneMap = new Map<string, typeof stores[0]>();
+    for (const store of stores) {
+      const normalized = normalizePhone(store.phone);
+      if (normalized && !phoneMap.has(normalized)) {
+        phoneMap.set(normalized, store);
+      }
+    }
+    const dedupedStores = Array.from(phoneMap.values());
+    console.log(`TARGETS_AFTER_DEDUP: ${dedupedStores.length} (from ${stores.length} resolved)`);
+
+    if (dedupedStores.length === 0) {
       await supabase.from("messaging_campaigns").update({
         status: "completed",
         total_targets: 0,
         updated_at: new Date().toISOString(),
       }).eq("id", campaign_id);
 
-      return new Response(JSON.stringify({ success: true, targets: 0 }), {
+      return new Response(JSON.stringify({ success: true, targets: 0, resolved: stores.length, deduped: 0 }), {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
     // DRY RUN: return counts without inserting
     if (dry_run) {
+      // Also collect source breakdown
+      const sourceCounts: Record<string, number> = {};
+      stores.forEach(s => {
+        // Sources come from resolver but we track counts
+        sourceCounts["resolved"] = (sourceCounts["resolved"] || 0) + 1;
+      });
+
       return new Response(
         JSON.stringify({
           success: true,
           dry_run: true,
           campaign_id,
-          targets: stores.length,
+          resolved_customers: stores.length,
+          valid_phones: dedupedStores.length,
+          targets: dedupedStores.length,
           mode: campaign.mode,
+          source_breakdown: sourceCounts,
         }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    // 3. Insert targets
-    const targets = stores.map((store: any) => ({
+    // 4. Insert targets (deduped)
+    const targets = dedupedStores.map((store: any) => ({
       campaign_id,
       store_id: store.id,
       phone: store.phone,
@@ -124,19 +157,21 @@ serve(async (req: Request) => {
       }
     }
 
-    // 4. Update campaign with target count
+    // 5. Update campaign with target count
     await supabase.from("messaging_campaigns").update({
       total_targets: insertedCount,
       started_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     }).eq("id", campaign_id);
 
-    console.log(`✅ Campaign launched with ${insertedCount} targets`);
+    console.log(`✅ Campaign launched: RESOLVER=${stores.length} → DEDUP=${dedupedStores.length} → INSERTED=${insertedCount}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         campaign_id,
+        resolved_customers: stores.length,
+        valid_phones: dedupedStores.length,
         targets: insertedCount,
         mode: campaign.mode,
       }),
