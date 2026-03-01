@@ -35,18 +35,27 @@ serve(async (req: Request) => {
 
     // 2. Expand audience — get stores based on target_filter
     const segment = campaign.target_filter?.segment || "all";
-    let storeQuery = supabase
-      .from("store_master")
-      .select("id, store_name, phone, contact_name")
-      .not("phone", "is", null);
+    // Use audience segment resolver if audience_id is provided, otherwise fallback to store_master
+    const audienceId = campaign.target_filter?.audience_id;
+    let stores: any[] = [];
+    let storeError: any = null;
 
-    if (campaign.business_id) {
-      storeQuery = storeQuery.eq("business_id", campaign.business_id);
+    if (audienceId) {
+      console.log(`🎯 Resolving audience segment: ${audienceId}`);
+      const { data, error } = await supabase.rpc("resolve_audience_segment", {
+        p_segment_id: audienceId,
+      });
+      stores = data || [];
+      storeError = error;
+    } else {
+      const { data, error } = await supabase
+        .from("store_master")
+        .select("id, store_name, phone, contact_name")
+        .not("phone", "is", null)
+        .limit(5000);
+      stores = data || [];
+      storeError = error;
     }
-
-    // Apply basic segment filters
-    // More advanced filtering would use RPCs
-    const { data: stores, error: storeError } = await storeQuery.limit(5000);
 
     if (storeError) {
       throw new Error(`Failed to fetch stores: ${storeError.message}`);
