@@ -5,6 +5,7 @@ import { Megaphone, BarChart3, Target, Users } from 'lucide-react';
 import AutoCampaigns from "@/components/communication/AutoCampaigns";
 import ColdCallBlastPage from '@/pages/communication/cold-calls/ColdCallBlastPage';
 import CampaignIntelligencePage from '@/pages/communication/dialer/CampaignIntelligencePage';
+import AudienceBuilderTab from './AudienceBuilderTab';
 
 export default function CampaignsPage() {
   const [searchParams] = useSearchParams();
@@ -25,6 +26,9 @@ export default function CampaignsPage() {
           <TabsTrigger value="builder" className="gap-1.5 text-xs">
             <Megaphone className="h-3.5 w-3.5" /> Builder
           </TabsTrigger>
+          <TabsTrigger value="audiences" className="gap-1.5 text-xs">
+            <Users className="h-3.5 w-3.5" /> Audience Builder
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="gap-1.5 text-xs">
             <BarChart3 className="h-3.5 w-3.5" /> Analytics
           </TabsTrigger>
@@ -35,6 +39,9 @@ export default function CampaignsPage() {
 
         <TabsContent value="builder" className="mt-4">
           <AutoCampaigns />
+        </TabsContent>
+        <TabsContent value="audiences" className="mt-4">
+          <AudienceBuilderTab />
         </TabsContent>
         <TabsContent value="analytics" className="mt-4">
           <CampaignIntelligencePage />

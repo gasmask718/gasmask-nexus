@@ -6850,6 +6850,62 @@ export type Database = {
           },
         ]
       }
+      audience_segments: {
+        Row: {
+          business_id: string | null
+          cached_at: string | null
+          cached_count: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          engagement_rate: number | null
+          filter_config: Json
+          id: string
+          is_default: boolean
+          is_dynamic: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          business_id?: string | null
+          cached_at?: string | null
+          cached_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          engagement_rate?: number | null
+          filter_config?: Json
+          id?: string
+          is_default?: boolean
+          is_dynamic?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          business_id?: string | null
+          cached_at?: string | null
+          cached_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          engagement_rate?: number | null
+          filter_config?: Json
+          id?: string
+          is_default?: boolean
+          is_dynamic?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audience_segments_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_approvals_log: {
         Row: {
           action: string
