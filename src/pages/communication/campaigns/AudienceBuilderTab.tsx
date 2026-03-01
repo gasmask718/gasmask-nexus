@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DeleteConfirmModal } from "@/components/crud/DeleteConfirmModal";
-import { Users, Plus, Pencil, Trash2, RefreshCw, Eye, Loader2, Sparkles, Filter } from "lucide-react";
+import { Users, Plus, Pencil, Trash2, RefreshCw, Eye, Loader2, Sparkles, Filter, Activity, Database } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -79,7 +79,7 @@ export default function AudienceBuilderTab() {
     },
   });
 
-  // Preview members query using invoice-aware RPC
+  // Preview members query using unified identity resolver
   const { data: previewMembers, isFetching: countLoading } = useQuery({
     queryKey: ["audience-preview", previewSegmentId],
     queryFn: async () => {
@@ -88,6 +88,16 @@ export default function AudienceBuilderTab() {
       return data || [];
     },
     enabled: !!previewSegmentId,
+  });
+
+  // Audience diagnostics
+  const { data: diagnostics, refetch: refetchDiagnostics } = useQuery({
+    queryKey: ["audience-diagnostics"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("audience_diagnostics");
+      if (error) throw error;
+      return data?.[0] || null;
+    },
   });
 
   const saveMutation = useMutation({
@@ -273,6 +283,53 @@ export default function AudienceBuilderTab() {
         </CardContent>
       </Card>
 
+      {/* Audience Diagnostics Panel */}
+      {diagnostics && (
+        <Card className="border-accent/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Activity className="h-4 w-4 text-accent-foreground" />
+              Audience Diagnostics
+            </CardTitle>
+            <CardDescription className="text-xs">Identity resolution across all invoice sources</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold">{Number(diagnostics.total_invoices_scanned || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Invoices Scanned</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{Number(diagnostics.matched_by_id || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Matched by ID</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-secondary-foreground">{Number(diagnostics.matched_by_phone || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Matched by Phone</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-accent-foreground">{Number(diagnostics.matched_by_name || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Matched by Name</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-destructive">{Number(diagnostics.unmatched_invoices || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Unmatched</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{Number(diagnostics.unique_customers || 0).toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Unique Customers</p>
+              </div>
+            </div>
+            {Number(diagnostics.unmatched_invoices || 0) > 0 && (
+              <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                <Database className="h-3 w-3" />
+                {Number(diagnostics.unmatched_invoices || 0).toLocaleString()} invoices from stores missing phone numbers in store master
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Preview Card */}
       {previewSegmentId && (
         <Card className="border-primary/30">
@@ -303,6 +360,8 @@ export default function AudienceBuilderTab() {
                         <TableHead className="text-right">Orders</TableHead>
                         <TableHead className="text-right">Lifetime Spend</TableHead>
                         <TableHead>Last Order</TableHead>
+                        <TableHead>Sources</TableHead>
+                        <TableHead>Match</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -314,6 +373,18 @@ export default function AudienceBuilderTab() {
                           <TableCell className="text-right font-mono">${Number(m.lifetime_spend || 0).toLocaleString()}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">
                             {m.last_order_date ? format(new Date(m.last_order_date), "MMM d, yyyy") : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-1 flex-wrap">
+                              {(m.sources_used || []).map((s: string) => (
+                                <Badge key={s} variant="outline" className="text-[9px] px-1 py-0">{s}</Badge>
+                              ))}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={m.match_method === 'id' ? 'default' : 'secondary'} className="text-[9px]">
+                              {m.match_method}
+                            </Badge>
                           </TableCell>
                         </TableRow>
                       ))}

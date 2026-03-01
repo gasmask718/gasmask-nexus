@@ -60351,6 +60351,21 @@ export type Database = {
           },
         ]
       }
+      unified_customer_orders: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          invoice_source: string | null
+          order_id: string | null
+          paid_at: string | null
+          phone: string | null
+          status: string | null
+          store_id: string | null
+          store_name: string | null
+          total_amount: number | null
+        }
+        Relationships: []
+      }
       v_ai_denial_summary: {
         Row: {
           action_key: string | null
@@ -63932,6 +63947,17 @@ export type Database = {
         Args: { p_promotion_id: string }
         Returns: string
       }
+      audience_diagnostics: {
+        Args: never
+        Returns: {
+          matched_by_id: number
+          matched_by_name: number
+          matched_by_phone: number
+          total_invoices_scanned: number
+          unique_customers: number
+          unmatched_invoices: number
+        }[]
+      }
       audit_actor_role: { Args: never; Returns: string }
       audit_compute_hash: {
         Args: { payload: Json; prev: string }
@@ -64773,6 +64799,7 @@ export type Database = {
         Returns: undefined
       }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
+      normalize_phone: { Args: { raw_phone: string }; Returns: string }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
@@ -64874,7 +64901,9 @@ export type Database = {
         Returns: {
           last_order_date: string
           lifetime_spend: number
+          match_method: string
           phone: string
+          sources_used: string[]
           store_id: string
           store_name: string
           total_orders: number
@@ -64890,6 +64919,20 @@ export type Database = {
         Args: { p_commitment_id: string }
         Returns: undefined
       }
+      resolve_previous_customers: {
+        Args: never
+        Returns: {
+          last_order_date: string
+          lifetime_spend: number
+          match_method: string
+          phone: string
+          sources_used: string[]
+          store_id: string
+          store_name: string
+          total_orders: number
+        }[]
+      }
+      resolve_previous_customers_count: { Args: never; Returns: number }
       restore_deleted: {
         Args: { _record_id: string; _table_name: string }
         Returns: undefined
