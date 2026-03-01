@@ -62,6 +62,7 @@ const FLOOR_2_AUTOMATION: FloorSection = {
   items: [
     { path: "outbound-growth", label: "Outbound Growth", icon: Rocket, highlight: true },
     { path: "campaigns", label: "Campaigns", icon: Megaphone },
+    { path: "messaging-hub", label: "Messaging Hub", icon: MessageCircle, highlight: true },
     { path: "ai-auto-text", label: "AI Auto Text", icon: MessageCircle },
     { path: "personas", label: "Personas", icon: User },
     { path: "call-flows", label: "Call Flows", icon: GitBranch },
