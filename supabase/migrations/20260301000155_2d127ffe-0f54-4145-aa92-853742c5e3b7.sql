@@ -1,0 +1,4 @@
+ALTER TABLE public.dialer_campaigns
+ADD COLUMN IF NOT EXISTS amd_enabled BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS amd_mode TEXT DEFAULT 'detect',
+ADD COLUMN IF NOT EXISTS amd_timeout_seconds INTEGER DEFAULT 30;

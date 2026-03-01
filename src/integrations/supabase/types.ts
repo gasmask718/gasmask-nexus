@@ -21411,6 +21411,9 @@ export type Database = {
       }
       dialer_campaigns: {
         Row: {
+          amd_enabled: boolean | null
+          amd_mode: string | null
+          amd_timeout_seconds: number | null
           answered_calls: number | null
           auto_pause_reason: string | null
           auto_paused: boolean | null
@@ -21432,6 +21435,9 @@ export type Database = {
           voicemail_count: number | null
         }
         Insert: {
+          amd_enabled?: boolean | null
+          amd_mode?: string | null
+          amd_timeout_seconds?: number | null
           answered_calls?: number | null
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
@@ -21453,6 +21459,9 @@ export type Database = {
           voicemail_count?: number | null
         }
         Update: {
+          amd_enabled?: boolean | null
+          amd_mode?: string | null
+          amd_timeout_seconds?: number | null
           answered_calls?: number | null
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
