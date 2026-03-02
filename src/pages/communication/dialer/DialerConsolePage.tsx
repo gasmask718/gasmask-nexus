@@ -101,6 +101,39 @@ export default function DialerConsolePage() {
     enabled: !!bizId,
   });
 
+  // ── Territory Prospects with phone numbers ──
+  const { data: prospectContacts = [] } = useQuery({
+    queryKey: ['console-prospect-contacts', bizId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('territory_addresses')
+        .select('id, store_name, full_address, city, state, phone, discovery_status, address_type')
+        .not('phone', 'is', null)
+        .neq('phone', '')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+    enabled: !!bizId,
+    refetchInterval: 15000,
+  });
+
+  // ── Stores missing phone numbers ──
+  const { data: storesNoPhone = [] } = useQuery({
+    queryKey: ['console-stores-no-phone', bizId],
+    queryFn: async () => {
+      const result = await (supabase as any)
+        .from('store_master')
+        .select('id, store_name, city, state, phone')
+        .eq('business_id', bizId!)
+        .is('phone', null)
+        .order('store_name')
+        .limit(20);
+      return (result.data || []) as Array<{ id: string; store_name: string; city: string | null; state: string | null; phone: string | null }>;
+    },
+    enabled: !!bizId,
+  });
+
   const { data: activeSessions = [] } = useQuery({
     queryKey: ['console-live-sessions', bizId],
     queryFn: async () => {
@@ -430,7 +463,68 @@ export default function DialerConsolePage() {
         </CardContent></Card>
       </div>
 
-      {/* ── Main 3-Column Layout ── */}
+      {/* ── Prospect Quick Nav & Missing Phones ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Prospects with phone numbers */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" /> Prospect Contacts
+              <Badge variant="secondary" className="ml-auto text-xs">{prospectContacts.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-1 p-3">
+                {prospectContacts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No prospects with phone numbers found</p>
+                ) : prospectContacts.map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between p-2 border rounded-lg text-sm hover:bg-muted/50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{p.store_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{p.city}{p.state ? `, ${p.state}` : ''}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-mono text-muted-foreground">{p.phone}</span>
+                      <Badge variant="outline" className="text-xs capitalize">{(p.discovery_status || 'new').replace('_', ' ')}</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Stores missing phone numbers */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" /> Stores Missing Phone
+              <Badge variant="destructive" className="ml-auto text-xs">{storesNoPhone.length}</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ScrollArea className="h-[200px]">
+              <div className="space-y-1 p-3">
+                {storesNoPhone.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">All stores have registered numbers ✓</p>
+                ) : storesNoPhone.map((s: any) => (
+                  <div key={s.id} className="flex items-center justify-between p-2 border border-amber-500/20 rounded-lg text-sm bg-amber-500/5">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{s.store_name || 'Unknown Store'}</p>
+                      <p className="text-xs text-muted-foreground truncate">{s.city}{s.state ? `, ${s.state}` : ''}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-500/30 shrink-0">
+                      No phone
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
         {/* LEFT: Queue */}
         <div className="lg:col-span-3">
