@@ -1,40 +1,36 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
-import { Crown, Loader2, AlertCircle, UserPlus } from 'lucide-react';
-import {
-  validateInviteToken,
-  acceptInvitation,
-  type Invitation,
-} from '@/services/invitationService';
-import { supabase } from '@/integrations/supabase/client';
-import { getRoleRedirectPath, getRoleDisplayName } from '@/services/roleService';
-import { createUserProfile, createRoleProfile } from '@/services/roleService';
-import { OSRole } from '@/config/osNavigation';
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Crown, Loader2, AlertCircle, UserPlus } from "lucide-react";
+import { validateInviteToken, acceptInvitation, type Invitation } from "@/services/invitationService";
+import { supabase } from "@/integrations/supabase/client";
+import { getRoleDisplayName } from "@/services/roleService";
+import { createUserProfile, createRoleProfile } from "@/services/roleService";
+import { OSRole } from "@/config/osNavigation";
 
 export default function InviteSignup() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const token = searchParams.get("token");
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Form state
-  const [fullName, setFullName] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     if (!token) {
-      setError('No invitation token provided');
+      setError("No invitation token provided");
       setLoading(false);
       return;
     }
@@ -44,9 +40,9 @@ export default function InviteSignup() {
 
   const validateToken = async () => {
     if (!token) return;
-    
+
     const { invitation, error } = await validateInviteToken(token);
-    
+
     if (error) {
       setError(error);
       setLoading(false);
@@ -59,19 +55,19 @@ export default function InviteSignup() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!invitation || !token) {
-      toast.error('Invalid invitation');
+      toast.error("Invalid invitation");
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
@@ -87,29 +83,26 @@ export default function InviteSignup() {
           data: {
             full_name: fullName,
             role: invitation.role,
-          }
-        }
+          },
+        },
       });
 
       if (authError) throw new Error(authError.message);
-      if (!authData.user) throw new Error('Failed to create user account');
+      if (!authData.user) throw new Error("Failed to create user account");
 
       const userId = authData.user.id;
 
       // 2. Accept invitation FIRST — source of truth mutation
-      //    Records accepted_user_id, status='accepted', audit trail
       const { success: accepted, error: acceptError } = await acceptInvitation(token, userId);
       if (!accepted) {
-        console.error('Accept invitation failed:', acceptError);
-        // Non-fatal: continue with profile/role creation
-        // Admin can see the user was created even if this step fails
+        console.error("Accept invitation failed:", acceptError);
       }
 
       // 3. Create user profile
       await createUserProfile(userId, {
         full_name: fullName,
         primary_role: invitation.role as OSRole,
-        preferred_language: 'en'
+        preferred_language: "en",
       });
 
       // 4. Create role-specific profile if needed
@@ -120,25 +113,39 @@ export default function InviteSignup() {
       if (invitation.metadata?.assigned_brand_id) {
         roleData.assigned_brand_id = invitation.metadata.assigned_brand_id;
       }
-      
+
       await createRoleProfile(userId, invitation.role as OSRole, roleData);
 
-      // 5. Add to user_roles table (CRITICAL — authority source for RLS)
-      await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: invitation.role as any });
+      // 5. Add to user_roles table
+      await supabase.from("user_roles").insert({ user_id: userId, role: invitation.role as any });
 
-      toast.success('Account created successfully! Redirecting to your portal...');
-      
-      // 6. Redirect to appropriate portal based on role
-      const redirectPath = getRoleRedirectPath(invitation.role);
+      toast.success("Account created successfully! Redirecting to login...");
+
+      // 6. Redirect to appropriate login page based on role
+      let redirectPath = "/auth"; // Default fallback
+
+      switch (invitation.role) {
+        case "biker":
+          redirectPath = "/portal/biker/login";
+          break;
+        case "driver":
+          redirectPath = "/portal/driver/login";
+          break;
+        case "customer":
+        case "user":
+          redirectPath = "/portal/login";
+          break;
+        default:
+          redirectPath = "/auth";
+          break;
+      }
+
       setTimeout(() => {
         navigate(redirectPath, { replace: true });
-      }, 500);
-      
+      }, 1000); // Increased delay slightly to let the toast be seen
     } catch (err: any) {
-      console.error('Signup error:', err);
-      toast.error(err.message || 'Failed to create account');
+      console.error("Signup error:", err);
+      toast.error(err.message || "Failed to create account");
     } finally {
       setSubmitting(false);
     }
@@ -165,7 +172,7 @@ export default function InviteSignup() {
             <CardDescription>{error}</CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Button onClick={() => navigate('/auth')} variant="outline">
+            <Button onClick={() => navigate("/auth")} variant="outline">
               Go to Login
             </Button>
           </CardContent>
@@ -215,7 +222,7 @@ export default function InviteSignup() {
                 required
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
