@@ -52400,6 +52400,7 @@ export type Database = {
           longitude: number | null
           neighborhood_id: string | null
           notes: string | null
+          phone: string | null
           state: string
           store_name: string | null
           updated_at: string
@@ -52419,6 +52420,7 @@ export type Database = {
           longitude?: number | null
           neighborhood_id?: string | null
           notes?: string | null
+          phone?: string | null
           state: string
           store_name?: string | null
           updated_at?: string
@@ -52438,6 +52440,7 @@ export type Database = {
           longitude?: number | null
           neighborhood_id?: string | null
           notes?: string | null
+          phone?: string | null
           state?: string
           store_name?: string | null
           updated_at?: string
