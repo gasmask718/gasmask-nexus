@@ -39,6 +39,7 @@ export interface DuplicateRecord {
     zip: string;
     latitude: number;
     longitude: number;
+    phone?: string | null;
     address_type: string;
     notes: string;
     discovery_status: string;

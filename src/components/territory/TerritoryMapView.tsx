@@ -38,6 +38,7 @@ interface TerritoryAddress {
   zip: string | null;
   latitude: number | null;
   longitude: number | null;
+  phone: string | null;
   discovery_status: string | null;
   discovered_by: string | null;
   address_type: string | null;
@@ -142,7 +143,7 @@ export function TerritoryMapView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('territory_addresses')
-        .select('id, store_name, full_address, city, state, zip, latitude, longitude, discovery_status, discovered_by, address_type, notes, verified_sells_grabba, last_checked_at, created_at')
+        .select('id, store_name, full_address, city, state, zip, latitude, longitude, phone, discovery_status, discovered_by, address_type, notes, verified_sells_grabba, last_checked_at, created_at')
         .not('latitude', 'is', null)
         .not('longitude', 'is', null);
       if (error) throw error;
@@ -352,7 +353,7 @@ export function TerritoryMapView() {
         .setLngLat([a.longitude, a.latitude])
         .setPopup(
           new mapboxgl.Popup({ offset: 10, closeButton: false })
-            .setHTML(`<div style="color:#000;font-size:12px"><strong>${a.store_name || 'Unknown Store'}</strong><br/><span style="color:#555">${a.full_address || '—'}</span><br/><span style="color:#888;font-size:11px">${(a.discovery_status || 'new').replace('_', ' ')} · ${a.discovered_by || '—'}</span></div>`)
+            .setHTML(`<div style="color:#000;font-size:12px"><strong>${a.store_name || 'Unknown Store'}</strong><br/><span style="color:#555">${a.full_address || '—'}</span>${a.phone ? `<br/><span style=\"color:#555\">Phone: ${a.phone}</span>` : ''}<br/><span style="color:#888;font-size:11px">${(a.discovery_status || 'new').replace('_', ' ')} · ${a.discovered_by || '—'}</span></div>`)
         )
         .addTo(map);
 

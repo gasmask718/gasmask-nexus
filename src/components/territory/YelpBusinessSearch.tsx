@@ -146,6 +146,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
       zip: b.location.zip_code,
       latitude: b.coordinates.latitude,
       longitude: b.coordinates.longitude,
+      phone: b.phone || b.display_phone || null,
       address_type: 'commercial',
       notes: `${b.name} | ${b.categories.map(c => c.title).join(', ')} | Rating: ${b.rating}/5 (${b.review_count} reviews) | ${b.display_phone}`,
       discovery_status: 'unknown',
@@ -242,7 +243,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
 
       // No duplicates — insert directly
       if (fresh.length > 0) {
-        const { error } = await supabase.from('territory_addresses').insert(fresh);
+        const { error } = await supabase.from('territory_addresses').insert(fresh as any);
         if (error) throw error;
       }
 
@@ -276,7 +277,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
         }
 
         if (action === 'add') {
-          const { error } = await supabase.from('territory_addresses').insert(newRecord);
+          const { error } = await supabase.from('territory_addresses').insert(newRecord as any);
           if (error) throw error;
           inserted++;
         }
@@ -289,9 +290,10 @@ export function YelpBusinessSearch({ onBack }: Props) {
               store_name: newRecord.store_name,
               latitude: newRecord.latitude,
               longitude: newRecord.longitude,
+              phone: newRecord.phone || null,
               notes: newRecord.notes,
               discovered_by: newRecord.discovered_by,
-            })
+            } as any)
             .eq('id', existingRow.id);
           if (error) throw error;
           updated++;
@@ -304,7 +306,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
             .eq('id', existingRow.id);
           if (delErr) throw delErr;
 
-          const { error: insErr } = await supabase.from('territory_addresses').insert(newRecord);
+          const { error: insErr } = await supabase.from('territory_addresses').insert(newRecord as any);
           if (insErr) throw insErr;
           replaced++;
         }
@@ -312,7 +314,7 @@ export function YelpBusinessSearch({ onBack }: Props) {
 
       // Also insert non-duplicate records
       if (nonDuplicateRecords.length > 0) {
-        const { error } = await supabase.from('territory_addresses').insert(nonDuplicateRecords);
+        const { error } = await supabase.from('territory_addresses').insert(nonDuplicateRecords as any);
         if (error) throw error;
         inserted += nonDuplicateRecords.length;
       }

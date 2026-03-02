@@ -1,0 +1,1 @@
+ALTER TABLE public.territory_addresses ADD COLUMN IF NOT EXISTS phone TEXT;
