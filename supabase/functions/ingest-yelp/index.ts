@@ -355,7 +355,7 @@ serve(async (req) => {
       const location = `${city}, ${state}`;
       let allBusinesses: any[] = [];
       let offset = 0;
-      const limit = 50;
+      const limit = 300;
 
       for (let page = 0; page < 4; page++) {
         try {
