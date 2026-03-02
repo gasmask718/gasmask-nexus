@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,32 +39,27 @@ interface YelpBusiness {
 
 interface Props {
   onBack: () => void;
-  // NEW PROPS FOR PERSISTENCE
-  selectedItems: any[];
-  onSelectionChange: (items: any[]) => void;
-  onIngest?: () => void; // Optional trigger for parent ingestion
+  // CHANGED: Accept global selection state from parent
+  selectedItems: YelpBusiness[];
+  onSelectionChange: (items: YelpBusiness[]) => void;
+  // Optional: If you still want to allow the parent to trigger ingestion, keep this
+  onIngest?: () => void;
   isIngesting?: boolean;
 }
 
 const PAGE_SIZE = 50;
 const MAX_RESULTS = 300;
 
-export function YelpBusinessSearch({
-  onBack,
-  selectedItems = [],
-  onSelectionChange,
-  onIngest,
-  isIngesting = false,
-}: Props) {
+export function YelpBusinessSearch({ onBack, selectedItems, onSelectionChange }: Props) {
   const { addSearch, recentTerms, recentLocations } = useSearchHistory();
   const [term, setTerm] = useState("");
   const [location, setLocation] = useState("");
   const [results, setResults] = useState<YelpBusiness[]>([]);
   const [searching, setSearching] = useState(false);
 
-  // REMOVED LOCAL STATE: const [selected, setSelected] = useState<Set<string>>(new Set());
-  // We now use props.selectedItems directly.
+  // REMOVED: Local 'selected' state is gone. We use 'selectedItems' prop now.
 
+  const [ingesting, setIngesting] = useState(false);
   const [detailBusiness, setDetailBusiness] = useState<YelpBusiness | null>(null);
 
   // Pagination state
@@ -79,8 +74,8 @@ export function YelpBusinessSearch({
   const [nonDuplicateRecords, setNonDuplicateRecords] = useState<any[]>([]);
   const [processingDuplicates, setProcessingDuplicates] = useState(false);
 
-  // Helper to check if an ID is selected in the global list
-  const isSelected = (id: string) => selectedItems.some((item) => item.id === id);
+  // Helper: Check if ID is in the global list
+  const isSelected = (id: string) => selectedItems.some((i) => i.id === id);
 
   const fetchPage = async (searchTerm: string, searchLocation: string, page: number) => {
     setSearching(true);
@@ -113,7 +108,7 @@ export function YelpBusinessSearch({
       toast({ title: "Missing Fields", description: "Enter a search term and location.", variant: "destructive" });
       return;
     }
-    // Don't clear results immediately to avoid flicker, just fetch page 1
+    // We do NOT clear selectedItems here, preserving selection across searches if desired.
     setLastSearchTerm(term);
     setLastSearchLocation(location);
 
@@ -129,44 +124,31 @@ export function YelpBusinessSearch({
     await fetchPage(lastSearchTerm, lastSearchLocation, page);
   };
 
-  // UPDATED: Toggle selection updates the PARENT array
+  // CHANGED: Toggle now saves the full object to parent array
   const toggleSelect = (business: YelpBusiness) => {
     if (isSelected(business.id)) {
-      // Remove
-      onSelectionChange(selectedItems.filter((item) => item.id !== business.id));
+      onSelectionChange(selectedItems.filter((i) => i.id !== business.id));
     } else {
-      // Add (Check limit if you want)
       if (selectedItems.length >= 300) {
-        toast({ title: "Limit Reached", description: "You can only select up to 300 items.", variant: "destructive" });
+        toast({ title: "Limit Reached", description: "Limit of 300 selections reached.", variant: "destructive" });
         return;
       }
       onSelectionChange([...selectedItems, business]);
     }
   };
 
-  // UPDATED: Select All merges page items into global array
-  const selectAllOnPage = () => {
+  // CHANGED: Select All now intelligently merges current page into global list
+  const selectAll = () => {
     const pageIds = results.map((b) => b.id);
     const allPageSelected = pageIds.every((id) => isSelected(id));
 
     if (allPageSelected) {
-      // Deselect all on this page
-      onSelectionChange(selectedItems.filter((item) => !pageIds.includes(item.id)));
+      // Deselect only the visible ones
+      onSelectionChange(selectedItems.filter((i) => !pageIds.includes(i.id)));
     } else {
-      // Add all from this page that aren't already selected
+      // Add visible ones that aren't already selected
       const newItems = results.filter((b) => !isSelected(b.id));
-      const spaceLeft = 300 - selectedItems.length;
-
-      if (newItems.length > spaceLeft) {
-        toast({
-          title: "Limit Warning",
-          description: `Added ${spaceLeft} items. Limit of 300 reached.`,
-          variant: "warning",
-        });
-        onSelectionChange([...selectedItems, ...newItems.slice(0, spaceLeft)]);
-      } else {
-        onSelectionChange([...selectedItems, ...newItems]);
-      }
+      onSelectionChange([...selectedItems, ...newItems]);
     }
   };
 
@@ -188,33 +170,192 @@ export function YelpBusinessSearch({
 
   const normalizeAddr = (s: string) => s?.toLowerCase().replace(/[^a-z0-9]/g, "") || "";
 
-  // UPDATED: Ingest uses GLOBAL list if no args, or uses passed list
   const ingestSelected = async () => {
-    // If the parent passed an ingest function, prefer that (it handles the edge function call)
-    if (onIngest) {
-      onIngest();
-      return;
+    // CHANGED: We use 'selectedItems' (Global) instead of filtering 'results' (Local Page)
+    const businesses = selectedItems;
+
+    if (businesses.length === 0) return;
+    setIngesting(true);
+    try {
+      const records = buildRecords(businesses);
+      const addresses = records.map((r) => r.full_address);
+
+      // Run territory + store checks in parallel
+      const [territoryResult, storesResult] = await Promise.all([
+        supabase
+          .from("territory_addresses")
+          .select("id, full_address, notes, created_at")
+          .in("full_address", addresses),
+        supabase
+          .from("stores")
+          .select("id, name, address_street, address_city, address_state, address_zip, created_at")
+          .is("deleted_at", null),
+      ]);
+
+      const existingTerritoryMap = new Map((territoryResult.data || []).map((e: any) => [e.full_address, e]));
+
+      // Build store lookup maps
+      const storesByAddr = new Map<string, any>();
+      const storesByName = new Map<string, any>();
+      for (const store of storesResult.data || []) {
+        const storeAddr = normalizeAddr(
+          [store.address_street, store.address_city, store.address_state, store.address_zip].filter(Boolean).join(", "),
+        );
+        if (storeAddr) storesByAddr.set(storeAddr, store);
+        if (store.name) storesByName.set(store.name.toLowerCase(), store);
+      }
+
+      const dupes: DuplicateRecord[] = [];
+      const fresh: typeof records = [];
+
+      for (const rec of records) {
+        // Check territory first
+        const territoryMatch = existingTerritoryMap.get(rec.full_address);
+        if (territoryMatch) {
+          dupes.push({
+            newRecord: rec,
+            existingRow: { ...territoryMatch, source: "territory" as const },
+            action: "skip",
+          });
+          continue;
+        }
+
+        // Check stores by address or name
+        const recNormAddr = normalizeAddr(rec.full_address);
+        const recName = rec.store_name?.toLowerCase() || "";
+        const storeMatchByAddr = storesByAddr.get(recNormAddr);
+        const storeMatchByName = recName ? storesByName.get(recName) : null;
+        const storeMatch = storeMatchByAddr || storeMatchByName;
+
+        if (storeMatch) {
+          const storeFullAddr = [
+            storeMatch.address_street,
+            storeMatch.address_city,
+            storeMatch.address_state,
+            storeMatch.address_zip,
+          ]
+            .filter(Boolean)
+            .join(", ");
+          dupes.push({
+            newRecord: rec,
+            existingRow: {
+              id: storeMatch.id,
+              full_address: storeFullAddr,
+              notes: storeMatch.name,
+              created_at: storeMatch.created_at || new Date().toISOString(),
+              source: "store_directory" as const,
+            },
+            action: "skip",
+          });
+          continue;
+        }
+
+        fresh.push(rec);
+      }
+
+      if (dupes.length > 0) {
+        setDuplicateRecords(dupes);
+        setNonDuplicateRecords(fresh);
+        setDuplicateModalOpen(true);
+        setIngesting(false);
+        return;
+      }
+
+      // No duplicates — insert directly
+      if (fresh.length > 0) {
+        const { error } = await supabase.from("territory_addresses").insert(fresh as any);
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Ingestion Complete",
+        description: `${fresh.length} new address(es) added.`,
+      });
+      // CHANGED: Clear the global selection
+      onSelectionChange([]);
+    } catch (err: any) {
+      toast({ title: "Ingestion Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIngesting(false);
     }
+  };
 
-    // FALLBACK: Local ingestion logic (if parent doesn't handle it)
-    // Note: This only processes what's in 'selectedItems', ignoring 'results' unless needed
-    const businessesToIngest = selectedItems;
+  const handleDuplicateConfirm = async (items: DuplicateRecord[]) => {
+    setProcessingDuplicates(true);
+    try {
+      let inserted = 0;
+      let updated = 0;
+      let replaced = 0;
+      let skipped = 0;
 
-    if (businessesToIngest.length === 0) return;
+      for (const item of items) {
+        const { action, newRecord, existingRow } = item;
+        const source = existingRow.source || "territory";
 
-    // ... (Rest of your local ingestion logic, duplicate checking etc.)
-    // For brevity, I am assuming you might want to move this logic to the parent too
-    // but if you keep it here, ensure it uses 'businessesToIngest' (the global list).
+        if (action === "skip") {
+          skipped++;
+          continue;
+        }
 
-    // NOTE: Based on your previous request, the PARENT 'TerritoryIngestion' handles the actual API call
-    // to 'ingest-yelp'. If you want to keep using the local logic below (which does client-side duplicate checking),
-    // you can, but it might be better to unify it.
+        if (action === "add") {
+          const { error } = await supabase.from("territory_addresses").insert(newRecord as any);
+          if (error) throw error;
+          inserted++;
+        }
 
-    // For now, I will assume you want to use the PARENT logic via onIngest().
-    // If onIngest is undefined, we execute the local logic below as fallback.
+        if (action === "update" && source === "territory") {
+          const { error } = await supabase
+            .from("territory_addresses")
+            .update({
+              store_name: newRecord.store_name,
+              latitude: newRecord.latitude,
+              longitude: newRecord.longitude,
+              phone: newRecord.phone || null,
+              notes: newRecord.notes,
+              discovered_by: newRecord.discovered_by,
+            } as any)
+            .eq("id", existingRow.id);
+          if (error) throw error;
+          updated++;
+        }
 
-    // ... [Insert your existing local ingestion logic here if you want to keep client-side checks] ...
-    // Since you built a robust Edge Function earlier, I strongly recommend using onIngest()!
+        if (action === "replace" && source === "territory") {
+          const { error: delErr } = await supabase.from("territory_addresses").delete().eq("id", existingRow.id);
+          if (delErr) throw delErr;
+
+          const { error: insErr } = await supabase.from("territory_addresses").insert(newRecord as any);
+          if (insErr) throw insErr;
+          replaced++;
+        }
+      }
+
+      if (nonDuplicateRecords.length > 0) {
+        const { error } = await supabase.from("territory_addresses").insert(nonDuplicateRecords as any);
+        if (error) throw error;
+        inserted += nonDuplicateRecords.length;
+      }
+
+      const parts: string[] = [];
+      if (inserted > 0) parts.push(`${inserted} added`);
+      if (updated > 0) parts.push(`${updated} updated`);
+      if (replaced > 0) parts.push(`${replaced} replaced`);
+      if (skipped > 0) parts.push(`${skipped} skipped`);
+
+      toast({
+        title: "Ingestion Complete",
+        description: parts.join(", ") + ".",
+      });
+
+      // CHANGED: Clear global selection after confirming duplicates
+      onSelectionChange([]);
+      setDuplicateModalOpen(false);
+      setDuplicateRecords([]);
+      setNonDuplicateRecords([]);
+    } catch (err: any) {
+      toast({ title: "Ingestion Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setProcessingDuplicates(false);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -232,23 +373,24 @@ export function YelpBusinessSearch({
         business={detailBusiness}
         onBack={() => setDetailBusiness(null)}
         onIngest={async () => {
-          // Add to global list if not there
+          // CHANGED: Add full object to global list
           if (!isSelected(detailBusiness.id)) {
             onSelectionChange([...selectedItems, detailBusiness]);
           }
           setDetailBusiness(null);
-          // Trigger ingest immediately? Or just select it?
-          // Usually better to just select it and let user click "Ingest" on main screen
-          toast({ title: "Selected", description: `${detailBusiness.name} added to ingestion list.` });
+          setTimeout(() => {
+            const btn = document.getElementById("yelp-ingest-btn");
+            if (btn) btn.click();
+          }, 100);
         }}
       />
     );
   }
 
   const totalPages = Math.ceil(totalResults / PAGE_SIZE);
-  // Calculate how many on CURRENT page are selected
+  // CHANGED: Calculated based on global list vs current results
   const currentPageSelectedCount = results.filter((b) => isSelected(b.id)).length;
-  const isPageFullySelected = results.length > 0 && currentPageSelectedCount === results.length;
+  const allCurrentSelected = results.length > 0 && currentPageSelectedCount === results.length;
 
   return (
     <div className="space-y-4">
@@ -308,17 +450,12 @@ export function YelpBusinessSearch({
               {selectedItems.length > 0 && ` · ${selectedItems.length} selected total`}
             </p>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={selectAllOnPage}>
-                {isPageFullySelected ? "Deselect Page" : "Select Page"}
+              <Button variant="outline" size="sm" onClick={selectAll}>
+                {allCurrentSelected ? "Deselect Page" : "Select Page"}
               </Button>
               {selectedItems.length > 0 && (
-                <Button
-                  id="yelp-ingest-btn"
-                  size="sm"
-                  onClick={ingestSelected}
-                  disabled={isIngesting || processingDuplicates}
-                >
-                  {isIngesting ? (
+                <Button id="yelp-ingest-btn" size="sm" onClick={ingestSelected} disabled={ingesting}>
+                  {ingesting ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
                   ) : (
                     <Download className="h-4 w-4 mr-1" />
@@ -395,7 +532,7 @@ export function YelpBusinessSearch({
       <DuplicateResolutionModal
         open={duplicateModalOpen}
         duplicates={duplicateRecords}
-        onConfirm={() => {}} // You might need to refactor this if you move ingestion to parent
+        onConfirm={handleDuplicateConfirm}
         onCancel={() => {
           setDuplicateModalOpen(false);
           setDuplicateRecords([]);
