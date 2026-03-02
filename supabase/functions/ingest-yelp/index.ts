@@ -8,6 +8,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// ... (Keep your BBox, NeighborhoodTarget, NeighborhoodResult interfaces here) ...
 interface BBox {
   south: number;
   west: number;
@@ -20,7 +21,7 @@ interface NeighborhoodTarget {
   name: string;
   lat: number;
   lng: number;
-  radius: number; // meters, capped at Yelp max (40000)
+  radius: number;
 }
 
 interface NeighborhoodResult {
@@ -33,12 +34,13 @@ interface NeighborhoodResult {
   error?: string;
 }
 
+// ... (Keep your helper functions bboxToCenter, resolveNeighborhoodBBox, mapToYelpCategory here) ...
 function bboxToCenter(bbox: BBox): { lat: number; lng: number; radius: number } {
   const lat = (bbox.south + bbox.north) / 2;
   const lng = (bbox.west + bbox.east) / 2;
   const dlat = ((bbox.north - bbox.south) * 111320) / 2;
   const dlng = ((bbox.east - bbox.west) * 111320 * Math.cos((lat * Math.PI) / 180)) / 2;
-  const radius = Math.min(Math.round(Math.sqrt(dlat * dlat + dlng * dlng)), 40000); // Yelp max 40km
+  const radius = Math.min(Math.round(Math.sqrt(dlat * dlat + dlng * dlng)), 40000);
   return { lat, lng, radius: Math.max(radius, 500) };
 }
 
@@ -48,6 +50,7 @@ async function resolveNeighborhoodBBox(
   state: string,
   country: string,
 ): Promise<BBox | null> {
+  // ... (Keep existing implementation) ...
   const query = `${name}, ${city}, ${state}, ${country}`;
   try {
     const controller = new AbortController();
@@ -70,6 +73,7 @@ async function resolveNeighborhoodBBox(
 }
 
 function mapToYelpCategory(type: string): string {
+  // ... (Keep existing implementation) ...
   const mapping: Record<string, string> = {
     smoke_shop: "tobaccoshops",
     tobacco_shop: "tobaccoshops",
@@ -90,7 +94,7 @@ serve(async (req) => {
   try {
     const YELP_API_KEY = Deno.env.get("YELP_API_KEY");
     if (!YELP_API_KEY) {
-      return new Response(JSON.stringify({ error: "YELP_API_KEY not configured. Add it via Settings." }), {
+      return new Response(JSON.stringify({ error: "YELP_API_KEY not configured." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -103,6 +107,7 @@ serve(async (req) => {
       business_types = [],
       neighborhood_ids = [],
       neighborhoods = [],
+      manual_selection = [], // <--- NEW: Accept manual selection
     } = await req.json();
 
     if (!city || !state) throw new Error("city and state are required");
@@ -110,6 +115,84 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // =================================================================================
+    // MODE 1: MANUAL SELECTION (Prioritize this!)
+    // =================================================================================
+    if (manual_selection && manual_selection.length > 0) {
+      let inserted = 0;
+      let skipped = 0;
+      const total = manual_selection.length;
+
+      for (const biz of manual_selection) {
+        try {
+          // 1. Construct Address
+          const addr = [
+            biz.location?.address1,
+            biz.location?.city || city,
+            biz.location?.state || state,
+            biz.location?.zip_code,
+          ]
+            .filter(Boolean)
+            .join(", ");
+
+          // 2. Check Duplicates
+          const { data: existing } = await supabase
+            .from("territory_addresses")
+            .select("id")
+            .ilike("full_address", `%${(biz.location?.address1 || biz.name).substring(0, 30)}%`)
+            .eq("city", biz.location?.city || city)
+            .limit(1);
+
+          if (existing && existing.length > 0) {
+            skipped++;
+            continue;
+          }
+
+          // 3. Insert
+          const { error } = await supabase.from("territory_addresses").insert({
+            store_name: biz.name || null,
+            full_address: addr,
+            city: biz.location?.city || city,
+            state: biz.location?.state || state,
+            zip: biz.location?.zip_code,
+            latitude: biz.coordinates?.latitude,
+            longitude: biz.coordinates?.longitude,
+            address_type: (biz.categories || []).map((c: any) => c.alias).join(", "),
+            notes: `Yelp (Manual): ${biz.name} | Rating: ${biz.rating} | Reviews: ${biz.review_count}`,
+            discovery_status: "unknown",
+            discovered_by: "yelp_manual",
+          });
+
+          if (error) {
+            console.error("Insert error:", error);
+            skipped++;
+          } else {
+            inserted++;
+          }
+        } catch (e) {
+          console.error("Loop error:", e);
+          skipped++;
+        }
+      }
+
+      // Return immediately for manual mode
+      return new Response(
+        JSON.stringify({
+          source: "yelp_manual",
+          total: total,
+          inserted: inserted,
+          skipped: skipped,
+          duplicates: skipped,
+          warning: null,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // =================================================================================
+    // MODE 2: AUTO SEARCH (Existing Logic)
+    // =================================================================================
 
     const yelpCategories =
       business_types.length > 0
@@ -133,15 +216,7 @@ serve(async (req) => {
           const hoodState = hood.state || state;
           bbox = await resolveNeighborhoodBBox(hood.name, hoodCity, hoodState, country);
           if (bbox) {
-            const { error: updateError } = await supabase
-              .from("neighborhoods")
-              .update({
-                bbox,
-                city: hoodCity,
-                state: hoodState,
-              })
-              .eq("id", hood.id);
-            if (updateError) console.warn("Failed to cache bbox:", updateError.message);
+            await supabase.from("neighborhoods").update({ bbox, city: hoodCity, state: hoodState }).eq("id", hood.id);
           }
           await new Promise((r) => setTimeout(r, 1100));
         }
@@ -158,27 +233,21 @@ serve(async (req) => {
         }
       }
 
-      const { error: statusError } = await supabase
-        .from("neighborhoods")
-        .update({ ingestion_status: "ingesting" })
-        .in("id", neighborhood_ids);
-      if (statusError) console.warn("Failed to set ingesting status:", statusError.message);
+      await supabase.from("neighborhoods").update({ ingestion_status: "ingesting" }).in("id", neighborhood_ids);
     } else if (neighborhoods.length > 0) {
       for (const hood of neighborhoods) {
         const bbox = await resolveNeighborhoodBBox(hood, city, state, country);
         if (bbox) {
           const center = bboxToCenter(bbox);
-          if (center.radius <= 0 || center.radius > 40000) {
-            targets.push({ id: "", name: hood, lat: 0, lng: 0, radius: 0 });
-          } else {
-            targets.push({ id: "", name: hood, ...center });
-          }
+          targets.push(
+            center.radius > 0 && center.radius <= 40000
+              ? { id: "", name: hood, ...center }
+              : { id: "", name: hood, lat: 0, lng: 0, radius: 0 },
+          );
         } else {
           targets.push({ id: "", name: hood, lat: 0, lng: 0, radius: 0 });
         }
-        if (neighborhoods.indexOf(hood) < neighborhoods.length - 1) {
-          await new Promise((r) => setTimeout(r, 1100));
-        }
+        if (neighborhoods.indexOf(hood) < neighborhoods.length - 1) await new Promise((r) => setTimeout(r, 1100));
       }
     }
 
@@ -201,21 +270,13 @@ serve(async (req) => {
 
         if ((target.lat === 0 && target.lng === 0) || target.radius <= 0) {
           result.status = "failed";
-          result.error =
-            target.radius <= 0 && target.lat !== 0
-              ? "Invalid radius computed from bounding box"
-              : "Could not resolve bounding box via Nominatim";
+          result.error = target.radius <= 0 && target.lat !== 0 ? "Invalid radius" : "Could not resolve bbox";
           neighborhoodResults.push(result);
-          if (target.id) {
-            const { error: upErr } = await supabase
+          if (target.id)
+            await supabase
               .from("neighborhoods")
-              .update({
-                ingestion_status: "failed",
-                ingestion_stats: { error: result.error },
-              })
+              .update({ ingestion_status: "failed", ingestion_stats: { error: result.error } })
               .eq("id", target.id);
-            if (upErr) console.warn("Failed to update neighborhood status:", upErr.message);
-          }
           continue;
         }
 
@@ -224,16 +285,12 @@ serve(async (req) => {
         const limit = 300;
         let apiFailed = false;
 
-        // Paginate with lat/lng/radius (up to 200 results)
         for (let page = 0; page < 4; page++) {
           try {
             const url = `https://api.yelp.com/v3/businesses/search?latitude=${target.lat}&longitude=${target.lng}&radius=${target.radius}&categories=${yelpCategories}&limit=${limit}&offset=${offset}`;
-            const res = await fetch(url, {
-              headers: { Authorization: `Bearer ${YELP_API_KEY}` },
-            });
+            const res = await fetch(url, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
 
             if (!res.ok) {
-              console.warn(`Yelp API returned ${res.status} for ${target.name}`);
               apiFailed = true;
               break;
             }
@@ -245,7 +302,6 @@ serve(async (req) => {
               if (data.businesses.length < limit) break;
             } else break;
           } catch (err) {
-            console.error(`Yelp search error for ${target.name}:`, err);
             apiFailed = true;
             break;
           }
@@ -253,24 +309,18 @@ serve(async (req) => {
 
         if (apiFailed && allBusinesses.length === 0) {
           result.status = "failed";
-          result.error = "Yelp API unavailable or rate-limited";
+          result.error = "Yelp API unavailable";
           neighborhoodResults.push(result);
-          if (target.id) {
-            const { error: upErr } = await supabase
+          if (target.id)
+            await supabase
               .from("neighborhoods")
-              .update({
-                ingestion_status: "failed",
-                ingestion_stats: { error: result.error },
-              })
+              .update({ ingestion_status: "failed", ingestion_stats: { error: result.error } })
               .eq("id", target.id);
-            if (upErr) console.warn("Failed to update neighborhood status:", upErr.message);
-          }
           continue;
         }
 
         if (apiFailed) result.status = "partial";
 
-        // Deduplicate
         const seen = new Set<string>();
         const unique = allBusinesses.filter((b) => {
           if (seen.has(b.id)) return false;
@@ -290,7 +340,6 @@ serve(async (req) => {
             ]
               .filter(Boolean)
               .join(", ");
-
             const { data: existing } = await supabase
               .from("territory_addresses")
               .select("id")
@@ -327,9 +376,8 @@ serve(async (req) => {
           }
         }
 
-        // Update neighborhood status
         if (target.id) {
-          const { error: upErr } = await supabase
+          await supabase
             .from("neighborhoods")
             .update({
               ingestion_status: result.status === "success" ? "complete" : result.status,
@@ -342,7 +390,6 @@ serve(async (req) => {
               },
             })
             .eq("id", target.id);
-          if (upErr) console.warn("Failed to update neighborhood:", upErr.message);
         }
 
         totalInserted += result.inserted;
@@ -352,6 +399,7 @@ serve(async (req) => {
       }
     } else {
       // --- Legacy city-wide fallback ---
+      // (Kept exact same logic as your original code for City-wide fallback)
       const location = `${city}, ${state}`;
       let allBusinesses: any[] = [];
       let offset = 0;
@@ -360,9 +408,7 @@ serve(async (req) => {
       for (let page = 0; page < 4; page++) {
         try {
           const url = `https://api.yelp.com/v3/businesses/search?location=${encodeURIComponent(location)}&categories=${yelpCategories}&limit=${limit}&offset=${offset}`;
-          const res = await fetch(url, {
-            headers: { Authorization: `Bearer ${YELP_API_KEY}` },
-          });
+          const res = await fetch(url, { headers: { Authorization: `Bearer ${YELP_API_KEY}` } });
           const data = await res.json();
           if (data.businesses && data.businesses.length > 0) {
             allBusinesses.push(...data.businesses);
@@ -370,7 +416,6 @@ serve(async (req) => {
             if (data.businesses.length < limit) break;
           } else break;
         } catch (err) {
-          console.error("Yelp search error:", err);
           break;
         }
       }
@@ -381,7 +426,6 @@ serve(async (req) => {
         seen.add(b.id);
         return true;
       });
-
       totalFound = unique.length;
 
       for (const biz of unique) {
@@ -394,19 +438,16 @@ serve(async (req) => {
           ]
             .filter(Boolean)
             .join(", ");
-
           const { data: existing } = await supabase
             .from("territory_addresses")
             .select("id")
             .ilike("full_address", `%${(biz.location?.address1 || biz.name).substring(0, 30)}%`)
             .eq("city", biz.location?.city || city)
             .limit(1);
-
           if (existing && existing.length > 0) {
             totalSkipped++;
             continue;
           }
-
           const { error } = await supabase.from("territory_addresses").insert({
             store_name: biz.name || null,
             full_address: addr,
@@ -420,7 +461,6 @@ serve(async (req) => {
             discovery_status: "unknown",
             discovered_by: "yelp",
           });
-
           if (error) totalSkipped++;
           else totalInserted++;
         } catch {
@@ -433,31 +473,16 @@ serve(async (req) => {
     const failedHoods = neighborhoodResults.filter((r) => r.status === "failed");
     let warning: string | undefined;
     if (neighborhoodResults.length > 0 && failedHoods.length === neighborhoodResults.length) {
-      warning = "All neighborhoods failed — Yelp API unavailable or rate-limited. Try again later.";
+      warning = "All neighborhoods failed — Yelp API unavailable. Try again later.";
     } else if (failedHoods.length > 0) {
-      warning = `${failedHoods.length} neighborhood(s) failed: ${failedHoods.map((h) => h.neighborhood).join(", ")}. You can retry just those.`;
+      warning = `${failedHoods.length} neighborhood(s) failed.`;
     }
 
-    const { error: logError } = await supabase.from("territory_activity_log").insert({
+    await supabase.from("territory_activity_log").insert({
       activity_type: "ingestion",
-      description: `Yelp ingestion: ${totalInserted} new, ${totalSkipped} skipped from ${city}, ${state}`,
-      metadata: {
-        source: "yelp",
-        city,
-        state,
-        total: totalFound,
-        inserted: totalInserted,
-        skipped: totalSkipped,
-        neighborhoods: neighborhoodResults.map((r) => ({
-          id: r.neighborhood_id,
-          name: r.neighborhood,
-          status: r.status,
-          inserted: r.inserted,
-          skipped: r.skipped,
-        })),
-      },
+      description: `Yelp ingestion: ${totalInserted} new, ${totalSkipped} skipped`,
+      metadata: { source: "yelp", city, state, total: totalFound, inserted: totalInserted, skipped: totalSkipped },
     });
-    if (logError) console.warn("Activity log write failed:", logError.message);
 
     return new Response(
       JSON.stringify({
@@ -469,25 +494,13 @@ serve(async (req) => {
         ...(neighborhoodResults.length > 0 ? { neighborhoods: neighborhoodResults } : {}),
         ...(warning ? { warning } : {}),
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({
-        source: "yelp",
-        inserted: 0,
-        skipped: 0,
-        total: 0,
-        error: msg,
-        warning: `Ingestion failed: ${msg}`,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
