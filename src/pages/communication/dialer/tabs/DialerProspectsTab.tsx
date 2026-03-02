@@ -247,7 +247,7 @@ export default function DialerProspectsTab() {
                         )}
                         {p.city && (
                           <span>
-                            {p.city}, {p.state}
+                            {p.city}, {p.state}, {p.phone}
                           </span>
                         )}
                         <span>Added: {new Date(p.created_at).toLocaleDateString()}</span>
