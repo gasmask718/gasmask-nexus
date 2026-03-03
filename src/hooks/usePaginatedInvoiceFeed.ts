@@ -39,6 +39,10 @@ export interface PaginatedInvoiceResult {
 export interface PaginatedFilters extends InvoiceFilters {
   page?: number;
   pageSize?: number;
+  // Additional filters used by BillingInvoices
+  startDate?: string;
+  endDate?: string;
+  sortBy?: "created_at" | "updated_at";
 }
 
 /**

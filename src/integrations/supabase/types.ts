@@ -65071,6 +65071,7 @@ export type Database = {
           discovered_by: string
           full_address: string
           id: string
+          phone: string
           state: string
           store_name: string
           total_count: number
