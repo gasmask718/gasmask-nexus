@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useMemo, useCallback } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Target, Users, Settings, FileText, Rocket,
-  ChevronRight, ChevronLeft, CheckCircle2
+  ChevronRight, ChevronLeft, CheckCircle2, Search
 } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,6 +20,7 @@ import { useBusiness } from '@/contexts/BusinessContext';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
+import { DataTablePagination } from '@/components/crud/DataTablePagination';
 
 const STEPS = [
   { label: 'Campaign Info', icon: Target },
@@ -27,6 +30,16 @@ const STEPS = [
   { label: 'Launch', icon: Rocket },
 ];
 
+const PAGE_SIZE = 25;
+
+interface AudienceRow {
+  id: string;
+  store_name: string;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+}
+
 export default function CampaignWizardPage() {
   const { currentBusiness } = useBusiness();
   const queryClient = useQueryClient();
@@ -34,10 +47,32 @@ export default function CampaignWizardPage() {
   const bizId = currentBusiness?.id;
 
   const [step, setStep] = useState(0);
+
+  // Audience selection state
+  const [audienceType, setAudienceType] = useState<'prospects' | 'stores'>('prospects');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [audiencePage, setAudiencePage] = useState(1);
+  const [audienceSearch, setAudienceSearch] = useState('');
+
+  // Auto-generate campaign name
+  const { data: campaignCount } = useQuery({
+    queryKey: ['dialer-campaign-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('dialer_campaigns')
+        .select('id', { count: 'exact', head: true });
+      return count ?? 0;
+    },
+  });
+
+  const defaultName = useMemo(() => {
+    const seq = (campaignCount ?? 0) + 1;
+    return `CMPN-${String(seq).padStart(4, '0')}-OUTREACH`;
+  }, [campaignCount]);
+
   const [form, setForm] = useState({
     name: '',
     description: '',
-    mode: 'mixed',
     max_attempts: 3,
     retry_backoff_minutes: 30,
     amd_enabled: true,
@@ -45,40 +80,87 @@ export default function CampaignWizardPage() {
     call_window_end: '17:00',
     max_concurrent: 5,
     talk_track: '',
-    state_filter: 'all',
-    callable_only: true,
     voice_provider: 'auto',
     voice_mode: 'balanced',
   });
 
-  // Fetch audience count
-  const { data: audienceCount = 0 } = useQuery({
-    queryKey: ['audience-count', bizId, form.mode, form.state_filter, form.callable_only],
+  // Set default name once loaded
+  const effectiveName = form.name || defaultName;
+
+  // Audience query with server-side pagination
+  const { data: audienceData, isLoading: audienceLoading } = useQuery({
+    queryKey: ['campaign-audience', audienceType, audiencePage, audienceSearch],
     queryFn: async () => {
-      let query = supabase.from('v_callable_entities' as any).select('entity_id', { count: 'exact', head: true });
+      const from = (audiencePage - 1) * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const table = audienceType === 'prospects' ? 'territory_addresses' : 'store_master';
 
-      if (form.mode === 'stores') query = query.eq('entity_type', 'store');
-      if (form.mode === 'prospects') query = query.eq('entity_type', 'prospect');
-      if (form.callable_only) query = query.eq('callable_now', true);
-      if (form.state_filter !== 'all') query = query.eq('state', form.state_filter);
+      let query = supabase
+        .from(table)
+        .select('id, store_name, phone, city, state', { count: 'exact' });
 
-      const { count } = await query;
-      return count || 0;
+      if (audienceType === 'stores') {
+        query = query.is('deleted_at', null);
+      }
+
+      if (audienceSearch.trim()) {
+        const s = audienceSearch.trim();
+        query = query.or(`store_name.ilike.%${s}%,phone.ilike.%${s}%,city.ilike.%${s}%`);
+      }
+
+      query = query.order('store_name', { ascending: true }).range(from, to);
+      const { data, error, count } = await query;
+      if (error) throw error;
+      return { rows: (data ?? []) as AudienceRow[], totalCount: count ?? 0 };
     },
-    enabled: !!bizId,
   });
+
+  const audienceRows = audienceData?.rows ?? [];
+  const audienceTotalCount = audienceData?.totalCount ?? 0;
+  const audienceTotalPages = Math.max(1, Math.ceil(audienceTotalCount / PAGE_SIZE));
+
+  // Selection helpers
+  const allPageSelected = audienceRows.length > 0 && audienceRows.every(r => selectedIds.has(r.id));
+
+  const toggleRow = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAllPage = useCallback(() => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (allPageSelected) {
+        audienceRows.forEach(r => next.delete(r.id));
+      } else {
+        audienceRows.forEach(r => next.add(r.id));
+      }
+      return next;
+    });
+  }, [allPageSelected, audienceRows]);
+
+  const handleAudienceTypeChange = (val: string) => {
+    setAudienceType(val as 'prospects' | 'stores');
+    setSelectedIds(new Set());
+    setAudiencePage(1);
+    setAudienceSearch('');
+  };
 
   // Launch campaign mutation
   const launchMutation = useMutation({
     mutationFn: async () => {
       if (!bizId) throw new Error('No business');
+      if (selectedIds.size === 0) throw new Error('No audience selected');
 
       // Create campaign
       const { data: campaign, error: campErr } = await supabase
         .from('dialer_campaigns')
         .insert({
           business_id: bizId,
-          name: form.name,
+          name: effectiveName,
           description: form.description || null,
           status: 'active',
           max_attempts: form.max_attempts,
@@ -89,35 +171,36 @@ export default function CampaignWizardPage() {
         .single();
       if (campErr) throw campErr;
 
-      // Seed queue from audience
-      let query = supabase
-        .from('v_callable_entities' as any)
-        .select('entity_type, entity_id, display_name, phone_e164')
-        .eq('callable_now', true);
+      // Fetch selected records in batches for queue seeding
+      const ids = Array.from(selectedIds);
+      const table = audienceType === 'prospects' ? 'territory_addresses' : 'store_master';
+      const allRecords: AudienceRow[] = [];
+      const batchSize = 100;
+      for (let i = 0; i < ids.length; i += batchSize) {
+        const batch = ids.slice(i, i + batchSize);
+        const { data } = await supabase.from(table).select('id, store_name, phone, city, state').in('id', batch);
+        if (data) allRecords.push(...(data as AudienceRow[]));
+      }
 
-      if (form.mode === 'stores') query = query.eq('entity_type', 'store');
-      if (form.mode === 'prospects') query = query.eq('entity_type', 'prospect');
-      if (form.state_filter !== 'all') query = query.eq('state', form.state_filter);
+      const items = allRecords
+        .filter(r => r.phone)
+        .map((r, i) => ({
+          business_id: bizId,
+          phone_number: r.phone,
+          contact_name: r.store_name,
+          store_id: audienceType === 'stores' ? r.id : null,
+          entity_type: audienceType === 'prospects' ? 'prospect' : 'store',
+          entity_id: r.id,
+          source_reason: audienceType === 'stores' ? 'active_store' : 'prospect',
+          campaign_id: campaign.id,
+          priority_score: Math.max(1, 100 - i),
+          status: 'queued',
+        }));
 
-      const { data: audience } = await query.limit(500);
-      if (!audience?.length) throw new Error('No callable entities found');
+      if (items.length === 0) throw new Error('No selected records have phone numbers');
 
-      const items = (audience as any[]).map((e: any, i: number) => ({
-        business_id: bizId,
-        phone_number: e.phone_e164,
-        contact_name: e.display_name,
-        store_id: e.entity_type === 'store' ? e.entity_id : null,
-        entity_type: e.entity_type,
-        entity_id: e.entity_id,
-        source_reason: e.entity_type === 'store' ? 'active_store' : 'prospect',
-        campaign_id: campaign.id,
-        priority_score: Math.max(1, 100 - i),
-        status: 'queued',
-      }));
-
-      const batchSize = 50;
-      for (let i = 0; i < items.length; i += batchSize) {
-        await supabase.from('outbound_call_queue').insert(items.slice(i, i + batchSize) as any);
+      for (let i = 0; i < items.length; i += 50) {
+        await supabase.from('outbound_call_queue').insert(items.slice(i, i + 50) as any);
       }
 
       return { campaignId: campaign.id, seeded: items.length };
@@ -125,13 +208,13 @@ export default function CampaignWizardPage() {
     onSuccess: (data) => {
       toast.success(`Campaign launched! ${data.seeded} contacts seeded to queue.`);
       queryClient.invalidateQueries({ queryKey: ['outbound-call-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['dialer-campaign-count'] });
       navigate('/communication/dialer-console');
     },
     onError: (err: any) => toast.error(`Launch failed: ${err.message}`),
   });
 
   const progress = ((step + 1) / STEPS.length) * 100;
-
   const update = (key: string, value: any) => setForm(prev => ({ ...prev, [key]: value }));
 
   return (
@@ -173,50 +256,120 @@ export default function CampaignWizardPage() {
             <>
               <div className="space-y-2">
                 <Label>Campaign Name *</Label>
-                <Input value={form.name} onChange={e => update('name', e.target.value)} placeholder="Q1 Store Reorders" />
+                <Input
+                  value={effectiveName}
+                  onChange={e => update('name', e.target.value)}
+                  placeholder={defaultName}
+                />
+                <p className="text-xs text-muted-foreground">Auto-generated. Edit if needed.</p>
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Textarea value={form.description} onChange={e => update('description', e.target.value)} placeholder="Outreach for..." rows={3} />
               </div>
-              <div className="space-y-2">
-                <Label>Mode</Label>
-                <Select value={form.mode} onValueChange={v => update('mode', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="stores">Active Stores Only</SelectItem>
-                    <SelectItem value="prospects">Prospects Only</SelectItem>
-                    <SelectItem value="mixed">Mixed (Both)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </>
           )}
 
           {step === 1 && (
-            <>
-              <div className="p-4 border rounded-lg bg-muted/30 text-center">
-                <p className="text-3xl font-bold text-primary">{audienceCount}</p>
-                <p className="text-sm text-muted-foreground">Estimated callable entities</p>
-              </div>
+            <div className="space-y-4">
+              {/* Audience type selector */}
               <div className="space-y-2">
-                <Label>State Filter</Label>
-                <Select value={form.state_filter} onValueChange={v => update('state_filter', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All States</SelectItem>
-                    <SelectItem value="NY">New York</SelectItem>
-                    <SelectItem value="NJ">New Jersey</SelectItem>
-                    <SelectItem value="CT">Connecticut</SelectItem>
-                    <SelectItem value="PA">Pennsylvania</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>Audience Type</Label>
+                <RadioGroup value={audienceType} onValueChange={handleAudienceTypeChange} className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="prospects" id="aud-prospects" />
+                    <Label htmlFor="aud-prospects" className="cursor-pointer text-sm">Prospects</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="stores" id="aud-stores" />
+                    <Label htmlFor="aud-stores" className="cursor-pointer text-sm">Active Stores</Label>
+                  </div>
+                </RadioGroup>
               </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={form.callable_only} onCheckedChange={v => update('callable_only', v)} />
-                <Label className="text-sm">Callable only (has phone + not DNC)</Label>
+
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search by name, phone, or city..."
+                  value={audienceSearch}
+                  onChange={e => { setAudienceSearch(e.target.value); setAudiencePage(1); }}
+                />
               </div>
-            </>
+
+              {/* Selection badge */}
+              <div className="flex items-center justify-between">
+                <Badge variant="secondary" className="text-sm">
+                  {selectedIds.size} selected
+                </Badge>
+                {selectedIds.size > 0 && (
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                    Clear selection
+                  </Button>
+                )}
+              </div>
+
+              {/* Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="p-3 w-10">
+                        <Checkbox
+                          checked={allPageSelected}
+                          onCheckedChange={toggleAllPage}
+                        />
+                      </th>
+                      <th className="p-3 text-left font-medium">Name</th>
+                      <th className="p-3 text-left font-medium">Phone</th>
+                      <th className="p-3 text-left font-medium">City</th>
+                      <th className="p-3 text-left font-medium">State</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {audienceLoading ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-muted-foreground">Loading...</td>
+                      </tr>
+                    ) : audienceRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="p-8 text-center text-muted-foreground">No records found</td>
+                      </tr>
+                    ) : (
+                      audienceRows.map(row => (
+                        <tr
+                          key={row.id}
+                          className={`border-t cursor-pointer hover:bg-muted/30 transition-colors ${selectedIds.has(row.id) ? 'bg-primary/5' : ''}`}
+                          onClick={() => toggleRow(row.id)}
+                        >
+                          <td className="p-3">
+                            <Checkbox
+                              checked={selectedIds.has(row.id)}
+                              onCheckedChange={() => toggleRow(row.id)}
+                              onClick={e => e.stopPropagation()}
+                            />
+                          </td>
+                          <td className="p-3 font-medium">{row.store_name || '—'}</td>
+                          <td className="p-3 text-muted-foreground">{row.phone || '—'}</td>
+                          <td className="p-3 text-muted-foreground">{row.city || '—'}</td>
+                          <td className="p-3 text-muted-foreground">{row.state || '—'}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <DataTablePagination
+                currentPage={audiencePage}
+                totalPages={audienceTotalPages}
+                pageSize={PAGE_SIZE}
+                totalItems={audienceTotalCount}
+                onPageChange={setAudiencePage}
+              />
+            </div>
           )}
 
           {step === 2 && (
@@ -277,15 +430,15 @@ export default function CampaignWizardPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 border rounded-lg">
                   <p className="text-muted-foreground text-xs">Campaign</p>
-                  <p className="font-medium">{form.name || '(unnamed)'}</p>
+                  <p className="font-medium">{effectiveName}</p>
                 </div>
                 <div className="p-3 border rounded-lg">
-                  <p className="text-muted-foreground text-xs">Mode</p>
-                  <p className="font-medium capitalize">{form.mode}</p>
+                  <p className="text-muted-foreground text-xs">Audience Type</p>
+                  <p className="font-medium capitalize">{audienceType}</p>
                 </div>
                 <div className="p-3 border rounded-lg">
-                  <p className="text-muted-foreground text-xs">Audience</p>
-                  <p className="font-medium">{audienceCount} entities</p>
+                  <p className="text-muted-foreground text-xs">Selected</p>
+                  <p className="font-medium">{selectedIds.size} records</p>
                 </div>
                 <div className="p-3 border rounded-lg">
                   <p className="text-muted-foreground text-xs">Concurrency</p>
@@ -319,8 +472,12 @@ export default function CampaignWizardPage() {
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => {
-              if (step === 0 && !form.name.trim()) {
+              if (step === 0 && !effectiveName.trim()) {
                 toast.error('Campaign name is required');
+                return;
+              }
+              if (step === 1 && selectedIds.size === 0) {
+                toast.error('Select at least one record');
                 return;
               }
               setStep(s => s + 1);
@@ -332,11 +489,11 @@ export default function CampaignWizardPage() {
         ) : (
           <Button
             onClick={() => launchMutation.mutate()}
-            disabled={launchMutation.isPending || !form.name.trim() || audienceCount === 0}
+            disabled={launchMutation.isPending || !effectiveName.trim() || selectedIds.size === 0}
             className="gap-1 bg-green-600 hover:bg-green-700"
           >
             <Rocket className="h-4 w-4" />
-            {launchMutation.isPending ? 'Launching...' : `Launch Campaign (${audienceCount})`}
+            {launchMutation.isPending ? 'Launching...' : `Launch Campaign (${selectedIds.size})`}
           </Button>
         )}
       </div>
