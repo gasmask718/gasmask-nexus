@@ -28,6 +28,7 @@ export type OSRole =
   | 'ambassador' 
   | 'production' 
   | 'customer'
+  | 'user'
   | 'accountant'
   | 'csr';
 
