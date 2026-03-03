@@ -12,7 +12,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Target,
   Users,
@@ -36,7 +35,6 @@ import {
   Mic,
   LayoutDashboard,
   Plus,
-  AlertCircle,
   Loader2,
   CheckSquare,
 } from "lucide-react";
@@ -122,7 +120,6 @@ export default function CampaignWizardPage() {
   const bizId = currentBusiness?.id;
 
   // --- STATE ---
-  const [isBusinessChecking, setIsBusinessChecking] = useState(true);
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
@@ -149,12 +146,6 @@ export default function CampaignWizardPage() {
     initial_script: "",
     agent_id: VOICE_OPTIONS[0].id,
   });
-
-  // --- EFFECTS ---
-  useEffect(() => {
-    const timer = setTimeout(() => setIsBusinessChecking(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   // --- QUERIES ---
   const { data: campaignCount } = useQuery({
@@ -233,13 +224,13 @@ export default function CampaignWizardPage() {
   // --- MUTATION: LAUNCH ---
   const launchMutation = useMutation({
     mutationFn: async () => {
-      if (!bizId) throw new Error("No business ID found.");
+      // NOTE: Removed strict business ID check as requested
       if (selectedIds.size === 0) throw new Error("No audience selected");
 
       const { data: campaign, error: campErr } = await supabase
         .from("dialer_campaigns")
         .insert({
-          business_id: bizId,
+          business_id: bizId || null, // Allow null if business is missing
           name: effectiveName,
           description: form.description || null,
           status: "active",
@@ -268,7 +259,7 @@ export default function CampaignWizardPage() {
       const items = allRecords
         .filter((r) => r.phone)
         .map((r, i) => ({
-          business_id: bizId,
+          business_id: bizId || null, // Allow null
           phone_number: r.phone,
           contact_name: r.store_name,
           campaign_id: campaign.id,
@@ -301,14 +292,17 @@ export default function CampaignWizardPage() {
   const { data: campaignsList } = useQuery({
     queryKey: ["dialer-campaigns", bizId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("dialer_campaigns")
-        .select("*")
-        .eq("business_id", bizId)
-        .order("created_at", { ascending: false });
+      let query = supabase.from("dialer_campaigns").select("*").order("created_at", { ascending: false });
+
+      // Only filter by business if it exists
+      if (bizId) {
+        query = query.eq("business_id", bizId);
+      }
+
+      const { data } = await query;
       return (data as unknown as Campaign[]) || [];
     },
-    enabled: viewMode === "console" && !!bizId,
+    enabled: viewMode === "console",
   });
 
   const { data: callItems, isLoading: callsLoading } = useQuery({
@@ -343,34 +337,6 @@ export default function CampaignWizardPage() {
     completed:
       callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
   };
-
-  // --- RENDER STATES ---
-
-  if (isBusinessChecking) {
-    return (
-      <div className="w-full h-[50vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Initializing campaign tools...</p>
-      </div>
-    );
-  }
-
-  if (!bizId) {
-    return (
-      <div className="w-full h-full p-8 max-w-2xl mx-auto">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Business Detected</AlertTitle>
-          <AlertDescription>
-            You must be signed in to a business context to launch campaigns.
-            <Button variant="outline" className="mt-4 w-full" onClick={() => window.location.reload()}>
-              Reload Page
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
-  }
 
   if (viewMode === "console") {
     return (
@@ -869,7 +835,7 @@ export default function CampaignWizardPage() {
         ) : (
           <Button
             onClick={() => launchMutation.mutate()}
-            disabled={launchMutation.isPending || !bizId}
+            disabled={launchMutation.isPending} // Removed business check block
             className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white"
           >
             <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch & Monitor"}
