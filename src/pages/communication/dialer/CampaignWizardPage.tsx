@@ -96,7 +96,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
   dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
   connected: { label: "Live", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneCall },
   completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
-  transferred: { label: "Transferred", color: "bg-purple-500/15 text-purple-600 dark:text-purple-400", icon: PhoneForwarded },
+  transferred: {
+    label: "Transferred",
+    color: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+    icon: PhoneForwarded,
+  },
   no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400", icon: XCircle },
   failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
   voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-600 dark:text-orange-400", icon: Mic },
@@ -118,13 +122,12 @@ export default function CampaignWizardPage() {
   const bizId = currentBusiness?.id;
 
   // --- STATE ---
-  // Fix: Add a loading state for business check to prevent instant error flash
   const [isBusinessChecking, setIsBusinessChecking] = useState(true);
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
   const [step, setStep] = useState(0);
-  
+
   // Step 1: Audience State
   const [audienceType, setAudienceType] = useState<"prospects" | "stores">("prospects");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -148,7 +151,6 @@ export default function CampaignWizardPage() {
   });
 
   // --- EFFECTS ---
-  // Wait 1s for business context to settle before showing "No Business" error
   useEffect(() => {
     const timer = setTimeout(() => setIsBusinessChecking(false), 1000);
     return () => clearTimeout(timer);
@@ -204,7 +206,6 @@ export default function CampaignWizardPage() {
       else next.add(id);
       return next;
     });
-    // Reset confirmation if user modifies selection
     setIsAudienceConfirmed(false);
   }, []);
 
@@ -372,109 +373,136 @@ export default function CampaignWizardPage() {
   }
 
   if (viewMode === "console") {
-    // ... CONSOLE RENDER (Same as before but omitted for brevity in response flow, kept in final output)
     return (
-        <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
-          {/* SIDEBAR */}
-          <Card className="w-full md:w-80 flex flex-col h-full border shadow-sm bg-card text-card-foreground">
-            <CardHeader className="pb-3 border-b">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <LayoutDashboard className="h-5 w-5 text-primary" />
-                  History
-                </CardTitle>
-                <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
-                  <Plus className="h-3.5 w-3.5" /> New
-                </Button>
+      <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
+        {/* SIDEBAR */}
+        <Card className="w-full md:w-80 flex flex-col h-full border shadow-sm bg-card text-card-foreground">
+          <CardHeader className="pb-3 border-b">
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+                History
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
+                <Plus className="h-3.5 w-3.5" /> New
+              </Button>
+            </div>
+            <CardDescription>Select campaign to monitor</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0 flex-1">
+            <ScrollArea className="h-full">
+              <div className="flex flex-col p-2 gap-2">
+                {campaignsList?.length === 0 ? (
+                  <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
+                ) : (
+                  campaignsList?.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setActiveCampaignId(c.id)}
+                      className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${
+                        activeCampaignId === c.id
+                          ? "bg-primary/10 border-primary shadow-sm text-primary"
+                          : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"
+                      }`}
+                    >
+                      <div className="flex w-full justify-between items-center">
+                        <span className="font-semibold text-sm truncate">{c.name}</span>
+                        <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
+                          {c.status}
+                        </Badge>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(c.created_at), "MMM d, h:mm a")}
+                      </span>
+                    </button>
+                  ))
+                )}
               </div>
-              <CardDescription>Select campaign to monitor</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0 flex-1">
-              <ScrollArea className="h-full">
-                <div className="flex flex-col p-2 gap-2">
-                  {campaignsList?.length === 0 ? (
-                    <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
-                  ) : (
-                    campaignsList?.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => setActiveCampaignId(c.id)}
-                        className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${
-                          activeCampaignId === c.id
-                            ? "bg-primary/10 border-primary shadow-sm text-primary"
-                            : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"
-                        }`}
-                      >
-                        <div className="flex w-full justify-between items-center">
-                          <span className="font-semibold text-sm truncate">{c.name}</span>
-                          <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
-                            {c.status}
-                          </Badge>
-                        </div>
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(c.created_at), "MMM d, h:mm a")}
-                        </span>
-                      </button>
-                    ))
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* MAIN DASHBOARD */}
+        <div className="flex-1 flex flex-col gap-6 h-full overflow-hidden">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">{activeCampaign?.name || "Campaign Dashboard"}</h1>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                  <Badge variant="outline" className="gap-1 bg-background">
+                    <Bot className="h-3 w-3" /> Agent: {activeAgentName}
+                  </Badge>
+                  {activeCampaign?.status === "active" && (
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
+                      <Activity className="h-3 w-3" /> Live
+                    </span>
                   )}
                 </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-  
-          {/* MAIN DASHBOARD */}
-          <div className="flex-1 flex flex-col gap-6 h-full overflow-hidden">
-            <div className="flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">{activeCampaign?.name || "Campaign Dashboard"}</h1>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                    <Badge variant="outline" className="gap-1 bg-background">
-                      <Bot className="h-3 w-3" /> Agent: {activeAgentName}
-                    </Badge>
-                    {activeCampaign?.status === "active" && (
-                      <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
-                        <Activity className="h-3 w-3" /> Live
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
-                  <RotateCcw className="h-4 w-4 mr-1" /> Refresh
-                </Button>
               </div>
-  
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <StatCard label="Total Leads" value={stats.total} icon={Users} />
-                <StatCard label="In Queue" value={stats.queued} icon={Clock} color="text-muted-foreground" />
-                <StatCard label="Live Calls" value={stats.live} icon={Activity} color="text-blue-600 dark:text-blue-400" active />
-                <StatCard label="Transferred" value={stats.transferred} icon={PhoneForwarded} color="text-purple-600 dark:text-purple-400" />
-                <StatCard label="Completed" value={stats.completed} icon={CheckCircle2} color="text-green-600 dark:text-green-400" />
-              </div>
+              <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
+                <RotateCcw className="h-4 w-4 mr-1" /> Refresh
+              </Button>
             </div>
-  
-            <Card className="flex-1 border shadow-sm flex flex-col overflow-hidden bg-card">
-              <Tabs defaultValue="monitor" className="h-full flex flex-col">
-                <div className="px-6 pt-4 pb-0 border-b bg-muted/20">
-                  <TabsList className="bg-muted">
-                    <TabsTrigger value="monitor" className="gap-2"><Activity className="h-4 w-4" /> Live Monitor</TabsTrigger>
-                    <TabsTrigger value="transcripts" className="gap-2"><MessageSquare className="h-4 w-4" /> Transcripts & Logs</TabsTrigger>
-                  </TabsList>
-                </div>
-  
-                <TabsContent value="monitor" className="flex-1 p-0 m-0 overflow-hidden bg-background">
-                  <ScrollArea className="h-full p-4">
-                    <div className="space-y-2">
-                      {callsLoading ? (
-                        <p className="text-center py-4 text-muted-foreground">Loading calls...</p>
-                      ) : callItems?.length === 0 ? (
-                        <div className="text-center py-10 text-muted-foreground">No calls generated for this campaign yet.</div>
-                      ) : (
-                        callItems?.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors">
+
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <StatCard label="Total Leads" value={stats.total} icon={Users} />
+              <StatCard label="In Queue" value={stats.queued} icon={Clock} color="text-muted-foreground" />
+              <StatCard
+                label="Live Calls"
+                value={stats.live}
+                icon={Activity}
+                color="text-blue-600 dark:text-blue-400"
+                active
+              />
+              <StatCard
+                label="Transferred"
+                value={stats.transferred}
+                icon={PhoneForwarded}
+                color="text-purple-600 dark:text-purple-400"
+              />
+              <StatCard
+                label="Completed"
+                value={stats.completed}
+                icon={CheckCircle2}
+                color="text-green-600 dark:text-green-400"
+              />
+            </div>
+          </div>
+
+          <Card className="flex-1 border shadow-sm flex flex-col overflow-hidden bg-card">
+            <Tabs defaultValue="monitor" className="h-full flex flex-col">
+              <div className="px-6 pt-4 pb-0 border-b bg-muted/20">
+                <TabsList className="bg-muted">
+                  <TabsTrigger value="monitor" className="gap-2">
+                    <Activity className="h-4 w-4" /> Live Monitor
+                  </TabsTrigger>
+                  <TabsTrigger value="transcripts" className="gap-2">
+                    <MessageSquare className="h-4 w-4" /> Transcripts & Logs
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="monitor" className="flex-1 p-0 m-0 overflow-hidden bg-background">
+                <ScrollArea className="h-full p-4">
+                  <div className="space-y-2">
+                    {callsLoading ? (
+                      <p className="text-center py-4 text-muted-foreground">Loading calls...</p>
+                    ) : callItems?.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        No calls generated for this campaign yet.
+                      </div>
+                    ) : (
+                      callItems?.map((item) => {
+                        const config = STATUS_CONFIG[item.status] || STATUS_CONFIG.queued;
+                        const Icon = config.icon;
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
+                          >
                             <div className="flex items-center gap-4">
-                              <div className={`p-2 rounded-full bg-muted/50 ${STATUS_CONFIG[item.status]?.color || STATUS_CONFIG.queued.color}`}>
-                                {STATUS_CONFIG[item.status]?.icon && <STATUS_CONFIG[item.status].icon className="h-4 w-4" />}
+                              <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
+                                <Icon className="h-4 w-4" />
                               </div>
                               <div>
                                 <p className="font-medium text-sm text-foreground">{item.contact_name || "Unknown"}</p>
@@ -482,26 +510,27 @@ export default function CampaignWizardPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
-                              <Badge variant="outline" className={`${STATUS_CONFIG[item.status]?.color || STATUS_CONFIG.queued.color} border-0 bg-transparent`}>
-                                {STATUS_CONFIG[item.status]?.label || item.status}
+                              <Badge variant="outline" className={`${config.color} border-0 bg-transparent`}>
+                                {config.label}
                               </Badge>
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </TabsContent>
-                <TabsContent value="transcripts" className="flex-1 p-0 m-0 overflow-hidden bg-muted/10">
-                    <div className="p-8 text-center text-muted-foreground">
-                        <p>Transcripts will appear here after calls are completed.</p>
-                    </div>
-                </TabsContent>
-              </Tabs>
-            </Card>
-          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="transcripts" className="flex-1 p-0 m-0 overflow-hidden bg-muted/10">
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>Transcripts will appear here after calls are completed.</p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </Card>
         </div>
-      );
+      </div>
+    );
   }
 
   const progress = ((step + 1) / STEPS.length) * 100;
@@ -556,11 +585,7 @@ export default function CampaignWizardPage() {
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Textarea
-                  value={form.description}
-                  onChange={(e) => update("description", e.target.value)}
-                  rows={3}
-                />
+                <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={3} />
               </div>
             </CardContent>
           </Card>
@@ -608,7 +633,14 @@ export default function CampaignWizardPage() {
                   {selectedIds.size} selected {isAudienceConfirmed && "(Confirmed)"}
                 </Badge>
                 {selectedIds.size > 0 && (
-                  <Button variant="ghost" size="sm" onClick={() => { setSelectedIds(new Set()); setIsAudienceConfirmed(false); }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedIds(new Set());
+                      setIsAudienceConfirmed(false);
+                    }}
+                  >
                     Clear
                   </Button>
                 )}
@@ -627,7 +659,9 @@ export default function CampaignWizardPage() {
                   <tbody>
                     {audienceLoading ? (
                       <tr>
-                        <td colSpan={3} className="p-4 text-center">Loading...</td>
+                        <td colSpan={3} className="p-4 text-center">
+                          Loading...
+                        </td>
                       </tr>
                     ) : (
                       audienceRows.map((row) => (
@@ -647,19 +681,19 @@ export default function CampaignWizardPage() {
                   </tbody>
                 </table>
               </div>
-              
+
               {/* NEW CONFIRM BUTTON */}
               <div className="flex justify-end pt-2">
-                 <Button 
-                   variant={isAudienceConfirmed ? "outline" : "default"} 
-                   size="sm" 
-                   onClick={handleConfirmSelection}
-                   disabled={selectedIds.size === 0}
-                   className="gap-2"
-                 >
-                   <CheckSquare className="h-4 w-4" />
-                   {isAudienceConfirmed ? "Selection Confirmed" : "Confirm Selection"}
-                 </Button>
+                <Button
+                  variant={isAudienceConfirmed ? "outline" : "default"}
+                  size="sm"
+                  onClick={handleConfirmSelection}
+                  disabled={selectedIds.size === 0}
+                  className="gap-2"
+                >
+                  <CheckSquare className="h-4 w-4" />
+                  {isAudienceConfirmed ? "Selection Confirmed" : "Confirm Selection"}
+                </Button>
               </div>
 
               <DataTablePagination
