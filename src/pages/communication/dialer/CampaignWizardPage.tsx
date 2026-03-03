@@ -116,7 +116,7 @@ const STEPS = [
 const PAGE_SIZE = 25;
 
 export default function CampaignWizardPage() {
-  const { currentBusiness, isLoading: isBusinessLoading } = useBusiness();
+  const { currentBusiness } = useBusiness();
   const queryClient = useQueryClient();
   const bizId = currentBusiness?.id;
 
@@ -329,16 +329,6 @@ export default function CampaignWizardPage() {
     completed:
       callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
   };
-
-  // --- RENDER LOADING STATE ---
-  if (isBusinessLoading) {
-    return (
-      <div className="w-full h-[50vh] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-muted-foreground">Loading business context...</p>
-      </div>
-    );
-  }
 
   // --- RENDER NO BUSINESS STATE ---
   if (!bizId) {
