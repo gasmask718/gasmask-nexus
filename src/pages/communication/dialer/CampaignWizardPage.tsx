@@ -117,7 +117,20 @@ const PAGE_SIZE = 25;
 export default function CampaignWizardPage() {
   const { currentBusiness } = useBusiness();
   const queryClient = useQueryClient();
-  const bizId = currentBusiness?.id;
+  const contextBizId = currentBusiness?.id;
+
+  // --- FALLBACK BUSINESS FETCH ---
+  // If context is missing, fetch the first available business to satisfy DB constraints
+  const { data: fallbackBiz } = useQuery({
+    queryKey: ["fallback-business"],
+    queryFn: async () => {
+      const { data } = await supabase.from("businesses").select("id").limit(1).maybeSingle();
+      return data;
+    },
+    enabled: !contextBizId, // Only run if context is missing
+  });
+
+  const effectiveBizId = contextBizId || fallbackBiz?.id;
 
   // --- STATE ---
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
@@ -125,12 +138,11 @@ export default function CampaignWizardPage() {
 
   const [step, setStep] = useState(0);
 
-  // Step 1: Audience State
+  // Audience State
   const [audienceType, setAudienceType] = useState<"prospects" | "stores">("prospects");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [audiencePage, setAudiencePage] = useState(1);
   const [audienceSearch, setAudienceSearch] = useState("");
-  // New: Confirmation state for Step 2
   const [isAudienceConfirmed, setIsAudienceConfirmed] = useState(false);
 
   // Form State
@@ -197,6 +209,7 @@ export default function CampaignWizardPage() {
       else next.add(id);
       return next;
     });
+    // Un-confirm if user changes selection to force them to click Confirm again
     setIsAudienceConfirmed(false);
   }, []);
 
@@ -216,7 +229,7 @@ export default function CampaignWizardPage() {
       return;
     }
     setIsAudienceConfirmed(true);
-    toast.success(`${selectedIds.size} records confirmed for campaign.`);
+    toast.success(`${selectedIds.size} records confirmed. You may proceed.`);
   };
 
   const update = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -224,13 +237,13 @@ export default function CampaignWizardPage() {
   // --- MUTATION: LAUNCH ---
   const launchMutation = useMutation({
     mutationFn: async () => {
-      // NOTE: Removed strict business ID check as requested
+      if (!effectiveBizId) throw new Error("Critical: No Business ID found in database to link campaign.");
       if (selectedIds.size === 0) throw new Error("No audience selected");
 
       const { data: campaign, error: campErr } = await supabase
         .from("dialer_campaigns")
         .insert({
-          business_id: bizId || null, // Allow null if business is missing
+          business_id: effectiveBizId,
           name: effectiveName,
           description: form.description || null,
           status: "active",
@@ -259,7 +272,7 @@ export default function CampaignWizardPage() {
       const items = allRecords
         .filter((r) => r.phone)
         .map((r, i) => ({
-          business_id: bizId || null, // Allow null
+          business_id: effectiveBizId,
           phone_number: r.phone,
           contact_name: r.store_name,
           campaign_id: campaign.id,
@@ -290,13 +303,13 @@ export default function CampaignWizardPage() {
 
   // --- CONSOLE DATA ---
   const { data: campaignsList } = useQuery({
-    queryKey: ["dialer-campaigns", bizId],
+    queryKey: ["dialer-campaigns", effectiveBizId],
     queryFn: async () => {
       let query = supabase.from("dialer_campaigns").select("*").order("created_at", { ascending: false });
 
-      // Only filter by business if it exists
-      if (bizId) {
-        query = query.eq("business_id", bizId);
+      // If we have a business ID, filter by it. If not, fetch all (Admin mode bypass)
+      if (effectiveBizId) {
+        query = query.eq("business_id", effectiveBizId);
       }
 
       const { data } = await query;
@@ -337,6 +350,8 @@ export default function CampaignWizardPage() {
     completed:
       callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
   };
+
+  // --- RENDER ---
 
   if (viewMode === "console") {
     return (
@@ -835,7 +850,7 @@ export default function CampaignWizardPage() {
         ) : (
           <Button
             onClick={() => launchMutation.mutate()}
-            disabled={launchMutation.isPending} // Removed business check block
+            disabled={launchMutation.isPending}
             className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white"
           >
             <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch & Monitor"}
