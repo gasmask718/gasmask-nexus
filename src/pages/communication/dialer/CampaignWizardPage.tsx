@@ -53,13 +53,6 @@ interface AudienceRow {
   state: string | null;
 }
 
-interface VoiceAgent {
-  id: string;
-  name: string;
-  description: string | null;
-  provider: string;
-}
-
 interface Campaign {
   id: string;
   name: string;
@@ -79,6 +72,19 @@ interface CallItem {
   transcript?: string;
   updated_at: string;
 }
+
+// --- VOICE OPTIONS (From Cold Call Reference) ---
+const VOICE_OPTIONS = [
+  { id: "JBFqnCBsd6RMkjVDRZzb", name: "Adam (Male, Deep)" },
+  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel (Female, Warm)" },
+  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella (Female, Soft)" },
+  { id: "ErXwobaYiN019PkySvjV", name: "Antoni (Male, Calm)" },
+  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli (Female, Young)" },
+  { id: "TxGEqnHWrfWFTfGW9XjX", name: "Josh (Male, Deep)" },
+  { id: "VR6AewLTigWG4xSOukaG", name: "Arnold (Male, Strong)" },
+  { id: "pNInz6obpgDQGcFmaJgB", name: "Sam (Male, Raspy)" },
+  { id: "yoZ06aMxZJJ28mfd3POQ", name: "Sam (Female, Raspy)" },
+];
 
 // --- Status Config for Console ---
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
@@ -132,7 +138,7 @@ export default function CampaignWizardPage() {
     call_window_end: "17:00",
     max_concurrent: 5,
     initial_script: "",
-    agent_id: "",
+    agent_id: VOICE_OPTIONS[0].id, // Default to first agent (Adam)
   });
 
   // --- DATA FETCHING (WIZARD) ---
@@ -141,19 +147,6 @@ export default function CampaignWizardPage() {
     queryFn: async () => {
       const { count } = await supabase.from("dialer_campaigns").select("id", { count: "exact", head: true });
       return count ?? 0;
-    },
-  });
-
-  // Fetch Agents (Cast as VoiceAgent[] to avoid TS errors on missing table types)
-  const { data: availableAgents } = useQuery({
-    queryKey: ["voice-agents"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("voice_agents" as any)
-        .select("id, name, description, provider")
-        .eq("provider", "elevenlabs");
-      if (error) return [] as VoiceAgent[];
-      return data as unknown as VoiceAgent[];
     },
   });
 
@@ -320,7 +313,7 @@ export default function CampaignWizardPage() {
   }, [viewMode, campaignsList, activeCampaignId]);
 
   const activeCampaign = campaignsList?.find((c) => c.id === activeCampaignId);
-  const activeAgentName = availableAgents?.find((a) => a.id === activeCampaign?.agent_id)?.name;
+  const activeAgentName = VOICE_OPTIONS.find((a) => a.id === activeCampaign?.agent_id)?.name || "Default";
 
   // Console Stats
   const stats = {
@@ -392,7 +385,7 @@ export default function CampaignWizardPage() {
                 <h1 className="text-2xl font-bold tracking-tight">{activeCampaign?.name || "Campaign Dashboard"}</h1>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                   <Badge variant="outline" className="gap-1 bg-background">
-                    <Bot className="h-3 w-3" /> Agent: {activeAgentName || "Default"}
+                    <Bot className="h-3 w-3" /> Agent: {activeAgentName}
                   </Badge>
                   {activeCampaign?.status === "active" && (
                     <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
@@ -805,7 +798,7 @@ export default function CampaignWizardPage() {
                       <SelectValue placeholder="Select Agent..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableAgents?.map((a) => (
+                      {VOICE_OPTIONS.map((a) => (
                         <SelectItem key={a.id} value={a.id}>
                           {a.name}
                         </SelectItem>
@@ -839,7 +832,7 @@ export default function CampaignWizardPage() {
                 </div>
                 <div className="p-3 border rounded bg-purple-50 dark:bg-purple-900/20">
                   <p className="text-xs text-purple-600 dark:text-purple-400">Agent</p>
-                  <p>{availableAgents?.find((a) => a.id === form.agent_id)?.name || "Missing"}</p>
+                  <p>{VOICE_OPTIONS.find((a) => a.id === form.agent_id)?.name || "Missing"}</p>
                 </div>
               </div>
             </CardContent>
