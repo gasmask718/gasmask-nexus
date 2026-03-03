@@ -29,7 +29,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { VoiceProviderSelector } from "@/components/communication/VoiceProviderSelector";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 
 const STEPS = [
@@ -48,6 +47,14 @@ interface AudienceRow {
   phone: string | null;
   city: string | null;
   state: string | null;
+}
+
+// Define interface manually to fix TS errors since table might not exist in types yet
+interface VoiceAgent {
+  id: string;
+  name: string;
+  description: string | null;
+  provider: string;
 }
 
 export default function CampaignWizardPage() {
@@ -74,21 +81,21 @@ export default function CampaignWizardPage() {
   });
 
   // Fetch available ElevenLabs Agents
+  // CASTING 'as any' TO BYPASS TS ERROR IF TABLE IS MISSING IN TYPES
   const { data: availableAgents } = useQuery({
     queryKey: ["voice-agents"],
     queryFn: async () => {
-      // Replace 'voice_agents' with your actual table for ElevenLabs agents
       const { data, error } = await supabase
-        .from("voice_agents")
+        .from("voice_agents" as any)
         .select("id, name, description, provider")
-        .eq("provider", "elevenlabs")
-        .eq("status", "active"); // Assuming there's a status column
+        .eq("provider", "elevenlabs");
+      // .eq('status', 'active') // Uncomment if you have a status column
 
       if (error) {
-        console.warn("Could not fetch agents, defaulting to empty list or mocks", error);
-        return [];
+        console.warn("Could not fetch agents", error);
+        return [] as VoiceAgent[];
       }
-      return data;
+      return data as VoiceAgent[];
     },
   });
 
@@ -539,7 +546,7 @@ export default function CampaignWizardPage() {
                         <SelectValue placeholder="Select an AI Agent..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableAgents?.map((agent) => (
+                        {availableAgents?.map((agent: VoiceAgent) => (
                           <SelectItem key={agent.id} value={agent.id}>
                             <span className="font-medium">{agent.name}</span>
                             {agent.description && (
@@ -587,7 +594,9 @@ export default function CampaignWizardPage() {
                 <div className="p-3 border rounded-lg bg-purple-50/50 border-purple-100">
                   <p className="text-purple-600 text-xs font-medium">Handover Agent</p>
                   <p className="font-medium">
-                    {availableAgents?.find((a) => a.id === form.agent_id)?.name || form.agent_id || "Not selected"}
+                    {availableAgents?.find((a: VoiceAgent) => a.id === form.agent_id)?.name ||
+                      form.agent_id ||
+                      "Not selected"}
                   </p>
                 </div>
                 <div className="p-3 border rounded-lg">
