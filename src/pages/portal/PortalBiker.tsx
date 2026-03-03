@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, Camera, Package, MessageSquare, DollarSign, Award, Navigation, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin, Camera, DollarSign, Award, Navigation, Loader2, Download } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 
 const GPS_INTERVAL_MS = 30_000; // 30 seconds
 
@@ -22,6 +23,9 @@ export default function PortalBiker() {
   const userIdRef = useRef<string | null>(null);
   const { toast } = useToast();
 
+  // PWA Hook
+  const { canInstall, triggerInstall } = usePwaInstall();
+
   useEffect(() => {
     fetchBikerData();
     return () => stopTracking();
@@ -29,15 +33,13 @@ export default function PortalBiker() {
 
   async function fetchBikerData() {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       userIdRef.current = user.id;
 
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      const { data: profileData, error } = await supabase.from("profiles").select("*").eq("id", user.id).single();
 
       if (error) throw error;
       setProfile(profileData);
@@ -46,11 +48,11 @@ export default function PortalBiker() {
       // Auto-start tracking
       startTracking();
     } catch (error) {
-      console.error('Error fetching biker data:', error);
+      console.error("Error fetching biker data:", error);
       toast({
-        title: 'Error',
-        description: 'Failed to load biker data',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to load biker data",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -62,24 +64,24 @@ export default function PortalBiker() {
     if (!userId) return;
 
     try {
-      const { error } = await supabase.from('location_events').insert({
+      const { error } = await supabase.from("location_events").insert({
         user_id: userId,
-        event_type: 'gps_ping',
+        event_type: "gps_ping",
         lat,
         lng,
       });
       if (error) throw error;
-      setLastPing(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setLastPing(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
       setLocationError(null);
     } catch (err) {
-      console.error('Failed to send location ping:', err);
+      console.error("Failed to send location ping:", err);
     }
   }, []);
 
   function startTracking() {
     if (trackingActive) return;
     if (!navigator.geolocation) {
-      setLocationError('Geolocation not supported on this device');
+      setLocationError("Geolocation not supported on this device");
       return;
     }
 
@@ -95,14 +97,16 @@ export default function PortalBiker() {
         };
       },
       (err) => {
-        console.error('Geolocation error:', err);
+        console.error("Geolocation error:", err);
         setLocationError(
-          err.code === 1 ? 'Location permission denied. Please enable location access.'
-          : err.code === 2 ? 'Location unavailable. Check GPS settings.'
-          : 'Location request timed out.'
+          err.code === 1
+            ? "Location permission denied. Please enable location access."
+            : err.code === 2
+              ? "Location unavailable. Check GPS settings."
+              : "Location request timed out.",
         );
       },
-      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 }
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
     );
 
     // Send initial ping
@@ -115,7 +119,7 @@ export default function PortalBiker() {
         sendLocationPing(position.coords.latitude, position.coords.longitude);
       },
       () => {},
-      { enableHighAccuracy: true, timeout: 15_000 }
+      { enableHighAccuracy: true, timeout: 15_000 },
     );
 
     // Send pings every 30s
@@ -153,14 +157,14 @@ export default function PortalBiker() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold">{profile?.name || 'Biker Portal'}</h1>
+              <h1 className="text-2xl font-bold">{profile?.name || "Biker Portal"}</h1>
               <p className="text-muted-foreground">GasMask Street Team</p>
             </div>
             <div className="flex items-center gap-2">
               {/* GPS Status Indicator */}
-              <Badge 
-                variant={trackingActive ? 'default' : 'secondary'}
-                className={trackingActive ? 'bg-green-600 hover:bg-green-700' : ''}
+              <Badge
+                variant={trackingActive ? "default" : "secondary"}
+                className={trackingActive ? "bg-green-600 hover:bg-green-700" : ""}
               >
                 {trackingActive ? (
                   <>
@@ -168,7 +172,7 @@ export default function PortalBiker() {
                     GPS Active
                   </>
                 ) : (
-                  'GPS Off'
+                  "GPS Off"
                 )}
               </Badge>
               <Badge variant="default">Active</Badge>
@@ -178,11 +182,34 @@ export default function PortalBiker() {
       </div>
 
       <div className="container mx-auto px-6 py-8">
+        {/* PWA Install Card */}
+        <Card className="p-4 mb-6 border-primary/30 bg-primary/5">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="space-y-1 text-center sm:text-left">
+              <h3 className="text-base font-bold text-foreground">Install Biker App</h3>
+              <p className="text-xs text-muted-foreground">
+                {canInstall
+                  ? "Add to home screen for offline maps & better battery life."
+                  : 'Open in Safari (iOS) or Chrome (Android) and use "Add to Home Screen".'}
+              </p>
+            </div>
+            <Button
+              onClick={canInstall ? triggerInstall : undefined}
+              disabled={!canInstall}
+              size="sm"
+              className="gap-2 shrink-0 w-full sm:w-auto"
+            >
+              <Download className="h-4 w-4" />
+              {canInstall ? "Install Now" : "Install Guide"}
+            </Button>
+          </div>
+        </Card>
+
         {/* Location Status Card */}
         <Card className="p-4 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Navigation className={`h-5 w-5 ${trackingActive ? 'text-green-500' : 'text-muted-foreground'}`} />
+              <Navigation className={`h-5 w-5 ${trackingActive ? "text-green-500" : "text-muted-foreground"}`} />
               <div>
                 <p className="text-sm font-medium">Location Tracking</p>
                 {locationError ? (
@@ -200,10 +227,10 @@ export default function PortalBiker() {
             </div>
             <Button
               size="sm"
-              variant={trackingActive ? 'destructive' : 'default'}
-              onClick={() => trackingActive ? stopTracking() : startTracking()}
+              variant={trackingActive ? "destructive" : "default"}
+              onClick={() => (trackingActive ? stopTracking() : startTracking())}
             >
-              {trackingActive ? 'Stop' : 'Start'} Tracking
+              {trackingActive ? "Stop" : "Start"} Tracking
             </Button>
           </div>
         </Card>
