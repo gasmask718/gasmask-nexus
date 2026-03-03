@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Target,
   Users,
@@ -37,6 +38,9 @@ import {
   Plus,
   Loader2,
   CheckSquare,
+  Pause,
+  Play,
+  Square,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -120,14 +124,13 @@ export default function CampaignWizardPage() {
   const contextBizId = currentBusiness?.id;
 
   // --- FALLBACK BUSINESS FETCH ---
-  // If context is missing, fetch the first available business to satisfy DB constraints
   const { data: fallbackBiz } = useQuery({
     queryKey: ["fallback-business"],
     queryFn: async () => {
       const { data } = await supabase.from("businesses").select("id").limit(1).maybeSingle();
       return data;
     },
-    enabled: !contextBizId, // Only run if context is missing
+    enabled: !contextBizId,
   });
 
   const effectiveBizId = contextBizId || fallbackBiz?.id;
@@ -136,9 +139,8 @@ export default function CampaignWizardPage() {
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
+  // Wizard State
   const [step, setStep] = useState(0);
-
-  // Audience State
   const [audienceType, setAudienceType] = useState<"prospects" | "stores">("prospects");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [audiencePage, setAudiencePage] = useState(1);
@@ -159,7 +161,103 @@ export default function CampaignWizardPage() {
     agent_id: VOICE_OPTIONS[0].id,
   });
 
-  // --- QUERIES ---
+  // --- DISPATCHER LOGIC (Client-side Polling for "Launch & Monitor") ---
+  const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Function to process the queue
+  const processQueue = useCallback(
+    async (campaignId: string) => {
+      // 1. Fetch next queued item
+      const { data: queueItems, error: fetchErr } = await supabase
+        .from("outbound_call_queue")
+        .select("id, phone_number")
+        .eq("campaign_id", campaignId)
+        .eq("status", "queued")
+        .limit(1) // Process one by one for this demo to avoid rate limits
+        .maybeSingle();
+
+      if (fetchErr || !queueItems) return; // Queue empty or error
+
+      const queueItem = queueItems; // Simplify type
+
+      // 2. Lock item by setting to 'dialing' (Required by your Edge Function logic)
+      const { error: updateErr } = await supabase
+        .from("outbound_call_queue")
+        .update({
+          status: "dialing",
+          dialing_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", queueItem.id)
+        .eq("status", "queued"); // Optimistic lock
+
+      if (updateErr) return; // Someone else grabbed it
+
+      // 3. Trigger the Edge Function
+      try {
+        const response = await supabase.functions.invoke("twilio-outbound-call", {
+          body: {
+            queue_item_id: queueItem.id,
+            business_id: effectiveBizId,
+          },
+        });
+
+        if (response.error) {
+          console.error("Dispatcher Error:", response.error);
+          // Revert to failed if edge function fails
+          await supabase.from("outbound_call_queue").update({ status: "failed" }).eq("id", queueItem.id);
+        } else {
+          console.log("Call Dispatched:", queueItem.phone_number);
+          toast.success(`Dialing ${queueItem.phone_number}...`);
+        }
+      } catch (err) {
+        console.error("Dispatcher Exception:", err);
+      }
+
+      // Refresh UI
+      queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+    },
+    [effectiveBizId, queryClient],
+  );
+
+  // Dispatcher Effect Loop
+  useEffect(() => {
+    if (viewMode === "console" && activeCampaignId) {
+      // Check if campaign is active before running dispatcher
+      const checkAndRun = async () => {
+        const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
+
+        if (data?.status === "active") {
+          processQueue(activeCampaignId);
+        }
+      };
+
+      // Run every 5 seconds
+      dispatchIntervalRef.current = setInterval(checkAndRun, 5000);
+    }
+
+    return () => {
+      if (dispatchIntervalRef.current) clearInterval(dispatchIntervalRef.current);
+    };
+  }, [viewMode, activeCampaignId, processQueue]);
+
+  // --- CAMPAIGN CONTROL HANDLERS (Stop/Pause) ---
+  const updateCampaignStatus = async (status: "active" | "paused" | "completed") => {
+    if (!activeCampaignId) return;
+
+    const { error } = await supabase.from("dialer_campaigns").update({ status }).eq("id", activeCampaignId);
+
+    if (error) {
+      toast.error("Failed to update status");
+    } else {
+      toast.success(`Campaign ${status}`);
+      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
+    }
+  };
+
+  // --- QUERIES & MUTATIONS ---
+
+  // Get Campaign Counts for ID gen
   const { data: campaignCount } = useQuery({
     queryKey: ["dialer-campaign-count"],
     queryFn: async () => {
@@ -175,6 +273,7 @@ export default function CampaignWizardPage() {
 
   const effectiveName = form.name || defaultName;
 
+  // Get Audience
   const { data: audienceData, isLoading: audienceLoading } = useQuery({
     queryKey: ["campaign-audience", audienceType, audiencePage, audienceSearch],
     queryFn: async () => {
@@ -201,7 +300,7 @@ export default function CampaignWizardPage() {
   const audienceTotalPages = Math.max(1, Math.ceil(audienceTotalCount / PAGE_SIZE));
   const allPageSelected = audienceRows.length > 0 && audienceRows.every((r) => selectedIds.has(r.id));
 
-  // --- HANDLERS ---
+  // --- WIZARD HANDLERS ---
   const toggleRow = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -209,7 +308,6 @@ export default function CampaignWizardPage() {
       else next.add(id);
       return next;
     });
-    // Un-confirm if user changes selection to force them to click Confirm again
     setIsAudienceConfirmed(false);
   }, []);
 
@@ -234,12 +332,13 @@ export default function CampaignWizardPage() {
 
   const update = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }));
 
-  // --- MUTATION: LAUNCH ---
+  // --- LAUNCH MUTATION ---
   const launchMutation = useMutation({
     mutationFn: async () => {
       if (!effectiveBizId) throw new Error("Critical: No Business ID found in database to link campaign.");
       if (selectedIds.size === 0) throw new Error("No audience selected");
 
+      // 1. Create Campaign
       const { data: campaign, error: campErr } = await supabase
         .from("dialer_campaigns")
         .insert({
@@ -258,6 +357,7 @@ export default function CampaignWizardPage() {
 
       if (campErr) throw campErr;
 
+      // 2. Create Queue Items
       const ids = Array.from(selectedIds);
       const table = audienceType === "prospects" ? "territory_addresses" : "store_master";
       const allRecords: AudienceRow[] = [];
@@ -306,12 +406,7 @@ export default function CampaignWizardPage() {
     queryKey: ["dialer-campaigns", effectiveBizId],
     queryFn: async () => {
       let query = supabase.from("dialer_campaigns").select("*").order("created_at", { ascending: false });
-
-      // If we have a business ID, filter by it. If not, fetch all (Admin mode bypass)
-      if (effectiveBizId) {
-        query = query.eq("business_id", effectiveBizId);
-      }
-
+      if (effectiveBizId) query = query.eq("business_id", effectiveBizId);
       const { data } = await query;
       return (data as unknown as Campaign[]) || [];
     },
@@ -415,14 +510,39 @@ export default function CampaignWizardPage() {
                   </Badge>
                   {activeCampaign?.status === "active" && (
                     <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
-                      <Activity className="h-3 w-3" /> Live
+                      <Activity className="h-3 w-3" /> Dialing Active
+                    </span>
+                  )}
+                  {activeCampaign?.status === "paused" && (
+                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                      <Pause className="h-3 w-3" /> Paused
                     </span>
                   )}
                 </div>
               </div>
-              <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
-                <RotateCcw className="h-4 w-4 mr-1" /> Refresh
-              </Button>
+
+              {/* CAMPAIGN CONTROLS */}
+              <div className="flex gap-2">
+                {activeCampaign?.status === "active" ? (
+                  <Button variant="outline" size="sm" onClick={() => updateCampaignStatus("paused")}>
+                    <Pause className="h-4 w-4 mr-1" /> Pause
+                  </Button>
+                ) : activeCampaign?.status === "paused" ? (
+                  <Button variant="default" size="sm" onClick={() => updateCampaignStatus("active")}>
+                    <Play className="h-4 w-4 mr-1" /> Resume
+                  </Button>
+                ) : null}
+
+                {activeCampaign?.status !== "completed" && (
+                  <Button variant="destructive" size="sm" onClick={() => updateCampaignStatus("completed")}>
+                    <Square className="h-4 w-4 mr-1" /> Stop
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
+                  <RotateCcw className="h-4 w-4 mr-1" /> Refresh
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
