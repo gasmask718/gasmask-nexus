@@ -81,21 +81,22 @@ export default function CampaignWizardPage() {
   });
 
   // Fetch available ElevenLabs Agents
-  // CASTING 'as any' TO BYPASS TS ERROR IF TABLE IS MISSING IN TYPES
   const { data: availableAgents } = useQuery({
     queryKey: ["voice-agents"],
     queryFn: async () => {
+      // Cast the table name to any to bypass strict schema checks
       const { data, error } = await supabase
         .from("voice_agents" as any)
         .select("id, name, description, provider")
         .eq("provider", "elevenlabs");
-      // .eq('status', 'active') // Uncomment if you have a status column
 
       if (error) {
         console.warn("Could not fetch agents", error);
         return [] as VoiceAgent[];
       }
-      return data as VoiceAgent[];
+
+      // FIXED: Double cast (unknown -> VoiceAgent[]) to suppress the conversion error
+      return data as unknown as VoiceAgent[];
     },
   });
 
