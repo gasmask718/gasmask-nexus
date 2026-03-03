@@ -83,13 +83,17 @@ interface CallItem {
 // --- Status Config for Console ---
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
-  dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-700 dark:text-blue-400", icon: Phone },
-  connected: { label: "Live", color: "bg-green-500/15 text-green-700 dark:text-green-400", icon: PhoneCall },
-  completed: { label: "Completed", color: "bg-green-500/10 text-green-600", icon: CheckCircle2 },
-  transferred: { label: "Transferred", color: "bg-purple-500/15 text-purple-700", icon: PhoneForwarded },
-  no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-700", icon: XCircle },
+  dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
+  connected: { label: "Live", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneCall },
+  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
+  transferred: {
+    label: "Transferred",
+    color: "bg-purple-500/15 text-purple-600 dark:text-purple-400",
+    icon: PhoneForwarded,
+  },
+  no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400", icon: XCircle },
   failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
-  voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-700", icon: Mic },
+  voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-600 dark:text-orange-400", icon: Mic },
 };
 
 const STEPS = [
@@ -332,10 +336,10 @@ export default function CampaignWizardPage() {
 
   if (viewMode === "console") {
     return (
-      <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-slate-50/50 dark:bg-slate-950/50">
+      <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
         {/* SIDEBAR: HISTORY */}
-        <Card className="w-full md:w-80 flex flex-col h-full border-none shadow-md">
-          <CardHeader className="pb-3 border-b bg-white dark:bg-slate-900 rounded-t-xl">
+        <Card className="w-full md:w-80 flex flex-col h-full border shadow-sm bg-card text-card-foreground">
+          <CardHeader className="pb-3 border-b">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5 text-primary" />
@@ -347,7 +351,7 @@ export default function CampaignWizardPage() {
             </div>
             <CardDescription>Select campaign to monitor</CardDescription>
           </CardHeader>
-          <CardContent className="p-0 flex-1 bg-white dark:bg-slate-900 rounded-b-xl">
+          <CardContent className="p-0 flex-1">
             <ScrollArea className="h-full">
               <div className="flex flex-col p-2 gap-2">
                 {campaignsList?.length === 0 ? (
@@ -359,16 +363,12 @@ export default function CampaignWizardPage() {
                       onClick={() => setActiveCampaignId(c.id)}
                       className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${
                         activeCampaignId === c.id
-                          ? "bg-primary/5 border-primary shadow-sm"
-                          : "hover:bg-muted border-transparent hover:border-border"
+                          ? "bg-primary/10 border-primary shadow-sm text-primary"
+                          : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"
                       }`}
                     >
                       <div className="flex w-full justify-between items-center">
-                        <span
-                          className={`font-semibold text-sm truncate ${activeCampaignId === c.id ? "text-primary" : ""}`}
-                        >
-                          {c.name}
-                        </span>
+                        <span className="font-semibold text-sm truncate">{c.name}</span>
                         <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
                           {c.status}
                         </Badge>
@@ -389,15 +389,13 @@ export default function CampaignWizardPage() {
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-                  {activeCampaign?.name || "Campaign Dashboard"}
-                </h1>
+                <h1 className="text-2xl font-bold tracking-tight">{activeCampaign?.name || "Campaign Dashboard"}</h1>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-                  <Badge variant="outline" className="gap-1">
+                  <Badge variant="outline" className="gap-1 bg-background">
                     <Bot className="h-3 w-3" /> Agent: {activeAgentName || "Default"}
                   </Badge>
                   {activeCampaign?.status === "active" && (
-                    <span className="flex items-center gap-1 text-green-600 animate-pulse text-xs font-medium">
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
                       <Activity className="h-3 w-3" /> Live
                     </span>
                   )}
@@ -410,17 +408,33 @@ export default function CampaignWizardPage() {
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <StatCard label="Total Leads" value={stats.total} icon={Users} />
-              <StatCard label="In Queue" value={stats.queued} icon={Clock} color="text-slate-600" />
-              <StatCard label="Live Calls" value={stats.live} icon={Activity} color="text-blue-600" active />
-              <StatCard label="Transferred" value={stats.transferred} icon={PhoneForwarded} color="text-purple-600" />
-              <StatCard label="Completed" value={stats.completed} icon={CheckCircle2} color="text-green-600" />
+              <StatCard label="In Queue" value={stats.queued} icon={Clock} color="text-muted-foreground" />
+              <StatCard
+                label="Live Calls"
+                value={stats.live}
+                icon={Activity}
+                color="text-blue-600 dark:text-blue-400"
+                active
+              />
+              <StatCard
+                label="Transferred"
+                value={stats.transferred}
+                icon={PhoneForwarded}
+                color="text-purple-600 dark:text-purple-400"
+              />
+              <StatCard
+                label="Completed"
+                value={stats.completed}
+                icon={CheckCircle2}
+                color="text-green-600 dark:text-green-400"
+              />
             </div>
           </div>
 
-          <Card className="flex-1 border-none shadow-md flex flex-col overflow-hidden">
+          <Card className="flex-1 border shadow-sm flex flex-col overflow-hidden bg-card">
             <Tabs defaultValue="monitor" className="h-full flex flex-col">
-              <div className="px-6 pt-4 pb-0 border-b">
-                <TabsList>
+              <div className="px-6 pt-4 pb-0 border-b bg-muted/20">
+                <TabsList className="bg-muted">
                   <TabsTrigger value="monitor" className="gap-2">
                     <Activity className="h-4 w-4" /> Live Monitor
                   </TabsTrigger>
@@ -430,7 +444,8 @@ export default function CampaignWizardPage() {
                 </TabsList>
               </div>
 
-              <TabsContent value="monitor" className="flex-1 p-0 m-0 overflow-hidden">
+              {/* LIVE MONITOR TAB */}
+              <TabsContent value="monitor" className="flex-1 p-0 m-0 overflow-hidden bg-background">
                 <ScrollArea className="h-full p-4">
                   <div className="space-y-2">
                     {callsLoading ? (
@@ -446,24 +461,24 @@ export default function CampaignWizardPage() {
                         return (
                           <div
                             key={item.id}
-                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
                           >
                             <div className="flex items-center gap-4">
-                              <div className={`p-2 rounded-full ${config.color.split(" ")[0]}`}>
-                                <Icon className={`h-4 w-4 ${config.color.split(" ")[1]}`} />
+                              <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
+                                <Icon className="h-4 w-4" />
                               </div>
                               <div>
-                                <p className="font-medium text-sm">{item.contact_name || "Unknown"}</p>
+                                <p className="font-medium text-sm text-foreground">{item.contact_name || "Unknown"}</p>
                                 <p className="text-xs text-muted-foreground font-mono">{item.phone_number}</p>
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
                               {item.duration && (
-                                <span className="text-xs text-muted-foreground font-mono bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                                <span className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
                                   {Math.floor(item.duration / 60)}:{(item.duration % 60).toString().padStart(2, "0")}
                                 </span>
                               )}
-                              <Badge variant="outline" className={`${config.color} border-0`}>
+                              <Badge variant="outline" className={`${config.color} border-0 bg-transparent`}>
                                 {config.label}
                               </Badge>
                             </div>
@@ -475,47 +490,51 @@ export default function CampaignWizardPage() {
                 </ScrollArea>
               </TabsContent>
 
-              <TabsContent
-                value="transcripts"
-                className="flex-1 p-0 m-0 overflow-hidden bg-slate-50 dark:bg-slate-950/30"
-              >
+              {/* TRANSCRIPTS TAB */}
+              <TabsContent value="transcripts" className="flex-1 p-0 m-0 overflow-hidden bg-muted/10">
                 <ScrollArea className="h-full p-4 md:p-6">
                   <div className="max-w-4xl mx-auto space-y-4">
                     {callItems
                       ?.filter((i) => ["completed", "transferred", "connected"].includes(i.status))
                       .map((item) => (
-                        <Card key={item.id} className="overflow-hidden">
-                          <CardHeader className="bg-muted/30 py-3 px-4 flex flex-row items-center justify-between space-y-0">
+                        <Card key={item.id} className="overflow-hidden border shadow-sm">
+                          <CardHeader className="bg-muted/40 py-3 px-4 flex flex-row items-center justify-between space-y-0">
                             <div className="flex items-center gap-3">
-                              <Badge variant="outline" className="bg-white">
+                              <Badge variant="outline" className="bg-background">
                                 {STATUS_CONFIG[item.status]?.label}
                               </Badge>
-                              <span className="font-medium text-sm">{item.contact_name}</span>
+                              <span className="font-medium text-sm text-foreground">{item.contact_name}</span>
                             </div>
                             <span className="text-xs text-muted-foreground">
                               {format(new Date(item.updated_at), "h:mm a")}
                             </span>
                           </CardHeader>
-                          <CardContent className="p-4 space-y-3 text-sm">
+                          <CardContent className="p-4 space-y-4 text-sm bg-card">
                             {/* Twilio Opener */}
                             <div className="flex gap-3">
-                              <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                                <Bot className="h-3 w-3 text-blue-600" />
+                              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                <Bot className="h-4 w-4" />
                               </div>
-                              <div className="bg-slate-100 dark:bg-slate-800 p-2.5 rounded-r-lg rounded-bl-lg max-w-[80%]">
-                                <p className="text-xs text-blue-500 font-semibold mb-1">Twilio Opener</p>
-                                <p>{activeCampaign?.initial_script}</p>
+                              <div className="bg-muted/40 p-3 rounded-r-xl rounded-bl-xl max-w-[85%]">
+                                <p className="text-xs text-blue-500 dark:text-blue-400 font-semibold mb-1">
+                                  Twilio Opener
+                                </p>
+                                <p className="text-foreground">{activeCampaign?.initial_script}</p>
                               </div>
                             </div>
                             {/* Agent Handoff Visual */}
                             {item.status === "transferred" && (
                               <div className="flex gap-3">
-                                <div className="h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                                  <Bot className="h-3 w-3 text-purple-600" />
+                                <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                                  <Bot className="h-4 w-4" />
                                 </div>
-                                <div className="bg-purple-50 dark:bg-purple-900/20 p-2.5 rounded-r-lg rounded-bl-lg max-w-[80%] border border-purple-100">
-                                  <p className="text-xs text-purple-600 font-semibold mb-1">AI Agent</p>
-                                  <p className="italic">Call successfully transferred to human agent.</p>
+                                <div className="bg-purple-50 dark:bg-purple-900/10 p-3 rounded-r-xl rounded-bl-xl max-w-[85%] border border-purple-100 dark:border-purple-800">
+                                  <p className="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">
+                                    AI Agent
+                                  </p>
+                                  <p className="italic text-muted-foreground">
+                                    Call successfully transferred to human agent/appointment setter.
+                                  </p>
                                 </div>
                               </div>
                             )}
@@ -814,12 +833,12 @@ export default function CampaignWizardPage() {
                   <p className="text-xs text-muted-foreground">Audience</p>
                   <p className="font-medium">{selectedIds.size} records</p>
                 </div>
-                <div className="p-3 border rounded bg-blue-50">
-                  <p className="text-xs text-blue-600">Script</p>
+                <div className="p-3 border rounded bg-blue-50 dark:bg-blue-900/20">
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Script</p>
                   <p className="truncate">{form.initial_script || "Missing"}</p>
                 </div>
-                <div className="p-3 border rounded bg-purple-50">
-                  <p className="text-xs text-purple-600">Agent</p>
+                <div className="p-3 border rounded bg-purple-50 dark:bg-purple-900/20">
+                  <p className="text-xs text-purple-600 dark:text-purple-400">Agent</p>
                   <p>{availableAgents?.find((a) => a.id === form.agent_id)?.name || "Missing"}</p>
                 </div>
               </div>
@@ -846,7 +865,7 @@ export default function CampaignWizardPage() {
           <Button
             onClick={() => launchMutation.mutate()}
             disabled={launchMutation.isPending}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white"
           >
             <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch & Monitor"}
           </Button>
@@ -858,16 +877,12 @@ export default function CampaignWizardPage() {
 
 function StatCard({ label, value, icon: Icon, color = "text-foreground", active = false }: any) {
   return (
-    <Card
-      className={`border-none shadow-sm ${active ? "bg-primary/5 ring-1 ring-primary/20" : "bg-white dark:bg-slate-900"}`}
-    >
+    <Card className={`border shadow-sm bg-card ${active ? "bg-primary/5 border-primary/20" : ""}`}>
       <CardContent className="p-4 flex flex-col items-center justify-center text-center">
-        <div
-          className={`p-2 rounded-full bg-slate-100 dark:bg-slate-800 mb-2 ${color.replace("text-", "bg-").replace("600", "100")}`}
-        >
-          <Icon className={`h-5 w-5 ${color}`} />
+        <div className={`p-2 rounded-full mb-2 bg-muted ${color}`}>
+          <Icon className="h-5 w-5" />
         </div>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold text-foreground">{value}</div>
         <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
       </CardContent>
     </Card>
