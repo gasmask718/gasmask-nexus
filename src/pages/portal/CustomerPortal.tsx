@@ -1,32 +1,50 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { useTranslation } from '@/hooks/useTranslation';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/services/marketplace/useCart';
-import { supabase } from '@/integrations/supabase/client';
-import PortalDashboard from '@/layouts/PortalDashboard';
-import { HudCard } from '@/components/portal/HudCard';
-import { HudButton } from '@/components/portal/HudButton';
-import { HudMetric } from '@/components/portal/HudMetric';
-import { HudStatusBadge } from '@/components/portal/HudStatusBadge';
-import { ComingSoonBadge } from '@/components/ui/ComingSoonBadge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
+import { useTranslation } from "@/hooks/useTranslation";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/services/marketplace/useCart";
+import { supabase } from "@/integrations/supabase/client";
+import PortalDashboard from "@/layouts/PortalDashboard";
+import { HudCard } from "@/components/portal/HudCard";
+import { HudButton } from "@/components/portal/HudButton";
+import { HudMetric } from "@/components/portal/HudMetric";
+import { HudStatusBadge } from "@/components/portal/HudStatusBadge";
+import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { usePwaInstall } from "@/hooks/usePwaInstall";
 import {
-  ShoppingBag, Package, MapPin, Gift, MessageCircle,
-  Clock, ChevronRight, Star, ShoppingCart, ChevronDown,
-  ChevronUp, User, Mail, Phone
-} from 'lucide-react';
-import { format } from 'date-fns';
+  ShoppingBag,
+  Package,
+  MapPin,
+  Gift,
+  MessageCircle,
+  Clock,
+  ChevronRight,
+  Star,
+  ShoppingCart,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Mail,
+  Phone,
+  Download,
+} from "lucide-react";
+import { format } from "date-fns";
 
-type FulfillmentStatus = 'pending' | 'processing' | 'shipped' | 'delivered';
+type FulfillmentStatus = "pending" | "processing" | "shipped" | "delivered";
 
-const fulfillmentToBadge: Record<FulfillmentStatus, { status: 'pending' | 'active' | 'completed' | 'warning'; label: string }> = {
-  pending: { status: 'pending', label: 'Pending' },
-  processing: { status: 'active', label: 'Processing' },
-  shipped: { status: 'warning', label: 'In Transit' },
-  delivered: { status: 'completed', label: 'Delivered' },
+const fulfillmentToBadge: Record<
+  FulfillmentStatus,
+  { status: "pending" | "active" | "completed" | "warning"; label: string }
+> = {
+  pending: { status: "pending", label: "Pending" },
+  processing: { status: "active", label: "Processing" },
+  shipped: { status: "warning", label: "In Transit" },
+  delivered: { status: "completed", label: "Delivered" },
 };
 
 export default function CustomerPortal() {
@@ -38,17 +56,23 @@ export default function CustomerPortal() {
   const ordersRef = useRef<HTMLDivElement>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
+  // PWA Logic
+  const { canInstall, triggerInstall } = usePwaInstall();
+  const [isStandalone, setIsStandalone] = useState(false);
+
+  useEffect(() => {
+    const isInStandaloneMode =
+      window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
+    setIsStandalone(isInStandaloneMode);
+  }, []);
+
   const profile = profileData?.profile;
 
-  // Fetch profile details (email/phone)
+  // Fetch profile details
   const { data: profileDetails } = useQuery({
-    queryKey: ['customer-profile-details', user?.id],
+    queryKey: ["customer-profile-details", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('name, email, phone')
-        .eq('id', user!.id)
-        .single();
+      const { data } = await supabase.from("profiles").select("name, email, phone").eq("id", user!.id).single();
       return data;
     },
     enabled: !!user,
@@ -56,20 +80,22 @@ export default function CustomerPortal() {
 
   // Fetch real orders with items
   const { data: orders, isLoading: ordersLoading } = useQuery({
-    queryKey: ['customer-orders', user?.id],
+    queryKey: ["customer-orders", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('marketplace_orders')
-        .select(`
+        .from("marketplace_orders")
+        .select(
+          `
           id, created_at, order_type, payment_status, fulfillment_status,
           subtotal, shipping_cost, tax_amount, total, shipping_address, notes,
           items:marketplace_order_items(
             id, qty, price_each,
             product:products_all(id, product_name, images)
           )
-        `)
-        .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        `,
+        )
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
@@ -78,11 +104,11 @@ export default function CustomerPortal() {
 
   // Derived stats
   const totalOrders = orders?.length ?? 0;
-  const activeDeliveries = orders?.filter(o => o.fulfillment_status === 'shipped') ?? [];
+  const activeDeliveries = orders?.filter((o) => o.fulfillment_status === "shipped") ?? [];
   const uniqueAddresses = (() => {
     if (!orders) return 0;
     const seen = new Set<string>();
-    orders.forEach(o => {
+    orders.forEach((o) => {
       if (o.shipping_address) {
         seen.add(JSON.stringify(o.shipping_address));
       }
@@ -91,18 +117,15 @@ export default function CustomerPortal() {
   })();
 
   const scrollToOrders = () => {
-    ordersRef.current?.scrollIntoView({ behavior: 'smooth' });
+    ordersRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const displayName = profile?.full_name || profileDetails?.name || 'Customer';
-  const displayEmail = profileDetails?.email || user?.email || '';
-  const displayPhone = profileDetails?.phone || '';
+  const displayName = profile?.full_name || profileDetails?.name || "Customer";
+  const displayEmail = profileDetails?.email || user?.email || "";
+  const displayPhone = profileDetails?.phone || "";
 
   return (
-    <PortalDashboard
-      title={t('my_account')}
-      subtitle={`Welcome back, ${displayName}!`}
-    >
+    <PortalDashboard title={t("my_account")} subtitle={`Welcome back, ${displayName}!`}>
       <div className="space-y-6">
         {/* Account Info */}
         <HudCard>
@@ -114,15 +137,46 @@ export default function CustomerPortal() {
               <h2 className="font-bold text-lg truncate">{displayName}</h2>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {displayEmail && (
-                  <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{displayEmail}</span>
+                  <span className="flex items-center gap-1">
+                    <Mail className="h-3 w-3" />
+                    {displayEmail}
+                  </span>
                 )}
                 {displayPhone && (
-                  <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{displayPhone}</span>
+                  <span className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    {displayPhone}
+                  </span>
                 )}
               </div>
             </div>
           </div>
         </HudCard>
+
+        {/* PWA Install Card */}
+        {!isStandalone && (
+          <Card className="glass-card border-primary/30 bg-primary/5">
+            <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
+              <div className="space-y-1 text-center sm:text-left">
+                <h3 className="text-lg font-bold text-foreground">Install App</h3>
+                <p className="text-sm text-muted-foreground">
+                  {canInstall
+                    ? "Add to your home screen for quick access & offline support."
+                    : 'Open this page in Safari (iOS) or Chrome (Android) and use "Add to Home Screen" to install.'}
+                </p>
+              </div>
+              <Button
+                onClick={canInstall ? triggerInstall : undefined}
+                disabled={!canInstall}
+                size="lg"
+                className="gap-2 shrink-0 min-w-[200px]"
+              >
+                <Download className="h-5 w-5" />
+                {canInstall ? "Install Now" : "Install via Browser Menu"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Active Delivery Banner */}
         {activeDeliveries.length > 0 && (
@@ -134,7 +188,9 @@ export default function CustomerPortal() {
                 </div>
                 <div>
                   <p className="text-hud-cyan font-semibold">
-                    {activeDeliveries.length === 1 ? t('order_on_the_way') : `${activeDeliveries.length} orders in transit`}
+                    {activeDeliveries.length === 1
+                      ? t("order_on_the_way")
+                      : `${activeDeliveries.length} orders in transit`}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {activeDeliveries[0].id.slice(0, 8).toUpperCase()}
@@ -143,7 +199,7 @@ export default function CustomerPortal() {
                 </div>
               </div>
               <HudButton variant="cyan" size="sm" onClick={scrollToOrders}>
-                {t('track_order')}
+                {t("track_order")}
               </HudButton>
             </div>
           </HudCard>
@@ -153,8 +209,8 @@ export default function CustomerPortal() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <HudCard variant="cyan">
             <HudMetric
-              label={t('total_orders')}
-              value={ordersLoading ? '...' : String(totalOrders)}
+              label={t("total_orders")}
+              value={ordersLoading ? "..." : String(totalOrders)}
               icon={<ShoppingBag className="h-4 w-4" />}
               variant="cyan"
               size="sm"
@@ -163,7 +219,7 @@ export default function CustomerPortal() {
           <HudCard variant="amber">
             <div className="relative">
               <HudMetric
-                label={t('rewards_points')}
+                label={t("rewards_points")}
                 value="—"
                 icon={<Star className="h-4 w-4" />}
                 variant="amber"
@@ -176,8 +232,8 @@ export default function CustomerPortal() {
           </HudCard>
           <HudCard variant="green">
             <HudMetric
-              label={t('saved_addresses')}
-              value={ordersLoading ? '...' : String(uniqueAddresses)}
+              label={t("saved_addresses")}
+              value={ordersLoading ? "..." : String(uniqueAddresses)}
               icon={<MapPin className="h-4 w-4" />}
               variant="green"
               size="sm"
@@ -186,7 +242,7 @@ export default function CustomerPortal() {
           <HudCard variant="purple">
             <div className="relative">
               <HudMetric
-                label={t('available_deals')}
+                label={t("available_deals")}
                 value="—"
                 icon={<Gift className="h-4 w-4" />}
                 variant="purple"
@@ -201,15 +257,15 @@ export default function CustomerPortal() {
 
         {/* Main Actions Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="cursor-pointer" onClick={() => navigate('/shop')}>
+          <div className="cursor-pointer" onClick={() => navigate("/shop")}>
             <HudCard variant="cyan" className="hover:border-hud-cyan/70 transition-colors h-full">
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-xl bg-hud-cyan/20">
                   <ShoppingBag className="h-8 w-8 text-hud-cyan" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg">{t('shop_now')}</h3>
-                  <p className="text-sm text-muted-foreground">{t('browse_products')}</p>
+                  <h3 className="font-bold text-lg">{t("shop_now")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("browse_products")}</p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -223,7 +279,7 @@ export default function CustomerPortal() {
                   <Package className="h-8 w-8 text-hud-green" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg">{t('my_orders')}</h3>
+                  <h3 className="font-bold text-lg">{t("my_orders")}</h3>
                   <p className="text-sm text-muted-foreground">{totalOrders} orders</p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -231,8 +287,7 @@ export default function CustomerPortal() {
             </HudCard>
           </div>
 
-          {/* Cart */}
-          <div className="cursor-pointer" onClick={() => navigate('/cart')}>
+          <div className="cursor-pointer" onClick={() => navigate("/cart")}>
             <HudCard variant="amber" className="hover:border-hud-amber/70 transition-colors h-full">
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-xl bg-hud-amber/20 relative">
@@ -246,56 +301,10 @@ export default function CustomerPortal() {
                 <div className="flex-1">
                   <h3 className="font-bold text-lg">Cart</h3>
                   <p className="text-sm text-muted-foreground">
-                    {totals.itemCount > 0 ? `${totals.itemCount} items • $${totals.subtotal.toFixed(2)}` : 'Empty'}
+                    {totals.itemCount > 0 ? `${totals.itemCount} items • $${totals.subtotal.toFixed(2)}` : "Empty"}
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </HudCard>
-          </div>
-
-          {/* Addresses */}
-          <div className="cursor-pointer" onClick={scrollToOrders}>
-            <HudCard variant="purple" className="hover:border-hud-purple/70 transition-colors h-full">
-              <div className="flex items-center gap-4">
-                <div className="p-4 rounded-xl bg-hud-purple/20">
-                  <MapPin className="h-8 w-8 text-hud-purple" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{t('addresses')}</h3>
-                  <p className="text-sm text-muted-foreground">{uniqueAddresses} saved</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </div>
-            </HudCard>
-          </div>
-
-          {/* Rewards - Coming Soon */}
-          <div>
-            <HudCard variant="amber" className="opacity-60 h-full">
-              <div className="flex items-center gap-4">
-                <div className="p-4 rounded-xl bg-hud-amber/20">
-                  <Gift className="h-8 w-8 text-hud-amber" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{t('rewards')}</h3>
-                  <ComingSoonBadge />
-                </div>
-              </div>
-            </HudCard>
-          </div>
-
-          {/* Support - Coming Soon */}
-          <div>
-            <HudCard variant="cyan" className="opacity-60 h-full">
-              <div className="flex items-center gap-4">
-                <div className="p-4 rounded-xl bg-hud-cyan/20">
-                  <MessageCircle className="h-8 w-8 text-hud-cyan" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg">{t('support')}</h3>
-                  <ComingSoonBadge />
-                </div>
               </div>
             </HudCard>
           </div>
@@ -305,15 +314,13 @@ export default function CustomerPortal() {
         <div ref={ordersRef}>
           <HudCard>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">{t('recent_orders')}</h3>
-              {totalOrders > 0 && (
-                <span className="text-sm text-muted-foreground">{totalOrders} total</span>
-              )}
+              <h3 className="font-bold text-lg">{t("recent_orders")}</h3>
+              {totalOrders > 0 && <span className="text-sm text-muted-foreground">{totalOrders} total</span>}
             </div>
 
             {ordersLoading ? (
               <div className="space-y-3">
-                {[1, 2, 3].map(i => (
+                {[1, 2, 3].map((i) => (
                   <Skeleton key={i} className="h-16 w-full" />
                 ))}
               </div>
@@ -321,14 +328,14 @@ export default function CustomerPortal() {
               <div className="text-center py-12">
                 <ShoppingBag className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
                 <p className="text-muted-foreground">No orders yet</p>
-                <HudButton variant="cyan" className="mt-4" onClick={() => navigate('/shop')}>
+                <HudButton variant="cyan" className="mt-4" onClick={() => navigate("/shop")}>
                   Start Shopping
                 </HudButton>
               </div>
             ) : (
               <div className="space-y-3">
                 {orders.map((order) => {
-                  const badge = fulfillmentToBadge[(order.fulfillment_status as FulfillmentStatus) || 'pending'];
+                  const badge = fulfillmentToBadge[(order.fulfillment_status as FulfillmentStatus) || "pending"];
                   const isExpanded = expandedOrderId === order.id;
                   const itemCount = order.items?.reduce((sum: number, item: any) => sum + (item.qty || 0), 0) ?? 0;
 
@@ -345,7 +352,8 @@ export default function CustomerPortal() {
                           <div className="text-left">
                             <p className="font-medium">{order.id.slice(0, 8).toUpperCase()}</p>
                             <p className="text-sm text-muted-foreground">
-                              {format(new Date(order.created_at), 'MMM d, yyyy')} • {itemCount} item{itemCount !== 1 ? 's' : ''}
+                              {format(new Date(order.created_at), "MMM d, yyyy")} • {itemCount} item
+                              {itemCount !== 1 ? "s" : ""}
                             </p>
                           </div>
                         </div>
@@ -360,14 +368,12 @@ export default function CustomerPortal() {
                         </div>
                       </button>
 
-                      {/* Expanded order details */}
                       {isExpanded && (
                         <div className="border-t border-border/50 p-4 space-y-3">
-                          {/* Order meta */}
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                             <div>
                               <span className="text-muted-foreground">Payment</span>
-                              <p className="font-medium capitalize">{order.payment_status || 'pending'}</p>
+                              <p className="font-medium capitalize">{order.payment_status || "pending"}</p>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Subtotal</span>
@@ -383,21 +389,21 @@ export default function CustomerPortal() {
                             </div>
                           </div>
 
-                          {/* Shipping address */}
                           {order.shipping_address && (
                             <div className="text-sm">
                               <span className="text-muted-foreground flex items-center gap-1 mb-1">
                                 <MapPin className="h-3 w-3" /> Shipping Address
                               </span>
                               <p className="font-medium">
-                                {typeof order.shipping_address === 'object'
-                                  ? Object.values(order.shipping_address as Record<string, string>).filter(Boolean).join(', ')
+                                {typeof order.shipping_address === "object"
+                                  ? Object.values(order.shipping_address as Record<string, string>)
+                                      .filter(Boolean)
+                                      .join(", ")
                                   : String(order.shipping_address)}
                               </p>
                             </div>
                           )}
 
-                          {/* Line items */}
                           {order.items && order.items.length > 0 && (
                             <div className="space-y-2">
                               <span className="text-sm text-muted-foreground">Items</span>
@@ -406,7 +412,7 @@ export default function CustomerPortal() {
                                   {item.product?.images?.[0] ? (
                                     <img
                                       src={item.product.images[0]}
-                                      alt={item.product?.product_name || 'Product'}
+                                      alt={item.product?.product_name || "Product"}
                                       className="w-10 h-10 rounded-md object-cover"
                                     />
                                   ) : (
@@ -416,7 +422,7 @@ export default function CustomerPortal() {
                                   )}
                                   <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium truncate">
-                                      {item.product?.product_name || 'Unknown Product'}
+                                      {item.product?.product_name || "Unknown Product"}
                                     </p>
                                     <p className="text-xs text-muted-foreground">
                                       Qty: {item.qty} × ${(item.price_each ?? 0).toFixed(2)}
@@ -427,13 +433,6 @@ export default function CustomerPortal() {
                                   </span>
                                 </div>
                               ))}
-                            </div>
-                          )}
-
-                          {order.notes && (
-                            <div className="text-sm">
-                              <span className="text-muted-foreground">Notes</span>
-                              <p>{order.notes}</p>
                             </div>
                           )}
                         </div>
