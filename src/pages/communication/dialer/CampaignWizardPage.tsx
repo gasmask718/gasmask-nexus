@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
   Target,
   Users,
@@ -35,6 +36,8 @@ import {
   Mic,
   LayoutDashboard,
   Plus,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,7 +116,7 @@ const STEPS = [
 const PAGE_SIZE = 25;
 
 export default function CampaignWizardPage() {
-  const { currentBusiness } = useBusiness();
+  const { currentBusiness, isLoading: isBusinessLoading } = useBusiness();
   const queryClient = useQueryClient();
   const bizId = currentBusiness?.id;
 
@@ -208,7 +211,7 @@ export default function CampaignWizardPage() {
   // --- MUTATION: LAUNCH CAMPAIGN ---
   const launchMutation = useMutation({
     mutationFn: async () => {
-      if (!bizId) throw new Error("No business");
+      if (!bizId) throw new Error("No business ID found. Please refresh or select a business.");
       if (selectedIds.size === 0) throw new Error("No audience selected");
 
       // 1. Create Campaign
@@ -254,7 +257,7 @@ export default function CampaignWizardPage() {
           status: "queued",
         }));
 
-      if (items.length === 0) throw new Error("No valid phones");
+      if (items.length === 0) throw new Error("No valid phones found in selection");
 
       for (let i = 0; i < items.length; i += 50) {
         await supabase.from("outbound_call_queue").insert(items.slice(i, i + 50) as any);
@@ -285,7 +288,9 @@ export default function CampaignWizardPage() {
         .select("*")
         .eq("business_id", bizId)
         .order("created_at", { ascending: false });
-      return (data as Campaign[]) || [];
+
+      // FIXED: Double cast to bypass strict type check for custom columns
+      return (data as unknown as Campaign[]) || [];
     },
     enabled: viewMode === "console" && !!bizId,
   });
@@ -325,7 +330,33 @@ export default function CampaignWizardPage() {
       callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
   };
 
-  // --- RENDER ---
+  // --- RENDER LOADING STATE ---
+  if (isBusinessLoading) {
+    return (
+      <div className="w-full h-[50vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading business context...</p>
+      </div>
+    );
+  }
+
+  // --- RENDER NO BUSINESS STATE ---
+  if (!bizId) {
+    return (
+      <div className="w-full h-full p-8 max-w-2xl mx-auto">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Business Selected</AlertTitle>
+          <AlertDescription>
+            You must be signed in to a business to launch campaigns. Please select a business from the top menu or
+            dashboard.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  // --- RENDER CONSOLE ---
 
   if (viewMode === "console") {
     return (
@@ -857,7 +888,7 @@ export default function CampaignWizardPage() {
         ) : (
           <Button
             onClick={() => launchMutation.mutate()}
-            disabled={launchMutation.isPending}
+            disabled={launchMutation.isPending || !bizId}
             className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white"
           >
             <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch & Monitor"}
