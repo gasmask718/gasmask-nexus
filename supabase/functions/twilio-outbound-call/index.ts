@@ -5,7 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Safe Twilio Polly Voices (No Neural suffix to guarantee playback)
 const VOICE_MAP: Record<string, string> = {
   JBFqnCBsd6RMkjVDRZzb: "Polly.Matthew",
   "21m00Tcm4TlvDq8ikWAM": "Polly.Joanna",
@@ -64,29 +63,30 @@ Deno.serve(async (req) => {
     const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // ── THE COMBINED WEBHOOK CONNECTION ──
     const agentId = item.dialer_campaigns?.agent_id || "";
-
-    // We point BOTH actions to your status-webhook, but use ?type to separate the logic
     const baseWebhookUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
+
     const statusCallbackUrl = `${baseWebhookUrl}?type=status`;
     const gatherActionUrl = `${baseWebhookUrl}?type=gather&agent_id=${agentId}`;
 
-    // Prepare the script
-    const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please say yes or press 1 to continue.`;
+    const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad to connect.`;
     const safeScript = escapeXml(rawScript);
-
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
-    // ── THE TwiML ──
-    // This waits for the physical answer, plays the TTS, and waits for a Yes or 1
-    const twiml = `
+    // ── BULLETPROOF TWIML ──
+    // 1. Added XML header
+    // 2. Increased Pause to 3 seconds for cell carrier lag
+    // 3. Changed Gather to DTMF (keypad) ONLY to prevent Speech Rec engine crashes
+    // 4. Repeated the phrase twice just in case
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
-        <Pause length="1"/>
-        <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="5" hints="yes, yeah, sure, okay, ready">
+        <Pause length="3"/>
+        <Gather input="dtmf" action="${gatherActionUrl}" numDigits="1" timeout="8">
           <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
+          <Pause length="2"/>
+          <Say voice="${voiceId}" language="en-US">I repeat, ${safeScript}</Say>
         </Gather>
-        <Say voice="${voiceId}">We did not receive a response. Goodbye.</Say>
+        <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>
         <Hangup/>
       </Response>
     `;
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
 
     params.append("To", item.phone_number);
     params.append("From", FROM_NUMBER);
-    params.append("Twiml", twiml);
+    params.append("Twiml", twiml.trim());
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
     params.append("StatusCallbackEvent", "initiated");
@@ -105,10 +105,13 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
 
-    // Apply AMD only if enabled in the wizard
+    // ── BYPASS AMD ENTIRELY FOR THIS TEST ──
+    // We are forcing this to remain commented out so the database cannot accidentally trigger it.
+    /*
     if (item.dialer_campaigns?.amd_enabled) {
       params.append("MachineDetection", "DetectMessageEnd");
     }
+    */
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
