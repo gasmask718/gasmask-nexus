@@ -2,64 +2,56 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 Deno.serve(async (req) => {
-  console.log("FUNCTION ONLINE:", { name: "twilio-outbound-call", project: Deno.env.get("SUPABASE_URL"), time: new Date().toISOString() });
+  // 1. Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    // 2. Initialize Supabase Client
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const body = await req.json();
-
-    // ── Dry-run / health probe mode ──
-    if (body.dry_run === true) {
-      return new Response(
-        JSON.stringify({ status: "ok", mode: "dry_run", reachable: true }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const { queue_item_id, business_id } = body;
 
-    if (!queue_item_id || !business_id) {
-      return new Response(
-        JSON.stringify({ error: "queue_item_id and business_id required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // Validate Input
+    if (!queue_item_id) {
+      return new Response(JSON.stringify({ error: "Missing queue_item_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // ── Fetch queue item ──
+    // 3. Fetch Queue Item AND Campaign Details
+    // We join 'dialer_campaigns' to get the script and agent info
     const { data: item, error: itemErr } = await supabase
       .from("outbound_call_queue")
-      .select("id, status, phone_number, store_id, contact_name, business_id, campaign_id")
+      .select(
+        `
+        *,
+        dialer_campaigns (
+          id,
+          initial_script,
+          agent_id,
+          amd_enabled
+        )
+      `,
+      )
       .eq("id", queue_item_id)
       .single();
 
     if (itemErr || !item) {
-      return new Response(
-        JSON.stringify({ error: "Queue item not found", details: itemErr?.message }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ error: "Queue item not found", details: itemErr }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // ── Validate: must be in dialing state ──
-    if (item.status !== "dialing") {
-      return new Response(
-        JSON.stringify({ error: `Item not in dialing state (current: ${item.status})` }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // ── DNC check ──
+    // 4. DNC (Do Not Call) Check
     if (item.store_id) {
       const { data: store } = await supabase
         .from("store_master")
@@ -68,57 +60,75 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (store?.do_not_call) {
-        // Auto-complete as compliance block
-        await supabase.from("outbound_call_queue")
+        // Block the call, mark complete
+        await supabase
+          .from("outbound_call_queue")
           .update({ status: "completed", updated_at: new Date().toISOString() })
           .eq("id", queue_item_id);
 
-        return new Response(
-          JSON.stringify({ error: "DNC store — blocked", compliance: true }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return new Response(JSON.stringify({ error: "DNC Blocked", compliance: true }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
-    // ── Get Twilio credentials ──
+    // 5. Prepare Twilio Credentials
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
     const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-      return new Response(
-        JSON.stringify({ error: "Twilio credentials not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error("Twilio credentials not configured in Secrets");
     }
 
-    // ── Build status callback URL ──
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
+    // 6. Build Dynamic TwiML
+    // Use the campaign script, or fall back to a default
+    let script =
+      item.dialer_campaigns?.initial_script || "Hello, this is a call from our automated system. Please hold.";
 
-    // ── Place Twilio call ──
+    // Simple variable replacement
+    script = script.replace("{{contact_name}}", item.contact_name || "there");
+    script = script.replace("{{agent_name}}", "our assistant");
+    script = script.replace("{{business_name}}", "our company");
+
+    // Construct TwiML
+    // If you are connecting to ElevenLabs later, you would use <Connect><Stream> here.
+    // For now, we use <Say> to speak the script.
+    const twiml = `
+      <Response>
+        <Pause length="1"/>
+        <Say voice="alice" language="en-US">${script}</Say>
+        <Pause length="30"/> 
+      </Response>
+    `;
+
+    // 7. Make the Call via Twilio API
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
-
     const params = new URLSearchParams();
     params.set("To", item.phone_number);
     params.set("From", TWILIO_PHONE_NUMBER);
-    // TwiML: ring for 30s, play brief hold message
-    params.set("Twiml", `<Response><Pause length="1"/><Say>Please hold while we connect you.</Say><Pause length="30"/></Response>`);
-    params.set("StatusCallback", statusCallbackUrl);
-    params.set("StatusCallbackEvent", "initiated ringing answered completed");
-    params.set("StatusCallbackMethod", "POST");
-    params.set("MachineDetection", "DetectMessageEnd"); // AMD
-    params.set("AsyncAmd", "true");
-    params.set("AsyncAmdStatusCallback", statusCallbackUrl);
-    params.set("AsyncAmdStatusCallbackMethod", "POST");
-    params.set("Timeout", "30");
+    params.set("Twiml", twiml);
+
+    // Status Callbacks (Optional: Hook this up to a webhook to track 'answered', 'completed')
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    if (supabaseUrl) {
+      params.set("StatusCallback", `${supabaseUrl}/functions/v1/twilio-status-webhook`);
+      params.set("StatusCallbackEvent", "initiated ringing answered completed");
+      params.set("StatusCallbackMethod", "POST");
+    }
+
+    // Machine Detection (AMD)
+    if (item.dialer_campaigns?.amd_enabled) {
+      params.set("MachineDetection", "DetectMessageEnd");
+    }
 
     const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
       headers: {
-        "Authorization": authHeader,
+        Authorization: authHeader,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: params.toString(),
@@ -127,51 +137,35 @@ Deno.serve(async (req) => {
     const twilioData = await twilioRes.json();
 
     if (!twilioRes.ok) {
-      // Log the failure
-      await supabase.from("twilio_call_logs").insert({
-        business_id,
-        queue_item_id,
-        to_number: item.phone_number,
-        from_number: TWILIO_PHONE_NUMBER,
-        status: "api_error",
-        raw_payload: twilioData,
-      });
+      // Log failure in DB
+      await supabase
+        .from("outbound_call_queue")
+        .update({ status: "failed", updated_at: new Date().toISOString() })
+        .eq("id", queue_item_id);
 
-      return new Response(
-        JSON.stringify({ error: "Twilio API error", details: twilioData }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      throw new Error(`Twilio API Error: ${twilioData.message || twilioData.code}`);
     }
 
-    const callSid = twilioData.sid;
+    // 8. Success: Update Queue Item
+    await supabase
+      .from("outbound_call_queue")
+      .update({
+        twilio_call_sid: twilioData.sid,
+        dialing_started_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Note: We leave status as 'dialing'. The webhook should update it to 'connected' or 'completed'.
+      })
+      .eq("id", queue_item_id);
 
-    // ── Save call_sid to queue item ──
-    await supabase.from("outbound_call_queue").update({
-      twilio_call_sid: callSid,
-      dialing_started_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }).eq("id", queue_item_id);
-
-    // ── Audit log ──
-    await supabase.from("twilio_call_logs").insert({
-      business_id,
-      queue_item_id,
-      call_sid: callSid,
-      direction: "outbound",
-      to_number: item.phone_number,
-      from_number: TWILIO_PHONE_NUMBER,
-      status: "initiated",
-      raw_payload: twilioData,
+    return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
-    return new Response(
-      JSON.stringify({ success: true, call_sid: callSid, queue_item_id }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Internal error", details: String(err) }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    console.error("Function Error:", err);
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
