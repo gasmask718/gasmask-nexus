@@ -32,37 +32,30 @@ Deno.serve(async (req) => {
     // ACTION 1: HANDLE USER INPUT (GATHER)
     // Returns XML to Twilio to route the call
     // ==========================================
+    // Inside your switch/logic in the webhook
     if (webhookType === "gather") {
       const digits = params.Digits || "";
       const speechResult = (params.SpeechResult || "").toLowerCase();
 
-      const isConfirmed =
-        digits === "1" ||
-        speechResult.includes("yes") ||
-        speechResult.includes("yeah") ||
-        speechResult.includes("sure") ||
-        speechResult.includes("ready");
-
-      let twiml = "";
+      const isConfirmed = digits === "1" || speechResult.includes("yes") || speechResult.includes("yeah");
 
       if (isConfirmed && agentId) {
-        twiml = `
-          <Response>
-            <Say voice="Polly.Joanna">Connecting you now.</Say>
-            <Connect>
-              <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}" />
-            </Connect>
-          </Response>
-        `;
-      } else if (isConfirmed && !agentId) {
-        twiml = `<Response><Say voice="Polly.Joanna">Configuration error. No AI agent ID found.</Say><Hangup/></Response>`;
-      } else {
-        twiml = `<Response><Say voice="Polly.Joanna">Okay, we will cancel this request. Have a great day.</Say><Hangup/></Response>`;
+        // ONLY NOW do we activate ElevenLabs
+        return new Response(
+          `
+      <Response>
+        <Say voice="Polly.Joanna">Connecting you now...</Say>
+        <Connect>
+          <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}" />
+        </Connect>
+      </Response>
+    `,
+          { headers: { "Content-Type": "text/xml" } },
+        );
       }
 
-      // Return TwiML (XML) back to Twilio
-      return new Response(twiml, {
-        headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      return new Response(`<Response><Say>Goodbye.</Say><Hangup/></Response>`, {
+        headers: { "Content-Type": "text/xml" },
       });
     }
 
@@ -240,17 +233,15 @@ async function updateStoreStats(supabase: any, storeId: string, answered: boolea
 async function trackCost(supabase: any, item: any, callSid: string, duration: number) {
   const minutes = Math.ceil(duration / 60);
   const rate = 0.0085;
-  await supabase
-    .from("call_cost_events")
-    .insert({
-      business_id: item.business_id,
-      call_sid: callSid,
-      queue_item_id: item.id,
-      duration_seconds: duration,
-      billable_minutes: minutes,
-      estimated_cost: minutes * rate,
-      rate_per_minute: rate,
-    });
+  await supabase.from("call_cost_events").insert({
+    business_id: item.business_id,
+    call_sid: callSid,
+    queue_item_id: item.id,
+    duration_seconds: duration,
+    billable_minutes: minutes,
+    estimated_cost: minutes * rate,
+    rate_per_minute: rate,
+  });
 }
 
 async function logAttemptOutcome(
@@ -263,34 +254,30 @@ async function logAttemptOutcome(
   conf?: string,
   block?: string,
 ) {
-  await supabase
-    .from("dialer_call_attempts")
-    .insert({
-      business_id: queueItem.business_id,
-      campaign_id: queueItem.campaign_id,
-      queue_item_id: queueItem.id,
-      store_id: queueItem.store_id,
-      target_phone_e164: queueItem.phone_number,
-      target_call_sid: callSid,
-      attempt_state: state,
-      amd_result: amd,
-      agent_user_id: agent,
-      conference_name: conf,
-      blocked_reason: block,
-    });
+  await supabase.from("dialer_call_attempts").insert({
+    business_id: queueItem.business_id,
+    campaign_id: queueItem.campaign_id,
+    queue_item_id: queueItem.id,
+    store_id: queueItem.store_id,
+    target_phone_e164: queueItem.phone_number,
+    target_call_sid: callSid,
+    attempt_state: state,
+    amd_result: amd,
+    agent_user_id: agent,
+    conference_name: conf,
+    blocked_reason: block,
+  });
 }
 
 async function createAutoFollowUp(supabase: any, item: any, sid: string, reason: string, delay: number) {
   const due = new Date(Date.now() + delay * 60000).toISOString();
-  await supabase
-    .from("follow_up_queue")
-    .insert({
-      store_id: item.store_id,
-      business_id: item.business_id,
-      reason: reason,
-      status: "pending",
-      due_at: due,
-      priority: 3,
-      context: { source: "dialer", call_sid: sid },
-    });
+  await supabase.from("follow_up_queue").insert({
+    store_id: item.store_id,
+    business_id: item.business_id,
+    reason: reason,
+    status: "pending",
+    due_at: due,
+    priority: 3,
+    context: { source: "dialer", call_sid: sid },
+  });
 }
