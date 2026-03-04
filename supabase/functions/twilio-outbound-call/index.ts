@@ -5,11 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VOICE_MAP: Record<string, string> = {
-  default: "Polly.Joanna", // We only need a simple fallback for the initial prompt
-};
-
 function escapeXml(unsafe: string) {
+  if (!unsafe) return "";
   return unsafe.replace(/[<>&'"]/g, (c) => {
     switch (c) {
       case "<":
@@ -41,7 +38,7 @@ Deno.serve(async (req) => {
     const { data: item, error: itemErr } = await supabase
       .from("outbound_call_queue")
       .select(
-        `id, status, phone_number, store_id, contact_name, business_id, campaign_id, dialer_campaigns ( agent_id )`,
+        `id, status, phone_number, store_id, contact_name, business_id, campaign_id, dialer_campaigns ( initial_script, agent_id, amd_enabled )`,
       )
       .eq("id", queue_item_id)
       .single();
@@ -53,18 +50,20 @@ Deno.serve(async (req) => {
     const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // Webhooks
-    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
+    // ── THE COMBINED WEBHOOK URLS ──
+    const agentId = item.dialer_campaigns?.agent_id || "";
+    const baseWebhookUrl = `${supabaseUrl}/functions/v1/twilio-webhook`;
 
-    // NEW: We need a URL to process the user's "Yes"
-    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${item.dialer_campaigns?.agent_id || ""}`;
+    // Route 1: For logging answered/completed statuses
+    const statusCallbackUrl = `${baseWebhookUrl}?type=status`;
 
-    // The script asking for confirmation
-    const safeScript = escapeXml(
-      `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please say yes or press 1 to continue.`,
-    );
+    // Route 2: For processing the user saying "Yes" or pressing "1"
+    const gatherActionUrl = `${baseWebhookUrl}?type=gather&agent_id=${agentId}`;
 
-    // THE MAGIC: <Gather> waits for the user to answer the phone, speaks, and listens for "Yes" or "1".
+    const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please say yes or press 1 to continue.`;
+    const safeScript = escapeXml(rawScript);
+
+    // Prompt the user and wait for a response
     const twiml = `
       <Response>
         <Pause length="1"/>
@@ -82,13 +81,17 @@ Deno.serve(async (req) => {
 
     params.append("To", item.phone_number);
     params.append("From", FROM_NUMBER);
-    params.append("Twiml", twiml); // Twilio inherently waits for the physical pickup before playing this
+    params.append("Twiml", twiml);
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
     params.append("StatusCallbackEvent", "initiated");
     params.append("StatusCallbackEvent", "ringing");
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
+
+    if (item.dialer_campaigns?.amd_enabled) {
+      params.append("MachineDetection", "DetectMessageEnd");
+    }
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
@@ -112,7 +115,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", queue_item_id);
 
-    return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid }), { headers: corsHeaders });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
