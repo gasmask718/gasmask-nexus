@@ -5,20 +5,41 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Map the IDs from your Frontend to valid Twilio/Polly Neural Voices
+// FIX 1: Map to Standard Twilio Polly Voices (Safe versions, removed "-Neural")
+// Neural voices often require specific account flags or cause silence if unsupported.
 const VOICE_MAP: Record<string, string> = {
-  JBFqnCBsd6RMkjVDRZzb: "Polly.Matthew-Neural", // Adam -> Matthew
-  "21m00Tcm4TlvDq8ikWAM": "Polly.Joanna-Neural", // Rachel -> Joanna
-  EXAVITQu4vr4xnSDxMaL: "Polly.Amy-Neural", // Bella -> Amy
-  ErXwobaYiN019PkySvjV: "Polly.Arthur-Neural", // Antoni -> Arthur
-  MF3mGyEYCl7XYWbV9V6O: "Polly.Emma-Neural", // Elli -> Emma
-  TxGEqnHWrfWFTfGW9XjX: "Polly.Joey-Neural", // Josh -> Joey
-  VR6AewLTigWG4xSOukaG: "Polly.Justin-Neural", // Arnold -> Justin
-  pNInz6obpgDQGcFmaJgB: "Polly.Salli-Neural", // Sam (M) -> Salli (Fallback M/F mismatch handled by name usually, but Salli is F. Let's map to Matthew for Male ID)
-  yoZ06aMxZJJ28mfd3POQ: "Polly.Kendra-Neural", // Sam (F) -> Kendra
-  // Fallback
-  default: "Polly.Joanna-Neural",
+  JBFqnCBsd6RMkjVDRZzb: "Polly.Matthew",
+  "21m00Tcm4TlvDq8ikWAM": "Polly.Joanna",
+  EXAVITQu4vr4xnSDxMaL: "Polly.Amy",
+  ErXwobaYiN019PkySvjV: "Polly.Arthur",
+  MF3mGyEYCl7XYWbV9V6O: "Polly.Emma",
+  TxGEqnHWrfWFTfGW9XjX: "Polly.Joey",
+  VR6AewLTigWG4xSOukaG: "Polly.Justin",
+  pNInz6obpgDQGcFmaJgB: "Polly.Salli",
+  yoZ06aMxZJJ28mfd3POQ: "Polly.Kendra",
+  default: "Polly.Joanna",
 };
+
+// FIX 2: Helper to escape XML special characters
+// If your script contains "&", "<", or ">", it breaks TwiML and causes silence.
+function escapeXml(unsafe: string) {
+  return unsafe.replace(/[<>&'"]/g, (c) => {
+    switch (c) {
+      case "<":
+        return "&lt;";
+      case ">":
+        return "&gt;";
+      case "&":
+        return "&amp;";
+      case "'":
+        return "&apos;";
+      case '"':
+        return "&quot;";
+      default:
+        return c;
+    }
+  });
+}
 
 Deno.serve(async (req) => {
   console.log("FUNCTION ONLINE:", { name: "twilio-outbound-call", time: new Date().toISOString() });
@@ -114,21 +135,25 @@ Deno.serve(async (req) => {
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
 
     // 6. Generate Script & Select Voice
-    let script = item.dialer_campaigns?.initial_script || "Hello, this is a call from our automated system.";
+    let rawScript = item.dialer_campaigns?.initial_script || "Hello, this is a call from our automated system.";
 
-    // FIX: Use Regex with 'g' flag for global replacement
-    script = script.replace(/{{contact_name}}/g, item.contact_name || "there");
-    script = script.replace(/{{agent_name}}/g, "our assistant");
-    script = script.replace(/{{business_name}}/g, "our company");
+    // Use Regex with 'g' flag for global replacement
+    rawScript = rawScript.replace(/{{contact_name}}/g, item.contact_name || "there");
+    rawScript = rawScript.replace(/{{agent_name}}/g, "our assistant");
+    rawScript = rawScript.replace(/{{business_name}}/g, "our company");
 
-    // FIX: Select the correct Twilio voice based on the Agent ID from campaign
+    // FIX 3: Apply XML Escaping to the script
+    const safeScript = escapeXml(rawScript);
+
+    // FIX 4: Select the correct Twilio voice from our safe map
     const agentId = item.dialer_campaigns?.agent_id;
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
+    // FIX 5: Use <Pause> to buffer connection lag and ensure script is heard
     const twiml = `
       <Response>
         <Pause length="1"/>
-        <Say voice="${voiceId}" language="en-US">${script}</Say>
+        <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
         <Pause length="2"/>
         <Record maxLength="30" action="${statusCallbackUrl}" />
       </Response>
@@ -145,7 +170,7 @@ Deno.serve(async (req) => {
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
 
-    // FIX: Enable Recording explicitly for transcripts
+    // Enable Recording explicitly for transcripts
     params.append("Record", "true");
     params.append("RecordingStatusCallback", statusCallbackUrl);
 
@@ -156,9 +181,9 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "completed");
 
     // AMD Logic
+    // WARNING: "DetectMessageEnd" adds 3-4 seconds of silence while it listens to the user.
     if (item.dialer_campaigns?.amd_enabled) {
       params.append("MachineDetection", "DetectMessageEnd");
-      // Optional: Tweaking AMD params can reduce delay, but 'DetectMessageEnd' is safest for voicemail detection
       params.append("MachineDetectionTimeout", "30");
     }
 
