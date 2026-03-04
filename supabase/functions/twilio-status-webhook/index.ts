@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     if (!callSid) throw new Error("No CallSid found in webhook");
 
-    // ── 1. Fetch Queue Item + Campaign Mode ──
+    // ── 1. Fetch Queue Item ──
     const { data: queueItem } = await supabase
       .from("outbound_call_queue")
       .select(
@@ -68,10 +68,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, note: "orphan_call_ignored" }), { headers: corsHeaders });
     }
 
-    // Determine Mode: 'ai' or 'human_agent'
-    const dialMode = queueItem.dialer_campaigns?.dial_mode || "ai";
-
-    // ── 2. AMD (Machine Detection) - Applies to BOTH modes ──
+    // ── 2. AMD (Machine Detection) ──
     if (answeredBy && answeredBy !== "human" && answeredBy !== "unknown") {
       if (queueItem.status === "dialing" || queueItem.status === "answered") {
         // Mark as voicemail
@@ -89,7 +86,7 @@ Deno.serve(async (req) => {
         // Hangup immediately to save cost on voicemail
         await hangupCall(callSid);
 
-        // Trigger Auto-Follow Up logic (e.g. send email/sms later)
+        // Trigger Auto-Follow Up logic
         if (queueItem.store_id) {
           await updateStoreContact(supabase, queueItem.store_id);
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
@@ -104,81 +101,17 @@ Deno.serve(async (req) => {
       case "answered": {
         // Only act if we haven't processed the answer yet
         if (queueItem.status === "dialing") {
-          // ── PATH A: AI MODE (Simple) ──
-          if (dialMode === "ai") {
-            console.log("AI Mode: Marking connected.");
-            await supabase
-              .from("outbound_call_queue")
-              .update({
-                status: "connected",
-                answered_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", queueItem.id);
+          console.log("Call answered. Marking connected so Twilio can play TTS.");
+          await supabase
+            .from("outbound_call_queue")
+            .update({
+              status: "connected",
+              answered_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", queueItem.id);
 
-            await logAttemptOutcome(supabase, callSid, queueItem, "answered_human", "human");
-          }
-
-          // ── PATH B: HUMAN AGENT MODE (Complex Bridging) ──
-          else {
-            console.log("Human Agent Mode: Finding agent...");
-
-            // 1. Mark answered
-            await supabase
-              .from("outbound_call_queue")
-              .update({ answered_at: new Date().toISOString() })
-              .eq("id", queueItem.id);
-
-            // 2. Find Agent via RPC
-            const { data: agentRows } = await supabase.rpc("claim_available_agent", {
-              p_business_id: queueItem.business_id,
-            });
-
-            if (agentRows && agentRows.length > 0) {
-              const agent = agentRows[0];
-
-              // Create Session
-              const { data: session } = await supabase
-                .from("live_call_sessions")
-                .insert({
-                  business_id: queueItem.business_id,
-                  store_id: queueItem.store_id,
-                  queue_item_id: queueItem.id,
-                  contact_name: queueItem.contact_name,
-                  phone_number: queueItem.phone_number,
-                  rep_user_id: agent.user_id,
-                  twilio_call_sid: callSid,
-                  connected_at: new Date().toISOString(),
-                  campaign_id: queueItem.campaign_id,
-                })
-                .select("id")
-                .single();
-
-              if (session) {
-                // Mark Bridged
-                await supabase.from("outbound_call_queue").update({ status: "bridged" }).eq("id", queueItem.id);
-
-                // Execute Bridge via another Edge Function
-                const { error: bridgeErr } = await supabase.functions.invoke("dialer-bridge-agent", {
-                  body: {
-                    session_id: session.id,
-                    queue_item_id: queueItem.id,
-                    target_call_sid: callSid,
-                    business_id: queueItem.business_id,
-                  },
-                });
-
-                if (bridgeErr) console.error("Bridge Error", bridgeErr);
-              }
-            } else {
-              // No Agent Found -> Apologize & Hangup
-              await logAttemptOutcome(supabase, callSid, queueItem, "agent_missed", "human");
-              await updateCallTwiml(
-                callSid,
-                `<Response><Say>Sorry, all agents are currently busy. We will call you back.</Say><Hangup/></Response>`,
-              );
-            }
-          }
+          await logAttemptOutcome(supabase, callSid, queueItem, "answered_human", "human");
         }
         break;
       }
@@ -197,12 +130,6 @@ Deno.serve(async (req) => {
         }
 
         await supabase.from("outbound_call_queue").update(updateData).eq("id", queueItem.id);
-
-        // Update Session (if exists)
-        await supabase
-          .from("live_call_sessions")
-          .update({ duration_seconds: callDuration, ended_at: new Date().toISOString() })
-          .eq("twilio_call_sid", callSid);
 
         // Track Costs
         await trackCost(supabase, queueItem, callSid, callDuration);
