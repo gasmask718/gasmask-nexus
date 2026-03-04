@@ -14,13 +14,14 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Initialize Supabase with Service Role Key to bypass RLS in the backend
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const body = await req.json();
 
-    // ── Dry-run / health probe mode ──
+    // Health probe / Dry-run
     if (body.dry_run === true) {
-      return new Response(JSON.stringify({ status: "ok", mode: "dry_run", reachable: true }), {
+      return new Response(JSON.stringify({ status: "ok", mode: "dry_run" }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -35,7 +36,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 2. Fetch queue item AND Campaign Data (FIXED) ──
+    // 2. Fetch queue item AND Campaign Data
     const { data: item, error: itemErr } = await supabase
       .from("outbound_call_queue")
       .select(
@@ -58,16 +59,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // ── 3. Validate: must be in dialing state ──
-    // Note: We allow 'queued' too, just in case the frontend optimistic update failed
-    if (item.status !== "dialing" && item.status !== "queued") {
-      return new Response(JSON.stringify({ error: `Item state invalid (current: ${item.status})` }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ── 4. DNC check ──
+    // 3. DNC check (Compliance)
     if (item.store_id) {
       const { data: store } = await supabase
         .from("store_master")
@@ -76,7 +68,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       if (store?.do_not_call) {
-        // Auto-complete as compliance block
         await supabase
           .from("outbound_call_queue")
           .update({ status: "completed", updated_at: new Date().toISOString() })
@@ -89,28 +80,26 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── 5. Get Twilio credentials ──
+    // 4. Set Twilio credentials
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const TWILIO_PHONE_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER");
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-      return new Response(JSON.stringify({ error: "Twilio credentials not configured" }), {
+    // HARDCODED "FROM" NUMBER
+    const FROM_NUMBER = "+18776818621";
+
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
+      return new Response(JSON.stringify({ error: "Twilio SID or Token not configured in Secrets" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // ── 6. Build Status Callback URL ──
+    // 5. Build Webhook URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    // Note: Ensure you have a 'twilio-status-webhook' function or remove this param if not
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
 
-    // ── 7. Generate Dynamic TwiML (FIXED) ──
-    // We grab the script from the joined campaign data
+    // 6. Generate Script
     let script = item.dialer_campaigns?.initial_script || "Hello, this is a call from our automated system.";
-
-    // Replace variables
     script = script.replace("{{contact_name}}", item.contact_name || "there");
     script = script.replace("{{agent_name}}", "our assistant");
     script = script.replace("{{business_name}}", "our company");
@@ -123,18 +112,17 @@ Deno.serve(async (req) => {
       </Response>
     `;
 
-    // ── 8. Place Twilio call ──
+    // 7. Place Twilio call
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
 
     const params = new URLSearchParams();
-    params.set("To", item.phone_number);
-    params.set("From", TWILIO_PHONE_NUMBER);
+    params.set("To", item.phone_number); // The record you selected
+    params.set("From", FROM_NUMBER); // Your fixed 877 number
     params.set("Twiml", twiml);
     params.set("StatusCallback", statusCallbackUrl);
     params.set("StatusCallbackEvent", "initiated ringing answered completed");
     params.set("StatusCallbackMethod", "POST");
 
-    // Use campaign setting for AMD
     if (item.dialer_campaigns?.amd_enabled) {
       params.set("MachineDetection", "DetectMessageEnd");
     }
@@ -153,17 +141,16 @@ Deno.serve(async (req) => {
     const twilioData = await twilioRes.json();
 
     if (!twilioRes.ok) {
-      // Log the failure
+      // Mark as failed in DB
       await supabase.from("twilio_call_logs").insert({
         business_id,
         queue_item_id,
         to_number: item.phone_number,
-        from_number: TWILIO_PHONE_NUMBER,
+        from_number: FROM_NUMBER,
         status: "api_error",
         raw_payload: twilioData,
       });
 
-      // Mark queue item as failed so it doesn't get stuck
       await supabase
         .from("outbound_call_queue")
         .update({ status: "failed", updated_at: new Date().toISOString() })
@@ -175,36 +162,34 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 8. Success: Update queue item and logs
     const callSid = twilioData.sid;
-
-    // ── 9. Success: Update queue item ──
     await supabase
       .from("outbound_call_queue")
       .update({
         twilio_call_sid: callSid,
         dialing_started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        // Status remains 'dialing' until webhook confirms 'completed'
       })
       .eq("id", queue_item_id);
 
-    // ── 10. Audit log ──
     await supabase.from("twilio_call_logs").insert({
       business_id,
       queue_item_id,
       call_sid: callSid,
       direction: "outbound",
       to_number: item.phone_number,
-      from_number: TWILIO_PHONE_NUMBER,
+      from_number: FROM_NUMBER,
       status: "initiated",
       raw_payload: twilioData,
     });
 
-    return new Response(JSON.stringify({ success: true, call_sid: callSid, queue_item_id }), {
+    return new Response(JSON.stringify({ success: true, call_sid: callSid }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Internal Function Error:", err);
     return new Response(JSON.stringify({ error: "Internal error", details: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
