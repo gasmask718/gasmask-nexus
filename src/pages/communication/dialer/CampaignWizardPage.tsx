@@ -259,23 +259,25 @@ export default function CampaignWizardPage() {
     agent_id: VOICE_OPTIONS[0].id,
   });
 
-  // --- DISPATCHER LOGIC ---
+  // --- DISPATCHER LOGIC (ROBUST VERSION) ---
   const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const processQueue = useCallback(
     async (campaignId: string) => {
+      // 1. Fetch NEXT item in queue (Optimistic Locking)
       const { data: queueItems, error: fetchErr } = await supabase
         .from("outbound_call_queue")
-        .select("id, phone_number")
+        .select("id, phone_number, contact_name")
         .eq("campaign_id", campaignId)
         .eq("status", "queued")
         .limit(1)
         .maybeSingle();
 
-      if (fetchErr || !queueItems) return;
+      if (fetchErr || !queueItems) return; // Queue empty or error
 
       const queueItem = queueItems;
 
+      // 2. Lock item (Set to dialing) - Critical to prevent race conditions
       const { error: updateErr } = await supabase
         .from("outbound_call_queue")
         .update({
@@ -284,22 +286,38 @@ export default function CampaignWizardPage() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", queueItem.id)
-        .eq("status", "queued");
+        .eq("status", "queued"); // Ensure we only update if it's still queued
 
       if (updateErr) return;
 
       try {
+        toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
+
+        // 3. Invoke Edge Function
         const response = await supabase.functions.invoke("twilio-outbound-call", {
           body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
         });
+
+        // 4. Handle Invocation Errors
         if (response.error) {
-          console.error("Dispatcher Error:", response.error);
-          await supabase.from("outbound_call_queue").update({ status: "failed" }).eq("id", queueItem.id);
-        } else {
-          toast.success(`Dialing ${queueItem.phone_number}...`);
+          throw new Error(response.error.message || "Function invocation failed");
         }
-      } catch (err) {
+
+        // Check for application-level errors returned in JSON
+        if (response.data && response.data.error) {
+          throw new Error(response.data.error);
+        }
+
+        // Success: Status remains 'dialing' until webhook updates it to 'connected' or 'completed'
+      } catch (err: any) {
         console.error("Dispatcher Exception:", err);
+        toast.error(`Call failed: ${err.message}`);
+
+        // 5. Rollback Status on Failure
+        await supabase
+          .from("outbound_call_queue")
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+          .eq("id", queueItem.id);
       }
 
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
@@ -313,7 +331,8 @@ export default function CampaignWizardPage() {
         const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
         if (data?.status === "active") processQueue(activeCampaignId);
       };
-      dispatchIntervalRef.current = setInterval(checkAndRun, 5000);
+      // Poll every 4 seconds
+      dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
     }
     return () => {
       if (dispatchIntervalRef.current) clearInterval(dispatchIntervalRef.current);
@@ -407,11 +426,6 @@ export default function CampaignWizardPage() {
     }
     const id = crypto.randomUUID();
     setCustomNumbers((prev) => [...prev, { id, phone: formatted, name: customNameInput.trim() || formatted }]);
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.add(id);
-      return next;
-    });
     setCustomPhoneInput("");
     setCustomNameInput("");
     setIsAudienceConfirmed(false);
@@ -419,11 +433,6 @@ export default function CampaignWizardPage() {
 
   const removeCustomNumber = (id: string) => {
     setCustomNumbers((prev) => prev.filter((n) => n.id !== id));
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
     setIsAudienceConfirmed(false);
   };
 
@@ -446,7 +455,6 @@ export default function CampaignWizardPage() {
     }
     if (newNumbers.length > 0) {
       setCustomNumbers((prev) => [...prev, ...newNumbers]);
-      setSelectedIds(newIds);
       toast.success(`Added ${newNumbers.length} numbers`);
     } else {
       toast.error("No valid new numbers found");
@@ -1162,7 +1170,6 @@ export default function CampaignWizardPage() {
         {/* STEP 3: Script & AI Agent */}
         {step === 3 && (
           <div className="space-y-6">
-            {/* Voice Provider Info */}
             <div className="grid grid-cols-2 gap-4">
               <Card className="border border-blue-500/30 bg-blue-500/5">
                 <CardContent className="p-4 flex items-center gap-3">
@@ -1197,7 +1204,6 @@ export default function CampaignWizardPage() {
               </Card>
             </div>
 
-            {/* Twilio TTS Script */}
             <Card className="border-l-4 border-l-blue-500">
               <CardContent className="pt-6 flex gap-4">
                 <div className="mt-1">
@@ -1213,7 +1219,6 @@ export default function CampaignWizardPage() {
                     </p>
                   </div>
 
-                  {/* Template Selector */}
                   <div className="space-y-2">
                     <Label className="text-xs">Quick Templates</Label>
                     <div className="flex flex-wrap gap-2">
@@ -1251,7 +1256,6 @@ export default function CampaignWizardPage() {
               </div>
             </div>
 
-            {/* ElevenLabs Agent */}
             <Card className="border-l-4 border-l-purple-500">
               <CardContent className="pt-6 flex gap-4">
                 <div className="mt-1">
@@ -1310,7 +1314,6 @@ export default function CampaignWizardPage() {
                 </div>
               </div>
 
-              {/* Voice provider summary */}
               <Alert>
                 <Phone className="h-4 w-4" />
                 <AlertTitle>Voice Pipeline</AlertTitle>
