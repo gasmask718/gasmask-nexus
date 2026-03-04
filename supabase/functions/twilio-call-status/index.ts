@@ -237,6 +237,8 @@ const handler = async (req: Request): Promise<Response> => {
 
               const convoJson = await convoRes.json();
 
+              const transcriptItems: { role: string; text: string }[] = [];
+
               const transcriptText = (() => {
                 const lines: string[] = [];
 
@@ -244,6 +246,7 @@ const handler = async (req: Request): Promise<Response> => {
                   const clean = (text ?? "").toString().trim();
                   if (!clean) return;
                   lines.push(`${role}: ${clean}`);
+                  transcriptItems.push({ role, text: clean });
                 };
 
                 // Try common shapes
@@ -271,6 +274,21 @@ const handler = async (req: Request): Promise<Response> => {
                 // Fallback: stringify
                 return JSON.stringify(convoJson, null, 2);
               })();
+
+              // Also save structured transcript to live_call_transcripts for dashboard
+              if (transcriptItems.length > 0) {
+                const rows = transcriptItems.map((item) => ({
+                  call_sid: effectiveSid,
+                  speaker: item.role === "agent" || item.role === "ai" ? "ai" : "caller",
+                  text: item.text,
+                  is_final: true,
+                  created_at: new Date().toISOString(),
+                }));
+                const { error: liveTranscriptError } = await supabase.from("live_call_transcripts").insert(rows);
+                if (liveTranscriptError) {
+                   console.error("❌ Error saving live_call_transcripts:", liveTranscriptError);
+                }
+              }
 
               const newMetadata = {
                 ...existingMeta,

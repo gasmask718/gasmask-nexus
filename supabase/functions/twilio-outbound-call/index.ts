@@ -66,13 +66,13 @@ Deno.serve(async (req) => {
     // ── ISOLATED WEBHOOK ROUTES ──
     const agentId = item.dialer_campaigns?.agent_id || "";
 
-    // Points to your old webhook for logging
-    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
+    // Points to your old webhook for logging (Fixed to point to the correct status handler)
+    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;
 
     // Points to your brand new webhook for the ElevenLabs connection
     const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
 
-    const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad to connect.`;
+    const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad or say yes to connect.`;
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Pause length="2"/>
-        <Gather input="dtmf" action="${gatherActionUrl}" numDigits="1" timeout="8">
+        <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="8">
           <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
           <Pause length="2"/>
           <Say voice="${voiceId}" language="en-US">I repeat, ${safeScript}</Say>
@@ -125,6 +125,25 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq("id", queue_item_id);
+
+    // Initial log in call_recordings to ensure subsequent updates (status/transcript) have a row to target.
+    // Using upsert to be safe, though this is the initiation point.
+    const { error: recordingError } = await supabase.from("call_recordings").upsert(
+      {
+        provider_call_sid: twilioData.sid,
+        business_id: business_id,
+        direction: "outbound",
+        status: "initiated",
+        from_number: FROM_NUMBER,
+        to_number: item.phone_number,
+        created_at: new Date().toISOString(),
+      },
+      { onConflict: "provider_call_sid" },
+    );
+
+    if (recordingError) {
+      console.error("Failed to create call_recordings entry:", recordingError);
+    }
 
     return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid }), { headers: corsHeaders });
   } catch (err: any) {
