@@ -7,6 +7,7 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
+  // Handle CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,9 +15,10 @@ Deno.serve(async (req) => {
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Parse Params
+    // Parse Params (Handle both JSON and Form Data)
     const contentType = req.headers.get("content-type") || "";
     let params: Record<string, string> = {};
+
     if (contentType.includes("application/x-www-form-urlencoded")) {
       const body = await req.text();
       new URLSearchParams(body).forEach((value, key) => {
@@ -31,7 +33,10 @@ Deno.serve(async (req) => {
     const answeredBy = params.AnsweredBy || params.answered_by || "";
     const callDuration = parseInt(params.CallDuration || params.Duration || "0") || 0;
 
-    if (!callSid) throw new Error("No CallSid");
+    // --- NEW: Grab Recording URL for Transcripts ---
+    const recordingUrl = params.RecordingUrl || params.recording_url || null;
+
+    if (!callSid) throw new Error("No CallSid found in webhook");
 
     // ── 1. Fetch Queue Item + Campaign Mode ──
     const { data: queueItem } = await supabase
@@ -61,7 +66,7 @@ Deno.serve(async (req) => {
     });
 
     if (!queueItem) {
-      return new Response(JSON.stringify({ ok: true, note: "orphan" }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ ok: true, note: "orphan_call_ignored" }), { headers: corsHeaders });
     }
 
     // Determine Mode: 'ai' or 'human_agent'
@@ -85,7 +90,7 @@ Deno.serve(async (req) => {
         // Hangup
         await hangupCall(callSid);
 
-        // Trigger your existing Auto-Follow Up logic
+        // Trigger Auto-Follow Up logic
         if (queueItem.store_id) {
           await updateStoreContact(supabase, queueItem.store_id);
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
@@ -180,15 +185,19 @@ Deno.serve(async (req) => {
       }
 
       case "completed": {
-        // Update Queue
-        await supabase
-          .from("outbound_call_queue")
-          .update({
-            status: "completed",
-            duration: callDuration,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", queueItem.id);
+        // Update Queue with Duration AND Transcript (Recording URL)
+        const updateData: any = {
+          status: "completed",
+          duration: callDuration,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Save recording URL to transcript field if available
+        if (recordingUrl) {
+          updateData.transcript = `Recording: ${recordingUrl}`;
+        }
+
+        await supabase.from("outbound_call_queue").update(updateData).eq("id", queueItem.id);
 
         // Update Session (if exists)
         await supabase
@@ -212,7 +221,7 @@ Deno.serve(async (req) => {
       case "canceled": {
         if (queueItem.status === "dialing") {
           const statusMap: any = { busy: "busy", "no-answer": "no_answer", failed: "failed", canceled: "failed" };
-          const outcome = statusMap[callStatus];
+          const outcome = statusMap[callStatus] || "failed";
 
           // Log
           await logAttemptOutcome(supabase, callSid, queueItem, "failed", null, undefined, undefined, outcome);
@@ -231,13 +240,13 @@ Deno.serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
-  } catch (err) {
+  } catch (err: any) {
     console.error("Webhook Error:", err);
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
 });
 
-// ── HELPERS (Preserving your logic) ──
+// ── HELPERS ──
 
 async function handleRetry(supabase: any, item: any, reason: string) {
   const { data: settings } = await supabase
@@ -269,7 +278,6 @@ async function updateStoreContact(supabase: any, storeId: string) {
 }
 
 async function updateStoreStats(supabase: any, storeId: string, answered: boolean) {
-  // Simplified version of your stats logic
   const { data: store } = await supabase.from("store_answer_profile").select("*").eq("store_id", storeId).maybeSingle();
   const now = new Date();
   const updates: any = {
@@ -301,8 +309,6 @@ async function trackCost(supabase: any, item: any, callSid: string, duration: nu
   });
 }
 
-// ... Keep logAttemptOutcome, createAutoFollowUp, hangupCall, updateCallTwiml from your original code ...
-// (Included implicitly to save space, copy them from your previous snippet if needed)
 async function logAttemptOutcome(
   supabase: any,
   callSid: string,
