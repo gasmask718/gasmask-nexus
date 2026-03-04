@@ -7,44 +7,84 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req) => {
-  // Handle CORS
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    // Parse URL parameters to determine which logic to run
+    const url = new URL(req.url);
+    const webhookType = url.searchParams.get("type") || "status";
+    const agentId = url.searchParams.get("agent_id");
 
-    // Parse Params (Handle both JSON and Form Data)
+    // Parse Body
     const contentType = req.headers.get("content-type") || "";
     let params: Record<string, string> = {};
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
-      const body = await req.text();
-      new URLSearchParams(body).forEach((value, key) => {
+      const bodyText = await req.text();
+      new URLSearchParams(bodyText).forEach((value, key) => {
         params[key] = value;
       });
     } else {
       params = await req.json();
     }
 
-    // Extract standard Twilio params
+    // ==========================================
+    // ACTION 1: HANDLE USER INPUT (GATHER)
+    // Returns XML to Twilio to route the call
+    // ==========================================
+    if (webhookType === "gather") {
+      const digits = params.Digits || "";
+      const speechResult = (params.SpeechResult || "").toLowerCase();
+
+      const isConfirmed =
+        digits === "1" ||
+        speechResult.includes("yes") ||
+        speechResult.includes("yeah") ||
+        speechResult.includes("sure") ||
+        speechResult.includes("ready");
+
+      let twiml = "";
+
+      if (isConfirmed && agentId) {
+        twiml = `
+          <Response>
+            <Say voice="Polly.Joanna">Connecting you now.</Say>
+            <Connect>
+              <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}" />
+            </Connect>
+          </Response>
+        `;
+      } else if (isConfirmed && !agentId) {
+        twiml = `<Response><Say voice="Polly.Joanna">Configuration error. No AI agent ID found.</Say><Hangup/></Response>`;
+      } else {
+        twiml = `<Response><Say voice="Polly.Joanna">Okay, we will cancel this request. Have a great day.</Say><Hangup/></Response>`;
+      }
+
+      // Return TwiML (XML) back to Twilio
+      return new Response(twiml, {
+        headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      });
+    }
+
+    // ==========================================
+    // ACTION 2: HANDLE CALL STATUS UPDATES
+    // Returns JSON and logs data to Supabase
+    // ==========================================
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
     const callSid = params.CallSid || params.call_sid || "";
     const callStatus = params.CallStatus || params.call_status || "";
     const answeredBy = params.AnsweredBy || params.answered_by || "";
     const callDuration = parseInt(params.CallDuration || params.Duration || "0") || 0;
-    const recordingUrl = params.RecordingUrl || params.recording_url || null;
 
     if (!callSid) throw new Error("No CallSid found in webhook");
 
-    // ── 1. Fetch Queue Item ──
     const { data: queueItem } = await supabase
       .from("outbound_call_queue")
       .select("*")
       .eq("twilio_call_sid", callSid)
       .maybeSingle();
 
-    // Log for audit
     await supabase.from("twilio_call_logs").insert({
       business_id: queueItem?.business_id || null,
       queue_item_id: queueItem?.id || null,
@@ -58,44 +98,44 @@ Deno.serve(async (req) => {
     });
 
     if (!queueItem) {
-      return new Response(JSON.stringify({ ok: true, note: "orphan_call_ignored" }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ ok: true, note: "orphan_call_ignored" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // ── 2. AMD (Machine Detection) ──
+    // AMD Logic
     if (answeredBy && answeredBy !== "human" && answeredBy !== "unknown") {
       if (queueItem.status === "dialing" || queueItem.status === "answered") {
-        // Mark as voicemail
         await supabase
           .from("outbound_call_queue")
-          .update({
-            status: "voicemail",
-            updated_at: new Date().toISOString(),
-          })
+          .update({ status: "voicemail", updated_at: new Date().toISOString() })
           .eq("id", queueItem.id);
-
-        // Log Outcome
         await logAttemptOutcome(supabase, callSid, queueItem, "answered_machine", answeredBy);
 
-        // Hangup immediately to save cost on voicemail
-        await hangupCall(callSid);
+        // Hangup
+        const a = Deno.env.get("TWILIO_ACCOUNT_SID");
+        const t = Deno.env.get("TWILIO_AUTH_TOKEN");
+        await fetch(`https://api.twilio.com/2010-04-01/Accounts/${a}/Calls/${callSid}.json`, {
+          method: "POST",
+          headers: { Authorization: "Basic " + btoa(`${a}:${t}`), "Content-Type": "application/x-www-form-urlencoded" },
+          body: "Status=completed",
+        });
 
-        // Trigger Auto-Follow Up logic (e.g. send email/sms later)
         if (queueItem.store_id) {
           await updateStoreContact(supabase, queueItem.store_id);
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
         }
       }
-      return new Response(JSON.stringify({ ok: true, action: "amd_voicemail" }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ ok: true, action: "amd_voicemail" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // ── 3. Status Handling ──
+    // Queue Status Handling
     switch (callStatus) {
       case "in-progress":
       case "answered": {
-        // Only act if we haven't processed the answer yet
         if (queueItem.status === "dialing") {
-          // ── AI MODE ONLY (Human Agent bridging removed) ──
-          console.log("Call answered. Marking connected so Twilio can play TTS.");
           await supabase
             .from("outbound_call_queue")
             .update({
@@ -104,37 +144,21 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             })
             .eq("id", queueItem.id);
-
           await logAttemptOutcome(supabase, callSid, queueItem, "answered_human", "human");
         }
         break;
       }
-
       case "completed": {
-        // Update Queue with Duration AND Transcript (Recording URL)
-        const updateData: any = {
-          status: "completed",
-          duration: callDuration,
-          updated_at: new Date().toISOString(),
-        };
-
-        // Save recording URL if available
-        if (recordingUrl) {
-          updateData.transcript = `Recording: ${recordingUrl}`;
-        }
-
-        await supabase.from("outbound_call_queue").update(updateData).eq("id", queueItem.id);
-
-        // Track Costs
+        await supabase
+          .from("outbound_call_queue")
+          .update({ status: "completed", duration: callDuration, updated_at: new Date().toISOString() })
+          .eq("id", queueItem.id);
         await trackCost(supabase, queueItem, callSid, callDuration);
-
-        // Update Store Stats
         if (queueItem.store_id) {
           await updateStoreStats(supabase, queueItem.store_id, callDuration > 0);
         }
         break;
       }
-
       case "busy":
       case "no-answer":
       case "failed":
@@ -142,32 +166,38 @@ Deno.serve(async (req) => {
         if (queueItem.status === "dialing") {
           const statusMap: any = { busy: "busy", "no-answer": "no_answer", failed: "failed", canceled: "failed" };
           const outcome = statusMap[callStatus] || "failed";
-
-          // Log
           await logAttemptOutcome(supabase, callSid, queueItem, "failed", null, undefined, undefined, outcome);
-
-          // Retry Logic
           await handleRetry(supabase, queueItem, outcome);
-
-          // Auto Follow Up
           if (queueItem.store_id) {
             await updateStoreContact(supabase, queueItem.store_id);
-            await createAutoFollowUp(supabase, queueItem, callSid, outcome, outcome === "busy" ? 120 : 1440); // 2h or 24h
+            await createAutoFollowUp(supabase, queueItem, callSid, outcome, outcome === "busy" ? 120 : 1440);
           }
         }
         break;
       }
     }
 
-    return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ ok: true }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (err: any) {
     console.error("Webhook Error:", err);
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+    // If it fails on gather, we must return valid XML so Twilio doesn't crash the call
+    const url = new URL(req.url);
+    if (url.searchParams.get("type") === "gather") {
+      return new Response(`<Response><Say voice="Polly.Joanna">System error.</Say><Hangup/></Response>`, {
+        headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      });
+    }
+    // Otherwise return JSON error
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
 // ── HELPERS ──
-
 async function handleRetry(supabase: any, item: any, reason: string) {
   const { data: settings } = await supabase
     .from("dialer_settings")
@@ -182,11 +212,7 @@ async function handleRetry(supabase: any, item: any, reason: string) {
     const nextTime = new Date(Date.now() + minutes * 60000).toISOString();
     await supabase
       .from("outbound_call_queue")
-      .update({
-        status: "queued",
-        attempt_count: attempt,
-        next_retry_at: nextTime,
-      })
+      .update({ status: "queued", attempt_count: attempt, next_retry_at: nextTime })
       .eq("id", item.id);
   } else {
     await supabase.from("outbound_call_queue").update({ status: reason }).eq("id", item.id);
@@ -207,26 +233,24 @@ async function updateStoreStats(supabase: any, storeId: string, answered: boolea
     updated_at: now.toISOString(),
   };
   if (answered) updates.last_answer_at = now.toISOString();
-
-  if (store) {
-    await supabase.from("store_answer_profile").update(updates).eq("store_id", storeId);
-  } else {
-    await supabase.from("store_answer_profile").insert({ store_id: storeId, ...updates });
-  }
+  if (store) await supabase.from("store_answer_profile").update(updates).eq("store_id", storeId);
+  else await supabase.from("store_answer_profile").insert({ store_id: storeId, ...updates });
 }
 
 async function trackCost(supabase: any, item: any, callSid: string, duration: number) {
   const minutes = Math.ceil(duration / 60);
   const rate = 0.0085;
-  await supabase.from("call_cost_events").insert({
-    business_id: item.business_id,
-    call_sid: callSid,
-    queue_item_id: item.id,
-    duration_seconds: duration,
-    billable_minutes: minutes,
-    estimated_cost: minutes * rate,
-    rate_per_minute: rate,
-  });
+  await supabase
+    .from("call_cost_events")
+    .insert({
+      business_id: item.business_id,
+      call_sid: callSid,
+      queue_item_id: item.id,
+      duration_seconds: duration,
+      billable_minutes: minutes,
+      estimated_cost: minutes * rate,
+      rate_per_minute: rate,
+    });
 }
 
 async function logAttemptOutcome(
@@ -239,40 +263,34 @@ async function logAttemptOutcome(
   conf?: string,
   block?: string,
 ) {
-  await supabase.from("dialer_call_attempts").insert({
-    business_id: queueItem.business_id,
-    campaign_id: queueItem.campaign_id,
-    queue_item_id: queueItem.id,
-    store_id: queueItem.store_id,
-    target_phone_e164: queueItem.phone_number,
-    target_call_sid: callSid,
-    attempt_state: state,
-    amd_result: amd,
-    agent_user_id: agent,
-    conference_name: conf,
-    blocked_reason: block,
-  });
+  await supabase
+    .from("dialer_call_attempts")
+    .insert({
+      business_id: queueItem.business_id,
+      campaign_id: queueItem.campaign_id,
+      queue_item_id: queueItem.id,
+      store_id: queueItem.store_id,
+      target_phone_e164: queueItem.phone_number,
+      target_call_sid: callSid,
+      attempt_state: state,
+      amd_result: amd,
+      agent_user_id: agent,
+      conference_name: conf,
+      blocked_reason: block,
+    });
 }
 
 async function createAutoFollowUp(supabase: any, item: any, sid: string, reason: string, delay: number) {
   const due = new Date(Date.now() + delay * 60000).toISOString();
-  await supabase.from("follow_up_queue").insert({
-    store_id: item.store_id,
-    business_id: item.business_id,
-    reason: reason,
-    status: "pending",
-    due_at: due,
-    priority: 3,
-    context: { source: "dialer", call_sid: sid },
-  });
-}
-
-async function hangupCall(sid: string) {
-  const a = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const t = Deno.env.get("TWILIO_AUTH_TOKEN");
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${a}/Calls/${sid}.json`, {
-    method: "POST",
-    headers: { Authorization: "Basic " + btoa(`${a}:${t}`), "Content-Type": "application/x-www-form-urlencoded" },
-    body: "Status=completed",
-  });
+  await supabase
+    .from("follow_up_queue")
+    .insert({
+      store_id: item.store_id,
+      business_id: item.business_id,
+      reason: reason,
+      status: "pending",
+      due_at: due,
+      priority: 3,
+      context: { source: "dialer", call_sid: sid },
+    });
 }
