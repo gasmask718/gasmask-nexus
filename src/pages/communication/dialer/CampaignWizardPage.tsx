@@ -25,7 +25,6 @@ import {
   Search,
   Bot,
   MessageSquare,
-  ArrowDown,
   Activity,
   RotateCcw,
   Phone,
@@ -151,7 +150,13 @@ const SCRIPT_TEMPLATES = [
 // --- AUDIENCE TYPE CONFIG ---
 const AUDIENCE_TYPE_CONFIG: Record<
   AudienceType,
-  { label: string; table: string | null; nameCol: string; phoneCol: string; searchCols: string[] }
+  {
+    label: string;
+    table: string | null;
+    nameCol: string;
+    phoneCol: string;
+    searchCols: string[];
+  }
 > = {
   prospects: {
     label: "Prospects",
@@ -195,21 +200,67 @@ const AUDIENCE_TYPE_CONFIG: Record<
     phoneCol: "phone",
     searchCols: ["name", "phone", "city"],
   },
-  custom: { label: "Custom Numbers", table: null, nameCol: "", phoneCol: "", searchCols: [] },
+  custom: {
+    label: "Custom Numbers",
+    table: null,
+    nameCol: "",
+    phoneCol: "",
+    searchCols: [],
+  },
 };
 
 // --- Status Config ---
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
-  queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
-  dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
-  connected: { label: "Live (AI)", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Bot },
-  bridging: { label: "Finding Agent", color: "bg-purple-500/15 text-purple-600", icon: Users },
-  bridged: { label: "Live (Human)", color: "bg-indigo-500/15 text-indigo-600", icon: Headphones },
-  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
-  transferred: { label: "Transferred", color: "bg-purple-500/15 text-purple-600", icon: PhoneForwarded },
-  no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
-  failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
-  voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-600", icon: Mic },
+  queued: {
+    label: "Queued",
+    color: "bg-muted text-muted-foreground",
+    icon: Clock,
+  },
+  dialing: {
+    label: "Dialing",
+    color: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    icon: Phone,
+  },
+  connected: {
+    label: "Live (AI)",
+    color: "bg-green-500/15 text-green-600 dark:text-green-400",
+    icon: Bot,
+  },
+  bridging: {
+    label: "Finding Agent",
+    color: "bg-purple-500/15 text-purple-600",
+    icon: Users,
+  },
+  bridged: {
+    label: "Live (Human)",
+    color: "bg-indigo-500/15 text-indigo-600",
+    icon: Headphones,
+  },
+  completed: {
+    label: "Completed",
+    color: "bg-green-500/10 text-green-600 dark:text-green-500",
+    icon: CheckCircle2,
+  },
+  transferred: {
+    label: "Transferred",
+    color: "bg-purple-500/15 text-purple-600",
+    icon: PhoneForwarded,
+  },
+  no_answer: {
+    label: "No Answer",
+    color: "bg-amber-500/15 text-amber-600",
+    icon: XCircle,
+  },
+  failed: {
+    label: "Failed",
+    color: "bg-destructive/15 text-destructive",
+    icon: XCircle,
+  },
+  voicemail: {
+    label: "Voicemail",
+    color: "bg-orange-500/15 text-orange-600",
+    icon: Mic,
+  },
 };
 
 const STEPS = [
@@ -284,11 +335,16 @@ export default function CampaignWizardPage() {
         .limit(1)
         .maybeSingle();
 
-      if (fetchErr || !queueItems) return; // Queue empty or error
+      if (fetchErr) {
+        console.error("Queue Fetch Error:", fetchErr);
+        return;
+      }
+      if (!queueItems) return; // Queue empty
 
       const queueItem = queueItems;
 
       // 2. Lock item (Set to dialing) - Critical to prevent race conditions
+      // FIXED: Added error handling here to detect RLS issues
       const { error: updateErr } = await supabase
         .from("outbound_call_queue")
         .update({
@@ -299,19 +355,24 @@ export default function CampaignWizardPage() {
         .eq("id", queueItem.id)
         .eq("status", "queued"); // Ensure we only update if it's still queued
 
-      if (updateErr) return;
+      if (updateErr) {
+        console.error("Queue Lock Error (RLS?):", updateErr);
+        toast.error(`Failed to lock call: ${updateErr.message}`);
+        return;
+      }
 
       try {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
 
         // 3. Invoke Edge Function
+        // FIXED: Better response handling
         const response = await supabase.functions.invoke("twilio-outbound-call", {
           body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
         });
 
         // 4. Handle Invocation Errors
         if (response.error) {
-          throw new Error(response.error.message || "Function invocation failed");
+          throw new Error(response.error.message || "Edge Function invocation failed");
         }
 
         // Check for application-level errors returned in JSON
@@ -322,7 +383,7 @@ export default function CampaignWizardPage() {
         // Success: Status remains 'dialing' until webhook updates it to 'connected' or 'completed'
       } catch (err: any) {
         console.error("Dispatcher Exception:", err);
-        toast.error(`Call failed: ${err.message}`);
+        toast.error(`Call logic failed: ${err.message}`);
 
         // 5. Rollback Status on Failure
         await supabase
@@ -331,7 +392,11 @@ export default function CampaignWizardPage() {
           .eq("id", queueItem.id);
       }
 
-      queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+      // Refresh the UI immediately
+      queryClient.invalidateQueries({
+        queryKey: ["campaign-calls", campaignId],
+      });
+      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
     },
     [effectiveBizId, queryClient],
   );
@@ -340,7 +405,9 @@ export default function CampaignWizardPage() {
     if (viewMode === "console" && activeCampaignId) {
       const checkAndRun = async () => {
         const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
-        if (data?.status === "active") processQueue(activeCampaignId);
+        if (data?.status === "active") {
+          processQueue(activeCampaignId);
+        }
       };
       // Poll every 4 seconds
       dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
@@ -594,8 +661,14 @@ export default function CampaignWizardPage() {
 
       if (items.length === 0) throw new Error("No valid phones found in selection");
 
+      // Batch insert to avoid timeout
       for (let i = 0; i < items.length; i += 50) {
-        await supabase.from("outbound_call_queue").insert(items.slice(i, i + 50) as any);
+        const batch = items.slice(i, i + 50);
+        const { error } = await supabase.from("outbound_call_queue").insert(batch as any);
+        if (error) {
+          console.error("Batch insert error:", error);
+          throw error;
+        }
       }
 
       return { campaignId: campaign.id, count: items.length };
@@ -642,13 +715,12 @@ export default function CampaignWizardPage() {
   });
 
   useEffect(() => {
-    if (viewMode === "console" && !activeCampaignId && campaignsList?.length) {
+    if (viewMode === "console" && !activeCampaignId && campaignsList && campaignsList.length > 0) {
       setActiveCampaignId(campaignsList[0].id);
     }
   }, [viewMode, campaignsList, activeCampaignId]);
 
   const activeCampaign = campaignsList?.find((c) => c.id === activeCampaignId);
-  const activeAgentName = VOICE_OPTIONS.find((a) => a.id === activeCampaign?.agent_id)?.name || "Default";
 
   const stats = {
     total: callItems?.length || 0,
@@ -681,10 +753,10 @@ export default function CampaignWizardPage() {
           <CardContent className="p-0 flex-1">
             <ScrollArea className="h-full">
               <div className="flex flex-col p-2 gap-2">
-                {campaignsList?.length === 0 ? (
+                {!campaignsList || campaignsList.length === 0 ? (
                   <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
                 ) : (
-                  campaignsList?.map((c) => (
+                  campaignsList.map((c) => (
                     <button
                       key={c.id}
                       onClick={() => setActiveCampaignId(c.id)}
@@ -800,12 +872,12 @@ export default function CampaignWizardPage() {
                   <div className="space-y-2">
                     {callsLoading ? (
                       <p className="text-center py-4 text-muted-foreground">Loading calls...</p>
-                    ) : callItems?.length === 0 ? (
+                    ) : !callItems || callItems.length === 0 ? (
                       <div className="text-center py-10 text-muted-foreground">
                         No calls generated for this campaign yet.
                       </div>
                     ) : (
-                      callItems?.map((item) => {
+                      callItems.map((item) => {
                         const config = STATUS_CONFIG[item.status] || STATUS_CONFIG.queued;
                         const Icon = config.icon;
                         return (
@@ -867,7 +939,9 @@ export default function CampaignWizardPage() {
             <button
               key={i}
               onClick={() => setStep(i)}
-              className={`flex flex-col md:flex-row items-center gap-1.5 text-xs font-medium transition-colors ${i === step ? "text-primary" : i < step ? "text-green-600" : "text-muted-foreground"}`}
+              className={`flex flex-col md:flex-row items-center gap-1.5 text-xs font-medium transition-colors ${
+                i === step ? "text-primary" : i < step ? "text-green-600" : "text-muted-foreground"
+              }`}
             >
               <div className={`p-1.5 rounded-full ${i === step ? "bg-primary/10" : ""}`}>
                 {i < step ? <CheckCircle2 className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
@@ -928,7 +1002,9 @@ export default function CampaignWizardPage() {
                   ).map(([key, cfg]) => (
                     <div
                       key={key}
-                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${audienceType === key ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${
+                        audienceType === key ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+                      }`}
                     >
                       <RadioGroupItem value={key} id={`aud-${key}`} />
                       <Label htmlFor={`aud-${key}`} className="cursor-pointer text-sm">
@@ -1068,7 +1144,9 @@ export default function CampaignWizardPage() {
                           audienceRows.map((row) => (
                             <tr
                               key={row.id}
-                              className={`border-t hover:bg-muted/30 cursor-pointer ${selectedIds.has(row.id) ? "bg-primary/5" : ""}`}
+                              className={`border-t hover:bg-muted/30 cursor-pointer ${
+                                selectedIds.has(row.id) ? "bg-primary/5" : ""
+                              }`}
                               onClick={() => toggleRow(row.id)}
                             >
                               <td className="p-3">
@@ -1143,7 +1221,9 @@ export default function CampaignWizardPage() {
                   className="grid grid-cols-1 md:grid-cols-2 gap-4"
                 >
                   <div
-                    className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer ${form.dial_mode === "ai" ? "bg-primary/5 border-primary" : "bg-card"}`}
+                    className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer ${
+                      form.dial_mode === "ai" ? "bg-primary/5 border-primary" : "bg-card"
+                    }`}
                   >
                     <RadioGroupItem value="ai" id="mode-ai" className="mt-1" />
                     <div>
@@ -1157,7 +1237,9 @@ export default function CampaignWizardPage() {
                     </div>
                   </div>
                   <div
-                    className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer ${form.dial_mode === "human_agent" ? "bg-primary/5 border-primary" : "bg-card"}`}
+                    className={`flex items-start gap-3 p-3 border rounded-md cursor-pointer ${
+                      form.dial_mode === "human_agent" ? "bg-primary/5 border-primary" : "bg-card"
+                    }`}
                   >
                     <RadioGroupItem value="human_agent" id="mode-human" className="mt-1" />
                     <div>
@@ -1370,7 +1452,7 @@ export default function CampaignWizardPage() {
                   <p className="text-xs text-muted-foreground">Audience ({AUDIENCE_TYPE_CONFIG[audienceType].label})</p>
                   <p className="font-medium">{totalSelected} records</p>
                 </div>
-                <div className="p-3 border rounded bg-blue-50 dark:bg-blue-900/20">
+                <div className="p-3 border rounded bg-blue-5 dark:bg-blue-900/20">
                   <p className="text-xs text-blue-600 dark:text-blue-400">Twilio TTS Script</p>
                   <p className="truncate">{form.initial_script || "Missing"}</p>
                 </div>
