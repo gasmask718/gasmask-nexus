@@ -325,29 +325,28 @@ export default function CampaignWizardPage() {
     [effectiveBizId, queryClient],
   );
 
+  // Polling Effect
   useEffect(() => {
+    // DEBUG LOG: Check if the poller is active
+    console.log("Poller Status:", { viewMode, activeCampaignId });
+
     if (viewMode === "console" && activeCampaignId) {
       const checkAndRun = async () => {
+        console.log("Checking queue for campaign:", activeCampaignId); // ADD THIS
+
         const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
-        if (data?.status === "active") processQueue(activeCampaignId);
+        if (data?.status === "active") {
+          processQueue(activeCampaignId);
+        } else {
+          console.log("Campaign is not active:", data?.status); // ADD THIS
+        }
       };
-      // Poll every 4 seconds
       dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
     }
     return () => {
       if (dispatchIntervalRef.current) clearInterval(dispatchIntervalRef.current);
     };
   }, [viewMode, activeCampaignId, processQueue]);
-
-  const updateCampaignStatus = async (status: "active" | "paused" | "completed") => {
-    if (!activeCampaignId) return;
-    const { error } = await supabase.from("dialer_campaigns").update({ status }).eq("id", activeCampaignId);
-    if (error) toast.error("Failed to update status");
-    else {
-      toast.success(`Campaign ${status}`);
-      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
-    }
-  };
 
   // --- QUERIES & MUTATIONS ---
 
