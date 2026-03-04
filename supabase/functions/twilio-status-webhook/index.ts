@@ -28,12 +28,11 @@ Deno.serve(async (req) => {
       params = await req.json();
     }
 
+    // Extract standard Twilio params
     const callSid = params.CallSid || params.call_sid || "";
     const callStatus = params.CallStatus || params.call_status || "";
     const answeredBy = params.AnsweredBy || params.answered_by || "";
     const callDuration = parseInt(params.CallDuration || params.Duration || "0") || 0;
-
-    // --- NEW: Grab Recording URL for Transcripts ---
     const recordingUrl = params.RecordingUrl || params.recording_url || null;
 
     if (!callSid) throw new Error("No CallSid found in webhook");
@@ -87,10 +86,10 @@ Deno.serve(async (req) => {
         // Log Outcome
         await logAttemptOutcome(supabase, callSid, queueItem, "answered_machine", answeredBy);
 
-        // Hangup
+        // Hangup immediately to save cost on voicemail
         await hangupCall(callSid);
 
-        // Trigger Auto-Follow Up logic
+        // Trigger Auto-Follow Up logic (e.g. send email/sms later)
         if (queueItem.store_id) {
           await updateStoreContact(supabase, queueItem.store_id);
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
@@ -130,7 +129,7 @@ Deno.serve(async (req) => {
               .update({ answered_at: new Date().toISOString() })
               .eq("id", queueItem.id);
 
-            // 2. Find Agent
+            // 2. Find Agent via RPC
             const { data: agentRows } = await supabase.rpc("claim_available_agent", {
               p_business_id: queueItem.business_id,
             });
@@ -159,7 +158,7 @@ Deno.serve(async (req) => {
                 // Mark Bridged
                 await supabase.from("outbound_call_queue").update({ status: "bridged" }).eq("id", queueItem.id);
 
-                // Execute Bridge
+                // Execute Bridge via another Edge Function
                 const { error: bridgeErr } = await supabase.functions.invoke("dialer-bridge-agent", {
                   body: {
                     session_id: session.id,
@@ -192,7 +191,7 @@ Deno.serve(async (req) => {
           updated_at: new Date().toISOString(),
         };
 
-        // Save recording URL to transcript field if available
+        // Save recording URL if available
         if (recordingUrl) {
           updateData.transcript = `Recording: ${recordingUrl}`;
         }
