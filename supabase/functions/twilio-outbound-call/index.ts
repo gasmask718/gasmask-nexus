@@ -63,31 +63,33 @@ Deno.serve(async (req) => {
     const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
+    // ── ISOLATED WEBHOOK ROUTES ──
     const agentId = item.dialer_campaigns?.agent_id || "";
-    const baseWebhookUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
 
-    const statusCallbackUrl = `${baseWebhookUrl}?type=status`;
-    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook?type=gather&agent_id=${agentId}`;
+    // Points to your old webhook for logging
+    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
+
+    // Points to your brand new webhook for the ElevenLabs connection
+    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
 
     const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad to connect.`;
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
-    // ── BULLETPROOF TWIML ──
-    // 1. Added XML header
-    // 2. Increased Pause to 3 seconds for cell carrier lag
-    // 3. Changed Gather to DTMF (keypad) ONLY to prevent Speech Rec engine crashes
-    // 4. Repeated the phrase twice just in case
-    const twiml = `
-  <Response>
-    <Pause length="1"/>
-    <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="5">
-      <Say voice="Polly.Joanna">Hello! Are you ready to speak with our AI? Say yes or press 1 to connect.</Say>
-    </Gather>
-    <Say voice="Polly.Joanna">We didn't hear you. Goodbye!</Say>
-    <Hangup/>
-  </Response>
-`;
+    // Added a 2-second pause to prevent carrier clipping, and removed "speech" to prevent Twilio Speech block errors.
+    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+      <Response>
+        <Pause length="2"/>
+        <Gather input="dtmf" action="${gatherActionUrl}" numDigits="1" timeout="8">
+          <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
+          <Pause length="2"/>
+          <Say voice="${voiceId}" language="en-US">I repeat, ${safeScript}</Say>
+        </Gather>
+        <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>
+        <Hangup/>
+      </Response>
+    `;
+
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
     const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
     const params = new URLSearchParams();
@@ -101,14 +103,6 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "ringing");
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
-
-    // ── BYPASS AMD ENTIRELY FOR THIS TEST ──
-    // We are forcing this to remain commented out so the database cannot accidentally trigger it.
-    /*
-    if (item.dialer_campaigns?.amd_enabled) {
-      params.append("MachineDetection", "DetectMessageEnd");
-    }
-    */
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
