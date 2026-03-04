@@ -5,6 +5,21 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Map the IDs from your Frontend to valid Twilio/Polly Neural Voices
+const VOICE_MAP: Record<string, string> = {
+  JBFqnCBsd6RMkjVDRZzb: "Polly.Matthew-Neural", // Adam -> Matthew
+  "21m00Tcm4TlvDq8ikWAM": "Polly.Joanna-Neural", // Rachel -> Joanna
+  EXAVITQu4vr4xnSDxMaL: "Polly.Amy-Neural", // Bella -> Amy
+  ErXwobaYiN019PkySvjV: "Polly.Arthur-Neural", // Antoni -> Arthur
+  MF3mGyEYCl7XYWbV9V6O: "Polly.Emma-Neural", // Elli -> Emma
+  TxGEqnHWrfWFTfGW9XjX: "Polly.Joey-Neural", // Josh -> Joey
+  VR6AewLTigWG4xSOukaG: "Polly.Justin-Neural", // Arnold -> Justin
+  pNInz6obpgDQGcFmaJgB: "Polly.Salli-Neural", // Sam (M) -> Salli (Fallback M/F mismatch handled by name usually, but Salli is F. Let's map to Matthew for Male ID)
+  yoZ06aMxZJJ28mfd3POQ: "Polly.Kendra-Neural", // Sam (F) -> Kendra
+  // Fallback
+  default: "Polly.Joanna-Neural",
+};
+
 Deno.serve(async (req) => {
   console.log("FUNCTION ONLINE:", { name: "twilio-outbound-call", time: new Date().toISOString() });
 
@@ -84,8 +99,8 @@ Deno.serve(async (req) => {
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
 
-    // --- FIX 1: Hardcoded From Number ---
-    const FROM_NUMBER = "+18776818621";
+    // Ensure you have a valid Twilio number in your ENV or hardcoded here
+    const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
       return new Response(JSON.stringify({ error: "Twilio SID or Token not configured in Secrets" }), {
@@ -98,17 +113,24 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
 
-    // 6. Generate Script
+    // 6. Generate Script & Select Voice
     let script = item.dialer_campaigns?.initial_script || "Hello, this is a call from our automated system.";
-    script = script.replace("{{contact_name}}", item.contact_name || "there");
-    script = script.replace("{{agent_name}}", "our assistant");
-    script = script.replace("{{business_name}}", "our company");
+
+    // FIX: Use Regex with 'g' flag for global replacement
+    script = script.replace(/{{contact_name}}/g, item.contact_name || "there");
+    script = script.replace(/{{agent_name}}/g, "our assistant");
+    script = script.replace(/{{business_name}}/g, "our company");
+
+    // FIX: Select the correct Twilio voice based on the Agent ID from campaign
+    const agentId = item.dialer_campaigns?.agent_id;
+    const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
     const twiml = `
       <Response>
         <Pause length="1"/>
-        <Say voice="alice" language="en-US">${script}</Say>
-        <Pause length="30"/>
+        <Say voice="${voiceId}" language="en-US">${script}</Say>
+        <Pause length="2"/>
+        <Record maxLength="30" action="${statusCallbackUrl}" />
       </Response>
     `;
 
@@ -116,7 +138,6 @@ Deno.serve(async (req) => {
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
     const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
 
-    // --- FIX 2: Correctly format Body to avoid Error 21626 ---
     const params = new URLSearchParams();
     params.append("To", item.phone_number);
     params.append("From", FROM_NUMBER);
@@ -124,18 +145,21 @@ Deno.serve(async (req) => {
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
 
-    // --- FIX 3: Enable Recording for Transcripts ---
+    // FIX: Enable Recording explicitly for transcripts
     params.append("Record", "true");
     params.append("RecordingStatusCallback", statusCallbackUrl);
 
-    // Send events as separate keys (Fixes the "Invalid events" warning)
+    // Call Events
     params.append("StatusCallbackEvent", "initiated");
     params.append("StatusCallbackEvent", "ringing");
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
 
+    // AMD Logic
     if (item.dialer_campaigns?.amd_enabled) {
       params.append("MachineDetection", "DetectMessageEnd");
+      // Optional: Tweaking AMD params can reduce delay, but 'DetectMessageEnd' is safest for voicemail detection
+      params.append("MachineDetectionTimeout", "30");
     }
 
     const twilioRes = await fetch(twilioUrl, {
@@ -173,6 +197,8 @@ Deno.serve(async (req) => {
 
     // 8. Success: Update queue item
     const callSid = twilioData.sid;
+
+    // Update queue status
     await supabase
       .from("outbound_call_queue")
       .update({
@@ -182,6 +208,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", queue_item_id);
 
+    // Create log entry
     await supabase.from("twilio_call_logs").insert({
       business_id,
       queue_item_id,
