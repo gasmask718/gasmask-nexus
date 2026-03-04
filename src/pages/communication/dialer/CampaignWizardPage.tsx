@@ -68,7 +68,7 @@ interface Campaign {
   id: string;
   name: string;
   status: "active" | "paused" | "completed" | "draft";
-  dial_mode: "ai" | "human_agent"; // Added dial_mode
+  dial_mode: "ai" | "human_agent";
   created_at: string;
   initial_script: string;
   agent_id: string;
@@ -122,7 +122,30 @@ const SCRIPT_TEMPLATES = [
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. I'm following up on our previous conversation. I wanted to check in and see if you had any questions or if you're ready to place an order.",
   },
-  // ... (Other templates remain same)
+  {
+    id: "reactivation",
+    label: "Reactivation / Win-Back",
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. We noticed it's been a while since your last order and wanted to reach out. We have some new offers and would love to get you back on board. Can I share what's new?",
+  },
+  {
+    id: "survey",
+    label: "Customer Satisfaction Survey",
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. We're conducting a quick survey to improve our service. It'll only take about 2 minutes. Would you be willing to answer a few questions?",
+  },
+  {
+    id: "appointment",
+    label: "Appointment Setting",
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. I'm calling to schedule a quick meeting with you to discuss how we can help grow your business. What day and time works best for you this week?",
+  },
+  {
+    id: "promo",
+    label: "Promotional Offer",
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. I'm calling with an exclusive limited-time offer just for you. We're running a special promotion this week — would you like to hear the details?",
+  },
 ];
 
 // --- AUDIENCE TYPE CONFIG ---
@@ -247,11 +270,12 @@ export default function CampaignWizardPage() {
     agent_id: VOICE_OPTIONS[0].id,
   });
 
-  // --- DISPATCHER LOGIC ---
+  // --- DISPATCHER LOGIC (ROBUST VERSION) ---
   const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const processQueue = useCallback(
     async (campaignId: string) => {
+      // 1. Fetch NEXT item in queue (Optimistic Locking)
       const { data: queueItems, error: fetchErr } = await supabase
         .from("outbound_call_queue")
         .select("id, phone_number, contact_name")
@@ -260,10 +284,11 @@ export default function CampaignWizardPage() {
         .limit(1)
         .maybeSingle();
 
-      if (fetchErr || !queueItems) return;
+      if (fetchErr || !queueItems) return; // Queue empty or error
 
       const queueItem = queueItems;
 
+      // 2. Lock item (Set to dialing) - Critical to prevent race conditions
       const { error: updateErr } = await supabase
         .from("outbound_call_queue")
         .update({
@@ -272,23 +297,34 @@ export default function CampaignWizardPage() {
           updated_at: new Date().toISOString(),
         })
         .eq("id", queueItem.id)
-        .eq("status", "queued");
+        .eq("status", "queued"); // Ensure we only update if it's still queued
 
       if (updateErr) return;
 
       try {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
 
+        // 3. Invoke Edge Function
         const response = await supabase.functions.invoke("twilio-outbound-call", {
           body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
         });
 
-        if (response.error) throw new Error(response.error.message || "Function invocation failed");
-        if (response.data && response.data.error) throw new Error(response.data.error);
+        // 4. Handle Invocation Errors
+        if (response.error) {
+          throw new Error(response.error.message || "Function invocation failed");
+        }
+
+        // Check for application-level errors returned in JSON
+        if (response.data && response.data.error) {
+          throw new Error(response.data.error);
+        }
+
+        // Success: Status remains 'dialing' until webhook updates it to 'connected' or 'completed'
       } catch (err: any) {
         console.error("Dispatcher Exception:", err);
         toast.error(`Call failed: ${err.message}`);
 
+        // 5. Rollback Status on Failure
         await supabase
           .from("outbound_call_queue")
           .update({ status: "failed", updated_at: new Date().toISOString() })
@@ -306,6 +342,7 @@ export default function CampaignWizardPage() {
         const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
         if (data?.status === "active") processQueue(activeCampaignId);
       };
+      // Poll every 4 seconds
       dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
     }
     return () => {
@@ -353,7 +390,9 @@ export default function CampaignWizardPage() {
       const nameCol = audienceConfig.nameCol;
       const phoneCol = audienceConfig.phoneCol;
 
-      let query = supabase.from(audienceConfig.table as any).select(`id, ${nameCol}, ${phoneCol}`, { count: "exact" });
+      // Build select columns - always get id + name + phone + city/state if available
+      const selectCols = `id, ${nameCol}, ${phoneCol}`;
+      let query = supabase.from(audienceConfig.table as any).select(selectCols, { count: "exact" });
 
       if (audienceType === "stores") query = query.is("deleted_at", null);
       if (audienceSearch.trim()) {
@@ -365,6 +404,7 @@ export default function CampaignWizardPage() {
       const { data, error, count } = await query;
       if (error) throw error;
 
+      // Normalize rows
       const rows: AudienceRow[] = (data ?? []).map((r: any) => ({
         id: r.id,
         store_name: r[nameCol] || "Unknown",
@@ -384,13 +424,17 @@ export default function CampaignWizardPage() {
 
   // Custom number helpers
   const addCustomNumber = () => {
-    // ... (Same as before)
     const phone = customPhoneInput.trim().replace(/\D/g, "");
     if (phone.length < 10) {
-      toast.error("Invalid phone");
+      toast.error("Enter a valid phone number (10+ digits)");
       return;
     }
-    const formatted = phone.length === 10 ? `+1${phone}` : `+${phone}`;
+    const formatted =
+      phone.length === 10 ? `+1${phone}` : phone.startsWith("1") && phone.length === 11 ? `+${phone}` : `+${phone}`;
+    if (customNumbers.some((n) => n.phone === formatted)) {
+      toast.error("Number already added");
+      return;
+    }
     const id = crypto.randomUUID();
     setCustomNumbers((prev) => [...prev, { id, phone: formatted, name: customNameInput.trim() || formatted }]);
     setCustomPhoneInput("");
@@ -404,21 +448,27 @@ export default function CampaignWizardPage() {
   };
 
   const handleBulkPaste = (text: string) => {
-    // ... (Same as before)
     const lines = text
       .split(/[\n,;]+/)
       .map((l) => l.trim())
       .filter(Boolean);
-    const newNumbers = [];
+    const newNumbers: typeof customNumbers = [];
+    const newIds = new Set(selectedIds);
     for (const line of lines) {
       const phone = line.replace(/\D/g, "");
       if (phone.length < 10) continue;
-      const formatted = phone.length === 10 ? `+1${phone}` : `+${phone}`;
-      newNumbers.push({ id: crypto.randomUUID(), phone: formatted, name: formatted });
+      const formatted =
+        phone.length === 10 ? `+1${phone}` : phone.startsWith("1") && phone.length === 11 ? `+${phone}` : `+${phone}`;
+      if (customNumbers.some((n) => n.phone === formatted) || newNumbers.some((n) => n.phone === formatted)) continue;
+      const id = crypto.randomUUID();
+      newNumbers.push({ id, phone: formatted, name: formatted });
+      newIds.add(id);
     }
     if (newNumbers.length > 0) {
       setCustomNumbers((prev) => [...prev, ...newNumbers]);
       toast.success(`Added ${newNumbers.length} numbers`);
+    } else {
+      toast.error("No valid new numbers found");
     }
     setIsAudienceConfirmed(false);
   };
@@ -447,11 +497,11 @@ export default function CampaignWizardPage() {
   const handleConfirmSelection = () => {
     const totalSelected = audienceType === "custom" ? customNumbers.length : selectedIds.size;
     if (totalSelected === 0) {
-      toast.error("Select at least one record.");
+      toast.error("Please select at least one record.");
       return;
     }
     setIsAudienceConfirmed(true);
-    toast.success(`${totalSelected} confirmed.`);
+    toast.success(`${totalSelected} records confirmed. You may proceed.`);
   };
 
   const update = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }));
@@ -460,6 +510,7 @@ export default function CampaignWizardPage() {
   const launchMutation = useMutation({
     mutationFn: async () => {
       if (!effectiveBizId) throw new Error("No Business ID found.");
+
       const totalSelected = audienceType === "custom" ? customNumbers.length : selectedIds.size;
       if (totalSelected === 0) throw new Error("No audience selected");
 
@@ -471,7 +522,7 @@ export default function CampaignWizardPage() {
           name: effectiveName,
           description: form.description || null,
           status: "active",
-          dial_mode: form.dial_mode, // SAVE MODE
+          dial_mode: form.dial_mode, // Added dial mode
           max_attempts: form.max_attempts,
           amd_enabled: form.amd_enabled,
           max_concurrent_calls: form.max_concurrent,
@@ -483,8 +534,16 @@ export default function CampaignWizardPage() {
 
       if (campErr) throw campErr;
 
-      // 2. Build queue items (Simplified for brevity - assumes logic works as before)
-      let items = [];
+      // 2. Build queue items
+      let items: {
+        business_id: string;
+        phone_number: string;
+        contact_name: string;
+        campaign_id: string;
+        priority_score: number;
+        status: string;
+      }[] = [];
+
       if (audienceType === "custom") {
         items = customNumbers.map((n, i) => ({
           business_id: effectiveBizId!,
@@ -496,32 +555,44 @@ export default function CampaignWizardPage() {
         }));
       } else {
         const ids = Array.from(selectedIds);
-        // ... (Batch fetch logic same as before) ...
-        // Re-implementing simplified batch fetch for robust context:
         const table = audienceConfig.table!;
         const nameCol = audienceConfig.nameCol;
         const phoneCol = audienceConfig.phoneCol;
-        const allRecords: any[] = [];
-        for (let i = 0; i < ids.length; i += 100) {
+        const allRecords: AudienceRow[] = [];
+        const batchSize = 100;
+
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const batch = ids.slice(i, i + batchSize);
           const { data } = await supabase
             .from(table as any)
             .select(`id, ${nameCol}, ${phoneCol}`)
-            .in("id", ids.slice(i, i + 100));
-          if (data) allRecords.push(...data);
+            .in("id", batch);
+          if (data) {
+            allRecords.push(
+              ...(data as any[]).map((r: any) => ({
+                id: r.id,
+                store_name: r[nameCol] || "Unknown",
+                phone: r[phoneCol] || null,
+                city: null,
+                state: null,
+              })),
+            );
+          }
         }
+
         items = allRecords
-          .filter((r) => r[phoneCol])
+          .filter((r) => r.phone)
           .map((r, i) => ({
             business_id: effectiveBizId!,
-            phone_number: r[phoneCol],
-            contact_name: r[nameCol],
+            phone_number: r.phone!,
+            contact_name: r.store_name,
             campaign_id: campaign.id,
             priority_score: Math.max(1, 100 - i),
             status: "queued",
           }));
       }
 
-      if (items.length === 0) throw new Error("No valid phones found");
+      if (items.length === 0) throw new Error("No valid phones found in selection");
 
       for (let i = 0; i < items.length; i += 50) {
         await supabase.from("outbound_call_queue").insert(items.slice(i, i + 50) as any);
@@ -594,7 +665,7 @@ export default function CampaignWizardPage() {
   if (viewMode === "console") {
     return (
       <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
-        {/* SIDEBAR (Same as before) */}
+        {/* SIDEBAR */}
         <Card className="w-full md:w-80 flex flex-col h-full border shadow-sm bg-card text-card-foreground">
           <CardHeader className="pb-3 border-b">
             <div className="flex justify-between items-center">
@@ -610,32 +681,36 @@ export default function CampaignWizardPage() {
           <CardContent className="p-0 flex-1">
             <ScrollArea className="h-full">
               <div className="flex flex-col p-2 gap-2">
-                {campaignsList?.map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setActiveCampaignId(c.id)}
-                    className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${
-                      activeCampaignId === c.id
-                        ? "bg-primary/10 border-primary shadow-sm text-primary"
-                        : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"
-                    }`}
-                  >
-                    <div className="flex w-full justify-between items-center">
-                      <span className="font-semibold text-sm truncate">{c.name}</span>
-                      <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
-                        {c.status}
-                      </Badge>
-                    </div>
-                    <div className="flex w-full justify-between items-center mt-1">
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(c.created_at), "MMM d, h:mm a")}
-                      </span>
-                      <Badge variant="outline" className="text-[9px] h-4 px-1">
-                        {c.dial_mode === "human_agent" ? "Human" : "AI"}
-                      </Badge>
-                    </div>
-                  </button>
-                ))}
+                {campaignsList?.length === 0 ? (
+                  <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
+                ) : (
+                  campaignsList?.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setActiveCampaignId(c.id)}
+                      className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${
+                        activeCampaignId === c.id
+                          ? "bg-primary/10 border-primary shadow-sm text-primary"
+                          : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"
+                      }`}
+                    >
+                      <div className="flex w-full justify-between items-center">
+                        <span className="font-semibold text-sm truncate">{c.name}</span>
+                        <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
+                          {c.status}
+                        </Badge>
+                      </div>
+                      <div className="flex w-full justify-between items-center mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(c.created_at), "MMM d, h:mm a")}
+                        </span>
+                        <Badge variant="outline" className="text-[9px] h-4 px-1">
+                          {c.dial_mode === "human_agent" ? "Human" : "AI"}
+                        </Badge>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -661,6 +736,11 @@ export default function CampaignWizardPage() {
                       <Activity className="h-3 w-3" /> Dialing Active
                     </span>
                   )}
+                  {activeCampaign?.status === "paused" && (
+                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                      <Pause className="h-3 w-3" /> Paused
+                    </span>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
@@ -673,6 +753,11 @@ export default function CampaignWizardPage() {
                     <Play className="h-4 w-4 mr-1" /> Resume
                   </Button>
                 ) : null}
+                {activeCampaign?.status !== "completed" && (
+                  <Button variant="destructive" size="sm" onClick={() => updateCampaignStatus("completed")}>
+                    <Square className="h-4 w-4 mr-1" /> Stop
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
                   <RotateCcw className="h-4 w-4 mr-1" /> Refresh
                 </Button>
@@ -713,8 +798,12 @@ export default function CampaignWizardPage() {
               <TabsContent value="monitor" className="flex-1 p-0 m-0 overflow-hidden bg-background">
                 <ScrollArea className="h-full p-4">
                   <div className="space-y-2">
-                    {callItems?.length === 0 ? (
-                      <div className="text-center py-10 text-muted-foreground">No calls yet.</div>
+                    {callsLoading ? (
+                      <p className="text-center py-4 text-muted-foreground">Loading calls...</p>
+                    ) : callItems?.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        No calls generated for this campaign yet.
+                      </div>
                     ) : (
                       callItems?.map((item) => {
                         const config = STATUS_CONFIG[item.status] || STATUS_CONFIG.queued;
@@ -742,6 +831,11 @@ export default function CampaignWizardPage() {
                     )}
                   </div>
                 </ScrollArea>
+              </TabsContent>
+              <TabsContent value="transcripts" className="flex-1 p-0 m-0 overflow-hidden bg-muted/10">
+                <div className="p-8 text-center text-muted-foreground">
+                  <p>Transcripts will appear here after calls are completed.</p>
+                </div>
               </TabsContent>
             </Tabs>
           </Card>
@@ -791,6 +885,7 @@ export default function CampaignWizardPage() {
           <Card>
             <CardHeader>
               <CardTitle>Campaign Basics</CardTitle>
+              <CardDescription>Name your campaign.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -809,7 +904,7 @@ export default function CampaignWizardPage() {
           </Card>
         )}
 
-        {/* STEP 1: Audience (Same logic, shortened for readability) */}
+        {/* STEP 1: Audience */}
         {step === 1 && (
           <Card>
             <CardContent className="pt-6 space-y-4">
@@ -818,14 +913,19 @@ export default function CampaignWizardPage() {
                 <RadioGroup
                   value={audienceType}
                   onValueChange={(v: any) => {
-                    setAudienceType(v);
+                    setAudienceType(v as AudienceType);
                     setSelectedIds(new Set());
                     setAudiencePage(1);
                     setIsAudienceConfirmed(false);
                   }}
                   className="grid grid-cols-2 md:grid-cols-4 gap-3"
                 >
-                  {Object.entries(AUDIENCE_TYPE_CONFIG).map(([key, cfg]) => (
+                  {(
+                    Object.entries(AUDIENCE_TYPE_CONFIG) as [
+                      AudienceType,
+                      (typeof AUDIENCE_TYPE_CONFIG)[AudienceType],
+                    ][]
+                  ).map(([key, cfg]) => (
                     <div
                       key={key}
                       className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${audienceType === key ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
@@ -839,34 +939,107 @@ export default function CampaignWizardPage() {
                 </RadioGroup>
               </div>
 
-              {/* Audience Tables/Inputs (Rest of Step 1 Logic is Identical to previous) */}
-              {audienceType === "custom" ? (
+              {/* Custom Numbers Input */}
+              {audienceType === "custom" && (
                 <div className="space-y-4">
+                  <Alert>
+                    <UserPlus className="h-4 w-4" />
+                    <AlertTitle>Custom Numbers</AlertTitle>
+                    <AlertDescription>
+                      Add phone numbers manually or paste a list (comma/newline separated).
+                    </AlertDescription>
+                  </Alert>
+
                   <div className="flex gap-2">
-                    <Input
-                      placeholder="Phone"
-                      value={customPhoneInput}
-                      onChange={(e) => setCustomPhoneInput(e.target.value)}
-                    />
-                    <Button onClick={addCustomNumber}>Add</Button>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Phone Number</Label>
+                      <Input
+                        placeholder="(555) 123-4567"
+                        value={customPhoneInput}
+                        onChange={(e) => setCustomPhoneInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addCustomNumber()}
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Name (optional)</Label>
+                      <Input
+                        placeholder="Contact name"
+                        value={customNameInput}
+                        onChange={(e) => setCustomNameInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addCustomNumber()}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button size="sm" onClick={addCustomNumber} className="gap-1">
+                        <Plus className="h-4 w-4" /> Add
+                      </Button>
+                    </div>
                   </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Bulk Paste (comma or newline separated numbers)</Label>
+                    <Textarea
+                      placeholder="5551234567&#10;5559876543&#10;5551112222"
+                      rows={3}
+                      onBlur={(e) => {
+                        if (e.target.value.trim()) {
+                          handleBulkPaste(e.target.value);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </div>
+
                   {customNumbers.length > 0 && (
-                    <div className="border rounded p-2 max-h-40 overflow-y-auto">
-                      {customNumbers.map((n) => (
-                        <div key={n.id} className="text-sm p-1">
-                          {n.phone}
-                        </div>
-                      ))}
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="p-3 text-left">Name</th>
+                            <th className="p-3 text-left">Phone</th>
+                            <th className="p-3 w-10"></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {customNumbers.map((n) => (
+                            <tr key={n.id} className="border-t hover:bg-muted/30">
+                              <td className="p-3">{n.name}</td>
+                              <td className="p-3 text-muted-foreground font-mono text-xs">{n.phone}</td>
+                              <td className="p-3">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => removeCustomNumber(n.id)}
+                                >
+                                  <X className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Search..."
-                    value={audienceSearch}
-                    onChange={(e) => setAudienceSearch(e.target.value)}
-                  />
+              )}
+
+              {/* Table-based audience */}
+              {audienceType !== "custom" && (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      placeholder="Search..."
+                      value={audienceSearch}
+                      onChange={(e) => {
+                        setAudienceSearch(e.target.value);
+                        setAudiencePage(1);
+                      }}
+                    />
+                  </div>
+
                   <div className="border rounded-lg overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-muted/50">
@@ -879,45 +1052,82 @@ export default function CampaignWizardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {audienceRows.map((row) => (
-                          <tr key={row.id} className="border-t">
-                            <td className="p-3">
-                              <Checkbox checked={selectedIds.has(row.id)} onCheckedChange={() => toggleRow(row.id)} />
+                        {audienceLoading ? (
+                          <tr>
+                            <td colSpan={3} className="p-4 text-center">
+                              Loading...
                             </td>
-                            <td className="p-3">{row.store_name}</td>
-                            <td className="p-3">{row.phone}</td>
                           </tr>
-                        ))}
+                        ) : audienceRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="p-4 text-center text-muted-foreground">
+                              No records found.
+                            </td>
+                          </tr>
+                        ) : (
+                          audienceRows.map((row) => (
+                            <tr
+                              key={row.id}
+                              className={`border-t hover:bg-muted/30 cursor-pointer ${selectedIds.has(row.id) ? "bg-primary/5" : ""}`}
+                              onClick={() => toggleRow(row.id)}
+                            >
+                              <td className="p-3">
+                                <Checkbox checked={selectedIds.has(row.id)} />
+                              </td>
+                              <td className="p-3">{row.store_name}</td>
+                              <td className="p-3 text-muted-foreground">{row.phone || "—"}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
-                  <div className="flex justify-between">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setAudiencePage((p) => p - 1)}
-                      disabled={audiencePage === 1}
-                    >
-                      Prev
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setAudiencePage((p) => p + 1)}>
-                      Next
-                    </Button>
-                  </div>
-                </div>
+
+                  <DataTablePagination
+                    currentPage={audiencePage}
+                    totalPages={audienceTotalPages}
+                    pageSize={PAGE_SIZE}
+                    totalItems={audienceTotalCount}
+                    onPageChange={setAudiencePage}
+                  />
+                </>
               )}
 
-              <div className="flex justify-between items-center mt-4">
-                <Badge variant="secondary">{totalSelected} selected</Badge>
-                <Button onClick={handleConfirmSelection} disabled={totalSelected === 0}>
-                  {isAudienceConfirmed ? "Confirmed" : "Confirm"}
-                </Button>
+              <div className="flex justify-between items-center">
+                <Badge variant={isAudienceConfirmed ? "default" : "secondary"}>
+                  {totalSelected} selected {isAudienceConfirmed && "(Confirmed)"}
+                </Badge>
+                <div className="flex gap-2">
+                  {totalSelected > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedIds(new Set());
+                        if (audienceType === "custom") setCustomNumbers([]);
+                        setIsAudienceConfirmed(false);
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    variant={isAudienceConfirmed ? "outline" : "default"}
+                    size="sm"
+                    onClick={handleConfirmSelection}
+                    disabled={totalSelected === 0}
+                    className="gap-2"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                    {isAudienceConfirmed ? "Selection Confirmed" : "Confirm Selection"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* STEP 2: Settings (Dialer Mode) */}
+        {/* STEP 2: Dialing Rules & Mode */}
         {step === 2 && (
           <Card>
             <CardHeader>
@@ -979,54 +1189,144 @@ export default function CampaignWizardPage() {
                     onChange={(e) => update("retry_backoff_minutes", parseInt(e.target.value))}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>Start Time</Label>
+                  <Input
+                    type="time"
+                    value={form.call_window_start}
+                    onChange={(e) => update("call_window_start", e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>End Time</Label>
+                  <Input
+                    type="time"
+                    value={form.call_window_end}
+                    onChange={(e) => update("call_window_end", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Max Concurrent Calls</Label>
+                <Input
+                  type="number"
+                  value={form.max_concurrent}
+                  onChange={(e) => update("max_concurrent", parseInt(e.target.value))}
+                />
               </div>
               <div className="flex items-center gap-2 pt-2">
                 <Switch checked={form.amd_enabled} onCheckedChange={(v) => update("amd_enabled", v)} />
-                <Label>AMD Enabled (Detect Voicemail)</Label>
+                <Label>AMD Enabled</Label>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* STEP 3: Script */}
+        {/* STEP 3: Script & AI Agent */}
         {step === 3 && (
           <div className="space-y-6">
-            {form.dial_mode === "ai" && (
-              <Alert className="bg-blue-50 dark:bg-blue-900/10 border-blue-200">
-                <Bot className="h-4 w-4 text-blue-600" />
-                <AlertTitle>AI Scripting</AlertTitle>
-                <AlertDescription>Define what the AI should say when the customer answers.</AlertDescription>
-              </Alert>
-            )}
-            {form.dial_mode === "human_agent" && (
-              <Alert className="bg-purple-50 dark:bg-purple-900/10 border-purple-200">
-                <Headphones className="h-4 w-4 text-purple-600" />
-                <AlertTitle>Human Bridge</AlertTitle>
-                <AlertDescription>
-                  This script is only used for the initial "Hello" while bridging. Once bridged, the human agent takes
-                  over.
-                </AlertDescription>
-              </Alert>
-            )}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="border border-blue-500/30 bg-blue-500/5">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                    <Phone className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Twilio TTS</p>
+                    <p className="text-xs text-muted-foreground">Handles call initiation & opener script</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto text-blue-600 dark:text-blue-400 border-blue-500/30">
+                    Active
+                  </Badge>
+                </CardContent>
+              </Card>
+              <Card className="border border-purple-500/30 bg-purple-500/5">
+                <CardContent className="p-4 flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+                    <Bot className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">
+                      {form.dial_mode === "human_agent" ? "Sales Rep" : "AI Agent"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {form.dial_mode === "human_agent" ? "Live agent takes over" : "Conversational AI"}
+                    </p>
+                  </div>
+                  <Badge
+                    variant="outline"
+                    className="ml-auto text-purple-600 dark:text-purple-400 border-purple-500/30"
+                  >
+                    Active
+                  </Badge>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                <div className="space-y-2">
-                  <Label>Opening Script</Label>
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="pt-6 flex gap-4">
+                <div className="mt-1">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                </div>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold">Opener Script</h4>
+                    <p className="text-xs text-muted-foreground">
+                      {form.dial_mode === "human_agent"
+                        ? "Spoken by TTS while connecting the live agent."
+                        : "The AI speaks this immediately when the customer answers."}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Quick Templates</Label>
+                    <div className="flex flex-wrap gap-2">
+                      {SCRIPT_TEMPLATES.map((tpl) => (
+                        <Button
+                          key={tpl.id}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => update("initial_script", tpl.script)}
+                        >
+                          {tpl.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
                   <Textarea
                     value={form.initial_script}
                     onChange={(e) => update("initial_script", e.target.value)}
                     rows={4}
                     placeholder="Hi, this is..."
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Use <code className="bg-muted px-1 rounded text-xs">{"{{contact_name}}"}</code>,{" "}
+                    <code className="bg-muted px-1 rounded text-xs">{"{{agent_name}}"}</code> variables.
+                  </p>
                 </div>
+              </CardContent>
+            </Card>
 
-                {form.dial_mode === "ai" && (
-                  <div className="space-y-2">
-                    <Label>AI Voice</Label>
+            {form.dial_mode === "ai" && (
+              <Card className="border-l-4 border-l-purple-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Bot className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">AI Voice Settings</h4>
+                      <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+                    </div>
                     <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select Agent..." />
                       </SelectTrigger>
                       <SelectContent>
                         {VOICE_OPTIONS.map((a) => (
@@ -1037,9 +1337,9 @@ export default function CampaignWizardPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
@@ -1047,26 +1347,43 @@ export default function CampaignWizardPage() {
         {step === 4 && (
           <Card>
             <CardHeader>
-              <CardTitle>Review & Launch</CardTitle>
+              <CardTitle>Review Launch</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 border rounded bg-muted/20">
-                  <p className="text-xs text-muted-foreground">Mode</p>
-                  <div className="font-medium flex items-center gap-2">
-                    {form.dial_mode === "ai" ? <Bot className="h-4 w-4" /> : <Headphones className="h-4 w-4" />}
-                    {form.dial_mode === "ai" ? "AI Agent" : "Power Dialer"}
-                  </div>
+                  <p className="text-xs text-muted-foreground">Campaign</p>
+                  <p className="font-medium">{effectiveName}</p>
                 </div>
                 <div className="p-3 border rounded bg-muted/20">
-                  <p className="text-xs text-muted-foreground">Audience</p>
+                  <p className="text-xs text-muted-foreground">Mode</p>
+                  <p className="font-medium flex items-center gap-1">
+                    {form.dial_mode === "human_agent" ? (
+                      <Headphones className="h-3 w-3" />
+                    ) : (
+                      <Bot className="h-3 w-3" />
+                    )}
+                    {form.dial_mode === "human_agent" ? "Power Dialer" : "AI Agent"}
+                  </p>
+                </div>
+                <div className="p-3 border rounded bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Audience ({AUDIENCE_TYPE_CONFIG[audienceType].label})</p>
                   <p className="font-medium">{totalSelected} records</p>
                 </div>
+                <div className="p-3 border rounded bg-blue-50 dark:bg-blue-900/20">
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Twilio TTS Script</p>
+                  <p className="truncate">{form.initial_script || "Missing"}</p>
+                </div>
               </div>
+
               <Alert>
-                <Rocket className="h-4 w-4" />
-                <AlertTitle>Ready?</AlertTitle>
-                <AlertDescription>You are about to queue {totalSelected} calls.</AlertDescription>
+                <Phone className="h-4 w-4" />
+                <AlertTitle>Voice Pipeline</AlertTitle>
+                <AlertDescription>
+                  {form.dial_mode === "human_agent"
+                    ? "Calls initiate via Twilio. When a human answers, the system will bridge a live agent immediately."
+                    : "Calls initiate via Twilio. When a human answers, the AI Agent will take over the conversation."}
+                </AlertDescription>
               </Alert>
             </CardContent>
           </Card>
@@ -1080,8 +1397,9 @@ export default function CampaignWizardPage() {
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => {
-              if (step === 3 && !form.initial_script) return toast.error("Script required");
-              if (step === 1 && !isAudienceConfirmed) return toast.error("Confirm audience");
+              if (step === 3 && !form.initial_script) return toast.error("Complete script setup");
+              if (step === 1 && totalSelected === 0) return toast.error("Select audience");
+              if (step === 1 && !isAudienceConfirmed) return toast.error("Please confirm your selection first.");
               setStep((s) => s + 1);
             }}
           >
@@ -1091,9 +1409,9 @@ export default function CampaignWizardPage() {
           <Button
             onClick={() => launchMutation.mutate()}
             disabled={launchMutation.isPending}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-600 text-white"
           >
-            <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch Campaign"}
+            <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch & Monitor"}
           </Button>
         )}
       </div>
