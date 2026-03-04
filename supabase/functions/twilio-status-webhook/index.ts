@@ -40,14 +40,7 @@ Deno.serve(async (req) => {
     // ── 1. Fetch Queue Item ──
     const { data: queueItem } = await supabase
       .from("outbound_call_queue")
-      .select(
-        `
-        *,
-        dialer_campaigns (
-            dial_mode
-        )
-      `,
-      )
+      .select("*")
       .eq("twilio_call_sid", callSid)
       .maybeSingle();
 
@@ -86,7 +79,7 @@ Deno.serve(async (req) => {
         // Hangup immediately to save cost on voicemail
         await hangupCall(callSid);
 
-        // Trigger Auto-Follow Up logic
+        // Trigger Auto-Follow Up logic (e.g. send email/sms later)
         if (queueItem.store_id) {
           await updateStoreContact(supabase, queueItem.store_id);
           await createAutoFollowUp(supabase, queueItem, callSid, "voicemail", 48 * 60);
@@ -101,6 +94,7 @@ Deno.serve(async (req) => {
       case "answered": {
         // Only act if we haven't processed the answer yet
         if (queueItem.status === "dialing") {
+          // ── AI MODE ONLY (Human Agent bridging removed) ──
           console.log("Call answered. Marking connected so Twilio can play TTS.");
           await supabase
             .from("outbound_call_queue")
@@ -280,15 +274,5 @@ async function hangupCall(sid: string) {
     method: "POST",
     headers: { Authorization: "Basic " + btoa(`${a}:${t}`), "Content-Type": "application/x-www-form-urlencoded" },
     body: "Status=completed",
-  });
-}
-
-async function updateCallTwiml(sid: string, xml: string) {
-  const a = Deno.env.get("TWILIO_ACCOUNT_SID");
-  const t = Deno.env.get("TWILIO_AUTH_TOKEN");
-  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${a}/Calls/${sid}.json`, {
-    method: "POST",
-    headers: { Authorization: "Basic " + btoa(`${a}:${t}`), "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ Twiml: xml }).toString(),
   });
 }
