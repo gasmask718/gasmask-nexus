@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     const baseWebhookUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
 
     const statusCallbackUrl = `${baseWebhookUrl}?type=status`;
-    const gatherActionUrl = `${baseWebhookUrl}?type=gather&agent_id=${agentId}`;
+    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook?type=gather&agent_id=${agentId}`;
 
     const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad to connect.`;
     const safeScript = escapeXml(rawScript);
@@ -78,19 +78,16 @@ Deno.serve(async (req) => {
     // 2. Increased Pause to 3 seconds for cell carrier lag
     // 3. Changed Gather to DTMF (keypad) ONLY to prevent Speech Rec engine crashes
     // 4. Repeated the phrase twice just in case
-    const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-      <Response>
-        <Pause length="3"/>
-        <Gather input="dtmf" action="${gatherActionUrl}" numDigits="1" timeout="8">
-          <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
-          <Pause length="2"/>
-          <Say voice="${voiceId}" language="en-US">I repeat, ${safeScript}</Say>
-        </Gather>
-        <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>
-        <Hangup/>
-      </Response>
-    `;
-
+    const twiml = `
+  <Response>
+    <Pause length="1"/>
+    <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="5">
+      <Say voice="Polly.Joanna">Hello! Are you ready to speak with our AI? Say yes or press 1 to connect.</Say>
+    </Gather>
+    <Say voice="Polly.Joanna">We didn't hear you. Goodbye!</Say>
+    <Hangup/>
+  </Response>
+`;
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
     const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
     const params = new URLSearchParams();
