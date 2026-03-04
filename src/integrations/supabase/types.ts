@@ -21521,6 +21521,7 @@ export type Database = {
       }
       dialer_campaigns: {
         Row: {
+          agent_id: string | null
           amd_enabled: boolean | null
           amd_mode: string | null
           amd_timeout_seconds: number | null
@@ -21534,6 +21535,9 @@ export type Database = {
           description: string | null
           failed_calls: number | null
           id: string
+          initial_script: string | null
+          max_attempts: number | null
+          max_concurrent_calls: number | null
           name: string
           status: string
           total_followups: number | null
@@ -21545,6 +21549,7 @@ export type Database = {
           voicemail_count: number | null
         }
         Insert: {
+          agent_id?: string | null
           amd_enabled?: boolean | null
           amd_mode?: string | null
           amd_timeout_seconds?: number | null
@@ -21558,6 +21563,9 @@ export type Database = {
           description?: string | null
           failed_calls?: number | null
           id?: string
+          initial_script?: string | null
+          max_attempts?: number | null
+          max_concurrent_calls?: number | null
           name: string
           status?: string
           total_followups?: number | null
@@ -21569,6 +21577,7 @@ export type Database = {
           voicemail_count?: number | null
         }
         Update: {
+          agent_id?: string | null
           amd_enabled?: boolean | null
           amd_mode?: string | null
           amd_timeout_seconds?: number | null
@@ -21582,6 +21591,9 @@ export type Database = {
           description?: string | null
           failed_calls?: number | null
           id?: string
+          initial_script?: string | null
+          max_attempts?: number | null
+          max_concurrent_calls?: number | null
           name?: string
           status?: string
           total_followups?: number | null
