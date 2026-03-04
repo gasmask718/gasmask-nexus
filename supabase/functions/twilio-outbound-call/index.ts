@@ -5,6 +5,20 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Safe Twilio Polly Voices (No Neural suffix to guarantee playback)
+const VOICE_MAP: Record<string, string> = {
+  JBFqnCBsd6RMkjVDRZzb: "Polly.Matthew",
+  "21m00Tcm4TlvDq8ikWAM": "Polly.Joanna",
+  EXAVITQu4vr4xnSDxMaL: "Polly.Amy",
+  ErXwobaYiN019PkySvjV: "Polly.Arthur",
+  MF3mGyEYCl7XYWbV9V6O: "Polly.Emma",
+  TxGEqnHWrfWFTfGW9XjX: "Polly.Joey",
+  VR6AewLTigWG4xSOukaG: "Polly.Justin",
+  pNInz6obpgDQGcFmaJgB: "Polly.Salli",
+  yoZ06aMxZJJ28mfd3POQ: "Polly.Kendra",
+  default: "Polly.Joanna",
+};
+
 function escapeXml(unsafe: string) {
   if (!unsafe) return "";
   return unsafe.replace(/[<>&'"]/g, (c) => {
@@ -50,27 +64,29 @@ Deno.serve(async (req) => {
     const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // ── THE COMBINED WEBHOOK URLS ──
+    // ── THE COMBINED WEBHOOK CONNECTION ──
     const agentId = item.dialer_campaigns?.agent_id || "";
-    const baseWebhookUrl = `${supabaseUrl}/functions/v1/twilio-webhook`;
 
-    // Route 1: For logging answered/completed statuses
+    // We point BOTH actions to your status-webhook, but use ?type to separate the logic
+    const baseWebhookUrl = `${supabaseUrl}/functions/v1/twilio-status-webhook`;
     const statusCallbackUrl = `${baseWebhookUrl}?type=status`;
-
-    // Route 2: For processing the user saying "Yes" or pressing "1"
     const gatherActionUrl = `${baseWebhookUrl}?type=gather&agent_id=${agentId}`;
 
+    // Prepare the script
     const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please say yes or press 1 to continue.`;
     const safeScript = escapeXml(rawScript);
 
-    // Prompt the user and wait for a response
+    const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
+
+    // ── THE TwiML ──
+    // This waits for the physical answer, plays the TTS, and waits for a Yes or 1
     const twiml = `
       <Response>
         <Pause length="1"/>
         <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="5" hints="yes, yeah, sure, okay, ready">
-          <Say voice="Polly.Joanna" language="en-US">${safeScript}</Say>
+          <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
         </Gather>
-        <Say voice="Polly.Joanna">We did not receive a response. Goodbye.</Say>
+        <Say voice="${voiceId}">We did not receive a response. Goodbye.</Say>
         <Hangup/>
       </Response>
     `;
@@ -89,6 +105,7 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
 
+    // Apply AMD only if enabled in the wizard
     if (item.dialer_campaigns?.amd_enabled) {
       params.append("MachineDetection", "DetectMessageEnd");
     }
