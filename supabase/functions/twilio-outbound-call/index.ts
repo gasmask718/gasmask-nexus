@@ -14,12 +14,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase with Service Role Key to bypass RLS in the backend
+    // Initialize Supabase (Service Role to bypass RLS)
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const body = await req.json();
 
-    // Health probe / Dry-run
+    // Health probe
     if (body.dry_run === true) {
       return new Response(JSON.stringify({ status: "ok", mode: "dry_run" }), {
         status: 200,
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
 
-    // HARDCODED "FROM" NUMBER
+    // --- FIX 1: Hardcoded From Number ---
     const FROM_NUMBER = "+18776818621";
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) {
@@ -114,20 +114,29 @@ Deno.serve(async (req) => {
 
     // 7. Place Twilio call
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
+    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
 
+    // --- FIX 2: Correctly format Body to avoid Error 21626 ---
     const params = new URLSearchParams();
-    params.set("To", item.phone_number); // The record you selected
-    params.set("From", FROM_NUMBER); // Your fixed 877 number
-    params.set("Twiml", twiml);
-    params.set("StatusCallback", statusCallbackUrl);
-    params.set("StatusCallbackEvent", "initiated ringing answered completed");
-    params.set("StatusCallbackMethod", "POST");
+    params.append("To", item.phone_number);
+    params.append("From", FROM_NUMBER);
+    params.append("Twiml", twiml);
+    params.append("StatusCallback", statusCallbackUrl);
+    params.append("StatusCallbackMethod", "POST");
+
+    // --- FIX 3: Enable Recording for Transcripts ---
+    params.append("Record", "true");
+    params.append("RecordingStatusCallback", statusCallbackUrl);
+
+    // Send events as separate keys (Fixes the "Invalid events" warning)
+    params.append("StatusCallbackEvent", "initiated");
+    params.append("StatusCallbackEvent", "ringing");
+    params.append("StatusCallbackEvent", "answered");
+    params.append("StatusCallbackEvent", "completed");
 
     if (item.dialer_campaigns?.amd_enabled) {
-      params.set("MachineDetection", "DetectMessageEnd");
+      params.append("MachineDetection", "DetectMessageEnd");
     }
-
-    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
@@ -141,7 +150,7 @@ Deno.serve(async (req) => {
     const twilioData = await twilioRes.json();
 
     if (!twilioRes.ok) {
-      // Mark as failed in DB
+      // Log failure
       await supabase.from("twilio_call_logs").insert({
         business_id,
         queue_item_id,
@@ -162,7 +171,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 8. Success: Update queue item and logs
+    // 8. Success: Update queue item
     const callSid = twilioData.sid;
     await supabase
       .from("outbound_call_queue")
