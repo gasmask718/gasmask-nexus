@@ -29,13 +29,11 @@ import {
   RotateCcw,
   Phone,
   PhoneForwarded,
-  PhoneCall,
   Clock,
   XCircle,
   Mic,
   LayoutDashboard,
   Plus,
-  Loader2,
   CheckSquare,
   Pause,
   Play,
@@ -95,6 +93,7 @@ interface CallItem {
 }
 
 // --- VOICE OPTIONS ---
+// NOTE: These IDs are mapped to Twilio Polly Voices in the Edge Function (twilio-outbound-call)
 const VOICE_OPTIONS = [
   { id: "JBFqnCBsd6RMkjVDRZzb", name: "Adam (Male, Deep)" },
   { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel (Female, Warm)" },
@@ -344,7 +343,6 @@ export default function CampaignWizardPage() {
       const queueItem = queueItems;
 
       // 2. Lock item (Set to dialing) - Critical to prevent race conditions
-      // FIXED: Added error handling here to detect RLS issues
       const { error: updateErr } = await supabase
         .from("outbound_call_queue")
         .update({
@@ -365,7 +363,6 @@ export default function CampaignWizardPage() {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
 
         // 3. Invoke Edge Function
-        // FIXED: Better response handling
         const response = await supabase.functions.invoke("twilio-outbound-call", {
           body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
         });
@@ -589,7 +586,7 @@ export default function CampaignWizardPage() {
           name: effectiveName,
           description: form.description || null,
           status: "active",
-          dial_mode: form.dial_mode, // Added dial mode
+          dial_mode: form.dial_mode,
           max_attempts: form.max_attempts,
           amd_enabled: form.amd_enabled,
           max_concurrent_calls: form.max_concurrent,
@@ -733,8 +730,10 @@ export default function CampaignWizardPage() {
   };
 
   // --- RENDER ---
-
   if (viewMode === "console") {
+    // ... (Console View JSX) ...
+    // Note: Kept brief here as per instruction, but you can copy the console JSX from your original file.
+    // It remains unchanged.
     return (
       <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
         {/* SIDEBAR */}
@@ -916,6 +915,7 @@ export default function CampaignWizardPage() {
     );
   }
 
+  // WIZARD VIEW JSX
   const progress = ((step + 1) / STEPS.length) * 100;
   const totalSelected = audienceType === "custom" ? customNumbers.length : selectedIds.size;
 
