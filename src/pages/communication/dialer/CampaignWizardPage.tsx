@@ -312,7 +312,7 @@ export default function CampaignWizardPage() {
     dial_mode: "ai" as "ai" | "human_agent",
     max_attempts: 3,
     retry_backoff_minutes: 30,
-    amd_enabled: true,
+    amd_enabled: false, // FIX: Default to FALSE so TTS works instantly
     call_window_start: "09:00",
     call_window_end: "17:00",
     max_concurrent: 5,
@@ -731,9 +731,6 @@ export default function CampaignWizardPage() {
 
   // --- RENDER ---
   if (viewMode === "console") {
-    // ... (Console View JSX) ...
-    // Note: Kept brief here as per instruction, but you can copy the console JSX from your original file.
-    // It remains unchanged.
     return (
       <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
         {/* SIDEBAR */}
@@ -1296,9 +1293,19 @@ export default function CampaignWizardPage() {
                   onChange={(e) => update("max_concurrent", parseInt(e.target.value))}
                 />
               </div>
-              <div className="flex items-center gap-2 pt-2">
-                <Switch checked={form.amd_enabled} onCheckedChange={(v) => update("amd_enabled", v)} />
-                <Label>AMD Enabled</Label>
+
+              {/* FIX: Improved UI to warn about AMD delay */}
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.amd_enabled} onCheckedChange={(v) => update("amd_enabled", v)} />
+                  <Label>AMD Enabled (Voicemail Detection)</Label>
+                </div>
+                {form.amd_enabled && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500 max-w-sm">
+                    Warning: AMD adds a 3 to 5 second silence at the beginning of the call while it listens to detect a
+                    human. Turn this OFF for instant Text-to-Speech testing.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
