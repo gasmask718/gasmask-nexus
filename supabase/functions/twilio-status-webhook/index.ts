@@ -14,6 +14,7 @@ serve(async (req) => {
     const formData = await req.formData();
     const digits = formData.get("Digits")?.toString() || "";
     const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
+    const callSid = formData.get("CallSid")?.toString() || "";
 
     const url = new URL(req.url);
     const agentId = url.searchParams.get("agent_id");
@@ -29,11 +30,13 @@ serve(async (req) => {
     let twiml = "";
 
     if (isConfirmed && agentId) {
+      // 🔴 Removed the <Say> wrapper to remove TTS delay, jumping straight to Stream connection.
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
         <Response>
-          <Say voice="Polly.Joanna">Connecting you now.</Say>
           <Connect>
-            <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}" />
+            <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}">
+              <Parameter name="twilio_call_sid" value="${callSid}" />
+            </Stream>
           </Connect>
         </Response>
       `;
