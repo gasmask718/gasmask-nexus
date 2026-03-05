@@ -75,7 +75,9 @@ Deno.serve(async (req) => {
 
     // Use campaign script from Step 4, fallback to default
     const campaignScript = campaign?.initial_script || "";
-    const rawScript = campaignScript || `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad or say yes to connect.`;
+    const rawScript =
+      campaignScript ||
+      `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad or say yes to connect.`;
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
@@ -106,6 +108,14 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "ringing");
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
+
+    // 🔴 FIX 1: Enable AMD if toggled in the campaign settings
+    if (campaign?.amd_enabled) {
+      params.append("MachineDetection", "Enable");
+      params.append("MachineDetectionTimeout", "8");
+      params.append("MachineDetectionSpeechThreshold", "2400");
+      params.append("MachineDetectionSpeechEndThreshold", "1200");
+    }
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
@@ -146,6 +156,18 @@ Deno.serve(async (req) => {
 
     if (recordingError) {
       console.error("Failed to create call_recordings entry:", recordingError);
+    }
+
+    // 🔴 FIX 2: Log the initial Text-to-Speech script into the transcripts table
+    const { error: transcriptError } = await supabase.from("live_call_transcripts").insert({
+      call_sid: twilioData.sid,
+      speaker: "ai",
+      text: rawScript,
+      is_final: true,
+    });
+
+    if (transcriptError) {
+      console.error("Failed to log initial AI transcript:", transcriptError);
     }
 
     return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid }), { headers: corsHeaders });
