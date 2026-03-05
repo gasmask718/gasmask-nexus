@@ -1,18 +1,33 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
+
 import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
+
 import { Textarea } from "@/components/ui/textarea";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Switch } from "@/components/ui/switch";
+
 import { Progress } from "@/components/ui/progress";
+
 import { Checkbox } from "@/components/ui/checkbox";
+
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+
 import {
   Target,
   Users,
@@ -28,6 +43,7 @@ import {
   Activity,
   RotateCcw,
   Phone,
+  PhoneForwarded,
   Clock,
   XCircle,
   Mic,
@@ -40,373 +56,1652 @@ import {
   X,
   UserPlus,
 } from "lucide-react";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { supabase } from "@/integrations/supabase/client";
+
 import { useBusiness } from "@/contexts/BusinessContext";
+
 import { toast } from "sonner";
+
 import { format } from "date-fns";
+
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
 
-// --- Config ---
 type AudienceType = "prospects" | "stores" | "ambassadors" | "bikers" | "drivers" | "customers" | "custom";
+
+interface AudienceRow {
+  id: string;
+
+  store_name: string;
+
+  phone: string | null;
+
+  city: string | null;
+
+  state: string | null;
+}
 
 interface Campaign {
   id: string;
+
   name: string;
+
   status: "active" | "paused" | "completed" | "draft";
+
+  dial_mode: "ai"; // Forced to AI
+
   created_at: string;
+
+  initial_script: string;
+
+  agent_id: string;
+
+  business_id: string;
+}
+
+interface CallItem {
+  id: string;
+
+  phone_number: string;
+
+  contact_name: string;
+
+  status:
+    | "queued"
+    | "dialing"
+    | "connected"
+    | "completed"
+    | "failed"
+    | "no_answer"
+    | "voicemail"
+    | "transferred"
+    | "bridged"
+    | "bridging";
+
+  duration?: number;
+
+  transcript?: string;
+
+  updated_at: string;
 }
 
 const VOICE_OPTIONS = [
   { id: "JBFqnCBsd6RMkjVDRZzb", name: "Adam (Male, Deep)" },
+
   { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel (Female, Warm)" },
+
   { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella (Female, Soft)" },
+
   { id: "ErXwobaYiN019PkySvjV", name: "Antoni (Male, Calm)" },
+
   { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli (Female, Young)" },
+
   { id: "TxGEqnHWrfWFTfGW9XjX", name: "Josh (Male, Deep)" },
+
   { id: "VR6AewLTigWG4xSOukaG", name: "Arnold (Male, Strong)" },
+
   { id: "pNInz6obpgDQGcFmaJgB", name: "Sam (Male, Raspy)" },
+
   { id: "yoZ06aMxZJJ28mfd3POQ", name: "Sam (Female, Raspy)" },
 ];
 
+const SCRIPT_TEMPLATES = [
+  {
+    id: "intro_sales",
+
+    label: "Sales Introduction",
+
+    script:
+      "Hi, this is {{agent_name}} calling from {{business_name}}. I'm reaching out because we have some exciting new products that I think would be a great fit for your store. Do you have a quick moment to chat?",
+  },
+
+  {
+    id: "follow_up",
+
+    label: "Follow-Up Call",
+
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. I'm following up on our previous conversation. I wanted to check in and see if you had any questions or if you're ready to place an order.",
+  },
+
+  {
+    id: "reactivation",
+
+    label: "Reactivation / Win-Back",
+
+    script:
+      "Hi, this is {{agent_name}} from {{business_name}}. We noticed it's been a while since your last order and wanted to reach out. We have some new offers and would love to get you back on board. Can I share what's new?",
+  },
+];
+
+const AUDIENCE_TYPE_CONFIG: Record<
+  AudienceType,
+  { label: string; table: string | null; nameCol: string; phoneCol: string; searchCols: string[] }
+> = {
+  prospects: {
+    label: "Prospects",
+
+    table: "territory_addresses",
+
+    nameCol: "store_name",
+
+    phoneCol: "phone",
+
+    searchCols: ["store_name", "phone", "city"],
+  },
+
+  stores: {
+    label: "Active Stores",
+
+    table: "store_master",
+
+    nameCol: "store_name",
+
+    phoneCol: "phone",
+
+    searchCols: ["store_name", "phone", "city"],
+  },
+
+  ambassadors: {
+    label: "Ambassadors",
+
+    table: "ambassadors",
+
+    nameCol: "name",
+
+    phoneCol: "phone_primary",
+
+    searchCols: ["name", "phone_primary", "city"],
+  },
+
+  bikers: {
+    label: "Bikers",
+
+    table: "bikers",
+
+    nameCol: "full_name",
+
+    phoneCol: "phone",
+
+    searchCols: ["full_name", "phone"],
+  },
+
+  drivers: {
+    label: "Drivers",
+
+    table: "drivers",
+
+    nameCol: "full_name",
+
+    phoneCol: "phone",
+
+    searchCols: ["full_name", "phone"],
+  },
+
+  customers: {
+    label: "Customers (CRM)",
+
+    table: "crm_customers",
+
+    nameCol: "name",
+
+    phoneCol: "phone",
+
+    searchCols: ["name", "phone", "city"],
+  },
+
+  custom: { label: "Custom Numbers", table: null, nameCol: "", phoneCol: "", searchCols: [] },
+};
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
-  dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600", icon: Phone },
-  connected: { label: "Live (AI)", color: "bg-green-500/15 text-green-600", icon: Bot },
-  completed: { label: "Completed", color: "bg-green-500/10 text-green-600", icon: CheckCircle2 },
+
+  dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
+
+  connected: { label: "Live (AI)", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Bot },
+
+  completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
+
+  no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
+
   failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
+
+  voicemail: { label: "Voicemail", color: "bg-orange-500/15 text-orange-600", icon: Mic },
 };
 
 const STEPS = [
   { label: "Campaign Info", icon: Target },
+
   { label: "Audience", icon: Users },
+
   { label: "Settings", icon: Settings },
+
   { label: "Script & AI", icon: FileText },
+
   { label: "Launch", icon: Rocket },
 ];
 
+const PAGE_SIZE = 25;
+
 export default function CampaignWizardPage() {
   const { currentBusiness } = useBusiness();
-  const queryClient = useQueryClient();
-  const effectiveBizId = currentBusiness?.id;
 
-  // 1. ALL Hooks must be at the very top
+  const queryClient = useQueryClient();
+
+  const contextBizId = currentBusiness?.id;
+
+  const { data: fallbackBiz } = useQuery({
+    queryKey: ["fallback-business"],
+
+    queryFn: async () => {
+      const { data } = await supabase.from("businesses").select("id").limit(1).maybeSingle();
+
+      return data;
+    },
+
+    enabled: !contextBizId,
+  });
+
+  const effectiveBizId = contextBizId || fallbackBiz?.id;
+
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
+
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
+
   const [step, setStep] = useState(0);
+
   const [audienceType, setAudienceType] = useState<AudienceType>("prospects");
+
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [customNumbers, setCustomNumbers] = useState<any[]>([]);
+
+  const [audiencePage, setAudiencePage] = useState(1);
+
+  const [audienceSearch, setAudienceSearch] = useState("");
+
+  const [isAudienceConfirmed, setIsAudienceConfirmed] = useState(false);
+
+  const [customNumbers, setCustomNumbers] = useState<{ id: string; phone: string; name: string }[]>([]);
+
+  const [customPhoneInput, setCustomPhoneInput] = useState("");
+
+  const [customNameInput, setCustomNameInput] = useState("");
+
   const [form, setForm] = useState({
     name: "",
+
     description: "",
+
+    dial_mode: "ai", // Hardcoded to AI
+
+    max_attempts: 3,
+
+    retry_backoff_minutes: 30,
+
+    amd_enabled: false, // Default false for instant TTS
+
+    call_window_start: "09:00",
+
+    call_window_end: "17:00",
+
+    max_concurrent: 5,
+
     initial_script: "",
+
     agent_id: VOICE_OPTIONS[0].id,
-    amd_enabled: false,
   });
+
+  const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const processQueue = useCallback(
     async (campaignId: string) => {
-      const { data: queueItem } = await supabase
+      const { data: queueItems, error: fetchErr } = await supabase
+
         .from("outbound_call_queue")
-        .select("id")
+
+        .select("id, phone_number, contact_name")
+
         .eq("campaign_id", campaignId)
+
         .eq("status", "queued")
+
         .limit(1)
+
         .maybeSingle();
-      if (!queueItem) return;
-      await supabase
+
+      if (fetchErr || !queueItems) return;
+
+      const queueItem = queueItems;
+
+      const { error: updateErr } = await supabase
+
         .from("outbound_call_queue")
-        .update({ status: "dialing", dialing_started_at: new Date().toISOString() })
-        .eq("id", queueItem.id);
-      await supabase.functions.invoke("twilio-outbound-call", {
-        body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
-      });
+
+        .update({
+          status: "dialing",
+
+          dialing_started_at: new Date().toISOString(),
+
+          updated_at: new Date().toISOString(),
+        })
+
+        .eq("id", queueItem.id)
+
+        .eq("status", "queued");
+
+      if (updateErr) return toast.error(`Failed to lock call: ${updateErr.message}`);
+
+      try {
+        toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
+
+        const response = await supabase.functions.invoke("twilio-outbound-call", {
+          body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
+        });
+
+        if (response.error || (response.data && response.data.error))
+          throw new Error(response.error?.message || response.data?.error);
+      } catch (err: any) {
+        console.error("Dispatcher Exception:", err);
+
+        toast.error(`Call logic failed: ${err.message}`);
+
+        await supabase
+
+          .from("outbound_call_queue")
+
+          .update({ status: "failed", updated_at: new Date().toISOString() })
+
+          .eq("id", queueItem.id);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+
+      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
     },
+
     [effectiveBizId, queryClient],
   );
 
   useEffect(() => {
-    let interval: any;
     if (viewMode === "console" && activeCampaignId) {
-      interval = setInterval(() => {
-        supabase
-          .from("dialer_campaigns")
-          .select("status")
-          .eq("id", activeCampaignId)
-          .single()
-          .then(({ data }) => {
-            if (data?.status === "active") processQueue(activeCampaignId);
-          });
-      }, 4000);
+      const checkAndRun = async () => {
+        const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
+
+        if (data?.status === "active") processQueue(activeCampaignId);
+      };
+
+      dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
     }
-    return () => clearInterval(interval);
+
+    return () => {
+      if (dispatchIntervalRef.current) clearInterval(dispatchIntervalRef.current);
+    };
   }, [viewMode, activeCampaignId, processQueue]);
 
-  const { data: campaignsList } = useQuery({
-    queryKey: ["dialer-campaigns", effectiveBizId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("dialer_campaigns")
-        .select("*")
-        .eq("business_id", effectiveBizId!)
-        .order("created_at", { ascending: false });
-      return (data as Campaign[]) || [];
-    },
-    enabled: !!effectiveBizId,
-  });
+  const updateCampaignStatus = async (status: "active" | "paused" | "completed") => {
+    if (!activeCampaignId) return;
 
-  const { data: callItems } = useQuery({
-    queryKey: ["campaign-calls", activeCampaignId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("outbound_call_queue")
-        .select("*")
-        .eq("campaign_id", activeCampaignId!)
-        .order("updated_at", { ascending: false });
-      return data || [];
-    },
-    enabled: !!activeCampaignId,
-    refetchInterval: 3000,
-  });
+    const { error } = await supabase.from("dialer_campaigns").update({ status }).eq("id", activeCampaignId);
 
-  const callSids = useMemo(
-    () => (callItems?.map((i: any) => i.twilio_call_sid?.trim()).filter(Boolean) as string[]) || [],
-    [callItems],
-  );
+    if (error) toast.error("Failed to update status");
+    else {
+      toast.success(`Campaign ${status}`);
 
-  const { data: transcripts } = useQuery({
-    queryKey: ["campaign-transcripts", activeCampaignId, callSids],
-    queryFn: async () => {
-      if (callSids.length === 0) return [];
-      const { data } = await supabase
-        .from("live_call_transcripts")
-        .select("*")
-        .in("call_sid", callSids)
-        .order("created_at", { ascending: true });
-      return data || [];
-    },
-    enabled: callSids.length > 0,
-    refetchInterval: 2000,
-  });
-
-  const transcriptsByCall = useMemo(() => {
-    const grouped: Record<string, any[]> = {};
-    if (!transcripts) return grouped;
-    transcripts.forEach((t: any) => {
-      const sid = t.call_sid.trim();
-      if (!grouped[sid]) grouped[sid] = [];
-      let displaySpeaker = t.speaker === "ai" || t.speaker === "agent" ? "ai" : "caller";
-      grouped[sid].push({ ...t, speaker: displaySpeaker });
-    });
-    return grouped;
-  }, [transcripts]);
-
-  const updateCampaignStatus = async (status: string) => {
-    await supabase.from("dialer_campaigns").update({ status }).eq("id", activeCampaignId);
-    queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
+      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
+    }
   };
+
+  const { data: campaignCount } = useQuery({
+    queryKey: ["dialer-campaign-count"],
+
+    queryFn: async () => {
+      const { count } = await supabase.from("dialer_campaigns").select("id", { count: "exact", head: true });
+
+      return count ?? 0;
+    },
+  });
+
+  const defaultName = useMemo(() => {
+    const seq = (campaignCount ?? 0) + 1;
+
+    return `CMPN-${String(seq).padStart(4, "0")}-OUTREACH`;
+  }, [campaignCount]);
+
+  const effectiveName = form.name || defaultName;
+
+  const audienceConfig = AUDIENCE_TYPE_CONFIG[audienceType];
+
+  const { data: audienceData, isLoading: audienceLoading } = useQuery({
+    queryKey: ["campaign-audience", audienceType, audiencePage, audienceSearch],
+
+    queryFn: async () => {
+      if (!audienceConfig.table) return { rows: [], totalCount: 0 };
+
+      const from = (audiencePage - 1) * PAGE_SIZE,
+        to = from + PAGE_SIZE - 1;
+
+      let query = supabase
+
+        .from(audienceConfig.table as any)
+
+        .select(`id, ${audienceConfig.nameCol}, ${audienceConfig.phoneCol}`, { count: "exact" });
+
+      if (audienceType === "stores") query = query.is("deleted_at", null);
+
+      if (audienceSearch.trim())
+        query = query.or(audienceConfig.searchCols.map((c) => `${c}.ilike.%${audienceSearch.trim()}%`).join(","));
+
+      const { data, error, count } = await query.order(audienceConfig.nameCol, { ascending: true }).range(from, to);
+
+      if (error) throw error;
+
+      const rows: AudienceRow[] = (data ?? []).map((r: any) => ({
+        id: r.id,
+
+        store_name: r[audienceConfig.nameCol] || "Unknown",
+
+        phone: r[audienceConfig.phoneCol] || null,
+
+        city: null,
+
+        state: null,
+      }));
+
+      return { rows, totalCount: count ?? 0 };
+    },
+
+    enabled: viewMode === "wizard" && audienceType !== "custom",
+  });
+
+  const audienceRows = audienceType === "custom" ? [] : (audienceData?.rows ?? []);
+
+  const audienceTotalCount = audienceType === "custom" ? customNumbers.length : (audienceData?.totalCount ?? 0);
+
+  const audienceTotalPages = Math.max(1, Math.ceil(audienceTotalCount / PAGE_SIZE));
+
+  const allPageSelected = audienceRows.length > 0 && audienceRows.every((r) => selectedIds.has(r.id));
+
+  const addCustomNumber = () => {
+    const phone = customPhoneInput.trim().replace(/\D/g, "");
+
+    if (phone.length < 10) return toast.error("Enter a valid phone number (10+ digits)");
+
+    const formatted =
+      phone.length === 10 ? `+1${phone}` : phone.startsWith("1") && phone.length === 11 ? `+${phone}` : `+${phone}`;
+
+    if (customNumbers.some((n) => n.phone === formatted)) return toast.error("Number already added");
+
+    setCustomNumbers((prev) => [
+      ...prev,
+
+      { id: crypto.randomUUID(), phone: formatted, name: customNameInput.trim() || formatted },
+    ]);
+
+    setCustomPhoneInput("");
+
+    setCustomNameInput("");
+
+    setIsAudienceConfirmed(false);
+  };
+
+  const removeCustomNumber = (id: string) => {
+    setCustomNumbers((prev) => prev.filter((n) => n.id !== id));
+
+    setIsAudienceConfirmed(false);
+  };
+
+  const handleBulkPaste = (text: string) => {
+    const lines = text
+
+      .split(/[\n,;]+/)
+
+      .map((l) => l.trim())
+
+      .filter(Boolean);
+
+    const newNumbers: typeof customNumbers = [];
+
+    for (const line of lines) {
+      const phone = line.replace(/\D/g, "");
+
+      if (phone.length < 10) continue;
+
+      const formatted =
+        phone.length === 10 ? `+1${phone}` : phone.startsWith("1") && phone.length === 11 ? `+${phone}` : `+${phone}`;
+
+      if (!customNumbers.some((n) => n.phone === formatted) && !newNumbers.some((n) => n.phone === formatted))
+        newNumbers.push({ id: crypto.randomUUID(), phone: formatted, name: formatted });
+    }
+
+    if (newNumbers.length > 0) {
+      setCustomNumbers((prev) => [...prev, ...newNumbers]);
+
+      toast.success(`Added ${newNumbers.length} numbers`);
+    } else toast.error("No valid new numbers found");
+
+    setIsAudienceConfirmed(false);
+  };
+
+  const toggleRow = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+
+      return next;
+    });
+
+    setIsAudienceConfirmed(false);
+  }, []);
+
+  const toggleAllPage = useCallback(() => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      if (allPageSelected) audienceRows.forEach((r) => next.delete(r.id));
+      else audienceRows.forEach((r) => next.add(r.id));
+
+      return next;
+    });
+
+    setIsAudienceConfirmed(false);
+  }, [allPageSelected, audienceRows]);
+
+  const handleConfirmSelection = () => {
+    const t = audienceType === "custom" ? customNumbers.length : selectedIds.size;
+
+    if (t === 0) return toast.error("Please select at least one record.");
+
+    setIsAudienceConfirmed(true);
+
+    toast.success(`${t} records confirmed.`);
+  };
+
+  const update = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }));
 
   const launchMutation = useMutation({
     mutationFn: async () => {
-      const { data: campaign } = await supabase
+      if (!effectiveBizId) throw new Error("No Business ID found.");
+
+      if ((audienceType === "custom" ? customNumbers.length : selectedIds.size) === 0)
+        throw new Error("No audience selected");
+
+      const { data: campaign, error: campErr } = await supabase
+
         .from("dialer_campaigns")
+
         .insert({
           business_id: effectiveBizId,
-          name: form.name || `CMPN-${Date.now()}`,
+
+          name: effectiveName,
+
+          description: form.description || null,
+
           status: "active",
+
           dial_mode: "ai",
-          initial_script: form.initial_script,
-          agent_id: form.agent_id,
+
+          max_attempts: form.max_attempts,
+
           amd_enabled: form.amd_enabled,
+
+          max_concurrent_calls: form.max_concurrent,
+
+          initial_script: form.initial_script,
+
+          agent_id: form.agent_id,
         } as any)
+
         .select("id")
+
         .single();
-      if (!campaign) throw new Error("Launch failed");
-      const items = customNumbers.map((n) => ({
-        business_id: effectiveBizId,
-        phone_number: n.phone,
-        contact_name: n.name,
-        campaign_id: campaign.id,
-        status: "queued",
-      }));
-      await supabase.from("outbound_call_queue").insert(items as any);
-      return campaign.id;
+
+      if (campErr) throw campErr;
+
+      let items: any[] = [];
+
+      if (audienceType === "custom") {
+        items = customNumbers.map((n, i) => ({
+          business_id: effectiveBizId!,
+
+          phone_number: n.phone,
+
+          contact_name: n.name,
+
+          campaign_id: campaign.id,
+
+          priority_score: Math.max(1, 100 - i),
+
+          status: "queued",
+        }));
+      } else {
+        const ids = Array.from(selectedIds),
+          allRecords: any[] = [];
+
+        for (let i = 0; i < ids.length; i += 100) {
+          const { data } = await supabase
+
+            .from(audienceConfig.table as any)
+
+            .select(`id, ${audienceConfig.nameCol}, ${audienceConfig.phoneCol}`)
+
+            .in("id", ids.slice(i, i + 100));
+
+          if (data)
+            allRecords.push(
+              ...data.map((r: any) => ({
+                id: r.id,
+
+                store_name: r[audienceConfig.nameCol] || "Unknown",
+
+                phone: r[audienceConfig.phoneCol] || null,
+              })),
+            );
+        }
+
+        items = allRecords
+
+          .filter((r) => r.phone)
+
+          .map((r, i) => ({
+            business_id: effectiveBizId!,
+
+            phone_number: r.phone!,
+
+            contact_name: r.store_name,
+
+            campaign_id: campaign.id,
+
+            priority_score: Math.max(1, 100 - i),
+
+            status: "queued",
+          }));
+      }
+
+      if (items.length === 0) throw new Error("No valid phones found");
+
+      for (let i = 0; i < items.length; i += 50) {
+        const { error } = await supabase.from("outbound_call_queue").insert(items.slice(i, i + 50) as any);
+
+        if (error) throw error;
+      }
+
+      return { campaignId: campaign.id, count: items.length };
     },
-    onSuccess: (id) => {
-      setActiveCampaignId(id);
+
+    onSuccess: (data) => {
+      toast.success(`Launched with ${data.count} contacts!`);
+
+      queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
+
+      setActiveCampaignId(data.campaignId);
+
       setViewMode("console");
-      toast.success("Launched!");
+
+      setStep(0);
+
+      setSelectedIds(new Set());
+
+      setCustomNumbers([]);
+
+      setIsAudienceConfirmed(false);
+
+      setForm((prev) => ({ ...prev, name: "" }));
     },
+
+    onError: (err: any) => toast.error(`Failed: ${err.message}`),
   });
+
+  const { data: campaignsList } = useQuery({
+    queryKey: ["dialer-campaigns", effectiveBizId],
+
+    queryFn: async () => {
+      const { data } = await supabase
+
+        .from("dialer_campaigns")
+
+        .select("*")
+
+        .eq("business_id", effectiveBizId!)
+
+        .order("created_at", { ascending: false });
+
+      return (data as unknown as Campaign[]) || [];
+    },
+
+    enabled: viewMode === "console" && !!effectiveBizId,
+  });
+
+  const { data: callItems, isLoading: callsLoading } = useQuery({
+    queryKey: ["campaign-calls", activeCampaignId],
+
+    queryFn: async () => {
+      const { data } = await supabase
+
+        .from("outbound_call_queue")
+
+        .select("*")
+
+        .eq("campaign_id", activeCampaignId!)
+
+        .order("updated_at", { ascending: false });
+
+      return (data as CallItem[]) || [];
+    },
+
+    enabled: viewMode === "console" && !!activeCampaignId,
+
+    refetchInterval: 3000,
+  });
+
+  // Fetch transcripts for all calls in the active campaign
+
+  const callSids = useMemo(() => {
+    if (!callItems) return [];
+
+    return callItems
+
+      .map((i: any) => i.twilio_call_sid)
+
+      .filter(Boolean) as string[];
+  }, [callItems]);
+
+  const { data: transcripts } = useQuery({
+    queryKey: ["campaign-transcripts", activeCampaignId, callSids],
+
+    queryFn: async () => {
+      if (callSids.length === 0) return [];
+
+      const { data } = await supabase
+
+        .from("live_call_transcripts")
+
+        .select("*")
+
+        .in("call_sid", callSids)
+
+        .order("created_at", { ascending: true });
+
+      return data || [];
+    },
+
+    enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
+
+    refetchInterval: 5000,
+  });
+
+  // Group transcripts by call_sid with enhanced speaker labels
+
+  const transcriptsByCall = useMemo(() => {
+    if (!transcripts) return {};
+
+    const grouped: Record<string, { speaker: string; text: string; created_at: string }[]> = {};
+
+    (transcripts as any[]).forEach((t) => {
+      const sid = t.call_sid.trim();
+
+      if (!grouped[sid]) grouped[sid] = [];
+
+      // Normalize speaker names for the UI
+
+      let displaySpeaker = t.speaker;
+
+      if (t.speaker === "ai" || t.speaker === "agent") displaySpeaker = "ai";
+
+      if (t.speaker === "caller" || t.speaker === "user") displaySpeaker = "caller";
+
+      grouped[sid].push({
+        speaker: displaySpeaker,
+
+        text: t.text,
+
+        created_at: t.created_at,
+      });
+    });
+
+    return grouped;
+  }, [transcripts]);
+
+  useEffect(() => {
+    if (viewMode === "console" && !activeCampaignId && campaignsList && campaignsList.length > 0)
+      setActiveCampaignId(campaignsList[0].id);
+  }, [viewMode, campaignsList, activeCampaignId]);
 
   const activeCampaign = campaignsList?.find((c) => c.id === activeCampaignId);
 
-  // 2. NOW we can start the conditional UI returns
+  const stats = {
+    total: callItems?.length || 0,
+
+    queued: callItems?.filter((i) => i.status === "queued").length || 0,
+
+    live: callItems?.filter((i) => i.status === "dialing" || i.status === "connected").length || 0,
+
+    completed:
+      callItems?.filter((i) => ["completed", "failed", "no_answer", "voicemail"].includes(i.status)).length || 0,
+  };
+
   if (viewMode === "console") {
     return (
-      <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-6 bg-background">
-        <Card className="w-full md:w-80 border shadow-sm bg-card">
+      <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row gap-6 p-4 md:p-6 bg-background text-foreground">
+        {/* SIDEBAR */}
+
+        <Card className="w-full md:w-80 flex flex-col h-full border shadow-sm bg-card text-card-foreground">
           <CardHeader className="pb-3 border-b">
             <div className="flex justify-between items-center">
               <CardTitle className="text-lg flex items-center gap-2">
                 <LayoutDashboard className="h-5 w-5 text-primary" /> History
               </CardTitle>
-              <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")}>
-                <Plus className="h-3.5 w-3.5" />
+
+              <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
+                <Plus className="h-3.5 w-3.5" /> New
               </Button>
             </div>
+
+            <CardDescription>Select campaign to monitor</CardDescription>
           </CardHeader>
-          <CardContent className="p-2">
-            {campaignsList?.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActiveCampaignId(c.id)}
-                className={`w-full flex flex-col items-start gap-1 p-3 rounded-lg text-left border mb-2 transition-all ${activeCampaignId === c.id ? "bg-primary/10 border-primary" : "hover:bg-muted/50 border-transparent"}`}
-              >
-                <span className="font-semibold text-sm truncate">{c.name}</span>
-                <Badge variant="outline" className="text-[10px]">
-                  {c.status}
-                </Badge>
-              </button>
-            ))}
+
+          <CardContent className="p-0 flex-1">
+            <ScrollArea className="h-full">
+              <div className="flex flex-col p-2 gap-2">
+                {!campaignsList || campaignsList.length === 0 ? (
+                  <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
+                ) : (
+                  campaignsList.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setActiveCampaignId(c.id)}
+                      className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${activeCampaignId === c.id ? "bg-primary/10 border-primary shadow-sm text-primary" : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"}`}
+                    >
+                      <div className="flex w-full justify-between items-center">
+                        <span className="font-semibold text-sm truncate">{c.name}</span>
+
+                        <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
+                          {c.status}
+                        </Badge>
+                      </div>
+
+                      <div className="flex w-full justify-between items-center mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(c.created_at), "MMM d, h:mm a")}
+                        </span>
+
+                        <Badge variant="outline" className="text-[9px] h-4 px-1">
+                          AI Agent
+                        </Badge>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </CardContent>
         </Card>
 
-        <div className="flex-1 flex flex-col gap-6 overflow-hidden">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{activeCampaign?.name || "Dashboard"}</h1>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => updateCampaignStatus("paused")}>
-                <Pause className="h-4 w-4 mr-1" /> Pause
-              </Button>
-              <Button variant="default" size="sm" onClick={() => updateCampaignStatus("active")}>
-                <Play className="h-4 w-4 mr-1" /> Resume
-              </Button>
+        {/* MAIN DASHBOARD */}
+
+        <div className="flex-1 flex flex-col gap-6 h-full overflow-hidden">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">{activeCampaign?.name || "Campaign Dashboard"}</h1>
+
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                  <Badge variant="outline" className="gap-1 bg-background">
+                    <Bot className="h-3 w-3" /> Mode: AI Agent
+                  </Badge>
+
+                  {activeCampaign?.status === "active" && (
+                    <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
+                      <Activity className="h-3 w-3" /> Dialing Active
+                    </span>
+                  )}
+
+                  {activeCampaign?.status === "paused" && (
+                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400 text-xs font-medium">
+                      <Pause className="h-3 w-3" /> Paused
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {activeCampaign?.status === "active" ? (
+                  <Button variant="outline" size="sm" onClick={() => updateCampaignStatus("paused")}>
+                    <Pause className="h-4 w-4 mr-1" /> Pause
+                  </Button>
+                ) : activeCampaign?.status === "paused" ? (
+                  <Button variant="default" size="sm" onClick={() => updateCampaignStatus("active")}>
+                    <Play className="h-4 w-4 mr-1" /> Resume
+                  </Button>
+                ) : null}
+
+                {activeCampaign?.status !== "completed" && (
+                  <Button variant="destructive" size="sm" onClick={() => updateCampaignStatus("completed")}>
+                    <Square className="h-4 w-4 mr-1" /> Stop
+                  </Button>
+                )}
+
+                <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
+                  <RotateCcw className="h-4 w-4 mr-1" /> Refresh
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard label="Total Leads" value={stats.total} icon={Users} />
+
+              <StatCard label="In Queue" value={stats.queued} icon={Clock} color="text-muted-foreground" />
+
+              <StatCard
+                label="Live Calls"
+                value={stats.live}
+                icon={Activity}
+                color="text-blue-600 dark:text-blue-400"
+                active
+              />
+
+              <StatCard
+                label="Completed"
+                value={stats.completed}
+                icon={CheckCircle2}
+                color="text-green-600 dark:text-green-400"
+              />
             </div>
           </div>
 
-          <Tabs defaultValue="transcripts" className="flex-1 flex flex-col overflow-hidden">
-            <TabsList className="bg-muted w-fit">
-              <TabsTrigger value="monitor">Queue</TabsTrigger>
-              <TabsTrigger value="transcripts">Live Logs</TabsTrigger>
-            </TabsList>
+          <Card className="flex-1 border shadow-sm flex flex-col overflow-hidden bg-card">
+            <Tabs defaultValue="monitor" className="h-full flex flex-col">
+              <div className="px-6 pt-4 pb-0 border-b bg-muted/20">
+                <TabsList className="bg-muted">
+                  <TabsTrigger value="monitor" className="gap-2">
+                    <Activity className="h-4 w-4" /> Live Monitor
+                  </TabsTrigger>
 
-            <TabsContent value="transcripts" className="flex-1 p-4 overflow-y-auto bg-muted/10">
-              {callItems
-                ?.filter((i: any) => i.twilio_call_sid)
-                .map((item: any) => {
-                  const sid = item.twilio_call_sid.trim();
-                  const msgs = transcriptsByCall[sid] || [];
-                  return (
-                    <Card key={item.id} className="border bg-card mb-4 overflow-hidden">
-                      <div className="p-3 border-b flex items-center justify-between bg-muted/30">
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-primary" />
-                          <span className="font-bold text-sm">{item.contact_name}</span>
-                        </div>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {item.status}
-                        </Badge>
+                  <TabsTrigger value="transcripts" className="gap-2">
+                    <MessageSquare className="h-4 w-4" /> Logs
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <TabsContent value="monitor" className="flex-1 p-0 m-0 overflow-hidden bg-background">
+                <ScrollArea className="h-full p-4">
+                  <div className="space-y-2">
+                    {callsLoading ? (
+                      <p className="text-center py-4 text-muted-foreground">Loading calls...</p>
+                    ) : !callItems || callItems.length === 0 ? (
+                      <div className="text-center py-10 text-muted-foreground">
+                        No calls generated for this campaign yet.
                       </div>
-                      <div className="p-4 space-y-3 max-h-64 overflow-y-auto bg-background/50">
-                        {msgs.length === 0 ? (
-                          <p className="text-center text-xs italic opacity-50">Waiting for logs...</p>
-                        ) : (
-                          msgs.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}>
-                              <div
-                                className={`max-w-[85%] rounded-2xl px-4 py-2 text-xs shadow-sm ${msg.speaker === "ai" ? "bg-primary text-primary-foreground rounded-tl-none" : "bg-muted text-foreground rounded-tr-none border"}`}
-                              >
-                                <p className="text-[8px] font-bold uppercase mb-1 opacity-70">
-                                  {msg.speaker === "ai" ? "Agent" : "Customer"}
-                                </p>
-                                {msg.text}
+                    ) : (
+                      callItems.map((item) => {
+                        const config = STATUS_CONFIG[item.status] || STATUS_CONFIG.queued;
+
+                        const Icon = config.icon;
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/40 transition-colors"
+                          >
+                            <div className="flex items-center gap-4">
+                              <div className={`p-2 rounded-full bg-muted/50 ${config.color}`}>
+                                <Icon className="h-4 w-4" />
+                              </div>
+
+                              <div>
+                                <p className="font-medium text-sm text-foreground">{item.contact_name || "Unknown"}</p>
+
+                                <p className="text-xs text-muted-foreground font-mono">{item.phone_number}</p>
                               </div>
                             </div>
-                          ))
-                        )}
-                      </div>
-                    </Card>
-                  );
-                })}
-            </TabsContent>
-          </Tabs>
+
+                            <Badge variant="outline" className={`${config.color} border-0 bg-transparent`}>
+                              {config.label}
+                            </Badge>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="transcripts" className="flex-1 p-0 m-0 overflow-hidden bg-muted/10">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  <div className="p-4 space-y-4">
+                    {!callItems || callItems.length === 0 ? (
+                      <p className="text-center text-sm text-muted-foreground py-8">
+                        No calls yet. Launch a campaign to see transcripts.
+                      </p>
+                    ) : callItems.filter((i: any) => i.twilio_call_sid).length === 0 ? (
+                      <p className="text-center text-sm text-muted-foreground py-8">Waiting for calls to connect...</p>
+                    ) : (
+                      callItems
+
+                        .filter((i: any) => i.twilio_call_sid)
+
+                        .map((item: any) => {
+                          const msgs = transcriptsByCall[item.twilio_call_sid] || [];
+
+                          return (
+                            <Card key={item.id} className="border bg-card">
+                              <div className="p-3 border-b flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-muted-foreground" />
+
+                                  <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
+
+                                  <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
+                                </div>
+
+                                <Badge variant="outline" className="text-[10px]">
+                                  {item.status}
+                                </Badge>
+                              </div>
+
+                              <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
+                                {msgs.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground italic">No transcript recorded yet.</p>
+                                ) : (
+                                  msgs.map((msg, idx) => (
+                                    <div
+                                      key={idx}
+                                      className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
+                                    >
+                                      <div
+                                        className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                      >
+                                        <span className="font-semibold capitalize text-[10px] text-muted-foreground">
+                                          {msg.speaker === "ai" ? "Agent" : "Caller"}
+                                        </span>
+
+                                        <p className="mt-0.5">{msg.text}</p>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </Card>
+                          );
+                        })
+                    )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
+          </Card>
         </div>
       </div>
     );
   }
 
+  const progress = ((step + 1) / STEPS.length) * 100;
+
+  const totalSelected = audienceType === "custom" ? customNumbers.length : selectedIds.size;
+
   return (
-    <div className="max-w-4xl mx-auto p-10 space-y-8">
-      <h1 className="text-3xl font-bold flex items-center gap-3">
-        <Rocket className="h-8 w-8 text-primary" /> AI Campaign Wizard
-      </h1>
-      <Progress value={((step + 1) / STEPS.length) * 100} className="h-2" />
+    <div className="w-full min-h-full max-w-4xl mx-auto space-y-6 pb-12">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Rocket className="h-6 w-6" /> AI Campaign Wizard
+          </h2>
 
-      {step === 0 && (
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <Label>Campaign Name</Label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Main Outreach 2026"
-            />
-            <Label>Description</Label>
-            <Textarea
-              value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
-              placeholder="Goal: Book meetings."
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {step === 3 && (
-        <div className="space-y-6">
-          <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="pt-6 space-y-4">
-              <h4 className="font-bold">AI Introductory Script</h4>
-              <Textarea
-                value={form.initial_script}
-                onChange={(e) => setForm({ ...form, initial_script: e.target.value })}
-                rows={4}
-              />
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="pt-6 space-y-4">
-              <h4 className="font-bold">Voice Persona</h4>
-              <Select value={form.agent_id} onValueChange={(v) => setForm({ ...form, agent_id: v })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {VOICE_OPTIONS.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </CardContent>
-          </Card>
+          <p className="text-sm text-muted-foreground">
+            Create an AI dialer campaign, select your audience, and launch.
+          </p>
         </div>
-      )}
 
-      <footer className="flex justify-between pt-6 border-t">
-        <Button variant="ghost" onClick={() => setStep((s) => s - 1)} disabled={step === 0}>
-          Back
+        <Button variant="outline" onClick={() => setViewMode("console")}>
+          View Dashboard
         </Button>
-        <Button
-          onClick={() => (step === 4 ? launchMutation.mutate() : setStep((s) => s + 1))}
-          disabled={launchMutation.isPending}
-        >
-          {step === 4 ? (launchMutation.isPending ? "Launching..." : "Launch Campaign") : "Next"}
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between px-1">
+          {STEPS.map((s, i) => (
+            <button
+              key={i}
+              onClick={() => setStep(i)}
+              className={`flex flex-col md:flex-row items-center gap-1.5 text-xs font-medium transition-colors ${i === step ? "text-primary" : i < step ? "text-green-600" : "text-muted-foreground"}`}
+            >
+              <div className={`p-1.5 rounded-full ${i === step ? "bg-primary/10" : ""}`}>
+                {i < step ? <CheckCircle2 className="h-4 w-4" /> : <s.icon className="h-4 w-4" />}
+              </div>
+
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <Progress value={progress} className="h-1.5" />
+      </div>
+
+      <div className="min-h-[400px]">
+        {/* STEP 0: Campaign Info */}
+
+        {step === 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Campaign Basics</CardTitle>
+
+              <CardDescription>Name your AI campaign.</CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Name</Label>
+
+                <Input
+                  value={effectiveName}
+                  onChange={(e) => update("name", e.target.value)}
+                  placeholder={defaultName}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Description</Label>
+
+                <Textarea value={form.description} onChange={(e) => update("description", e.target.value)} rows={3} />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* STEP 1: Audience */}
+
+        {step === 1 && (
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <Label>Audience Type</Label>
+
+                <RadioGroup
+                  value={audienceType}
+                  onValueChange={(v: any) => {
+                    setAudienceType(v as AudienceType);
+
+                    setSelectedIds(new Set());
+
+                    setAudiencePage(1);
+
+                    setIsAudienceConfirmed(false);
+                  }}
+                  className="grid grid-cols-2 md:grid-cols-4 gap-3"
+                >
+                  {(
+                    Object.entries(AUDIENCE_TYPE_CONFIG) as [
+                      AudienceType,
+
+                      (typeof AUDIENCE_TYPE_CONFIG)[AudienceType],
+                    ][]
+                  ).map(([key, cfg]) => (
+                    <div
+                      key={key}
+                      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${audienceType === key ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
+                    >
+                      <RadioGroupItem value={key} id={`aud-${key}`} />
+
+                      <Label htmlFor={`aud-${key}`} className="cursor-pointer text-sm">
+                        {cfg.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* Custom Numbers Input */}
+
+              {audienceType === "custom" && (
+                <div className="space-y-4">
+                  <Alert>
+                    <UserPlus className="h-4 w-4" />
+
+                    <AlertTitle>Custom Numbers</AlertTitle>
+
+                    <AlertDescription>Add phone numbers manually or paste a list.</AlertDescription>
+                  </Alert>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Phone Number</Label>
+
+                      <Input
+                        placeholder="(555) 123-4567"
+                        value={customPhoneInput}
+                        onChange={(e) => setCustomPhoneInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addCustomNumber()}
+                      />
+                    </div>
+
+                    <div className="flex-1 space-y-1">
+                      <Label className="text-xs">Name (optional)</Label>
+
+                      <Input
+                        placeholder="Contact name"
+                        value={customNameInput}
+                        onChange={(e) => setCustomNameInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && addCustomNumber()}
+                      />
+                    </div>
+
+                    <div className="flex items-end">
+                      <Button size="sm" onClick={addCustomNumber} className="gap-1">
+                        <Plus className="h-4 w-4" /> Add
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label className="text-xs">Bulk Paste (comma or newline separated numbers)</Label>
+
+                    <Textarea
+                      placeholder="5551234567&#10;5559876543"
+                      rows={3}
+                      onBlur={(e) => {
+                        if (e.target.value.trim()) {
+                          handleBulkPaste(e.target.value);
+
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {customNumbers.length > 0 && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="p-3 text-left">Name</th>
+
+                            <th className="p-3 text-left">Phone</th>
+
+                            <th className="p-3 w-10"></th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {customNumbers.map((n) => (
+                            <tr key={n.id} className="border-t hover:bg-muted/30">
+                              <td className="p-3">{n.name}</td>
+
+                              <td className="p-3 text-muted-foreground font-mono text-xs">{n.phone}</td>
+
+                              <td className="p-3">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  onClick={() => removeCustomNumber(n.id)}
+                                >
+                                  <X className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Table-based audience */}
+
+              {audienceType !== "custom" && (
+                <>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+                    <Input
+                      className="pl-9"
+                      placeholder="Search..."
+                      value={audienceSearch}
+                      onChange={(e) => {
+                        setAudienceSearch(e.target.value);
+
+                        setAudiencePage(1);
+                      }}
+                    />
+                  </div>
+
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="p-3 w-10">
+                            <Checkbox checked={allPageSelected} onCheckedChange={toggleAllPage} />
+                          </th>
+
+                          <th className="p-3 text-left">Name</th>
+
+                          <th className="p-3 text-left">Phone</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {audienceLoading ? (
+                          <tr>
+                            <td colSpan={3} className="p-4 text-center">
+                              Loading...
+                            </td>
+                          </tr>
+                        ) : audienceRows.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} className="p-4 text-center text-muted-foreground">
+                              No records found.
+                            </td>
+                          </tr>
+                        ) : (
+                          audienceRows.map((row) => (
+                            <tr
+                              key={row.id}
+                              className={`border-t hover:bg-muted/30 cursor-pointer ${selectedIds.has(row.id) ? "bg-primary/5" : ""}`}
+                              onClick={() => toggleRow(row.id)}
+                            >
+                              <td className="p-3">
+                                <Checkbox checked={selectedIds.has(row.id)} />
+                              </td>
+
+                              <td className="p-3">{row.store_name}</td>
+
+                              <td className="p-3 text-muted-foreground">{row.phone || "—"}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <DataTablePagination
+                    currentPage={audiencePage}
+                    totalPages={audienceTotalPages}
+                    pageSize={PAGE_SIZE}
+                    totalItems={audienceTotalCount}
+                    onPageChange={setAudiencePage}
+                  />
+                </>
+              )}
+
+              <div className="flex justify-between items-center">
+                <Badge variant={isAudienceConfirmed ? "default" : "secondary"}>
+                  {totalSelected} selected {isAudienceConfirmed && "(Confirmed)"}
+                </Badge>
+
+                <div className="flex gap-2">
+                  {totalSelected > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedIds(new Set());
+
+                        if (audienceType === "custom") setCustomNumbers([]);
+
+                        setIsAudienceConfirmed(false);
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+
+                  <Button
+                    variant={isAudienceConfirmed ? "outline" : "default"}
+                    size="sm"
+                    onClick={handleConfirmSelection}
+                    disabled={totalSelected === 0}
+                    className="gap-2"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+
+                    {isAudienceConfirmed ? "Selection Confirmed" : "Confirm Selection"}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* STEP 2: Dialing Rules */}
+
+        {step === 2 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Dialing Configuration</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Max Attempts</Label>
+
+                  <Input
+                    type="number"
+                    value={form.max_attempts}
+                    onChange={(e) => update("max_attempts", parseInt(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Retry Backoff (min)</Label>
+
+                  <Input
+                    type="number"
+                    value={form.retry_backoff_minutes}
+                    onChange={(e) => update("retry_backoff_minutes", parseInt(e.target.value))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Start Time</Label>
+
+                  <Input
+                    type="time"
+                    value={form.call_window_start}
+                    onChange={(e) => update("call_window_start", e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>End Time</Label>
+
+                  <Input
+                    type="time"
+                    value={form.call_window_end}
+                    onChange={(e) => update("call_window_end", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Max Concurrent Calls</Label>
+
+                <Input
+                  type="number"
+                  value={form.max_concurrent}
+                  onChange={(e) => update("max_concurrent", parseInt(e.target.value))}
+                />
+              </div>
+
+              <div className="flex flex-col gap-2 pt-2">
+                <div className="flex items-center gap-2">
+                  <Switch checked={form.amd_enabled} onCheckedChange={(v) => update("amd_enabled", v)} />
+
+                  <Label>AMD Enabled (Voicemail Detection)</Label>
+                </div>
+
+                {form.amd_enabled && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500 max-w-sm">
+                    Warning: AMD adds a 3 to 5 second silence at the beginning of the call while it listens to detect a
+                    human. Turn this OFF for instant Text-to-Speech testing.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* STEP 3: Script & AI Agent */}
+
+        {step === 3 && (
+          <div className="space-y-6">
+            <Card className="border-l-4 border-l-blue-500">
+              <CardContent className="pt-6 flex gap-4">
+                <div className="mt-1">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                    <MessageSquare className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold">AI Agent Script</h4>
+
+                    <p className="text-xs text-muted-foreground">
+                      The AI speaks this immediately when the customer answers.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Quick Templates</Label>
+
+                    <div className="flex flex-wrap gap-2">
+                      {SCRIPT_TEMPLATES.map((tpl) => (
+                        <Button
+                          key={tpl.id}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs h-7"
+                          onClick={() => update("initial_script", tpl.script)}
+                        >
+                          {tpl.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <Textarea
+                    value={form.initial_script}
+                    onChange={(e) => update("initial_script", e.target.value)}
+                    rows={4}
+                    placeholder="Hi, this is..."
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    Use <code className="bg-muted px-1 rounded text-xs">{"{{contact_name}}"}</code>,{" "}
+                    <code className="bg-muted px-1 rounded text-xs">{"{{agent_name}}"}</code> variables.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-purple-500">
+              <CardContent className="pt-6 flex gap-4">
+                <div className="mt-1">
+                  <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                    <Bot className="h-5 w-5" />
+                  </div>
+                </div>
+
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="font-semibold">AI Voice Settings</h4>
+
+                    <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+                  </div>
+
+                  <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Agent..." />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {VOICE_OPTIONS.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* STEP 4: Launch */}
+
+        {step === 4 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Review Launch</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="p-3 border rounded bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Campaign</p>
+
+                  <p className="font-medium">{effectiveName}</p>
+                </div>
+
+                <div className="p-3 border rounded bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Mode</p>
+
+                  <p className="font-medium flex items-center gap-1">
+                    <Bot className="h-3 w-3" /> AI Agent
+                  </p>
+                </div>
+
+                <div className="p-3 border rounded bg-muted/20">
+                  <p className="text-xs text-muted-foreground">Audience</p>
+
+                  <p className="font-medium">{totalSelected} records</p>
+                </div>
+
+                <div className="p-3 border rounded bg-blue-5 dark:bg-blue-900/20">
+                  <p className="text-xs text-blue-600 dark:text-blue-400">Twilio TTS Script</p>
+
+                  <p className="truncate">{form.initial_script || "Missing"}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between pt-4 border-t">
+        <Button variant="outline" onClick={() => setStep((s) => s - 1)} disabled={step === 0}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Back
         </Button>
-      </footer>
+
+        {step < STEPS.length - 1 ? (
+          <Button
+            onClick={() => {
+              if (step === 3 && !form.initial_script) return toast.error("Complete script setup");
+
+              if (step === 1 && totalSelected === 0) return toast.error("Select audience");
+
+              if (step === 1 && !isAudienceConfirmed) return toast.error("Please confirm your selection first.");
+
+              setStep((s) => s + 1);
+            }}
+          >
+            Next <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+        ) : (
+          <Button
+            onClick={() => launchMutation.mutate()}
+            disabled={launchMutation.isPending}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Rocket className="h-4 w-4 mr-1" /> {launchMutation.isPending ? "Launching..." : "Launch & Monitor"}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -418,8 +1713,10 @@ function StatCard({ label, value, icon: Icon, color = "text-foreground", active 
         <div className={`p-2 rounded-full mb-2 bg-muted ${color}`}>
           <Icon className="h-5 w-5" />
         </div>
-        <div className="text-2xl font-bold">{value}</div>
-        <div className="text-[10px] uppercase font-bold opacity-50">{label}</div>
+
+        <div className="text-2xl font-bold text-foreground">{value}</div>
+
+        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{label}</div>
       </CardContent>
     </Card>
   );
