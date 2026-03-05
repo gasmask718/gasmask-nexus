@@ -21533,6 +21533,7 @@ export type Database = {
           completed_calls: number | null
           created_at: string
           description: string | null
+          dial_mode: string | null
           failed_calls: number | null
           id: string
           initial_script: string | null
@@ -21561,6 +21562,7 @@ export type Database = {
           completed_calls?: number | null
           created_at?: string
           description?: string | null
+          dial_mode?: string | null
           failed_calls?: number | null
           id?: string
           initial_script?: string | null
@@ -21589,6 +21591,7 @@ export type Database = {
           completed_calls?: number | null
           created_at?: string
           description?: string | null
+          dial_mode?: string | null
           failed_calls?: number | null
           id?: string
           initial_script?: string | null
@@ -49012,6 +49015,7 @@ export type Database = {
           is_simulation: boolean | null
           language_preference: string | null
           languages: string[] | null
+          last_contacted_at: string | null
           last_opt_out_timestamp: string | null
           last_order_at: string | null
           last_order_date: string | null
@@ -49040,6 +49044,8 @@ export type Database = {
           sticker_with_phone: boolean | null
           store_name: string
           store_type: string | null
+          total_answers: number | null
+          total_attempts: number | null
           updated_at: string | null
           zip: string
         }
@@ -49085,6 +49091,7 @@ export type Database = {
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
+          last_contacted_at?: string | null
           last_opt_out_timestamp?: string | null
           last_order_at?: string | null
           last_order_date?: string | null
@@ -49113,6 +49120,8 @@ export type Database = {
           sticker_with_phone?: boolean | null
           store_name: string
           store_type?: string | null
+          total_answers?: number | null
+          total_attempts?: number | null
           updated_at?: string | null
           zip: string
         }
@@ -49158,6 +49167,7 @@ export type Database = {
           is_simulation?: boolean | null
           language_preference?: string | null
           languages?: string[] | null
+          last_contacted_at?: string | null
           last_opt_out_timestamp?: string | null
           last_order_at?: string | null
           last_order_date?: string | null
@@ -49186,6 +49196,8 @@ export type Database = {
           sticker_with_phone?: boolean | null
           store_name?: string
           store_type?: string | null
+          total_answers?: number | null
+          total_attempts?: number | null
           updated_at?: string | null
           zip?: string
         }

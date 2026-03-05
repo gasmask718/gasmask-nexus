@@ -528,6 +528,40 @@ export default function CampaignWizardPage() {
     refetchInterval: 3000,
   });
 
+  // Fetch transcripts for all calls in the active campaign
+  const callSids = useMemo(() => {
+    if (!callItems) return [];
+    return callItems
+      .map((i: any) => i.twilio_call_sid)
+      .filter(Boolean) as string[];
+  }, [callItems]);
+
+  const { data: transcripts } = useQuery({
+    queryKey: ["campaign-transcripts", activeCampaignId, callSids],
+    queryFn: async () => {
+      if (callSids.length === 0) return [];
+      const { data } = await supabase
+        .from("live_call_transcripts")
+        .select("*")
+        .in("call_sid", callSids)
+        .order("created_at", { ascending: true });
+      return data || [];
+    },
+    enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
+    refetchInterval: 5000,
+  });
+
+  // Group transcripts by call_sid
+  const transcriptsByCall = useMemo(() => {
+    if (!transcripts) return {};
+    const grouped: Record<string, { speaker: string; text: string; created_at: string }[]> = {};
+    for (const t of transcripts as any[]) {
+      if (!grouped[t.call_sid]) grouped[t.call_sid] = [];
+      grouped[t.call_sid].push({ speaker: t.speaker, text: t.text, created_at: t.created_at });
+    }
+    return grouped;
+  }, [transcripts]);
+
   useEffect(() => {
     if (viewMode === "console" && !activeCampaignId && campaignsList && campaignsList.length > 0)
       setActiveCampaignId(campaignsList[0].id);
@@ -704,9 +738,47 @@ export default function CampaignWizardPage() {
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="transcripts" className="flex-1 p-0 m-0 overflow-hidden bg-muted/10">
-                <div className="p-8 text-center text-muted-foreground">
-                  <p>Transcripts will appear here after calls are completed.</p>
-                </div>
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  <div className="p-4 space-y-4">
+                    {(!callItems || callItems.length === 0) ? (
+                      <p className="text-center text-sm text-muted-foreground py-8">No calls yet. Launch a campaign to see transcripts.</p>
+                    ) : callItems.filter((i: any) => i.twilio_call_sid).length === 0 ? (
+                      <p className="text-center text-sm text-muted-foreground py-8">Waiting for calls to connect...</p>
+                    ) : (
+                      callItems
+                        .filter((i: any) => i.twilio_call_sid)
+                        .map((item: any) => {
+                          const msgs = transcriptsByCall[item.twilio_call_sid] || [];
+                          return (
+                            <Card key={item.id} className="border bg-card">
+                              <div className="p-3 border-b flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Phone className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
+                                  <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
+                                </div>
+                                <Badge variant="outline" className="text-[10px]">{item.status}</Badge>
+                              </div>
+                              <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
+                                {msgs.length === 0 ? (
+                                  <p className="text-xs text-muted-foreground italic">No transcript recorded yet.</p>
+                                ) : (
+                                  msgs.map((msg, idx) => (
+                                    <div key={idx} className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}>
+                                      <div className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}>
+                                        <span className="font-semibold capitalize text-[10px] text-muted-foreground">{msg.speaker === "ai" ? "Agent" : "Caller"}</span>
+                                        <p className="mt-0.5">{msg.text}</p>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            </Card>
+                          );
+                        })
+                    )}
+                  </div>
+                </ScrollArea>
               </TabsContent>
             </Tabs>
           </Card>

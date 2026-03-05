@@ -1066,7 +1066,7 @@ Deno.serve(async (req) => {
       }
 
       // ── SIMULATION MODE ──
-      const outcome = simulateOutcome();
+      const outcome: "answered" | "voicemail" | "no_answer" | "failed" = simulateOutcome();
 
       if (outcome === "answered") {
         const { error: transErr } = await supabase.functions.invoke("dialer-state-transition", {
