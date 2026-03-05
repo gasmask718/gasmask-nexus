@@ -34,15 +34,9 @@ const handler = async (req: Request): Promise<Response> => {
     const callSid = formData.get("CallSid")?.toString().trim() || "";
     const parentCallSid = formData.get("ParentCallSid")?.toString().trim() || null;
     const callStatus = formData.get("CallStatus")?.toString() || "";
-    const from = formData.get("From")?.toString() || "";
-    const to = formData.get("To")?.toString() || "";
-    const direction = formData.get("Direction")?.toString() || "";
     const duration = formData.get("CallDuration")?.toString() || formData.get("Duration")?.toString() || "0";
     const recordingUrl = formData.get("RecordingUrl")?.toString() || null;
     const recordingDuration = formData.get("RecordingDuration")?.toString() || null;
-    const errorCode = formData.get("ErrorCode")?.toString() || null;
-    const errorMessage = formData.get("ErrorMessage")?.toString() || null;
-    const timestamp = formData.get("Timestamp")?.toString() || new Date().toISOString();
 
     console.log(`📞 Call Status Update: SID=${callSid}, Status=${callStatus}`);
 
@@ -72,25 +66,39 @@ const handler = async (req: Request): Promise<Response> => {
 
     const dbStatus = STATUS_MAP[callStatus] || callStatus;
     const isTerminal = ["completed", "busy", "no_answer", "failed", "canceled"].includes(dbStatus);
+    const effectiveSid = parentCallSid || callSid;
 
-    // 🔴 TRANSCRIPT LOGGING: Only log the initial script when the call starts progressing
-    if (callStatus === "in-progress" && initialScript) {
+    // 🔴 UPDATE QUEUE STATUS: Ensure the dashboard knows the call is live or finished
+    const queueUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
+    if (dbStatus === "in_progress") {
+      queueUpdate.status = "connected";
+    } else if (isTerminal) {
+      queueUpdate.status = dbStatus === "completed" ? "completed" : dbStatus;
+      if (dbStatus === "canceled") queueUpdate.status = "failed"; // normalize for UI
+    }
+
+    if (Object.keys(queueUpdate).length > 1) {
+      await supabase.from("outbound_call_queue").update(queueUpdate).eq("twilio_call_sid", effectiveSid);
+    }
+
+    // 🔴 TRANSCRIPT LOGGING: Initial script mapped
+    if ((dbStatus === "in_progress" || callStatus === "in-progress") && initialScript) {
       const { data: existingLog } = await supabase
         .from("live_call_transcripts")
         .select("id")
-        .eq("call_sid", callSid)
+        .eq("call_sid", effectiveSid)
         .eq("text", initialScript)
         .maybeSingle();
 
       if (!existingLog) {
         await supabase.from("live_call_transcripts").insert({
-          call_sid: callSid,
+          call_sid: effectiveSid,
           speaker: "ai",
           text: initialScript,
           is_final: true,
           created_at: new Date().toISOString(),
         });
-        console.log(`🧾 Logged initial TTS script for connected call: ${callSid}`);
+        console.log(`🧾 Logged initial TTS script for connected call: ${effectiveSid}`);
       }
     }
 
@@ -98,8 +106,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (recordingUrl) recordingUpdate.recording_url = recordingUrl;
     if (recordingDuration) recordingUpdate.recording_duration = parseInt(recordingDuration, 10);
     if (isTerminal) recordingUpdate.completed_at = new Date().toISOString();
-
-    const effectiveSid = parentCallSid || callSid;
 
     const { data: recording } = await supabase
       .from("call_recordings")
@@ -125,39 +131,40 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         await supabase.from("manual_call_logs").update(callLogUpdate).eq("id", recording.manual_call_id);
+      }
 
-        if (isTerminal && ELEVENLABS_API_KEY && recording.elevenlabs_conversation_id && dbStatus === "completed") {
-          waitUntil(
-            (async () => {
-              try {
-                const convoRes = await fetch(
-                  `https://api.elevenlabs.io/v1/convai/conversations/${recording.elevenlabs_conversation_id}`,
-                  {
-                    method: "GET",
-                    headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
-                  },
-                );
+      // 🔴 TRANSCRIPT FETCH: Moved outside of manual_call_id check so it works for automated campaigns!
+      if (isTerminal && ELEVENLABS_API_KEY && recording.elevenlabs_conversation_id && dbStatus === "completed") {
+        waitUntil(
+          (async () => {
+            try {
+              const convoRes = await fetch(
+                `https://api.elevenlabs.io/v1/convai/conversations/${recording.elevenlabs_conversation_id}`,
+                {
+                  method: "GET",
+                  headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
+                },
+              );
 
-                if (!convoRes.ok) return;
-                const convoJson = await convoRes.json();
-                const items = convoJson?.messages || convoJson?.transcript || [];
+              if (!convoRes.ok) return;
+              const convoJson = await convoRes.json();
+              const items = convoJson?.messages || convoJson?.transcript || [];
 
-                if (Array.isArray(items) && items.length > 0) {
-                  const rows = items.map((it: any) => ({
-                    call_sid: effectiveSid,
-                    speaker: it.role === "agent" || it.role === "ai" ? "ai" : "caller",
-                    text: it.text || it.message || "",
-                    is_final: true,
-                    created_at: new Date().toISOString(),
-                  }));
-                  await supabase.from("live_call_transcripts").insert(rows);
-                }
-              } catch (e) {
-                console.error("❌ Transcript logging error:", e);
+              if (Array.isArray(items) && items.length > 0) {
+                const rows = items.map((it: any) => ({
+                  call_sid: effectiveSid,
+                  speaker: it.role === "agent" || it.role === "ai" ? "ai" : "caller",
+                  text: it.text || it.message || "",
+                  is_final: true,
+                  created_at: new Date().toISOString(),
+                }));
+                await supabase.from("live_call_transcripts").insert(rows);
               }
-            })(),
-          );
-        }
+            } catch (e) {
+              console.error("❌ Transcript logging error:", e);
+            }
+          })(),
+        );
       }
     }
 
