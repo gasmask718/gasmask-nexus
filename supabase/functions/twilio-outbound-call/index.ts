@@ -67,12 +67,6 @@ Deno.serve(async (req) => {
     const campaign = Array.isArray(item.dialer_campaigns) ? item.dialer_campaigns[0] : item.dialer_campaigns;
     const agentId = campaign?.agent_id || "";
 
-    // Points to your old webhook for logging (Fixed to point to the correct status handler)
-    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;
-
-    // Points to the ElevenLabs bridge webhook for AI handoff
-    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
-
     // Use campaign script from Step 4, fallback to default
     const campaignScript = campaign?.initial_script || "";
     const rawScript =
@@ -81,7 +75,10 @@ Deno.serve(async (req) => {
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
-    // Added a 2-second pause to prevent carrier clipping, and removed "speech" to prevent Twilio Speech block errors.
+    // 🔴 NEW: Pass the customized script via the URL so the status webhook can log it ONLY when answered
+    const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status?script=${encodeURIComponent(rawScript)}`;
+    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
+
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
         <Pause length="2"/>
@@ -109,7 +106,6 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
 
-    // 🔴 FIX 1: Enable AMD if toggled in the campaign settings
     if (campaign?.amd_enabled) {
       params.append("MachineDetection", "Enable");
       params.append("MachineDetectionTimeout", "8");
@@ -139,8 +135,6 @@ Deno.serve(async (req) => {
       })
       .eq("id", queue_item_id);
 
-    // Initial log in call_recordings to ensure subsequent updates (status/transcript) have a row to target.
-    // Using upsert to be safe, though this is the initiation point.
     const { error: recordingError } = await supabase.from("call_recordings").upsert(
       {
         provider_call_sid: twilioData.sid,
@@ -156,18 +150,6 @@ Deno.serve(async (req) => {
 
     if (recordingError) {
       console.error("Failed to create call_recordings entry:", recordingError);
-    }
-
-    // 🔴 FIX 2: Log the initial Text-to-Speech script into the transcripts table
-    const { error: transcriptError } = await supabase.from("live_call_transcripts").insert({
-      call_sid: twilioData.sid,
-      speaker: "ai",
-      text: rawScript,
-      is_final: true,
-    });
-
-    if (transcriptError) {
-      console.error("Failed to log initial AI transcript:", transcriptError);
     }
 
     return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid }), { headers: corsHeaders });
