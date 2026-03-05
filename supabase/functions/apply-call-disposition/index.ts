@@ -143,16 +143,17 @@ Deno.serve(async (req) => {
 
       // Update campaign followup count
       if (session.campaign_id) {
-        await supabase.rpc("increment_campaign_stat", {
+        const { error: rpcErr } = await supabase.rpc("increment_campaign_stat", {
           p_campaign_id: session.campaign_id,
           p_column: "total_followups",
-        }).catch(() => {
+        });
+        if (rpcErr) {
           // RPC may not exist yet, update directly
-          supabase
+          await supabase
             .from("dialer_campaigns")
             .update({ total_followups: (supabase as any).sql`total_followups + 1` })
             .eq("id", session.campaign_id);
-        });
+        }
       }
     }
 
@@ -267,9 +268,9 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("apply-call-disposition error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

@@ -317,7 +317,7 @@ serve(async (req) => {
       }
     } else {
       // --- Legacy city-wide fallback ---
-      const searchQueries = typeLabels.map(t => `${t} in ${city}, ${state}`);
+      const searchQueries = typeLabels.map((t: string) => `${t} in ${city}, ${state}`);
       let allPlaces: any[] = [];
 
       for (const query of searchQueries) {

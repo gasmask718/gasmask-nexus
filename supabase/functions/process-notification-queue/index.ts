@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
           .eq("id", event.id);
 
         failed++;
-        console.error(`✗ Failed ${event.event_type} for user ${event.user_id}:`, err.message);
+        console.error(`✗ Failed ${event.event_type} for user ${event.user_id}:`, err instanceof Error ? err.message : String(err));
       }
     }
 
@@ -257,10 +257,10 @@ Deno.serve(async (req) => {
       JSON.stringify(result),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("Notification queue error:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: err instanceof Error ? err.message : String(err) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

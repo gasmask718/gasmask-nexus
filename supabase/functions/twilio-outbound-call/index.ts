@@ -64,15 +64,18 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     // ── ISOLATED WEBHOOK ROUTES ──
-    const agentId = item.dialer_campaigns?.agent_id || "";
+    const campaign = Array.isArray(item.dialer_campaigns) ? item.dialer_campaigns[0] : item.dialer_campaigns;
+    const agentId = campaign?.agent_id || "";
 
     // Points to your old webhook for logging (Fixed to point to the correct status handler)
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;
 
-    // Points to your brand new webhook for the ElevenLabs connection
+    // Points to the ElevenLabs bridge webhook for AI handoff
     const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
 
-    const rawScript = `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad or say yes to connect.`;
+    // Use campaign script from Step 4, fallback to default
+    const campaignScript = campaign?.initial_script || "";
+    const rawScript = campaignScript || `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad or say yes to connect.`;
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
