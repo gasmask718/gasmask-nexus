@@ -18,7 +18,6 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const digits = formData.get("Digits")?.toString() || "";
-    // Lowercase speech result
     const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
     const callSid = formData.get("CallSid")?.toString() || "";
 
@@ -35,51 +34,58 @@ serve(async (req) => {
       speechResult.includes("sure") ||
       speechResult.includes("ready") ||
       speechResult.includes("connect") ||
-      speechResult.includes("link"); // Common misinterpretation of "I" or "line"
+      speechResult.includes("link");
 
-    // Log the user's response to live_call_transcripts
+    // 🔴 LATENCY FIX: Fire and forget the database log for the user's response
     if (callSid) {
       const transcriptText = digits ? `(Pressed ${digits})` : speechResult;
       if (transcriptText) {
-        await supabase.from("live_call_transcripts").insert({
-          call_sid: callSid,
-          speaker: "caller",
-          text: transcriptText,
-          is_final: true
-        });
+        // We do NOT 'await' this. We let it run in the background.
+        supabase
+          .from("live_call_transcripts")
+          .insert({
+            call_sid: callSid,
+            speaker: "caller",
+            text: transcriptText,
+            is_final: true,
+          })
+          .then(({ error }) => {
+            if (error) console.error("Error logging caller transcript:", error);
+          });
       }
     }
 
     let twiml = "";
 
     if (isConfirmed && agentId) {
-      // Log the system's confirmation
-      if (callSid) {
-        await supabase.from("live_call_transcripts").insert({
+      // 🔴 DASHBOARD VISIBILITY: Log that the transfer is starting (background)
+      supabase
+        .from("live_call_transcripts")
+        .insert({
           call_sid: callSid,
           speaker: "ai",
-          text: "Connecting you to our agent...",
-          is_final: true
-        });
-      }
+          text: "[System: Transferring to ElevenLabs AI Agent...]",
+          is_final: true,
+        })
+        .then(() => {});
 
-      // Redirect to the existing bridge which handles the ElevenLabs registration (and logging)
+      // 🔴 LATENCY FIX: We remove the <Say> "Connecting you now" block.
+      // This saves several seconds of waiting for Twilio TTS to generate audio.
       const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}`;
 
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
         <Response>
-          <Say voice="Polly.Joanna">Connecting you now.</Say>
           <Redirect method="POST">${bridgeUrl}</Redirect>
         </Response>
       `;
     } else if (isConfirmed && !agentId) {
       twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">Configuration error. No Agent ID found.</Say><Hangup/></Response>`;
     } else {
-      // Not confirmed or ambiguous input
+      // Not confirmed or ambiguous input - retry immediately
+      // 🔴 LATENCY FIX: Shortened the error message
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
       <Response>
-        <Say voice="Polly.Joanna">I'm sorry, I didn't catch that.</Say>
-        <Pause length="1"/>
+        <Say voice="Polly.Joanna">I didn't catch that.</Say>
         <Redirect method="POST">${url.toString()}</Redirect>
       </Response>`;
     }
