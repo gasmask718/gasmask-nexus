@@ -27,156 +27,117 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const url = new URL(req.url);
     const initialScript = url.searchParams.get("script");
-
     const formData = await req.formData();
 
-    // 🔴 FORCE TRIM: Ensures exact matching for the frontend dashboard
     const callSid = formData.get("CallSid")?.toString().trim() || "";
     const parentCallSid = formData.get("ParentCallSid")?.toString().trim() || null;
     const callStatus = formData.get("CallStatus")?.toString() || "";
-    const duration = formData.get("CallDuration")?.toString() || formData.get("Duration")?.toString() || "0";
+    const duration = formData.get("CallDuration")?.toString() || "0";
     const recordingUrl = formData.get("RecordingUrl")?.toString() || null;
     const recordingDuration = formData.get("RecordingDuration")?.toString() || null;
 
-    console.log(`📞 Call Status Update: SID=${callSid}, Status=${callStatus}`);
-
     if (!callSid) {
-      return new Response(JSON.stringify({ success: false, error: "Missing CallSid" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return new Response(JSON.stringify({ error: "Missing CallSid" }), { status: 400, headers: corsHeaders });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY") ?? null;
-
-    const waitUntil = (promise: Promise<unknown>) => {
-      try {
-        // @ts-ignore
-        if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
-          // @ts-ignore
-          EdgeRuntime.waitUntil(promise);
-          return;
-        }
-      } catch {}
-      promise.catch((e) => console.error("❌ Background task failed:", e));
-    };
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
 
     const dbStatus = STATUS_MAP[callStatus] || callStatus;
     const isTerminal = ["completed", "busy", "no_answer", "failed", "canceled"].includes(dbStatus);
     const effectiveSid = parentCallSid || callSid;
 
-    // 🔴 UPDATE QUEUE STATUS: Ensure the dashboard knows the call is live or finished
-    const queueUpdate: Record<string, any> = { updated_at: new Date().toISOString() };
-    if (dbStatus === "in_progress") {
-      queueUpdate.status = "connected";
-    } else if (isTerminal) {
-      queueUpdate.status = dbStatus === "completed" ? "completed" : dbStatus;
-      if (dbStatus === "canceled") queueUpdate.status = "failed"; // normalize for UI
+    // 🔴 1. Gather all required DB updates into a single task list
+    const tasks: Promise<any>[] = [];
+
+    // Queue status update
+    if (dbStatus === "in_progress" || isTerminal) {
+      const statusLabel = dbStatus === "in_progress" ? "connected" : dbStatus === "canceled" ? "failed" : dbStatus;
+      tasks.push(
+        supabase
+          .from("outbound_call_queue")
+          .update({ status: statusLabel, updated_at: new Date().toISOString() })
+          .eq("twilio_call_sid", effectiveSid),
+      );
     }
 
-    if (Object.keys(queueUpdate).length > 1) {
-      await supabase.from("outbound_call_queue").update(queueUpdate).eq("twilio_call_sid", effectiveSid);
+    // Initial Script Log
+    if (dbStatus === "in_progress" && initialScript) {
+      tasks.push(
+        supabase
+          .from("live_call_transcripts")
+          .insert({
+            call_sid: effectiveSid,
+            speaker: "ai",
+            text: initialScript,
+            is_final: true,
+          })
+          .then(({ error }) => {
+            if (error && error.code !== "23505") console.error("Initial script error:", error);
+          }),
+      );
     }
 
-    // 🔴 TRANSCRIPT LOGGING: Initial script mapped
-    if ((dbStatus === "in_progress" || callStatus === "in-progress") && initialScript) {
-      const { data: existingLog } = await supabase
-        .from("live_call_transcripts")
-        .select("id")
-        .eq("call_sid", effectiveSid)
-        .eq("text", initialScript)
-        .maybeSingle();
+    // Recording Updates
+    if (recordingUrl || isTerminal) {
+      const updateData: any = {};
+      if (recordingUrl) updateData.recording_url = recordingUrl;
+      if (recordingDuration) updateData.recording_duration = parseInt(recordingDuration, 10);
+      if (isTerminal) updateData.completed_at = new Date().toISOString();
 
-      if (!existingLog) {
-        await supabase.from("live_call_transcripts").insert({
-          call_sid: effectiveSid,
-          speaker: "ai",
-          text: initialScript,
-          is_final: true,
-          created_at: new Date().toISOString(),
-        });
-        console.log(`🧾 Logged initial TTS script for connected call: ${effectiveSid}`);
-      }
+      tasks.push(supabase.from("call_recordings").update(updateData).eq("provider_call_sid", effectiveSid));
     }
 
-    const recordingUpdate: Record<string, any> = {};
-    if (recordingUrl) recordingUpdate.recording_url = recordingUrl;
-    if (recordingDuration) recordingUpdate.recording_duration = parseInt(recordingDuration, 10);
-    if (isTerminal) recordingUpdate.completed_at = new Date().toISOString();
+    // 🔴 2. Execute primary updates immediately to free up the queue
+    await Promise.allSettled(tasks);
 
-    const { data: recording } = await supabase
-      .from("call_recordings")
-      .select("id, manual_call_id, elevenlabs_conversation_id")
-      .eq("provider_call_sid", effectiveSid)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
+    // 🔴 3. Handle Heavy Transcript Batching if Terminal
+    if (isTerminal && ELEVENLABS_API_KEY && dbStatus === "completed") {
+      // We do NOT 'await' this one globally to respond to Twilio fast,
+      // but we use a background worker pattern
+      (async () => {
+        try {
+          const { data: rec } = await supabase
+            .from("call_recordings")
+            .select("elevenlabs_conversation_id")
+            .eq("provider_call_sid", effectiveSid)
+            .single();
 
-    if (recording) {
-      if (Object.keys(recordingUpdate).length > 0) {
-        await supabase.from("call_recordings").update(recordingUpdate).eq("id", recording.id);
-      }
+          if (rec?.elevenlabs_conversation_id) {
+            const res = await fetch(
+              `https://api.elevenlabs.io/v1/convai/conversations/${rec.elevenlabs_conversation_id}`,
+              {
+                headers: { "xi-api-key": ELEVENLABS_API_KEY },
+              },
+            );
 
-      if (recording.manual_call_id) {
-        const callLogUpdate: Record<string, any> = { status: dbStatus };
-        if (isTerminal) {
-          callLogUpdate.ended_at = new Date().toISOString();
-          callLogUpdate.duration_seconds = parseInt(duration, 10);
-          if (dbStatus === "completed") callLogUpdate.outcome = "connected";
-          else if (dbStatus === "no_answer") callLogUpdate.outcome = "no_answer";
-          else if (dbStatus === "failed") callLogUpdate.outcome = "failed";
-        }
+            if (res.ok) {
+              const json = await res.json();
+              const messages = json?.messages || [];
 
-        await supabase.from("manual_call_logs").update(callLogUpdate).eq("id", recording.manual_call_id);
-      }
-
-      // 🔴 TRANSCRIPT FETCH: Moved outside of manual_call_id check so it works for automated campaigns!
-      if (isTerminal && ELEVENLABS_API_KEY && recording.elevenlabs_conversation_id && dbStatus === "completed") {
-        waitUntil(
-          (async () => {
-            try {
-              const convoRes = await fetch(
-                `https://api.elevenlabs.io/v1/convai/conversations/${recording.elevenlabs_conversation_id}`,
-                {
-                  method: "GET",
-                  headers: { "xi-api-key": ELEVENLABS_API_KEY, "Content-Type": "application/json" },
-                },
-              );
-
-              if (!convoRes.ok) return;
-              const convoJson = await convoRes.json();
-              const items = convoJson?.messages || convoJson?.transcript || [];
-
-              if (Array.isArray(items) && items.length > 0) {
-                const rows = items.map((it: any) => ({
+              if (messages.length > 0) {
+                // Batch insert all transcripts in ONE go instead of a loop
+                const rows = messages.map((m: any) => ({
                   call_sid: effectiveSid,
-                  speaker: it.role === "agent" || it.role === "ai" ? "ai" : "caller",
-                  text: it.text || it.message || "",
+                  speaker: m.role === "agent" ? "ai" : "caller",
+                  text: m.text || m.message || "",
                   is_final: true,
                   created_at: new Date().toISOString(),
                 }));
                 await supabase.from("live_call_transcripts").insert(rows);
               }
-            } catch (e) {
-              console.error("❌ Transcript logging error:", e);
             }
-          })(),
-        );
-      }
+          }
+        } catch (e) {
+          console.error("Delayed transcript failed:", e);
+        }
+      })();
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
   } catch (error: any) {
-    return new Response(JSON.stringify({ success: false, error: error.message }), {
-      status: 200,
-      headers: corsHeaders,
-    });
+    console.error("Global Webhook Error:", error.message);
+    return new Response(JSON.stringify({ error: error.message }), { status: 200, headers: corsHeaders });
   }
 };
 
