@@ -75,22 +75,20 @@ Deno.serve(async (req) => {
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
-    // 🔴 NEW: Pass the customized script via the URL so the status webhook can log it ONLY when answered
+    // Pass the customized script via the URL so the status webhook logs it ONLY when answered
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status?script=${encodeURIComponent(rawScript)}`;
     const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
 
+    // Safely build TwiML ensuring absolutely no leading spaces before <?xml
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-      <Response>
-        <Pause length="2"/>
-        <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="8">
-          <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
-          <Pause length="2"/>
-          <Say voice="${voiceId}" language="en-US">I repeat, ${safeScript}</Say>
-        </Gather>
-        <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>
-        <Hangup/>
-      </Response>
-    `;
+<Response>
+  <Pause length="1"/>
+  <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="8">
+    <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
+  </Gather>
+  <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>
+  <Hangup/>
+</Response>`;
 
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`;
     const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
@@ -98,7 +96,7 @@ Deno.serve(async (req) => {
 
     params.append("To", item.phone_number);
     params.append("From", FROM_NUMBER);
-    params.append("Twiml", twiml.trim());
+    params.append("Twiml", twiml);
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
     params.append("StatusCallbackEvent", "initiated");
@@ -106,6 +104,7 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
 
+    // Enable AMD if toggled in the campaign settings
     if (campaign?.amd_enabled) {
       params.append("MachineDetection", "Enable");
       params.append("MachineDetectionTimeout", "8");
@@ -135,6 +134,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", queue_item_id);
 
+    // Initial log in call_recordings to ensure subsequent updates (status/transcript) have a row to target.
     const { error: recordingError } = await supabase.from("call_recordings").upsert(
       {
         provider_call_sid: twilioData.sid,
