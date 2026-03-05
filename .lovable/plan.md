@@ -1,41 +1,79 @@
 
 
-# Campaign Wizard: Default Name + Audience Table with Selection
+## Plan: Fix Build Errors + Campaign Voice Pipeline + Transcript Logging
 
-## What Changes
+### Problem Summary
 
-### 1. Auto-generate default campaign name
-On wizard load, generate a name like `CMPN-0001-OUTREACH` based on the count of existing campaigns in the database (+1). The name field will be pre-filled but editable. Format: `CMPN-{zero-padded sequence}-OUTREACH`.
+There are 17 build errors across multiple edge functions, plus the campaign dashboard's "Logs" tab is a placeholder. The core voice pipeline (Twilio TTS opener -> ElevenLabs AI handoff) is already wired but needs fixes to compile and properly use the campaign's script from Step 4.
 
-### 2. Rebuild the Audience step (Step 1) with a selectable table
-Replace the current "estimated count" display with:
-- **Audience type selector**: Radio/select to pick "Prospects" (territory_addresses) or "Active Stores" (store_master) — one at a time
-- **Search bar**: Filter by name, phone, address
-- **Data table**: 25 rows per page, columns: Name, Phone, City, State
-  - Checkbox per row + "Select All" checkbox in header (selects all on current page)
-  - Server-side pagination with page controls
-  - **Persistent selection**: Selected IDs are stored in a `Set<string>` state. Navigating pages does not clear previous selections. A badge shows total selected count.
-- Data source:
-  - "Prospects" queries `territory_addresses` (id, store_name, phone, city, state)
-  - "Active Stores" queries `store_master` (id, store_name, phone, city, state)
-- Switching audience type clears all selections
+### Part 1: Fix All Build Errors (17 errors across ~10 files)
 
-### 3. Wire selections to launch
-On launch, instead of bulk-seeding from `v_callable_entities`, use the explicitly selected IDs to build the `outbound_call_queue` entries. Each selected row's phone/name is already in the table data.
+These are mechanical TypeScript fixes:
 
-## Technical Details
+1. **`apply-call-disposition/index.ts` (line 149)**: Replace `.catch()` on Supabase query with proper `{ data, error }` destructuring pattern.
 
-**Files modified**: `src/pages/communication/dialer/CampaignWizardPage.tsx` only.
+2. **`auto-draft-batches/index.ts` (line 77)**: Change `err.message` to `(err as Error).message` (or `err instanceof Error ? err.message : String(err)`).
 
-**State additions**:
-- `audienceType: 'prospects' | 'stores'`
-- `selectedIds: Set<string>` — persists across page navigation
-- `audiencePage: number`, `audienceSearch: string`
+3. **`aws-polly-tts/index.ts` (line 38)**: Fix `ArrayBufferLike` type issue by casting: `key instanceof ArrayBuffer ? new Uint8Array(key) : key` and passing `.buffer` correctly, or use `as ArrayBuffer`.
 
-**Queries**:
-- Campaign count query for auto-name: `SELECT count(*) FROM dialer_campaigns`
-- Audience query with server-side pagination (25 per page) using `.range(from, to)` and `{ count: 'exact' }`
-- Search uses `.or()` with `ilike` on name, phone, city
+4. **`create-ops-thread/index.ts` (line 130)**: Type `err` as `unknown`, use safe access.
 
-**Launch mutation update**: Filters selected records from the fetched audience data + selected IDs to build queue items.
+5. **`generate-shipping-label/index.ts` (line 166)**: Same `err.message` fix.
+
+6. **`ingest-google-places/index.ts` (line 320)**: Add type annotation `(t: string)` to the `.map()` callback.
+
+7. **`marketplace-order-engine/index.ts` (line 232)**: Same `err.message` fix.
+
+8. **`predictive-dialer-engine/index.ts` (lines 1214-1225)**: The `outcome` variable is typed too narrowly (`"failed" | "voicemail" | "no_answer"`), excluding `"answered"`. Widen the type to include `"answered"` at the declaration site.
+
+9. **`process-notification-queue/index.ts` (lines 249, 263)**: Two `err.message` fixes.
+
+10. **`process-settlements/index.ts` (line 41)**: Same `err.message` fix.
+
+11. **`production-alert-engine/index.ts` (line 125)**: Same `err.message` fix.
+
+12. **`twilio-outbound-call/index.ts` (line 67)**: The `.select()` returns `dialer_campaigns` as an array (joined relation). Fix: access `item.dialer_campaigns?.[0]?.agent_id` or add `.single()` semantics, or destructure properly. The select returns an array for joined tables -- need to handle `item.dialer_campaigns` as array.
+
+### Part 2: Campaign Script in TwiML (twilio-outbound-call)
+
+Currently line 75 hardcodes: `"Hello ${item.contact_name}. Are you ready to speak with our AI assistant?"`. 
+
+**Fix**: Read the campaign's `initial_script` from the joined `dialer_campaigns` relation and use it as the TwiML `<Say>` content. Fall back to the current default if no script is set.
+
+### Part 3: Transcript Logging in Campaign Dashboard
+
+The "Logs" tab (line 706-710) is a static placeholder. 
+
+**Fix**: Query `live_call_transcripts` by matching `call_sid` values from the campaign's `outbound_call_queue` items (which have `twilio_call_sid`). Also query `call_recordings` for completed calls. Display per-contact transcript threads grouped by call.
+
+Additionally, ensure the `twilio-call-status` webhook also handles campaign calls (not just manual calls) -- it currently only saves transcripts when `recording.manual_call_id` exists. Need to add a parallel path that checks for campaign queue items by `provider_call_sid` and fetches/stores ElevenLabs transcripts for those too.
+
+### Part 4: ElevenLabs Bridge Separation
+
+The existing `twilio-gather-webhook` already redirects to `twilio-elevenlabs-bridge` when the user confirms. This flow is correct:
+
+1. `twilio-outbound-call` -> Twilio dials with TwiML containing `<Gather>` pointing to `twilio-gather-webhook`
+2. `twilio-gather-webhook` -> If user says yes/presses 1, `<Redirect>` to `twilio-elevenlabs-bridge`
+3. `twilio-elevenlabs-bridge` -> Registers with ElevenLabs API, returns their TwiML
+
+This is already a separate webhook. No new function needed -- just ensure it's working correctly with the campaign's agent_id.
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| `supabase/functions/apply-call-disposition/index.ts` | Fix `.catch()` pattern |
+| `supabase/functions/auto-draft-batches/index.ts` | Type-safe error |
+| `supabase/functions/aws-polly-tts/index.ts` | Fix ArrayBuffer type |
+| `supabase/functions/create-ops-thread/index.ts` | Type-safe error |
+| `supabase/functions/generate-shipping-label/index.ts` | Type-safe error |
+| `supabase/functions/ingest-google-places/index.ts` | Add type annotation |
+| `supabase/functions/marketplace-order-engine/index.ts` | Type-safe error |
+| `supabase/functions/predictive-dialer-engine/index.ts` | Widen outcome type |
+| `supabase/functions/process-notification-queue/index.ts` | Type-safe errors |
+| `supabase/functions/process-settlements/index.ts` | Type-safe error |
+| `supabase/functions/production-alert-engine/index.ts` | Type-safe error |
+| `supabase/functions/twilio-outbound-call/index.ts` | Fix array join access + use campaign script |
+| `supabase/functions/twilio-call-status/index.ts` | Add campaign transcript path (not just manual calls) |
+| `src/pages/communication/dialer/CampaignWizardPage.tsx` | Build real Logs tab with transcript display |
 
