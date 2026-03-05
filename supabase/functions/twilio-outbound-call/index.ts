@@ -63,11 +63,9 @@ Deno.serve(async (req) => {
     const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    // ── ISOLATED WEBHOOK ROUTES ──
     const campaign = Array.isArray(item.dialer_campaigns) ? item.dialer_campaigns[0] : item.dialer_campaigns;
     const agentId = campaign?.agent_id || "";
 
-    // Use campaign script from Step 4, fallback to default
     const campaignScript = campaign?.initial_script || "";
     const rawScript =
       campaignScript ||
@@ -75,11 +73,9 @@ Deno.serve(async (req) => {
     const safeScript = escapeXml(rawScript);
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
-    // Pass the customized script via the URL so the status webhook logs it ONLY when answered
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status?script=${encodeURIComponent(rawScript)}`;
     const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
 
-    // Safely build TwiML ensuring absolutely no leading spaces before <?xml
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Pause length="1"/>
@@ -104,12 +100,9 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
 
-    // Enable AMD if toggled in the campaign settings
     if (campaign?.amd_enabled) {
       params.append("MachineDetection", "Enable");
       params.append("MachineDetectionTimeout", "8");
-      params.append("MachineDetectionSpeechThreshold", "2400");
-      params.append("MachineDetectionSpeechEndThreshold", "1200");
     }
 
     const twilioRes = await fetch(twilioUrl, {
@@ -125,19 +118,20 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: twilioData }), { status: 500, headers: corsHeaders });
     }
 
+    // 🔴 FORCE TRIM & STATUS UPDATE: Ensures the frontend registers the SID immediately
     await supabase
       .from("outbound_call_queue")
       .update({
-        twilio_call_sid: twilioData.sid,
+        twilio_call_sid: twilioData.sid.trim(),
+        status: "dialing",
         dialing_started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq("id", queue_item_id);
 
-    // Initial log in call_recordings to ensure subsequent updates (status/transcript) have a row to target.
     const { error: recordingError } = await supabase.from("call_recordings").upsert(
       {
-        provider_call_sid: twilioData.sid,
+        provider_call_sid: twilioData.sid.trim(),
         business_id: business_id,
         direction: "outbound",
         status: "initiated",
@@ -148,11 +142,7 @@ Deno.serve(async (req) => {
       { onConflict: "provider_call_sid" },
     );
 
-    if (recordingError) {
-      console.error("Failed to create call_recordings entry:", recordingError);
-    }
-
-    return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid }), { headers: corsHeaders });
+    return new Response(JSON.stringify({ success: true, call_sid: twilioData.sid.trim() }), { headers: corsHeaders });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
   }
