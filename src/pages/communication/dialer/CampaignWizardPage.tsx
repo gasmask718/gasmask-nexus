@@ -554,7 +554,7 @@ export default function CampaignWizardPage() {
   const handleBulkPaste = (text: string) => {
     const lines = text
 
-      .split(/[\n,;]+/)
+      .split(/[\n,]+/)
 
       .map((l) => l.trim())
 
@@ -1232,11 +1232,7 @@ export default function CampaignWizardPage() {
                   className="grid grid-cols-2 md:grid-cols-4 gap-3"
                 >
                   {(
-                    Object.entries(AUDIENCE_TYPE_CONFIG) as [
-                      AudienceType,
-
-                      (typeof AUDIENCE_TYPE_CONFIG)[AudienceType],
-                    ][]
+                    Object.entries(AUDIENCE_TYPE_CONFIG) as [AudienceType, (typeof AUDIENCE_TYPE_CONFIG)[AudienceType]]
                   ).map(([key, cfg]) => (
                     <div
                       key={key}
