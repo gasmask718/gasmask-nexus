@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Zap, Bot, Radio, Send } from "lucide-react";
+import { MessageSquare, Bot, Radio, Send, Phone } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
@@ -21,9 +21,9 @@ export default function MessagingHubPage() {
         .from("messaging_campaigns")
         .select("status, mode")
         .eq("business_id", currentBusiness?.id || "");
-      
-      const active = campaigns?.filter(c => c.status === "active").length || 0;
-      const aiActive = campaigns?.filter(c => c.status === "active" && c.mode === "ai_campaign").length || 0;
+
+      const active = campaigns?.filter((c) => c.status === "active").length || 0;
+      const aiActive = campaigns?.filter((c) => c.status === "active" && c.mode === "ai_campaign").length || 0;
       return { active, aiActive };
     },
     enabled: !!currentBusiness?.id,
@@ -38,11 +38,13 @@ export default function MessagingHubPage() {
             <MessageSquare className="h-6 w-6 text-primary" />
             Messaging Hub
           </h1>
-          <p className="text-muted-foreground">
-            Manual bulk messaging & AI auto text — unified engine
-          </p>
+          <p className="text-muted-foreground">Manual bulk messaging & AI auto text — Powered by Twilio</p>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="default" className="gap-1 bg-blue-600 hover:bg-blue-700">
+            <Phone className="h-3 w-3" />
+            Twilio Connected
+          </Badge>
           <Badge variant="outline" className="gap-1">
             <Radio className="h-3 w-3 text-green-500 animate-pulse" />
             {stats?.active || 0} Active
