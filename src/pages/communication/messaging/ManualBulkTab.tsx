@@ -7,46 +7,58 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, RefreshCw, Eye, Database,
-} from "lucide-react";
+import { Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, Phone } from "lucide-react";
 
-const QUICK_SEGMENTS = [
-  { value: "all", label: "All Stores" },
-  { value: "borough_manhattan", label: "Manhattan" },
-  { value: "borough_brooklyn", label: "Brooklyn" },
-  { value: "borough_bronx", label: "Bronx" },
-  { value: "borough_queens", label: "Queens" },
-  { value: "new_30d", label: "New Stores (30 days)" },
-  { value: "dead_60d", label: "Dead Stores (60+ days)" },
-  { value: "high_value", label: "High Value" },
-  { value: "low_engagement", label: "Low Engagement" },
-];
+const ROLES = ["Wholesaler", "Ambassador", "Driver", "Biker", "Customer"];
 
 const TEMPLATES = [
-  { name: "Inventory Check", category: "Operations", msg: "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)" },
-  { name: "New Product Alert", category: "Promo", msg: "Hey {{contact_name}}! GasMask just dropped new products for {{store_name}}. Reply YES to see the lineup!" },
-  { name: "Payment Reminder", category: "Collections", msg: "Hi {{contact_name}}, friendly reminder on your balance for {{store_name}}. Need help? Reply here." },
-  { name: "Reactivation", category: "Win Back", msg: "Hi {{contact_name}}, we miss {{store_name}}! It's been a while — got a minute to catch up?" },
+  {
+    name: "Inventory Check",
+    category: "Operations",
+    msg: "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)",
+  },
+  {
+    name: "New Product Alert",
+    category: "Promo",
+    msg: "Hey {{contact_name}}! GasMask just dropped new products for {{store_name}}. Reply YES to see the lineup!",
+  },
+  {
+    name: "Payment Reminder",
+    category: "Collections",
+    msg: "Hi {{contact_name}}, friendly reminder on your balance for {{store_name}}. Need help? Reply here.",
+  },
+  {
+    name: "Reactivation",
+    category: "Win Back",
+    msg: "Hi {{contact_name}}, we miss {{store_name}}! It's been a while — got a minute to catch up?",
+  },
 ];
-
-type RecipientMode = "quick_segment" | "audience_segment";
 
 export default function ManualBulkTab() {
   const { toast } = useToast();
   const { currentBusiness } = useBusiness();
   const [campaignName, setCampaignName] = useState("");
-  const [recipientMode, setRecipientMode] = useState<RecipientMode>("quick_segment");
-  const [selectedSegment, setSelectedSegment] = useState("");
-  const [selectedAudienceId, setSelectedAudienceId] = useState("");
+
+  // New Targeting State
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [customNumbers, setCustomNumbers] = useState("");
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+
   const [messageContent, setMessageContent] = useState("");
   const [throttle, setThrottle] = useState("50");
   const [jitterEnabled, setJitterEnabled] = useState(true);
@@ -58,57 +70,63 @@ export default function ManualBulkTab() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<"send" | "schedule" | null>(null);
 
-  // Fetch audience segments from shared table
-  const { data: audiences = [] } = useQuery({
-    queryKey: ["audience-segments-for-bulk"],
+  // Fetch users based on selected roles
+  const { data: users = [], isLoading: usersLoading } = useQuery({
+    queryKey: ["target-users", selectedRoles, currentBusiness?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("audience_segments")
-        .select("id, name, description, cached_count, cached_at, is_dynamic, engagement_rate")
-        .order("name");
+      let query = supabase
+        .from("profiles")
+        .select("id, full_name, phone, role")
+        .eq("business_id", currentBusiness?.id || "");
+
+      if (selectedRoles.length > 0) {
+        query = query.in("role", selectedRoles);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data ?? [];
+      return data || [];
     },
+    enabled: !!currentBusiness?.id,
   });
 
-  const selectedAudience = audiences.find(a => a.id === selectedAudienceId);
+  const toggleRole = (role: string) => {
+    setSelectedRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
+  };
 
-  // RESOLVER-BASED count: NEVER query store_master directly
-  const { data: resolverCount, isLoading: resolverLoading } = useQuery({
-    queryKey: ["resolver-count"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("resolve_previous_customers_count" as any);
-      if (error) throw error;
-      return (data as number) ?? 0;
-    },
-  });
+  const toggleUser = (id: string) => {
+    const newSet = new Set(selectedUserIds);
+    newSet.has(id) ? newSet.delete(id) : newSet.add(id);
+    setSelectedUserIds(newSet);
+  };
 
-  // Diagnostics from unified invoice engine
-  const { data: diagnostics } = useQuery({
-    queryKey: ["messaging-diagnostics"],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("audience_diagnostics" as any);
-      if (error) throw error;
-      return data as any;
-    },
-  });
+  const selectAllUsers = () => {
+    if (selectedUserIds.size === users.length && users.length > 0) {
+      setSelectedUserIds(new Set());
+    } else {
+      setSelectedUserIds(new Set(users.map((u) => u.id)));
+    }
+  };
 
-  const recipientCount = recipientMode === "audience_segment"
-    ? (selectedAudience?.cached_count ?? resolverCount ?? 0)
-    : (resolverCount ?? 0);
-
-  const hasRecipients = recipientMode === "audience_segment" ? !!selectedAudienceId : !!selectedSegment;
-  const canSend = !!campaignName && !!messageContent && hasRecipients;
+  const customNumbersList = customNumbers
+    .split(",")
+    .map((n) => n.trim())
+    .filter((n) => n);
+  const recipientCount = selectedUserIds.size + customNumbersList.length;
+  const canSend = !!campaignName && !!messageContent && recipientCount > 0;
 
   const confirmThreshold = 500;
 
   const triggerSend = (action: "send" | "schedule") => {
     if (!canSend) {
-      toast({ title: "Missing Information", description: "Fill in all required fields.", variant: "destructive" });
+      toast({
+        title: "Missing Information",
+        description: "Fill in all required fields and select targets.",
+        variant: "destructive",
+      });
       return;
     }
     if (action === "schedule" && (!scheduleDate || !scheduleTime)) {
-      // open schedule modal first
       setShowScheduleModal(true);
       return;
     }
@@ -126,16 +144,23 @@ export default function ManualBulkTab() {
     setShowConfirmModal(false);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const targetFilter = recipientMode === "audience_segment"
-        ? { audience_id: selectedAudienceId, throttle: parseInt(throttle), jitter: jitterEnabled }
-        : { segment: selectedSegment, throttle: parseInt(throttle), jitter: jitterEnabled };
+      const targetFilter = {
+        roles: selectedRoles,
+        user_ids: Array.from(selectedUserIds),
+        custom_numbers: customNumbersList,
+        throttle: parseInt(throttle),
+        jitter: jitterEnabled,
+      };
 
       const campaignPayload: any = {
         business_id: currentBusiness?.id || null,
         mode: "manual_bulk",
+        provider: "twilio", // EXPLICIT TWILIO TAG
         name: campaignName,
         script: messageContent,
         ai_enabled: false,
@@ -158,14 +183,23 @@ export default function ManualBulkTab() {
       }
 
       const msg = isSchedule
-        ? `"${campaignName}" scheduled for ${scheduleDate} at ${scheduleTime}.`
-        : `"${campaignName}" is now sending to ${recipientCount.toLocaleString()} recipients.`;
+        ? `"${campaignName}" scheduled via Twilio for ${scheduleDate} at ${scheduleTime}.`
+        : `"${campaignName}" is now sending via Twilio to ${recipientCount.toLocaleString()} recipients.`;
 
       toast({ title: isSchedule ? "Campaign Scheduled" : "Campaign Launched!", description: msg });
-      setCampaignName(""); setMessageContent(""); setSelectedSegment(""); setSelectedAudienceId("");
+
+      // Reset form
+      setCampaignName("");
+      setMessageContent("");
+      setCustomNumbers("");
+      setSelectedUserIds(new Set());
       setShowScheduleModal(false);
     } catch (error: any) {
-      toast({ title: isSchedule ? "Schedule Failed" : "Send Failed", description: error.message, variant: "destructive" });
+      toast({
+        title: isSchedule ? "Schedule Failed" : "Send Failed",
+        description: error.message,
+        variant: "destructive",
+      });
     } finally {
       setIsSending(false);
       setIsScheduling(false);
@@ -181,100 +215,110 @@ export default function ManualBulkTab() {
             <Zap className="h-5 w-5 text-primary" />
             Manual Bulk Message
           </CardTitle>
-          <CardDescription>Send ONE message to MANY stores instantly — operator controlled</CardDescription>
+          <CardDescription>Send instantly via Twilio to selected roles or custom numbers</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Campaign Name</Label>
-            <Input placeholder="e.g., Monday Inventory Check" value={campaignName} onChange={e => setCampaignName(e.target.value)} />
+            <Input
+              placeholder="e.g., Monday Inventory Check"
+              value={campaignName}
+              onChange={(e) => setCampaignName(e.target.value)}
+            />
           </div>
 
-          {/* Recipient Mode Selector */}
-          <div className="space-y-3">
-            <Label>Recipients</Label>
-            <RadioGroup value={recipientMode} onValueChange={(v) => setRecipientMode(v as RecipientMode)} className="flex gap-4">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="quick_segment" id="mode-quick" />
-                <Label htmlFor="mode-quick" className="text-sm cursor-pointer">Quick Filter</Label>
+          {/* New Targeting Engine */}
+          <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
+            <Label className="text-base font-semibold flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" /> Target Audience
+            </Label>
+
+            {/* Role Filters */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Filter Database by Role</Label>
+              <div className="flex flex-wrap gap-2">
+                {ROLES.map((role) => (
+                  <Badge
+                    key={role}
+                    variant={selectedRoles.includes(role) ? "default" : "outline"}
+                    className="cursor-pointer"
+                    onClick={() => toggleRole(role)}
+                  >
+                    {role}
+                  </Badge>
+                ))}
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="audience_segment" id="mode-audience" />
-                <Label htmlFor="mode-audience" className="text-sm cursor-pointer">Audience Segment</Label>
-              </div>
-            </RadioGroup>
+            </div>
 
-            {recipientMode === "quick_segment" && (
-              <Select value={selectedSegment} onValueChange={setSelectedSegment}>
-                <SelectTrigger><SelectValue placeholder="Select target stores" /></SelectTrigger>
-                <SelectContent>
-                  {QUICK_SEGMENTS.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            )}
+            {/* User Table */}
+            <div className="border rounded-md bg-background">
+              <ScrollArea className="h-[200px]">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={users.length > 0 && selectedUserIds.size === users.length}
+                          onCheckedChange={selectAllUsers}
+                        />
+                      </TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Phone</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usersLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                          Loading users...
+                        </TableCell>
+                      </TableRow>
+                    ) : users.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                          No users found for selected roles.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      users.map((u) => (
+                        <TableRow key={u.id}>
+                          <TableCell>
+                            <Checkbox checked={selectedUserIds.has(u.id)} onCheckedChange={() => toggleUser(u.id)} />
+                          </TableCell>
+                          <TableCell className="font-medium">{u.full_name || "Unknown"}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {u.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-xs">{u.phone || "No phone"}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </div>
 
-            {recipientMode === "audience_segment" && (
-              <div className="space-y-2">
-                <Select value={selectedAudienceId} onValueChange={setSelectedAudienceId}>
-                  <SelectTrigger><SelectValue placeholder="Choose an audience segment" /></SelectTrigger>
-                  <SelectContent>
-                    {audiences.map(a => (
-                      <SelectItem key={a.id} value={a.id}>
-                        <span className="flex items-center gap-2">
-                          {a.name}
-                          {a.cached_count != null && (
-                            <span className="text-xs text-muted-foreground">({a.cached_count.toLocaleString()})</span>
-                          )}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* Custom Numbers */}
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs text-muted-foreground">Or Add Custom Numbers (Comma separated)</Label>
+              <Textarea
+                placeholder="+1234567890, +0987654321"
+                value={customNumbers}
+                onChange={(e) => setCustomNumbers(e.target.value)}
+                rows={2}
+              />
+            </div>
 
-                {selectedAudience && (
-                  <Card className="border-primary/20 bg-primary/5">
-                    <CardContent className="p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{selectedAudience.name}</span>
-                        {selectedAudience.is_dynamic && <Badge variant="default" className="text-[10px]">Dynamic</Badge>}
-                      </div>
-                      {selectedAudience.description && (
-                        <p className="text-xs text-muted-foreground">{selectedAudience.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 pt-1">
-                        <div>
-                          <p className="text-lg font-bold text-primary">{selectedAudience.cached_count?.toLocaleString() ?? "—"}</p>
-                          <p className="text-[10px] text-muted-foreground">Estimated Recipients</p>
-                        </div>
-                        {selectedAudience.engagement_rate != null && (
-                          <div>
-                            <p className="text-lg font-bold">{selectedAudience.engagement_rate}%</p>
-                            <p className="text-[10px] text-muted-foreground">Engagement Rate</p>
-                          </div>
-                        )}
-                        <div className="text-[10px] text-muted-foreground">
-                          Last refreshed: {selectedAudience.cached_at ? new Date(selectedAudience.cached_at).toLocaleString() : "Never"}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {audiences.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No audience segments created yet. Build one in Campaigns → Audience Builder.</p>
-                )}
-              </div>
-            )}
-
-            {hasRecipients && (
-              <div className="flex items-center gap-2">
+            {/* Target Count */}
+            {recipientCount > 0 && (
+              <div className="flex items-center gap-2 pt-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-primary">
-                  {resolverLoading ? "Resolving..." : `${recipientCount.toLocaleString()} recipients`}
+                  {recipientCount.toLocaleString()} Total Targets Selected
                 </span>
-                <Badge variant="secondary" className="text-[10px]">
-                  <Database className="h-2.5 w-2.5 mr-0.5" />
-                  Unified Customers
-                </Badge>
               </div>
             )}
           </div>
@@ -282,15 +326,15 @@ export default function ManualBulkTab() {
           <div className="space-y-2">
             <Label>Message Content</Label>
             <Textarea
-              placeholder={"Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)"}
+              placeholder={
+                "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)"
+              }
               value={messageContent}
-              onChange={e => setMessageContent(e.target.value)}
+              onChange={(e) => setMessageContent(e.target.value)}
               rows={5}
             />
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">
-                Variables: {"{{store_name}}"}, {"{{contact_name}}"}
-              </p>
+              <p className="text-xs text-muted-foreground">Variables: {"{{full_name}}"}</p>
               <p className="text-xs text-muted-foreground">{messageContent.length}/160</p>
             </div>
           </div>
@@ -299,7 +343,9 @@ export default function ManualBulkTab() {
             <div className="space-y-2">
               <Label>Send Rate</Label>
               <Select value={throttle} onValueChange={setThrottle}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="10">10/min (Slow)</SelectItem>
                   <SelectItem value="50">50/min (Normal)</SelectItem>
@@ -329,71 +375,44 @@ export default function ManualBulkTab() {
           </Card>
 
           <div className="pt-2 flex gap-2">
-            <Button className="flex-1 gap-2" onClick={() => triggerSend("send")} disabled={!canSend || isSending}>
+            <Button
+              className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => triggerSend("send")}
+              disabled={!canSend || isSending}
+            >
               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {isSending ? "Launching..." : "Send Now"}
+              {isSending ? "Launching..." : "Send via Twilio"}
             </Button>
-            <Button variant="outline" className="gap-2" onClick={() => {
-              if (!canSend) {
-                toast({ title: "Fill all fields first", variant: "destructive" });
-                return;
-              }
-              setShowScheduleModal(true);
-            }}>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                if (!canSend) {
+                  toast({ title: "Fill all fields first", variant: "destructive" });
+                  return;
+                }
+                setShowScheduleModal(true);
+              }}
+            >
               <Calendar className="h-4 w-4" /> Schedule
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Preview & Diagnostics */}
+      {/* Preview & Templates */}
       <div className="space-y-6">
-        {/* Unified Identity Diagnostics */}
-        {diagnostics && (
-          <Card className="border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Database className="h-4 w-4 text-primary" />
-                Recipients Source: Unified Customers (Invoices)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center">
-                  <p className="text-lg font-bold text-primary">{diagnostics.total_invoices?.toLocaleString()}</p>
-                  <p className="text-[10px] text-muted-foreground">Invoices Scanned</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-primary">{diagnostics.resolved_customers?.toLocaleString()}</p>
-                  <p className="text-[10px] text-muted-foreground">Resolved Customers</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-bold text-primary">{diagnostics.distinct_phones?.toLocaleString()}</p>
-                  <p className="text-[10px] text-muted-foreground">Distinct Phones</p>
-                </div>
-              </div>
-              {diagnostics.source_summary && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {(diagnostics.source_summary as any[]).map((s: any, i: number) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">
-                      {s.source}: {s.count}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader>
             <CardTitle>Message Preview</CardTitle>
-            <CardDescription>How your message will appear</CardDescription>
+            <CardDescription>How your message will appear on their phone</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="bg-muted rounded-lg p-4">
-              <div className="bg-primary text-primary-foreground rounded-lg p-3 max-w-[80%] ml-auto">
-                <p className="text-sm whitespace-pre-wrap">{messageContent || "Your message preview will appear here..."}</p>
+              <div className="bg-blue-600 text-white rounded-lg p-3 max-w-[80%] ml-auto">
+                <p className="text-sm whitespace-pre-wrap">
+                  {messageContent || "Your message preview will appear here..."}
+                </p>
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-right">{messageContent.length}/160 characters</p>
             </div>
@@ -410,11 +429,16 @@ export default function ManualBulkTab() {
                 <Card
                   key={i}
                   className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => { setMessageContent(t.msg); toast({ title: `Loaded: ${t.name}` }); }}
+                  onClick={() => {
+                    setMessageContent(t.msg);
+                    toast({ title: `Loaded: ${t.name}` });
+                  }}
                 >
                   <CardContent className="p-3">
                     <p className="text-sm font-medium">{t.name}</p>
-                    <Badge variant="secondary" className="mt-1 text-xs">{t.category}</Badge>
+                    <Badge variant="secondary" className="mt-1 text-xs">
+                      {t.category}
+                    </Badge>
                   </CardContent>
                 </Card>
               ))}
@@ -429,16 +453,23 @@ export default function ManualBulkTab() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-warning" />
-              Confirm Bulk Send
+              Confirm Twilio Bulk Send
             </DialogTitle>
             <DialogDescription>
-              You are about to send to <span className="font-bold text-foreground">{recipientCount.toLocaleString()}</span> recipients. This action cannot be undone.
+              You are about to send to{" "}
+              <span className="font-bold text-foreground">{recipientCount.toLocaleString()}</span> recipients via
+              Twilio. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
-            <Button onClick={() => pendingAction && executeSend(pendingAction)} className="gap-2">
-              <Send className="h-4 w-4" /> Confirm Send
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => pendingAction && executeSend(pendingAction)}
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <Phone className="h-4 w-4" /> Confirm Send
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -449,27 +480,33 @@ export default function ManualBulkTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Schedule Campaign</DialogTitle>
-            <DialogDescription>Choose when to send "{campaignName}"</DialogDescription>
+            <DialogDescription>Choose when to send "{campaignName}" via Twilio</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label>Date</Label>
-              <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} />
+              <Input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label>Time</Label>
-              <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} />
+              <Input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowScheduleModal(false)}>Cancel</Button>
-            <Button onClick={() => {
-              if (!scheduleDate || !scheduleTime) {
-                toast({ title: "Select Date & Time", variant: "destructive" });
-                return;
-              }
-              triggerSend("schedule");
-            }} disabled={isScheduling} className="gap-2">
+            <Button variant="outline" onClick={() => setShowScheduleModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!scheduleDate || !scheduleTime) {
+                  toast({ title: "Select Date & Time", variant: "destructive" });
+                  return;
+                }
+                triggerSend("schedule");
+              }}
+              disabled={isScheduling}
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+            >
               {isScheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
               {isScheduling ? "Scheduling..." : "Confirm Schedule"}
             </Button>
