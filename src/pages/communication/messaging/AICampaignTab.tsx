@@ -23,7 +23,8 @@ interface DripStep {
   condition: "none" | "no_reply" | "no_click";
 }
 
-const ROLES = ["Wholesaler", "Ambassador", "Driver", "Biker", "Customer"];
+// Lowercased to match DB Enums exactly
+const ROLES = ["wholesaler", "ambassador", "driver", "biker", "customer"];
 
 const PERSONAS = [
   { value: "friendly", label: "Friendly & Casual" },
@@ -45,7 +46,7 @@ export default function AICampaignTab() {
   const [isLaunching, setIsLaunching] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
 
-  // New Targeting State
+  // Targeting State
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [customNumbers, setCustomNumbers] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -71,22 +72,22 @@ export default function AICampaignTab() {
     },
   ]);
 
-  // Fetch users based on selected roles
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["ai-target-users", selectedRoles, currentBusiness?.id],
     queryFn: async () => {
       let query = supabase
         .from("profiles")
-        .select("id, full_name, phone, role")
+        .select("id, first_name, last_name, phone, role") // Swapped full_name for first_name, last_name
         .eq("business_id", currentBusiness?.id || "");
 
       if (selectedRoles.length > 0) {
-        query = query.in("role", selectedRoles);
+        // Cast as any[] to bypass strict DB Enum array type checking
+        query = query.in("role", selectedRoles as any[]);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data as any[]) || []; // Cast to any array to prevent cascading TS errors
     },
     enabled: !!currentBusiness?.id,
   });
@@ -151,7 +152,7 @@ export default function AICampaignTab() {
         .insert({
           business_id: currentBusiness?.id || null,
           mode: "ai_campaign",
-          provider: "twilio", // EXPLICIT TWILIO TAG
+          provider: "twilio",
           name: campaignName,
           script: baseScript,
           ai_enabled: true,
@@ -262,7 +263,7 @@ export default function AICampaignTab() {
                     <Badge
                       key={role}
                       variant={selectedRoles.includes(role) ? "default" : "outline"}
-                      className="cursor-pointer text-xs"
+                      className="cursor-pointer text-xs capitalize"
                       onClick={() => toggleRole(role)}
                     >
                       {role}
@@ -299,13 +300,14 @@ export default function AICampaignTab() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        users.map((u) => (
+                        users.map((u: any) => (
                           <TableRow key={u.id}>
                             <TableCell className="p-2">
                               <Checkbox checked={selectedUserIds.has(u.id)} onCheckedChange={() => toggleUser(u.id)} />
                             </TableCell>
                             <TableCell className="p-2 text-xs">
-                              {u.full_name || "Unknown"} <span className="text-muted-foreground">({u.role})</span>
+                              {`${u.first_name || ""} ${u.last_name || ""}`.trim() || "Unknown"}{" "}
+                              <span className="text-muted-foreground capitalize">({u.role})</span>
                             </TableCell>
                           </TableRow>
                         ))
