@@ -24,7 +24,8 @@ import {
 } from "@/components/ui/dialog";
 import { Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, Phone } from "lucide-react";
 
-const ROLES = ["Wholesaler", "Ambassador", "Driver", "Biker", "Customer"];
+// Lowercased to match DB Enums exactly
+const ROLES = ["wholesaler", "ambassador", "driver", "biker", "customer"];
 
 const TEMPLATES = [
   {
@@ -54,7 +55,7 @@ export default function ManualBulkTab() {
   const { currentBusiness } = useBusiness();
   const [campaignName, setCampaignName] = useState("");
 
-  // New Targeting State
+  // Targeting State
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [customNumbers, setCustomNumbers] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -70,22 +71,22 @@ export default function ManualBulkTab() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<"send" | "schedule" | null>(null);
 
-  // Fetch users based on selected roles
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["target-users", selectedRoles, currentBusiness?.id],
     queryFn: async () => {
       let query = supabase
         .from("profiles")
-        .select("id, full_name, phone, role")
+        .select("id, first_name, last_name, phone, role") // Swapped full_name
         .eq("business_id", currentBusiness?.id || "");
 
       if (selectedRoles.length > 0) {
-        query = query.in("role", selectedRoles);
+        // Cast as any[] to bypass strict DB Enum array type checking
+        query = query.in("role", selectedRoles as any[]);
       }
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data as any[]) || []; // Cast to any array to prevent cascading TS errors
     },
     enabled: !!currentBusiness?.id,
   });
@@ -160,7 +161,7 @@ export default function ManualBulkTab() {
       const campaignPayload: any = {
         business_id: currentBusiness?.id || null,
         mode: "manual_bulk",
-        provider: "twilio", // EXPLICIT TWILIO TAG
+        provider: "twilio",
         name: campaignName,
         script: messageContent,
         ai_enabled: false,
@@ -188,7 +189,6 @@ export default function ManualBulkTab() {
 
       toast({ title: isSchedule ? "Campaign Scheduled" : "Campaign Launched!", description: msg });
 
-      // Reset form
       setCampaignName("");
       setMessageContent("");
       setCustomNumbers("");
@@ -208,7 +208,6 @@ export default function ManualBulkTab() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      {/* Builder */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -227,13 +226,11 @@ export default function ManualBulkTab() {
             />
           </div>
 
-          {/* New Targeting Engine */}
           <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
             <Label className="text-base font-semibold flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" /> Target Audience
             </Label>
 
-            {/* Role Filters */}
             <div className="space-y-2">
               <Label className="text-xs text-muted-foreground">Filter Database by Role</Label>
               <div className="flex flex-wrap gap-2">
@@ -241,7 +238,7 @@ export default function ManualBulkTab() {
                   <Badge
                     key={role}
                     variant={selectedRoles.includes(role) ? "default" : "outline"}
-                    className="cursor-pointer"
+                    className="cursor-pointer capitalize"
                     onClick={() => toggleRole(role)}
                   >
                     {role}
@@ -250,7 +247,6 @@ export default function ManualBulkTab() {
               </div>
             </div>
 
-            {/* User Table */}
             <div className="border rounded-md bg-background">
               <ScrollArea className="h-[200px]">
                 <Table>
@@ -281,14 +277,16 @@ export default function ManualBulkTab() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      users.map((u) => (
+                      users.map((u: any) => (
                         <TableRow key={u.id}>
                           <TableCell>
                             <Checkbox checked={selectedUserIds.has(u.id)} onCheckedChange={() => toggleUser(u.id)} />
                           </TableCell>
-                          <TableCell className="font-medium">{u.full_name || "Unknown"}</TableCell>
+                          <TableCell className="font-medium">
+                            {`${u.first_name || ""} ${u.last_name || ""}`.trim() || "Unknown"}
+                          </TableCell>
                           <TableCell>
-                            <Badge variant="secondary" className="text-[10px]">
+                            <Badge variant="secondary" className="text-[10px] capitalize">
                               {u.role}
                             </Badge>
                           </TableCell>
@@ -301,7 +299,6 @@ export default function ManualBulkTab() {
               </ScrollArea>
             </div>
 
-            {/* Custom Numbers */}
             <div className="space-y-2 pt-2">
               <Label className="text-xs text-muted-foreground">Or Add Custom Numbers (Comma separated)</Label>
               <Textarea
@@ -312,7 +309,6 @@ export default function ManualBulkTab() {
               />
             </div>
 
-            {/* Target Count */}
             {recipientCount > 0 && (
               <div className="flex items-center gap-2 pt-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -334,7 +330,7 @@ export default function ManualBulkTab() {
               rows={5}
             />
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Variables: {"{{full_name}}"}</p>
+              <p className="text-xs text-muted-foreground">Variables: {"{{first_name}}"}</p>
               <p className="text-xs text-muted-foreground">{messageContent.length}/160</p>
             </div>
           </div>
@@ -363,7 +359,6 @@ export default function ManualBulkTab() {
             </div>
           </div>
 
-          {/* Compliance Guard */}
           <Card className="border-warning/30 bg-warning/5">
             <CardContent className="p-3 flex items-start gap-2">
               <Shield className="h-4 w-4 text-warning mt-0.5" />
@@ -400,7 +395,6 @@ export default function ManualBulkTab() {
         </CardContent>
       </Card>
 
-      {/* Preview & Templates */}
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -447,7 +441,6 @@ export default function ManualBulkTab() {
         </Card>
       </div>
 
-      {/* Confirmation Modal (>500 recipients) */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent>
           <DialogHeader>
@@ -475,7 +468,6 @@ export default function ManualBulkTab() {
         </DialogContent>
       </Dialog>
 
-      {/* Schedule Modal */}
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
         <DialogContent>
           <DialogHeader>
