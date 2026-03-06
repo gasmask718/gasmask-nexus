@@ -1231,9 +1231,7 @@ export default function CampaignWizardPage() {
                   }}
                   className="grid grid-cols-2 md:grid-cols-4 gap-3"
                 >
-                  {(
-                    Object.entries(AUDIENCE_TYPE_CONFIG) as [AudienceType, (typeof AUDIENCE_TYPE_CONFIG)[AudienceType]]
-                  ).map(([key, cfg]) => (
+                  {(Object.entries(AUDIENCE_TYPE_CONFIG) as [AudienceType, (typeof AUDIENCE_TYPE_CONFIG)[AudienceType]][]).map(([key, cfg]) => (
                     <div
                       key={key}
                       className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors ${audienceType === key ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}
