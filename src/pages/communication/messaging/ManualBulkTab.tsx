@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/dialog";
 import { Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, Phone } from "lucide-react";
 
-// Lowercased to match DB Enums exactly
 const ROLES = ["wholesaler", "ambassador", "driver", "biker", "customer"];
 
 const TEMPLATES = [
@@ -55,7 +54,6 @@ export default function ManualBulkTab() {
   const { currentBusiness } = useBusiness();
   const [campaignName, setCampaignName] = useState("");
 
-  // Targeting State
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [customNumbers, setCustomNumbers] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
@@ -71,32 +69,29 @@ export default function ManualBulkTab() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<"send" | "schedule" | null>(null);
 
-  // Fetch users based on selected roles - TS2589 FIXED
+  // TS2589 FIXED: Bypassed deep generic inference using (supabase as any)
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["target-users", selectedRoles, currentBusiness?.id],
     queryFn: async () => {
       if (!currentBusiness?.id) return [];
 
-      // Path 1: Roles are selected
+      let queryResult;
+
       if (selectedRoles.length > 0) {
-        const { data, error } = await supabase
+        queryResult = await (supabase as any)
           .from("profiles")
           .select("id, first_name, last_name, phone, role")
           .eq("business_id", currentBusiness.id)
-          .in("role", selectedRoles as any[]);
-
-        if (error) throw error;
-        return (data as any[]) || [];
+          .in("role", selectedRoles);
+      } else {
+        queryResult = await (supabase as any)
+          .from("profiles")
+          .select("id, first_name, last_name, phone, role")
+          .eq("business_id", currentBusiness.id);
       }
 
-      // Path 2: No roles selected, fetch all for business
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, phone, role")
-        .eq("business_id", currentBusiness.id);
-
-      if (error) throw error;
-      return (data as any[]) || [];
+      if (queryResult.error) throw queryResult.error;
+      return queryResult.data || [];
     },
     enabled: !!currentBusiness?.id,
   });
@@ -186,11 +181,15 @@ export default function ManualBulkTab() {
         campaignPayload.scheduled_at = new Date(`${scheduleDate}T${scheduleTime}`).toISOString();
       }
 
-      const { data, error } = await supabase.from("messaging_campaigns").insert(campaignPayload).select().single();
+      const { data, error } = await (supabase as any)
+        .from("messaging_campaigns")
+        .insert(campaignPayload)
+        .select()
+        .single();
       if (error) throw error;
 
       if (!isSchedule) {
-        await supabase.functions.invoke("messaging-launch", { body: { campaign_id: data.id } });
+        await (supabase as any).functions.invoke("messaging-launch", { body: { campaign_id: data.id } });
       }
 
       const msg = isSchedule
