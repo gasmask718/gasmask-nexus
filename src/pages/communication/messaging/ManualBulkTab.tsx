@@ -71,22 +71,32 @@ export default function ManualBulkTab() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<"send" | "schedule" | null>(null);
 
+  // Fetch users based on selected roles - TS2589 FIXED
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["target-users", selectedRoles, currentBusiness?.id],
     queryFn: async () => {
-      let query = supabase
-        .from("profiles")
-        .select("id, first_name, last_name, phone, role") // Swapped full_name
-        .eq("business_id", currentBusiness?.id || "");
+      if (!currentBusiness?.id) return [];
 
+      // Path 1: Roles are selected
       if (selectedRoles.length > 0) {
-        // Cast as any[] to bypass strict DB Enum array type checking
-        query = query.in("role", selectedRoles as any[]);
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, first_name, last_name, phone, role")
+          .eq("business_id", currentBusiness.id)
+          .in("role", selectedRoles as any[]);
+
+        if (error) throw error;
+        return (data as any[]) || [];
       }
 
-      const { data, error } = await query;
+      // Path 2: No roles selected, fetch all for business
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, first_name, last_name, phone, role")
+        .eq("business_id", currentBusiness.id);
+
       if (error) throw error;
-      return (data as any[]) || []; // Cast to any array to prevent cascading TS errors
+      return (data as any[]) || [];
     },
     enabled: !!currentBusiness?.id,
   });
@@ -105,7 +115,7 @@ export default function ManualBulkTab() {
     if (selectedUserIds.size === users.length && users.length > 0) {
       setSelectedUserIds(new Set());
     } else {
-      setSelectedUserIds(new Set(users.map((u) => u.id)));
+      setSelectedUserIds(new Set(users.map((u: any) => u.id)));
     }
   };
 
