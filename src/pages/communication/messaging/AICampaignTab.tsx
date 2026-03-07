@@ -80,19 +80,19 @@ export default function AICampaignTab() {
 
       // Path 1: Roles are selected
       if (selectedRoles.length > 0) {
-        const { data, error } = await supabase
-          .from("profiles")
+        const { data, error } = await (supabase
+          .from("profiles") as any)
           .select("id, first_name, last_name, phone, role")
           .eq("business_id", currentBusiness.id)
-          .in("role", selectedRoles as any[]);
+          .in("role", selectedRoles);
 
         if (error) throw error;
         return (data as any[]) || [];
       }
 
       // Path 2: No roles selected, fetch all for business
-      const { data, error } = await supabase
-        .from("profiles")
+      const { data, error } = await (supabase
+        .from("profiles") as any)
         .select("id, first_name, last_name, phone, role")
         .eq("business_id", currentBusiness.id);
 
