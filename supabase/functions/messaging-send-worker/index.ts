@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const BIZTEXT_API_BASE = "https://www.biztextsolutions.com/api/send";
-const BIZTEXT_WEBSITE_ID = "438";
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -22,6 +19,15 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Twilio credentials
+    const twilioAccountSid = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+    const twilioAuthToken = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+    const twilioMessagingServiceSid = Deno.env.get("TWILIO_MESSAGING_SERVICE_SID")!;
+
+    if (!twilioAccountSid || !twilioAuthToken || !twilioMessagingServiceSid) {
+      throw new Error("Twilio credentials not configured");
+    }
 
     // 1. Get campaign
     const { data: campaign, error: campaignError } = await supabase
@@ -47,7 +53,6 @@ serve(async (req: Request) => {
 
     if (targetError) throw new Error(`Failed to fetch targets: ${targetError.message}`);
     if (!targets || targets.length === 0) {
-      // All done — mark campaign complete
       await supabase.from("messaging_campaigns").update({
         status: "completed",
         completed_at: new Date().toISOString(),
@@ -59,10 +64,12 @@ serve(async (req: Request) => {
       });
     }
 
-    console.log(`📱 Processing ${targets.length} targets for campaign ${campaign.name}`);
+    console.log(`📱 Processing ${targets.length} targets for campaign ${campaign.name} via Twilio`);
 
     let sentCount = 0;
     let failCount = 0;
+    const twilioApiUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+    const authHeader = "Basic " + btoa(`${twilioAccountSid}:${twilioAuthToken}`);
 
     for (const target of targets) {
       try {
@@ -82,20 +89,27 @@ serve(async (req: Request) => {
           continue;
         }
 
-        // Send via BizText
-        const params = new URLSearchParams({
-          to: `+1${phone}`,
-          txt: message,
-          wid: BIZTEXT_WEBSITE_ID,
+        // Send via Twilio
+        const formData = new URLSearchParams({
+          To: `+1${phone}`,
+          Body: message,
+          MessagingServiceSid: twilioMessagingServiceSid,
         });
 
-        const response = await fetch(`${BIZTEXT_API_BASE}?${params.toString()}`, { method: "POST" });
-        const responseText = await response.text();
+        const response = await fetch(twilioApiUrl, {
+          method: "POST",
+          headers: {
+            "Authorization": authHeader,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: formData.toString(),
+        });
 
+        const responseText = await response.text();
         let responseData: any;
         try { responseData = JSON.parse(responseText); } catch { responseData = { raw: responseText.trim() }; }
 
-        const isError = !response.ok || responseData?.error || responseData?.auth === false;
+        const isError = !response.ok || responseData?.status === "failed" || responseData?.error_code;
 
         // Update target status
         await supabase.from("messaging_targets").update({
@@ -118,15 +132,14 @@ serve(async (req: Request) => {
 
         if (isError) {
           failCount++;
-          console.error(`❌ Failed to send to ${phone}:`, responseText.substring(0, 200));
+          console.error(`❌ Twilio failed for ${phone}:`, responseData?.message || responseText.substring(0, 200));
         } else {
           sentCount++;
         }
 
-        // Throttle delay
+        // Throttle
         const delayMs = Math.max(60000 / (campaign.throttle_per_minute || 50), 100);
         await new Promise(resolve => setTimeout(resolve, delayMs));
-
       } catch (sendError: any) {
         console.error(`❌ Error processing target ${target.id}:`, sendError);
         await supabase.from("messaging_targets").update({ status: "failed" }).eq("id", target.id);
@@ -140,7 +153,7 @@ serve(async (req: Request) => {
       updated_at: new Date().toISOString(),
     }).eq("id", campaign_id);
 
-    console.log(`✅ Batch complete: ${sentCount} sent, ${failCount} failed`);
+    console.log(`✅ Twilio batch complete: ${sentCount} sent, ${failCount} failed`);
 
     return new Response(
       JSON.stringify({ success: true, sent: sentCount, failed: failCount, remaining: targets.length - sentCount - failCount }),

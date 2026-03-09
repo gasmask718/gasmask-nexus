@@ -1,93 +1,79 @@
 
 
-## Plan: Messaging Hub — Full Wiring & Contact Selector Overhaul
+## Plan: Fix Build Errors + Campaign Voice Pipeline + Transcript Logging
 
 ### Problem Summary
 
-1. **Contact selection is broken**: Both ManualBulkTab and AICampaignTab only query the `profiles` table (which holds internal users like VAs/admins). They don't query the actual contact sources: **stores** (2,966), **drivers** (29), **bikers** (13), **ambassadors** (68), **wholesalers** (41), or **prospects** (territory_addresses).
+There are 17 build errors across multiple edge functions, plus the campaign dashboard's "Logs" tab is a placeholder. The core voice pipeline (Twilio TTS opener -> ElevenLabs AI handoff) is already wired but needs fixes to compile and properly use the campaign's script from Step 4.
 
-2. **messaging-launch edge function ignores selected contacts**: It always resolves audience via `resolve_previous_customers` RPC, completely ignoring the `target_filter.user_ids` the UI sends. The UI selection is decorative.
+### Part 1: Fix All Build Errors (17 errors across ~10 files)
 
-3. **messaging-send-worker uses BizText, not Twilio**: Despite the UI saying "Twilio," the worker sends via `biztextsolutions.com`. Twilio SMS credentials exist (`TWILIO_MESSAGING_SERVICE_SID`, `TWILIO_PHONE_NUMBER`).
+These are mechanical TypeScript fixes:
 
-4. **No pagination**: Contact table loads all records in a ScrollArea with no pagination.
+1. **`apply-call-disposition/index.ts` (line 149)**: Replace `.catch()` on Supabase query with proper `{ data, error }` destructuring pattern.
 
-5. **`provider` column doesn't exist**: Both tabs insert `provider: "twilio"` into `messaging_campaigns` but the column doesn't exist in the schema — this gets silently ignored.
+2. **`auto-draft-batches/index.ts` (line 77)**: Change `err.message` to `(err as Error).message` (or `err instanceof Error ? err.message : String(err)`).
 
-6. **ConversationsTab has no filters**: No way to filter by status, date, direction, or campaign.
+3. **`aws-polly-tts/index.ts` (line 38)**: Fix `ArrayBufferLike` type issue by casting: `key instanceof ArrayBuffer ? new Uint8Array(key) : key` and passing `.buffer` correctly, or use `as ArrayBuffer`.
 
-7. **ActiveCampaignsTab**: Already functional — queries `messaging_campaigns` with real data, shows progress, supports pause/resume/stop.
+4. **`create-ops-thread/index.ts` (line 130)**: Type `err` as `unknown`, use safe access.
 
----
+5. **`generate-shipping-label/index.ts` (line 166)**: Same `err.message` fix.
 
-### Changes
+6. **`ingest-google-places/index.ts` (line 320)**: Add type annotation `(t: string)` to the `.map()` callback.
 
-#### 1. Database Migration
-- Add `provider` column to `messaging_campaigns` (text, default `'twilio'`)
-- Add `contact_type` and `contact_id` columns to `messaging_targets` so we track which entity type each target came from
+7. **`marketplace-order-engine/index.ts` (line 232)**: Same `err.message` fix.
 
-#### 2. Shared `ContactSelector` Component
-Create `src/components/communication/ContactSelector.tsx` — a reusable paginated contact table used by both ManualBulkTab and AICampaignTab.
+8. **`predictive-dialer-engine/index.ts` (lines 1214-1225)**: The `outcome` variable is typed too narrowly (`"failed" | "voicemail" | "no_answer"`), excluding `"answered"`. Widen the type to include `"answered"` at the declaration site.
 
-**Entity types with sources:**
-| Type | Table | Name field | Phone field |
-|------|-------|-----------|-------------|
-| Store | `stores` | `name` | `phone` |
-| Prospect | `territory_addresses` | `store_name` | `phone` |
-| Driver | `drivers` | `full_name` | `phone` |
-| Biker | `bikers` | `full_name` | `phone` |
-| Ambassador | `ambassadors` joined with `profiles` | `profiles.name` | `profiles.phone` |
-| Wholesaler | `wholesalers` | `name` | `phone` |
-| Customer | `people` | `name` | `phone` |
-| Custom | Manual entry | — | — |
+9. **`process-notification-queue/index.ts` (lines 249, 263)**: Two `err.message` fixes.
 
-**Features:**
-- Tab/badge filter by entity type (multi-select)
-- 20 rows per page with page number selector
-- **Selection persists across page changes** (stored in a `Set<string>` keyed by `{type}:{id}`)
-- Select all on current page / select all across all pages
-- Search by name/phone
-- Shows total selected count
+10. **`process-settlements/index.ts` (line 41)**: Same `err.message` fix.
 
-#### 3. Update ManualBulkTab & AICampaignTab
-- Remove inline `profiles` query and contact table
-- Embed `<ContactSelector>` component
-- Pass selected contacts as `{ type, id, phone, name }[]` to campaign creation
-- Store selected contacts in `target_filter` as `{ contacts: [{ type, id, phone, name }] }`
-- Remove `provider: "twilio"` from insert until migration adds the column (or add it after migration)
+11. **`production-alert-engine/index.ts` (line 125)**: Same `err.message` fix.
 
-#### 4. Fix `messaging-launch` Edge Function
-- Check `target_filter.contacts` array first
-- If contacts are provided, use them directly to create `messaging_targets` rows (skip RPC resolution)
-- Fall back to RPC resolution only when no explicit contacts are provided
-- Populate `contact_type` and `contact_id` on each target row
+12. **`twilio-outbound-call/index.ts` (line 67)**: The `.select()` returns `dialer_campaigns` as an array (joined relation). Fix: access `item.dialer_campaigns?.[0]?.agent_id` or add `.single()` semantics, or destructure properly. The select returns an array for joined tables -- need to handle `item.dialer_campaigns` as array.
 
-#### 5. Fix `messaging-send-worker` to Use Twilio
-- Replace BizText API call with Twilio Messages API using `TWILIO_MESSAGING_SERVICE_SID` and `TWILIO_AUTH_TOKEN`
-- Send via `https://api.twilio.com/2010-04-01/Accounts/{SID}/Messages.json`
-- Use `MessagingServiceSid` for automatic number selection
-- Keep BizText as fallback if Twilio fails (optional)
+### Part 2: Campaign Script in TwiML (twilio-outbound-call)
 
-#### 6. ConversationsTab Filters
-- Add filter bar: status (Sent / Failed / Needs Review), direction (Inbound / Outbound), campaign dropdown, date range
-- Add search by phone number
-- Persist filters in state
+Currently line 75 hardcodes: `"Hello ${item.contact_name}. Are you ready to speak with our AI assistant?"`. 
 
-#### 7. ActiveCampaignsTab
-- Already functional. Add status filter tabs (All / Active / Paused / Completed / Draft) for convenience.
+**Fix**: Read the campaign's `initial_script` from the joined `dialer_campaigns` relation and use it as the TwiML `<Say>` content. Fall back to the current default if no script is set.
 
----
+### Part 3: Transcript Logging in Campaign Dashboard
 
-### Files to Create/Modify
+The "Logs" tab (line 706-710) is a static placeholder. 
 
-| File | Action |
+**Fix**: Query `live_call_transcripts` by matching `call_sid` values from the campaign's `outbound_call_queue` items (which have `twilio_call_sid`). Also query `call_recordings` for completed calls. Display per-contact transcript threads grouped by call.
+
+Additionally, ensure the `twilio-call-status` webhook also handles campaign calls (not just manual calls) -- it currently only saves transcripts when `recording.manual_call_id` exists. Need to add a parallel path that checks for campaign queue items by `provider_call_sid` and fetches/stores ElevenLabs transcripts for those too.
+
+### Part 4: ElevenLabs Bridge Separation
+
+The existing `twilio-gather-webhook` already redirects to `twilio-elevenlabs-bridge` when the user confirms. This flow is correct:
+
+1. `twilio-outbound-call` -> Twilio dials with TwiML containing `<Gather>` pointing to `twilio-gather-webhook`
+2. `twilio-gather-webhook` -> If user says yes/presses 1, `<Redirect>` to `twilio-elevenlabs-bridge`
+3. `twilio-elevenlabs-bridge` -> Registers with ElevenLabs API, returns their TwiML
+
+This is already a separate webhook. No new function needed -- just ensure it's working correctly with the campaign's agent_id.
+
+### Files to Modify
+
+| File | Change |
 |------|--------|
-| `src/components/communication/ContactSelector.tsx` | **CREATE** — Shared paginated contact selector |
-| `src/pages/communication/messaging/ManualBulkTab.tsx` | **MODIFY** — Replace inline profiles query with ContactSelector |
-| `src/pages/communication/messaging/AICampaignTab.tsx` | **MODIFY** — Replace inline profiles query with ContactSelector |
-| `src/pages/communication/messaging/ConversationsTab.tsx` | **MODIFY** — Add filter bar |
-| `src/pages/communication/messaging/ActiveCampaignsTab.tsx` | **MODIFY** — Add status filter tabs |
-| `supabase/functions/messaging-launch/index.ts` | **MODIFY** — Use target_filter.contacts when provided |
-| `supabase/functions/messaging-send-worker/index.ts` | **MODIFY** — Switch from BizText to Twilio SMS API |
-| Database migration | Add `provider` column + `contact_type`/`contact_id` to `messaging_targets` |
+| `supabase/functions/apply-call-disposition/index.ts` | Fix `.catch()` pattern |
+| `supabase/functions/auto-draft-batches/index.ts` | Type-safe error |
+| `supabase/functions/aws-polly-tts/index.ts` | Fix ArrayBuffer type |
+| `supabase/functions/create-ops-thread/index.ts` | Type-safe error |
+| `supabase/functions/generate-shipping-label/index.ts` | Type-safe error |
+| `supabase/functions/ingest-google-places/index.ts` | Add type annotation |
+| `supabase/functions/marketplace-order-engine/index.ts` | Type-safe error |
+| `supabase/functions/predictive-dialer-engine/index.ts` | Widen outcome type |
+| `supabase/functions/process-notification-queue/index.ts` | Type-safe errors |
+| `supabase/functions/process-settlements/index.ts` | Type-safe error |
+| `supabase/functions/production-alert-engine/index.ts` | Type-safe error |
+| `supabase/functions/twilio-outbound-call/index.ts` | Fix array join access + use campaign script |
+| `supabase/functions/twilio-call-status/index.ts` | Add campaign transcript path (not just manual calls) |
+| `src/pages/communication/dialer/CampaignWizardPage.tsx` | Build real Logs tab with transcript display |
 

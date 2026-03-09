@@ -33183,6 +33183,7 @@ export type Database = {
           name: string
           opt_out_count: number | null
           persona: string | null
+          provider: string
           reply_count: number | null
           scheduled_at: string | null
           script: string | null
@@ -33205,6 +33206,7 @@ export type Database = {
           name: string
           opt_out_count?: number | null
           persona?: string | null
+          provider?: string
           reply_count?: number | null
           scheduled_at?: string | null
           script?: string | null
@@ -33227,6 +33229,7 @@ export type Database = {
           name?: string
           opt_out_count?: number | null
           persona?: string | null
+          provider?: string
           reply_count?: number | null
           scheduled_at?: string | null
           script?: string | null
@@ -33358,7 +33361,9 @@ export type Database = {
       messaging_targets: {
         Row: {
           campaign_id: string
+          contact_id: string | null
           contact_name: string | null
+          contact_type: string | null
           created_at: string
           id: string
           metadata: Json | null
@@ -33372,7 +33377,9 @@ export type Database = {
         }
         Insert: {
           campaign_id: string
+          contact_id?: string | null
           contact_name?: string | null
+          contact_type?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
@@ -33386,7 +33393,9 @@ export type Database = {
         }
         Update: {
           campaign_id?: string
+          contact_id?: string | null
           contact_name?: string | null
+          contact_type?: string | null
           created_at?: string
           id?: string
           metadata?: Json | null
