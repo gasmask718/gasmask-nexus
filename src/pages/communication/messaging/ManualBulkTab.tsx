@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,57 +7,28 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { useQuery } from "@tanstack/react-query";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Zap, Users, Calendar, Loader2, Shield, AlertTriangle, Phone } from "lucide-react";
-
-const ROLES = ["wholesaler", "ambassador", "driver", "biker", "customer"];
+import { Send, Zap, Calendar, Loader2, Shield, AlertTriangle } from "lucide-react";
+import ContactSelector, { SelectedContact } from "@/components/communication/ContactSelector";
 
 const TEMPLATES = [
-  {
-    name: "Inventory Check",
-    category: "Operations",
-    msg: "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)",
-  },
-  {
-    name: "New Product Alert",
-    category: "Promo",
-    msg: "Hey {{contact_name}}! GasMask just dropped new products for {{store_name}}. Reply YES to see the lineup!",
-  },
-  {
-    name: "Payment Reminder",
-    category: "Collections",
-    msg: "Hi {{contact_name}}, friendly reminder on your balance for {{store_name}}. Need help? Reply here.",
-  },
-  {
-    name: "Reactivation",
-    category: "Win Back",
-    msg: "Hi {{contact_name}}, we miss {{store_name}}! It's been a while — got a minute to catch up?",
-  },
+  { name: "Inventory Check", category: "Operations", msg: "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)" },
+  { name: "New Product Alert", category: "Promo", msg: "Hey {{contact_name}}! GasMask just dropped new products for {{store_name}}. Reply YES to see the lineup!" },
+  { name: "Payment Reminder", category: "Collections", msg: "Hi {{contact_name}}, friendly reminder on your balance for {{store_name}}. Need help? Reply here." },
+  { name: "Reactivation", category: "Win Back", msg: "Hi {{contact_name}}, we miss {{store_name}}! It's been a while — got a minute to catch up?" },
 ];
 
 export default function ManualBulkTab() {
   const { toast } = useToast();
   const { currentBusiness } = useBusiness();
   const [campaignName, setCampaignName] = useState("");
-
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedContacts, setSelectedContacts] = useState<Map<string, SelectedContact>>(new Map());
   const [customNumbers, setCustomNumbers] = useState("");
-  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
-
   const [messageContent, setMessageContent] = useState("");
   const [throttle, setThrottle] = useState("50");
   const [jitterEnabled, setJitterEnabled] = useState(true);
@@ -69,74 +40,24 @@ export default function ManualBulkTab() {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingAction, setPendingAction] = useState<"send" | "schedule" | null>(null);
 
-  // TS2589 FIXED: Bypassed deep generic inference using (supabase as any)
-  const { data: users = [], isLoading: usersLoading } = useQuery({
-    queryKey: ["target-users", selectedRoles, currentBusiness?.id],
-    queryFn: async () => {
-      if (!currentBusiness?.id) return [];
+  const handleSelectionChange = useCallback((contacts: Map<string, SelectedContact>) => {
+    setSelectedContacts(contacts);
+  }, []);
 
-      let queryResult;
-
-      if (selectedRoles.length > 0) {
-        queryResult = await (supabase as any)
-          .from("profiles")
-          .select("id, first_name, last_name, phone, role")
-          .eq("business_id", currentBusiness.id)
-          .in("role", selectedRoles);
-      } else {
-        queryResult = await (supabase as any)
-          .from("profiles")
-          .select("id, first_name, last_name, phone, role")
-          .eq("business_id", currentBusiness.id);
-      }
-
-      if (queryResult.error) throw queryResult.error;
-      return queryResult.data || [];
-    },
-    enabled: !!currentBusiness?.id,
-  });
-
-  const toggleRole = (role: string) => {
-    setSelectedRoles((prev) => (prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]));
-  };
-
-  const toggleUser = (id: string) => {
-    const newSet = new Set(selectedUserIds);
-    newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-    setSelectedUserIds(newSet);
-  };
-
-  const selectAllUsers = () => {
-    if (selectedUserIds.size === users.length && users.length > 0) {
-      setSelectedUserIds(new Set());
-    } else {
-      setSelectedUserIds(new Set(users.map((u: any) => u.id)));
-    }
-  };
-
-  const customNumbersList = customNumbers
-    .split(",")
-    .map((n) => n.trim())
-    .filter((n) => n);
-  const recipientCount = selectedUserIds.size + customNumbersList.length;
+  const customNumbersList = customNumbers.split(",").map((n) => n.trim()).filter((n) => n);
+  const recipientCount = selectedContacts.size + customNumbersList.length;
   const canSend = !!campaignName && !!messageContent && recipientCount > 0;
-
-  const confirmThreshold = 500;
 
   const triggerSend = (action: "send" | "schedule") => {
     if (!canSend) {
-      toast({
-        title: "Missing Information",
-        description: "Fill in all required fields and select targets.",
-        variant: "destructive",
-      });
+      toast({ title: "Missing Information", description: "Fill in all required fields and select targets.", variant: "destructive" });
       return;
     }
     if (action === "schedule" && (!scheduleDate || !scheduleTime)) {
       setShowScheduleModal(true);
       return;
     }
-    if (recipientCount > confirmThreshold) {
+    if (recipientCount > 500) {
       setPendingAction(action);
       setShowConfirmModal(true);
     } else {
@@ -150,14 +71,12 @@ export default function ManualBulkTab() {
     setShowConfirmModal(false);
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const contacts = Array.from(selectedContacts.values());
       const targetFilter = {
-        roles: selectedRoles,
-        user_ids: Array.from(selectedUserIds),
+        contacts,
         custom_numbers: customNumbersList,
         throttle: parseInt(throttle),
         jitter: jitterEnabled,
@@ -192,23 +111,18 @@ export default function ManualBulkTab() {
         await (supabase as any).functions.invoke("messaging-launch", { body: { campaign_id: data.id } });
       }
 
-      const msg = isSchedule
-        ? `"${campaignName}" scheduled via Twilio for ${scheduleDate} at ${scheduleTime}.`
-        : `"${campaignName}" is now sending via Twilio to ${recipientCount.toLocaleString()} recipients.`;
-
-      toast({ title: isSchedule ? "Campaign Scheduled" : "Campaign Launched!", description: msg });
+      toast({
+        title: isSchedule ? "Campaign Scheduled" : "Campaign Launched!",
+        description: `"${campaignName}" ${isSchedule ? "scheduled" : "sending"} via Twilio to ${recipientCount.toLocaleString()} recipients.`,
+      });
 
       setCampaignName("");
       setMessageContent("");
       setCustomNumbers("");
-      setSelectedUserIds(new Set());
+      setSelectedContacts(new Map());
       setShowScheduleModal(false);
     } catch (error: any) {
-      toast({
-        title: isSchedule ? "Schedule Failed" : "Send Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: isSchedule ? "Schedule Failed" : "Send Failed", description: error.message, variant: "destructive" });
     } finally {
       setIsSending(false);
       setIsScheduling(false);
@@ -223,123 +137,31 @@ export default function ManualBulkTab() {
             <Zap className="h-5 w-5 text-primary" />
             Manual Bulk Message
           </CardTitle>
-          <CardDescription>Send instantly via Twilio to selected roles or custom numbers</CardDescription>
+          <CardDescription>Send instantly via Twilio to selected contacts</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label>Campaign Name</Label>
-            <Input
-              placeholder="e.g., Monday Inventory Check"
-              value={campaignName}
-              onChange={(e) => setCampaignName(e.target.value)}
-            />
+            <Input placeholder="e.g., Monday Inventory Check" value={campaignName} onChange={(e) => setCampaignName(e.target.value)} />
           </div>
 
-          <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
-            <Label className="text-base font-semibold flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" /> Target Audience
-            </Label>
-
-            <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Filter Database by Role</Label>
-              <div className="flex flex-wrap gap-2">
-                {ROLES.map((role) => (
-                  <Badge
-                    key={role}
-                    variant={selectedRoles.includes(role) ? "default" : "outline"}
-                    className="cursor-pointer capitalize"
-                    onClick={() => toggleRole(role)}
-                  >
-                    {role}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="border rounded-md bg-background">
-              <ScrollArea className="h-[200px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">
-                        <Checkbox
-                          checked={users.length > 0 && selectedUserIds.size === users.length}
-                          onCheckedChange={selectAllUsers}
-                        />
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Phone</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {usersLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                          Loading users...
-                        </TableCell>
-                      </TableRow>
-                    ) : users.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                          No users found for selected roles.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      users.map((u: any) => (
-                        <TableRow key={u.id}>
-                          <TableCell>
-                            <Checkbox checked={selectedUserIds.has(u.id)} onCheckedChange={() => toggleUser(u.id)} />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {`${u.first_name || ""} ${u.last_name || ""}`.trim() || "Unknown"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary" className="text-[10px] capitalize">
-                              {u.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-xs">{u.phone || "No phone"}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <Label className="text-xs text-muted-foreground">Or Add Custom Numbers (Comma separated)</Label>
-              <Textarea
-                placeholder="+1234567890, +0987654321"
-                value={customNumbers}
-                onChange={(e) => setCustomNumbers(e.target.value)}
-                rows={2}
-              />
-            </div>
-
-            {recipientCount > 0 && (
-              <div className="flex items-center gap-2 pt-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-primary">
-                  {recipientCount.toLocaleString()} Total Targets Selected
-                </span>
-              </div>
-            )}
-          </div>
+          <ContactSelector
+            selectedContacts={selectedContacts}
+            onSelectionChange={handleSelectionChange}
+            customNumbers={customNumbers}
+            onCustomNumbersChange={setCustomNumbers}
+          />
 
           <div className="space-y-2">
             <Label>Message Content</Label>
             <Textarea
-              placeholder={
-                "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)"
-              }
+              placeholder="Hi this is GasMask —\nQuick inventory check..."
               value={messageContent}
               onChange={(e) => setMessageContent(e.target.value)}
               rows={5}
             />
             <div className="flex items-center justify-between">
-              <p className="text-xs text-muted-foreground">Variables: {"{{first_name}}"}</p>
+              <p className="text-xs text-muted-foreground">Variables: {"{{contact_name}}, {{store_name}}"}</p>
               <p className="text-xs text-muted-foreground">{messageContent.length}/160</p>
             </div>
           </div>
@@ -348,9 +170,7 @@ export default function ManualBulkTab() {
             <div className="space-y-2">
               <Label>Send Rate</Label>
               <Select value={throttle} onValueChange={setThrottle}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="10">10/min (Slow)</SelectItem>
                   <SelectItem value="50">50/min (Normal)</SelectItem>
@@ -379,25 +199,11 @@ export default function ManualBulkTab() {
           </Card>
 
           <div className="pt-2 flex gap-2">
-            <Button
-              className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => triggerSend("send")}
-              disabled={!canSend || isSending}
-            >
+            <Button className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white" onClick={() => triggerSend("send")} disabled={!canSend || isSending}>
               {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               {isSending ? "Launching..." : "Send via Twilio"}
             </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => {
-                if (!canSend) {
-                  toast({ title: "Fill all fields first", variant: "destructive" });
-                  return;
-                }
-                setShowScheduleModal(true);
-              }}
-            >
+            <Button variant="outline" className="gap-2" onClick={() => { if (!canSend) { toast({ title: "Fill all fields first", variant: "destructive" }); return; } setShowScheduleModal(true); }}>
               <Calendar className="h-4 w-4" /> Schedule
             </Button>
           </div>
@@ -406,16 +212,11 @@ export default function ManualBulkTab() {
 
       <div className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Message Preview</CardTitle>
-            <CardDescription>How your message will appear on their phone</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>Message Preview</CardTitle><CardDescription>How your message will appear</CardDescription></CardHeader>
           <CardContent>
             <div className="bg-muted rounded-lg p-4">
               <div className="bg-blue-600 text-white rounded-lg p-3 max-w-[80%] ml-auto">
-                <p className="text-sm whitespace-pre-wrap">
-                  {messageContent || "Your message preview will appear here..."}
-                </p>
+                <p className="text-sm whitespace-pre-wrap">{messageContent || "Your message preview will appear here..."}</p>
               </div>
               <p className="text-xs text-muted-foreground mt-2 text-right">{messageContent.length}/160 characters</p>
             </div>
@@ -423,25 +224,14 @@ export default function ManualBulkTab() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Quick Templates</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Quick Templates</CardTitle></CardHeader>
           <CardContent>
             <div className="grid gap-3 grid-cols-2">
               {TEMPLATES.map((t, i) => (
-                <Card
-                  key={i}
-                  className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => {
-                    setMessageContent(t.msg);
-                    toast({ title: `Loaded: ${t.name}` });
-                  }}
-                >
+                <Card key={i} className="cursor-pointer hover:border-primary transition-colors" onClick={() => { setMessageContent(t.msg); toast({ title: `Loaded: ${t.name}` }); }}>
                   <CardContent className="p-3">
                     <p className="text-sm font-medium">{t.name}</p>
-                    <Badge variant="secondary" className="mt-1 text-xs">
-                      {t.category}
-                    </Badge>
+                    <Badge variant="secondary" className="mt-1 text-xs">{t.category}</Badge>
                   </CardContent>
                 </Card>
               ))}
@@ -450,66 +240,36 @@ export default function ManualBulkTab() {
         </Card>
       </div>
 
+      {/* Confirm Modal */}
       <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              Confirm Twilio Bulk Send
-            </DialogTitle>
-            <DialogDescription>
-              You are about to send to{" "}
-              <span className="font-bold text-foreground">{recipientCount.toLocaleString()}</span> recipients via
-              Twilio. This action cannot be undone.
-            </DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-warning" /> Confirm Twilio Bulk Send</DialogTitle>
+            <DialogDescription>You are about to send to {recipientCount.toLocaleString()} recipients via Twilio. This action cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => pendingAction && executeSend(pendingAction)}
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Phone className="h-4 w-4" /> Confirm Send
-            </Button>
+            <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => pendingAction && executeSend(pendingAction)}>Confirm Send</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Schedule Modal */}
       <Dialog open={showScheduleModal} onOpenChange={setShowScheduleModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Schedule Campaign</DialogTitle>
-            <DialogDescription>Choose when to send "{campaignName}" via Twilio</DialogDescription>
+            <DialogDescription>Choose when to send "{campaignName}"</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Time</Label>
-              <Input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} />
-            </div>
+            <div className="space-y-2"><Label>Date</Label><Input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Time</Label><Input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowScheduleModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => {
-                if (!scheduleDate || !scheduleTime) {
-                  toast({ title: "Select Date & Time", variant: "destructive" });
-                  return;
-                }
-                triggerSend("schedule");
-              }}
-              disabled={isScheduling}
-              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              {isScheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Calendar className="h-4 w-4" />}
-              {isScheduling ? "Scheduling..." : "Confirm Schedule"}
+            <Button variant="outline" onClick={() => setShowScheduleModal(false)}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => triggerSend("schedule")} disabled={!scheduleDate || !scheduleTime || isScheduling}>
+              {isScheduling ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Schedule
             </Button>
           </DialogFooter>
         </DialogContent>
