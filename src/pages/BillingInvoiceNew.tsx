@@ -10,15 +10,18 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft, FileText, Store, Search } from 'lucide-react';
 import { InvoiceModeSelector, InvoiceMode } from '@/components/invoice/InvoiceModeSelector';
+import { Badge } from '@/components/ui/badge';
 
 const BillingInvoiceNew = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
+  const [storeSearch, setStoreSearch] = useState('');
   const [formData, setFormData] = useState({
     customer_id: '',
+    store_id: '',
     invoice_number: '',
     invoice_date: new Date().toISOString().split('T')[0],
     due_date: '',
@@ -40,36 +43,122 @@ const BillingInvoiceNew = () => {
     },
   });
 
+  // Query stores for optional store assignment
+  const { data: stores } = useQuery({
+    queryKey: ['stores-for-invoice', storeSearch],
+    queryFn: async () => {
+      let query = supabase
+        .from('store_master')
+        .select('id, store_name, city, state, phone, contact_phone')
+        .order('store_name')
+        .limit(50);
+      if (storeSearch) {
+        query = query.ilike('store_name', `%${storeSearch}%`);
+      }
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const selectedStore = stores?.find(s => s.id === formData.store_id);
+
   const createInvoiceMutation = useMutation({
     mutationFn: async () => {
       const subtotal = parseFloat(formData.subtotal) || 0;
       const tax = parseFloat(formData.tax) || 0;
       const total = subtotal + tax;
+      const dueDate = formData.due_date || (() => {
+        const d = new Date(formData.invoice_date);
+        d.setDate(d.getDate() + 30);
+        return d.toISOString().split('T')[0];
+      })();
 
+      // If store is assigned → insert into `invoices` table (unified polymorphic system)
+      if (formData.store_id) {
+        const { data: invoice, error } = await supabase
+          .from('invoices')
+          .insert({
+            entity_type: 'store',
+            entity_id: formData.store_id,
+            store_id: formData.store_id,
+            invoice_number: formData.invoice_number,
+            invoice_date: formData.invoice_date,
+            due_date: dueDate,
+            subtotal,
+            tax,
+            total,
+            status: formData.status,
+            notes: formData.notes || null,
+            is_historical: invoiceMode === 'historical',
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+
+        // Trigger SMS receipt via edge function (for live invoices)
+        if (invoiceMode === 'live') {
+          const storeName = selectedStore?.store_name || 'Store';
+          supabase.functions.invoke('send-invoice-receipt', {
+            body: {
+              invoice_id: invoice.id,
+              store_id: formData.store_id,
+              invoice_number: formData.invoice_number,
+              total_amount: total,
+              store_name: storeName,
+              due_date: dueDate,
+              is_historical: false,
+            },
+          }).catch(err => console.error('Receipt send error (non-blocking):', err));
+        }
+
+        return invoice;
+      }
+
+      // No store → insert into customer_invoices (CRM flow)
       const { data: invoice, error } = await supabase
         .from('customer_invoices')
         .insert({
           customer_id: formData.customer_id,
           invoice_number: formData.invoice_number,
           invoice_date: formData.invoice_date,
-          due_date: formData.due_date || null,
+          due_date: dueDate || null,
           subtotal,
           tax,
           total_amount: total,
           status: formData.status,
           notes: formData.notes || null,
-          is_historical: invoiceMode === 'historical', // Track mode
+          is_historical: invoiceMode === 'historical',
         })
         .select('id')
         .single();
 
       if (error) throw error;
+
+      // Trigger SMS receipt for CRM invoices too (for live invoices)
+      if (invoiceMode === 'live' && formData.customer_id) {
+        const customer = customers?.find(c => c.id === formData.customer_id);
+        supabase.functions.invoke('send-invoice-receipt', {
+          body: {
+            customer_invoice_id: invoice.id,
+            customer_id: formData.customer_id,
+            invoice_number: formData.invoice_number,
+            total_amount: total,
+            store_name: customer?.name || 'Customer',
+            due_date: dueDate,
+            is_historical: false,
+          },
+        }).catch(err => console.error('Receipt send error (non-blocking):', err));
+      }
+
       return invoice;
     },
-    onSuccess: (invoice) => {
+    onSuccess: () => {
       const modeLabel = invoiceMode === 'historical' ? ' (historical - no notifications)' : '';
       toast.success(`Invoice created successfully${modeLabel}`);
       queryClient.invalidateQueries({ queryKey: ['all-invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['store-invoices'] });
       navigate('/billing/invoices');
     },
     onError: (error: any) => {
@@ -80,8 +169,8 @@ const BillingInvoiceNew = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.customer_id) {
-      toast.error('Please select a customer');
+    if (!formData.customer_id && !formData.store_id) {
+      toast.error('Please select a customer or a store');
       return;
     }
     if (!formData.invoice_number) {
@@ -121,21 +210,78 @@ const BillingInvoiceNew = () => {
             />
 
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="customer">Customer *</Label>
-                <Select value={formData.customer_id} onValueChange={(v) => setFormData({...formData, customer_id: v})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select customer" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.business_type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              {/* Store Selector (optional) */}
+              <div className="space-y-2 md:col-span-2">
+                <Label className="flex items-center gap-2">
+                  <Store className="h-4 w-4" />
+                  Assign to Store (optional)
+                </Label>
+                {formData.store_id && selectedStore ? (
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="gap-1 py-1.5 px-3 text-sm">
+                      <Store className="h-3 w-3" />
+                      {selectedStore.store_name}
+                      {selectedStore.city && ` — ${selectedStore.city}, ${selectedStore.state || ''}`}
+                    </Badge>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setFormData({ ...formData, store_id: '' })}>
+                      Remove
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search stores by name..."
+                        value={storeSearch}
+                        onChange={(e) => setStoreSearch(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
+                    {stores && stores.length > 0 && (
+                      <div className="border rounded-md max-h-40 overflow-y-auto">
+                        {stores.map(store => (
+                          <div
+                            key={store.id}
+                            className="p-2 hover:bg-muted/50 cursor-pointer text-sm flex justify-between items-center"
+                            onClick={() => {
+                              setFormData({ ...formData, store_id: store.id, customer_id: '' });
+                              setStoreSearch('');
+                            }}
+                          >
+                            <span className="font-medium">{store.store_name}</span>
+                            <span className="text-muted-foreground text-xs">
+                              {[store.city, store.state].filter(Boolean).join(', ')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  If assigned, this invoice will appear in the store's profile and an SMS receipt will be sent.
+                </p>
               </div>
+
+              {/* Customer selector — only show if no store selected */}
+              {!formData.store_id && (
+                <div className="space-y-2">
+                  <Label htmlFor="customer">Customer *</Label>
+                  <Select value={formData.customer_id} onValueChange={(v) => setFormData({...formData, customer_id: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers?.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name} ({c.business_type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="invoice_number">Invoice Number *</Label>

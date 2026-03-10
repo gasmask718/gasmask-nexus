@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter } from "lucide-react";
+import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText } from "lucide-react";
 
 export default function ConversationsTab() {
   const { currentBusiness } = useBusiness();
@@ -29,14 +29,19 @@ export default function ConversationsTab() {
 
       const grouped = new Map<string, any>();
       for (const msg of data || []) {
-        const key = `${msg.campaign_id}_${msg.phone}`;
+        // Group by campaign+phone for campaign msgs, or just phone for direct msgs (invoice receipts)
+        const campaignKey = msg.campaign_id || '__direct__';
+        const key = `${campaignKey}_${msg.phone}`;
         if (!grouped.has(key)) {
           grouped.set(key, {
             key, phone: msg.phone, campaignId: msg.campaign_id,
-            campaignName: msg.messaging_campaigns?.name || "Unknown Campaign",
+            campaignName: msg.campaign_id
+              ? (msg.messaging_campaigns?.name || "Unknown Campaign")
+              : "Invoice Receipt",
             lastMessage: msg.body, lastMessageAt: msg.created_at,
             aiGenerated: msg.ai_generated, messageCount: 0,
             hasInbound: false, hasFailed: false, statuses: new Set<string>(),
+            isDirect: !msg.campaign_id,
           });
         }
         const entry = grouped.get(key)!;
@@ -64,15 +69,22 @@ export default function ConversationsTab() {
   const selectedThread = filteredThreads?.find((t: any) => t.key === selectedThreadKey);
 
   const { data: transcript, isLoading: transcriptLoading } = useQuery({
-    queryKey: ["messaging-transcript", selectedThread?.phone, selectedThread?.campaignId],
+    queryKey: ["messaging-transcript", selectedThread?.phone, selectedThread?.campaignId, selectedThread?.isDirect],
     queryFn: async () => {
       if (!selectedThread) return [];
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from("messaging_messages")
         .select("*")
         .eq("phone", selectedThread.phone)
-        .eq("campaign_id", selectedThread.campaignId)
         .order("created_at", { ascending: true });
+
+      if (selectedThread.campaignId) {
+        query = query.eq("campaign_id", selectedThread.campaignId);
+      } else {
+        query = query.is("campaign_id", null);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data as any[]) || [];
     },
@@ -80,6 +92,7 @@ export default function ConversationsTab() {
   });
 
   const getStatusBadge = (conv: any) => {
+    if (conv.isDirect) return <Badge className="gap-1 bg-amber-500/20 text-amber-700 border-amber-500/30"><FileText className="h-3 w-3" /> Receipt</Badge>;
     if (conv.hasInbound) return <Badge className="gap-1 bg-destructive/20 text-destructive border-destructive/30"><AlertTriangle className="h-3 w-3" /> Needs Review</Badge>;
     if (conv.hasFailed) return <Badge variant="destructive" className="gap-1 text-xs">Failed</Badge>;
     if (conv.aiGenerated) return <Badge className="gap-1 bg-primary/20 text-primary border-primary/30"><Bot className="h-3 w-3" /> AI Handling</Badge>;
@@ -118,9 +131,10 @@ export default function ConversationsTab() {
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><Bot className="h-4 w-4" /> AI Handling</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.aiGenerated && !c.hasInbound).length}</p></CardContent></Card>
+      <div className="grid grid-cols-4 gap-4">
+        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><Bot className="h-4 w-4" /> AI Handling</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.aiGenerated && !c.hasInbound && !c.isDirect).length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><AlertTriangle className="h-4 w-4" /> Needs Review</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.hasInbound).length}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><FileText className="h-4 w-4" /> Invoice Receipts</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.isDirect).length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><CheckCircle className="h-4 w-4" /> Total Threads</div><p className="text-2xl font-bold mt-1">{filteredThreads.length}</p></CardContent></Card>
       </div>
 
@@ -159,7 +173,8 @@ export default function ConversationsTab() {
                   <div>
                     <CardTitle className="text-lg flex items-center gap-2">{selectedThread.phone}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
-                      Campaign: <span className="font-medium text-foreground">{selectedThread.campaignName}</span>
+                      {selectedThread.isDirect ? "Source:" : "Campaign:"}
+                      <span className="font-medium text-foreground">{selectedThread.campaignName}</span>
                       <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-600 border-blue-200 gap-1"><Phone className="h-3 w-3" /> Twilio Log</Badge>
                     </p>
                   </div>
