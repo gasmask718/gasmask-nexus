@@ -49,7 +49,7 @@ const BillingInvoiceNew = () => {
     queryFn: async () => {
       let query = supabase
         .from('store_master')
-        .select('id, store_name, city, state, phone, contact_phone')
+        .select('id, store_name, city, state, phone')
         .order('store_name')
         .limit(50);
       if (storeSearch) {
