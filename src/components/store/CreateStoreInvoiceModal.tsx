@@ -631,6 +631,8 @@ export function CreateStoreInvoiceModal({
                 total_amount: total,
                 store_name: storeName,
                 is_historical: false,
+                recipient_phone: recipientPhone || undefined,
+                custom_message: customMessage || undefined,
               },
             });
             
