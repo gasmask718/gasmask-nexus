@@ -19,6 +19,8 @@ const BillingInvoiceNew = () => {
   const queryClient = useQueryClient();
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
   const [storeSearch, setStoreSearch] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
   const [formData, setFormData] = useState({
     customer_id: '',
     store_id: '',
