@@ -1206,6 +1206,28 @@ export function CreateStoreInvoiceModal({
             />
           </div>
 
+          {/* Recipient Contact (for SMS receipt) */}
+          <div className="space-y-2 p-3 rounded-lg border border-dashed bg-muted/20">
+            <Label className="flex items-center gap-2 text-sm font-medium">
+              📱 Send Receipt To (SMS via Twilio)
+            </Label>
+            <Input
+              value={recipientPhone}
+              onChange={(e) => setRecipientPhone(e.target.value)}
+              placeholder="e.g., +1234567890 or 2125551234"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter a phone number to send the invoice receipt via SMS. Leave blank to auto-resolve from store contacts.
+            </p>
+            <Label className="text-xs text-muted-foreground">Custom Message (optional)</Label>
+            <Textarea
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Add a personal note to the invoice receipt..."
+              rows={2}
+            />
+          </div>
+
           {/* Notes */}
           <div className="space-y-2">
             <Label>Notes (optional)</Label>

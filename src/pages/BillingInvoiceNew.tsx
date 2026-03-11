@@ -152,6 +152,8 @@ const BillingInvoiceNew = () => {
             store_name: customer?.name || 'Customer',
             due_date: dueDate,
             is_historical: false,
+            recipient_phone: recipientPhone || undefined,
+            custom_message: customMessage || undefined,
           },
         }).catch(err => console.error('Receipt send error (non-blocking):', err));
       }
