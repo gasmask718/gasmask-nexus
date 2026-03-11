@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface ReceiptRequest {
@@ -14,6 +14,8 @@ interface ReceiptRequest {
   total_amount: number;
   store_name: string;
   phone_number?: string;
+  recipient_phone?: string;
+  custom_message?: string;
   due_date?: string;
   is_historical?: boolean;
   manual_resend?: boolean;
@@ -21,12 +23,7 @@ interface ReceiptRequest {
 
 /**
  * INVOICE RECEIPT AUTOMATION — Unified for both store invoices and CRM invoices
- * 
- * CRITICAL RULES:
- * 1. This is a SIDE-EFFECT - failures must NEVER block invoice persistence
- * 2. Historical invoices are PERMANENTLY blocked from automation
- * 3. Missing phone numbers are logged gracefully, not thrown as errors
- * 4. After sending, logs to messaging_messages for Conversations tab visibility
+ * Sends via Twilio and logs to messaging_messages for Conversations tab visibility.
  */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -44,7 +41,6 @@ Deno.serve(async (req) => {
 
     const request: ReceiptRequest = await req.json();
     
-    // Determine if this is a store invoice or CRM customer invoice
     const isStoreInvoice = !!request.invoice_id && !!request.store_id;
     const isCrmInvoice = !!request.customer_invoice_id;
     const invoiceTableId = request.invoice_id || request.customer_invoice_id;
@@ -53,37 +49,34 @@ Deno.serve(async (req) => {
       invoice_id: request.invoice_id,
       customer_invoice_id: request.customer_invoice_id,
       is_historical: request.is_historical,
-      manual_resend: request.manual_resend,
       type: isStoreInvoice ? 'store' : 'crm',
+      recipient_phone: request.recipient_phone || 'auto-resolve',
     });
 
-    // CRITICAL: Block ALL automation for historical invoices
+    // Block historical invoices
     if (request.is_historical && !request.manual_resend) {
-      console.log('🚫 BLOCKED: Historical invoice - no automatic receipt sent');
-      
+      console.log('🚫 BLOCKED: Historical invoice');
       await supabase.from('invoice_receipt_log').insert({
-        invoice_id: request.invoice_id || request.customer_invoice_id,
+        invoice_id: invoiceTableId,
         store_id: request.store_id || null,
-        phone_number: request.phone_number || 'N/A',
+        phone_number: 'N/A',
         message_body: 'BLOCKED - Historical invoice',
         delivery_status: 'blocked',
         is_historical_invoice: true,
         sent_reason: 'blocked_historical',
       });
-
       if (isStoreInvoice) {
         await supabase.from('invoices').update({ receipt_status: 'blocked' }).eq('id', request.invoice_id!);
       }
-
       return new Response(
-        JSON.stringify({ success: true, blocked: true, reason: 'Historical invoice - automation disabled' }),
+        JSON.stringify({ success: true, blocked: true, reason: 'Historical invoice' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // PHONE NUMBER RESOLUTION
-    let phoneNumber = request.phone_number;
-    let phoneSource = 'provided';
+    // PHONE NUMBER RESOLUTION — Priority: recipient_phone > phone_number > auto-resolve
+    let phoneNumber = request.recipient_phone || request.phone_number;
+    let phoneSource = request.recipient_phone ? 'recipient_input' : (request.phone_number ? 'provided' : 'auto');
 
     // For CRM invoices, resolve phone from crm_customers
     if (!phoneNumber && isCrmInvoice && request.customer_id) {
@@ -92,11 +85,9 @@ Deno.serve(async (req) => {
         .select('phone, name')
         .eq('id', request.customer_id)
         .single();
-      
       if (customer?.phone) {
         phoneNumber = customer.phone;
         phoneSource = `crm_customer:${customer.name || 'unknown'}`;
-        console.log(`📞 Using CRM customer phone: ${phoneNumber}`);
       }
     }
 
@@ -109,11 +100,9 @@ Deno.serve(async (req) => {
         .not('phone', 'is', null)
         .order('created_at', { ascending: true })
         .limit(1);
-      
       if (contacts && contacts.length > 0 && contacts[0].phone) {
         phoneNumber = contacts[0].phone;
         phoneSource = `store_contact:${contacts[0].name || 'unknown'}`;
-        console.log(`📞 Using contact phone: ${phoneNumber} (${contacts[0].role || 'no role'})`);
       }
     }
 
@@ -123,18 +112,12 @@ Deno.serve(async (req) => {
         .select('phone, contact_phone')
         .eq('id', request.store_id)
         .single();
-
       phoneNumber = storeData?.contact_phone || storeData?.phone;
-      if (phoneNumber) {
-        phoneSource = 'store_record';
-        console.log(`📞 Using store phone: ${phoneNumber}`);
-      }
+      if (phoneNumber) phoneSource = 'store_record';
     }
 
-    // No phone = log and return success
     if (!phoneNumber) {
       console.log('⚠️ No phone number found - receipt skipped');
-      
       await supabase.from('invoice_receipt_log').insert({
         invoice_id: invoiceTableId,
         store_id: request.store_id || null,
@@ -145,55 +128,59 @@ Deno.serve(async (req) => {
         is_historical_invoice: false,
         sent_reason: request.manual_resend ? 'manual_resend' : 'auto_live',
       });
-
       if (isStoreInvoice) {
         await supabase.from('invoices').update({ receipt_status: 'skipped' }).eq('id', request.invoice_id!);
       }
-
       return new Response(
         JSON.stringify({ success: true, sent: false, reason: 'No phone number available' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Normalize phone number to E.164
+    // Normalize phone to E.164
     let normalizedPhone = phoneNumber.replace(/\D/g, '');
     if (normalizedPhone.length === 10) {
       normalizedPhone = `+1${normalizedPhone}`;
-    } else if (normalizedPhone.length === 11 && normalizedPhone.startsWith('09')) {
-      normalizedPhone = `+63${normalizedPhone.slice(1)}`;
-    } else if (normalizedPhone.startsWith('63') && normalizedPhone.length === 12) {
+    } else if (normalizedPhone.length === 11 && normalizedPhone.startsWith('1')) {
       normalizedPhone = `+${normalizedPhone}`;
     } else if (!normalizedPhone.startsWith('+')) {
       normalizedPhone = `+${normalizedPhone}`;
     }
 
-    // Compose professional receipt message
-    const formattedTotal = new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(request.total_amount);
-
+    // Compose receipt message
+    const formattedTotal = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(request.total_amount);
     const invoiceDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const dueDateFormatted = request.due_date 
+    const dueDateFormatted = request.due_date
       ? new Date(request.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       : 'Net 30';
 
-    const messageBody = `🧾 Invoice Notification\n\n` +
-      `Hi ${request.store_name},\n\n` +
-      `You have a new invoice from Dynasty OS:\n\n` +
-      `📄 Invoice #: ${request.invoice_number}\n` +
-      `💰 Amount: ${formattedTotal}\n` +
-      `📅 Date: ${invoiceDate}\n` +
-      `📅 Due: ${dueDateFormatted}\n\n` +
-      `Payment Methods: Cash, CashApp, Zelle, Check\n\n` +
-      `Thank you for your business!\n` +
-      `— Dynasty OS`;
+    // Build message — use custom_message if provided, otherwise default template
+    let messageBody: string;
+    if (request.custom_message && request.custom_message.trim()) {
+      messageBody = `🧾 Invoice Notification\n\n` +
+        `Hi ${request.store_name},\n\n` +
+        `📄 Invoice #: ${request.invoice_number}\n` +
+        `💰 Amount: ${formattedTotal}\n` +
+        `📅 Due: ${dueDateFormatted}\n\n` +
+        `${request.custom_message.trim()}\n\n` +
+        `Payment Methods: Cash, CashApp, Zelle, Check\n` +
+        `— Dynasty OS`;
+    } else {
+      messageBody = `🧾 Invoice Notification\n\n` +
+        `Hi ${request.store_name},\n\n` +
+        `You have a new invoice from Dynasty OS:\n\n` +
+        `📄 Invoice #: ${request.invoice_number}\n` +
+        `💰 Amount: ${formattedTotal}\n` +
+        `📅 Date: ${invoiceDate}\n` +
+        `📅 Due: ${dueDateFormatted}\n\n` +
+        `Payment Methods: Cash, CashApp, Zelle, Check\n\n` +
+        `Thank you for your business!\n` +
+        `— Dynasty OS`;
+    }
 
-    // Check if Twilio is configured
+    // Check Twilio config
     if (!twilioAccountSid || !twilioAuthToken || !twilioMessagingServiceSid) {
       console.log('⚠️ Twilio not configured - logging receipt without sending');
-      
       await supabase.from('invoice_receipt_log').insert({
         invoice_id: invoiceTableId,
         store_id: request.store_id || null,
@@ -204,11 +191,9 @@ Deno.serve(async (req) => {
         is_historical_invoice: false,
         sent_reason: request.manual_resend ? 'manual_resend' : 'auto_live',
       });
-
       if (isStoreInvoice) {
         await supabase.from('invoices').update({ receipt_status: 'skipped' }).eq('id', request.invoice_id!);
       }
-
       return new Response(
         JSON.stringify({ success: true, sent: false, reason: 'Twilio not configured' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -268,7 +253,7 @@ Deno.serve(async (req) => {
         status: sendSuccess ? 'sent' : 'failed',
         twilio_sid: messageSid,
         store_id: request.store_id || null,
-        campaign_id: null, // Not a campaign — direct invoice receipt
+        campaign_id: null,
         ai_generated: false,
       });
       console.log('📝 Logged invoice receipt to messaging_messages');

@@ -145,6 +145,8 @@ export function CreateStoreInvoiceModal({
   const [photos, setPhotos] = useState<string[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
   const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
 
@@ -629,6 +631,8 @@ export function CreateStoreInvoiceModal({
                 total_amount: total,
                 store_name: storeName,
                 is_historical: false,
+                recipient_phone: recipientPhone || undefined,
+                custom_message: customMessage || undefined,
               },
             });
             
@@ -697,6 +701,8 @@ export function CreateStoreInvoiceModal({
     setSelectedStoreIds([]);
     setInvoiceMode('live');
     setPriceOverrideEnabled(false);
+    setRecipientPhone('');
+    setCustomMessage('');
   };
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.line_subtotal, 0);
@@ -1197,6 +1203,28 @@ export function CreateStoreInvoiceModal({
               value={dueDate}
               onChange={setDueDate}
               placeholder="Select due date"
+            />
+          </div>
+
+          {/* Recipient Contact (for SMS receipt) */}
+          <div className="space-y-2 p-3 rounded-lg border border-dashed bg-muted/20">
+            <Label className="flex items-center gap-2 text-sm font-medium">
+              📱 Send Receipt To (SMS via Twilio)
+            </Label>
+            <Input
+              value={recipientPhone}
+              onChange={(e) => setRecipientPhone(e.target.value)}
+              placeholder="e.g., +1234567890 or 2125551234"
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter a phone number to send the invoice receipt via SMS. Leave blank to auto-resolve from store contacts.
+            </p>
+            <Label className="text-xs text-muted-foreground">Custom Message (optional)</Label>
+            <Textarea
+              value={customMessage}
+              onChange={(e) => setCustomMessage(e.target.value)}
+              placeholder="Add a personal note to the invoice receipt..."
+              rows={2}
             />
           </div>
 
