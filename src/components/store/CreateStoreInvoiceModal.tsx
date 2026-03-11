@@ -145,6 +145,8 @@ export function CreateStoreInvoiceModal({
   const [photos, setPhotos] = useState<string[]>([]);
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedStoreIds, setSelectedStoreIds] = useState<string[]>([]);
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [customMessage, setCustomMessage] = useState('');
   const [invoiceMode, setInvoiceMode] = useState<InvoiceMode>('live');
   const [priceOverrideEnabled, setPriceOverrideEnabled] = useState(false);
 
