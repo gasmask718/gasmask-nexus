@@ -701,6 +701,8 @@ export function CreateStoreInvoiceModal({
     setSelectedStoreIds([]);
     setInvoiceMode('live');
     setPriceOverrideEnabled(false);
+    setRecipientPhone('');
+    setCustomMessage('');
   };
 
   const subtotal = lineItems.reduce((sum, item) => sum + item.line_subtotal, 0);
