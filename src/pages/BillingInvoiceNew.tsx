@@ -85,7 +85,6 @@ const BillingInvoiceNew = () => {
             entity_id: formData.store_id,
             store_id: formData.store_id,
             invoice_number: formData.invoice_number,
-            invoice_date: formData.invoice_date,
             due_date: dueDate,
             subtotal,
             tax,
