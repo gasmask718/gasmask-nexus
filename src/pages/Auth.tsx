@@ -12,6 +12,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Package } from 'lucide-react';
+import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
+import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -21,12 +23,22 @@ const Auth = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const markManualSignIn = useMarkManualSignIn();
+  const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
 
   useEffect(() => {
-    if (user) {
-      navigate('/');
+    if (!user) return;
+    if (profileLoading) return;
+
+    // If user has a profile with a role, redirect to their portal
+    if (profileData?.profile?.primary_role) {
+      const role = profileData.profile.primary_role as OSRole;
+      const redirectPath = getRoleRedirectPath(role);
+      navigate(redirectPath, { replace: true });
+    } else {
+      // No profile/role — go to main dashboard or onboarding
+      navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, profileData, profileLoading, navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

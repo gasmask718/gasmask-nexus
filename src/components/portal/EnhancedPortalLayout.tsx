@@ -152,6 +152,9 @@ export function EnhancedPortalLayout({
                 </DropdownMenu>
               )}
 
+              {/* PWA Install */}
+              <PwaInstallButton variant="ghost" size="sm" showLabel={false} />
+
               {/* Language Selector */}
               <LanguageSelector />
 

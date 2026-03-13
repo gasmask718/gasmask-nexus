@@ -46,6 +46,9 @@ export default function PortalLayout({ children, title }: PortalLayoutProps) {
             {/* Language Selector */}
             <LanguageSelector />
 
+            {/* PWA Install */}
+            <PwaInstallButton variant="ghost" size="sm" showLabel={false} />
+
             {/* Role Badge */}
             {profile?.primary_role && (
               <Badge variant="secondary" className="hidden sm:flex">
