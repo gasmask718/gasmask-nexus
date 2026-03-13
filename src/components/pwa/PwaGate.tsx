@@ -45,7 +45,7 @@ export default function PwaGate() {
     // Register service worker
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
-        .register('/sw.js', { scope: '/portal' })
+        .register('/sw.js', { scope: '/' })
         .then(() => logPwaEvent('sw_registered'))
         .catch((err) => console.warn('SW registration failed:', err));
     }
