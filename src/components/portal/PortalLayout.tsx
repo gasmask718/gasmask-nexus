@@ -8,6 +8,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { getRoleDisplayName } from '@/services/roleService';
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from '@/hooks/useTranslation';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallButton';
 
 interface PortalLayoutProps {
   children: ReactNode;

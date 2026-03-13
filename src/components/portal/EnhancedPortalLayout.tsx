@@ -9,6 +9,7 @@ import { getRoleDisplayName } from '@/services/roleService';
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from '@/hooks/useTranslation';
 import { SimulationBadge, useSimulationMode } from '@/contexts/SimulationModeContext';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallButton';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { cn } from '@/lib/utils';
 import {

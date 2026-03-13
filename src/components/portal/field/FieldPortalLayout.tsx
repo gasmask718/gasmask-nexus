@@ -8,6 +8,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { PortalSidebar } from './PortalSidebar';
 import { LanguageSelector } from '@/components/portal/LanguageSelector';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallButton';
 
 interface FieldPortalLayoutProps {
   children: ReactNode;
