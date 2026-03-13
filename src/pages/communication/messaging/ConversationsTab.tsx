@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
-import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall } from "lucide-react";
+import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall, RefreshCw } from "lucide-react";
 
 interface UnifiedMessage {
   id: string;
@@ -16,11 +17,12 @@ interface UnifiedMessage {
   body: string;
   status: string;
   created_at: string;
-  source: "campaign" | "invoice" | "comm_sms" | "comm_email" | "comm_call" | "comm_ai_call";
+  source: "campaign" | "invoice" | "comm_sms" | "comm_email" | "comm_call" | "comm_ai_call" | "twilio_log";
   campaign_name?: string;
   campaign_id?: string;
   ai_generated?: boolean;
   channel?: string;
+  twilio_sid?: string;
 }
 
 export default function ConversationsTab() {
@@ -31,30 +33,54 @@ export default function ConversationsTab() {
   const [directionFilter, setDirectionFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
-  const { data: threads, isLoading: threadsLoading } = useQuery({
+  // Fetch Twilio message history via edge function
+  const fetchTwilioMessages = useCallback(async (): Promise<UnifiedMessage[]> => {
+    try {
+      const { data, error } = await supabase.functions.invoke("fetch-twilio-messages");
+      if (error || !data?.messages) return [];
+      return (data.messages as any[]).map((msg: any) => ({
+        id: msg.sid || msg.id,
+        phone: msg.direction === "outbound-api" || msg.direction === "outbound" ? msg.to : msg.from,
+        direction: msg.direction?.includes("outbound") ? "outbound" : "inbound",
+        body: msg.body || "",
+        status: msg.status || "sent",
+        created_at: msg.date_sent || msg.date_created || new Date().toISOString(),
+        source: "twilio_log" as const,
+        channel: "sms",
+        twilio_sid: msg.sid,
+      }));
+    } catch {
+      return [];
+    }
+  }, []);
+
+  const { data: threads, isLoading: threadsLoading, refetch } = useQuery({
     queryKey: ["unified-conversations", currentBusiness?.id],
     queryFn: async () => {
-      if (!currentBusiness?.id) return [];
-
       // 1. Fetch messaging_messages (campaigns + invoice receipts)
       const { data: msgData } = await (supabase as any)
         .from("messaging_messages")
-        .select("id, campaign_id, direction, body, ai_generated, status, phone, created_at, messaging_campaigns(name)")
+        .select("id, campaign_id, direction, body, ai_generated, status, phone, created_at, twilio_sid, messaging_campaigns(name)")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       // 2. Fetch communication_logs (SMS, email, calls, AI calls)
       const { data: commData } = await supabase
         .from("communication_logs")
         .select("id, channel, direction, summary, message_content, delivery_status, recipient_phone, sender_phone, created_at, outcome, performed_by")
         .order("created_at", { ascending: false })
-        .limit(500);
+        .limit(1000);
+
+      // 3. Fetch Twilio API messages
+      const twilioMsgs = await fetchTwilioMessages();
 
       const unified: UnifiedMessage[] = [];
+      const seenSids = new Set<string>();
 
       // Map messaging_messages
       for (const msg of msgData || []) {
         const source = msg.campaign_id ? "campaign" : "invoice";
+        if (msg.twilio_sid) seenSids.add(msg.twilio_sid);
         unified.push({
           id: msg.id,
           phone: msg.phone || "",
@@ -67,6 +93,7 @@ export default function ConversationsTab() {
           campaign_id: msg.campaign_id,
           ai_generated: msg.ai_generated,
           channel: "sms",
+          twilio_sid: msg.twilio_sid,
         });
       }
 
@@ -93,20 +120,29 @@ export default function ConversationsTab() {
         });
       }
 
+      // Add Twilio messages not already tracked in messaging_messages (dedupe by SID)
+      for (const tm of twilioMsgs) {
+        if (tm.twilio_sid && seenSids.has(tm.twilio_sid)) continue;
+        unified.push(tm);
+      }
+
       // Sort all by date desc
       unified.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
       // Group into threads by phone
       const grouped = new Map<string, any>();
       for (const msg of unified) {
+        // Normalize phone for grouping
+        const cleanPhone = msg.phone?.replace(/\D/g, "").slice(-10) || "unknown";
         const key = msg.campaign_id
-          ? `campaign_${msg.campaign_id}_${msg.phone}`
-          : `${msg.source}_${msg.phone}`;
+          ? `campaign_${msg.campaign_id}_${cleanPhone}`
+          : `${msg.source}_${cleanPhone}`;
 
         if (!grouped.has(key)) {
           grouped.set(key, {
             key,
             phone: msg.phone,
+            cleanPhone,
             source: msg.source,
             campaignId: msg.campaign_id || null,
             campaignName: msg.campaign_name || getSourceLabel(msg.source),
@@ -122,17 +158,17 @@ export default function ConversationsTab() {
         const entry = grouped.get(key)!;
         entry.messageCount++;
         if (msg.direction === "inbound") entry.hasInbound = true;
-        if (msg.status === "failed") entry.hasFailed = true;
+        if (msg.status === "failed" || msg.status === "undelivered") entry.hasFailed = true;
       }
 
       return Array.from(grouped.values());
     },
-    enabled: !!currentBusiness?.id,
+    refetchInterval: 30000, // Auto-refresh every 30s
   });
 
   // Apply filters
   const filteredThreads = (threads || []).filter((t: any) => {
-    if (searchPhone && !t.phone?.includes(searchPhone)) return false;
+    if (searchPhone && !t.phone?.includes(searchPhone) && !t.cleanPhone?.includes(searchPhone.replace(/\D/g, ""))) return false;
     if (statusFilter === "needs_review" && !t.hasInbound) return false;
     if (statusFilter === "failed" && !t.hasFailed) return false;
     if (statusFilter === "sent" && (t.hasInbound || t.hasFailed)) return false;
@@ -144,19 +180,21 @@ export default function ConversationsTab() {
 
   const selectedThread = filteredThreads?.find((t: any) => t.key === selectedThreadKey);
 
-  // Fetch transcript for selected thread from both sources
+  // Fetch transcript for selected thread
   const { data: transcript, isLoading: transcriptLoading } = useQuery({
     queryKey: ["unified-transcript", selectedThread?.phone, selectedThread?.campaignId, selectedThread?.source],
     queryFn: async () => {
       if (!selectedThread) return [];
       const results: UnifiedMessage[] = [];
+      const cleanPhone = selectedThread.phone?.replace(/\D/g, "").slice(-10) || "";
 
-      // Always fetch from messaging_messages for this phone
+      // Fetch from messaging_messages
       let msgQuery = (supabase as any)
         .from("messaging_messages")
-        .select("id, campaign_id, direction, body, ai_generated, status, phone, created_at")
-        .eq("phone", selectedThread.phone)
-        .order("created_at", { ascending: true });
+        .select("id, campaign_id, direction, body, ai_generated, status, phone, created_at, twilio_sid")
+        .or(`phone.ilike.%${cleanPhone}%`)
+        .order("created_at", { ascending: true })
+        .limit(200);
 
       if (selectedThread.campaignId) {
         msgQuery = msgQuery.eq("campaign_id", selectedThread.campaignId);
@@ -168,20 +206,18 @@ export default function ConversationsTab() {
           id: m.id, phone: m.phone, direction: m.direction || "outbound",
           body: m.body || "", status: m.status || "sent", created_at: m.created_at,
           source: m.campaign_id ? "campaign" : "invoice", ai_generated: m.ai_generated,
-          channel: "sms",
+          channel: "sms", twilio_sid: m.twilio_sid,
         });
       }
 
-      // Also fetch from communication_logs for this phone (if not a campaign thread)
+      // Fetch from communication_logs
       if (!selectedThread.campaignId) {
-        const cleanPhone = selectedThread.phone.replace(/\D/g, "");
-        const phoneSuffix = cleanPhone.slice(-10);
-
         const { data: commData } = await supabase
           .from("communication_logs")
           .select("id, channel, direction, summary, message_content, delivery_status, recipient_phone, sender_phone, created_at, outcome, performed_by")
-          .or(`recipient_phone.ilike.%${phoneSuffix}%,sender_phone.ilike.%${phoneSuffix}%`)
-          .order("created_at", { ascending: true });
+          .or(`recipient_phone.ilike.%${cleanPhone}%,sender_phone.ilike.%${cleanPhone}%`)
+          .order("created_at", { ascending: true })
+          .limit(200);
 
         for (const log of (commData as any[]) || []) {
           let source: UnifiedMessage["source"] = "comm_sms";
@@ -201,7 +237,6 @@ export default function ConversationsTab() {
         }
       }
 
-      // Sort chronologically
       results.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       return results;
     },
@@ -209,6 +244,7 @@ export default function ConversationsTab() {
   });
 
   const getStatusBadge = (conv: any) => {
+    if (conv.source === "twilio_log") return <Badge className="gap-1 bg-green-500/20 text-green-700 border-green-500/30"><Phone className="h-3 w-3" /> Twilio</Badge>;
     if (conv.source === "invoice") return <Badge className="gap-1 bg-amber-500/20 text-amber-700 border-amber-500/30"><FileText className="h-3 w-3" /> Receipt</Badge>;
     if (conv.source === "comm_call" || conv.source === "comm_ai_call") return <Badge className="gap-1 bg-purple-500/20 text-purple-700 border-purple-500/30"><PhoneCall className="h-3 w-3" /> Call</Badge>;
     if (conv.source === "comm_email") return <Badge className="gap-1 bg-blue-500/20 text-blue-700 border-blue-500/30"><Mail className="h-3 w-3" /> Email</Badge>;
@@ -240,6 +276,7 @@ export default function ConversationsTab() {
             <SelectItem value="comm_email">Email</SelectItem>
             <SelectItem value="comm_call">Calls</SelectItem>
             <SelectItem value="comm_ai_call">AI Calls</SelectItem>
+            <SelectItem value="twilio_log">Twilio Logs</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -259,21 +296,26 @@ export default function ConversationsTab() {
             <SelectItem value="outbound">Outbound</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5 h-9">
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </Button>
       </div>
 
       {/* Summary */}
-      <div className="grid grid-cols-5 gap-4">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><MessageSquare className="h-4 w-4" /> Campaigns</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "campaign").length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><FileText className="h-4 w-4" /> Receipts</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "invoice").length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><Phone className="h-4 w-4" /> SMS Logs</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "comm_sms").length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><PhoneCall className="h-4 w-4" /> Calls</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "comm_call" || c.source === "comm_ai_call").length}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-2 text-muted-foreground text-sm"><AlertTriangle className="h-4 w-4" /> Needs Review</div><p className="text-2xl font-bold mt-1">{(threads || []).filter((c: any) => c.hasInbound).length}</p></CardContent></Card>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2 text-muted-foreground text-xs"><MessageSquare className="h-3.5 w-3.5" /> All</div><p className="text-xl font-bold mt-1">{(threads || []).length}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2 text-muted-foreground text-xs"><MessageSquare className="h-3.5 w-3.5" /> Campaigns</div><p className="text-xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "campaign").length}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2 text-muted-foreground text-xs"><FileText className="h-3.5 w-3.5" /> Receipts</div><p className="text-xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "invoice").length}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2 text-muted-foreground text-xs"><Phone className="h-3.5 w-3.5" /> SMS</div><p className="text-xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "comm_sms" || c.source === "twilio_log").length}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2 text-muted-foreground text-xs"><PhoneCall className="h-3.5 w-3.5" /> Calls</div><p className="text-xl font-bold mt-1">{(threads || []).filter((c: any) => c.source === "comm_call" || c.source === "comm_ai_call").length}</p></CardContent></Card>
+        <Card><CardContent className="p-3"><div className="flex items-center gap-2 text-muted-foreground text-xs"><AlertTriangle className="h-3.5 w-3.5" /> Review</div><p className="text-xl font-bold mt-1">{(threads || []).filter((c: any) => c.hasInbound).length}</p></CardContent></Card>
       </div>
 
       {/* Split View */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[600px]">
         <Card className="col-span-1 flex flex-col h-full overflow-hidden">
-          <CardHeader className="py-4 border-b"><CardTitle className="text-lg">All Conversations</CardTitle></CardHeader>
+          <CardHeader className="py-4 border-b"><CardTitle className="text-lg">All Conversations ({filteredThreads.length})</CardTitle></CardHeader>
           <ScrollArea className="flex-1">
             <div className="divide-y">
               {filteredThreads.length === 0 ? (
@@ -306,7 +348,7 @@ export default function ConversationsTab() {
                     <CardTitle className="text-lg flex items-center gap-2">{selectedThread.phone}</CardTitle>
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                       Source: <span className="font-medium text-foreground">{selectedThread.campaignName || getSourceLabel(selectedThread.source)}</span>
-                      <Badge variant="outline" className="ml-2 bg-blue-50 text-blue-600 border-blue-200 gap-1"><Phone className="h-3 w-3" /> Twilio</Badge>
+                      <Badge variant="outline" className="ml-2 bg-green-50 text-green-600 border-green-200 gap-1"><Phone className="h-3 w-3" /> Twilio</Badge>
                     </p>
                   </div>
                 </div>
@@ -326,7 +368,7 @@ export default function ConversationsTab() {
                             {msg.ai_generated && <Bot className="h-3 w-3 text-primary" />}
                             {!isOutbound && <User className="h-3 w-3 text-muted-foreground" />}
                           </div>
-                          <div className={`max-w-[80%] rounded-lg p-3 text-sm shadow-sm ${isOutbound ? "bg-blue-600 text-white rounded-tr-none" : "bg-background border rounded-tl-none"}`}>
+                          <div className={`max-w-[80%] rounded-lg p-3 text-sm shadow-sm ${isOutbound ? "bg-primary text-primary-foreground rounded-tr-none" : "bg-background border rounded-tl-none"}`}>
                             <p className="whitespace-pre-wrap">{msg.body}</p>
                           </div>
                           <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
@@ -359,11 +401,13 @@ function getSourceLabel(source: string): string {
     case "comm_email": return "Email";
     case "comm_call": return "Phone Call";
     case "comm_ai_call": return "AI Call";
+    case "twilio_log": return "Twilio Message";
     default: return "Message";
   }
 }
 
 function getProviderLabel(source: string): string {
+  if (source === "twilio_log") return "Twilio";
   if (source.startsWith("comm_")) return "System";
   return "Twilio";
 }

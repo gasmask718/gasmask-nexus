@@ -8,6 +8,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { getRoleDisplayName } from '@/services/roleService';
 import { LanguageSelector } from './LanguageSelector';
 import { useTranslation } from '@/hooks/useTranslation';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallButton';
 
 interface PortalLayoutProps {
   children: ReactNode;
@@ -44,6 +45,9 @@ export default function PortalLayout({ children, title }: PortalLayoutProps) {
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Language Selector */}
             <LanguageSelector />
+
+            {/* PWA Install */}
+            <PwaInstallButton variant="ghost" size="sm" showLabel={false} />
 
             {/* Role Badge */}
             {profile?.primary_role && (

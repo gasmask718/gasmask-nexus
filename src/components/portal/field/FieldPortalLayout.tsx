@@ -8,6 +8,7 @@ import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
 import { useTranslation } from '@/hooks/useTranslation';
 import { PortalSidebar } from './PortalSidebar';
 import { LanguageSelector } from '@/components/portal/LanguageSelector';
+import { PwaInstallButton } from '@/components/pwa/PwaInstallButton';
 
 interface FieldPortalLayoutProps {
   children: ReactNode;
@@ -50,6 +51,9 @@ export function FieldPortalLayout({ children, portalType }: FieldPortalLayoutPro
             <div className={cn('flex items-center gap-2', isRTL && 'flex-row-reverse')}>
               {/* Language Selector */}
               <LanguageSelector />
+              
+              {/* PWA Install */}
+              <PwaInstallButton variant="ghost" size="icon" showLabel={false} />
               
               <Button variant="ghost" size="icon" className="relative">
                 <Bell className="h-4 w-4" />
