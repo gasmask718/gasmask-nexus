@@ -22,11 +22,8 @@ export function PwaInstallButton({
 }: PwaInstallButtonProps) {
   const { canInstall, isIos, isInstalled, triggerInstall } = usePwaInstall();
 
-  // Already installed — hide
-  if (isInstalled) return null;
-
-  // iOS — show manual instructions
-  if (isIos) {
+  // iOS — show manual instructions via popover
+  if (isIos && !isInstalled) {
     return (
       <Popover>
         <PopoverTrigger asChild>
@@ -47,15 +44,19 @@ export function PwaInstallButton({
     );
   }
 
-  // Chrome/Edge/etc — native prompt
-  if (canInstall) {
-    return (
-      <Button variant={variant} size={size} className={className} onClick={triggerInstall}>
-        <Download className="h-4 w-4" />
-        {showLabel && <span className="ml-1.5">Install App</span>}
-      </Button>
-    );
-  }
+  // Always show — trigger native prompt if available, otherwise guide user
+  const handleClick = () => {
+    if (canInstall) {
+      triggerInstall();
+    } else {
+      window.alert('To install, use your browser menu → "Add to Home Screen" or "Install App".');
+    }
+  };
 
-  return null;
+  return (
+    <Button variant={variant} size={size} className={className} onClick={handleClick}>
+      <Download className="h-4 w-4" />
+      {showLabel && <span className="ml-1.5">{isInstalled ? 'Installed' : 'Install App'}</span>}
+    </Button>
+  );
 }

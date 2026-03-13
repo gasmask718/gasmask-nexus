@@ -113,19 +113,22 @@ const Dashboard = () => {
           <div className="space-y-1 text-center sm:text-left">
             <h3 className="text-lg font-bold text-foreground">Install GASMASK PWA</h3>
             <p className="text-sm text-muted-foreground">
-              {canInstall
-                ? 'Add to your home screen for quick access & offline support.'
-                : 'Open this page in Safari (iOS) or Chrome (Android) and use "Add to Home Screen" to install.'}
+              Add to your home screen for quick access &amp; offline support.
             </p>
           </div>
           <Button
-            onClick={canInstall ? triggerInstall : undefined}
-            disabled={!canInstall}
+            onClick={() => {
+              if (canInstall) {
+                triggerInstall();
+              } else {
+                window.alert('Use your browser menu → "Add to Home Screen" or "Install App".');
+              }
+            }}
             size="lg"
             className="gap-2 shrink-0 min-w-[200px]"
           >
             <Download className="h-5 w-5" />
-            {canInstall ? 'Install Now' : 'Install via Browser Menu'}
+            Install Now
           </Button>
         </CardContent>
       </Card>
