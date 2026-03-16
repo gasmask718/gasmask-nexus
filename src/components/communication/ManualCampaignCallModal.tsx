@@ -481,7 +481,7 @@ export function ManualCampaignCallModal({
           queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
         });
     }
-  }, [device, currentItem, campaignId, queryClient, refetchQueue, stopSpeechRecognition]);
+  }, [device, currentItem, campaignId, queryClient, refetchQueue, stopSpeechRecognition, stopRemoteAudioCapture]);
 
   const skipToNext = useCallback(() => {
     if (isDialing || device.callStatus !== "idle") {
