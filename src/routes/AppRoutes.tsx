@@ -578,9 +578,11 @@ import BrandPlaceholder from '@/pages/BrandPlaceholder';
  */
 const ProtectedLayout = () => (
   <ProtectedRoute>
-    <Layout>
-      <Outlet />
-    </Layout>
+    <RoleRouteGuard>
+      <Layout>
+        <Outlet />
+      </Layout>
+    </RoleRouteGuard>
   </ProtectedRoute>
 );
 
