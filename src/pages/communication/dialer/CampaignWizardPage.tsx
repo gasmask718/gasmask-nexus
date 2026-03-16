@@ -1149,11 +1149,11 @@ export default function CampaignWizardPage() {
                       <p className="text-center text-sm text-muted-foreground py-8">
                         No calls yet. Launch a campaign to see transcripts.
                       </p>
-                    ) : callItems.filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status)).length === 0 ? (
+                    ) : callItems.filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected", "transferred"].includes(i.status)).length === 0 ? (
                       <p className="text-center text-sm text-muted-foreground py-8">Waiting for calls to connect...</p>
                     ) : (
                       callItems
-                        .filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status))
+                        .filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected", "transferred"].includes(i.status))
                         .map((item: any) => {
                           const sid = item.twilio_call_sid?.trim();
                           const msgs = sid ? (transcriptsByCall[sid] || []) : [];
