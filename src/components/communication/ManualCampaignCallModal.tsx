@@ -598,10 +598,11 @@ export function ManualCampaignCallModal({
   ]);
 
   const skipToNext = useCallback(() => {
-    if (isDialing || device.callStatus !== "idle") {
+    if (isDialing || isOnCall) {
       toast.error("End the current call before skipping");
       return;
     }
+
     if (currentItem?.status === "queued") {
       supabase
         .from("outbound_call_queue")
@@ -609,51 +610,35 @@ export function ManualCampaignCallModal({
         .eq("id", currentItem.id)
         .then(() => refetchQueue());
     }
+
+    stopSidResolution();
+    currentCallSidRef.current = null;
+    setActiveCallSid(null);
+    setInterimText("");
     setLocalTranscripts([]);
+
     const nextQueued = queueItems.findIndex((q, i) => i > currentIndex && q.status === "queued");
     if (nextQueued >= 0) {
       setCurrentIndex(nextQueued);
     } else {
       toast.info("No more numbers in queue");
     }
-  }, [currentIndex, queueItems, currentItem, isDialing, device.callStatus, refetchQueue]);
+  }, [currentIndex, currentItem, isDialing, isOnCall, queueItems, refetchQueue, stopSidResolution]);
 
   const handleClose = (next: boolean) => {
-    if (isDialing || device.callStatus !== "idle") {
+    if (isDialing || isOnCall) {
       toast.error("End the current call before closing");
       return;
     }
+    stopSidResolution();
     stopSpeechRecognition();
     stopRemoteAudioCapture();
+    currentCallSidRef.current = null;
+    setActiveCallSid(null);
+    setInterimText("");
     onOpenChange(next);
   };
-
-  // Merge local + DB transcripts for display
-  const allTranscripts = [
-    ...localTranscripts.map((t) => ({
-      speaker: t.speaker,
-      text: t.text,
-      time: t.timestamp,
-      source: "local" as const,
-    })),
-    ...(dbTranscripts as any[]).map((t: any) => ({
-      speaker: t.speaker === "human" || t.speaker === "user" ? "you" as const : "caller" as const,
-      text: t.text,
-      time: new Date(t.created_at),
-      source: "db" as const,
-    })),
-  ]
-    // Deduplicate by text similarity
-    .filter((t, i, arr) => {
-      if (t.source === "local") {
-        // Remove local if DB has same text
-        return !arr.some((o) => o.source === "db" && o.text === t.text);
-      }
-      return true;
-    })
-    .sort((a, b) => a.time.getTime() - b.time.getTime());
-
-  const isOnCall = device.callStatus === "in-progress" || device.callStatus === "ringing" || device.callStatus === "connecting";
+...
   const progressPct = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
 
   return (
