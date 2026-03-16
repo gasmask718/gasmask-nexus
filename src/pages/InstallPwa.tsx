@@ -119,7 +119,7 @@ export default function InstallPwa() {
               <Download className="h-5 w-5" />
               Install GASMASK
             </Button>
-          )
+          )}
         </section>
 
         {/* Features Grid */}
