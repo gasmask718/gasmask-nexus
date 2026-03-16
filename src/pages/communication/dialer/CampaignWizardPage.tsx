@@ -302,6 +302,8 @@ export default function CampaignWizardPage() {
 
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
+  const [isManualCallModalOpen, setIsManualCallModalOpen] = useState(false);
+
   const [step, setStep] = useState(0);
 
   const [audienceType, setAudienceType] = useState<AudienceType>("prospects");
