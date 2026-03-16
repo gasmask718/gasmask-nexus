@@ -1,0 +1,1 @@
+ALTER TABLE public.dialer_campaigns ADD COLUMN IF NOT EXISTS archived_at timestamptz DEFAULT NULL;
