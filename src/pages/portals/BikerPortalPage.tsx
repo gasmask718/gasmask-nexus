@@ -112,7 +112,7 @@ const SIMULATION_ACTIVITY: ActivityItem[] = [
 function BikerPortalContent() {
   const navigate = useNavigate();
   const { simulationMode } = useSimulationMode();
-  const { canInstall, triggerInstall } = usePwaInstall();
+  
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
 
   const { data: tasks, isSimulated: tasksSimulated } = useResolvedData([], SIMULATION_TASKS);
