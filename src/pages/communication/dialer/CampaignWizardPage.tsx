@@ -617,7 +617,7 @@ export default function CampaignWizardPage() {
 
           status: "active",
 
-          dial_mode: "ai",
+          dial_mode: form.dial_mode,
 
           max_attempts: form.max_attempts,
 
