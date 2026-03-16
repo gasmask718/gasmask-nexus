@@ -71,7 +71,7 @@ serve(async (req) => {
         })
         .then(() => {});
 
-      const transferChoiceUrl = `${supabaseUrl}/functions/v1/twilio-transfer-choice-webhook?agent_id=${agentId}&human_number=${encodeURIComponent(humanNumber)}&queue_item_id=${encodeURIComponent(queueItemId)}&campaign_id=${encodeURIComponent(campaignId)}`;
+      const transferChoiceUrl = `${supabaseUrl}/functions/v1/twilio-transfer-choice-webhook?agent_id=${agentId}&amp;human_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}&amp;campaign_id=${encodeURIComponent(campaignId)}`;
 
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
