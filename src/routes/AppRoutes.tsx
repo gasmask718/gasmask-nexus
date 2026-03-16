@@ -645,6 +645,8 @@ export default function AppRoutes() {
       <Route path="/invite/accept" element={<InviteSignup />} />
       <Route path="/invite/ambassador/:token" element={<AmbassadorInviteAccept />} />
       <Route path="/accept-invite" element={<Navigate to="/signup" replace />} />
+      {/* Brandaro Public Proposal Viewer */}
+      <Route path="/proposal/:token" element={<PublicProposalPage />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
