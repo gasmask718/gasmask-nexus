@@ -638,7 +638,30 @@ export function ManualCampaignCallModal({
     setInterimText("");
     onOpenChange(next);
   };
-...
+
+  // Merge local + DB transcripts for display
+  const allTranscripts = [
+    ...localTranscripts.map((t) => ({
+      speaker: t.speaker,
+      text: t.text,
+      time: t.timestamp,
+      source: "local" as const,
+    })),
+    ...(dbTranscripts as any[]).map((t: any) => ({
+      speaker: t.speaker === "human" || t.speaker === "user" ? ("you" as const) : ("caller" as const),
+      text: t.text,
+      time: new Date(t.created_at),
+      source: "db" as const,
+    })),
+  ]
+    .filter((t, i, arr) => {
+      if (t.source === "local") {
+        return !arr.some((o) => o.source === "db" && o.text === t.text);
+      }
+      return true;
+    })
+    .sort((a, b) => a.time.getTime() - b.time.getTime());
+
   const progressPct = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
 
   return (
