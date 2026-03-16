@@ -2,13 +2,29 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-/**
- * Receives base64 audio chunks from the browser, transcribes via Gemini,
- * and stores the transcript in live_call_transcripts as "caller" speaker.
- */
+function extractTranscript(content: unknown): string {
+  if (typeof content === "string") return content.trim();
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof part === "object" && "text" in part) {
+          return String((part as { text?: string }).text || "");
+        }
+        return "";
+      })
+      .join(" ")
+      .trim();
+  }
+
+  return "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -21,16 +37,48 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { audio_base64, call_sid, mime_type } = await req.json();
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return new Response(JSON.stringify({ error: "Database service unavailable" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    if (!audio_base64 || !call_sid) {
-      return new Response(JSON.stringify({ error: "Missing audio_base64 or call_sid" }), {
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    const body = await req.json();
+    const audioBase64 = typeof body.audio_base64 === "string" ? body.audio_base64 : "";
+    const queueItemId = typeof body.queue_item_id === "string" ? body.queue_item_id : "";
+    const mimeType = typeof body.mime_type === "string" ? body.mime_type : "audio/webm";
+
+    let effectiveCallSid = typeof body.call_sid === "string" ? body.call_sid.trim() : "";
+
+    if ((!effectiveCallSid || effectiveCallSid.startsWith("browser-")) && queueItemId) {
+      const { data: queueItem } = await supabase
+        .from("outbound_call_queue")
+        .select("twilio_call_sid")
+        .eq("id", queueItemId)
+        .maybeSingle();
+
+      effectiveCallSid = queueItem?.twilio_call_sid?.trim() || "";
+    }
+
+    if (!audioBase64) {
+      return new Response(JSON.stringify({ error: "Missing audio_base64" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Call Gemini with audio for transcription
+    if (!effectiveCallSid) {
+      return new Response(JSON.stringify({ text: "", skipped: true, reason: "call_sid_unavailable" }), {
+        status: 202,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -38,7 +86,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           {
             role: "user",
@@ -46,18 +94,18 @@ Deno.serve(async (req) => {
               {
                 type: "input_audio",
                 input_audio: {
-                  data: audio_base64,
-                  format: mime_type === "audio/webm" ? "webm" : "wav",
+                  data: audioBase64,
+                  format: mimeType.includes("webm") ? "webm" : "wav",
                 },
               },
               {
                 type: "text",
-                text: "Transcribe this audio exactly as spoken. Return ONLY the spoken words, nothing else. If there is silence or no speech, return exactly: [silence]",
+                text: "Transcribe only what the remote caller says. Output only spoken words. If no speech, return exactly [silence].",
               },
             ],
           },
         ],
-        temperature: 0.1,
+        temperature: 0,
       }),
     });
 
@@ -71,29 +119,30 @@ Deno.serve(async (req) => {
     }
 
     const aiData = await aiResponse.json();
-    const transcript = aiData.choices?.[0]?.message?.content?.trim() || "";
+    const transcript = extractTranscript(aiData?.choices?.[0]?.message?.content);
 
-    // Skip silence
     if (!transcript || transcript === "[silence]" || transcript.length < 2) {
       return new Response(JSON.stringify({ text: "", skipped: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Store in live_call_transcripts
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
-
-    await supabase.from("live_call_transcripts").insert({
-      call_sid,
+    const { error: insertError } = await supabase.from("live_call_transcripts").insert({
+      call_sid: effectiveCallSid,
       speaker: "caller",
       text: transcript,
       created_at: new Date().toISOString(),
     });
 
-    return new Response(JSON.stringify({ text: transcript, stored: true }), {
+    if (insertError) {
+      console.error("Failed to store transcript:", insertError);
+      return new Response(JSON.stringify({ error: "Failed to store transcript" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ text: transcript, stored: true, call_sid: effectiveCallSid }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err: unknown) {

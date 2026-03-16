@@ -84,12 +84,14 @@ export function ManualCampaignCallModal({
   const [elapsed, setElapsed] = useState(0);
   const [localTranscripts, setLocalTranscripts] = useState<TranscriptLine[]>([]);
   const [interimText, setInterimText] = useState("");
+  const [activeCallSid, setActiveCallSid] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
   const remoteRecorderRef = useRef<MediaRecorder | null>(null);
   const remoteChunksRef = useRef<Blob[]>([]);
   const transcribeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sidResolveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch all queued items for this campaign
   const { data: queueItems = [], refetch: refetchQueue } = useQuery({
@@ -112,8 +114,17 @@ export function ManualCampaignCallModal({
     (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer"
   ).length;
 
+  const isOnCall =
+    Boolean(device.activeCall) ||
+    ["connecting", "ringing", "in-progress", "reconnecting"].includes(device.callStatus);
+
   // Fetch DB transcripts for current call
-  const currentCallSid = currentItem?.twilio_call_sid || null;
+  const currentCallSid = activeCallSid || currentItem?.twilio_call_sid || null;
+
+  useEffect(() => {
+    currentCallSidRef.current = currentCallSid;
+  }, [currentCallSid]);
+
   const { data: dbTranscripts = [] } = useQuery({
     queryKey: ["manual-call-transcripts", currentCallSid],
     queryFn: async () => {
@@ -124,8 +135,8 @@ export function ManualCampaignCallModal({
         .order("created_at", { ascending: true });
       return data || [];
     },
-    enabled: !!currentCallSid,
-    refetchInterval: 3000,
+    enabled: open && !!currentCallSid,
+    refetchInterval: isOnCall ? 1000 : 3000,
   });
 
   // Timer
@@ -141,6 +152,32 @@ export function ManualCampaignCallModal({
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [localTranscripts, dbTranscripts, interimText]);
+
+  // Realtime inserts for near-instant transcript updates
+  useEffect(() => {
+    if (!open || !currentCallSid) return;
+
+    const channel = supabase
+      .channel(`manual-call-transcripts-${currentCallSid}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_call_transcripts",
+          filter: `call_sid=eq.${currentCallSid}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["manual-call-transcripts", currentCallSid] });
+          queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [open, currentCallSid, queryClient]);
 
   // Auto-advance currentIndex to first "queued" item
   useEffect(() => {
@@ -240,39 +277,76 @@ export function ManualCampaignCallModal({
     }
   }, []);
 
-  // ── Remote Audio Transcription ──
-  const startRemoteAudioCapture = useCallback((call: any) => {
-    try {
-      // Access the underlying PeerConnection from Twilio SDK
-      const pc =
-        call?._mediaHandler?._peerConnection ||
-        call?.mediaStream?._peerConnection ||
-        call?._peerConnection;
+  const stopSidResolution = useCallback(() => {
+    if (sidResolveIntervalRef.current) {
+      clearInterval(sidResolveIntervalRef.current);
+      sidResolveIntervalRef.current = null;
+    }
+  }, []);
 
-      if (!pc) {
-        console.warn("Could not access PeerConnection for remote audio capture");
-        return;
+  const persistCallSid = useCallback(
+    async (rawSid: string | null | undefined, queueItemId?: string) => {
+      const sid = rawSid?.trim();
+      if (!sid || sid.startsWith("browser-") || sid === currentCallSidRef.current) return;
+
+      currentCallSidRef.current = sid;
+      setActiveCallSid(sid);
+
+      if (queueItemId) {
+        await supabase
+          .from("outbound_call_queue")
+          .update({ twilio_call_sid: sid, updated_at: new Date().toISOString() })
+          .eq("id", queueItemId);
+        refetchQueue();
       }
+    },
+    [refetchQueue]
+  );
 
-      // Build a MediaStream from the remote tracks
-      const receivers = pc.getReceivers?.();
-      if (!receivers || receivers.length === 0) {
-        console.warn("No remote receivers found");
-        return;
+  const transcribeRemoteBlob = useCallback(
+    async (blob: Blob) => {
+      if (blob.size < 1200) return;
+
+      try {
+        const arrayBuffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+
+        const { data, error } = await supabase.functions.invoke("transcribe-call-audio", {
+          body: {
+            audio_base64: btoa(binary),
+            call_sid: currentCallSidRef.current,
+            queue_item_id: currentItem?.id,
+            mime_type: blob.type || "audio/webm",
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.text && !data?.skipped) {
+          setLocalTranscripts((prev) => [
+            ...prev,
+            { speaker: "caller", text: data.text, timestamp: new Date() },
+          ]);
+          if (currentCallSidRef.current) {
+            queryClient.invalidateQueries({ queryKey: ["manual-call-transcripts", currentCallSidRef.current] });
+          }
+          queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+        }
+      } catch (err) {
+        console.warn("Remote transcription chunk failed:", err);
       }
+    },
+    [currentItem?.id, queryClient]
+  );
 
-      const remoteStream = new MediaStream(
-        receivers
-          .filter((r: RTCRtpReceiver) => r.track && r.track.kind === "audio")
-          .map((r: RTCRtpReceiver) => r.track)
-      );
-
-      if (remoteStream.getTracks().length === 0) {
-        console.warn("No remote audio tracks found");
-        return;
-      }
-
-      console.log("🔊 Remote audio stream captured, starting recorder");
+  const startRemoteRecorder = useCallback(
+    (remoteStream: MediaStream) => {
+      if (remoteRecorderRef.current || remoteStream.getAudioTracks().length === 0) return;
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
@@ -283,74 +357,92 @@ export function ManualCampaignCallModal({
       remoteChunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          remoteChunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) remoteChunksRef.current.push(e.data);
       };
 
-      recorder.start(5000); // Collect 5-second chunks
+      recorder.start(2000);
 
-      // Every 6 seconds, send accumulated audio for transcription
-      transcribeIntervalRef.current = setInterval(async () => {
-        if (remoteChunksRef.current.length === 0) return;
-
+      transcribeIntervalRef.current = setInterval(() => {
         const chunks = [...remoteChunksRef.current];
+        if (chunks.length === 0) return;
+
         remoteChunksRef.current = [];
-        const blob = new Blob(chunks, { type: mimeType });
+        void transcribeRemoteBlob(new Blob(chunks, { type: mimeType }));
+      }, 2500);
+    },
+    [transcribeRemoteBlob]
+  );
 
-        // Skip tiny chunks (likely silence)
-        if (blob.size < 2000) return;
+  const startRemoteAudioCapture = useCallback(
+    (call: any) => {
+      try {
+        call.on?.("audio", (audioElement: HTMLAudioElement) => {
+          const audioWithCapture = audioElement as HTMLAudioElement & {
+            captureStream?: () => MediaStream;
+            mozCaptureStream?: () => MediaStream;
+          };
+          const stream = audioWithCapture.captureStream?.() || audioWithCapture.mozCaptureStream?.();
 
-        try {
-          const arrayBuffer = await blob.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(arrayBuffer).reduce(
-              (data, byte) => data + String.fromCharCode(byte),
-              ""
-            )
-          );
-
-          const callSid = currentCallSidRef.current;
-          if (!callSid) return;
-
-          const { data } = await supabase.functions.invoke("transcribe-call-audio", {
-            body: {
-              audio_base64: base64,
-              call_sid: callSid,
-              mime_type: "audio/webm",
-            },
-          });
-
-          if (data?.text && !data?.skipped) {
-            setLocalTranscripts((prev) => [
-              ...prev,
-              { speaker: "caller", text: data.text, timestamp: new Date() },
-            ]);
-            queryClient.invalidateQueries({ queryKey: ["manual-call-transcripts", callSid] });
-            queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+          if (stream?.getAudioTracks().length) {
+            console.log("🔊 Remote audio captured from Twilio audio element");
+            startRemoteRecorder(stream);
           }
-        } catch (err) {
-          console.warn("Remote transcription chunk failed:", err);
+        });
+      } catch (err) {
+        console.warn("Audio element capture hook failed, will use peer connection fallback", err);
+      }
+
+      setTimeout(() => {
+        if (remoteRecorderRef.current) return;
+
+        const pc =
+          call?._mediaHandler?._peerConnection ||
+          call?.mediaStream?._peerConnection ||
+          call?._peerConnection;
+
+        const receivers = pc?.getReceivers?.() || [];
+        const remoteTracks = receivers
+          .filter((r: RTCRtpReceiver) => r.track && r.track.kind === "audio")
+          .map((r: RTCRtpReceiver) => r.track);
+
+        if (remoteTracks.length === 0) {
+          console.warn("No remote audio tracks found for transcription");
+          return;
         }
-      }, 6000);
-    } catch (err) {
-      console.error("Failed to start remote audio capture:", err);
-    }
-  }, [queryClient]);
+
+        console.log("🔊 Remote audio captured from peer connection fallback");
+        startRemoteRecorder(new MediaStream(remoteTracks));
+      }, 800);
+    },
+    [startRemoteRecorder]
+  );
 
   const stopRemoteAudioCapture = useCallback(() => {
-    if (remoteRecorderRef.current) {
-      try { remoteRecorderRef.current.stop(); } catch { /* ok */ }
-      remoteRecorderRef.current = null;
-    }
     if (transcribeIntervalRef.current) {
       clearInterval(transcribeIntervalRef.current);
       transcribeIntervalRef.current = null;
     }
-    remoteChunksRef.current = [];
-    console.log("🔊 Remote audio capture stopped");
-  }, []);
 
+    const bufferedChunks = [...remoteChunksRef.current];
+    remoteChunksRef.current = [];
+
+    if (remoteRecorderRef.current) {
+      try {
+        if (remoteRecorderRef.current.state !== "inactive") {
+          remoteRecorderRef.current.stop();
+        }
+      } catch {
+        // noop
+      }
+      remoteRecorderRef.current = null;
+    }
+
+    if (bufferedChunks.length > 0) {
+      void transcribeRemoteBlob(new Blob(bufferedChunks, { type: bufferedChunks[0]?.type || "audio/webm" }));
+    }
+
+    console.log("🔊 Remote audio capture stopped");
+  }, [transcribeRemoteBlob]);
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -362,6 +454,10 @@ export function ManualCampaignCallModal({
       toast.error("No queued number to dial");
       return;
     }
+    if (isOnCall || isDialing) {
+      toast.error("Finish the current call before dialing another");
+      return;
+    }
     if (!device.isReady) {
       toast.error("Voice device not ready. Check microphone permissions.");
       return;
@@ -369,107 +465,116 @@ export function ManualCampaignCallModal({
 
     setIsDialing(true);
     setLocalTranscripts([]);
+    setInterimText("");
+    setActiveCallSid(null);
     currentCallSidRef.current = null;
+    stopSidResolution();
 
     try {
-      // Mark as dialing in DB
       await supabase
         .from("outbound_call_queue")
         .update({ status: "dialing", dialing_started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("id", currentItem.id);
 
-      // Place the call via Twilio Voice SDK (browser WebRTC)
       const call = await device.makeCall(currentItem.phone_number);
-      if (call) {
-        setCallStartedAt(new Date());
-        toast.success(`Dialing ${currentItem.contact_name || currentItem.phone_number}...`);
+      if (!call) throw new Error("Call failed to initialize");
 
-        // Get and store call SID immediately
-        const callSid = (call as any).parameters?.CallSid || `browser-${Date.now()}`;
-        currentCallSidRef.current = callSid;
-        
-        await supabase
-          .from("outbound_call_queue")
-          .update({ twilio_call_sid: callSid, updated_at: new Date().toISOString() })
-          .eq("id", currentItem.id);
-        refetchQueue();
+      setCallStartedAt(new Date());
+      toast.success(`Dialing ${currentItem.contact_name || currentItem.phone_number}...`);
 
-        // Start speech recognition when call connects
-        call.on("accept", () => {
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "connected", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => refetchQueue());
-          
-          // Start capturing speech (user's mic)
-          startSpeechRecognition();
-          // Start capturing remote party audio for transcription
-          startRemoteAudioCapture(call);
-        });
+      const tryResolveSid = () => {
+        const sid = (call as any)?.parameters?.CallSid?.toString?.().trim?.();
+        if (!sid) return false;
+        void persistCallSid(sid, currentItem.id);
+        return true;
+      };
 
-        call.on("disconnect", () => {
-          stopSpeechRecognition();
-          stopRemoteAudioCapture();
-          currentCallSidRef.current = null;
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "completed", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => {
-              refetchQueue();
-              queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
-              queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
-            });
-          setCallStartedAt(null);
-          setIsDialing(false);
-        });
-
-        call.on("cancel", () => {
-          stopSpeechRecognition();
-          stopRemoteAudioCapture();
-          currentCallSidRef.current = null;
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "no_answer", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => refetchQueue());
-          setCallStartedAt(null);
-          setIsDialing(false);
-        });
-
-        call.on("reject", () => {
-          stopSpeechRecognition();
-          stopRemoteAudioCapture();
-          currentCallSidRef.current = null;
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "failed", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => refetchQueue());
-          setCallStartedAt(null);
-          setIsDialing(false);
-        });
+      if (!tryResolveSid()) {
+        sidResolveIntervalRef.current = setInterval(() => {
+          if (tryResolveSid()) stopSidResolution();
+        }, 300);
+        setTimeout(() => stopSidResolution(), 10000);
       }
-    } catch (err: any) {
-      toast.error(`Failed to dial: ${err.message}`);
+
+      call.on("ringing", () => {
+        void tryResolveSid();
+      });
+
+      call.on("accept", () => {
+        void tryResolveSid();
+        supabase
+          .from("outbound_call_queue")
+          .update({ status: "connected", updated_at: new Date().toISOString() })
+          .eq("id", currentItem.id)
+          .then(() => refetchQueue());
+
+        startSpeechRecognition();
+        startRemoteAudioCapture(call);
+      });
+
+      const handleTerminal = (status: "completed" | "no_answer" | "failed") => {
+        stopSidResolution();
+        stopSpeechRecognition();
+        stopRemoteAudioCapture();
+        currentCallSidRef.current = null;
+        supabase
+          .from("outbound_call_queue")
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq("id", currentItem.id)
+          .then(() => {
+            refetchQueue();
+            queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+            queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
+          });
+        setCallStartedAt(null);
+        setIsDialing(false);
+      };
+
+      call.on("disconnect", () => handleTerminal("completed"));
+      call.on("cancel", () => handleTerminal("no_answer"));
+      call.on("reject", () => handleTerminal("failed"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to dial: ${message}`);
       await supabase
         .from("outbound_call_queue")
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("id", currentItem.id);
+      stopSidResolution();
       setIsDialing(false);
+      setCallStartedAt(null);
       currentCallSidRef.current = null;
       refetchQueue();
     }
-  }, [currentItem, device, campaignId, queryClient, refetchQueue, startSpeechRecognition, startRemoteAudioCapture, stopSpeechRecognition, stopRemoteAudioCapture]);
+  }, [
+    campaignId,
+    currentItem,
+    device,
+    isDialing,
+    isOnCall,
+    persistCallSid,
+    queryClient,
+    refetchQueue,
+    startRemoteAudioCapture,
+    startSpeechRecognition,
+    stopRemoteAudioCapture,
+    stopSidResolution,
+    stopSpeechRecognition,
+  ]);
 
   const endCall = useCallback(() => {
+    stopSidResolution();
     stopSpeechRecognition();
     stopRemoteAudioCapture();
-    device.hangUp();
+
+    if (device.activeCall) {
+      device.hangUp();
+    }
+
     setCallStartedAt(null);
     setIsDialing(false);
     currentCallSidRef.current = null;
+
     if (currentItem) {
       supabase
         .from("outbound_call_queue")
@@ -481,13 +586,23 @@ export function ManualCampaignCallModal({
           queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
         });
     }
-  }, [device, currentItem, campaignId, queryClient, refetchQueue, stopSpeechRecognition, stopRemoteAudioCapture]);
+  }, [
+    campaignId,
+    currentItem,
+    device,
+    queryClient,
+    refetchQueue,
+    stopRemoteAudioCapture,
+    stopSidResolution,
+    stopSpeechRecognition,
+  ]);
 
   const skipToNext = useCallback(() => {
-    if (isDialing || device.callStatus !== "idle") {
+    if (isDialing || isOnCall) {
       toast.error("End the current call before skipping");
       return;
     }
+
     if (currentItem?.status === "queued") {
       supabase
         .from("outbound_call_queue")
@@ -495,22 +610,32 @@ export function ManualCampaignCallModal({
         .eq("id", currentItem.id)
         .then(() => refetchQueue());
     }
+
+    stopSidResolution();
+    currentCallSidRef.current = null;
+    setActiveCallSid(null);
+    setInterimText("");
     setLocalTranscripts([]);
+
     const nextQueued = queueItems.findIndex((q, i) => i > currentIndex && q.status === "queued");
     if (nextQueued >= 0) {
       setCurrentIndex(nextQueued);
     } else {
       toast.info("No more numbers in queue");
     }
-  }, [currentIndex, queueItems, currentItem, isDialing, device.callStatus, refetchQueue]);
+  }, [currentIndex, currentItem, isDialing, isOnCall, queueItems, refetchQueue, stopSidResolution]);
 
   const handleClose = (next: boolean) => {
-    if (isDialing || device.callStatus !== "idle") {
+    if (isDialing || isOnCall) {
       toast.error("End the current call before closing");
       return;
     }
+    stopSidResolution();
     stopSpeechRecognition();
     stopRemoteAudioCapture();
+    currentCallSidRef.current = null;
+    setActiveCallSid(null);
+    setInterimText("");
     onOpenChange(next);
   };
 
@@ -523,23 +648,20 @@ export function ManualCampaignCallModal({
       source: "local" as const,
     })),
     ...(dbTranscripts as any[]).map((t: any) => ({
-      speaker: t.speaker === "human" || t.speaker === "user" ? "you" as const : "caller" as const,
+      speaker: t.speaker === "human" || t.speaker === "user" ? ("you" as const) : ("caller" as const),
       text: t.text,
       time: new Date(t.created_at),
       source: "db" as const,
     })),
   ]
-    // Deduplicate by text similarity
     .filter((t, i, arr) => {
       if (t.source === "local") {
-        // Remove local if DB has same text
         return !arr.some((o) => o.source === "db" && o.text === t.text);
       }
       return true;
     })
     .sort((a, b) => a.time.getTime() - b.time.getTime());
 
-  const isOnCall = device.callStatus === "in-progress" || device.callStatus === "ringing" || device.callStatus === "connecting";
   const progressPct = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
 
   return (
