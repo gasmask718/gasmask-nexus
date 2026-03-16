@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, UserCheck, Loader2, CheckCircle, Phone, ArrowRightLeft } from "lucide-react";
+import { Bot, UserCheck, Loader2, CheckCircle, Phone, ArrowRightLeft, Circle, Users } from "lucide-react";
 
 interface TransferStatusPanelProps {
   campaignId: string;
@@ -24,23 +24,85 @@ export function TransferStatusPanel({ campaignId }: TransferStatusPanelProps) {
     refetchInterval: 3000,
   });
 
+  // Human agent line status
+  const { data: lineStatuses = [] } = useQuery({
+    queryKey: ["human-agent-lines"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("human_agent_line_status")
+        .select("*")
+        .order("updated_at", { ascending: false });
+      return data || [];
+    },
+    refetchInterval: 3000,
+  });
+
+  // Queue waiting count
+  const { data: queueWaiting = 0 } = useQuery({
+    queryKey: ["human-queue-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("human_agent_call_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "waiting");
+      return count || 0;
+    },
+    refetchInterval: 3000,
+  });
+
   const activeTransfers = transfers.filter((t: any) => t.status === "transferred");
   const completedTransfers = transfers.filter((t: any) => t.status === "completed");
 
   return (
-    <div className="border-l pl-4 w-[260px] shrink-0 space-y-3">
+    <div className="border-l pl-4 w-[280px] shrink-0 space-y-3">
       <h4 className="text-sm font-semibold flex items-center gap-2 text-foreground">
         <ArrowRightLeft className="h-4 w-4" />
-        Transferred Calls
+        Transfer Monitor
       </h4>
 
-      {activeTransfers.length === 0 && completedTransfers.length === 0 && (
+      {/* Human Agent Line Status */}
+      {lineStatuses.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Agent Lines</p>
+          {lineStatuses.map((line: any) => (
+            <div key={line.id} className={`border rounded-md p-2 ${
+              line.status === "available" 
+                ? "bg-green-500/5 border-green-500/20" 
+                : "bg-amber-500/5 border-amber-500/20"
+            }`}>
+              <div className="flex items-center gap-2">
+                <Circle className={`h-2 w-2 fill-current ${
+                  line.status === "available" ? "text-green-500" : "text-amber-500"
+                }`} />
+                <span className="text-xs font-mono text-foreground">{line.phone_number}</span>
+                <Badge variant="outline" className="text-[9px] ml-auto">
+                  {line.status === "available" ? "Free" : "On Call"}
+                </Badge>
+              </div>
+              {line.status === "busy" && line.busy_since && (
+                <p className="text-[10px] text-muted-foreground ml-4 mt-0.5">
+                  Busy since {new Date(line.busy_since).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+          ))}
+          {queueWaiting > 0 && (
+            <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400 pl-1">
+              <Users className="h-3 w-3" />
+              {queueWaiting} caller{queueWaiting > 1 ? "s" : ""} in queue
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active & Completed Transfers */}
+      {activeTransfers.length === 0 && completedTransfers.length === 0 && lineStatuses.length === 0 && (
         <p className="text-xs text-muted-foreground italic text-center py-6">
           No transfers yet. Transfer a call to see its status here.
         </p>
       )}
 
-      <ScrollArea className="h-[350px]">
+      <ScrollArea className="h-[300px]">
         <div className="space-y-2 pr-2">
           {activeTransfers.map((t: any) => {
             const isAI = t.notes?.includes("elevenlabs");
