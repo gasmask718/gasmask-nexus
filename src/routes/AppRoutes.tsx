@@ -1548,7 +1548,7 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* OPS/PORTAL ROUTES — Wrapped in OpsLayout (mobile-first + bottom nav)         */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
-      <Route element={<ProtectedRoute><OpsLayout /></ProtectedRoute>}>
+      <Route element={<ProtectedRoute><RoleRouteGuard><OpsLayout /></RoleRouteGuard></ProtectedRoute>}>
         {/* Portal Routes */}
         <Route path="/portal" element={<RoleRouter />} />
         <Route path="/portal/home" element={<PortalHome />} />
