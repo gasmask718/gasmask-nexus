@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ManualCampaignCallModal } from "@/components/communication/ManualCampaignCallModal";
 
 import { Button } from "@/components/ui/button";
 
