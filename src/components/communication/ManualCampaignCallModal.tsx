@@ -17,7 +17,6 @@ import {
   Mic,
   MicOff,
   SkipForward,
-  Loader2,
   User,
   Hash,
 } from "lucide-react";
@@ -34,11 +33,41 @@ interface QueueItem {
   twilio_call_sid?: string;
 }
 
+interface TranscriptLine {
+  speaker: "you" | "caller";
+  text: string;
+  timestamp: Date;
+}
+
 interface ManualCampaignCallModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   campaignId: string;
   campaignName: string;
+}
+
+// Browser Speech Recognition types
+interface SpeechRecognitionEvent {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  isFinal: boolean;
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
 }
 
 export function ManualCampaignCallModal({
@@ -53,7 +82,11 @@ export function ManualCampaignCallModal({
   const [isDialing, setIsDialing] = useState(false);
   const [callStartedAt, setCallStartedAt] = useState<Date | null>(null);
   const [elapsed, setElapsed] = useState(0);
+  const [localTranscripts, setLocalTranscripts] = useState<TranscriptLine[]>([]);
+  const [interimText, setInterimText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const currentCallSidRef = useRef<string | null>(null);
 
   // Fetch all queued items for this campaign
   const { data: queueItems = [], refetch: refetchQueue } = useQuery({
@@ -76,9 +109,9 @@ export function ManualCampaignCallModal({
     (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer"
   ).length;
 
-  // Fetch live transcripts for current call
+  // Fetch DB transcripts for current call
   const currentCallSid = currentItem?.twilio_call_sid || null;
-  const { data: liveTranscripts = [] } = useQuery({
+  const { data: dbTranscripts = [] } = useQuery({
     queryKey: ["manual-call-transcripts", currentCallSid],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -89,7 +122,7 @@ export function ManualCampaignCallModal({
       return data || [];
     },
     enabled: !!currentCallSid,
-    refetchInterval: 2000,
+    refetchInterval: 3000,
   });
 
   // Timer
@@ -104,7 +137,7 @@ export function ManualCampaignCallModal({
   // Auto-scroll transcripts
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [liveTranscripts]);
+  }, [localTranscripts, dbTranscripts, interimText]);
 
   // Auto-advance currentIndex to first "queued" item
   useEffect(() => {
@@ -114,6 +147,95 @@ export function ManualCampaignCallModal({
       setCurrentIndex(firstQueued);
     }
   }, [queueItems, open]);
+
+  // ── Speech Recognition ──
+  const startSpeechRecognition = useCallback(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("Speech Recognition not supported in this browser");
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            const text = result[0].transcript.trim();
+            if (text) {
+              const line: TranscriptLine = {
+                speaker: "you",
+                text,
+                timestamp: new Date(),
+              };
+              setLocalTranscripts((prev) => [...prev, line]);
+              setInterimText("");
+              
+              // Persist to live_call_transcripts
+              const callSid = currentCallSidRef.current;
+              if (callSid) {
+                (supabase as any)
+                  .from("live_call_transcripts")
+                  .insert({
+                    call_sid: callSid,
+                    speaker: "human",
+                    text,
+                    created_at: new Date().toISOString(),
+                  })
+                  .then(() => {
+                    queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+                  });
+              }
+            }
+          } else {
+            interim += result[0].transcript;
+          }
+        }
+        if (interim) setInterimText(interim);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn("Speech recognition error:", event.error);
+        if (event.error === "not-allowed") {
+          toast.error("Microphone access denied for speech recognition");
+        }
+        // Auto-restart on non-fatal errors
+        if (event.error !== "not-allowed" && event.error !== "service-not-allowed") {
+          setTimeout(() => {
+            try { recognition.start(); } catch { /* already running */ }
+          }, 500);
+        }
+      };
+
+      recognition.onend = () => {
+        // Auto-restart if still on call
+        if (currentCallSidRef.current) {
+          try { recognition.start(); } catch { /* already running */ }
+        }
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+      console.log("🎤 Speech recognition started");
+    } catch (err) {
+      console.error("Failed to start speech recognition:", err);
+    }
+  }, [queryClient]);
+
+  const stopSpeechRecognition = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch { /* ok */ }
+      recognitionRef.current = null;
+      setInterimText("");
+      console.log("🎤 Speech recognition stopped");
+    }
+  }, []);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -132,6 +254,9 @@ export function ManualCampaignCallModal({
     }
 
     setIsDialing(true);
+    setLocalTranscripts([]);
+    currentCallSidRef.current = null;
+
     try {
       // Mark as dialing in DB
       await supabase
@@ -145,16 +270,31 @@ export function ManualCampaignCallModal({
         setCallStartedAt(new Date());
         toast.success(`Dialing ${currentItem.contact_name || currentItem.phone_number}...`);
 
-        // Listen for call events
+        // Get and store call SID immediately
+        const callSid = (call as any).parameters?.CallSid || `browser-${Date.now()}`;
+        currentCallSidRef.current = callSid;
+        
+        await supabase
+          .from("outbound_call_queue")
+          .update({ twilio_call_sid: callSid, updated_at: new Date().toISOString() })
+          .eq("id", currentItem.id);
+        refetchQueue();
+
+        // Start speech recognition when call connects
         call.on("accept", () => {
           supabase
             .from("outbound_call_queue")
             .update({ status: "connected", updated_at: new Date().toISOString() })
             .eq("id", currentItem.id)
             .then(() => refetchQueue());
+          
+          // Start capturing speech
+          startSpeechRecognition();
         });
 
         call.on("disconnect", () => {
+          stopSpeechRecognition();
+          currentCallSidRef.current = null;
           supabase
             .from("outbound_call_queue")
             .update({ status: "completed", updated_at: new Date().toISOString() })
@@ -169,6 +309,8 @@ export function ManualCampaignCallModal({
         });
 
         call.on("cancel", () => {
+          stopSpeechRecognition();
+          currentCallSidRef.current = null;
           supabase
             .from("outbound_call_queue")
             .update({ status: "no_answer", updated_at: new Date().toISOString() })
@@ -179,6 +321,8 @@ export function ManualCampaignCallModal({
         });
 
         call.on("reject", () => {
+          stopSpeechRecognition();
+          currentCallSidRef.current = null;
           supabase
             .from("outbound_call_queue")
             .update({ status: "failed", updated_at: new Date().toISOString() })
@@ -187,16 +331,6 @@ export function ManualCampaignCallModal({
           setCallStartedAt(null);
           setIsDialing(false);
         });
-
-        // Store call SID
-        const callSid = (call as any).parameters?.CallSid;
-        if (callSid) {
-          await supabase
-            .from("outbound_call_queue")
-            .update({ twilio_call_sid: callSid, updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id);
-          refetchQueue();
-        }
       }
     } catch (err: any) {
       toast.error(`Failed to dial: ${err.message}`);
@@ -205,14 +339,17 @@ export function ManualCampaignCallModal({
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("id", currentItem.id);
       setIsDialing(false);
+      currentCallSidRef.current = null;
       refetchQueue();
     }
-  }, [currentItem, device, campaignId, queryClient, refetchQueue]);
+  }, [currentItem, device, campaignId, queryClient, refetchQueue, startSpeechRecognition]);
 
   const endCall = useCallback(() => {
+    stopSpeechRecognition();
     device.hangUp();
     setCallStartedAt(null);
     setIsDialing(false);
+    currentCallSidRef.current = null;
     if (currentItem) {
       supabase
         .from("outbound_call_queue")
@@ -221,16 +358,16 @@ export function ManualCampaignCallModal({
         .then(() => {
           refetchQueue();
           queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+          queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
         });
     }
-  }, [device, currentItem, campaignId, queryClient, refetchQueue]);
+  }, [device, currentItem, campaignId, queryClient, refetchQueue, stopSpeechRecognition]);
 
   const skipToNext = useCallback(() => {
     if (isDialing || device.callStatus !== "idle") {
       toast.error("End the current call before skipping");
       return;
     }
-    // Mark current as skipped/no_answer if still queued
     if (currentItem?.status === "queued") {
       supabase
         .from("outbound_call_queue")
@@ -238,6 +375,7 @@ export function ManualCampaignCallModal({
         .eq("id", currentItem.id)
         .then(() => refetchQueue());
     }
+    setLocalTranscripts([]);
     const nextQueued = queueItems.findIndex((q, i) => i > currentIndex && q.status === "queued");
     if (nextQueued >= 0) {
       setCurrentIndex(nextQueued);
@@ -251,8 +389,34 @@ export function ManualCampaignCallModal({
       toast.error("End the current call before closing");
       return;
     }
+    stopSpeechRecognition();
     onOpenChange(next);
   };
+
+  // Merge local + DB transcripts for display
+  const allTranscripts = [
+    ...localTranscripts.map((t) => ({
+      speaker: t.speaker,
+      text: t.text,
+      time: t.timestamp,
+      source: "local" as const,
+    })),
+    ...(dbTranscripts as any[]).map((t: any) => ({
+      speaker: t.speaker === "human" || t.speaker === "user" ? "you" as const : "caller" as const,
+      text: t.text,
+      time: new Date(t.created_at),
+      source: "db" as const,
+    })),
+  ]
+    // Deduplicate by text similarity
+    .filter((t, i, arr) => {
+      if (t.source === "local") {
+        // Remove local if DB has same text
+        return !arr.some((o) => o.source === "db" && o.text === t.text);
+      }
+      return true;
+    })
+    .sort((a, b) => a.time.getTime() - b.time.getTime());
 
   const isOnCall = device.callStatus === "in-progress" || device.callStatus === "ringing" || device.callStatus === "connecting";
   const progressPct = totalItems > 0 ? (completedCount / totalItems) * 100 : 0;
@@ -372,33 +536,52 @@ export function ManualCampaignCallModal({
 
         {/* Live Transcript */}
         <div className="flex-1 min-h-0 border-t pt-3">
-          <h4 className="text-sm font-semibold mb-2 text-foreground">Live Transcript</h4>
+          <h4 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+            Live Transcript
+            {isOnCall && recognitionRef.current && (
+              <Badge variant="outline" className="text-[10px] gap-1 animate-pulse">
+                <Mic className="h-2.5 w-2.5" /> Listening
+              </Badge>
+            )}
+          </h4>
           <ScrollArea className="h-40 rounded-md border p-3 bg-muted/20">
             <div className="space-y-2">
-              {liveTranscripts.length === 0 ? (
+              {allTranscripts.length === 0 && !interimText ? (
                 <p className="text-xs text-muted-foreground italic text-center py-4">
-                  {isOnCall ? "Listening for speech..." : "Transcript will appear here during the call."}
+                  {isOnCall
+                    ? "Listening... speak and your words will appear here."
+                    : "Transcript will appear here during the call."}
                 </p>
               ) : (
-                liveTranscripts.map((t: any, i: number) => (
-                  <div
-                    key={i}
-                    className={`flex gap-2 text-xs ${t.speaker === "caller" || t.speaker === "user" ? "justify-end" : "justify-start"}`}
-                  >
+                <>
+                  {allTranscripts.map((t, i) => (
                     <div
-                      className={`max-w-[80%] rounded-lg px-3 py-1.5 ${
-                        t.speaker === "caller" || t.speaker === "user"
-                          ? "bg-primary/10 text-foreground"
-                          : "bg-muted text-foreground"
-                      }`}
+                      key={i}
+                      className={`flex gap-2 text-xs ${t.speaker === "you" ? "justify-end" : "justify-start"}`}
                     >
-                      <span className="font-semibold capitalize text-[10px] text-muted-foreground">
-                        {t.speaker === "caller" || t.speaker === "user" ? "You" : "Caller"}
-                      </span>
-                      <p className="mt-0.5">{t.text}</p>
+                      <div
+                        className={`max-w-[80%] rounded-lg px-3 py-1.5 ${
+                          t.speaker === "you"
+                            ? "bg-primary/10 text-foreground"
+                            : "bg-muted text-foreground"
+                        }`}
+                      >
+                        <span className="font-semibold text-[10px] text-muted-foreground">
+                          {t.speaker === "you" ? "You" : "Caller"}
+                        </span>
+                        <p className="mt-0.5">{t.text}</p>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  {interimText && (
+                    <div className="flex gap-2 text-xs justify-end">
+                      <div className="max-w-[80%] rounded-lg px-3 py-1.5 bg-primary/5 text-muted-foreground italic">
+                        <span className="font-semibold text-[10px]">You</span>
+                        <p className="mt-0.5">{interimText}...</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
               <div ref={scrollRef} />
             </div>

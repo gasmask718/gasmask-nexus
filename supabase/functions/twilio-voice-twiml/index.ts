@@ -31,8 +31,12 @@ serve(async (req: Request) => {
     // For callerId: ALWAYS use TWILIO_PHONE_NUMBER for PSTN calls.
     // The browser SDK sends the client identity as "From", which is NOT
     // a valid callerId for outbound PSTN <Dial>.
-    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
-    const callerId = twilioPhoneNumber || rawFrom;
+    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER") || "";
+    
+    // CRITICAL: Never use a client: identity as callerId — it causes one-way audio
+    const callerId = (twilioPhoneNumber && twilioPhoneNumber.startsWith("+")) 
+      ? twilioPhoneNumber 
+      : (rawFrom.startsWith("+") ? rawFrom : "");
 
     console.log(JSON.stringify({
       mode: isTestCall ? "PSTN_TEST" : "ROUTED",
@@ -53,6 +57,13 @@ serve(async (req: Request) => {
       });
     }
 
+    // If no valid callerId, omit the attribute so Twilio uses default
+    const callerIdAttr = callerId ? `callerId="${callerId}"` : "";
+    
+    if (!callerId) {
+      console.warn("⚠️ No valid callerId found — Twilio will use account default. Set TWILIO_PHONE_NUMBER secret.");
+    }
+
     // Build status callback URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
@@ -62,7 +73,7 @@ serve(async (req: Request) => {
     if (isTestCall) {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${callerId}" record="record-from-answer-dual"
+  <Dial ${callerIdAttr} record="record-from-answer-dual"
         statusCallbackEvent="initiated ringing answered completed"
         statusCallback="${statusCallbackUrl}"
         statusCallbackMethod="POST">
@@ -86,7 +97,7 @@ serve(async (req: Request) => {
     // ── NORMAL ROUTING ──
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${callerId}" record="record-from-answer-dual"
+  <Dial ${callerIdAttr} record="record-from-answer-dual"
         statusCallbackEvent="initiated ringing answered completed"
         statusCallback="${statusCallbackUrl}"
         statusCallbackMethod="POST">
