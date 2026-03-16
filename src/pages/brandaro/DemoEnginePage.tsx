@@ -157,11 +157,26 @@ export default function DemoEnginePage() {
 
   const sendDemo = async (demo: DemoSite) => {
     try {
-      await (supabase as any)
-        .from('brandaro_demo_sites')
-        .update({ sent_at: new Date().toISOString(), delivery_method: 'sms' })
-        .eq('id', demo.id);
+      // Get lead phone for real sending
+      const { data: lead } = await (supabase as any)
+        .from('brandaro_qualified_leads')
+        .select('phone')
+        .eq('id', demo.lead_id)
+        .single();
 
+      if (lead?.phone) {
+        // Use real send function
+        await supabase.functions.invoke('brandaro-send-demo', {
+          body: {
+            demo_id: demo.id,
+            lead_id: demo.lead_id,
+            channel: 'sms',
+            destination: lead.phone,
+          },
+        });
+      }
+
+      // Schedule follow-ups
       const followupTimes = [6, 24, 72];
       for (let i = 0; i < followupTimes.length; i++) {
         const scheduledAt = new Date(Date.now() + followupTimes[i] * 3600000);

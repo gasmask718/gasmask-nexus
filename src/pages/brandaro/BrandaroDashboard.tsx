@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Globe, Users, Phone, PhoneCall, Eye, FileText, 
-  DollarSign, Rocket, Wrench, TrendingUp, Target, BarChart3 
+  DollarSign, Rocket, Wrench, TrendingUp, Target, BarChart3,
+  AlertTriangle, Send, MessageSquare, RefreshCw
 } from "lucide-react";
 
 function StatCard({ title, value, icon: Icon, color = "text-primary", subtitle }: {
