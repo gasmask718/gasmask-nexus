@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Download, CheckCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { isRunningAsInstalledPwa } from '@/components/pwa/PwaTelemetry';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 
 interface PwaInstallBannerProps {
   appName?: string;
@@ -11,11 +12,11 @@ interface PwaInstallBannerProps {
 
 /**
  * Shared PWA install banner for Dashboard + all portals.
- * Auto-triggers native install on mount when available.
- * No extra dialogs or disabled states — one tap installs.
+ * Navigates to /install page on click.
  */
 export function PwaInstallBanner({ appName = 'GASMASK' }: PwaInstallBannerProps) {
-  const { canInstall, isInstalled, triggerInstall } = usePwaInstall();
+  const navigate = useNavigate();
+  const { isInstalled } = usePwaInstall();
   const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
@@ -24,9 +25,6 @@ export function PwaInstallBanner({ appName = 'GASMASK' }: PwaInstallBannerProps)
     }
   }, []);
 
-  // No auto-trigger — wait for user to click "Install Now"
-
-  // Don't show banner if installed or running as PWA
   if (isInstalled || isStandalone) {
     return null;
   }
@@ -41,7 +39,7 @@ export function PwaInstallBanner({ appName = 'GASMASK' }: PwaInstallBannerProps)
           </p>
         </div>
         <Button
-          onClick={() => triggerInstall()}
+          onClick={() => navigate('/install')}
           size="lg"
           className="gap-2 shrink-0 min-w-[200px]"
         >
