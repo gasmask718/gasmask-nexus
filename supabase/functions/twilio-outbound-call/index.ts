@@ -97,8 +97,7 @@ Deno.serve(async (req) => {
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Pause length="1"/>
-  <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="8">
+  <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="4" speechTimeout="2">
     <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
   </Gather>
   <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>

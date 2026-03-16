@@ -189,10 +189,10 @@ serve(async (req) => {
       const selfUrl = url.toString();
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="dtmf speech" action="${selfUrl}" numDigits="1" timeout="8">
-    <Say voice="Polly.Matthew">I didn't catch that. Please press 1 on your keypad for our AI assistant, or press 2 for a human agent.</Say>
+  <Gather input="dtmf speech" action="${selfUrl}" numDigits="1" timeout="4" speechTimeout="2">
+    <Say voice="Polly.Matthew">Press 1 for AI assistant, or press 2 for a human agent.</Say>
   </Gather>
-  <Say voice="Polly.Matthew">We did not receive a response. Goodbye.</Say>
+  <Say voice="Polly.Matthew">Goodbye.</Say>
   <Hangup/>
 </Response>`;
     }

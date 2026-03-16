@@ -75,10 +75,10 @@ serve(async (req) => {
 
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="dtmf speech" action="${transferChoiceUrl}" numDigits="1" timeout="8">
-    <Say voice="Polly.Matthew">Thank you for your interest. We have two options for you. Press 1 to speak with our AI assistant, or press 2 to speak with a live human agent. Please make your selection now.</Say>
+  <Gather input="dtmf speech" action="${transferChoiceUrl}" numDigits="1" timeout="4" speechTimeout="2">
+    <Say voice="Polly.Matthew">We have two options. Press 1 for our AI assistant, or press 2 for a live agent.</Say>
   </Gather>
-  <Say voice="Polly.Matthew">We did not receive a response. Connecting you to our AI assistant.</Say>
+  <Say voice="Polly.Matthew">Connecting you to our AI assistant.</Say>
   <Redirect method="POST">${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}</Redirect>
 </Response>`;
     } else if (isConfirmed && !agentId) {
