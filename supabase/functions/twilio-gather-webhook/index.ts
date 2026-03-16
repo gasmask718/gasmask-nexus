@@ -23,6 +23,9 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     const agentId = url.searchParams.get("agent_id");
+    const queueItemId = url.searchParams.get("queue_item_id") || "";
+    const campaignId = url.searchParams.get("campaign_id") || "";
+    const humanNumber = url.searchParams.get("human_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
 
     console.log(`Gather Input - Digits: ${digits}, Speech: ${speechResult}, Agent: ${agentId}`);
 
@@ -36,11 +39,10 @@ serve(async (req) => {
       speechResult.includes("connect") ||
       speechResult.includes("link");
 
-    // 🔴 LATENCY FIX: Fire and forget the database log for the user's response
+    // Log caller's response (fire and forget)
     if (callSid) {
       const transcriptText = digits ? `(Pressed ${digits})` : speechResult;
       if (transcriptText) {
-        // We do NOT 'await' this. We let it run in the background.
         supabase
           .from("live_call_transcripts")
           .insert({
@@ -58,42 +60,42 @@ serve(async (req) => {
     let twiml = "";
 
     if (isConfirmed && agentId) {
-      // 🔴 DASHBOARD VISIBILITY: Log that the transfer is starting (background)
+      // Customer confirmed interest — now ask them to choose AI or Human
       supabase
         .from("live_call_transcripts")
         .insert({
           call_sid: callSid,
           speaker: "ai",
-          text: "[System: Transferring to ElevenLabs AI Agent...]",
+          text: "[System: Customer confirmed — asking transfer preference]",
           is_final: true,
         })
         .then(() => {});
 
-      // 🔴 LATENCY FIX: We remove the <Say> "Connecting you now" block.
-      // This saves several seconds of waiting for Twilio TTS to generate audio.
-      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}`;
+      const transferChoiceUrl = `${supabaseUrl}/functions/v1/twilio-transfer-choice-webhook?agent_id=${agentId}&human_number=${encodeURIComponent(humanNumber)}&queue_item_id=${encodeURIComponent(queueItemId)}&campaign_id=${encodeURIComponent(campaignId)}`;
 
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
-        <Response>
-          <Redirect method="POST">${bridgeUrl}</Redirect>
-        </Response>
-      `;
+<Response>
+  <Gather input="dtmf speech" action="${transferChoiceUrl}" numDigits="1" timeout="8">
+    <Say voice="Polly.Matthew">Thank you for your interest. We have two options for you. Press 1 to speak with our AI assistant, or press 2 to speak with a live human agent. Please make your selection now.</Say>
+  </Gather>
+  <Say voice="Polly.Matthew">We did not receive a response. Connecting you to our AI assistant.</Say>
+  <Redirect method="POST">${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}</Redirect>
+</Response>`;
     } else if (isConfirmed && !agentId) {
       twiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">Configuration error. No Agent ID found.</Say><Hangup/></Response>`;
     } else {
-      // Not confirmed or ambiguous input - retry immediately
-      // 🔴 LATENCY FIX: Shortened the error message
+      // Not confirmed — retry
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
-      <Response>
-        <Say voice="Polly.Joanna">I didn't catch that.</Say>
-        <Redirect method="POST">${url.toString()}</Redirect>
-      </Response>`;
+<Response>
+  <Say voice="Polly.Joanna">I didn't catch that.</Say>
+  <Redirect method="POST">${url.toString()}</Redirect>
+</Response>`;
     }
 
     return new Response(twiml.trim(), {
       headers: { ...corsHeaders, "Content-Type": "text/xml" },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gather Webhook Error:", error);
     const fallbackTwiml = `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna">An error occurred. Goodbye.</Say><Hangup/></Response>`;
     return new Response(fallbackTwiml, { headers: { ...corsHeaders, "Content-Type": "text/xml" } });
