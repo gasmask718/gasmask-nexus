@@ -405,9 +405,9 @@ export default function CampaignWizardPage() {
   useEffect(() => {
     if (viewMode === "console" && activeCampaignId) {
       const checkAndRun = async () => {
-        const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
-
-        if (data?.status === "active") processQueue(activeCampaignId);
+        const { data } = await supabase.from("dialer_campaigns").select("status, dial_mode").eq("id", activeCampaignId).single();
+        // Only auto-dispatch for AI mode campaigns; manual mode uses the call modal
+        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") processQueue(activeCampaignId);
       };
 
       dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
