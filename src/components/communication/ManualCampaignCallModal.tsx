@@ -153,6 +153,32 @@ export function ManualCampaignCallModal({
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [localTranscripts, dbTranscripts, interimText]);
 
+  // Realtime inserts for near-instant transcript updates
+  useEffect(() => {
+    if (!open || !currentCallSid) return;
+
+    const channel = supabase
+      .channel(`manual-call-transcripts-${currentCallSid}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "live_call_transcripts",
+          filter: `call_sid=eq.${currentCallSid}`,
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["manual-call-transcripts", currentCallSid] });
+          queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [open, currentCallSid, queryClient]);
+
   // Auto-advance currentIndex to first "queued" item
   useEffect(() => {
     if (!open || queueItems.length === 0) return;
