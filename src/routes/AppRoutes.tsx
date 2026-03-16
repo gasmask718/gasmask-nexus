@@ -29,6 +29,7 @@ import BikerLogin from '@/pages/portal/BikerLogin';
 import InviteSignup from '@/pages/auth/InviteSignup';
 import UserInvitations from '@/pages/security/UserInvitations';
 import InviteLanding from '@/pages/portal/InviteLanding';
+import InstallPwa from '@/pages/InstallPwa';
 
 // Protected page imports
 import Dashboard from '@/pages/Dashboard';
