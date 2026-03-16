@@ -1732,23 +1732,28 @@ export default function CampaignWizardPage() {
 
                 <div className="p-3 border rounded bg-muted/20">
                   <p className="text-xs text-muted-foreground">Mode</p>
-
                   <p className="font-medium flex items-center gap-1">
-                    <Bot className="h-3 w-3" /> AI Agent
+                    {form.dial_mode === "manual" ? <><Phone className="h-3 w-3" /> Manual Cold Call</> : <><Bot className="h-3 w-3" /> AI Agent</>}
                   </p>
                 </div>
 
                 <div className="p-3 border rounded bg-muted/20">
                   <p className="text-xs text-muted-foreground">Audience</p>
-
                   <p className="font-medium">{totalSelected} records</p>
                 </div>
 
-                <div className="p-3 border rounded bg-blue-5 dark:bg-blue-900/20">
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Twilio TTS Script</p>
-
-                  <p className="truncate">{form.initial_script || "Missing"}</p>
-                </div>
+                {form.dial_mode === "ai" && (
+                  <div className="p-3 border rounded bg-muted/20">
+                    <p className="text-xs text-muted-foreground">Twilio TTS Script</p>
+                    <p className="truncate">{form.initial_script || "Missing"}</p>
+                  </div>
+                )}
+                {form.dial_mode === "manual" && form.initial_script && (
+                  <div className="p-3 border rounded bg-muted/20">
+                    <p className="text-xs text-muted-foreground">Call Notes</p>
+                    <p className="truncate">{form.initial_script}</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
