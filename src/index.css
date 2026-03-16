@@ -163,3 +163,11 @@ All colors MUST be HSL.
     animation-play-state: paused;
   }
 }
+
+/* Hide "Edit in Lovable" badge when running as installed PWA */
+@media all and (display-mode: standalone) {
+  #lovable-badge,
+  a[href*="lovable.dev/projects"] {
+    display: none !important;
+  }
+}
