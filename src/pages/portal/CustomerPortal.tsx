@@ -56,15 +56,6 @@ export default function CustomerPortal() {
   const ordersRef = useRef<HTMLDivElement>(null);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  // PWA Logic
-  const { canInstall, triggerInstall } = usePwaInstall();
-  const [isStandalone, setIsStandalone] = useState(false);
-
-  useEffect(() => {
-    const isInStandaloneMode =
-      window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true;
-    setIsStandalone(isInStandaloneMode);
-  }, []);
 
   const profile = profileData?.profile;
 
