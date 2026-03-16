@@ -1164,6 +1164,12 @@ export default function CampaignWizardPage() {
                                   <Phone className="h-4 w-4 text-muted-foreground" />
                                   <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
                                   <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
+                                  {item.status === "transferred" && (
+                                    <Badge variant="outline" className="gap-1 text-[10px] h-5 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10">
+                                      <ArrowRightLeft className="h-3 w-3" />
+                                      Transferred
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {recording?.recording_duration && (
