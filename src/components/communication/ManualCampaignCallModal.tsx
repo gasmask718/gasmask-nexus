@@ -114,8 +114,17 @@ export function ManualCampaignCallModal({
     (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer"
   ).length;
 
+  const isOnCall =
+    Boolean(device.activeCall) ||
+    ["connecting", "ringing", "in-progress", "reconnecting"].includes(device.callStatus);
+
   // Fetch DB transcripts for current call
-  const currentCallSid = currentItem?.twilio_call_sid || null;
+  const currentCallSid = activeCallSid || currentItem?.twilio_call_sid || null;
+
+  useEffect(() => {
+    currentCallSidRef.current = currentCallSid;
+  }, [currentCallSid]);
+
   const { data: dbTranscripts = [] } = useQuery({
     queryKey: ["manual-call-transcripts", currentCallSid],
     queryFn: async () => {
@@ -126,8 +135,8 @@ export function ManualCampaignCallModal({
         .order("created_at", { ascending: true });
       return data || [];
     },
-    enabled: !!currentCallSid,
-    refetchInterval: 3000,
+    enabled: open && !!currentCallSid,
+    refetchInterval: isOnCall ? 1000 : 3000,
   });
 
   // Timer
