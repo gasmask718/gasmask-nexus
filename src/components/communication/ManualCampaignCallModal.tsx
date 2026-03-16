@@ -510,6 +510,7 @@ export function ManualCampaignCallModal({
       return;
     }
     stopSpeechRecognition();
+    stopRemoteAudioCapture();
     onOpenChange(next);
   };
 
