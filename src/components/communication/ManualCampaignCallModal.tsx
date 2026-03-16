@@ -84,12 +84,14 @@ export function ManualCampaignCallModal({
   const [elapsed, setElapsed] = useState(0);
   const [localTranscripts, setLocalTranscripts] = useState<TranscriptLine[]>([]);
   const [interimText, setInterimText] = useState("");
+  const [activeCallSid, setActiveCallSid] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
   const remoteRecorderRef = useRef<MediaRecorder | null>(null);
   const remoteChunksRef = useRef<Blob[]>([]);
   const transcribeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const sidResolveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch all queued items for this campaign
   const { data: queueItems = [], refetch: refetchQueue } = useQuery({
