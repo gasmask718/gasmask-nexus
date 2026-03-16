@@ -27148,6 +27148,75 @@ export type Database = {
           },
         ]
       }
+      human_agent_call_queue: {
+        Row: {
+          call_sid: string
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          phone_number: string
+          position: number
+          queue_item_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          call_sid: string
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          phone_number: string
+          position?: number
+          queue_item_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          call_sid?: string
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          phone_number?: string
+          position?: number
+          queue_item_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      human_agent_line_status: {
+        Row: {
+          business_id: string | null
+          busy_since: string | null
+          current_call_sid: string | null
+          current_queue_item_id: string | null
+          id: string
+          phone_number: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          busy_since?: string | null
+          current_call_sid?: string | null
+          current_queue_item_id?: string | null
+          id?: string
+          phone_number: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          busy_since?: string | null
+          current_call_sid?: string | null
+          current_queue_item_id?: string | null
+          id?: string
+          phone_number?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       human_escalation_inbox: {
         Row: {
           accepted_at: string | null
