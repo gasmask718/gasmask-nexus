@@ -14,6 +14,7 @@ interface ProposalData {
   addons: any[];
   total_price: number;
   status: string;
+  payment_status?: string;
   lead_id: string;
   demo_id: string | null;
   business_name?: string;
