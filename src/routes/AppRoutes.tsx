@@ -4,6 +4,7 @@
  */
 import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import { RoleRouteGuard } from '@/components/security/RoleRouteGuard';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
 
@@ -577,9 +578,11 @@ import BrandPlaceholder from '@/pages/BrandPlaceholder';
  */
 const ProtectedLayout = () => (
   <ProtectedRoute>
-    <Layout>
-      <Outlet />
-    </Layout>
+    <RoleRouteGuard>
+      <Layout>
+        <Outlet />
+      </Layout>
+    </RoleRouteGuard>
   </ProtectedRoute>
 );
 
@@ -588,7 +591,9 @@ const ProtectedLayout = () => (
  */
 const ProtectedNoLayout = () => (
   <ProtectedRoute>
-    <Outlet />
+    <RoleRouteGuard>
+      <Outlet />
+    </RoleRouteGuard>
   </ProtectedRoute>
 );
 
@@ -1543,7 +1548,7 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* OPS/PORTAL ROUTES — Wrapped in OpsLayout (mobile-first + bottom nav)         */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
-      <Route element={<ProtectedRoute><OpsLayout /></ProtectedRoute>}>
+      <Route element={<ProtectedRoute><RoleRouteGuard><OpsLayout /></RoleRouteGuard></ProtectedRoute>}>
         {/* Portal Routes */}
         <Route path="/portal" element={<RoleRouter />} />
         <Route path="/portal/home" element={<PortalHome />} />
