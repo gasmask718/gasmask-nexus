@@ -28,8 +28,8 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Upsert recording — update existing row created by twilio-outbound-call
-    await supabase.from("call_recordings").upsert(
+    // Upsert recording — now works with proper unique constraint on provider_call_sid
+    const { error: upsertErr } = await supabase.from("call_recordings").upsert(
       {
         provider_call_sid: callSid,
         recording_url: recordingUrl,
@@ -42,6 +42,12 @@ serve(async (req) => {
       { onConflict: "provider_call_sid" }
     );
 
+    if (upsertErr) {
+      console.error(`❌ Recording upsert failed: ${upsertErr.message}`);
+    } else {
+      console.log(`✅ Recording saved for ${callSid}`);
+    }
+
     // Mark transferred queue items as completed when recording finishes
     await supabase
       .from("outbound_call_queue")
@@ -51,77 +57,85 @@ serve(async (req) => {
 
     // Fetch and transcribe the recording audio
     if (LOVABLE_API_KEY && recordingDuration > 1 && recordingDuration < 600) {
-      const audioRes = await fetch(`${recordingUrl}.wav`, {
-        headers: {
-          Authorization: "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-        },
-      });
+      try {
+        const audioRes = await fetch(`${recordingUrl}.wav`, {
+          headers: {
+            Authorization: "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
+          },
+        });
 
-      if (audioRes.ok) {
-        const audioBuffer = await audioRes.arrayBuffer();
-        const bytes = new Uint8Array(audioBuffer);
+        if (audioRes.ok) {
+          const audioBuffer = await audioRes.arrayBuffer();
+          const bytes = new Uint8Array(audioBuffer);
 
-        // Only transcribe if under 5MB
-        if (bytes.length < 5 * 1024 * 1024) {
-          let binary = "";
-          const chunkSize = 0x8000;
-          for (let i = 0; i < bytes.length; i += chunkSize) {
-            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
-          }
-          const audioBase64 = btoa(binary);
-
-          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${LOVABLE_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [{
-                role: "user",
-                content: [
-                  { type: "input_audio", input_audio: { data: audioBase64, format: "wav" } },
-                  {
-                    type: "text",
-                    text: "Transcribe this phone call recording. Label speakers as 'Agent' and 'Caller'. Output only spoken words with speaker labels, one line per speaker turn. If silence, return [silence].",
-                  },
-                ],
-              }],
-              temperature: 0,
-            }),
-          });
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            let transcript = aiData?.choices?.[0]?.message?.content;
-            if (Array.isArray(transcript)) {
-              transcript = transcript.map((p: any) => typeof p === "string" ? p : p?.text || "").join(" ");
+          // Only transcribe if under 5MB
+          if (bytes.length < 5 * 1024 * 1024) {
+            let binary = "";
+            const chunkSize = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+              binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
             }
-            if (typeof transcript === "string" && transcript.length > 2 && transcript !== "[silence]") {
-              const lines = transcript.split("\n").filter((l: string) => l.trim());
-              for (const line of lines) {
-                const isCaller = /^caller/i.test(line.trim());
-                const cleanText = line.replace(/^(agent|caller)\s*[:：]\s*/i, "").trim();
-                if (cleanText) {
-                  await supabase.from("live_call_transcripts").insert({
-                    call_sid: callSid,
-                    speaker: isCaller ? "caller" : "human",
-                    text: cleanText,
-                    created_at: new Date().toISOString(),
-                  });
-                }
+            const audioBase64 = btoa(binary);
+
+            const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash",
+                messages: [{
+                  role: "user",
+                  content: [
+                    { type: "input_audio", input_audio: { data: audioBase64, format: "wav" } },
+                    {
+                      type: "text",
+                      text: "Transcribe this phone call recording. Label speakers as 'Agent' and 'Caller'. Output only spoken words with speaker labels, one line per speaker turn. If silence, return [silence].",
+                    },
+                  ],
+                }],
+                temperature: 0,
+              }),
+            });
+
+            if (aiResponse.ok) {
+              const aiData = await aiResponse.json();
+              let transcript = aiData?.choices?.[0]?.message?.content;
+              if (Array.isArray(transcript)) {
+                transcript = transcript.map((p: any) => typeof p === "string" ? p : p?.text || "").join(" ");
               }
-              // Mark recording as having a transcript
-              await supabase
-                .from("call_recordings")
-                .update({ has_transcript: true })
-                .eq("provider_call_sid", callSid);
+              if (typeof transcript === "string" && transcript.length > 2 && transcript !== "[silence]") {
+                const lines = transcript.split("\n").filter((l: string) => l.trim());
+                for (const line of lines) {
+                  const isCaller = /^caller/i.test(line.trim());
+                  const cleanText = line.replace(/^(agent|caller)\s*[:：]\s*/i, "").trim();
+                  if (cleanText) {
+                    await supabase.from("live_call_transcripts").insert({
+                      call_sid: callSid,
+                      speaker: isCaller ? "caller" : "human",
+                      text: cleanText,
+                      created_at: new Date().toISOString(),
+                    });
+                  }
+                }
+                // Mark recording as having a transcript
+                await supabase
+                  .from("call_recordings")
+                  .update({ has_transcript: true })
+                  .eq("provider_call_sid", callSid);
 
-              console.log(`✅ Transcribed recording for ${callSid}: ${lines.length} lines`);
+                console.log(`✅ Transcribed recording for ${callSid}: ${lines.length} lines`);
+              }
+            } else {
+              console.error(`❌ AI transcription failed: ${aiResponse.status}`);
             }
           }
+        } else {
+          console.error(`❌ Failed to fetch recording audio: ${audioRes.status}`);
         }
+      } catch (transcribeErr) {
+        console.error("Transcription error:", transcribeErr instanceof Error ? transcribeErr.message : transcribeErr);
       }
     }
 
