@@ -465,6 +465,7 @@ export function ManualCampaignCallModal({
 
   const endCall = useCallback(() => {
     stopSpeechRecognition();
+    stopRemoteAudioCapture();
     device.hangUp();
     setCallStartedAt(null);
     setIsDialing(false);
