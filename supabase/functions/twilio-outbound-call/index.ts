@@ -46,7 +46,12 @@ Deno.serve(async (req) => {
     const body = await req.json();
 
     const { queue_item_id, business_id } = body;
-    if (!queue_item_id || !business_id) throw new Error("Missing IDs");
+    if (!queue_item_id || !business_id) {
+      return new Response(JSON.stringify({ error: "Missing IDs", hint: "Provide queue_item_id and business_id" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: item, error: itemErr } = await supabase
       .from("outbound_call_queue")
