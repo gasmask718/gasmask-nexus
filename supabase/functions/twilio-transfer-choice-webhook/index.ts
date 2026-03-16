@@ -137,11 +137,11 @@ serve(async (req) => {
 
           twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Matthew">Excellent. Connecting you to a live agent now. Please hold for just a moment.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}" timeout="30">
+  <Say voice="Polly.Matthew">Connecting you now.</Say>
+  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}" timeout="20">
     <Number statusCallback="${statusCallback}" statusCallbackEvent="initiated ringing answered completed">${humanNumber}</Number>
   </Dial>
-  <Say voice="Polly.Matthew">The agent was unavailable. Thank you for your time. Goodbye.</Say>
+  <Say voice="Polly.Matthew">The agent was unavailable. Goodbye.</Say>
   <Hangup/>
 </Response>`;
 
