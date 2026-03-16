@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useResolvedData } from "@/hooks/useResolvedData";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
-import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 
 // Simulation data
 const SIMULATION_TASKS = [
