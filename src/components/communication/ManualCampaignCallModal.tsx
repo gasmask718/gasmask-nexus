@@ -377,9 +377,11 @@ export function ManualCampaignCallModal({
     (call: any) => {
       try {
         call.on?.("audio", (audioElement: HTMLAudioElement) => {
-          const stream =
-            audioElement?.captureStream?.() ||
-            (audioElement as HTMLAudioElement & { mozCaptureStream?: () => MediaStream }).mozCaptureStream?.();
+          const audioWithCapture = audioElement as HTMLAudioElement & {
+            captureStream?: () => MediaStream;
+            mozCaptureStream?: () => MediaStream;
+          };
+          const stream = audioWithCapture.captureStream?.() || audioWithCapture.mozCaptureStream?.();
 
           if (stream?.getAudioTracks().length) {
             console.log("🔊 Remote audio captured from Twilio audio element");
