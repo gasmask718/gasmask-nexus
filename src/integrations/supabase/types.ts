@@ -10097,16 +10097,23 @@ export type Database = {
           created_at: string
           delivery_method: string | null
           demo_url: string | null
+          durable_site_id: string | null
+          engine_status: string
+          generated_html: string | null
+          generation_engine: string
           generation_status: string
+          hosting_path: string | null
           id: string
           industry: string | null
           last_viewed_at: string | null
           lead_id: string
+          preview_image: string | null
           screenshot_url: string | null
           sent_at: string | null
           seo_text: string | null
           services_inferred: string[] | null
           state: string | null
+          template_used: string | null
           updated_at: string
           view_count: number
         }
@@ -10116,16 +10123,23 @@ export type Database = {
           created_at?: string
           delivery_method?: string | null
           demo_url?: string | null
+          durable_site_id?: string | null
+          engine_status?: string
+          generated_html?: string | null
+          generation_engine?: string
           generation_status?: string
+          hosting_path?: string | null
           id?: string
           industry?: string | null
           last_viewed_at?: string | null
           lead_id: string
+          preview_image?: string | null
           screenshot_url?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
           state?: string | null
+          template_used?: string | null
           updated_at?: string
           view_count?: number
         }
@@ -10135,16 +10149,23 @@ export type Database = {
           created_at?: string
           delivery_method?: string | null
           demo_url?: string | null
+          durable_site_id?: string | null
+          engine_status?: string
+          generated_html?: string | null
+          generation_engine?: string
           generation_status?: string
+          hosting_path?: string | null
           id?: string
           industry?: string | null
           last_viewed_at?: string | null
           lead_id?: string
+          preview_image?: string | null
           screenshot_url?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
           state?: string | null
+          template_used?: string | null
           updated_at?: string
           view_count?: number
         }
@@ -10157,6 +10178,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_demo_templates: {
+        Row: {
+          color_scheme: Json | null
+          created_at: string | null
+          cta_text: string | null
+          hero_headline: string
+          hero_subheadline: string
+          id: string
+          industry: string
+          is_active: boolean | null
+          sections: Json | null
+          template_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          color_scheme?: Json | null
+          created_at?: string | null
+          cta_text?: string | null
+          hero_headline: string
+          hero_subheadline: string
+          id?: string
+          industry: string
+          is_active?: boolean | null
+          sections?: Json | null
+          template_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          color_scheme?: Json | null
+          created_at?: string | null
+          cta_text?: string | null
+          hero_headline?: string
+          hero_subheadline?: string
+          id?: string
+          industry?: string
+          is_active?: boolean | null
+          sections?: Json | null
+          template_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       brandaro_followups: {
         Row: {
