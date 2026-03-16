@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -8,6 +8,12 @@ import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import VAWorkspacePage from '@/pages/brandaro/VAWorkspacePage';
 import VAPerformancePage from '@/pages/brandaro/VAPerformancePage';
 import CampaignManagerPage from '@/pages/brandaro/CampaignManagerPage';
+import DemoEnginePage from '@/pages/brandaro/DemoEnginePage';
+import ProposalBuilderPage from '@/pages/brandaro/ProposalBuilderPage';
+import FollowUpEnginePage from '@/pages/brandaro/FollowUpEnginePage';
+import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
+import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
+import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -16,8 +22,14 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/qualification', label: 'Qualification', icon: Target },
   { path: '/os/brandaro/calling', label: 'Calling Ops', icon: Phone },
   { path: '/os/brandaro/workspace', label: 'VA Workspace', icon: Headset },
-  { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
   { path: '/os/brandaro/campaigns', label: 'Campaigns', icon: FolderOpen },
+  { path: '/os/brandaro/demos', label: 'Demo Engine', icon: Wand2 },
+  { path: '/os/brandaro/proposals', label: 'Proposals', icon: FileText },
+  { path: '/os/brandaro/followups', label: 'Follow-Ups', icon: Bell },
+  { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
+  { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
+  { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
+  { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
 ];
 
 export const BrandaroModule: DynastyModule = {
@@ -42,6 +54,12 @@ export const BrandaroModule: DynastyModule = {
     { path: '/workspace', component: VAWorkspacePage, label: 'VA Workspace', icon: Headset, requiresAuth: true },
     { path: '/performance', component: VAPerformancePage, label: 'VA Performance', icon: BarChart3, requiresAuth: true },
     { path: '/campaigns', component: CampaignManagerPage, label: 'Campaigns', icon: FolderOpen, requiresAuth: true },
+    { path: '/demos', component: DemoEnginePage, label: 'Demo Engine', icon: Wand2, requiresAuth: true },
+    { path: '/proposals', component: ProposalBuilderPage, label: 'Proposals', icon: FileText, requiresAuth: true },
+    { path: '/followups', component: FollowUpEnginePage, label: 'Follow-Ups', icon: Bell, requiresAuth: true },
+    { path: '/production', component: ProductionPipelinePage, label: 'Production', icon: Hammer, requiresAuth: true },
+    { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
+    { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,
