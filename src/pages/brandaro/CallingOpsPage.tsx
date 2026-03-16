@@ -91,9 +91,9 @@ export default function CallingOpsPage() {
     mutationFn: async () => {
       const { data: leads, error: leadsErr } = await supabase
         .from("brandaro_qualified_leads")
-        .select("id, lead_priority, lead_status, call_attempts")
+        .select("id, priority_tier, priority_score, lead_status, call_attempts")
         .not("lead_status", "in", `(${EXCLUDED_STATUSES.join(",")})`)
-        .order("lead_priority", { ascending: true })
+        .order("priority_score", { ascending: false })
         .limit(200);
       if (leadsErr) throw leadsErr;
       if (!leads?.length) throw new Error("No eligible leads found");
@@ -104,8 +104,8 @@ export default function CallingOpsPage() {
 
       const queueRows = newLeads.map((lead, idx) => ({
         lead_id: lead.id,
-        priority_tier: lead.lead_priority || 2,
-        priority_score: lead.lead_priority === 1 ? 90 : lead.lead_priority === 2 ? 60 : 30,
+        priority_tier: lead.priority_tier === "1" ? 1 : lead.priority_tier === "2" ? 2 : 3,
+        priority_score: lead.priority_score || 50,
         queue_position: idx + 1,
         retry_count: lead.call_attempts || 0,
       }));
