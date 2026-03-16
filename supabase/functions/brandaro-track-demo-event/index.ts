@@ -71,8 +71,10 @@ Deno.serve(async (req) => {
       const newScore = (lead?.engagement_score || 0) + score;
       const updates: Record<string, any> = { engagement_score: newScore };
 
-      // Auto-promote to hot_lead at threshold 50
-      if (newScore >= 50 && lead?.lead_status !== "hot_lead" && lead?.lead_status !== "sold") {
+      // Auto-promote: 50 = hot_lead, 100 = priority_call
+      if (newScore >= 100 && lead?.lead_status !== "sold" && lead?.lead_status !== "priority_call") {
+        updates.lead_status = "priority_call";
+      } else if (newScore >= 50 && !["hot_lead", "priority_call", "sold"].includes(lead?.lead_status || "")) {
         updates.lead_status = "hot_lead";
       }
 
