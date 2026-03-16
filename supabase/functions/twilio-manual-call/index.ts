@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
     const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-    const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
+    const FROM_NUMBER = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER") || "+18776818621";
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status`;

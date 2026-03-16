@@ -31,8 +31,12 @@ serve(async (req: Request) => {
     // For callerId: ALWAYS use TWILIO_PHONE_NUMBER for PSTN calls.
     // The browser SDK sends the client identity as "From", which is NOT
     // a valid callerId for outbound PSTN <Dial>.
-    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") || "";
-    const callerId = twilioPhoneNumber || rawFrom;
+    const twilioPhoneNumber = Deno.env.get("TWILIO_PHONE_NUMBER") || Deno.env.get("TWILIO_FROM_NUMBER") || "";
+    
+    // CRITICAL: Never use a client: identity as callerId — it causes one-way audio
+    const callerId = (twilioPhoneNumber && twilioPhoneNumber.startsWith("+")) 
+      ? twilioPhoneNumber 
+      : (rawFrom.startsWith("+") ? rawFrom : "");
 
     console.log(JSON.stringify({
       mode: isTestCall ? "PSTN_TEST" : "ROUTED",
