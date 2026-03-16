@@ -117,7 +117,7 @@ export function ManualCampaignCallModal({
   const currentItem = queueItems[currentIndex] || null;
   const totalItems = queueItems.length;
   const completedCount = queueItems.filter(
-    (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer"
+    (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer" || q.status === "transferred"
   ).length;
 
   const isOnCall =
