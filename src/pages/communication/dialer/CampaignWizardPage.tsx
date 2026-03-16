@@ -56,6 +56,8 @@ import {
   Square,
   X,
   UserPlus,
+  Trash2,
+  ArrowRightLeft,
 } from "lucide-react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
