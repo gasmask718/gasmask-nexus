@@ -44,19 +44,36 @@ export function PwaInstallButton({
     );
   }
 
-  // Always show — trigger native prompt if available, otherwise guide user
-  const handleClick = () => {
+  // Native install — always trigger prompt directly
+  const handleClick = async () => {
     if (canInstall) {
-      triggerInstall();
+      await triggerInstall();
+    } else if (isInstalled) {
+      // Already installed — no-op or gentle feedback
+      return;
     } else {
-      window.alert('To install, use your browser menu → "Add to Home Screen" or "Install App".');
+      // Browser doesn't support beforeinstallprompt (Firefox, some desktop browsers)
+      // Try to use the Related Applications API or fall back to manual
+      try {
+        // Check if we can use getInstalledRelatedApps
+        if ('getInstalledRelatedApps' in navigator) {
+          const apps = await (navigator as any).getInstalledRelatedApps();
+          if (apps.length > 0) {
+            return; // Already installed
+          }
+        }
+      } catch {
+        // ignore
+      }
+      // Last resort: show browser-specific instruction
+      window.alert('To install this app:\n\n• Chrome/Edge: Click the install icon (⊕) in the address bar\n• Safari: Tap Share → Add to Home Screen\n• Firefox: Not supported for PWA install');
     }
   };
 
   return (
     <Button variant={variant} size={size} className={className} onClick={handleClick}>
       <Download className="h-4 w-4" />
-      {showLabel && <span className="ml-1.5">{isInstalled ? 'Installed' : 'Install App'}</span>}
+      {showLabel && <span className="ml-1.5">{isInstalled ? 'Installed ✓' : 'Install App'}</span>}
     </Button>
   );
 }

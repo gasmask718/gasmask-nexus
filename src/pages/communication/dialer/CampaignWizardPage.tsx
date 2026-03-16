@@ -85,19 +85,12 @@ interface AudienceRow {
 
 interface Campaign {
   id: string;
-
   name: string;
-
   status: "active" | "paused" | "completed" | "draft";
-
-  dial_mode: "ai"; // Forced to AI
-
+  dial_mode: "ai" | "manual";
   created_at: string;
-
   initial_script: string;
-
   agent_id: string;
-
   business_id: string;
 }
 
@@ -257,11 +250,9 @@ const AUDIENCE_TYPE_CONFIG: Record<
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
-
   dialing: { label: "Dialing", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: Phone },
-
-  connected: { label: "Live (AI)", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Bot },
-
+  connected: { label: "Live", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: Bot },
+  bridged: { label: "Connected", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneForwarded },
   completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
 
   no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
@@ -330,16 +321,11 @@ export default function CampaignWizardPage() {
 
   const [form, setForm] = useState({
     name: "",
-
     description: "",
-
-    dial_mode: "ai", // Hardcoded to AI
-
+    dial_mode: "ai" as "ai" | "manual",
     max_attempts: 3,
-
     retry_backoff_minutes: 30,
-
-    amd_enabled: false, // Default false for instant TTS
+    amd_enabled: false,
 
     call_window_start: "09:00",
 
@@ -356,46 +342,43 @@ export default function CampaignWizardPage() {
 
   const processQueue = useCallback(
     async (campaignId: string) => {
+      // Check campaign's dial_mode to choose the right function
+      const { data: campData } = await supabase
+        .from("dialer_campaigns")
+        .select("dial_mode")
+        .eq("id", campaignId)
+        .single();
+      const dialMode = (campData as any)?.dial_mode || "ai";
+
       const { data: queueItems, error: fetchErr } = await supabase
-
         .from("outbound_call_queue")
-
         .select("id, phone_number, contact_name")
-
         .eq("campaign_id", campaignId)
-
         .eq("status", "queued")
-
         .limit(1)
-
         .maybeSingle();
 
       if (fetchErr || !queueItems) return;
-
       const queueItem = queueItems;
 
       const { error: updateErr } = await supabase
-
         .from("outbound_call_queue")
-
         .update({
           status: "dialing",
-
           dialing_started_at: new Date().toISOString(),
-
           updated_at: new Date().toISOString(),
         })
-
         .eq("id", queueItem.id)
-
         .eq("status", "queued");
 
       if (updateErr) return toast.error(`Failed to lock call: ${updateErr.message}`);
 
       try {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
-
-        const response = await supabase.functions.invoke("twilio-outbound-call", {
+        
+        // Use manual call function for manual mode, AI function for ai mode
+        const fnName = dialMode === "manual" ? "twilio-manual-call" : "twilio-outbound-call";
+        const response = await supabase.functions.invoke(fnName, {
           body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
         });
 
@@ -403,23 +386,16 @@ export default function CampaignWizardPage() {
           throw new Error(response.error?.message || response.data?.error);
       } catch (err: any) {
         console.error("Dispatcher Exception:", err);
-
         toast.error(`Call logic failed: ${err.message}`);
-
         await supabase
-
           .from("outbound_call_queue")
-
           .update({ status: "failed", updated_at: new Date().toISOString() })
-
           .eq("id", queueItem.id);
       }
 
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
-
       queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
     },
-
     [effectiveBizId, queryClient],
   );
 
@@ -641,7 +617,7 @@ export default function CampaignWizardPage() {
 
           status: "active",
 
-          dial_mode: "ai",
+          dial_mode: form.dial_mode,
 
           max_attempts: form.max_attempts,
 
@@ -949,7 +925,8 @@ export default function CampaignWizardPage() {
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                   <Badge variant="outline" className="gap-1 bg-background">
-                    <Bot className="h-3 w-3" /> Mode: AI Agent
+                    {(activeCampaign as any)?.dial_mode === "manual" ? <Phone className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
+                    Mode: {(activeCampaign as any)?.dial_mode === "manual" ? "Manual Cold Call" : "AI Agent"}
                   </Badge>
 
                   {activeCampaign?.status === "active" && (
@@ -1542,87 +1519,128 @@ export default function CampaignWizardPage() {
 
         {step === 3 && (
           <div className="space-y-6">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="pt-6 flex gap-4">
-                <div className="mt-1">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5" />
-                  </div>
+            {/* Call Mode Toggle */}
+            <Card className="border-l-4 border-l-primary">
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h4 className="font-semibold">Call Mode</h4>
+                  <p className="text-xs text-muted-foreground">Choose how calls are handled when answered.</p>
                 </div>
-
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h4 className="font-semibold">AI Agent Script</h4>
-
-                    <p className="text-xs text-muted-foreground">
-                      The AI speaks this immediately when the customer answers.
-                    </p>
+                <RadioGroup
+                  value={form.dial_mode}
+                  onValueChange={(v: any) => update("dial_mode", v)}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${form.dial_mode === "ai" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}>
+                    <RadioGroupItem value="ai" id="mode-ai" />
+                    <Label htmlFor="mode-ai" className="cursor-pointer flex-1">
+                      <div className="flex items-center gap-2 font-semibold"><Bot className="h-4 w-4" /> AI Voice Agent</div>
+                      <p className="text-xs text-muted-foreground mt-1">TTS opener → AI handoff via ElevenLabs</p>
+                    </Label>
                   </div>
+                  <div className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${form.dial_mode === "manual" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}>
+                    <RadioGroupItem value="manual" id="mode-manual" />
+                    <Label htmlFor="mode-manual" className="cursor-pointer flex-1">
+                      <div className="flex items-center gap-2 font-semibold"><Phone className="h-4 w-4" /> Manual Cold Call</div>
+                      <p className="text-xs text-muted-foreground mt-1">Direct human call — no AI, no TTS. Recorded.</p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs">Quick Templates</Label>
-
-                    <div className="flex flex-wrap gap-2">
-                      {SCRIPT_TEMPLATES.map((tpl) => (
-                        <Button
-                          key={tpl.id}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-7"
-                          onClick={() => update("initial_script", tpl.script)}
-                        >
-                          {tpl.label}
-                        </Button>
-                      ))}
+            {/* Script — shown for AI mode */}
+            {form.dial_mode === "ai" && (
+              <Card className="border-l-4 border-l-blue-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <MessageSquare className="h-5 w-5" />
                     </div>
                   </div>
-
-                  <Textarea
-                    value={form.initial_script}
-                    onChange={(e) => update("initial_script", e.target.value)}
-                    rows={4}
-                    placeholder="Hi, this is..."
-                  />
-
-                  <p className="text-xs text-muted-foreground">
-                    Use <code className="bg-muted px-1 rounded text-xs">{"{{contact_name}}"}</code>,{" "}
-                    <code className="bg-muted px-1 rounded text-xs">{"{{agent_name}}"}</code> variables.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-purple-500">
-              <CardContent className="pt-6 flex gap-4">
-                <div className="mt-1">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <Bot className="h-5 w-5" />
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">AI Agent Script</h4>
+                      <p className="text-xs text-muted-foreground">The AI speaks this immediately when the customer answers.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Quick Templates</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {SCRIPT_TEMPLATES.map((tpl) => (
+                          <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => update("initial_script", tpl.script)}>
+                            {tpl.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <Textarea value={form.initial_script} onChange={(e) => update("initial_script", e.target.value)} rows={4} placeholder="Hi, this is..." />
+                    <p className="text-xs text-muted-foreground">
+                      Use <code className="bg-muted px-1 rounded text-xs">{"{{contact_name}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{agent_name}}"}</code> variables.
+                    </p>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            )}
 
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h4 className="font-semibold">AI Voice Settings</h4>
-
-                    <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+            {/* AI Voice — shown for AI mode */}
+            {form.dial_mode === "ai" && (
+              <Card className="border-l-4 border-l-purple-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Bot className="h-5 w-5" />
+                    </div>
                   </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">AI Voice Settings</h4>
+                      <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+                    </div>
+                    <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select Agent..." /></SelectTrigger>
+                      <SelectContent>
+                        {VOICE_OPTIONS.map((a) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-                  <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Agent..." />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      {VOICE_OPTIONS.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Manual mode info */}
+            {form.dial_mode === "manual" && (
+              <Card className="border-l-4 border-l-green-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center">
+                      <Phone className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">Manual Cold Call Mode</h4>
+                      <p className="text-xs text-muted-foreground">Calls will be placed directly via Twilio without any AI voice agent. All calls are recorded and transcripts are logged automatically.</p>
+                    </div>
+                    <Alert>
+                      <Phone className="h-4 w-4" />
+                      <AlertTitle>How it works</AlertTitle>
+                      <AlertDescription className="text-xs">
+                        1. System dials the contact via Twilio<br/>
+                        2. Call is recorded from the moment it's answered<br/>
+                        3. Transcripts and recordings appear in the Logs tab
+                      </AlertDescription>
+                    </Alert>
+                    <Textarea
+                      value={form.initial_script}
+                      onChange={(e) => update("initial_script", e.target.value)}
+                      rows={4}
+                      placeholder="Call notes / talking points for reference (not spoken by AI)..."
+                    />
+                    <p className="text-xs text-muted-foreground">These notes are for your reference only — they won't be read aloud.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
@@ -1675,7 +1693,7 @@ export default function CampaignWizardPage() {
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => {
-              if (step === 3 && !form.initial_script) return toast.error("Complete script setup");
+              if (step === 3 && form.dial_mode === "ai" && !form.initial_script) return toast.error("Complete script setup");
 
               if (step === 1 && totalSelected === 0) return toast.error("Select audience");
 
