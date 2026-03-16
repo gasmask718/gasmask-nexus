@@ -15,7 +15,7 @@ import { ComingSoonBadge } from "@/components/ui/ComingSoonBadge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 import {
   ShoppingBag,
   Package,
