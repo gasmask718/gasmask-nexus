@@ -1692,7 +1692,7 @@ export default function CampaignWizardPage() {
         {step < STEPS.length - 1 ? (
           <Button
             onClick={() => {
-              if (step === 3 && !form.initial_script) return toast.error("Complete script setup");
+              if (step === 3 && form.dial_mode === "ai" && !form.initial_script) return toast.error("Complete script setup");
 
               if (step === 1 && totalSelected === 0) return toast.error("Select audience");
 
