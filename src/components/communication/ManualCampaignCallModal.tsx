@@ -87,6 +87,9 @@ export function ManualCampaignCallModal({
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
+  const remoteRecorderRef = useRef<MediaRecorder | null>(null);
+  const remoteChunksRef = useRef<Blob[]>([]);
+  const transcribeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Fetch all queued items for this campaign
   const { data: queueItems = [], refetch: refetchQueue } = useQuery({
