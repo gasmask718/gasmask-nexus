@@ -659,7 +659,7 @@ export function ManualCampaignCallModal({
     }
   }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition]);
 
-  
+  const skipToNext = useCallback(() => {
     if (isDialing || isOnCall) {
       toast.error("End the current call before skipping");
       return;
