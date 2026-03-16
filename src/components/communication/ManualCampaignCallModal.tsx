@@ -277,39 +277,76 @@ export function ManualCampaignCallModal({
     }
   }, []);
 
-  // ── Remote Audio Transcription ──
-  const startRemoteAudioCapture = useCallback((call: any) => {
-    try {
-      // Access the underlying PeerConnection from Twilio SDK
-      const pc =
-        call?._mediaHandler?._peerConnection ||
-        call?.mediaStream?._peerConnection ||
-        call?._peerConnection;
+  const stopSidResolution = useCallback(() => {
+    if (sidResolveIntervalRef.current) {
+      clearInterval(sidResolveIntervalRef.current);
+      sidResolveIntervalRef.current = null;
+    }
+  }, []);
 
-      if (!pc) {
-        console.warn("Could not access PeerConnection for remote audio capture");
-        return;
+  const persistCallSid = useCallback(
+    async (rawSid: string | null | undefined, queueItemId?: string) => {
+      const sid = rawSid?.trim();
+      if (!sid || sid.startsWith("browser-") || sid === currentCallSidRef.current) return;
+
+      currentCallSidRef.current = sid;
+      setActiveCallSid(sid);
+
+      if (queueItemId) {
+        await supabase
+          .from("outbound_call_queue")
+          .update({ twilio_call_sid: sid, updated_at: new Date().toISOString() })
+          .eq("id", queueItemId);
+        refetchQueue();
       }
+    },
+    [refetchQueue]
+  );
 
-      // Build a MediaStream from the remote tracks
-      const receivers = pc.getReceivers?.();
-      if (!receivers || receivers.length === 0) {
-        console.warn("No remote receivers found");
-        return;
+  const transcribeRemoteBlob = useCallback(
+    async (blob: Blob) => {
+      if (blob.size < 1200) return;
+
+      try {
+        const arrayBuffer = await blob.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = "";
+        const chunkSize = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunkSize) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+        }
+
+        const { data, error } = await supabase.functions.invoke("transcribe-call-audio", {
+          body: {
+            audio_base64: btoa(binary),
+            call_sid: currentCallSidRef.current,
+            queue_item_id: currentItem?.id,
+            mime_type: blob.type || "audio/webm",
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.text && !data?.skipped) {
+          setLocalTranscripts((prev) => [
+            ...prev,
+            { speaker: "caller", text: data.text, timestamp: new Date() },
+          ]);
+          if (currentCallSidRef.current) {
+            queryClient.invalidateQueries({ queryKey: ["manual-call-transcripts", currentCallSidRef.current] });
+          }
+          queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+        }
+      } catch (err) {
+        console.warn("Remote transcription chunk failed:", err);
       }
+    },
+    [currentItem?.id, queryClient]
+  );
 
-      const remoteStream = new MediaStream(
-        receivers
-          .filter((r: RTCRtpReceiver) => r.track && r.track.kind === "audio")
-          .map((r: RTCRtpReceiver) => r.track)
-      );
-
-      if (remoteStream.getTracks().length === 0) {
-        console.warn("No remote audio tracks found");
-        return;
-      }
-
-      console.log("🔊 Remote audio stream captured, starting recorder");
+  const startRemoteRecorder = useCallback(
+    (remoteStream: MediaStream) => {
+      if (remoteRecorderRef.current || remoteStream.getAudioTracks().length === 0) return;
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
@@ -320,74 +357,90 @@ export function ManualCampaignCallModal({
       remoteChunksRef.current = [];
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
-          remoteChunksRef.current.push(e.data);
-        }
+        if (e.data.size > 0) remoteChunksRef.current.push(e.data);
       };
 
-      recorder.start(5000); // Collect 5-second chunks
+      recorder.start(2000);
 
-      // Every 6 seconds, send accumulated audio for transcription
-      transcribeIntervalRef.current = setInterval(async () => {
-        if (remoteChunksRef.current.length === 0) return;
-
+      transcribeIntervalRef.current = setInterval(() => {
         const chunks = [...remoteChunksRef.current];
+        if (chunks.length === 0) return;
+
         remoteChunksRef.current = [];
-        const blob = new Blob(chunks, { type: mimeType });
+        void transcribeRemoteBlob(new Blob(chunks, { type: mimeType }));
+      }, 2500);
+    },
+    [transcribeRemoteBlob]
+  );
 
-        // Skip tiny chunks (likely silence)
-        if (blob.size < 2000) return;
+  const startRemoteAudioCapture = useCallback(
+    (call: any) => {
+      try {
+        call.on?.("audio", (audioElement: HTMLAudioElement) => {
+          const stream =
+            audioElement?.captureStream?.() ||
+            (audioElement as HTMLAudioElement & { mozCaptureStream?: () => MediaStream }).mozCaptureStream?.();
 
-        try {
-          const arrayBuffer = await blob.arrayBuffer();
-          const base64 = btoa(
-            new Uint8Array(arrayBuffer).reduce(
-              (data, byte) => data + String.fromCharCode(byte),
-              ""
-            )
-          );
-
-          const callSid = currentCallSidRef.current;
-          if (!callSid) return;
-
-          const { data } = await supabase.functions.invoke("transcribe-call-audio", {
-            body: {
-              audio_base64: base64,
-              call_sid: callSid,
-              mime_type: "audio/webm",
-            },
-          });
-
-          if (data?.text && !data?.skipped) {
-            setLocalTranscripts((prev) => [
-              ...prev,
-              { speaker: "caller", text: data.text, timestamp: new Date() },
-            ]);
-            queryClient.invalidateQueries({ queryKey: ["manual-call-transcripts", callSid] });
-            queryClient.invalidateQueries({ queryKey: ["campaign-transcripts"] });
+          if (stream?.getAudioTracks().length) {
+            console.log("🔊 Remote audio captured from Twilio audio element");
+            startRemoteRecorder(stream);
           }
-        } catch (err) {
-          console.warn("Remote transcription chunk failed:", err);
+        });
+      } catch (err) {
+        console.warn("Audio element capture hook failed, will use peer connection fallback", err);
+      }
+
+      setTimeout(() => {
+        if (remoteRecorderRef.current) return;
+
+        const pc =
+          call?._mediaHandler?._peerConnection ||
+          call?.mediaStream?._peerConnection ||
+          call?._peerConnection;
+
+        const receivers = pc?.getReceivers?.() || [];
+        const remoteTracks = receivers
+          .filter((r: RTCRtpReceiver) => r.track && r.track.kind === "audio")
+          .map((r: RTCRtpReceiver) => r.track);
+
+        if (remoteTracks.length === 0) {
+          console.warn("No remote audio tracks found for transcription");
+          return;
         }
-      }, 6000);
-    } catch (err) {
-      console.error("Failed to start remote audio capture:", err);
-    }
-  }, [queryClient]);
+
+        console.log("🔊 Remote audio captured from peer connection fallback");
+        startRemoteRecorder(new MediaStream(remoteTracks));
+      }, 800);
+    },
+    [startRemoteRecorder]
+  );
 
   const stopRemoteAudioCapture = useCallback(() => {
-    if (remoteRecorderRef.current) {
-      try { remoteRecorderRef.current.stop(); } catch { /* ok */ }
-      remoteRecorderRef.current = null;
-    }
     if (transcribeIntervalRef.current) {
       clearInterval(transcribeIntervalRef.current);
       transcribeIntervalRef.current = null;
     }
-    remoteChunksRef.current = [];
-    console.log("🔊 Remote audio capture stopped");
-  }, []);
 
+    const bufferedChunks = [...remoteChunksRef.current];
+    remoteChunksRef.current = [];
+
+    if (remoteRecorderRef.current) {
+      try {
+        if (remoteRecorderRef.current.state !== "inactive") {
+          remoteRecorderRef.current.stop();
+        }
+      } catch {
+        // noop
+      }
+      remoteRecorderRef.current = null;
+    }
+
+    if (bufferedChunks.length > 0) {
+      void transcribeRemoteBlob(new Blob(bufferedChunks, { type: bufferedChunks[0]?.type || "audio/webm" }));
+    }
+
+    console.log("🔊 Remote audio capture stopped");
+  }, [transcribeRemoteBlob]);
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
