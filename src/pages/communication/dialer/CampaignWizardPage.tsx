@@ -925,7 +925,8 @@ export default function CampaignWizardPage() {
 
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                   <Badge variant="outline" className="gap-1 bg-background">
-                    <Bot className="h-3 w-3" /> Mode: AI Agent
+                    {(activeCampaign as any)?.dial_mode === "manual" ? <Phone className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
+                    Mode: {(activeCampaign as any)?.dial_mode === "manual" ? "Manual Cold Call" : "AI Agent"}
                   </Badge>
 
                   {activeCampaign?.status === "active" && (
