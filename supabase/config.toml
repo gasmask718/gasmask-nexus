@@ -226,3 +226,27 @@ verify_jwt = false
 
 [functions.recover-dialer]
 verify_jwt = false
+
+[functions.twilio-transfer-choice-webhook]
+verify_jwt = false
+
+[functions.twilio-human-queue-hold]
+verify_jwt = false
+
+[functions.twilio-human-call-complete]
+verify_jwt = false
+
+[functions.twilio-gather-webhook]
+verify_jwt = false
+
+[functions.transfer-campaign-call]
+verify_jwt = false
+
+[functions.twilio-call-status]
+verify_jwt = false
+
+[functions.start-call-recording]
+verify_jwt = false
+
+[functions.twilio-recording-callback]
+verify_jwt = false

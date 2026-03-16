@@ -86,7 +86,8 @@ Deno.serve(async (req) => {
     const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status?script=${encodeURIComponent(rawScript)}`;
-    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}`;
+    const humanNumber = Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
+    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}&queue_item_id=${encodeURIComponent(queue_item_id)}&campaign_id=${encodeURIComponent(item.campaign_id || "")}&human_number=${encodeURIComponent(humanNumber)}`;
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
