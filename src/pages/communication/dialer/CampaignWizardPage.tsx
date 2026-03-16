@@ -298,7 +298,7 @@ export default function CampaignWizardPage() {
 
   const effectiveBizId = contextBizId || fallbackBiz?.id;
 
-  const [viewMode, setViewMode] = useState<"wizard" | "console">("console");
+  const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
 
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
@@ -750,7 +750,7 @@ export default function CampaignWizardPage() {
       return (data as unknown as Campaign[]) || [];
     },
 
-    enabled: !!effectiveBizId,
+    enabled: viewMode === "console" && !!effectiveBizId,
   });
 
   const { data: callItems, isLoading: callsLoading } = useQuery({

@@ -106,9 +106,6 @@ Deno.serve(async (req) => {
     params.append("To", item.phone_number);
     params.append("From", FROM_NUMBER);
     params.append("Twiml", twiml);
-    params.append("Record", "true");
-    params.append("RecordingStatusCallback", `${supabaseUrl}/functions/v1/twilio-call-status`);
-    params.append("RecordingStatusCallbackMethod", "POST");
     params.append("StatusCallback", statusCallbackUrl);
     params.append("StatusCallbackMethod", "POST");
     params.append("StatusCallbackEvent", "initiated");

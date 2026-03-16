@@ -54,9 +54,11 @@ export default function InviteLanding() {
         setStatus('success');
         toast.success(`Welcome! You've been assigned the ${data.role} role.`);
 
-        // Redirect immediately
-        const path = getRoleRedirectPath(data.role as OSRole);
-        navigate(path, { replace: true });
+        // Redirect after brief delay
+        setTimeout(() => {
+          const path = getRoleRedirectPath(data.role as OSRole);
+          navigate(path, { replace: true });
+        }, 2000);
       } else {
         setStatus('error');
         setError(data?.error || 'Invite redemption failed');
