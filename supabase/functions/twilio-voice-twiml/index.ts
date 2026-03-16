@@ -73,7 +73,7 @@ serve(async (req: Request) => {
     if (isTestCall) {
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial callerId="${callerId}" record="record-from-answer-dual"
+  <Dial ${callerIdAttr} record="record-from-answer-dual"
         statusCallbackEvent="initiated ringing answered completed"
         statusCallback="${statusCallbackUrl}"
         statusCallbackMethod="POST">
