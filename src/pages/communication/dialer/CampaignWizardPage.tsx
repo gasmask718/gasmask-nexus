@@ -1518,87 +1518,128 @@ export default function CampaignWizardPage() {
 
         {step === 3 && (
           <div className="space-y-6">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="pt-6 flex gap-4">
-                <div className="mt-1">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                    <MessageSquare className="h-5 w-5" />
-                  </div>
+            {/* Call Mode Toggle */}
+            <Card className="border-l-4 border-l-primary">
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <h4 className="font-semibold">Call Mode</h4>
+                  <p className="text-xs text-muted-foreground">Choose how calls are handled when answered.</p>
                 </div>
-
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h4 className="font-semibold">AI Agent Script</h4>
-
-                    <p className="text-xs text-muted-foreground">
-                      The AI speaks this immediately when the customer answers.
-                    </p>
+                <RadioGroup
+                  value={form.dial_mode}
+                  onValueChange={(v: any) => update("dial_mode", v)}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${form.dial_mode === "ai" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}>
+                    <RadioGroupItem value="ai" id="mode-ai" />
+                    <Label htmlFor="mode-ai" className="cursor-pointer flex-1">
+                      <div className="flex items-center gap-2 font-semibold"><Bot className="h-4 w-4" /> AI Voice Agent</div>
+                      <p className="text-xs text-muted-foreground mt-1">TTS opener → AI handoff via ElevenLabs</p>
+                    </Label>
                   </div>
+                  <div className={`flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-colors ${form.dial_mode === "manual" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"}`}>
+                    <RadioGroupItem value="manual" id="mode-manual" />
+                    <Label htmlFor="mode-manual" className="cursor-pointer flex-1">
+                      <div className="flex items-center gap-2 font-semibold"><Phone className="h-4 w-4" /> Manual Cold Call</div>
+                      <p className="text-xs text-muted-foreground mt-1">Direct human call — no AI, no TTS. Recorded.</p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </CardContent>
+            </Card>
 
-                  <div className="space-y-2">
-                    <Label className="text-xs">Quick Templates</Label>
-
-                    <div className="flex flex-wrap gap-2">
-                      {SCRIPT_TEMPLATES.map((tpl) => (
-                        <Button
-                          key={tpl.id}
-                          variant="outline"
-                          size="sm"
-                          className="text-xs h-7"
-                          onClick={() => update("initial_script", tpl.script)}
-                        >
-                          {tpl.label}
-                        </Button>
-                      ))}
+            {/* Script — shown for AI mode */}
+            {form.dial_mode === "ai" && (
+              <Card className="border-l-4 border-l-blue-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <MessageSquare className="h-5 w-5" />
                     </div>
                   </div>
-
-                  <Textarea
-                    value={form.initial_script}
-                    onChange={(e) => update("initial_script", e.target.value)}
-                    rows={4}
-                    placeholder="Hi, this is..."
-                  />
-
-                  <p className="text-xs text-muted-foreground">
-                    Use <code className="bg-muted px-1 rounded text-xs">{"{{contact_name}}"}</code>,{" "}
-                    <code className="bg-muted px-1 rounded text-xs">{"{{agent_name}}"}</code> variables.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-l-4 border-l-purple-500">
-              <CardContent className="pt-6 flex gap-4">
-                <div className="mt-1">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
-                    <Bot className="h-5 w-5" />
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">AI Agent Script</h4>
+                      <p className="text-xs text-muted-foreground">The AI speaks this immediately when the customer answers.</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Quick Templates</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {SCRIPT_TEMPLATES.map((tpl) => (
+                          <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => update("initial_script", tpl.script)}>
+                            {tpl.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    <Textarea value={form.initial_script} onChange={(e) => update("initial_script", e.target.value)} rows={4} placeholder="Hi, this is..." />
+                    <p className="text-xs text-muted-foreground">
+                      Use <code className="bg-muted px-1 rounded text-xs">{"{{contact_name}}"}</code>, <code className="bg-muted px-1 rounded text-xs">{"{{agent_name}}"}</code> variables.
+                    </p>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            )}
 
-                <div className="flex-1 space-y-3">
-                  <div>
-                    <h4 className="font-semibold">AI Voice Settings</h4>
-
-                    <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+            {/* AI Voice — shown for AI mode */}
+            {form.dial_mode === "ai" && (
+              <Card className="border-l-4 border-l-purple-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+                      <Bot className="h-5 w-5" />
+                    </div>
                   </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">AI Voice Settings</h4>
+                      <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+                    </div>
+                    <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
+                      <SelectTrigger><SelectValue placeholder="Select Agent..." /></SelectTrigger>
+                      <SelectContent>
+                        {VOICE_OPTIONS.map((a) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-                  <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select Agent..." />
-                    </SelectTrigger>
-
-                    <SelectContent>
-                      {VOICE_OPTIONS.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Manual mode info */}
+            {form.dial_mode === "manual" && (
+              <Card className="border-l-4 border-l-green-500">
+                <CardContent className="pt-6 flex gap-4">
+                  <div className="mt-1">
+                    <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex items-center justify-center">
+                      <Phone className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h4 className="font-semibold">Manual Cold Call Mode</h4>
+                      <p className="text-xs text-muted-foreground">Calls will be placed directly via Twilio without any AI voice agent. All calls are recorded and transcripts are logged automatically.</p>
+                    </div>
+                    <Alert>
+                      <Phone className="h-4 w-4" />
+                      <AlertTitle>How it works</AlertTitle>
+                      <AlertDescription className="text-xs">
+                        1. System dials the contact via Twilio<br/>
+                        2. Call is recorded from the moment it's answered<br/>
+                        3. Transcripts and recordings appear in the Logs tab
+                      </AlertDescription>
+                    </Alert>
+                    <Textarea
+                      value={form.initial_script}
+                      onChange={(e) => update("initial_script", e.target.value)}
+                      rows={4}
+                      placeholder="Call notes / talking points for reference (not spoken by AI)..."
+                    />
+                    <p className="text-xs text-muted-foreground">These notes are for your reference only — they won't be read aloud.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
