@@ -9665,6 +9665,327 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_clean_leads: {
+        Row: {
+          address: string | null
+          business_name: string
+          city: string | null
+          cleaned_at: string | null
+          created_at: string | null
+          email: string | null
+          google_maps_url: string | null
+          id: string
+          industry: string | null
+          is_duplicate: boolean | null
+          phone_number: string | null
+          phone_valid: boolean | null
+          rating: number | null
+          raw_lead_id: string | null
+          review_count: number | null
+          state: string | null
+          website_status: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name: string
+          city?: string | null
+          cleaned_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          google_maps_url?: string | null
+          id?: string
+          industry?: string | null
+          is_duplicate?: boolean | null
+          phone_number?: string | null
+          phone_valid?: boolean | null
+          rating?: number | null
+          raw_lead_id?: string | null
+          review_count?: number | null
+          state?: string | null
+          website_status?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          city?: string | null
+          cleaned_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          google_maps_url?: string | null
+          id?: string
+          industry?: string | null
+          is_duplicate?: boolean | null
+          phone_number?: string | null
+          phone_valid?: boolean | null
+          rating?: number | null
+          raw_lead_id?: string | null
+          review_count?: number | null
+          state?: string | null
+          website_status?: string | null
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_clean_leads_raw_lead_id_fkey"
+            columns: ["raw_lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_raw_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_clients: {
+        Row: {
+          addon_services: Json | null
+          address: string | null
+          assigned_builder: string | null
+          brand_colors: Json | null
+          business_name: string
+          created_at: string | null
+          domain_info: string | null
+          email: string | null
+          id: string
+          launched_at: string | null
+          logo_url: string | null
+          maintenance_status: string | null
+          monthly_recurring: number | null
+          onboarding_status: string | null
+          owner_name: string | null
+          phone: string | null
+          project_deadline: string | null
+          qualified_lead_id: string | null
+          service_areas: string[] | null
+          services_offered: string[] | null
+          social_media: Json | null
+          updated_at: string | null
+          website_package: string | null
+          website_package_price: number | null
+        }
+        Insert: {
+          addon_services?: Json | null
+          address?: string | null
+          assigned_builder?: string | null
+          brand_colors?: Json | null
+          business_name: string
+          created_at?: string | null
+          domain_info?: string | null
+          email?: string | null
+          id?: string
+          launched_at?: string | null
+          logo_url?: string | null
+          maintenance_status?: string | null
+          monthly_recurring?: number | null
+          onboarding_status?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          project_deadline?: string | null
+          qualified_lead_id?: string | null
+          service_areas?: string[] | null
+          services_offered?: string[] | null
+          social_media?: Json | null
+          updated_at?: string | null
+          website_package?: string | null
+          website_package_price?: number | null
+        }
+        Update: {
+          addon_services?: Json | null
+          address?: string | null
+          assigned_builder?: string | null
+          brand_colors?: Json | null
+          business_name?: string
+          created_at?: string | null
+          domain_info?: string | null
+          email?: string | null
+          id?: string
+          launched_at?: string | null
+          logo_url?: string | null
+          maintenance_status?: string | null
+          monthly_recurring?: number | null
+          onboarding_status?: string | null
+          owner_name?: string | null
+          phone?: string | null
+          project_deadline?: string | null
+          qualified_lead_id?: string | null
+          service_areas?: string[] | null
+          services_offered?: string[] | null
+          social_media?: Json | null
+          updated_at?: string | null
+          website_package?: string | null
+          website_package_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_clients_qualified_lead_id_fkey"
+            columns: ["qualified_lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_qualified_leads: {
+        Row: {
+          assigned_va: string | null
+          business_name: string
+          call_attempts: number | null
+          call_notes: string | null
+          city: string | null
+          clean_lead_id: string | null
+          created_at: string | null
+          demo_created_at: string | null
+          demo_link: string | null
+          demo_sent_at: string | null
+          demo_status: string | null
+          id: string
+          industry: string | null
+          last_call_at: string | null
+          lead_status: string | null
+          next_callback_at: string | null
+          phone_number: string | null
+          priority_score: number | null
+          priority_tier: string | null
+          proposal_amount: number | null
+          proposal_package: string | null
+          proposal_status: string | null
+          rating: number | null
+          review_count: number | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_va?: string | null
+          business_name: string
+          call_attempts?: number | null
+          call_notes?: string | null
+          city?: string | null
+          clean_lead_id?: string | null
+          created_at?: string | null
+          demo_created_at?: string | null
+          demo_link?: string | null
+          demo_sent_at?: string | null
+          demo_status?: string | null
+          id?: string
+          industry?: string | null
+          last_call_at?: string | null
+          lead_status?: string | null
+          next_callback_at?: string | null
+          phone_number?: string | null
+          priority_score?: number | null
+          priority_tier?: string | null
+          proposal_amount?: number | null
+          proposal_package?: string | null
+          proposal_status?: string | null
+          rating?: number | null
+          review_count?: number | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_va?: string | null
+          business_name?: string
+          call_attempts?: number | null
+          call_notes?: string | null
+          city?: string | null
+          clean_lead_id?: string | null
+          created_at?: string | null
+          demo_created_at?: string | null
+          demo_link?: string | null
+          demo_sent_at?: string | null
+          demo_status?: string | null
+          id?: string
+          industry?: string | null
+          last_call_at?: string | null
+          lead_status?: string | null
+          next_callback_at?: string | null
+          phone_number?: string | null
+          priority_score?: number | null
+          priority_tier?: string | null
+          proposal_amount?: number | null
+          proposal_package?: string | null
+          proposal_status?: string | null
+          rating?: number | null
+          review_count?: number | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_qualified_leads_clean_lead_id_fkey"
+            columns: ["clean_lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clean_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_raw_leads: {
+        Row: {
+          address: string | null
+          business_name: string
+          city: string | null
+          email: string | null
+          google_maps_url: string | null
+          id: string
+          import_batch_id: string | null
+          imported_at: string | null
+          imported_by: string | null
+          industry: string | null
+          phone_number: string | null
+          rating: number | null
+          raw_data: Json | null
+          review_count: number | null
+          source: string | null
+          state: string | null
+          website_status: string | null
+          website_url: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name: string
+          city?: string | null
+          email?: string | null
+          google_maps_url?: string | null
+          id?: string
+          import_batch_id?: string | null
+          imported_at?: string | null
+          imported_by?: string | null
+          industry?: string | null
+          phone_number?: string | null
+          rating?: number | null
+          raw_data?: Json | null
+          review_count?: number | null
+          source?: string | null
+          state?: string | null
+          website_status?: string | null
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          city?: string | null
+          email?: string | null
+          google_maps_url?: string | null
+          id?: string
+          import_batch_id?: string | null
+          imported_at?: string | null
+          imported_by?: string | null
+          industry?: string | null
+          phone_number?: string | null
+          rating?: number | null
+          raw_data?: Json | null
+          review_count?: number | null
+          source?: string | null
+          state?: string | null
+          website_status?: string | null
+          website_url?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       brands: {
         Row: {
           active: boolean | null
