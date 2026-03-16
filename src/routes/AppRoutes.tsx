@@ -591,7 +591,9 @@ const ProtectedLayout = () => (
  */
 const ProtectedNoLayout = () => (
   <ProtectedRoute>
-    <Outlet />
+    <RoleRouteGuard>
+      <Outlet />
+    </RoleRouteGuard>
   </ProtectedRoute>
 );
 
