@@ -1,13 +1,13 @@
-import { ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
-import { useBusiness } from '@/contexts/BusinessContext';
-import { Shield } from 'lucide-react';
+import { ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useCurrentUserProfile } from "@/hooks/useCurrentUserProfile";
+import { useBusiness } from "@/contexts/BusinessContext";
+import { Shield } from "lucide-react";
 
 /**
  * RoleRouteGuard — Global path-based role enforcement
- * 
+ *
  * Rules:
  * - owner / admin → full access to all pages
  * - Field roles → restricted to their allowed path prefixes
@@ -15,163 +15,162 @@ import { Shield } from 'lucide-react';
  */
 
 // Elevated roles that bypass all path restrictions
-const ELEVATED_ROLES = ['owner', 'admin', 'ceo'];
+const ELEVATED_ROLES = ["owner", "admin", "ceo"];
 
 // Path prefixes each role is allowed to access
 const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
   biker: [
-    '/portal/biker',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/biker',
-    '/install',
+    "/portal/biker",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/biker",
+    "/install",
   ],
   driver: [
-    '/portal/driver',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/driver',
-    '/install',
+    "/portal/driver",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/driver",
+    "/install",
   ],
   ambassador: [
-    '/portal/ambassador',
-    '/ambassador',
-    '/stores',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/ambassador',
-    '/install',
+    "/portal/ambassador",
+    "/ambassador",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/ambassador",
+    "/install",
   ],
   customer: [
-    '/portal/customer',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/customer',
-    '/shop',
-    '/cart',
-    '/checkout',
-    '/install',
+    "/portal/customer",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/customer",
+    "/shop",
+    "/cart",
+    "/checkout",
+    "/install",
   ],
   wholesaler: [
-    '/portal/wholesaler',
-    '/portal/wholesale',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/wholesaler',
-    '/portals/national-wholesale',
-    '/install',
+    "/portal/wholesaler",
+    "/portal/wholesale",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/wholesaler",
+    "/portals/national-wholesale",
+    "/install",
   ],
   wholesale: [
-    '/portal/wholesaler',
-    '/portal/wholesale',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/wholesaler',
-    '/portals/national-wholesale',
-    '/install',
+    "/portal/wholesaler",
+    "/portal/wholesale",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/wholesaler",
+    "/portals/national-wholesale",
+    "/install",
   ],
   store: [
-    '/portal/store',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/store',
-    '/install',
+    "/portal/store",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/store",
+    "/install",
   ],
   store_owner: [
-    '/portal/store',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/store',
-    '/install',
+    "/portal/store",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/store",
+    "/install",
   ],
   va: [
-    '/portal/va',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/va',
-    '/install',
+    "/portal/va",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/va",
+    "/install",
     // VAs get broader access as operational staff
-    '/',
-    '/stores',
-    '/crm',
-    '/communication',
-    '/messages',
-    '/delivery',
+    "/",
+    "/stores",
+    "/crm",
+    "/communication",
+    "/messages",
+    "/delivery",
   ],
   production: [
-    '/portal/production',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/portals/production',
-    '/production',
-    '/install',
+    "/portal/production",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/portals/production",
+    "/production",
+    "/install",
   ],
   influencer: [
-    '/portal/influencer',
-    '/portal/onboarding',
-    '/portal/home',
-    '/portal/inbox',
-    '/portal/tasks',
-    '/portal/join',
-    '/install',
+    "/portal/influencer",
+    "/portal/onboarding",
+    "/portal/home",
+    "/portal/inbox",
+    "/portal/tasks",
+    "/portal/join",
+    "/install",
   ],
 };
 
 // Default redirect per role
 const ROLE_HOME: Record<string, string> = {
-  biker: '/portal/biker',
-  driver: '/portal/driver',
-  ambassador: '/ambassador/dashboard',
-  customer: '/portal/customer',
-  wholesaler: '/portal/wholesaler',
-  wholesale: '/portal/wholesaler',
-  store: '/portal/store',
-  store_owner: '/portal/store',
-  va: '/portal/va',
-  production: '/portal/production',
-  influencer: '/portal/influencer',
+  biker: "/portal/biker",
+  driver: "/portal/driver",
+  ambassador: "/ambassador/dashboard",
+  customer: "/portal/customer",
+  wholesaler: "/portal/wholesaler",
+  wholesale: "/portal/wholesaler",
+  store: "/portal/store",
+  store_owner: "/portal/store",
+  va: "/portal/va",
+  production: "/portal/production",
+  influencer: "/portal/influencer",
 };
 
 // Public paths that all authenticated users can access
 const UNIVERSAL_PATHS = [
-  '/portal',
-  '/portal/onboarding',
-  '/portal/home',
-  '/portal/invoices',
-  '/wallet',
-  '/install',
-  '/messages',
-  '/me',
+  "/portal",
+  "/portal/onboarding",
+  "/portal/home",
+  "/portal/invoices",
+  "/wallet",
+  "/install",
+  "/messages",
+  "/me",
 ];
 
 interface RoleRouteGuardProps {
@@ -181,7 +180,7 @@ interface RoleRouteGuardProps {
 export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   const location = useLocation();
   const { currentBusiness, loading: businessLoading } = useBusiness();
-  const { roles, loading: rolesLoading } = useUserRole(businessLoading ? null : currentBusiness?.id ?? null);
+  const { roles, loading: rolesLoading } = useUserRole(businessLoading ? null : (currentBusiness?.id ?? null));
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
 
   // Don't block while loading
@@ -198,7 +197,7 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
 
   // Collect all roles from both sources
   const allRoles: string[] = [...roles];
-  
+
   // Add profile role
   const profileRole = profileData?.profile?.primary_role;
   if (profileRole && !allRoles.includes(profileRole)) {
@@ -206,7 +205,7 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   }
 
   // If user has any elevated role → full access
-  const hasElevatedAccess = allRoles.some(r => ELEVATED_ROLES.includes(r));
+  const hasElevatedAccess = allRoles.some((r) => ELEVATED_ROLES.includes(r));
   if (hasElevatedAccess) {
     return <>{children}</>;
   }
@@ -219,22 +218,20 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
   const currentPath = location.pathname;
 
   // Check universal paths
-  if (UNIVERSAL_PATHS.some(p => currentPath === p || currentPath.startsWith(p + '/'))) {
+  if (UNIVERSAL_PATHS.some((p) => currentPath === p || currentPath.startsWith(p + "/"))) {
     return <>{children}</>;
   }
 
   // Exact match for portal root (role router)
-  if (currentPath === '/portal') {
+  if (currentPath === "/portal") {
     return <>{children}</>;
   }
 
   // Check if any of the user's roles grant access to the current path
-  const hasPathAccess = allRoles.some(role => {
+  const hasPathAccess = allRoles.some((role) => {
     const allowedPaths = ROLE_ALLOWED_PATHS[role];
     if (!allowedPaths) return false;
-    return allowedPaths.some(prefix => 
-      currentPath === prefix || currentPath.startsWith(prefix + '/')
-    );
+    return allowedPaths.some((prefix) => currentPath === prefix || currentPath.startsWith(prefix + "/"));
   });
 
   if (hasPathAccess) {
@@ -243,9 +240,11 @@ export function RoleRouteGuard({ children }: RoleRouteGuardProps) {
 
   // Denied — redirect to the user's primary portal home
   const primaryRole = profileRole || allRoles[0];
-  const redirectTo = ROLE_HOME[primaryRole] || '/portal';
+  const redirectTo = ROLE_HOME[primaryRole] || "/portal";
 
-  console.warn(`🔐 [RoleRouteGuard] DENIED: path="${currentPath}", roles=[${allRoles.join(',')}], redirecting to "${redirectTo}"`);
+  console.warn(
+    `🔐 [RoleRouteGuard] DENIED: path="${currentPath}", roles=[${allRoles.join(",")}], redirecting to "${redirectTo}"`,
+  );
 
   return <Navigate to={redirectTo} replace />;
 }
