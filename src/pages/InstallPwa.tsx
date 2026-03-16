@@ -72,6 +72,9 @@ export default function InstallPwa() {
   const handleInstall = async () => {
     if (canInstall) {
       await triggerInstall();
+    } else {
+      // Fallback: scroll to manual instructions
+      document.getElementById('manual-instructions')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
