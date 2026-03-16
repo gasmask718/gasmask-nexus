@@ -123,6 +123,7 @@ const ROLE_ALLOWED_PATHS: Record<string, string[]> = {
     "/communication",
     "/messages",
     "/delivery",
+    "/os/brandaro",
   ],
   production: [
     "/portal/production",

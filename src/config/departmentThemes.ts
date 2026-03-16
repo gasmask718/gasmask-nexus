@@ -51,9 +51,17 @@ export const departmentThemes: Record<string, DepartmentTheme> = {
   communication: {
     key: 'communication',
     name: 'Communication Center',
-    color: '#0E2A47',       // Deep Blue
+    color: '#0E2A47',
     accent: '#1E3A5F',
-    lightBg: '#D8E6F3',     // Light Blue
+    lightBg: '#D8E6F3',
     colorRgb: '14, 42, 71'
+  },
+  brandaro: {
+    key: 'brandaro',
+    name: 'Brandaro Digital',
+    color: '#06B6D4',
+    accent: '#22D3EE',
+    lightBg: '#ECFEFF',
+    colorRgb: '6, 182, 212'
   }
 };
