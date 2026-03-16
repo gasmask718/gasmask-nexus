@@ -52,6 +52,22 @@ export default function BrandaroDashboard() {
     },
   });
 
+  const { data: jobFailures } = useQuery({
+    queryKey: ["brandaro-job-failures"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("brandaro_job_failures").select("status").eq("status", "pending_retry");
+      return data || [];
+    },
+  });
+
+  const { data: messageLogs } = useQuery({
+    queryKey: ["brandaro-message-stats"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("brandaro_message_log").select("send_status");
+      return data || [];
+    },
+  });
+
   const noWebsite = qualifiedLeads?.filter(l => l.priority_tier === "tier_1").length || 0;
   const callsAttempted = qualifiedLeads?.filter(l => l.lead_status !== "new" && l.lead_status !== "queued").length || 0;
   const interested = qualifiedLeads?.filter(l => ["interested", "hot_lead", "sold"].includes(l.lead_status || "")).length || 0;
@@ -64,6 +80,9 @@ export default function BrandaroDashboard() {
   const mrr = clients?.reduce((sum, c) => sum + (Number(c.monthly_recurring) || 0), 0) || 0;
   const oneTimeRev = clients?.reduce((sum, c) => sum + (Number(c.website_package_price) || 0), 0) || 0;
   const closeRate = callsAttempted > 0 ? ((dealsClosed / callsAttempted) * 100).toFixed(1) : "0";
+  const pendingRetries = jobFailures?.length || 0;
+  const messagesSent = messageLogs?.filter((m: any) => m.send_status === "sent").length || 0;
+  const messagesFailed = messageLogs?.filter((m: any) => m.send_status === "failed").length || 0;
 
   return (
     <div className="space-y-6">
