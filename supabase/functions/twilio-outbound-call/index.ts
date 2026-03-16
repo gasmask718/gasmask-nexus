@@ -112,6 +112,10 @@ Deno.serve(async (req) => {
     params.append("StatusCallbackEvent", "ringing");
     params.append("StatusCallbackEvent", "answered");
     params.append("StatusCallbackEvent", "completed");
+    params.append("Record", "true");
+    params.append("RecordingChannels", "dual");
+    params.append("RecordingStatusCallback", `${supabaseUrl}/functions/v1/twilio-recording-callback`);
+    params.append("RecordingStatusCallbackMethod", "POST");
 
     if (campaign?.amd_enabled) {
       params.append("MachineDetection", "Enable");

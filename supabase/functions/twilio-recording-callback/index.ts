@@ -10,7 +10,7 @@ serve(async (req) => {
   try {
     const formData = await req.formData();
     const recordingUrl = formData.get("RecordingUrl")?.toString() || "";
-    const callSid = formData.get("CallSid")?.toString() || "";
+    const callSid = formData.get("CallSid")?.toString().trim() || "";
     const recordingStatus = formData.get("RecordingStatus")?.toString() || "";
     const recordingSid = formData.get("RecordingSid")?.toString() || "";
     const recordingDuration = parseInt(formData.get("RecordingDuration")?.toString() || "0", 10);
@@ -28,16 +28,19 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Store recording reference
-    await supabase.from("call_recordings").insert({
-      provider_call_sid: callSid,
-      recording_url: recordingUrl,
-      recording_duration: recordingDuration,
-      provider: "twilio",
-      channels: "dual",
-      created_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-    });
+    // Upsert recording — update existing row created by twilio-outbound-call
+    await supabase.from("call_recordings").upsert(
+      {
+        provider_call_sid: callSid,
+        recording_url: recordingUrl,
+        recording_duration: recordingDuration,
+        provider: "twilio",
+        channels: "dual",
+        status: "completed",
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: "provider_call_sid" }
+    );
 
     // Mark transferred queue items as completed when recording finishes
     await supabase
@@ -96,7 +99,6 @@ serve(async (req) => {
               transcript = transcript.map((p: any) => typeof p === "string" ? p : p?.text || "").join(" ");
             }
             if (typeof transcript === "string" && transcript.length > 2 && transcript !== "[silence]") {
-              // Split by speaker turns and store each as separate transcript entry
               const lines = transcript.split("\n").filter((l: string) => l.trim());
               for (const line of lines) {
                 const isCaller = /^caller/i.test(line.trim());
@@ -110,6 +112,12 @@ serve(async (req) => {
                   });
                 }
               }
+              // Mark recording as having a transcript
+              await supabase
+                .from("call_recordings")
+                .update({ has_transcript: true })
+                .eq("provider_call_sid", callSid);
+
               console.log(`✅ Transcribed recording for ${callSid}: ${lines.length} lines`);
             }
           }
