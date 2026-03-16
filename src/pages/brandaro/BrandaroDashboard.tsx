@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Globe, Users, Phone, PhoneCall, Eye, FileText, 
-  DollarSign, Rocket, Wrench, TrendingUp, Target, BarChart3 
+  DollarSign, Rocket, Wrench, TrendingUp, Target, BarChart3,
+  AlertTriangle, Send, MessageSquare, RefreshCw
 } from "lucide-react";
 
 function StatCard({ title, value, icon: Icon, color = "text-primary", subtitle }: {
@@ -51,6 +52,22 @@ export default function BrandaroDashboard() {
     },
   });
 
+  const { data: jobFailures } = useQuery({
+    queryKey: ["brandaro-job-failures"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("brandaro_job_failures").select("status").eq("status", "pending_retry");
+      return data || [];
+    },
+  });
+
+  const { data: messageLogs } = useQuery({
+    queryKey: ["brandaro-message-stats"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("brandaro_message_log").select("send_status");
+      return data || [];
+    },
+  });
+
   const noWebsite = qualifiedLeads?.filter(l => l.priority_tier === "tier_1").length || 0;
   const callsAttempted = qualifiedLeads?.filter(l => l.lead_status !== "new" && l.lead_status !== "queued").length || 0;
   const interested = qualifiedLeads?.filter(l => ["interested", "hot_lead", "sold"].includes(l.lead_status || "")).length || 0;
@@ -63,6 +80,9 @@ export default function BrandaroDashboard() {
   const mrr = clients?.reduce((sum, c) => sum + (Number(c.monthly_recurring) || 0), 0) || 0;
   const oneTimeRev = clients?.reduce((sum, c) => sum + (Number(c.website_package_price) || 0), 0) || 0;
   const closeRate = callsAttempted > 0 ? ((dealsClosed / callsAttempted) * 100).toFixed(1) : "0";
+  const pendingRetries = jobFailures?.length || 0;
+  const messagesSent = messageLogs?.filter((m: any) => m.send_status === "sent").length || 0;
+  const messagesFailed = messageLogs?.filter((m: any) => m.send_status === "failed").length || 0;
 
   return (
     <div className="space-y-6">
@@ -169,6 +189,38 @@ export default function BrandaroDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Automation Health */}
+      <Card className={pendingRetries > 0 ? "border-destructive/50" : ""}>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            {pendingRetries > 0 ? <AlertTriangle className="h-4 w-4 text-destructive" /> : <RefreshCw className="h-4 w-4 text-muted-foreground" />}
+            Automation Health
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">{messagesSent}</p>
+              <p className="text-xs text-muted-foreground">Messages Sent</p>
+            </div>
+            <div className="text-center">
+              <p className={`text-2xl font-bold ${messagesFailed > 0 ? 'text-destructive' : 'text-foreground'}`}>{messagesFailed}</p>
+              <p className="text-xs text-muted-foreground">Send Failures</p>
+            </div>
+            <div className="text-center">
+              <p className={`text-2xl font-bold ${pendingRetries > 0 ? 'text-destructive' : 'text-foreground'}`}>{pendingRetries}</p>
+              <p className="text-xs text-muted-foreground">Pending Retries</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">
+                {pendingRetries === 0 && messagesFailed === 0 ? '✅' : '⚠️'}
+              </p>
+              <p className="text-xs text-muted-foreground">System Status</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
