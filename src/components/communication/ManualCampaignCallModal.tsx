@@ -121,8 +121,9 @@ export function ManualCampaignCallModal({
   ).length;
 
   const isOnCall =
-    Boolean(device.activeCall) ||
-    ["connecting", "ringing", "in-progress", "reconnecting"].includes(device.callStatus);
+    !isTransferring &&
+    (Boolean(device.activeCall) ||
+    ["connecting", "ringing", "in-progress", "reconnecting"].includes(device.callStatus));
 
   // Fetch DB transcripts for current call
   const currentCallSid = activeCallSid || currentItem?.twilio_call_sid || null;
