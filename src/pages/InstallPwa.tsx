@@ -72,6 +72,9 @@ export default function InstallPwa() {
   const handleInstall = async () => {
     if (canInstall) {
       await triggerInstall();
+    } else {
+      // Fallback: scroll to manual instructions
+      document.getElementById('manual-instructions')?.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -111,18 +114,11 @@ export default function InstallPwa() {
             <Button
               size="lg"
               onClick={handleInstall}
-              disabled={!canInstall}
               className="gap-2.5 text-lg px-10 py-6 h-auto font-bold shadow-lg"
             >
               <Download className="h-5 w-5" />
-              {canInstall ? 'Install GASMASK' : 'Install GASMASK'}
+              Install GASMASK
             </Button>
-          )}
-
-          {!canInstall && !isInstalled && !isStandalone && (
-            <p className="text-sm text-muted-foreground">
-              Your browser may not support automatic install. See manual instructions below.
-            </p>
           )}
         </section>
 
@@ -145,7 +141,7 @@ export default function InstallPwa() {
         </section>
 
         {/* Manual Install Instructions */}
-        <section className="space-y-6 pb-12">
+        <section id="manual-instructions" className="space-y-6 pb-12">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-foreground">Can't see the install button?</h2>
             <p className="text-muted-foreground">
