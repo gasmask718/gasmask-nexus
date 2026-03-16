@@ -9665,6 +9665,233 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_call_logs: {
+        Row: {
+          call_attempt_number: number
+          call_duration: number | null
+          call_notes: string | null
+          call_outcome: string
+          call_timestamp: string
+          called_by_user_id: string
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          industry_context: string | null
+          lead_id: string
+          next_action: string | null
+          next_call_time: string | null
+          phone_used: string | null
+        }
+        Insert: {
+          call_attempt_number?: number
+          call_duration?: number | null
+          call_notes?: string | null
+          call_outcome: string
+          call_timestamp?: string
+          called_by_user_id: string
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          industry_context?: string | null
+          lead_id: string
+          next_action?: string | null
+          next_call_time?: string | null
+          phone_used?: string | null
+        }
+        Update: {
+          call_attempt_number?: number
+          call_duration?: number | null
+          call_notes?: string | null
+          call_outcome?: string
+          call_timestamp?: string
+          called_by_user_id?: string
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          industry_context?: string | null
+          lead_id?: string
+          next_action?: string | null
+          next_call_time?: string | null
+          phone_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_call_logs_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_call_queue: {
+        Row: {
+          assigned_va: string | null
+          campaign_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          lead_id: string
+          locked_at: string | null
+          locked_by: string | null
+          next_call_time: string | null
+          priority_score: number | null
+          priority_tier: number | null
+          queue_position: number | null
+          retry_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_va?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id: string
+          locked_at?: string | null
+          locked_by?: string | null
+          next_call_time?: string | null
+          priority_score?: number | null
+          priority_tier?: number | null
+          queue_position?: number | null
+          retry_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_va?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          lead_id?: string
+          locked_at?: string | null
+          locked_by?: string | null
+          next_call_time?: string | null
+          priority_score?: number | null
+          priority_tier?: number | null
+          queue_position?: number | null
+          retry_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_call_queue_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_call_queue_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_callbacks: {
+        Row: {
+          assigned_va: string
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          lead_id: string
+          reason: string | null
+          scheduled_time: string
+          status: string
+        }
+        Insert: {
+          assigned_va: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          reason?: string | null
+          scheduled_time: string
+          status?: string
+        }
+        Update: {
+          assigned_va?: string
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          reason?: string | null
+          scheduled_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_callbacks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_campaigns: {
+        Row: {
+          city_filter: string | null
+          contacted_leads: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          industry_filter: string | null
+          interested_leads: number | null
+          name: string
+          state_filter: string | null
+          status: string
+          target_segment: string | null
+          total_leads: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          city_filter?: string | null
+          contacted_leads?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          industry_filter?: string | null
+          interested_leads?: number | null
+          name: string
+          state_filter?: string | null
+          status?: string
+          target_segment?: string | null
+          total_leads?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          city_filter?: string | null
+          contacted_leads?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          industry_filter?: string | null
+          interested_leads?: number | null
+          name?: string
+          state_filter?: string | null
+          status?: string
+          target_segment?: string | null
+          total_leads?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_clean_leads: {
         Row: {
           address: string | null
@@ -9831,6 +10058,7 @@ export type Database = {
           business_name: string
           call_attempts: number | null
           call_notes: string | null
+          campaign_id: string | null
           city: string | null
           clean_lead_id: string | null
           created_at: string | null
@@ -9841,6 +10069,7 @@ export type Database = {
           id: string
           industry: string | null
           last_call_at: string | null
+          last_called_at: string | null
           lead_status: string | null
           next_callback_at: string | null
           phone_number: string | null
@@ -9859,6 +10088,7 @@ export type Database = {
           business_name: string
           call_attempts?: number | null
           call_notes?: string | null
+          campaign_id?: string | null
           city?: string | null
           clean_lead_id?: string | null
           created_at?: string | null
@@ -9869,6 +10099,7 @@ export type Database = {
           id?: string
           industry?: string | null
           last_call_at?: string | null
+          last_called_at?: string | null
           lead_status?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
@@ -9887,6 +10118,7 @@ export type Database = {
           business_name?: string
           call_attempts?: number | null
           call_notes?: string | null
+          campaign_id?: string | null
           city?: string | null
           clean_lead_id?: string | null
           created_at?: string | null
@@ -9897,6 +10129,7 @@ export type Database = {
           id?: string
           industry?: string | null
           last_call_at?: string | null
+          last_called_at?: string | null
           lead_status?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
@@ -9911,6 +10144,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "brandaro_qualified_leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_campaigns"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "brandaro_qualified_leads_clean_lead_id_fkey"
             columns: ["clean_lead_id"]
