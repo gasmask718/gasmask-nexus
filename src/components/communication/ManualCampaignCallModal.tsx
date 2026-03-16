@@ -19,6 +19,10 @@ import {
   SkipForward,
   User,
   Hash,
+  ArrowRightLeft,
+  Bot,
+  UserCheck,
+  Loader2,
 } from "lucide-react";
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
