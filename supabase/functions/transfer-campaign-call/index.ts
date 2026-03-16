@@ -73,14 +73,43 @@ serve(async (req) => {
       const targetNumber = human_number || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
       if (!targetNumber) throw new Error("No human agent number configured");
 
+      // Check if human agent is available
+      const { data: lineStatus } = await supabase
+        .from("human_agent_line_status")
+        .select("status")
+        .eq("phone_number", targetNumber)
+        .maybeSingle();
+
+      const isAvailable = !lineStatus || lineStatus.status === "available";
+
+      if (!isAvailable) {
+        return new Response(JSON.stringify({ 
+          success: false, 
+          error: "Human agent is currently busy with another call",
+          agent_busy: true 
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Mark line as busy
+      await supabase.from("human_agent_line_status").upsert({
+        phone_number: targetNumber,
+        status: "busy",
+        current_call_sid: call_sid,
+        current_queue_item_id: queue_item_id || null,
+        busy_since: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "phone_number" });
+
       const recordingCallback = `${supabaseUrl}/functions/v1/twilio-recording-callback`;
-      const statusCallback = `${supabaseUrl}/functions/v1/twilio-call-status`;
 
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Matthew">Please hold while we connect you to an agent.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${statusCallback}" timeout="30">
-    <Number statusCallback="${statusCallback}" statusCallbackEvent="initiated ringing answered completed">${targetNumber}</Number>
+  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(targetNumber)}&amp;queue_item_id=${encodeURIComponent(queue_item_id || "")}" timeout="30">
+    <Number>${targetNumber}</Number>
   </Dial>
   <Say voice="Polly.Matthew">The agent was unavailable. Thank you for your time. Goodbye.</Say>
   <Hangup/>
@@ -96,6 +125,12 @@ serve(async (req) => {
       });
 
       if (!updateRes.ok) {
+        // Release line on failure
+        await supabase.from("human_agent_line_status").upsert({
+          phone_number: targetNumber, status: "available",
+          current_call_sid: null, current_queue_item_id: null,
+          busy_since: null, updated_at: new Date().toISOString(),
+        }, { onConflict: "phone_number" });
         const errBody = await updateRes.text();
         throw new Error(`Twilio update failed [${updateRes.status}]: ${errBody}`);
       }
