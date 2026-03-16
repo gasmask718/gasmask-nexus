@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ManualCampaignCallModal } from "@/components/communication/ManualCampaignCallModal";
 
 import { Button } from "@/components/ui/button";
 
@@ -301,6 +302,8 @@ export default function CampaignWizardPage() {
 
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
+  const [isManualCallModalOpen, setIsManualCallModalOpen] = useState(false);
+
   const [step, setStep] = useState(0);
 
   const [audienceType, setAudienceType] = useState<AudienceType>("prospects");
@@ -402,9 +405,9 @@ export default function CampaignWizardPage() {
   useEffect(() => {
     if (viewMode === "console" && activeCampaignId) {
       const checkAndRun = async () => {
-        const { data } = await supabase.from("dialer_campaigns").select("status").eq("id", activeCampaignId).single();
-
-        if (data?.status === "active") processQueue(activeCampaignId);
+        const { data } = await supabase.from("dialer_campaigns").select("status, dial_mode").eq("id", activeCampaignId).single();
+        // Only auto-dispatch for AI mode campaigns; manual mode uses the call modal
+        if (data?.status === "active" && (data as any)?.dial_mode !== "manual") processQueue(activeCampaignId);
       };
 
       dispatchIntervalRef.current = setInterval(checkAndRun, 4000);
@@ -786,27 +789,42 @@ export default function CampaignWizardPage() {
 
   const { data: transcripts } = useQuery({
     queryKey: ["campaign-transcripts", activeCampaignId, callSids],
-
     queryFn: async () => {
       if (callSids.length === 0) return [];
-
-      const { data } = await supabase
-
+      const { data } = await (supabase as any)
         .from("live_call_transcripts")
-
         .select("*")
-
         .in("call_sid", callSids)
-
         .order("created_at", { ascending: true });
-
       return data || [];
     },
-
     enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
-
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
+
+  // Fetch call recordings for this campaign's calls
+  const { data: callRecordings = [] } = useQuery({
+    queryKey: ["campaign-recordings", activeCampaignId, callSids],
+    queryFn: async () => {
+      if (callSids.length === 0) return [];
+      const { data } = await supabase
+        .from("call_recordings")
+        .select("provider_call_sid, recording_url, recording_duration, status, has_transcript")
+        .in("provider_call_sid", callSids);
+      return data || [];
+    },
+    enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
+    refetchInterval: 10000,
+  });
+
+  // Index recordings by call_sid
+  const recordingsByCall = useMemo(() => {
+    const map: Record<string, any> = {};
+    (callRecordings as any[]).forEach((r: any) => {
+      if (r.provider_call_sid) map[r.provider_call_sid.trim()] = r;
+    });
+    return map;
+  }, [callRecordings]);
 
   // Group transcripts by call_sid with enhanced speaker labels
 
@@ -944,6 +962,17 @@ export default function CampaignWizardPage() {
               </div>
 
               <div className="flex gap-2">
+                {/* Manual cold call button */}
+                {(activeCampaign as any)?.dial_mode === "manual" && activeCampaign?.status !== "completed" && (
+                  <Button
+                    size="sm"
+                    className="gap-1 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => setIsManualCallModalOpen(true)}
+                  >
+                    <Phone className="h-4 w-4" /> Start Calling
+                  </Button>
+                )}
+
                 {activeCampaign?.status === "active" ? (
                   <Button variant="outline" size="sm" onClick={() => updateCampaignStatus("paused")}>
                     <Pause className="h-4 w-4 mr-1" /> Pause
@@ -1052,52 +1081,83 @@ export default function CampaignWizardPage() {
                       <p className="text-center text-sm text-muted-foreground py-8">
                         No calls yet. Launch a campaign to see transcripts.
                       </p>
-                    ) : callItems.filter((i: any) => i.twilio_call_sid).length === 0 ? (
+                    ) : callItems.filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status)).length === 0 ? (
                       <p className="text-center text-sm text-muted-foreground py-8">Waiting for calls to connect...</p>
                     ) : (
                       callItems
-
-                        .filter((i: any) => i.twilio_call_sid)
-
+                        .filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status))
                         .map((item: any) => {
-                          const msgs = transcriptsByCall[item.twilio_call_sid] || [];
+                          const sid = item.twilio_call_sid?.trim();
+                          const msgs = sid ? (transcriptsByCall[sid] || []) : [];
+                          const recording = sid ? recordingsByCall[sid] : null;
 
                           return (
                             <Card key={item.id} className="border bg-card">
                               <div className="p-3 border-b flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <Phone className="h-4 w-4 text-muted-foreground" />
-
                                   <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
-
                                   <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
                                 </div>
-
-                                <Badge variant="outline" className="text-[10px]">
-                                  {item.status}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  {recording?.recording_duration && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {Math.floor(recording.recording_duration / 60)}:{String(recording.recording_duration % 60).padStart(2, "0")}
+                                    </span>
+                                  )}
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {item.status}
+                                  </Badge>
+                                </div>
                               </div>
 
                               <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
                                 {msgs.length === 0 ? (
-                                  <p className="text-xs text-muted-foreground italic">No transcript recorded yet.</p>
-                                ) : (
-                                  msgs.map((msg, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
-                                    >
-                                      <div
-                                        className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                  <div>
+                                    <p className="text-xs text-muted-foreground italic">
+                                      {item.status === "completed" || item.status === "failed" || item.status === "no_answer"
+                                        ? "No live transcript captured for this call."
+                                        : "Waiting for transcript..."}
+                                    </p>
+                                    {recording?.recording_url && (
+                                      <a
+                                        href={recording.recording_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary underline mt-1 inline-block"
                                       >
-                                        <span className="font-semibold capitalize text-[10px] text-muted-foreground">
-                                          {msg.speaker === "ai" ? "Agent" : "Caller"}
-                                        </span>
-
-                                        <p className="mt-0.5">{msg.text}</p>
+                                        🎙️ Play Recording
+                                      </a>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <>
+                                    {msgs.map((msg: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
+                                      >
+                                        <div
+                                          className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                        >
+                                          <span className="font-semibold capitalize text-[10px] text-muted-foreground">
+                                            {msg.speaker === "ai" ? "Agent" : "Caller"}
+                                          </span>
+                                          <p className="mt-0.5">{msg.text}</p>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))
+                                    ))}
+                                    {recording?.recording_url && (
+                                      <a
+                                        href={recording.recording_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary underline mt-2 inline-block"
+                                      >
+                                        🎙️ Play Recording
+                                      </a>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </Card>
@@ -1110,6 +1170,16 @@ export default function CampaignWizardPage() {
             </Tabs>
           </Card>
         </div>
+
+        {/* Manual Call Modal */}
+        {activeCampaignId && (
+          <ManualCampaignCallModal
+            open={isManualCallModalOpen}
+            onOpenChange={setIsManualCallModalOpen}
+            campaignId={activeCampaignId}
+            campaignName={activeCampaign?.name || "Campaign"}
+          />
+        )}
       </div>
     );
   }
@@ -1662,23 +1732,28 @@ export default function CampaignWizardPage() {
 
                 <div className="p-3 border rounded bg-muted/20">
                   <p className="text-xs text-muted-foreground">Mode</p>
-
                   <p className="font-medium flex items-center gap-1">
-                    <Bot className="h-3 w-3" /> AI Agent
+                    {form.dial_mode === "manual" ? <><Phone className="h-3 w-3" /> Manual Cold Call</> : <><Bot className="h-3 w-3" /> AI Agent</>}
                   </p>
                 </div>
 
                 <div className="p-3 border rounded bg-muted/20">
                   <p className="text-xs text-muted-foreground">Audience</p>
-
                   <p className="font-medium">{totalSelected} records</p>
                 </div>
 
-                <div className="p-3 border rounded bg-blue-5 dark:bg-blue-900/20">
-                  <p className="text-xs text-blue-600 dark:text-blue-400">Twilio TTS Script</p>
-
-                  <p className="truncate">{form.initial_script || "Missing"}</p>
-                </div>
+                {form.dial_mode === "ai" && (
+                  <div className="p-3 border rounded bg-muted/20">
+                    <p className="text-xs text-muted-foreground">Twilio TTS Script</p>
+                    <p className="truncate">{form.initial_script || "Missing"}</p>
+                  </div>
+                )}
+                {form.dial_mode === "manual" && form.initial_script && (
+                  <div className="p-3 border rounded bg-muted/20">
+                    <p className="text-xs text-muted-foreground">Call Notes</p>
+                    <p className="truncate">{form.initial_script}</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
