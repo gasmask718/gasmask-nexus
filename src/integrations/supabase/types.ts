@@ -12674,7 +12674,9 @@ export type Database = {
           channels: string | null
           completed_at: string | null
           created_at: string | null
+          direction: string | null
           elevenlabs_conversation_id: string | null
+          from_number: string | null
           has_transcript: boolean | null
           id: string
           language: string | null
@@ -12685,7 +12687,9 @@ export type Database = {
           recording_url: string | null
           session_id: string | null
           started_at: string | null
+          status: string | null
           store_id: string | null
+          to_number: string | null
           transcript_path: string | null
           vertical_id: string | null
         }
@@ -12694,7 +12698,9 @@ export type Database = {
           channels?: string | null
           completed_at?: string | null
           created_at?: string | null
+          direction?: string | null
           elevenlabs_conversation_id?: string | null
+          from_number?: string | null
           has_transcript?: boolean | null
           id?: string
           language?: string | null
@@ -12705,7 +12711,9 @@ export type Database = {
           recording_url?: string | null
           session_id?: string | null
           started_at?: string | null
+          status?: string | null
           store_id?: string | null
+          to_number?: string | null
           transcript_path?: string | null
           vertical_id?: string | null
         }
@@ -12714,7 +12722,9 @@ export type Database = {
           channels?: string | null
           completed_at?: string | null
           created_at?: string | null
+          direction?: string | null
           elevenlabs_conversation_id?: string | null
+          from_number?: string | null
           has_transcript?: boolean | null
           id?: string
           language?: string | null
@@ -12725,7 +12735,9 @@ export type Database = {
           recording_url?: string | null
           session_id?: string | null
           started_at?: string | null
+          status?: string | null
           store_id?: string | null
+          to_number?: string | null
           transcript_path?: string | null
           vertical_id?: string | null
         }
