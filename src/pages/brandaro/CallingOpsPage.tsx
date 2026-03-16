@@ -265,7 +265,7 @@ export default function CallingOpsPage() {
                       <TableCell className="font-medium">{lead?.business_name}</TableCell>
                       <TableCell>{lead?.industry || "—"}</TableCell>
                       <TableCell>{lead?.city}, {lead?.state}</TableCell>
-                      <TableCell className="font-mono text-xs">{lead?.phone}</TableCell>
+                      <TableCell className="font-mono text-xs">{lead?.phone_number}</TableCell>
                       <TableCell>{item.retry_count}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {item.next_call_time ? new Date(item.next_call_time).toLocaleString() : "Now"}

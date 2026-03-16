@@ -251,7 +251,7 @@ export default function VAWorkspacePage() {
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="font-mono font-bold text-lg">{currentLead.phone || "No phone"}</span>
+                <span className="font-mono font-bold text-lg">{currentLead.phone_number || "No phone"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-4 w-4 text-muted-foreground" />
