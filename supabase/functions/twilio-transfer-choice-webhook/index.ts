@@ -86,7 +86,7 @@ serve(async (req) => {
       const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}`;
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Matthew">Great choice. Connecting you to our AI assistant now.</Say>
+  <Say voice="Polly.Matthew">Connecting you now.</Say>
   <Redirect method="POST">${bridgeUrl}</Redirect>
 </Response>`;
 
