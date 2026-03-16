@@ -26,7 +26,7 @@ export default function CallingOpsPage() {
         .select(`
           *,
           brandaro_qualified_leads!inner(
-            business_name, phone, city, state, industry, rating, review_count, lead_status, website_status
+            business_name, phone_number, city, state, industry, rating, review_count, lead_status
           )
         `)
         .eq("is_active", true)
