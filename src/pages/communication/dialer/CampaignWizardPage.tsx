@@ -330,16 +330,11 @@ export default function CampaignWizardPage() {
 
   const [form, setForm] = useState({
     name: "",
-
     description: "",
-
-    dial_mode: "ai", // Hardcoded to AI
-
+    dial_mode: "ai" as "ai" | "manual",
     max_attempts: 3,
-
     retry_backoff_minutes: 30,
-
-    amd_enabled: false, // Default false for instant TTS
+    amd_enabled: false,
 
     call_window_start: "09:00",
 
