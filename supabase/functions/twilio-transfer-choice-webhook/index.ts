@@ -172,7 +172,7 @@ serve(async (req) => {
           }).then(() => {});
 
           // Tell the caller they're in queue, then offer AI as alternative
-          const retryUrl = `${supabaseUrl}/functions/v1/twilio-human-queue-hold?phone_number=${encodeURIComponent(humanNumber)}&agent_id=${agentId}&queue_item_id=${encodeURIComponent(queueItemId)}&call_queue_id=pending`;
+          const retryUrl = `${supabaseUrl}/functions/v1/twilio-human-queue-hold?phone_number=${encodeURIComponent(humanNumber)}&amp;agent_id=${agentId}&amp;queue_item_id=${encodeURIComponent(queueItemId)}&amp;call_queue_id=pending`;
 
           twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>

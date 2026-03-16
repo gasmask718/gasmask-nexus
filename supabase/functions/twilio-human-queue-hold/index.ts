@@ -104,7 +104,7 @@ serve(async (req) => {
     }
 
     // Still busy — loop with hold message
-    const selfUrl = `${supabaseUrl}/functions/v1/twilio-human-queue-hold?phone_number=${encodeURIComponent(humanNumber)}&agent_id=${encodeURIComponent(agentId)}&queue_item_id=${encodeURIComponent(queueItemId)}`;
+    const selfUrl = `${supabaseUrl}/functions/v1/twilio-human-queue-hold?phone_number=${encodeURIComponent(humanNumber)}&amp;agent_id=${encodeURIComponent(agentId)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}`;
 
     // Get queue position
     const { count } = await supabase
