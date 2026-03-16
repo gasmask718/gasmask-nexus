@@ -24,7 +24,7 @@ interface Stats {
 
 const Dashboard = () => {
   const { simulationMode, isLoading: isSimLoading } = useSimulationMode();
-  const { canInstall, triggerInstall } = usePwaInstall();
+  
   const [stats, setStats] = useState<Stats>({
     activeStores: 0,
     totalStores: 0,
