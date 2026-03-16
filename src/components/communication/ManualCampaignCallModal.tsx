@@ -410,6 +410,7 @@ export function ManualCampaignCallModal({
 
         call.on("disconnect", () => {
           stopSpeechRecognition();
+          stopRemoteAudioCapture();
           currentCallSidRef.current = null;
           supabase
             .from("outbound_call_queue")
@@ -426,6 +427,7 @@ export function ManualCampaignCallModal({
 
         call.on("cancel", () => {
           stopSpeechRecognition();
+          stopRemoteAudioCapture();
           currentCallSidRef.current = null;
           supabase
             .from("outbound_call_queue")
@@ -438,6 +440,7 @@ export function ManualCampaignCallModal({
 
         call.on("reject", () => {
           stopSpeechRecognition();
+          stopRemoteAudioCapture();
           currentCallSidRef.current = null;
           supabase
             .from("outbound_call_queue")
