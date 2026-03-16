@@ -17,12 +17,7 @@ export default function InviteLanding() {
   const [error, setError] = useState<string | null>(null);
   const [assignedRole, setAssignedRole] = useState<string | null>(null);
 
-  // Auto-trigger PWA install when landing on invite page
-  useEffect(() => {
-    if (canInstall) {
-      triggerInstall();
-    }
-  }, [canInstall, triggerInstall]);
+  // No auto-trigger — let PwaInstallBanner handle it on click
 
   useEffect(() => {
     if (authLoading) return;
