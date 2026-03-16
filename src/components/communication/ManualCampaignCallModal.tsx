@@ -19,6 +19,10 @@ import {
   SkipForward,
   User,
   Hash,
+  ArrowRightLeft,
+  Bot,
+  UserCheck,
+  Loader2,
 } from "lucide-react";
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -85,6 +89,8 @@ export function ManualCampaignCallModal({
   const [localTranscripts, setLocalTranscripts] = useState<TranscriptLine[]>([]);
   const [interimText, setInterimText] = useState("");
   const [activeCallSid, setActiveCallSid] = useState<string | null>(null);
+  const [showTransferPicker, setShowTransferPicker] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
@@ -111,12 +117,13 @@ export function ManualCampaignCallModal({
   const currentItem = queueItems[currentIndex] || null;
   const totalItems = queueItems.length;
   const completedCount = queueItems.filter(
-    (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer"
+    (q) => q.status === "completed" || q.status === "failed" || q.status === "no_answer" || q.status === "transferred"
   ).length;
 
   const isOnCall =
-    Boolean(device.activeCall) ||
-    ["connecting", "ringing", "in-progress", "reconnecting"].includes(device.callStatus);
+    !isTransferring &&
+    (Boolean(device.activeCall) ||
+    ["connecting", "ringing", "in-progress", "reconnecting"].includes(device.callStatus));
 
   // Fetch DB transcripts for current call
   const currentCallSid = activeCallSid || currentItem?.twilio_call_sid || null;
@@ -597,6 +604,61 @@ export function ManualCampaignCallModal({
     stopSpeechRecognition,
   ]);
 
+  const handleTransfer = useCallback(async (transferType: "elevenlabs" | "human") => {
+    const sid = currentCallSidRef.current || activeCallSid;
+    if (!sid) {
+      toast.error("No active call to transfer");
+      return;
+    }
+
+    setIsTransferring(true);
+    setShowTransferPicker(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("transfer-campaign-call", {
+        body: {
+          call_sid: sid,
+          transfer_type: transferType,
+          queue_item_id: currentItem?.id,
+          campaign_id: campaignId,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Call transferred to ${transferType === "elevenlabs" ? "AI Agent" : "Human Agent"}`);
+
+      // Disconnect local call leg
+      stopSpeechRecognition();
+      stopRemoteAudioCapture();
+      if (device.activeCall) device.hangUp();
+
+      currentCallSidRef.current = null;
+      setCallStartedAt(null);
+      setIsDialing(false);
+      setIsTransferring(false);
+
+      // Auto-advance to next queued number
+      refetchQueue();
+      queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
+
+      const nextQueued = queueItems.findIndex((q, i) => i > currentIndex && q.status === "queued");
+      if (nextQueued >= 0) {
+        setCurrentIndex(nextQueued);
+        setLocalTranscripts([]);
+        setActiveCallSid(null);
+        setInterimText("");
+      } else {
+        toast.info("No more numbers in queue");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Transfer failed: ${message}`);
+      setIsTransferring(false);
+    }
+  }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition]);
+
   const skipToNext = useCallback(() => {
     if (isDialing || isOnCall) {
       toast.error("End the current call before skipping");
@@ -759,6 +821,16 @@ export function ManualCampaignCallModal({
                 {device.isMuted ? "Unmute" : "Mute"}
               </Button>
               <Button
+                onClick={() => setShowTransferPicker(true)}
+                variant="outline"
+                size="lg"
+                className="gap-2"
+                disabled={isTransferring}
+              >
+                {isTransferring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
+                {isTransferring ? "Transferring..." : "Transfer"}
+              </Button>
+              <Button
                 onClick={endCall}
                 variant="destructive"
                 size="lg"
@@ -770,6 +842,43 @@ export function ManualCampaignCallModal({
             </>
           )}
         </div>
+
+        {/* Transfer Picker */}
+        {showTransferPicker && (
+          <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+            <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                onClick={() => handleTransfer("elevenlabs")}
+                disabled={isTransferring}
+              >
+                <Bot className="h-5 w-5 text-primary" />
+                <span className="text-xs font-semibold">AI Agent</span>
+                <span className="text-[10px] text-muted-foreground">ElevenLabs</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                onClick={() => handleTransfer("human")}
+                disabled={isTransferring}
+              >
+                <UserCheck className="h-5 w-5 text-primary" />
+                <span className="text-xs font-semibold">Human Agent</span>
+                <span className="text-[10px] text-muted-foreground">Google Voice</span>
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => setShowTransferPicker(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
 
         {!device.isReady && (
           <p className="text-xs text-destructive text-center">
