@@ -889,12 +889,61 @@ export default function CampaignWizardPage() {
                 <LayoutDashboard className="h-5 w-5 text-primary" /> History
               </CardTitle>
 
-              <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
-                <Plus className="h-3.5 w-3.5" /> New
-              </Button>
+              <div className="flex gap-1">
+                {selectedCampaignIds.size > 0 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="gap-1 h-8"
+                    disabled={isArchiving}
+                    onClick={async () => {
+                      setIsArchiving(true);
+                      try {
+                        const ids = Array.from(selectedCampaignIds);
+                        for (const id of ids) {
+                          await supabase
+                            .from("dialer_campaigns")
+                            .update({ archived_at: new Date().toISOString(), status: "completed" } as any)
+                            .eq("id", id);
+                        }
+                        toast.success(`Archived ${ids.length} campaign(s)`);
+                        setSelectedCampaignIds(new Set());
+                        if (selectedCampaignIds.has(activeCampaignId || "")) setActiveCampaignId(null);
+                        queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
+                      } catch (e: any) {
+                        toast.error(`Archive failed: ${e.message}`);
+                      } finally {
+                        setIsArchiving(false);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Archive ({selectedCampaignIds.size})
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
+                  <Plus className="h-3.5 w-3.5" /> New
+                </Button>
+              </div>
             </div>
 
-            <CardDescription>Select campaign to monitor</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardDescription>Select campaign to monitor</CardDescription>
+              {campaignsList && campaignsList.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Checkbox
+                    checked={campaignsList.length > 0 && campaignsList.every((c) => selectedCampaignIds.has(c.id))}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedCampaignIds(new Set(campaignsList.map((c) => c.id)));
+                      } else {
+                        setSelectedCampaignIds(new Set());
+                      }
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">All</span>
+                </div>
+              )}
+            </div>
           </CardHeader>
 
           <CardContent className="p-0 flex-1">
@@ -904,29 +953,45 @@ export default function CampaignWizardPage() {
                   <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
                 ) : (
                   campaignsList.map((c) => (
-                    <button
+                    <div
                       key={c.id}
-                      onClick={() => setActiveCampaignId(c.id)}
-                      className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${activeCampaignId === c.id ? "bg-primary/10 border-primary shadow-sm text-primary" : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"}`}
+                      className={`flex items-start gap-2 p-3 rounded-lg text-left transition-all border ${activeCampaignId === c.id ? "bg-primary/10 border-primary shadow-sm text-primary" : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"}`}
                     >
-                      <div className="flex w-full justify-between items-center">
-                        <span className="font-semibold text-sm truncate">{c.name}</span>
+                      <Checkbox
+                        checked={selectedCampaignIds.has(c.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedCampaignIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(c.id);
+                            else next.delete(c.id);
+                            return next;
+                          });
+                        }}
+                        className="mt-0.5"
+                      />
+                      <button
+                        onClick={() => setActiveCampaignId(c.id)}
+                        className="flex-1 flex flex-col items-start gap-1"
+                      >
+                        <div className="flex w-full justify-between items-center">
+                          <span className="font-semibold text-sm truncate">{c.name}</span>
 
-                        <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
-                          {c.status}
-                        </Badge>
-                      </div>
+                          <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
+                            {c.status}
+                          </Badge>
+                        </div>
 
-                      <div className="flex w-full justify-between items-center mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(c.created_at), "MMM d, h:mm a")}
-                        </span>
+                        <div className="flex w-full justify-between items-center mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(c.created_at), "MMM d, h:mm a")}
+                          </span>
 
-                        <Badge variant="outline" className="text-[9px] h-4 px-1">
-                          AI Agent
-                        </Badge>
-                      </div>
-                    </button>
+                          <Badge variant="outline" className="text-[9px] h-4 px-1">
+                            {(c as any).dial_mode === "manual" ? "Manual" : "AI Agent"}
+                          </Badge>
+                        </div>
+                      </button>
+                    </div>
                   ))
                 )}
               </div>
