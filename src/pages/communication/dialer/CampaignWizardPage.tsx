@@ -258,6 +258,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
   bridged: { label: "Connected", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneForwarded },
   completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
 
+  transferred: { label: "Transferred", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: PhoneForwarded },
+
   no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
 
   failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
