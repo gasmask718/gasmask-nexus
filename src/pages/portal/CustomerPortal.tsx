@@ -145,29 +145,7 @@ export default function CustomerPortal() {
         </HudCard>
 
         {/* PWA Install Card */}
-        {!isStandalone && (
-          <Card className="glass-card border-primary/30 bg-primary/5">
-            <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
-              <div className="space-y-1 text-center sm:text-left">
-                <h3 className="text-lg font-bold text-foreground">Install App</h3>
-                <p className="text-sm text-muted-foreground">
-                  {canInstall
-                    ? "Add to your home screen for quick access & offline support."
-                    : 'Open this page in Safari (iOS) or Chrome (Android) and use "Add to Home Screen" to install.'}
-                </p>
-              </div>
-              <Button
-                onClick={canInstall ? triggerInstall : undefined}
-                disabled={!canInstall}
-                size="lg"
-                className="gap-2 shrink-0 min-w-[200px]"
-              >
-                <Download className="h-5 w-5" />
-                {canInstall ? "Install Now" : "Install via Browser Menu"}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <PwaInstallBanner appName="GasMask" />
 
         {/* Active Delivery Banner */}
         {activeDeliveries.length > 0 && (
