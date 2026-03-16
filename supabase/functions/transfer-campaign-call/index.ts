@@ -6,6 +6,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
+const ELEVENLABS_AGENT_NAME = "GASMASK INVENTORY CHECK";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -22,43 +25,71 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-
-    let redirectUrl: string;
+    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${call_sid}.json`;
 
     if (transfer_type === "elevenlabs") {
-      // Redirect to existing ElevenLabs bridge
-      const bridgeBase = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge`;
-      // Pass campaign context so the bridge can resolve the right agent
-      const params = new URLSearchParams();
-      if (campaign_id) params.set("campaign_id", campaign_id);
-      redirectUrl = `${bridgeBase}?${params.toString()}`;
+      // Redirect to ElevenLabs bridge with specific agent ID
+      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${ELEVENLABS_AGENT_ID}`;
+
+      const updateRes = await fetch(twilioUrl, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({ Url: bridgeUrl }),
+      });
+
+      if (!updateRes.ok) {
+        const errBody = await updateRes.text();
+        throw new Error(`Twilio update failed [${updateRes.status}]: ${errBody}`);
+      }
+
+      // Update queue item with transfer info
+      if (queue_item_id) {
+        await supabase.from("outbound_call_queue").update({
+          status: "transferred",
+          notes: `[TRANSFER:elevenlabs] ${ELEVENLABS_AGENT_NAME}`,
+          updated_at: new Date().toISOString(),
+        }).eq("id", queue_item_id);
+      }
+
+      if (call_sid) {
+        await supabase.from("live_call_transcripts").insert({
+          call_sid,
+          speaker: "system",
+          text: `[TRANSFERRED to AI Agent: ${ELEVENLABS_AGENT_NAME}]`,
+          created_at: new Date().toISOString(),
+        });
+      }
+
+      console.log(`✅ Transferred ${call_sid} to ElevenLabs agent ${ELEVENLABS_AGENT_ID}`);
+      return new Response(JSON.stringify({ success: true, transfer_type: "elevenlabs", agent_name: ELEVENLABS_AGENT_NAME }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     } else {
-      // Human agent path — generate TwiML that dials the Google number with recording
+      // Human agent — dial Google number with recording
       const targetNumber = human_number || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
       if (!targetNumber) throw new Error("No human agent number configured");
 
-      const recordingCallback = `${supabaseUrl}/functions/v1/twilio-call-status`;
-      
-      // We'll use a TwiML Bin approach: redirect to a URL that serves TwiML
-      // But Twilio's update API accepts a Twiml parameter directly
+      const recordingCallback = `${supabaseUrl}/functions/v1/twilio-recording-callback`;
+      const statusCallback = `${supabaseUrl}/functions/v1/twilio-call-status`;
+
       const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Matthew">Please hold while we connect you to an agent.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" timeout="30" callerId="${targetNumber}">
-    <Number>${targetNumber}</Number>
+  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${statusCallback}" timeout="30">
+    <Number statusCallback="${statusCallback}" statusCallbackEvent="initiated ringing answered completed">${targetNumber}</Number>
   </Dial>
   <Say voice="Polly.Matthew">The agent was unavailable. Thank you for your time. Goodbye.</Say>
   <Hangup/>
 </Response>`;
 
-      // Use Twiml parameter directly instead of Url
-      const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${call_sid}.json`;
-      const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-
       const updateRes = await fetch(twilioUrl, {
         method: "POST",
         headers: {
-          "Authorization": authHeader,
+          Authorization: authHeader,
           "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({ Twiml: twiml }),
@@ -69,10 +100,10 @@ serve(async (req) => {
         throw new Error(`Twilio update failed [${updateRes.status}]: ${errBody}`);
       }
 
-      // Update queue item and insert transcript marker
       if (queue_item_id) {
         await supabase.from("outbound_call_queue").update({
           status: "transferred",
+          notes: `[TRANSFER:human] ${targetNumber}`,
           updated_at: new Date().toISOString(),
         }).eq("id", queue_item_id);
       }
@@ -86,49 +117,11 @@ serve(async (req) => {
         });
       }
 
+      console.log(`✅ Transferred ${call_sid} to human agent ${targetNumber}`);
       return new Response(JSON.stringify({ success: true, transfer_type: "human" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // ElevenLabs path — redirect the call to the bridge URL
-    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${call_sid}.json`;
-    const authHeader = "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`);
-
-    const updateRes = await fetch(twilioUrl, {
-      method: "POST",
-      headers: {
-        "Authorization": authHeader,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: new URLSearchParams({ Url: redirectUrl! }),
-    });
-
-    if (!updateRes.ok) {
-      const errBody = await updateRes.text();
-      throw new Error(`Twilio update failed [${updateRes.status}]: ${errBody}`);
-    }
-
-    // Update queue item
-    if (queue_item_id) {
-      await supabase.from("outbound_call_queue").update({
-        status: "transferred",
-        updated_at: new Date().toISOString(),
-      }).eq("id", queue_item_id);
-    }
-
-    if (call_sid) {
-      await supabase.from("live_call_transcripts").insert({
-        call_sid,
-        speaker: "system",
-        text: "[TRANSFERRED to AI Agent (ElevenLabs)]",
-        created_at: new Date().toISOString(),
-      });
-    }
-
-    return new Response(JSON.stringify({ success: true, transfer_type: "elevenlabs" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Transfer error:", message);

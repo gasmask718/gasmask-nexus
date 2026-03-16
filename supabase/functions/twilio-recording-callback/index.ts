@@ -1,0 +1,125 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+serve(async (req) => {
+  // Twilio sends POST with form data
+  if (req.method === "GET" || req.method === "OPTIONS") {
+    return new Response("OK", { status: 200 });
+  }
+
+  try {
+    const formData = await req.formData();
+    const recordingUrl = formData.get("RecordingUrl")?.toString() || "";
+    const callSid = formData.get("CallSid")?.toString() || "";
+    const recordingStatus = formData.get("RecordingStatus")?.toString() || "";
+    const recordingSid = formData.get("RecordingSid")?.toString() || "";
+    const recordingDuration = parseInt(formData.get("RecordingDuration")?.toString() || "0", 10);
+
+    console.log(`📼 Recording callback: ${recordingSid} status=${recordingStatus} call=${callSid} duration=${recordingDuration}s`);
+
+    if (recordingStatus !== "completed" || !recordingUrl || !callSid) {
+      return new Response("OK", { status: 200 });
+    }
+
+    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID")!;
+    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN")!;
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+    // Store recording reference
+    await supabase.from("call_recordings").insert({
+      provider_call_sid: callSid,
+      recording_url: recordingUrl,
+      recording_duration: recordingDuration,
+      provider: "twilio",
+      channels: "dual",
+      created_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
+    });
+
+    // Mark transferred queue items as completed when recording finishes
+    await supabase
+      .from("outbound_call_queue")
+      .update({ status: "completed", updated_at: new Date().toISOString() })
+      .eq("twilio_call_sid", callSid)
+      .eq("status", "transferred");
+
+    // Fetch and transcribe the recording audio
+    if (LOVABLE_API_KEY && recordingDuration > 1 && recordingDuration < 600) {
+      const audioRes = await fetch(`${recordingUrl}.wav`, {
+        headers: {
+          Authorization: "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
+        },
+      });
+
+      if (audioRes.ok) {
+        const audioBuffer = await audioRes.arrayBuffer();
+        const bytes = new Uint8Array(audioBuffer);
+
+        // Only transcribe if under 5MB
+        if (bytes.length < 5 * 1024 * 1024) {
+          let binary = "";
+          const chunkSize = 0x8000;
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+          }
+          const audioBase64 = btoa(binary);
+
+          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${LOVABLE_API_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [{
+                role: "user",
+                content: [
+                  { type: "input_audio", input_audio: { data: audioBase64, format: "wav" } },
+                  {
+                    type: "text",
+                    text: "Transcribe this phone call recording. Label speakers as 'Agent' and 'Caller'. Output only spoken words with speaker labels, one line per speaker turn. If silence, return [silence].",
+                  },
+                ],
+              }],
+              temperature: 0,
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const aiData = await aiResponse.json();
+            let transcript = aiData?.choices?.[0]?.message?.content;
+            if (Array.isArray(transcript)) {
+              transcript = transcript.map((p: any) => typeof p === "string" ? p : p?.text || "").join(" ");
+            }
+            if (typeof transcript === "string" && transcript.length > 2 && transcript !== "[silence]") {
+              // Split by speaker turns and store each as separate transcript entry
+              const lines = transcript.split("\n").filter((l: string) => l.trim());
+              for (const line of lines) {
+                const isCaller = /^caller/i.test(line.trim());
+                const cleanText = line.replace(/^(agent|caller)\s*[:：]\s*/i, "").trim();
+                if (cleanText) {
+                  await supabase.from("live_call_transcripts").insert({
+                    call_sid: callSid,
+                    speaker: isCaller ? "caller" : "human",
+                    text: cleanText,
+                    created_at: new Date().toISOString(),
+                  });
+                }
+              }
+              console.log(`✅ Transcribed recording for ${callSid}: ${lines.length} lines`);
+            }
+          }
+        }
+      }
+    }
+
+    return new Response("OK", { status: 200 });
+  } catch (err) {
+    console.error("Recording callback error:", err instanceof Error ? err.message : err);
+    return new Response("OK", { status: 200 });
+  }
+});

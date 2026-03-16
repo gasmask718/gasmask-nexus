@@ -23,11 +23,14 @@ import {
   Bot,
   UserCheck,
   Loader2,
+  PanelRightOpen,
+  PanelRightClose,
 } from "lucide-react";
 import { useVoiceDevice } from "@/contexts/VoiceDeviceProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { TransferStatusPanel } from "./TransferStatusPanel";
 
 interface QueueItem {
   id: string;
@@ -91,6 +94,7 @@ export function ManualCampaignCallModal({
   const [activeCallSid, setActiveCallSid] = useState<string | null>(null);
   const [showTransferPicker, setShowTransferPicker] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
+  const [showTransferPanel, setShowTransferPanel] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
@@ -252,7 +256,6 @@ export function ManualCampaignCallModal({
         if (event.error === "not-allowed") {
           toast.error("Microphone access denied for speech recognition");
         }
-        // Auto-restart on non-fatal errors
         if (event.error !== "not-allowed" && event.error !== "service-not-allowed") {
           setTimeout(() => {
             try { recognition.start(); } catch { /* already running */ }
@@ -261,7 +264,6 @@ export function ManualCampaignCallModal({
       };
 
       recognition.onend = () => {
-        // Auto-restart if still on call
         if (currentCallSidRef.current) {
           try { recognition.start(); } catch { /* already running */ }
         }
@@ -399,8 +401,11 @@ export function ManualCampaignCallModal({
         console.warn("Audio element capture hook failed, will use peer connection fallback", err);
       }
 
-      setTimeout(() => {
-        if (remoteRecorderRef.current) return;
+      // Retry PeerConnection extraction multiple times
+      let attempts = 0;
+      const tryCapture = () => {
+        if (remoteRecorderRef.current) return; // already capturing
+        attempts++;
 
         const pc =
           call?._mediaHandler?._peerConnection ||
@@ -412,14 +417,17 @@ export function ManualCampaignCallModal({
           .filter((r: RTCRtpReceiver) => r.track && r.track.kind === "audio")
           .map((r: RTCRtpReceiver) => r.track);
 
-        if (remoteTracks.length === 0) {
-          console.warn("No remote audio tracks found for transcription");
-          return;
+        if (remoteTracks.length > 0) {
+          console.log("🔊 Remote audio captured from peer connection");
+          startRemoteRecorder(new MediaStream(remoteTracks));
+        } else if (attempts < 10) {
+          setTimeout(tryCapture, 500);
+        } else {
+          console.warn("No remote audio tracks found after 10 attempts — relying on Twilio server-side recording");
         }
+      };
 
-        console.log("🔊 Remote audio captured from peer connection fallback");
-        startRemoteRecorder(new MediaStream(remoteTracks));
-      }, 800);
+      setTimeout(tryCapture, 800);
     },
     [startRemoteRecorder]
   );
@@ -450,11 +458,25 @@ export function ManualCampaignCallModal({
 
     console.log("🔊 Remote audio capture stopped");
   }, [transcribeRemoteBlob]);
+
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
+
+  // ── Start Twilio server-side recording ──
+  const startServerRecording = useCallback(async (callSid: string) => {
+    try {
+      const { error } = await supabase.functions.invoke("start-call-recording", {
+        body: { call_sid: callSid },
+      });
+      if (error) throw error;
+      console.log("🎙️ Server-side Twilio recording started for", callSid);
+    } catch (e) {
+      console.warn("Failed to start server recording (will retry on call end via Twilio):", e);
+    }
+  }, []);
 
   const dialCurrent = useCallback(async () => {
     if (!currentItem || currentItem.status !== "queued") {
@@ -517,6 +539,14 @@ export function ManualCampaignCallModal({
 
         startSpeechRecognition();
         startRemoteAudioCapture(call);
+
+        // Start server-side Twilio recording for reliable remote transcripts
+        setTimeout(() => {
+          const sid = (call as any)?.parameters?.CallSid?.toString?.().trim?.();
+          if (sid) {
+            void startServerRecording(sid);
+          }
+        }, 1500);
       });
 
       const handleTerminal = (status: "completed" | "no_answer" | "failed") => {
@@ -563,6 +593,7 @@ export function ManualCampaignCallModal({
     queryClient,
     refetchQueue,
     startRemoteAudioCapture,
+    startServerRecording,
     startSpeechRecognition,
     stopRemoteAudioCapture,
     stopSidResolution,
@@ -626,7 +657,10 @@ export function ManualCampaignCallModal({
 
       if (error) throw error;
 
-      toast.success(`Call transferred to ${transferType === "elevenlabs" ? "AI Agent" : "Human Agent"}`);
+      toast.success(`Call transferred to ${transferType === "elevenlabs" ? "AI Agent (GASMASK INVENTORY CHECK)" : "Human Agent"}`);
+
+      // Show the transfer panel so user can monitor
+      setShowTransferPanel(true);
 
       // Disconnect local call leg
       stopSpeechRecognition();
@@ -642,6 +676,7 @@ export function ManualCampaignCallModal({
       refetchQueue();
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
       queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["transferred-calls", campaignId] });
 
       const nextQueued = queueItems.findIndex((q, i) => i > currentIndex && q.status === "queued");
       if (nextQueued >= 0) {
@@ -728,247 +763,269 @@ export function ManualCampaignCallModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Phone className="h-5 w-5" />
-            Manual Cold Call — {campaignName}
-          </DialogTitle>
-          <DialogDescription className="flex items-center gap-3">
-            <Badge variant="outline" className="gap-1">
-              <Hash className="h-3 w-3" />
-              {currentIndex + 1} / {totalItems}
-            </Badge>
-            <Badge variant="secondary" className="gap-1">
-              Completed: {completedCount}
-            </Badge>
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className={`max-h-[90vh] flex ${showTransferPanel ? "sm:max-w-3xl" : "sm:max-w-xl"}`}>
+        {/* Main call area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              Manual Cold Call — {campaignName}
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-3">
+              <Badge variant="outline" className="gap-1">
+                <Hash className="h-3 w-3" />
+                {currentIndex + 1} / {totalItems}
+              </Badge>
+              <Badge variant="secondary" className="gap-1">
+                Completed: {completedCount}
+              </Badge>
+              {/* Transfer panel toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs gap-1 ml-auto"
+                onClick={() => setShowTransferPanel(!showTransferPanel)}
+              >
+                {showTransferPanel ? (
+                  <PanelRightClose className="h-3.5 w-3.5" />
+                ) : (
+                  <PanelRightOpen className="h-3.5 w-3.5" />
+                )}
+                Transfers
+              </Button>
+            </DialogDescription>
+          </DialogHeader>
 
-        {/* Progress bar */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Campaign Progress</span>
-            <span>{Math.round(progressPct)}%</span>
+          {/* Progress bar */}
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Campaign Progress</span>
+              <span>{Math.round(progressPct)}%</span>
+            </div>
+            <Progress value={progressPct} className="h-2" />
           </div>
-          <Progress value={progressPct} className="h-2" />
-        </div>
 
-        {/* Current contact card */}
-        <Card className="p-4 border-l-4 border-l-primary">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
+          {/* Current contact card */}
+          <Card className="p-4 border-l-4 border-l-primary">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {currentItem?.contact_name || "No contact"}
+                  </p>
+                  <p className="text-sm text-muted-foreground font-mono">
+                    {currentItem?.phone_number || "—"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="font-semibold text-foreground">
-                  {currentItem?.contact_name || "No contact"}
-                </p>
-                <p className="text-sm text-muted-foreground font-mono">
-                  {currentItem?.phone_number || "—"}
-                </p>
+              <div className="text-right">
+                {isOnCall && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-sm font-mono font-bold text-green-600 dark:text-green-400">
+                      {formatTime(elapsed)}
+                    </span>
+                  </div>
+                )}
+                {currentItem && (
+                  <Badge
+                    variant={currentItem.status === "queued" ? "secondary" : currentItem.status === "connected" ? "default" : "outline"}
+                    className="text-xs mt-1"
+                  >
+                    {currentItem.status}
+                  </Badge>
+                )}
               </div>
             </div>
-            <div className="text-right">
-              {isOnCall && (
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm font-mono font-bold text-green-600 dark:text-green-400">
-                    {formatTime(elapsed)}
-                  </span>
-                </div>
-              )}
-              {currentItem && (
-                <Badge
-                  variant={currentItem.status === "queued" ? "secondary" : currentItem.status === "connected" ? "default" : "outline"}
-                  className="text-xs mt-1"
+          </Card>
+
+          {/* Call controls */}
+          <div className="flex items-center justify-center gap-3 py-2">
+            {!isOnCall && !isDialing ? (
+              <>
+                <Button
+                  onClick={dialCurrent}
+                  disabled={!currentItem || currentItem.status !== "queued" || !device.isReady}
+                  size="lg"
+                  className="gap-2 bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {currentItem.status}
+                  <Phone className="h-4 w-4" />
+                  Dial
+                </Button>
+                <Button onClick={skipToNext} variant="outline" size="lg" className="gap-2">
+                  <SkipForward className="h-4 w-4" />
+                  Skip
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => device.toggleMute()}
+                  variant={device.isMuted ? "default" : "outline"}
+                  size="lg"
+                  className="gap-2"
+                >
+                  {device.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  {device.isMuted ? "Unmute" : "Mute"}
+                </Button>
+                <Button
+                  onClick={() => setShowTransferPicker(true)}
+                  variant="outline"
+                  size="lg"
+                  className="gap-2"
+                  disabled={isTransferring}
+                >
+                  {isTransferring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
+                  {isTransferring ? "Transferring..." : "Transfer"}
+                </Button>
+                <Button
+                  onClick={endCall}
+                  variant="destructive"
+                  size="lg"
+                  className="gap-2"
+                >
+                  <PhoneOff className="h-4 w-4" />
+                  End Call
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Transfer Picker */}
+          {showTransferPicker && (
+            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+              <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                  onClick={() => handleTransfer("elevenlabs")}
+                  disabled={isTransferring}
+                >
+                  <Bot className="h-5 w-5 text-primary" />
+                  <span className="text-xs font-semibold">AI Agent</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight">GASMASK INVENTORY CHECK</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                  onClick={() => handleTransfer("human")}
+                  disabled={isTransferring}
+                >
+                  <UserCheck className="h-5 w-5 text-primary" />
+                  <span className="text-xs font-semibold">Human Agent</span>
+                  <span className="text-[10px] text-muted-foreground">Google Voice</span>
+                </Button>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-xs"
+                onClick={() => setShowTransferPicker(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {!device.isReady && (
+            <p className="text-xs text-destructive text-center">
+              Voice device not connected. Make sure microphone is allowed.
+            </p>
+          )}
+
+          {/* Live Transcript */}
+          <div className="flex-1 min-h-0 border-t pt-3">
+            <h4 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+              Live Transcript
+              {isOnCall && recognitionRef.current && (
+                <Badge variant="outline" className="text-[10px] gap-1 animate-pulse">
+                  <Mic className="h-2.5 w-2.5" /> Listening
                 </Badge>
               )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Call controls */}
-        <div className="flex items-center justify-center gap-3 py-2">
-          {!isOnCall && !isDialing ? (
-            <>
-              <Button
-                onClick={dialCurrent}
-                disabled={!currentItem || currentItem.status !== "queued" || !device.isReady}
-                size="lg"
-                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-              >
-                <Phone className="h-4 w-4" />
-                Dial
-              </Button>
-              <Button onClick={skipToNext} variant="outline" size="lg" className="gap-2">
-                <SkipForward className="h-4 w-4" />
-                Skip
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                onClick={() => device.toggleMute()}
-                variant={device.isMuted ? "default" : "outline"}
-                size="lg"
-                className="gap-2"
-              >
-                {device.isMuted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                {device.isMuted ? "Unmute" : "Mute"}
-              </Button>
-              <Button
-                onClick={() => setShowTransferPicker(true)}
-                variant="outline"
-                size="lg"
-                className="gap-2"
-                disabled={isTransferring}
-              >
-                {isTransferring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
-                {isTransferring ? "Transferring..." : "Transfer"}
-              </Button>
-              <Button
-                onClick={endCall}
-                variant="destructive"
-                size="lg"
-                className="gap-2"
-              >
-                <PhoneOff className="h-4 w-4" />
-                End Call
-              </Button>
-            </>
-          )}
-        </div>
-
-        {/* Transfer Picker */}
-        {showTransferPicker && (
-          <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
-            <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
-                onClick={() => handleTransfer("elevenlabs")}
-                disabled={isTransferring}
-              >
-                <Bot className="h-5 w-5 text-primary" />
-                <span className="text-xs font-semibold">AI Agent</span>
-                <span className="text-[10px] text-muted-foreground">ElevenLabs</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
-                onClick={() => handleTransfer("human")}
-                disabled={isTransferring}
-              >
-                <UserCheck className="h-5 w-5 text-primary" />
-                <span className="text-xs font-semibold">Human Agent</span>
-                <span className="text-[10px] text-muted-foreground">Google Voice</span>
-              </Button>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs"
-              onClick={() => setShowTransferPicker(false)}
-            >
-              Cancel
-            </Button>
-          </div>
-        )}
-
-        {!device.isReady && (
-          <p className="text-xs text-destructive text-center">
-            Voice device not connected. Make sure microphone is allowed.
-          </p>
-        )}
-
-        {/* Live Transcript */}
-        <div className="flex-1 min-h-0 border-t pt-3">
-          <h4 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
-            Live Transcript
-            {isOnCall && recognitionRef.current && (
-              <Badge variant="outline" className="text-[10px] gap-1 animate-pulse">
-                <Mic className="h-2.5 w-2.5" /> Listening
-              </Badge>
-            )}
-          </h4>
-          <ScrollArea className="h-40 rounded-md border p-3 bg-muted/20">
-            <div className="space-y-2">
-              {allTranscripts.length === 0 && !interimText ? (
-                <p className="text-xs text-muted-foreground italic text-center py-4">
-                  {isOnCall
-                    ? "Listening... speak and your words will appear here."
-                    : "Transcript will appear here during the call."}
-                </p>
-              ) : (
-                <>
-                  {allTranscripts.map((t, i) => (
-                    <div
-                      key={i}
-                      className={`flex gap-2 text-xs ${t.speaker === "you" ? "justify-end" : "justify-start"}`}
-                    >
+            </h4>
+            <ScrollArea className="h-40 rounded-md border p-3 bg-muted/20">
+              <div className="space-y-2">
+                {allTranscripts.length === 0 && !interimText ? (
+                  <p className="text-xs text-muted-foreground italic text-center py-4">
+                    {isOnCall
+                      ? "Listening... speak and your words will appear here."
+                      : "Transcript will appear here during the call."}
+                  </p>
+                ) : (
+                  <>
+                    {allTranscripts.map((t, i) => (
                       <div
-                        className={`max-w-[80%] rounded-lg px-3 py-1.5 ${
-                          t.speaker === "you"
-                            ? "bg-primary/10 text-foreground"
-                            : "bg-muted text-foreground"
-                        }`}
+                        key={i}
+                        className={`flex gap-2 text-xs ${t.speaker === "you" ? "justify-end" : "justify-start"}`}
                       >
-                        <span className="font-semibold text-[10px] text-muted-foreground">
-                          {t.speaker === "you" ? "You" : "Caller"}
-                        </span>
-                        <p className="mt-0.5">{t.text}</p>
+                        <div
+                          className={`max-w-[80%] rounded-lg px-3 py-1.5 ${
+                            t.speaker === "you"
+                              ? "bg-primary/10 text-foreground"
+                              : "bg-muted text-foreground"
+                          }`}
+                        >
+                          <span className="font-semibold text-[10px] text-muted-foreground">
+                            {t.speaker === "you" ? "You" : "Caller"}
+                          </span>
+                          <p className="mt-0.5">{t.text}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                  {interimText && (
-                    <div className="flex gap-2 text-xs justify-end">
-                      <div className="max-w-[80%] rounded-lg px-3 py-1.5 bg-primary/5 text-muted-foreground italic">
-                        <span className="font-semibold text-[10px]">You</span>
-                        <p className="mt-0.5">{interimText}...</p>
+                    ))}
+                    {interimText && (
+                      <div className="flex gap-2 text-xs justify-end">
+                        <div className="max-w-[80%] rounded-lg px-3 py-1.5 bg-primary/5 text-muted-foreground italic">
+                          <span className="font-semibold text-[10px]">You</span>
+                          <p className="mt-0.5">{interimText}...</p>
+                        </div>
                       </div>
+                    )}
+                  </>
+                )}
+                <div ref={scrollRef} />
+              </div>
+            </ScrollArea>
+          </div>
+
+          {/* Queue list */}
+          <div className="border-t pt-3">
+            <h4 className="text-sm font-semibold mb-2 text-foreground">Call Queue</h4>
+            <ScrollArea className="h-32">
+              <div className="space-y-1">
+                {queueItems.map((q, i) => (
+                  <div
+                    key={q.id}
+                    className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${
+                      i === currentIndex
+                        ? "bg-primary/10 border border-primary/30 font-semibold"
+                        : "hover:bg-muted/50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground w-6">{i + 1}.</span>
+                      <span className="text-foreground">{q.contact_name || q.phone_number}</span>
                     </div>
-                  )}
-                </>
-              )}
-              <div ref={scrollRef} />
-            </div>
-          </ScrollArea>
+                    <Badge
+                      variant={q.status === "completed" ? "default" : q.status === "queued" ? "secondary" : "outline"}
+                      className="text-[10px] h-4"
+                    >
+                      {q.status}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
         </div>
 
-        {/* Queue list */}
-        <div className="border-t pt-3">
-          <h4 className="text-sm font-semibold mb-2 text-foreground">Call Queue</h4>
-          <ScrollArea className="h-32">
-            <div className="space-y-1">
-              {queueItems.map((q, i) => (
-                <div
-                  key={q.id}
-                  className={`flex items-center justify-between text-xs px-2 py-1.5 rounded ${
-                    i === currentIndex
-                      ? "bg-primary/10 border border-primary/30 font-semibold"
-                      : "hover:bg-muted/50"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground w-6">{i + 1}.</span>
-                    <span className="text-foreground">{q.contact_name || q.phone_number}</span>
-                  </div>
-                  <Badge
-                    variant={q.status === "completed" ? "default" : q.status === "queued" ? "secondary" : "outline"}
-                    className="text-[10px] h-4"
-                  >
-                    {q.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
+        {/* Transfer Status Sidebar */}
+        {showTransferPanel && (
+          <TransferStatusPanel campaignId={campaignId} />
+        )}
       </DialogContent>
     </Dialog>
   );
