@@ -461,7 +461,7 @@ export function ManualCampaignCallModal({
       currentCallSidRef.current = null;
       refetchQueue();
     }
-  }, [currentItem, device, campaignId, queryClient, refetchQueue, startSpeechRecognition]);
+  }, [currentItem, device, campaignId, queryClient, refetchQueue, startSpeechRecognition, startRemoteAudioCapture, stopSpeechRecognition, stopRemoteAudioCapture]);
 
   const endCall = useCallback(() => {
     stopSpeechRecognition();
