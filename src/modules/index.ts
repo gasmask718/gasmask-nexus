@@ -15,6 +15,7 @@ import { GrantsModule } from './grants';
 import { WealthModule } from './wealth';
 import { BettingModule } from './betting';
 import { BikerModule } from './biker';
+import { BrandaroModule } from './brandaro';
 
 // All Dynasty OS Modules
 export const DYNASTY_MODULES: DynastyModule[] = [
@@ -35,6 +36,9 @@ export const DYNASTY_MODULES: DynastyModule[] = [
   
   // Logistics
   BikerModule,
+
+  // Agency & Digital
+  BrandaroModule,
 ];
 
 // Initialize all modules on import
