@@ -94,15 +94,6 @@ interface Campaign {
   business_id: string;
 }
 
-  created_at: string;
-
-  initial_script: string;
-
-  agent_id: string;
-
-  business_id: string;
-}
-
 interface CallItem {
   id: string;
 
