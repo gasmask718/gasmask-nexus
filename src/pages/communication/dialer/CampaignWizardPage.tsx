@@ -1081,52 +1081,83 @@ export default function CampaignWizardPage() {
                       <p className="text-center text-sm text-muted-foreground py-8">
                         No calls yet. Launch a campaign to see transcripts.
                       </p>
-                    ) : callItems.filter((i: any) => i.twilio_call_sid).length === 0 ? (
+                    ) : callItems.filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status)).length === 0 ? (
                       <p className="text-center text-sm text-muted-foreground py-8">Waiting for calls to connect...</p>
                     ) : (
                       callItems
-
-                        .filter((i: any) => i.twilio_call_sid)
-
+                        .filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status))
                         .map((item: any) => {
-                          const msgs = transcriptsByCall[item.twilio_call_sid] || [];
+                          const sid = item.twilio_call_sid?.trim();
+                          const msgs = sid ? (transcriptsByCall[sid] || []) : [];
+                          const recording = sid ? recordingsByCall[sid] : null;
 
                           return (
                             <Card key={item.id} className="border bg-card">
                               <div className="p-3 border-b flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                   <Phone className="h-4 w-4 text-muted-foreground" />
-
                                   <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
-
                                   <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
                                 </div>
-
-                                <Badge variant="outline" className="text-[10px]">
-                                  {item.status}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  {recording?.recording_duration && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {Math.floor(recording.recording_duration / 60)}:{String(recording.recording_duration % 60).padStart(2, "0")}
+                                    </span>
+                                  )}
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {item.status}
+                                  </Badge>
+                                </div>
                               </div>
 
                               <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
                                 {msgs.length === 0 ? (
-                                  <p className="text-xs text-muted-foreground italic">No transcript recorded yet.</p>
-                                ) : (
-                                  msgs.map((msg, idx) => (
-                                    <div
-                                      key={idx}
-                                      className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
-                                    >
-                                      <div
-                                        className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                  <div>
+                                    <p className="text-xs text-muted-foreground italic">
+                                      {item.status === "completed" || item.status === "failed" || item.status === "no_answer"
+                                        ? "No live transcript captured for this call."
+                                        : "Waiting for transcript..."}
+                                    </p>
+                                    {recording?.recording_url && (
+                                      <a
+                                        href={recording.recording_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary underline mt-1 inline-block"
                                       >
-                                        <span className="font-semibold capitalize text-[10px] text-muted-foreground">
-                                          {msg.speaker === "ai" ? "Agent" : "Caller"}
-                                        </span>
-
-                                        <p className="mt-0.5">{msg.text}</p>
+                                        🎙️ Play Recording
+                                      </a>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <>
+                                    {msgs.map((msg: any, idx: number) => (
+                                      <div
+                                        key={idx}
+                                        className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
+                                      >
+                                        <div
+                                          className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                        >
+                                          <span className="font-semibold capitalize text-[10px] text-muted-foreground">
+                                            {msg.speaker === "ai" ? "Agent" : "Caller"}
+                                          </span>
+                                          <p className="mt-0.5">{msg.text}</p>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ))
+                                    ))}
+                                    {recording?.recording_url && (
+                                      <a
+                                        href={recording.recording_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary underline mt-2 inline-block"
+                                      >
+                                        🎙️ Play Recording
+                                      </a>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </Card>
