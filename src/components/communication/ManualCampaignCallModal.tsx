@@ -454,6 +454,10 @@ export function ManualCampaignCallModal({
       toast.error("No queued number to dial");
       return;
     }
+    if (isOnCall || isDialing) {
+      toast.error("Finish the current call before dialing another");
+      return;
+    }
     if (!device.isReady) {
       toast.error("Voice device not ready. Check microphone permissions.");
       return;
@@ -461,107 +465,116 @@ export function ManualCampaignCallModal({
 
     setIsDialing(true);
     setLocalTranscripts([]);
+    setInterimText("");
+    setActiveCallSid(null);
     currentCallSidRef.current = null;
+    stopSidResolution();
 
     try {
-      // Mark as dialing in DB
       await supabase
         .from("outbound_call_queue")
         .update({ status: "dialing", dialing_started_at: new Date().toISOString(), updated_at: new Date().toISOString() })
         .eq("id", currentItem.id);
 
-      // Place the call via Twilio Voice SDK (browser WebRTC)
       const call = await device.makeCall(currentItem.phone_number);
-      if (call) {
-        setCallStartedAt(new Date());
-        toast.success(`Dialing ${currentItem.contact_name || currentItem.phone_number}...`);
+      if (!call) throw new Error("Call failed to initialize");
 
-        // Get and store call SID immediately
-        const callSid = (call as any).parameters?.CallSid || `browser-${Date.now()}`;
-        currentCallSidRef.current = callSid;
-        
-        await supabase
-          .from("outbound_call_queue")
-          .update({ twilio_call_sid: callSid, updated_at: new Date().toISOString() })
-          .eq("id", currentItem.id);
-        refetchQueue();
+      setCallStartedAt(new Date());
+      toast.success(`Dialing ${currentItem.contact_name || currentItem.phone_number}...`);
 
-        // Start speech recognition when call connects
-        call.on("accept", () => {
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "connected", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => refetchQueue());
-          
-          // Start capturing speech (user's mic)
-          startSpeechRecognition();
-          // Start capturing remote party audio for transcription
-          startRemoteAudioCapture(call);
-        });
+      const tryResolveSid = () => {
+        const sid = (call as any)?.parameters?.CallSid?.toString?.().trim?.();
+        if (!sid) return false;
+        void persistCallSid(sid, currentItem.id);
+        return true;
+      };
 
-        call.on("disconnect", () => {
-          stopSpeechRecognition();
-          stopRemoteAudioCapture();
-          currentCallSidRef.current = null;
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "completed", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => {
-              refetchQueue();
-              queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
-              queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
-            });
-          setCallStartedAt(null);
-          setIsDialing(false);
-        });
-
-        call.on("cancel", () => {
-          stopSpeechRecognition();
-          stopRemoteAudioCapture();
-          currentCallSidRef.current = null;
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "no_answer", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => refetchQueue());
-          setCallStartedAt(null);
-          setIsDialing(false);
-        });
-
-        call.on("reject", () => {
-          stopSpeechRecognition();
-          stopRemoteAudioCapture();
-          currentCallSidRef.current = null;
-          supabase
-            .from("outbound_call_queue")
-            .update({ status: "failed", updated_at: new Date().toISOString() })
-            .eq("id", currentItem.id)
-            .then(() => refetchQueue());
-          setCallStartedAt(null);
-          setIsDialing(false);
-        });
+      if (!tryResolveSid()) {
+        sidResolveIntervalRef.current = setInterval(() => {
+          if (tryResolveSid()) stopSidResolution();
+        }, 300);
+        setTimeout(() => stopSidResolution(), 10000);
       }
-    } catch (err: any) {
-      toast.error(`Failed to dial: ${err.message}`);
+
+      call.on("ringing", () => {
+        void tryResolveSid();
+      });
+
+      call.on("accept", () => {
+        void tryResolveSid();
+        supabase
+          .from("outbound_call_queue")
+          .update({ status: "connected", updated_at: new Date().toISOString() })
+          .eq("id", currentItem.id)
+          .then(() => refetchQueue());
+
+        startSpeechRecognition();
+        startRemoteAudioCapture(call);
+      });
+
+      const handleTerminal = (status: "completed" | "no_answer" | "failed") => {
+        stopSidResolution();
+        stopSpeechRecognition();
+        stopRemoteAudioCapture();
+        currentCallSidRef.current = null;
+        supabase
+          .from("outbound_call_queue")
+          .update({ status, updated_at: new Date().toISOString() })
+          .eq("id", currentItem.id)
+          .then(() => {
+            refetchQueue();
+            queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+            queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
+          });
+        setCallStartedAt(null);
+        setIsDialing(false);
+      };
+
+      call.on("disconnect", () => handleTerminal("completed"));
+      call.on("cancel", () => handleTerminal("no_answer"));
+      call.on("reject", () => handleTerminal("failed"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Failed to dial: ${message}`);
       await supabase
         .from("outbound_call_queue")
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("id", currentItem.id);
+      stopSidResolution();
       setIsDialing(false);
+      setCallStartedAt(null);
       currentCallSidRef.current = null;
       refetchQueue();
     }
-  }, [currentItem, device, campaignId, queryClient, refetchQueue, startSpeechRecognition, startRemoteAudioCapture, stopSpeechRecognition, stopRemoteAudioCapture]);
+  }, [
+    campaignId,
+    currentItem,
+    device,
+    isDialing,
+    isOnCall,
+    persistCallSid,
+    queryClient,
+    refetchQueue,
+    startRemoteAudioCapture,
+    startSpeechRecognition,
+    stopRemoteAudioCapture,
+    stopSidResolution,
+    stopSpeechRecognition,
+  ]);
 
   const endCall = useCallback(() => {
+    stopSidResolution();
     stopSpeechRecognition();
     stopRemoteAudioCapture();
-    device.hangUp();
+
+    if (device.activeCall) {
+      device.hangUp();
+    }
+
     setCallStartedAt(null);
     setIsDialing(false);
     currentCallSidRef.current = null;
+
     if (currentItem) {
       supabase
         .from("outbound_call_queue")
@@ -573,7 +586,16 @@ export function ManualCampaignCallModal({
           queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
         });
     }
-  }, [device, currentItem, campaignId, queryClient, refetchQueue, stopSpeechRecognition, stopRemoteAudioCapture]);
+  }, [
+    campaignId,
+    currentItem,
+    device,
+    queryClient,
+    refetchQueue,
+    stopRemoteAudioCapture,
+    stopSidResolution,
+    stopSpeechRecognition,
+  ]);
 
   const skipToNext = useCallback(() => {
     if (isDialing || device.callStatus !== "idle") {
