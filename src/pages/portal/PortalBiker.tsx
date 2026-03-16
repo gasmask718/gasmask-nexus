@@ -3,10 +3,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Camera, DollarSign, Award, Navigation, Loader2, Download } from "lucide-react";
+import { MapPin, Camera, DollarSign, Award, Navigation, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 
 const GPS_INTERVAL_MS = 30_000; // 30 seconds
 
@@ -23,8 +23,6 @@ export default function PortalBiker() {
   const userIdRef = useRef<string | null>(null);
   const { toast } = useToast();
 
-  // PWA Hook
-  const { canInstall, triggerInstall } = usePwaInstall();
 
   useEffect(() => {
     fetchBikerData();
@@ -183,27 +181,9 @@ export default function PortalBiker() {
 
       <div className="container mx-auto px-6 py-8">
         {/* PWA Install Card */}
-        <Card className="p-4 mb-6 border-primary/30 bg-primary/5">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="space-y-1 text-center sm:text-left">
-              <h3 className="text-base font-bold text-foreground">Install Biker App</h3>
-              <p className="text-xs text-muted-foreground">
-                {canInstall
-                  ? "Add to home screen for offline maps & better battery life."
-                  : 'Open in Safari (iOS) or Chrome (Android) and use "Add to Home Screen".'}
-              </p>
-            </div>
-            <Button
-              onClick={canInstall ? triggerInstall : undefined}
-              disabled={!canInstall}
-              size="sm"
-              className="gap-2 shrink-0 w-full sm:w-auto"
-            >
-              <Download className="h-4 w-4" />
-              {canInstall ? "Install Now" : "Install Guide"}
-            </Button>
-          </div>
-        </Card>
+        <div className="mb-6">
+          <PwaInstallBanner appName="Biker" />
+        </div>
 
         {/* Location Status Card */}
         <Card className="p-4 mb-6">

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CommunicationWidget } from '@/components/communication/CommunicationWidget';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { getSimulationDashboardStats } from '@/lib/simulation/coreSimulationData';
-import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 import {
   Store, 
   TrendingUp, 
@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Package,
   Users,
-  Download
 } from 'lucide-react';
 
 interface Stats {
@@ -25,7 +24,7 @@ interface Stats {
 
 const Dashboard = () => {
   const { simulationMode, isLoading: isSimLoading } = useSimulationMode();
-  const { canInstall, triggerInstall } = usePwaInstall();
+  
   const [stats, setStats] = useState<Stats>({
     activeStores: 0,
     totalStores: 0,
@@ -107,31 +106,8 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* PWA Install Button — always visible on supported browsers */}
-      <Card className="glass-card border-primary/30 bg-primary/5">
-        <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
-          <div className="space-y-1 text-center sm:text-left">
-            <h3 className="text-lg font-bold text-foreground">Install GASMASK PWA</h3>
-            <p className="text-sm text-muted-foreground">
-              Add to your home screen for quick access &amp; offline support.
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              if (canInstall) {
-                triggerInstall();
-              } else {
-                window.alert('Use your browser menu → "Add to Home Screen" or "Install App".');
-              }
-            }}
-            size="lg"
-            className="gap-2 shrink-0 min-w-[200px]"
-          >
-            <Download className="h-5 w-5" />
-            Install Now
-          </Button>
-        </CardContent>
-      </Card>
+      {/* PWA Install */}
+      <PwaInstallBanner appName="GASMASK" />
 
       {/* Header */}
       <div className="space-y-2">

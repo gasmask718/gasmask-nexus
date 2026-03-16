@@ -86,7 +86,7 @@ serve(async (req) => {
       const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${agentId}`;
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Matthew">Great choice. Connecting you to our AI assistant now.</Say>
+  <Say voice="Polly.Matthew">Connecting you now.</Say>
   <Redirect method="POST">${bridgeUrl}</Redirect>
 </Response>`;
 
@@ -137,11 +137,11 @@ serve(async (req) => {
 
           twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Matthew">Excellent. Connecting you to a live agent now. Please hold for just a moment.</Say>
-  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}" timeout="30">
+  <Say voice="Polly.Matthew">Connecting you now.</Say>
+  <Dial record="record-from-answer-dual" recordingStatusCallback="${recordingCallback}" recordingStatusCallbackMethod="POST" action="${supabaseUrl}/functions/v1/twilio-human-call-complete?phone_number=${encodeURIComponent(humanNumber)}&amp;queue_item_id=${encodeURIComponent(queueItemId)}" timeout="20">
     <Number statusCallback="${statusCallback}" statusCallbackEvent="initiated ringing answered completed">${humanNumber}</Number>
   </Dial>
-  <Say voice="Polly.Matthew">The agent was unavailable. Thank you for your time. Goodbye.</Say>
+  <Say voice="Polly.Matthew">The agent was unavailable. Goodbye.</Say>
   <Hangup/>
 </Response>`;
 
@@ -189,10 +189,10 @@ serve(async (req) => {
       const selfUrl = url.toString();
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather input="dtmf speech" action="${selfUrl}" numDigits="1" timeout="8">
-    <Say voice="Polly.Matthew">I didn't catch that. Please press 1 on your keypad for our AI assistant, or press 2 for a human agent.</Say>
+  <Gather input="dtmf speech" action="${selfUrl}" numDigits="1" timeout="4" speechTimeout="2">
+    <Say voice="Polly.Matthew">Press 1 for AI assistant, or press 2 for a human agent.</Say>
   </Gather>
-  <Say voice="Polly.Matthew">We did not receive a response. Goodbye.</Say>
+  <Say voice="Polly.Matthew">Goodbye.</Say>
   <Hangup/>
 </Response>`;
     }
