@@ -29,6 +29,7 @@ import BikerLogin from '@/pages/portal/BikerLogin';
 import InviteSignup from '@/pages/auth/InviteSignup';
 import UserInvitations from '@/pages/security/UserInvitations';
 import InviteLanding from '@/pages/portal/InviteLanding';
+import InstallPwa from '@/pages/InstallPwa';
 
 // Protected page imports
 import Dashboard from '@/pages/Dashboard';
@@ -625,6 +626,7 @@ export default function AppRoutes() {
       </Route>
 
       {/* Standalone public routes (own layouts) */}
+      <Route path="/install" element={<InstallPwa />} />
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/portal/login" element={<PortalLogin />} />

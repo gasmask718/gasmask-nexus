@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
@@ -15,14 +16,8 @@ export function PwaInstallButton({
   className,
   showLabel = true 
 }: PwaInstallButtonProps) {
-  const { canInstall, isInstalled, triggerInstall } = usePwaInstall();
-
-  const handleClick = async () => {
-    if (canInstall) {
-      await triggerInstall();
-    }
-    // If not installable and not installed, do nothing — no extra dialogs
-  };
+  const navigate = useNavigate();
+  const { isInstalled } = usePwaInstall();
 
   if (isInstalled) {
     return (
@@ -34,7 +29,7 @@ export function PwaInstallButton({
   }
 
   return (
-    <Button variant={variant} size={size} className={className} onClick={handleClick}>
+    <Button variant={variant} size={size} className={className} onClick={() => navigate('/install')}>
       <Download className="h-4 w-4" />
       {showLabel && <span className="ml-1.5">Install App</span>}
     </Button>
