@@ -1124,6 +1124,16 @@ export default function CampaignWizardPage() {
             </Tabs>
           </Card>
         </div>
+
+        {/* Manual Call Modal */}
+        {activeCampaignId && (
+          <ManualCampaignCallModal
+            open={isManualCallModalOpen}
+            onOpenChange={setIsManualCallModalOpen}
+            campaignId={activeCampaignId}
+            campaignName={activeCampaign?.name || "Campaign"}
+          />
+        )}
       </div>
     );
   }
