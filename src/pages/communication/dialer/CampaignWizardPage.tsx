@@ -298,7 +298,7 @@ export default function CampaignWizardPage() {
 
   const effectiveBizId = contextBizId || fallbackBiz?.id;
 
-  const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
+  const [viewMode, setViewMode] = useState<"wizard" | "console">("console");
 
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
