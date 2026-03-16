@@ -305,6 +305,8 @@ export default function CampaignWizardPage() {
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
   const [isManualCallModalOpen, setIsManualCallModalOpen] = useState(false);
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const [step, setStep] = useState(0);
 
