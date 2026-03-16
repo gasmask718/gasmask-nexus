@@ -604,7 +604,62 @@ export function ManualCampaignCallModal({
     stopSpeechRecognition,
   ]);
 
-  const skipToNext = useCallback(() => {
+  const handleTransfer = useCallback(async (transferType: "elevenlabs" | "human") => {
+    const sid = currentCallSidRef.current || activeCallSid;
+    if (!sid) {
+      toast.error("No active call to transfer");
+      return;
+    }
+
+    setIsTransferring(true);
+    setShowTransferPicker(false);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("transfer-campaign-call", {
+        body: {
+          call_sid: sid,
+          transfer_type: transferType,
+          queue_item_id: currentItem?.id,
+          campaign_id: campaignId,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Call transferred to ${transferType === "elevenlabs" ? "AI Agent" : "Human Agent"}`);
+
+      // Disconnect local call leg
+      stopSpeechRecognition();
+      stopRemoteAudioCapture();
+      if (device.activeCall) device.hangUp();
+
+      currentCallSidRef.current = null;
+      setCallStartedAt(null);
+      setIsDialing(false);
+      setIsTransferring(false);
+
+      // Auto-advance to next queued number
+      refetchQueue();
+      queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
+      queryClient.invalidateQueries({ queryKey: ["campaign-transcripts", campaignId] });
+
+      const nextQueued = queueItems.findIndex((q, i) => i > currentIndex && q.status === "queued");
+      if (nextQueued >= 0) {
+        setCurrentIndex(nextQueued);
+        setLocalTranscripts([]);
+        setActiveCallSid(null);
+        setInterimText("");
+      } else {
+        toast.info("No more numbers in queue");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error(`Transfer failed: ${message}`);
+      setIsTransferring(false);
+    }
+  }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition]);
+
+  
     if (isDialing || isOnCall) {
       toast.error("End the current call before skipping");
       return;
