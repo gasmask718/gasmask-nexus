@@ -789,27 +789,42 @@ export default function CampaignWizardPage() {
 
   const { data: transcripts } = useQuery({
     queryKey: ["campaign-transcripts", activeCampaignId, callSids],
-
     queryFn: async () => {
       if (callSids.length === 0) return [];
-
-      const { data } = await supabase
-
+      const { data } = await (supabase as any)
         .from("live_call_transcripts")
-
         .select("*")
-
         .in("call_sid", callSids)
-
         .order("created_at", { ascending: true });
-
       return data || [];
     },
-
     enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
-
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
+
+  // Fetch call recordings for this campaign's calls
+  const { data: callRecordings = [] } = useQuery({
+    queryKey: ["campaign-recordings", activeCampaignId, callSids],
+    queryFn: async () => {
+      if (callSids.length === 0) return [];
+      const { data } = await supabase
+        .from("call_recordings")
+        .select("provider_call_sid, recording_url, recording_duration, status, has_transcript")
+        .in("provider_call_sid", callSids);
+      return data || [];
+    },
+    enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
+    refetchInterval: 10000,
+  });
+
+  // Index recordings by call_sid
+  const recordingsByCall = useMemo(() => {
+    const map: Record<string, any> = {};
+    (callRecordings as any[]).forEach((r: any) => {
+      if (r.provider_call_sid) map[r.provider_call_sid.trim()] = r;
+    });
+    return map;
+  }, [callRecordings]);
 
   // Group transcripts by call_sid with enhanced speaker labels
 
