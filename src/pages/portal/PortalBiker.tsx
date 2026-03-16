@@ -23,8 +23,6 @@ export default function PortalBiker() {
   const userIdRef = useRef<string | null>(null);
   const { toast } = useToast();
 
-  // PWA Hook
-  const { canInstall, triggerInstall } = usePwaInstall();
 
   useEffect(() => {
     fetchBikerData();
