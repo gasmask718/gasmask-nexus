@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, Camera, DollarSign, Award, Navigation, Loader2, Download } from "lucide-react";
+import { MapPin, Camera, DollarSign, Award, Navigation, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
