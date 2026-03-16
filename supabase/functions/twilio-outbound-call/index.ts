@@ -45,6 +45,13 @@ Deno.serve(async (req) => {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const body = await req.json();
 
+    // Handle dry_run health checks before validation
+    if (body.dry_run) {
+      return new Response(JSON.stringify({ status: "ok", dry_run: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { queue_item_id, business_id } = body;
     if (!queue_item_id || !business_id) {
       return new Response(JSON.stringify({ error: "Missing IDs", hint: "Provide queue_item_id and business_id" }), {
