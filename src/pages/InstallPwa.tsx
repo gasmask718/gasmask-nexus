@@ -141,7 +141,7 @@ export default function InstallPwa() {
         </section>
 
         {/* Manual Install Instructions */}
-        <section className="space-y-6 pb-12">
+        <section id="manual-instructions" className="space-y-6 pb-12">
           <div className="text-center space-y-2">
             <h2 className="text-2xl font-bold text-foreground">Can't see the install button?</h2>
             <p className="text-muted-foreground">
