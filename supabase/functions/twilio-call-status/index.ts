@@ -83,7 +83,10 @@ const handler = async (req: Request): Promise<Response> => {
       const updateData: any = {};
       if (recordingUrl) updateData.recording_url = recordingUrl;
       if (recordingDuration) updateData.recording_duration = parseInt(recordingDuration, 10);
-      if (isTerminal) updateData.completed_at = new Date().toISOString();
+      if (isTerminal) {
+        updateData.completed_at = new Date().toISOString();
+        updateData.status = dbStatus;
+      }
 
       tasks.push(supabase.from("call_recordings").update(updateData).eq("provider_call_sid", effectiveSid));
     }
