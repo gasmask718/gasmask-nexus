@@ -57,6 +57,13 @@ serve(async (req: Request) => {
       });
     }
 
+    // If no valid callerId, omit the attribute so Twilio uses default
+    const callerIdAttr = callerId ? `callerId="${callerId}"` : "";
+    
+    if (!callerId) {
+      console.warn("⚠️ No valid callerId found — Twilio will use account default. Set TWILIO_PHONE_NUMBER secret.");
+    }
+
     // Build status callback URL
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
