@@ -342,46 +342,43 @@ export default function CampaignWizardPage() {
 
   const processQueue = useCallback(
     async (campaignId: string) => {
+      // Check campaign's dial_mode to choose the right function
+      const { data: campData } = await supabase
+        .from("dialer_campaigns")
+        .select("dial_mode")
+        .eq("id", campaignId)
+        .single();
+      const dialMode = (campData as any)?.dial_mode || "ai";
+
       const { data: queueItems, error: fetchErr } = await supabase
-
         .from("outbound_call_queue")
-
         .select("id, phone_number, contact_name")
-
         .eq("campaign_id", campaignId)
-
         .eq("status", "queued")
-
         .limit(1)
-
         .maybeSingle();
 
       if (fetchErr || !queueItems) return;
-
       const queueItem = queueItems;
 
       const { error: updateErr } = await supabase
-
         .from("outbound_call_queue")
-
         .update({
           status: "dialing",
-
           dialing_started_at: new Date().toISOString(),
-
           updated_at: new Date().toISOString(),
         })
-
         .eq("id", queueItem.id)
-
         .eq("status", "queued");
 
       if (updateErr) return toast.error(`Failed to lock call: ${updateErr.message}`);
 
       try {
         toast.info(`Dialing ${queueItem.contact_name || queueItem.phone_number}...`);
-
-        const response = await supabase.functions.invoke("twilio-outbound-call", {
+        
+        // Use manual call function for manual mode, AI function for ai mode
+        const fnName = dialMode === "manual" ? "twilio-manual-call" : "twilio-outbound-call";
+        const response = await supabase.functions.invoke(fnName, {
           body: { queue_item_id: queueItem.id, business_id: effectiveBizId },
         });
 
@@ -389,23 +386,16 @@ export default function CampaignWizardPage() {
           throw new Error(response.error?.message || response.data?.error);
       } catch (err: any) {
         console.error("Dispatcher Exception:", err);
-
         toast.error(`Call logic failed: ${err.message}`);
-
         await supabase
-
           .from("outbound_call_queue")
-
           .update({ status: "failed", updated_at: new Date().toISOString() })
-
           .eq("id", queueItem.id);
       }
 
       queryClient.invalidateQueries({ queryKey: ["campaign-calls", campaignId] });
-
       queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
     },
-
     [effectiveBizId, queryClient],
   );
 
