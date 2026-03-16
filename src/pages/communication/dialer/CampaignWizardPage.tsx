@@ -85,12 +85,14 @@ interface AudienceRow {
 
 interface Campaign {
   id: string;
-
   name: string;
-
   status: "active" | "paused" | "completed" | "draft";
-
-  dial_mode: "ai"; // Forced to AI
+  dial_mode: "ai" | "manual";
+  created_at: string;
+  initial_script: string;
+  agent_id: string;
+  business_id: string;
+}
 
   created_at: string;
 
