@@ -821,6 +821,16 @@ export function ManualCampaignCallModal({
                 {device.isMuted ? "Unmute" : "Mute"}
               </Button>
               <Button
+                onClick={() => setShowTransferPicker(true)}
+                variant="outline"
+                size="lg"
+                className="gap-2"
+                disabled={isTransferring}
+              >
+                {isTransferring ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRightLeft className="h-4 w-4" />}
+                {isTransferring ? "Transferring..." : "Transfer"}
+              </Button>
+              <Button
                 onClick={endCall}
                 variant="destructive"
                 size="lg"
@@ -832,6 +842,43 @@ export function ManualCampaignCallModal({
             </>
           )}
         </div>
+
+        {/* Transfer Picker */}
+        {showTransferPicker && (
+          <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+            <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                onClick={() => handleTransfer("elevenlabs")}
+                disabled={isTransferring}
+              >
+                <Bot className="h-5 w-5 text-primary" />
+                <span className="text-xs font-semibold">AI Agent</span>
+                <span className="text-[10px] text-muted-foreground">ElevenLabs</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                onClick={() => handleTransfer("human")}
+                disabled={isTransferring}
+              >
+                <UserCheck className="h-5 w-5 text-primary" />
+                <span className="text-xs font-semibold">Human Agent</span>
+                <span className="text-[10px] text-muted-foreground">Google Voice</span>
+              </Button>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => setShowTransferPicker(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        )}
 
         {!device.isReady && (
           <p className="text-xs text-destructive text-center">
