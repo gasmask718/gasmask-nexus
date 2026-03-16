@@ -750,7 +750,7 @@ export default function CampaignWizardPage() {
       return (data as unknown as Campaign[]) || [];
     },
 
-    enabled: viewMode === "console" && !!effectiveBizId,
+    enabled: !!effectiveBizId,
   });
 
   const { data: callItems, isLoading: callsLoading } = useQuery({
