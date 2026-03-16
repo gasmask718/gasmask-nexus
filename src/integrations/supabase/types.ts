@@ -9975,13 +9975,17 @@ export type Database = {
           email: string | null
           id: string
           launched_at: string | null
+          lead_id: string | null
           logo_url: string | null
           maintenance_status: string | null
           monthly_recurring: number | null
+          onboarding_checklist: Json | null
           onboarding_status: string | null
           owner_name: string | null
           phone: string | null
+          portal_access_enabled: boolean | null
           project_deadline: string | null
+          proposal_id: string | null
           qualified_lead_id: string | null
           service_areas: string[] | null
           services_offered: string[] | null
@@ -10001,13 +10005,17 @@ export type Database = {
           email?: string | null
           id?: string
           launched_at?: string | null
+          lead_id?: string | null
           logo_url?: string | null
           maintenance_status?: string | null
           monthly_recurring?: number | null
+          onboarding_checklist?: Json | null
           onboarding_status?: string | null
           owner_name?: string | null
           phone?: string | null
+          portal_access_enabled?: boolean | null
           project_deadline?: string | null
+          proposal_id?: string | null
           qualified_lead_id?: string | null
           service_areas?: string[] | null
           services_offered?: string[] | null
@@ -10027,13 +10035,17 @@ export type Database = {
           email?: string | null
           id?: string
           launched_at?: string | null
+          lead_id?: string | null
           logo_url?: string | null
           maintenance_status?: string | null
           monthly_recurring?: number | null
+          onboarding_checklist?: Json | null
           onboarding_status?: string | null
           owner_name?: string | null
           phone?: string | null
+          portal_access_enabled?: boolean | null
           project_deadline?: string | null
+          proposal_id?: string | null
           qualified_lead_id?: string | null
           service_areas?: string[] | null
           services_offered?: string[] | null
@@ -10043,6 +10055,20 @@ export type Database = {
           website_package_price?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "brandaro_clients_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_clients_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_proposals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "brandaro_clients_qualified_lead_id_fkey"
             columns: ["qualified_lead_id"]
@@ -10097,6 +10123,10 @@ export type Database = {
           created_at: string
           delivery_method: string | null
           demo_url: string | null
+          durable_generated_url: string | null
+          durable_job_status: string | null
+          durable_last_error: string | null
+          durable_screenshot_url: string | null
           durable_site_id: string | null
           engine_status: string
           generated_html: string | null
@@ -10108,10 +10138,14 @@ export type Database = {
           last_viewed_at: string | null
           lead_id: string
           preview_image: string | null
+          public_status: string | null
+          published_at: string | null
+          published_version: number | null
           screenshot_url: string | null
           sent_at: string | null
           seo_text: string | null
           services_inferred: string[] | null
+          slug: string | null
           state: string | null
           template_used: string | null
           updated_at: string
@@ -10123,6 +10157,10 @@ export type Database = {
           created_at?: string
           delivery_method?: string | null
           demo_url?: string | null
+          durable_generated_url?: string | null
+          durable_job_status?: string | null
+          durable_last_error?: string | null
+          durable_screenshot_url?: string | null
           durable_site_id?: string | null
           engine_status?: string
           generated_html?: string | null
@@ -10134,10 +10172,14 @@ export type Database = {
           last_viewed_at?: string | null
           lead_id: string
           preview_image?: string | null
+          public_status?: string | null
+          published_at?: string | null
+          published_version?: number | null
           screenshot_url?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
+          slug?: string | null
           state?: string | null
           template_used?: string | null
           updated_at?: string
@@ -10149,6 +10191,10 @@ export type Database = {
           created_at?: string
           delivery_method?: string | null
           demo_url?: string | null
+          durable_generated_url?: string | null
+          durable_job_status?: string | null
+          durable_last_error?: string | null
+          durable_screenshot_url?: string | null
           durable_site_id?: string | null
           engine_status?: string
           generated_html?: string | null
@@ -10160,10 +10206,14 @@ export type Database = {
           last_viewed_at?: string | null
           lead_id?: string
           preview_image?: string | null
+          public_status?: string | null
+          published_at?: string | null
+          published_version?: number | null
           screenshot_url?: string | null
           sent_at?: string | null
           seo_text?: string | null
           services_inferred?: string[] | null
+          slug?: string | null
           state?: string | null
           template_used?: string | null
           updated_at?: string
@@ -10285,6 +10335,115 @@ export type Database = {
           },
         ]
       }
+      brandaro_job_failures: {
+        Row: {
+          attempt_count: number | null
+          created_at: string | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          job_type: string
+          last_error: string | null
+          resolved_at: string | null
+          retry_at: string | null
+          status: string | null
+        }
+        Insert: {
+          attempt_count?: number | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          job_type: string
+          last_error?: string | null
+          resolved_at?: string | null
+          retry_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          attempt_count?: number | null
+          created_at?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          job_type?: string
+          last_error?: string | null
+          resolved_at?: string | null
+          retry_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_message_log: {
+        Row: {
+          channel: string
+          created_at: string | null
+          demo_id: string | null
+          destination: string
+          failure_reason: string | null
+          id: string
+          lead_id: string | null
+          message_body: string | null
+          proposal_id: string | null
+          provider: string | null
+          provider_message_id: string | null
+          send_status: string
+          sent_at: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string | null
+          demo_id?: string | null
+          destination: string
+          failure_reason?: string | null
+          id?: string
+          lead_id?: string | null
+          message_body?: string | null
+          proposal_id?: string | null
+          provider?: string | null
+          provider_message_id?: string | null
+          send_status?: string
+          sent_at?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          demo_id?: string | null
+          destination?: string
+          failure_reason?: string | null
+          id?: string
+          lead_id?: string | null
+          message_body?: string | null
+          proposal_id?: string | null
+          provider?: string | null
+          provider_message_id?: string | null
+          send_status?: string
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_message_log_demo_id_fkey"
+            columns: ["demo_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_message_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_message_log_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_projects: {
         Row: {
           assigned_ai_agent: string | null
@@ -10386,9 +10545,14 @@ export type Database = {
           lead_id: string
           notes: string | null
           package_tier: string
+          paid_amount: number | null
+          paid_at: string | null
+          payment_status: string | null
           proposal_url: string | null
           sent_at: string | null
           status: string
+          stripe_checkout_id: string | null
+          stripe_session_url: string | null
           total_price: number | null
           tracking_token: string
           updated_at: string
@@ -10405,9 +10569,14 @@ export type Database = {
           lead_id: string
           notes?: string | null
           package_tier?: string
+          paid_amount?: number | null
+          paid_at?: string | null
+          payment_status?: string | null
           proposal_url?: string | null
           sent_at?: string | null
           status?: string
+          stripe_checkout_id?: string | null
+          stripe_session_url?: string | null
           total_price?: number | null
           tracking_token?: string
           updated_at?: string
@@ -10424,9 +10593,14 @@ export type Database = {
           lead_id?: string
           notes?: string | null
           package_tier?: string
+          paid_amount?: number | null
+          paid_at?: string | null
+          payment_status?: string | null
           proposal_url?: string | null
           sent_at?: string | null
           status?: string
+          stripe_checkout_id?: string | null
+          stripe_session_url?: string | null
           total_price?: number | null
           tracking_token?: string
           updated_at?: string
@@ -10463,6 +10637,7 @@ export type Database = {
           demo_link: string | null
           demo_sent_at: string | null
           demo_status: string | null
+          engagement_score: number | null
           id: string
           industry: string | null
           last_call_at: string | null
@@ -10493,6 +10668,7 @@ export type Database = {
           demo_link?: string | null
           demo_sent_at?: string | null
           demo_status?: string | null
+          engagement_score?: number | null
           id?: string
           industry?: string | null
           last_call_at?: string | null
@@ -10523,6 +10699,7 @@ export type Database = {
           demo_link?: string | null
           demo_sent_at?: string | null
           demo_status?: string | null
+          engagement_score?: number | null
           id?: string
           industry?: string | null
           last_call_at?: string | null
@@ -10635,6 +10812,7 @@ export type Database = {
           service_type: string
           started_at: string | null
           status: string
+          stripe_customer_id: string | null
           stripe_subscription_id: string | null
           updated_at: string
         }
@@ -10649,6 +10827,7 @@ export type Database = {
           service_type: string
           started_at?: string | null
           status?: string
+          stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
         }
@@ -10663,6 +10842,7 @@ export type Database = {
           service_type?: string
           started_at?: string | null
           status?: string
+          stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           updated_at?: string
         }
@@ -10676,6 +10856,76 @@ export type Database = {
           },
           {
             foreignKeyName: "brandaro_subscriptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_tasks: {
+        Row: {
+          assigned_to: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          output_payload: Json | null
+          project_id: string | null
+          prompt_payload: Json | null
+          review_status: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          task_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          output_payload?: Json | null
+          project_id?: string | null
+          prompt_payload?: Json | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          task_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          output_payload?: Json | null
+          project_id?: string | null
+          prompt_payload?: Json | null
+          review_status?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          task_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "brandaro_projects"
