@@ -189,6 +189,38 @@ export default function BrandaroDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Automation Health */}
+      <Card className={pendingRetries > 0 ? "border-destructive/50" : ""}>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            {pendingRetries > 0 ? <AlertTriangle className="h-4 w-4 text-destructive" /> : <RefreshCw className="h-4 w-4 text-muted-foreground" />}
+            Automation Health
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">{messagesSent}</p>
+              <p className="text-xs text-muted-foreground">Messages Sent</p>
+            </div>
+            <div className="text-center">
+              <p className={`text-2xl font-bold ${messagesFailed > 0 ? 'text-destructive' : 'text-foreground'}`}>{messagesFailed}</p>
+              <p className="text-xs text-muted-foreground">Send Failures</p>
+            </div>
+            <div className="text-center">
+              <p className={`text-2xl font-bold ${pendingRetries > 0 ? 'text-destructive' : 'text-foreground'}`}>{pendingRetries}</p>
+              <p className="text-xs text-muted-foreground">Pending Retries</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold text-foreground">
+                {pendingRetries === 0 && messagesFailed === 0 ? '✅' : '⚠️'}
+              </p>
+              <p className="text-xs text-muted-foreground">System Status</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
