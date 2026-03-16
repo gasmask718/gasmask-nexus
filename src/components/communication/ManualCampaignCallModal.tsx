@@ -402,8 +402,10 @@ export function ManualCampaignCallModal({
             .eq("id", currentItem.id)
             .then(() => refetchQueue());
           
-          // Start capturing speech
+          // Start capturing speech (user's mic)
           startSpeechRecognition();
+          // Start capturing remote party audio for transcription
+          startRemoteAudioCapture(call);
         });
 
         call.on("disconnect", () => {
