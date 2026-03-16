@@ -10052,6 +10052,340 @@ export type Database = {
           },
         ]
       }
+      brandaro_demo_events: {
+        Row: {
+          created_at: string
+          demo_id: string
+          event_data: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          demo_id: string
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          demo_id?: string
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_demo_events_demo_id_fkey"
+            columns: ["demo_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_demo_sites: {
+        Row: {
+          business_name: string
+          city: string | null
+          created_at: string
+          delivery_method: string | null
+          demo_url: string | null
+          generation_status: string
+          id: string
+          industry: string | null
+          last_viewed_at: string | null
+          lead_id: string
+          screenshot_url: string | null
+          sent_at: string | null
+          seo_text: string | null
+          services_inferred: string[] | null
+          state: string | null
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          business_name: string
+          city?: string | null
+          created_at?: string
+          delivery_method?: string | null
+          demo_url?: string | null
+          generation_status?: string
+          id?: string
+          industry?: string | null
+          last_viewed_at?: string | null
+          lead_id: string
+          screenshot_url?: string | null
+          sent_at?: string | null
+          seo_text?: string | null
+          services_inferred?: string[] | null
+          state?: string | null
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          business_name?: string
+          city?: string | null
+          created_at?: string
+          delivery_method?: string | null
+          demo_url?: string | null
+          generation_status?: string
+          id?: string
+          industry?: string | null
+          last_viewed_at?: string | null
+          lead_id?: string
+          screenshot_url?: string | null
+          sent_at?: string | null
+          seo_text?: string | null
+          services_inferred?: string[] | null
+          state?: string | null
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_demo_sites_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_followups: {
+        Row: {
+          channel: string
+          created_at: string
+          demo_id: string | null
+          id: string
+          lead_id: string
+          message_template: string | null
+          proposal_id: string | null
+          scheduled_at: string
+          sent_at: string | null
+          sequence_step: number
+          status: string
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          demo_id?: string | null
+          id?: string
+          lead_id: string
+          message_template?: string | null
+          proposal_id?: string | null
+          scheduled_at: string
+          sent_at?: string | null
+          sequence_step?: number
+          status?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          demo_id?: string | null
+          id?: string
+          lead_id?: string
+          message_template?: string | null
+          proposal_id?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          sequence_step?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_followups_demo_id_fkey"
+            columns: ["demo_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_followups_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_projects: {
+        Row: {
+          assigned_ai_agent: string | null
+          assigned_builder: string | null
+          build_status: string
+          client_id: string
+          created_at: string
+          deadline: string | null
+          demo_id: string | null
+          domain: string | null
+          hosting_status: string | null
+          id: string
+          launched_at: string | null
+          lead_id: string | null
+          package_tier: string
+          project_name: string
+          proposal_id: string | null
+          ssl_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_ai_agent?: string | null
+          assigned_builder?: string | null
+          build_status?: string
+          client_id: string
+          created_at?: string
+          deadline?: string | null
+          demo_id?: string | null
+          domain?: string | null
+          hosting_status?: string | null
+          id?: string
+          launched_at?: string | null
+          lead_id?: string | null
+          package_tier?: string
+          project_name: string
+          proposal_id?: string | null
+          ssl_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_ai_agent?: string | null
+          assigned_builder?: string | null
+          build_status?: string
+          client_id?: string
+          created_at?: string
+          deadline?: string | null
+          demo_id?: string | null
+          domain?: string | null
+          hosting_status?: string | null
+          id?: string
+          launched_at?: string | null
+          lead_id?: string | null
+          package_tier?: string
+          project_name?: string
+          proposal_id?: string | null
+          ssl_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_projects_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_projects_demo_id_fkey"
+            columns: ["demo_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_projects_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_projects_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_proposals: {
+        Row: {
+          accepted_at: string | null
+          addons: Json | null
+          base_price: number
+          created_at: string
+          demo_id: string | null
+          id: string
+          last_viewed_at: string | null
+          lead_id: string
+          notes: string | null
+          package_tier: string
+          proposal_url: string | null
+          sent_at: string | null
+          status: string
+          total_price: number | null
+          tracking_token: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          accepted_at?: string | null
+          addons?: Json | null
+          base_price?: number
+          created_at?: string
+          demo_id?: string | null
+          id?: string
+          last_viewed_at?: string | null
+          lead_id: string
+          notes?: string | null
+          package_tier?: string
+          proposal_url?: string | null
+          sent_at?: string | null
+          status?: string
+          total_price?: number | null
+          tracking_token?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          accepted_at?: string | null
+          addons?: Json | null
+          base_price?: number
+          created_at?: string
+          demo_id?: string | null
+          id?: string
+          last_viewed_at?: string | null
+          lead_id?: string
+          notes?: string | null
+          package_tier?: string
+          proposal_url?: string | null
+          sent_at?: string | null
+          status?: string
+          total_price?: number | null
+          tracking_token?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_proposals_demo_id_fkey"
+            columns: ["demo_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_proposals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_qualified_leads: {
         Row: {
           assigned_va: string | null
@@ -10225,6 +10559,66 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      brandaro_subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          client_id: string
+          created_at: string
+          id: string
+          monthly_fee: number
+          next_billing_at: string | null
+          project_id: string | null
+          service_type: string
+          started_at: string | null
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          monthly_fee: number
+          next_billing_at?: string | null
+          project_id?: string | null
+          service_type: string
+          started_at?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          monthly_fee?: number
+          next_billing_at?: string | null
+          project_id?: string | null
+          service_type?: string
+          started_at?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_subscriptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brands: {
         Row: {
