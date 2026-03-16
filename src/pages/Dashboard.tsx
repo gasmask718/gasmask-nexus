@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { CommunicationWidget } from '@/components/communication/CommunicationWidget';
 import { useSimulationMode, SimulationBadge } from '@/contexts/SimulationModeContext';
 import { getSimulationDashboardStats } from '@/lib/simulation/coreSimulationData';
-import { usePwaInstall } from '@/hooks/usePwaInstall';
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 import {
   Store, 
   TrendingUp, 
@@ -13,7 +13,6 @@ import {
   AlertCircle,
   Package,
   Users,
-  Download
 } from 'lucide-react';
 
 interface Stats {
