@@ -742,13 +742,10 @@ export default function CampaignWizardPage() {
 
     queryFn: async () => {
       const { data } = await supabase
-
         .from("dialer_campaigns")
-
         .select("*")
-
         .eq("business_id", effectiveBizId!)
-
+        .is("archived_at" as any, null)
         .order("created_at", { ascending: false });
 
       return (data as unknown as Campaign[]) || [];
