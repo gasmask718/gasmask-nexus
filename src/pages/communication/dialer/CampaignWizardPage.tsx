@@ -56,6 +56,8 @@ import {
   Square,
   X,
   UserPlus,
+  Trash2,
+  ArrowRightLeft,
 } from "lucide-react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -256,6 +258,8 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
   bridged: { label: "Connected", color: "bg-green-500/15 text-green-600 dark:text-green-400", icon: PhoneForwarded },
   completed: { label: "Completed", color: "bg-green-500/10 text-green-600 dark:text-green-500", icon: CheckCircle2 },
 
+  transferred: { label: "Transferred", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400", icon: PhoneForwarded },
+
   no_answer: { label: "No Answer", color: "bg-amber-500/15 text-amber-600", icon: XCircle },
 
   failed: { label: "Failed", color: "bg-destructive/15 text-destructive", icon: XCircle },
@@ -303,6 +307,8 @@ export default function CampaignWizardPage() {
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
 
   const [isManualCallModalOpen, setIsManualCallModalOpen] = useState(false);
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<Set<string>>(new Set());
+  const [isArchiving, setIsArchiving] = useState(false);
 
   const [step, setStep] = useState(0);
 
@@ -738,13 +744,10 @@ export default function CampaignWizardPage() {
 
     queryFn: async () => {
       const { data } = await supabase
-
         .from("dialer_campaigns")
-
         .select("*")
-
         .eq("business_id", effectiveBizId!)
-
+        .is("archived_at" as any, null)
         .order("created_at", { ascending: false });
 
       return (data as unknown as Campaign[]) || [];
@@ -888,12 +891,61 @@ export default function CampaignWizardPage() {
                 <LayoutDashboard className="h-5 w-5 text-primary" /> History
               </CardTitle>
 
-              <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
-                <Plus className="h-3.5 w-3.5" /> New
-              </Button>
+              <div className="flex gap-1">
+                {selectedCampaignIds.size > 0 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="gap-1 h-8"
+                    disabled={isArchiving}
+                    onClick={async () => {
+                      setIsArchiving(true);
+                      try {
+                        const ids = Array.from(selectedCampaignIds);
+                        for (const id of ids) {
+                          await supabase
+                            .from("dialer_campaigns")
+                            .update({ archived_at: new Date().toISOString(), status: "completed" } as any)
+                            .eq("id", id);
+                        }
+                        toast.success(`Archived ${ids.length} campaign(s)`);
+                        setSelectedCampaignIds(new Set());
+                        if (selectedCampaignIds.has(activeCampaignId || "")) setActiveCampaignId(null);
+                        queryClient.invalidateQueries({ queryKey: ["dialer-campaigns"] });
+                      } catch (e: any) {
+                        toast.error(`Archive failed: ${e.message}`);
+                      } finally {
+                        setIsArchiving(false);
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Archive ({selectedCampaignIds.size})
+                  </Button>
+                )}
+                <Button size="sm" variant="outline" onClick={() => setViewMode("wizard")} className="gap-1 h-8">
+                  <Plus className="h-3.5 w-3.5" /> New
+                </Button>
+              </div>
             </div>
 
-            <CardDescription>Select campaign to monitor</CardDescription>
+            <div className="flex items-center justify-between">
+              <CardDescription>Select campaign to monitor</CardDescription>
+              {campaignsList && campaignsList.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <Checkbox
+                    checked={campaignsList.length > 0 && campaignsList.every((c) => selectedCampaignIds.has(c.id))}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedCampaignIds(new Set(campaignsList.map((c) => c.id)));
+                      } else {
+                        setSelectedCampaignIds(new Set());
+                      }
+                    }}
+                  />
+                  <span className="text-xs text-muted-foreground">All</span>
+                </div>
+              )}
+            </div>
           </CardHeader>
 
           <CardContent className="p-0 flex-1">
@@ -903,29 +955,45 @@ export default function CampaignWizardPage() {
                   <p className="p-4 text-center text-sm text-muted-foreground">No campaigns yet.</p>
                 ) : (
                   campaignsList.map((c) => (
-                    <button
+                    <div
                       key={c.id}
-                      onClick={() => setActiveCampaignId(c.id)}
-                      className={`flex flex-col items-start gap-1 p-3 rounded-lg text-left transition-all border ${activeCampaignId === c.id ? "bg-primary/10 border-primary shadow-sm text-primary" : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"}`}
+                      className={`flex items-start gap-2 p-3 rounded-lg text-left transition-all border ${activeCampaignId === c.id ? "bg-primary/10 border-primary shadow-sm text-primary" : "hover:bg-muted/50 border-transparent hover:border-border text-foreground"}`}
                     >
-                      <div className="flex w-full justify-between items-center">
-                        <span className="font-semibold text-sm truncate">{c.name}</span>
+                      <Checkbox
+                        checked={selectedCampaignIds.has(c.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedCampaignIds((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(c.id);
+                            else next.delete(c.id);
+                            return next;
+                          });
+                        }}
+                        className="mt-0.5"
+                      />
+                      <button
+                        onClick={() => setActiveCampaignId(c.id)}
+                        className="flex-1 flex flex-col items-start gap-1"
+                      >
+                        <div className="flex w-full justify-between items-center">
+                          <span className="font-semibold text-sm truncate">{c.name}</span>
 
-                        <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
-                          {c.status}
-                        </Badge>
-                      </div>
+                          <Badge variant={c.status === "active" ? "default" : "secondary"} className="text-[10px] h-5">
+                            {c.status}
+                          </Badge>
+                        </div>
 
-                      <div className="flex w-full justify-between items-center mt-1">
-                        <span className="text-xs text-muted-foreground">
-                          {format(new Date(c.created_at), "MMM d, h:mm a")}
-                        </span>
+                        <div className="flex w-full justify-between items-center mt-1">
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(c.created_at), "MMM d, h:mm a")}
+                          </span>
 
-                        <Badge variant="outline" className="text-[9px] h-4 px-1">
-                          AI Agent
-                        </Badge>
-                      </div>
-                    </button>
+                          <Badge variant="outline" className="text-[9px] h-4 px-1">
+                            {(c as any).dial_mode === "manual" ? "Manual" : "AI Agent"}
+                          </Badge>
+                        </div>
+                      </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -1081,11 +1149,11 @@ export default function CampaignWizardPage() {
                       <p className="text-center text-sm text-muted-foreground py-8">
                         No calls yet. Launch a campaign to see transcripts.
                       </p>
-                    ) : callItems.filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status)).length === 0 ? (
+                    ) : callItems.filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected", "transferred"].includes(i.status)).length === 0 ? (
                       <p className="text-center text-sm text-muted-foreground py-8">Waiting for calls to connect...</p>
                     ) : (
                       callItems
-                        .filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected"].includes(i.status))
+                        .filter((i: any) => i.twilio_call_sid || ["completed", "failed", "no_answer", "connected", "transferred"].includes(i.status))
                         .map((item: any) => {
                           const sid = item.twilio_call_sid?.trim();
                           const msgs = sid ? (transcriptsByCall[sid] || []) : [];
@@ -1098,6 +1166,12 @@ export default function CampaignWizardPage() {
                                   <Phone className="h-4 w-4 text-muted-foreground" />
                                   <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
                                   <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
+                                  {item.status === "transferred" && (
+                                    <Badge variant="outline" className="gap-1 text-[10px] h-5 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10">
+                                      <ArrowRightLeft className="h-3 w-3" />
+                                      Transferred
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {recording?.recording_duration && (
@@ -1132,21 +1206,37 @@ export default function CampaignWizardPage() {
                                   </div>
                                 ) : (
                                   <>
-                                    {msgs.map((msg: any, idx: number) => (
-                                      <div
-                                        key={idx}
-                                        className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
-                                      >
+                                    {msgs.map((msg: any, idx: number) => {
+                                      const isSystem = msg.speaker === "system";
+                                      const isTransfer = isSystem && msg.text.includes("[TRANSFER") || msg.text.includes("transferring");
+                                      
+                                      if (isSystem) {
+                                        return (
+                                          <div key={idx} className="flex justify-center">
+                                            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-medium ${isTransfer ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" : "bg-muted text-muted-foreground"}`}>
+                                              {isTransfer && <ArrowRightLeft className="h-3 w-3" />}
+                                              {msg.text.replace(/\[|\]/g, "")}
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+                                      
+                                      return (
                                         <div
-                                          className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                          key={idx}
+                                          className={`flex gap-2 text-xs ${msg.speaker === "ai" || msg.speaker === "human" ? "justify-start" : "justify-end"}`}
                                         >
-                                          <span className="font-semibold capitalize text-[10px] text-muted-foreground">
-                                            {msg.speaker === "ai" ? "Agent" : "Caller"}
-                                          </span>
-                                          <p className="mt-0.5">{msg.text}</p>
+                                          <div
+                                            className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" || msg.speaker === "human" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                          >
+                                            <span className="font-semibold capitalize text-[10px] text-muted-foreground">
+                                              {msg.speaker === "ai" ? "AI Agent" : msg.speaker === "human" ? "Human Agent" : "Caller"}
+                                            </span>
+                                            <p className="mt-0.5">{msg.text}</p>
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                     {recording?.recording_url && (
                                       <a
                                         href={recording.recording_url}

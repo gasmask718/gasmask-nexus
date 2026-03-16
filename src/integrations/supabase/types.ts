@@ -21538,6 +21538,7 @@ export type Database = {
           amd_mode: string | null
           amd_timeout_seconds: number | null
           answered_calls: number | null
+          archived_at: string | null
           auto_pause_reason: string | null
           auto_paused: boolean | null
           business_id: string
@@ -21567,6 +21568,7 @@ export type Database = {
           amd_mode?: string | null
           amd_timeout_seconds?: number | null
           answered_calls?: number | null
+          archived_at?: string | null
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
           business_id: string
@@ -21596,6 +21598,7 @@ export type Database = {
           amd_mode?: string | null
           amd_timeout_seconds?: number | null
           answered_calls?: number | null
+          archived_at?: string | null
           auto_pause_reason?: string | null
           auto_paused?: boolean | null
           business_id?: string
