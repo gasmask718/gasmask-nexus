@@ -1206,21 +1206,37 @@ export default function CampaignWizardPage() {
                                   </div>
                                 ) : (
                                   <>
-                                    {msgs.map((msg: any, idx: number) => (
-                                      <div
-                                        key={idx}
-                                        className={`flex gap-2 text-xs ${msg.speaker === "ai" ? "justify-start" : "justify-end"}`}
-                                      >
+                                    {msgs.map((msg: any, idx: number) => {
+                                      const isSystem = msg.speaker === "system";
+                                      const isTransfer = isSystem && msg.text.includes("[TRANSFER") || msg.text.includes("transferring");
+                                      
+                                      if (isSystem) {
+                                        return (
+                                          <div key={idx} className="flex justify-center">
+                                            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-medium ${isTransfer ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20" : "bg-muted text-muted-foreground"}`}>
+                                              {isTransfer && <ArrowRightLeft className="h-3 w-3" />}
+                                              {msg.text.replace(/\[|\]/g, "")}
+                                            </div>
+                                          </div>
+                                        );
+                                      }
+                                      
+                                      return (
                                         <div
-                                          className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                          key={idx}
+                                          className={`flex gap-2 text-xs ${msg.speaker === "ai" || msg.speaker === "human" ? "justify-start" : "justify-end"}`}
                                         >
-                                          <span className="font-semibold capitalize text-[10px] text-muted-foreground">
-                                            {msg.speaker === "ai" ? "Agent" : "Caller"}
-                                          </span>
-                                          <p className="mt-0.5">{msg.text}</p>
+                                          <div
+                                            className={`max-w-[80%] rounded-lg px-3 py-1.5 ${msg.speaker === "ai" || msg.speaker === "human" ? "bg-primary/10 text-foreground" : "bg-muted text-foreground"}`}
+                                          >
+                                            <span className="font-semibold capitalize text-[10px] text-muted-foreground">
+                                              {msg.speaker === "ai" ? "AI Agent" : msg.speaker === "human" ? "Human Agent" : "Caller"}
+                                            </span>
+                                            <p className="mt-0.5">{msg.text}</p>
+                                          </div>
                                         </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                     {recording?.recording_url && (
                                       <a
                                         href={recording.recording_url}
