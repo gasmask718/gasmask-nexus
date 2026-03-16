@@ -89,6 +89,8 @@ export function ManualCampaignCallModal({
   const [localTranscripts, setLocalTranscripts] = useState<TranscriptLine[]>([]);
   const [interimText, setInterimText] = useState("");
   const [activeCallSid, setActiveCallSid] = useState<string | null>(null);
+  const [showTransferPicker, setShowTransferPicker] = useState(false);
+  const [isTransferring, setIsTransferring] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
