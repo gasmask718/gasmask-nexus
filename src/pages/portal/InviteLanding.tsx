@@ -6,18 +6,23 @@ import { getRoleRedirectPath, type OSRole } from '@/config/osNavigation';
 import { Loader2, CheckCircle2, XCircle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 
-/**
- * InviteLanding — /portal/invite/:token
- * Handles secure invite redemption for new ops users
- */
 export default function InviteLanding() {
   const { token } = useParams<{ token: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { canInstall, triggerInstall } = usePwaInstall();
   const [status, setStatus] = useState<'checking' | 'needs_login' | 'redeeming' | 'success' | 'error'>('checking');
   const [error, setError] = useState<string | null>(null);
   const [assignedRole, setAssignedRole] = useState<string | null>(null);
+
+  // Auto-trigger PWA install when landing on invite page
+  useEffect(() => {
+    if (canInstall) {
+      triggerInstall();
+    }
+  }, [canInstall, triggerInstall]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -54,7 +59,6 @@ export default function InviteLanding() {
         setStatus('success');
         toast.success(`Welcome! You've been assigned the ${data.role} role.`);
 
-        // Redirect after brief delay
         setTimeout(() => {
           const path = getRoleRedirectPath(data.role as OSRole);
           navigate(path, { replace: true });
@@ -70,7 +74,6 @@ export default function InviteLanding() {
   };
 
   const handleLogin = () => {
-    // Store invite token so we can resume after login
     if (token) {
       sessionStorage.setItem('pending_invite_token', token);
     }
@@ -80,7 +83,6 @@ export default function InviteLanding() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="text-center space-y-6 max-w-sm w-full">
-        {/* Logo */}
         <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
           <Shield className="h-8 w-8 text-primary" />
         </div>
