@@ -114,19 +114,12 @@ export default function InstallPwa() {
             <Button
               size="lg"
               onClick={handleInstall}
-              disabled={!canInstall}
               className="gap-2.5 text-lg px-10 py-6 h-auto font-bold shadow-lg"
             >
               <Download className="h-5 w-5" />
-              {canInstall ? 'Install GASMASK' : 'Install GASMASK'}
+              Install GASMASK
             </Button>
-          )}
-
-          {!canInstall && !isInstalled && !isStandalone && (
-            <p className="text-sm text-muted-foreground">
-              Your browser may not support automatic install. See manual instructions below.
-            </p>
-          )}
+          )
         </section>
 
         {/* Features Grid */}
