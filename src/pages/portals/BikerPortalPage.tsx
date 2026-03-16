@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useResolvedData } from "@/hooks/useResolvedData";
 import { useSimulationMode, SimulationBadge } from "@/contexts/SimulationModeContext";
-import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { PwaInstallBanner } from "@/components/pwa/PwaInstallBanner";
 
 // Simulation data
 const SIMULATION_TASKS = [
@@ -112,7 +112,7 @@ const SIMULATION_ACTIVITY: ActivityItem[] = [
 function BikerPortalContent() {
   const navigate = useNavigate();
   const { simulationMode } = useSimulationMode();
-  const { canInstall, triggerInstall } = usePwaInstall();
+  
   const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
 
   const { data: tasks, isSimulated: tasksSimulated } = useResolvedData([], SIMULATION_TASKS);
@@ -139,28 +139,8 @@ function BikerPortalContent() {
       ]}
     >
       <div className="space-y-6">
-        {/* PWA Install Button — Mobile Optimized */}
-        <Card className="glass-card border-primary/30 bg-primary/5">
-          <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 p-6">
-            <div className="space-y-1 text-center sm:text-left">
-              <h3 className="text-lg font-bold text-foreground">Install Biker App</h3>
-              <p className="text-sm text-muted-foreground">
-                {canInstall
-                  ? "Add to home screen for offline maps & quick access."
-                  : 'Open in Safari (iOS) or Chrome (Android) and use "Add to Home Screen".'}
-              </p>
-            </div>
-            <Button
-              onClick={canInstall ? triggerInstall : undefined}
-              disabled={!canInstall}
-              size="lg"
-              className="gap-2 shrink-0 min-w-[200px]"
-            >
-              <Download className="h-5 w-5" />
-              {canInstall ? "Install Now" : "Install via Browser Menu"}
-            </Button>
-          </CardContent>
-        </Card>
+        {/* PWA Install */}
+        <PwaInstallBanner appName="Biker" />
 
         {/* Command Center KPIs */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
