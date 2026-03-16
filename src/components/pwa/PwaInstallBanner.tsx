@@ -24,12 +24,7 @@ export function PwaInstallBanner({ appName = 'GASMASK' }: PwaInstallBannerProps)
     }
   }, []);
 
-  // Auto-trigger install prompt on mount when available
-  useEffect(() => {
-    if (canInstall) {
-      triggerInstall();
-    }
-  }, [canInstall, triggerInstall]);
+  // No auto-trigger — wait for user to click "Install Now"
 
   // Don't show banner if installed or running as PWA
   if (isInstalled || isStandalone) {
