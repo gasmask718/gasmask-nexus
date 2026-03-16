@@ -947,6 +947,17 @@ export default function CampaignWizardPage() {
               </div>
 
               <div className="flex gap-2">
+                {/* Manual cold call button */}
+                {(activeCampaign as any)?.dial_mode === "manual" && activeCampaign?.status !== "completed" && (
+                  <Button
+                    size="sm"
+                    className="gap-1 bg-green-600 hover:bg-green-700 text-white"
+                    onClick={() => setIsManualCallModalOpen(true)}
+                  >
+                    <Phone className="h-4 w-4" /> Start Calling
+                  </Button>
+                )}
+
                 {activeCampaign?.status === "active" ? (
                   <Button variant="outline" size="sm" onClick={() => updateCampaignStatus("paused")}>
                     <Pause className="h-4 w-4 mr-1" /> Pause
