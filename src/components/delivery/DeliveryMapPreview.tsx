@@ -48,16 +48,17 @@ export function DeliveryMapPreview({
     if (!bikerId && !driverId) return;
 
     const fetchWorkerLocation = async () => {
-      const table = bikerId ? 'bikers' : 'drivers';
-      const workerId = bikerId || driverId;
-      
-      const { data: worker } = await supabase
-        .from(table as any)
-        .select('user_id')
-        .eq('id', workerId!)
-        .maybeSingle();
+      let userId: string | null = null;
 
-      if (!worker?.user_id) return;
+      if (bikerId) {
+        const { data } = await supabase.from('bikers').select('user_id').eq('id', bikerId).maybeSingle();
+        userId = data?.user_id || null;
+      } else if (driverId) {
+        const { data } = await supabase.from('drivers').select('user_id').eq('id', driverId).maybeSingle();
+        userId = data?.user_id || null;
+      }
+
+      if (!userId) return;
 
       // Try drivers_live_location first
       const { data: liveRow } = await supabase
