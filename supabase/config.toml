@@ -327,3 +327,6 @@ verify_jwt = false
 
 [functions.brandaro-ai-conversation-engine]
 verify_jwt = false
+
+[functions.brandaro-closing-psychology]
+verify_jwt = false
