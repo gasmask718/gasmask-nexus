@@ -185,6 +185,7 @@ export default function VAManagerPage() {
           <TabsTrigger value="offers"><Tag className="h-3 w-3 mr-1" /> Offers</TabsTrigger>
           <TabsTrigger value="pricing"><DollarSign className="h-3 w-3 mr-1" /> Pricing</TabsTrigger>
           <TabsTrigger value="positioning"><Crosshair className="h-3 w-3 mr-1" /> Position</TabsTrigger>
+          <TabsTrigger value="decisions"><Eye className="h-3 w-3 mr-1" /> Decisions</TabsTrigger>
         </TabsList>
 
         {/* ── Escalation Queue ── */}
