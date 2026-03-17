@@ -1007,7 +1007,10 @@ export default function VAManagerPage() {
                   {personalities.map((p: any) => (
                     <div key={p.id} className={`rounded-lg border p-3 space-y-1 ${p.is_active ? 'border-primary/30 bg-primary/5' : 'border-muted opacity-60'}`}>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">{p.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{p.nickname || p.name}</span>
+                          {p.archetype && <Badge className="text-xs bg-accent/50 text-accent-foreground">{p.archetype}</Badge>}
+                        </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-xs">{p.tone}</Badge>
                           <Badge variant="secondary" className="text-xs">⚡{p.energy_level}</Badge>
@@ -1021,12 +1024,20 @@ export default function VAManagerPage() {
                           </Button>
                         </div>
                       </div>
+                      {p.name !== p.nickname && p.nickname && <p className="text-xs text-muted-foreground">{p.name}</p>}
                       <div className="flex gap-2 flex-wrap">
                         <span className="text-xs text-muted-foreground">Persuasion: {p.persuasion_style}</span>
                         <span className="text-xs text-muted-foreground">Objection: {p.objection_style}</span>
                         <span className="text-xs text-muted-foreground">Close: {p.closing_style}</span>
                         <span className="text-xs text-muted-foreground">Cadence: {p.cadence}</span>
                       </div>
+                      {p.inspiration_tags?.length > 0 && (
+                        <div className="flex gap-1 flex-wrap">
+                          {p.inspiration_tags.map((tag: string, i: number) => (
+                            <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">{tag}</span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {personalities.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No personalities created yet</p>}
