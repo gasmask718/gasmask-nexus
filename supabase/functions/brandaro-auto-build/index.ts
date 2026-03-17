@@ -199,23 +199,9 @@ Deno.serve(async (req) => {
       .replace("TRACKING_CLIENT_ID", client_id)
       .replace("TRACKING_PROJECT_ID", project_id || "");
 
-    // Store production HTML in demo_sites for serving
+    // Slug for deployment
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
     const productionSlug = `${slug}-live`;
-
-    const { data: prodSite } = await supabase
-      .from("brandaro_demo_sites")
-      .insert({
-        lead_id: client?.lead_id,
-        slug: productionSlug,
-        generated_html: productionHtml,
-        engine_used: buildEngine,
-        industry,
-        demo_ready_for_conversion: false,
-        production_build_ready: true,
-      })
-      .select()
-      .single();
 
     // ===== QUALITY GATE SYSTEM =====
     await updateBuildStatus(supabase, buildJob.id, "quality_check", "scoring_quality");
