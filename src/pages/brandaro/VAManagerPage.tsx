@@ -17,11 +17,17 @@ import {
 import {
   useWinningPatterns, useResponseLibrary, useVASkillProfiles, useOptimizeResponses,
 } from "@/hooks/useBrandaroLearningEngine";
+import {
+  useCompetitorIntel, useOfferVariants, usePricingTests, usePositioningTests,
+  useOptimizeOffers, useEvaluatePricingTests, useUpsertCompetitor, useCreateOffer,
+  useCreatePricingTest, useCreatePositioningTest,
+} from "@/hooks/useBrandaroMarketDomination";
 import { toast } from "sonner";
 import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
   Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2, Bell,
   Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap, BookOpen, BarChart3,
+  Crosshair, DollarSign, Swords, Tag,
 } from "lucide-react";
 
 export default function VAManagerPage() {
