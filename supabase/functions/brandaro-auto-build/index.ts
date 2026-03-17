@@ -761,14 +761,21 @@ async function selectDesignProfile(
 
   const preferredStyles = industryStyleMap[industry.toLowerCase()] || ["modern", "corporate"];
 
-  // Weighted selection: 60% performance rank, 30% style match, 10% novelty
+  // REVENUE INTELLIGENCE: Weighted selection
+  // Revenue (40%) + Conversion (20%) + Style Match (20%) + Engagement (10%) + Novelty (10%)
   const scored = profiles.map((p: any) => {
     let score = 0;
-    // Performance score (higher rank = higher score)
-    score += (1 - (p.performance_rank || profiles.length) / profiles.length) * 60;
-    // Style match
-    if (preferredStyles.includes(p.style_category)) score += 30;
-    // Novelty bonus (less used = more novel)
+    // Revenue score (40%) — profiles that produce paying customers
+    const revenueNorm = Math.min((p.revenue_score || 0) / 100, 1);
+    score += revenueNorm * 40;
+    // Conversion rate (20%) — close rate from builds using this profile
+    const closeNorm = Math.min((p.close_rate || 0) / 100, 1);
+    score += closeNorm * 20;
+    // Style match (20%)
+    if (preferredStyles.includes(p.style_category)) score += 20;
+    // Engagement/performance rank (10%)
+    score += (1 - (p.performance_rank || profiles.length) / profiles.length) * 10;
+    // Novelty bonus (10%) — less used = more novel
     const usagePenalty = Math.min((p.usage_count || 0) / 50, 1) * 10;
     score += 10 - usagePenalty;
     return { ...p, selectionScore: score };
