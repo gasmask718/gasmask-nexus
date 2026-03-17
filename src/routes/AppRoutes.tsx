@@ -2500,6 +2500,7 @@ export default function AppRoutes() {
         <Route path="/brandaro/revenue" element={<RevenueAnalyticsPage />} />
         <Route path="/brandaro/retention" element={<RetentionDashboardPage />} />
         <Route path="/brandaro/reporting" element={<ClientReportingPage />} />
+        <Route path="/brandaro/ads-engine" element={<AdsEnginePage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
