@@ -8,7 +8,10 @@ import {
   Swords, Phone, Users, TrendingUp, ListTodo, Brain,
   Theater, UserCog, GraduationCap, Crown, Settings,
   BarChart3, Globe, Megaphone, Wrench, Eye, FileText,
-  Flame, Target, DollarSign, Rocket, Zap,
+  Flame, Target, DollarSign, Rocket, Zap, Search,
+  PhoneCall, ClipboardList, Bell, Activity, Shield,
+  Presentation, Factory, Lightbulb, Crosshair, Tag,
+  Map, HeartPulse, Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -23,19 +26,36 @@ const hubNav = [
     { title: "VA Dashboard", path: "/brandaro/va-dashboard", icon: Users },
     { title: "VA Command", path: "/brandaro/va-command", icon: UserCog },
     { title: "VA Manager", path: "/brandaro/va-manager", icon: GraduationCap },
+    { title: "VA Performance", path: "/brandaro/va-performance", icon: BarChart3 },
     { title: "Closer AI", path: "/brandaro/closer-ai", icon: Flame },
   ]},
   { section: "Pipeline", items: [
     { title: "Leads", path: "/brandaro/leads", icon: Target },
+    { title: "Discovery", path: "/brandaro/lead-discovery", icon: Search },
+    { title: "Qualification", path: "/brandaro/lead-qualification", icon: Shield },
     { title: "Follow-Ups", path: "/brandaro/follow-ups", icon: ListTodo },
     { title: "Proposals", path: "/brandaro/proposals", icon: FileText },
     { title: "Build Pipeline", path: "/brandaro/build-pipeline", icon: Wrench },
+    { title: "Demo Engine", path: "/brandaro/demo-engine", icon: Presentation },
+  ]},
+  { section: "Execution", items: [
+    { title: "Production", path: "/brandaro/production-pipeline", icon: Factory },
+    { title: "Callbacks", path: "/brandaro/callbacks", icon: PhoneCall },
+    { title: "Tasks", path: "/brandaro/tasks", icon: ClipboardList },
+    { title: "Alerts", path: "/brandaro/alerts", icon: Bell },
   ]},
   { section: "Intelligence", items: [
     { title: "AI Brain", path: "/brandaro/ai-brain", icon: Brain },
     { title: "Personalities", path: "/brandaro/personalities", icon: Theater },
-    { title: "Learning", path: "/brandaro/learning", icon: GraduationCap },
-    { title: "Domination", path: "/brandaro/domination", icon: Crown },
+    { title: "Emotion Engine", path: "/brandaro/emotion-engine", icon: HeartPulse },
+    { title: "Learning", path: "/brandaro/learning", icon: Lightbulb },
+    { title: "Patterns", path: "/brandaro/patterns", icon: Activity },
+  ]},
+  { section: "Domination", items: [
+    { title: "Market Control", path: "/brandaro/domination", icon: Crown },
+    { title: "Competitors", path: "/brandaro/competitors", icon: Crosshair },
+    { title: "Offers", path: "/brandaro/offers", icon: Tag },
+    { title: "Positioning", path: "/brandaro/positioning", icon: Map },
   ]},
   { section: "Growth", items: [
     { title: "Revenue", path: "/brandaro/revenue", icon: DollarSign },
@@ -45,10 +65,11 @@ const hubNav = [
     { title: "Result Engine", path: "/brandaro/result-engine", icon: BarChart3 },
   ]},
   { section: "Clients", items: [
-    { title: "Retention", path: "/brandaro/retention", icon: Users },
+    { title: "Client Portal", path: "/brandaro/clients", icon: Users },
+    { title: "Retention", path: "/brandaro/retention", icon: HeartPulse },
     { title: "Reporting", path: "/brandaro/reporting", icon: Eye },
     { title: "Campaigns", path: "/brandaro/campaigns", icon: Zap },
-    { title: "Reviews", path: "/brandaro/reviews", icon: FileText },
+    { title: "Reviews", path: "/brandaro/reviews", icon: Star },
   ]},
 ];
 
