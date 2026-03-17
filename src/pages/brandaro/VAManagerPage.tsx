@@ -60,6 +60,18 @@ export default function VAManagerPage() {
   const { data: skills = [] } = useVASkillProfiles();
   const optimizeResponses = useOptimizeResponses();
 
+  // Market domination hooks
+  const { data: competitors = [] } = useCompetitorIntel();
+  const { data: offers = [] } = useOfferVariants();
+  const { data: pricingTests = [] } = usePricingTests();
+  const { data: positioningTests = [] } = usePositioningTests();
+  const optimizeOffers = useOptimizeOffers();
+  const evaluatePricing = useEvaluatePricingTests();
+  const upsertCompetitor = useUpsertCompetitor();
+  const createOffer = useCreateOffer();
+  const createPricingTest = useCreatePricingTest();
+  const createPositioning = useCreatePositioningTest();
+
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
   const totalInterested = allPerf.reduce((s: number, p: any) => s + (p.interested_leads || 0), 0);
