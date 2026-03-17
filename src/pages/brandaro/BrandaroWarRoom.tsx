@@ -327,89 +327,97 @@ export default function BrandaroWarRoom() {
         </div>
       </div>
 
-      {/* ── Automation Engine Panel ── */}
+      {/* ── Autonomous Execution Engine Panel ── */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
-              <Cpu className="h-4 w-4 text-primary" /> Automation Engine
+              <Cpu className="h-4 w-4 text-primary" /> Autonomous Execution Engine
             </h3>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-[10px]">
-                {autoStats.activeAutomations} rules active
+                {autoStats.activeAutomations} rules
               </Badge>
               <Badge className="text-[10px] bg-primary/10 text-primary border-0">
                 {autoStats.total24h} actions today
               </Badge>
+              {autoStats.revenueGenerated > 0 && (
+                <Badge className="text-[10px] bg-green-500/10 text-green-600 border-0">
+                  ${autoStats.revenueGenerated.toLocaleString()} AI revenue
+                </Badge>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-              </div>
+          {/* Execution metrics - top row */}
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-8 gap-2 mb-4">
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Phone className="h-3.5 w-3.5 mx-auto text-blue-500 mb-1" />
+              <p className="text-lg font-bold text-blue-500">{autoStats.callsInitiated}</p>
+              <p className="text-[9px] text-muted-foreground">AI Calls</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <MailCheck className="h-3.5 w-3.5 mx-auto text-cyan-500 mb-1" />
+              <p className="text-lg font-bold text-cyan-500">{autoStats.smsSent}</p>
+              <p className="text-[9px] text-muted-foreground">SMS Sent</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <DollarSign className="h-3.5 w-3.5 mx-auto text-emerald-500 mb-1" />
+              <p className="text-lg font-bold text-emerald-500">{autoStats.paymentLinksSent}</p>
+              <p className="text-[9px] text-muted-foreground">Payment Links</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <CheckCircle className="h-3.5 w-3.5 mx-auto text-green-500 mb-1" />
               <p className="text-lg font-bold text-green-600">{autoStats.successCount}</p>
-              <p className="text-[10px] text-muted-foreground">Successful</p>
+              <p className="text-[9px] text-muted-foreground">Success</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <XCircle className="h-3.5 w-3.5 text-red-500" />
-              </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <XCircle className="h-3.5 w-3.5 mx-auto text-red-500 mb-1" />
               <p className="text-lg font-bold text-red-500">{autoStats.failCount}</p>
-              <p className="text-[10px] text-muted-foreground">Failed</p>
+              <p className="text-[9px] text-muted-foreground">Failed</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Flame className="h-3.5 w-3.5 text-orange-500" />
-              </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Flame className="h-3.5 w-3.5 mx-auto text-orange-500 mb-1" />
               <p className="text-lg font-bold text-orange-500">{autoStats.triggerCounts.hot_lead || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Hot Escalations</p>
+              <p className="text-[9px] text-muted-foreground">Hot Leads</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <Play className="h-3.5 w-3.5 text-blue-500" />
-              </div>
-              <p className="text-lg font-bold text-blue-500">{autoStats.triggerCounts.new_lead || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Auto-Assigned</p>
-            </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <RefreshCw className="h-3.5 w-3.5 text-amber-500" />
-              </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <RefreshCw className="h-3.5 w-3.5 mx-auto text-amber-500 mb-1" />
               <p className="text-lg font-bold text-amber-500">{autoStats.triggerCounts.stale_lead || 0}</p>
-              <p className="text-[10px] text-muted-foreground">Re-engaged</p>
+              <p className="text-[9px] text-muted-foreground">Re-engaged</p>
             </div>
-            <div className="bg-muted/50 rounded-lg p-3 text-center">
-              <div className="flex items-center justify-center gap-1 mb-1">
-                <MailCheck className="h-3.5 w-3.5 text-purple-500" />
-              </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Clock className="h-3.5 w-3.5 mx-auto text-purple-500 mb-1" />
               <p className="text-lg font-bold text-purple-500">{autoStats.pendingFollowups}</p>
-              <p className="text-[10px] text-muted-foreground">Queued Follow-ups</p>
+              <p className="text-[9px] text-muted-foreground">Queued</p>
             </div>
           </div>
 
-          {/* Recent automation activity feed */}
+          {/* Recent execution activity feed */}
           <div className="border-t pt-3">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Recent Activity</p>
-            <ScrollArea className="h-[120px]">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Live Execution Feed</p>
+            <ScrollArea className="h-[140px]">
               <div className="space-y-1.5">
                 {recentLogs.length === 0 ? (
-                  <p className="text-xs text-muted-foreground text-center py-4">No automation activity yet</p>
-                ) : recentLogs.slice(0, 10).map((log: any) => (
+                  <p className="text-xs text-muted-foreground text-center py-4">No execution activity yet — engine is ready</p>
+                ) : recentLogs.slice(0, 15).map((log: any) => (
                   <div key={log.id} className="flex items-center justify-between p-1.5 rounded bg-muted/30 text-xs">
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className={cn("text-[9px] px-1.5",
+                        log.action_taken?.includes("call") ? "border-blue-500/30 text-blue-600" :
+                        log.action_taken?.includes("sms") ? "border-cyan-500/30 text-cyan-600" :
+                        log.action_taken?.includes("payment") ? "border-green-500/30 text-green-600" :
                         log.trigger_type === "hot_lead" ? "border-orange-500/30 text-orange-600" :
-                        log.trigger_type === "new_lead" ? "border-blue-500/30 text-blue-600" :
                         log.trigger_type === "stale_lead" ? "border-amber-500/30 text-amber-600" :
                         "border-muted-foreground/30"
                       )}>
-                        {log.trigger_type}
+                        {log.action_taken?.includes("executed_") ? log.action_taken.replace("executed_", "⚡ ") : log.action_taken}
                       </Badge>
-                      <span className="text-muted-foreground">{log.action_taken}</span>
+                      <span className="text-muted-foreground truncate max-w-[200px]">
+                        {log.trigger_type} → {log.result === "success" ? "✅" : log.result === "failed" ? "❌" : "⏳"}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                       {new Date(log.created_at).toLocaleTimeString()}
                     </span>
                   </div>
