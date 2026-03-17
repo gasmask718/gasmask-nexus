@@ -28,8 +28,10 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/proposals', label: 'Proposals', icon: FileText },
   { path: '/os/brandaro/followups', label: 'Follow-Ups', icon: Bell },
   { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
+  { path: '/os/brandaro/build-pipeline', label: 'Build Pipeline', icon: Factory },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
+  { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
   { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
 ];
 
