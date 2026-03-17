@@ -68,7 +68,8 @@ export default function VADashboardPage() {
   const endSession = useEndCallSession();
   const analyzeCall = useAnalyzeCallSession();
   const applyRec = useApplyRecommendation();
-
+  const { analyzeChunk, resetSession: resetLiveScript, isAnalyzing: isLiveAnalyzing, lastResponse: liveResponse, responseHistory, contextMemory } = useBrandaroLiveScript();
+  const [liveTranscript, setLiveTranscript] = useState("");
   const quotaProgress = (actual: number, target: number) =>
     target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0;
 
