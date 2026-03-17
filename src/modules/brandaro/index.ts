@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -7,6 +7,7 @@ import LeadQualificationPage from '@/pages/brandaro/LeadQualificationPage';
 import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import VAWorkspacePage from '@/pages/brandaro/VAWorkspacePage';
 import VAPerformancePage from '@/pages/brandaro/VAPerformancePage';
+import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
 import CampaignManagerPage from '@/pages/brandaro/CampaignManagerPage';
 import DemoEnginePage from '@/pages/brandaro/DemoEnginePage';
 import ProposalBuilderPage from '@/pages/brandaro/ProposalBuilderPage';
