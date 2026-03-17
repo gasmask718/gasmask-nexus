@@ -757,10 +757,13 @@ export default function VACommandCenterPage() {
                               </div>
                             </div>
                             <div className="flex flex-col gap-1">
-                              <Button size="sm" onClick={() => triggerFollowup(deal.lead_id, "sms")}>
+                              <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => sendPaymentLink(deal)}>
+                                <DollarSign className="h-3 w-3 mr-1" /> Send Payment Link
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => triggerFollowup(deal.lead_id, "sms")}>
                                 <Zap className="h-3 w-3 mr-1" /> Push Close
                               </Button>
-                              <Button size="sm" variant="outline" onClick={() => advancePipelineStage(deal.id, "closed")}>
+                              <Button size="sm" variant="ghost" onClick={() => advancePipelineStage(deal.id, "closed")}>
                                 <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Closed
                               </Button>
                             </div>
