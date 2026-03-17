@@ -268,3 +268,6 @@ verify_jwt = false
 
 [functions.brandaro-track-performance]
 verify_jwt = false
+
+[functions.brandaro-analyze-site]
+verify_jwt = false

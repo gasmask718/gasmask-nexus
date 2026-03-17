@@ -230,6 +230,19 @@ Deno.serve(async (req) => {
       console.log(`[AUTO-BUILD] Reusing top template (score: ${bestTemplate.avg_score})`);
     }
 
+    // ===== CONVERSION INTELLIGENCE: Select best patterns for this industry =====
+    await updateBuildStatus(supabase, buildJob.id, "selecting_patterns", "conversion_intelligence");
+    const conversionPatterns = await selectConversionPatterns(supabase, industry);
+    console.log(`[AUTO-BUILD] Conversion Intelligence selected ${conversionPatterns.length} patterns`);
+
+    // Record which patterns were used in this build
+    for (const pattern of conversionPatterns) {
+      await supabase.from("brandaro_build_patterns").insert({
+        build_job_id: buildJob.id,
+        pattern_id: pattern.id,
+      });
+    }
+
     // SECTION 5: STANDARDIZATION — Always assemble final site via native engine
     await updateBuildStatus(supabase, buildJob.id, "building", "standardizing_via_native");
 
@@ -241,9 +254,10 @@ Deno.serve(async (req) => {
       .order("section_order");
 
     // Use taste engine palette if available, otherwise random
+    // Pass conversion patterns for structural integration
     let productionHtml = designSelection
-      ? assembleProductionSiteWithProfile(allBlocks || [], businessName, industry, designSelection.palette)
-      : assembleProductionSite(allBlocks || [], businessName, industry);
+      ? assembleProductionSiteWithProfile(allBlocks || [], businessName, industry, designSelection.palette, conversionPatterns)
+      : assembleProductionSite(allBlocks || [], businessName, industry, conversionPatterns);
 
     // Inject tracking values
     productionHtml = productionHtml
@@ -532,6 +546,7 @@ function assembleProductionSiteWithProfile(
   businessName: string,
   industry: string,
   palette: StylePalette,
+  patterns: any[] = [],
 ): string {
   // Same assembly logic but with a pre-selected palette
   const pageGroups: Record<string, any[]> = {};
@@ -566,14 +581,17 @@ function assembleProductionSiteWithProfile(
     sectionIdx++;
   }
 
-  // Identical HTML shell but with taste-engine-selected palette
-  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette);
+  // Generate conversion elements from patterns
+  const conversionHtml = generateConversionElements(patterns, palette);
+
+  // Identical HTML shell but with taste-engine-selected palette + conversion elements
+  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette, conversionHtml);
 }
 
 // Shared HTML shell to avoid duplication
 function assembleHtmlShell(
   businessName: string, industry: string, seoTitle: string, seoDesc: string,
-  navLinks: string, contentSections: string, palette: StylePalette,
+  navLinks: string, contentSections: string, palette: StylePalette, conversionHtml: string = "",
 ): string {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -614,6 +632,7 @@ function assembleHtmlShell(
       </div>
     </nav>
   </header>
+  ${conversionHtml}
   <main>${contentSections}</main>
   <footer>
     <div style="max-width:1200px;margin:0 auto;">
@@ -635,6 +654,7 @@ function assembleProductionSite(
   blocks: any[],
   businessName: string,
   industry: string,
+  patterns: any[] = [],
 ): string {
   // Group blocks by page
   const pageGroups: Record<string, any[]> = {};
@@ -680,126 +700,8 @@ function assembleProductionSite(
     sectionIdx++;
   }
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${seoTitle}</title>
-  <meta name="description" content="${seoDesc}">
-  <meta property="og:title" content="${seoTitle}">
-  <meta property="og:description" content="${seoDesc}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=${palette.headingFont.replace(/ /g, "+")}:wght@400;600;700&family=${palette.bodyFont.replace(/ /g, "+")}:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root {
-      --primary: ${palette.primary};
-      --secondary: ${palette.secondary};
-      --accent: ${palette.accent};
-      --bg: ${palette.bg};
-      --text: ${palette.text};
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: '${palette.bodyFont}', system-ui, sans-serif; color: var(--text); background: var(--bg); }
-    h1, h2, h3, h4, h5 { font-family: '${palette.headingFont}', serif; }
-    .nav-link { padding: 0.5rem 1rem; text-decoration: none; color: var(--text); font-weight: 500; transition: color 0.2s; font-size: 0.9rem; }
-    .nav-link:hover { color: var(--primary); }
-    .page-section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
-    .content-block { margin-bottom: 2.5rem; }
-    header { background: var(--bg); border-bottom: 1px solid ${palette.primary}15; padding: 1rem 2rem; position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
-    footer { background: ${palette.text}; color: ${palette.bg}; padding: 4rem 2rem; text-align: center; }
-    footer a { color: var(--accent); }
-    .btn-primary { background: var(--primary); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; font-size: 1rem; }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px ${palette.primary}40; }
-    .btn-secondary { background: transparent; color: var(--primary); padding: 0.75rem 2rem; border: 2px solid var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn-secondary:hover { background: var(--primary); color: white; }
-    /* Layout variants */
-    .layout-full-width { max-width: 100%; padding: 5rem 4rem; }
-    .layout-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
-    .layout-offset-left { max-width: 900px; margin-left: 10%; }
-    .layout-centered-narrow { max-width: 800px; text-align: center; }
-    .layout-wide-hero { max-width: 100%; padding: 6rem 4rem; background: linear-gradient(135deg, ${palette.primary}08, ${palette.accent}08); }
-    @media (max-width: 768px) {
-      .layout-two-column { grid-template-columns: 1fr; }
-      .layout-offset-left { margin-left: auto; }
-      .layout-full-width, .layout-wide-hero { padding: 3rem 1.5rem; }
-      .page-section { padding: 3rem 1.5rem; }
-      header nav { flex-direction: column; gap: 0.5rem; }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <nav style="display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;">
-      <div style="font-size:1.5rem;font-weight:700;color:var(--primary);font-family:'${palette.headingFont}',serif;">${businessName}</div>
-      <div style="display:flex;gap:0.25rem;align-items:center;">
-        ${navLinks}
-        <a href="#contact" class="btn-primary" style="margin-left:1rem;padding:0.5rem 1.25rem;font-size:0.85rem;">Get Started</a>
-      </div>
-    </nav>
-  </header>
-
-  <main>
-    ${contentSections}
-  </main>
-
-  <footer>
-    <div style="max-width:1200px;margin:0 auto;">
-      <p style="font-size:1.25rem;font-weight:700;font-family:'${palette.headingFont}',serif;margin-bottom:1rem;">${businessName}</p>
-      <p style="opacity:0.7;">&copy; ${new Date().getFullYear()} ${businessName}. All rights reserved.</p>
-      <p style="margin-top:0.75rem;font-size:0.7rem;opacity:0.5;">Powered by Brandaro Digital</p>
-    </div>
-  </footer>
-
-  <script>
-    document.querySelectorAll('a[href^="#"]').forEach(a => {
-      a.addEventListener('click', e => {
-        e.preventDefault();
-        document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
-      });
-    });
-  </script>
-
-  <!-- Brandaro Result Engine Tracking -->
-  <script>
-  (function(){
-    var baseUrl="TRACKING_BASE_URL";
-    var anonKey="TRACKING_ANON_KEY";
-    var clientId="TRACKING_CLIENT_ID";
-    var projectId="TRACKING_PROJECT_ID";
-    var sid=Math.random().toString(36).substring(2);
-    function track(type,val){
-      fetch(baseUrl+"/functions/v1/brandaro-track-lead-event",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+anonKey},
-        body:JSON.stringify({client_id:clientId,project_id:projectId,event_type:type,event_value:val||"",source:document.referrer?"referral":"direct",page_url:location.href,session_id:sid})
-      }).catch(function(){});
-    }
-    track("session");
-    var maxScroll=0;
-    window.addEventListener("scroll",function(){
-      var pct=Math.round((window.scrollY/(document.body.scrollHeight-window.innerHeight))*100);
-      if(pct>=25&&maxScroll<25){track("scroll_25");maxScroll=25;}
-      if(pct>=50&&maxScroll<50){track("scroll_50");maxScroll=50;}
-      if(pct>=75&&maxScroll<75){track("scroll_75");maxScroll=75;}
-    });
-    document.addEventListener("click",function(e){
-      var t=e.target;
-      if(t.tagName==="A"||t.tagName==="BUTTON"||(t.closest&&t.closest("a,button"))){
-        var text=(t.textContent||"").trim().substring(0,50);
-        track("cta_click",text);
-        if(t.href&&t.href.startsWith("tel:")) track("phone_click",t.href);
-      }
-    });
-    document.querySelectorAll("form").forEach(function(f){
-      f.addEventListener("submit",function(){track("form_submit",f.id||f.action||"unknown");});
-    });
-  })();
-  </script>
-</body>
-</html>`;
+  const conversionHtml = generateConversionElements(patterns, palette);
+  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette, conversionHtml);
 }
 
 // ===== DESIGN INTELLIGENCE HELPERS =====
@@ -1143,3 +1045,125 @@ function extractDurableDesignPatterns(html: string): {
     typography: { fonts: [...new Set(fontsFound)] },
   };
 }
+
+// ===== CONVERSION INTELLIGENCE ENGINE =====
+
+async function selectConversionPatterns(
+  supabase: any,
+  industry: string,
+): Promise<any[]> {
+  // Get industry-specific patterns first, then universal ones
+  const { data: industryPatterns } = await supabase
+    .from("brandaro_conversion_patterns")
+    .select("*")
+    .eq("industry_type", industry.toLowerCase())
+    .eq("is_active", true)
+    .order("pattern_score", { ascending: false })
+    .limit(10);
+
+  const { data: universalPatterns } = await supabase
+    .from("brandaro_conversion_patterns")
+    .select("*")
+    .is("industry_type", null)
+    .eq("is_active", true)
+    .order("pattern_score", { ascending: false })
+    .limit(15);
+
+  // Merge: industry-specific take priority, fill remaining with universal
+  const selected: any[] = [];
+  const usedTypes = new Set<string>();
+
+  // Add best industry pattern per type
+  for (const p of (industryPatterns || [])) {
+    if (!usedTypes.has(p.pattern_type)) {
+      selected.push(p);
+      usedTypes.add(p.pattern_type);
+    }
+  }
+
+  // Fill with top universal patterns (avoid duplicate types unless score is very high)
+  for (const p of (universalPatterns || [])) {
+    if (selected.length >= 12) break;
+    if (!usedTypes.has(p.pattern_type) || p.pattern_score >= 85) {
+      selected.push(p);
+      usedTypes.add(p.pattern_type);
+    }
+  }
+
+  // Increment times_used
+  for (const p of selected) {
+    await supabase.from("brandaro_conversion_patterns").update({
+      times_used_in_builds: (p.times_used_in_builds || 0) + 1,
+    }).eq("id", p.id);
+  }
+
+  return selected;
+}
+
+function generateConversionElements(patterns: any[], palette: any): string {
+  let html = "";
+
+  for (const p of patterns) {
+    const data = p.pattern_data || {};
+
+    switch (p.pattern_type) {
+      case "trust_element":
+        if (data.position === "below_hero" && data.elements) {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="display:flex;justify-content:center;gap:2rem;padding:1.5rem 2rem;background:${palette.primary}08;flex-wrap:wrap;">
+      ${(data.elements as string[]).map((el: string) =>
+        `<span style="display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;font-weight:500;color:${palette.text};">✓ ${el.replace(/_/g, " ")}</span>`
+      ).join("\n      ")}
+    </div>\n`;
+        }
+        break;
+
+      case "social_proof":
+        if (data.type === "animated_counters") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="display:flex;justify-content:center;gap:3rem;padding:3rem 2rem;flex-wrap:wrap;">
+      ${(data.metrics as string[] || ["500+ Projects", "100+ Clients", "10+ Years"]).map((m: string) =>
+        `<div style="text-align:center;"><div style="font-size:2rem;font-weight:700;color:${palette.primary};">${m.replace(/_/g, " ")}</div></div>`
+      ).join("\n      ")}
+    </div>\n`;
+        }
+        break;
+
+      case "risk_reversal":
+        if (data.type === "guarantee_badge" || data.type === "free_offer") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem;background:${palette.accent}10;border-radius:8px;margin:1rem auto;max-width:400px;">
+      <span style="font-size:1.5rem;">🛡️</span>
+      <span style="font-weight:600;color:${palette.text};">${data.text || "100% Satisfaction Guaranteed"}</span>
+    </div>\n`;
+        }
+        break;
+
+      case "urgency_trigger":
+        if (data.position === "top_bar" || data.position === "hero_or_cta") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="background:${palette.primary};color:white;text-align:center;padding:0.5rem;font-size:0.85rem;font-weight:600;">
+      ⚡ ${data.text_pattern || "Limited Availability - Book Now"}
+    </div>\n`;
+        }
+        break;
+
+      case "cta_placement":
+        if (data.position === "sticky_bottom" && data.visibility === "mobile_only") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} (mobile sticky CTA) -->
+    <style>
+      @media (max-width: 768px) {
+        .mobile-sticky-cta { display: block !important; }
+      }
+    </style>
+    <div class="mobile-sticky-cta" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;padding:0.75rem;background:${palette.primary};text-align:center;">
+      <a href="#contact" style="color:white;font-weight:700;text-decoration:none;font-size:1.1rem;">Get Your Free Quote →</a>
+    </div>\n`;
+        }
+        break;
+    }
+  }
+
+  return html;
+}
+

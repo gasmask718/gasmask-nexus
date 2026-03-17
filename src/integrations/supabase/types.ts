@@ -9808,6 +9808,41 @@ export type Database = {
           },
         ]
       }
+      brandaro_build_patterns: {
+        Row: {
+          applied_at: string | null
+          build_job_id: string | null
+          engagement_delta: number | null
+          id: string
+          pattern_id: string | null
+          resulted_in_conversion: boolean | null
+        }
+        Insert: {
+          applied_at?: string | null
+          build_job_id?: string | null
+          engagement_delta?: number | null
+          id?: string
+          pattern_id?: string | null
+          resulted_in_conversion?: boolean | null
+        }
+        Update: {
+          applied_at?: string | null
+          build_job_id?: string | null
+          engagement_delta?: number | null
+          id?: string
+          pattern_id?: string | null
+          resulted_in_conversion?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_build_patterns_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_conversion_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_call_insights: {
         Row: {
           ai_recommended_next: string | null
@@ -10567,6 +10602,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_conversion_patterns: {
+        Row: {
+          conversion_correlation: number | null
+          created_at: string | null
+          engagement_boost: number | null
+          id: string
+          industry_type: string | null
+          is_active: boolean | null
+          pattern_data: Json
+          pattern_key: string
+          pattern_score: number | null
+          pattern_type: string
+          source_quality: string | null
+          source_url: string | null
+          times_used_in_builds: number | null
+          updated_at: string | null
+          usage_frequency: number | null
+        }
+        Insert: {
+          conversion_correlation?: number | null
+          created_at?: string | null
+          engagement_boost?: number | null
+          id?: string
+          industry_type?: string | null
+          is_active?: boolean | null
+          pattern_data?: Json
+          pattern_key: string
+          pattern_score?: number | null
+          pattern_type: string
+          source_quality?: string | null
+          source_url?: string | null
+          times_used_in_builds?: number | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Update: {
+          conversion_correlation?: number | null
+          created_at?: string | null
+          engagement_boost?: number | null
+          id?: string
+          industry_type?: string | null
+          is_active?: boolean | null
+          pattern_data?: Json
+          pattern_key?: string
+          pattern_score?: number | null
+          pattern_type?: string
+          source_quality?: string | null
+          source_url?: string | null
+          times_used_in_builds?: number | null
+          updated_at?: string | null
+          usage_frequency?: number | null
+        }
+        Relationships: []
       }
       brandaro_demo_events: {
         Row: {
