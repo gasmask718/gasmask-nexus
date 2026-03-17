@@ -286,6 +286,10 @@ Deno.serve(async (req) => {
       await deploySite(supabase, buildJob.id, project_id, client_id, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
       await supabase.from("brandaro_build_jobs").update({ deployment_decision: "auto_deployed" }).eq("id", buildJob.id);
       console.log(`[AUTO-BUILD] ✅ Auto-deployed (score: ${qualityScore}). URL: ${liveUrl}`);
+      // Record template performance for taste engine learning
+      if (designSelection) {
+        await recordTemplatePerformance(supabase, designSelection.profileId, buildJob.id, client_id);
+      }
 
     } else if (qualityScore >= 60) {
       // DEPLOY + FLAG: Medium quality
