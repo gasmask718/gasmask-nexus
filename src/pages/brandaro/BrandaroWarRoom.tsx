@@ -7,11 +7,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DollarSign, Phone, Flame, TrendingUp, ListTodo, Bot,
   Users, Brain, Theater, AlertTriangle, Zap, Target,
-  ArrowRight, Clock,
+  ArrowRight, Clock, Cpu, Play, CheckCircle, XCircle,
+  RefreshCw, MailCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useCloserKPIs } from "@/hooks/useBrandaroCloserAI";
+import { useBrandaroAutomationStats } from "@/hooks/useBrandaroAutomation";
 
 function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
   label: string; value: string | number; icon: any; color: string; subtitle?: string; to?: string;
