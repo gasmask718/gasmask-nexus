@@ -9909,6 +9909,125 @@ export type Database = {
           },
         ]
       }
+      brandaro_automation_log: {
+        Row: {
+          action_details: Json | null
+          action_taken: string
+          automation_id: string | null
+          business_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          personality_used: string | null
+          result: string | null
+          trigger_type: string
+        }
+        Insert: {
+          action_details?: Json | null
+          action_taken: string
+          automation_id?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          personality_used?: string | null
+          result?: string | null
+          trigger_type: string
+        }
+        Update: {
+          action_details?: Json | null
+          action_taken?: string
+          automation_id?: string | null
+          business_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          personality_used?: string | null
+          result?: string | null
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_automation_log_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_automation_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_automations: {
+        Row: {
+          actions: Json | null
+          business_id: string | null
+          conditions: Json | null
+          conversions_count: number | null
+          created_at: string | null
+          executions_count: number | null
+          follow_up_sequence: Json | null
+          id: string
+          is_active: boolean | null
+          name: string
+          personality_id: string | null
+          priority: number | null
+          revenue_generated: number | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json | null
+          business_id?: string | null
+          conditions?: Json | null
+          conversions_count?: number | null
+          created_at?: string | null
+          executions_count?: number | null
+          follow_up_sequence?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          personality_id?: string | null
+          priority?: number | null
+          revenue_generated?: number | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json | null
+          business_id?: string | null
+          conditions?: Json | null
+          conversions_count?: number | null
+          created_at?: string | null
+          executions_count?: number | null
+          follow_up_sequence?: Json | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          personality_id?: string | null
+          priority?: number | null
+          revenue_generated?: number | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_automations_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_build_jobs: {
         Row: {
           auto_retry_count: number | null
@@ -12568,6 +12687,66 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_followup_queue: {
+        Row: {
+          automation_id: string | null
+          business_id: string | null
+          channel: string | null
+          created_at: string | null
+          executed_at: string | null
+          id: string
+          lead_id: string
+          message_template: string | null
+          personality_id: string | null
+          scheduled_at: string
+          status: string | null
+          step_number: number | null
+        }
+        Insert: {
+          automation_id?: string | null
+          business_id?: string | null
+          channel?: string | null
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          lead_id: string
+          message_template?: string | null
+          personality_id?: string | null
+          scheduled_at: string
+          status?: string | null
+          step_number?: number | null
+        }
+        Update: {
+          automation_id?: string | null
+          business_id?: string | null
+          channel?: string | null
+          created_at?: string | null
+          executed_at?: string | null
+          id?: string
+          lead_id?: string
+          message_template?: string | null
+          personality_id?: string | null
+          scheduled_at?: string
+          status?: string | null
+          step_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_followup_queue_automation_id_fkey"
+            columns: ["automation_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_automations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_followup_queue_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
             referencedColumns: ["id"]
           },
         ]
