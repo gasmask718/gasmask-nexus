@@ -153,6 +153,40 @@ export function AssignedOrdersPage({ portalType }: AssignedOrdersPageProps) {
       bounds.extend([Number(lng), Number(lat)]);
       map.fitBounds(bounds, { padding: 60 });
 
+      // Immediately draw a dashed trajectory line (visible while route loads)
+      const addTrajectoryLine = () => {
+        if (map.getSource('trajectory')) return;
+        map.addSource('trajectory', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: {
+              type: 'LineString',
+              coordinates: [userLocation, [Number(lng), Number(lat)]],
+            },
+          },
+        });
+        map.addLayer({
+          id: 'trajectory',
+          type: 'line',
+          source: 'trajectory',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#3b82f6',
+            'line-width': 2.5,
+            'line-opacity': 0.5,
+            'line-dasharray': [4, 3],
+          },
+        });
+      };
+
+      if (map.isStyleLoaded()) {
+        addTrajectoryLine();
+      } else {
+        map.on('load', addTrajectoryLine);
+      }
+
       fetchRoute(userLocation, [Number(lng), Number(lat)], map);
     }
 
