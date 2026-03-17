@@ -38,10 +38,13 @@ interface BuildJob {
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   queued: { label: "Queued", color: "bg-muted text-muted-foreground", icon: Clock },
   extracting_demo: { label: "Extracting Demo", color: "bg-blue-500/10 text-blue-500", icon: Cpu },
+  extracting_durable: { label: "Extracting Durable", color: "bg-indigo-500/10 text-indigo-500", icon: Cpu },
   generating_content: { label: "Generating Content", color: "bg-violet-500/10 text-violet-500", icon: Zap },
-  building: { label: "Building", color: "bg-amber-500/10 text-amber-500", icon: Hammer },
+  building: { label: "Standardizing (Native)", color: "bg-amber-500/10 text-amber-500", icon: Hammer },
   deploying: { label: "Deploying", color: "bg-cyan-500/10 text-cyan-500", icon: Globe },
   quality_check: { label: "Quality Check", color: "bg-emerald-500/10 text-emerald-500", icon: CheckCircle2 },
+  auto_improving: { label: "Auto-Improving", color: "bg-orange-500/10 text-orange-500", icon: RefreshCw },
+  needs_review: { label: "Needs Review", color: "bg-yellow-500/10 text-yellow-500", icon: Clock },
   completed: { label: "Completed", color: "bg-green-500/10 text-green-500", icon: CheckCircle2 },
   failed: { label: "Failed", color: "bg-destructive/10 text-destructive", icon: XCircle },
 };
