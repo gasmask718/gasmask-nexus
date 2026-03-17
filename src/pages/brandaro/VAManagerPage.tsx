@@ -95,6 +95,12 @@ export default function VAManagerPage() {
   const createFramework = useCreateFramework();
   const togglePersonality = useTogglePersonality();
   const generatePersonalityResponse = useGeneratePersonalityResponse();
+  const ingestFromTranscript = useIngestFromTranscript();
+  const generateFromDescription = useGenerateFromDescription();
+  const seedStarters = useSeedStarterPersonalities();
+  const [ingestMode, setIngestMode] = useState<"manual" | "transcript" | "description">("manual");
+  const [ingestText, setIngestText] = useState("");
+  const [ingestName, setIngestName] = useState("");
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
