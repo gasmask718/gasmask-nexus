@@ -9977,6 +9977,48 @@ export type Database = {
           },
         ]
       }
+      brandaro_call_patterns: {
+        Row: {
+          conversion_probability: number | null
+          created_at: string
+          extracted_at: string
+          id: string
+          is_active: boolean | null
+          objection_responses: Json | null
+          opening_style: string | null
+          pattern_type: string
+          source_call_id: string | null
+          times_applied: number | null
+          tone_markers: string[] | null
+        }
+        Insert: {
+          conversion_probability?: number | null
+          created_at?: string
+          extracted_at?: string
+          id?: string
+          is_active?: boolean | null
+          objection_responses?: Json | null
+          opening_style?: string | null
+          pattern_type: string
+          source_call_id?: string | null
+          times_applied?: number | null
+          tone_markers?: string[] | null
+        }
+        Update: {
+          conversion_probability?: number | null
+          created_at?: string
+          extracted_at?: string
+          id?: string
+          is_active?: boolean | null
+          objection_responses?: Json | null
+          opening_style?: string | null
+          pattern_type?: string
+          source_call_id?: string | null
+          times_applied?: number | null
+          tone_markers?: string[] | null
+        }
+        Relationships: []
+      }
       brandaro_call_queue: {
         Row: {
           assigned_va: string | null
@@ -10480,6 +10522,77 @@ export type Database = {
           },
         ]
       }
+      brandaro_close_pipeline: {
+        Row: {
+          assigned_va_id: string | null
+          auto_actions_taken: string[] | null
+          closed_at: string | null
+          created_at: string
+          days_in_pipeline: number | null
+          demo_sent_at: string | null
+          demo_viewed_at: string | null
+          id: string
+          interested_at: string | null
+          lead_id: string | null
+          lost_at: string | null
+          lost_reason: string | null
+          negotiating_at: string | null
+          package_tier: string | null
+          payment_amount: number | null
+          priority_score: number | null
+          stage: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_va_id?: string | null
+          auto_actions_taken?: string[] | null
+          closed_at?: string | null
+          created_at?: string
+          days_in_pipeline?: number | null
+          demo_sent_at?: string | null
+          demo_viewed_at?: string | null
+          id?: string
+          interested_at?: string | null
+          lead_id?: string | null
+          lost_at?: string | null
+          lost_reason?: string | null
+          negotiating_at?: string | null
+          package_tier?: string | null
+          payment_amount?: number | null
+          priority_score?: number | null
+          stage?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_va_id?: string | null
+          auto_actions_taken?: string[] | null
+          closed_at?: string | null
+          created_at?: string
+          days_in_pipeline?: number | null
+          demo_sent_at?: string | null
+          demo_viewed_at?: string | null
+          id?: string
+          interested_at?: string | null
+          lead_id?: string | null
+          lost_at?: string | null
+          lost_reason?: string | null
+          negotiating_at?: string | null
+          package_tier?: string | null
+          payment_amount?: number | null
+          priority_score?: number | null
+          stage?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_close_pipeline_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_content_blocks: {
         Row: {
           build_job_id: string | null
@@ -10928,6 +11041,7 @@ export type Database = {
           cta_style: string | null
           font_pairing: Json | null
           id: string
+          industry_close_rates: Json | null
           is_active: boolean | null
           layout_preference: string | null
           performance_rank: number | null
@@ -10935,6 +11049,9 @@ export type Database = {
           revenue_score: number | null
           spacing_system: Json | null
           style_category: string
+          successful_close_colors: Json | null
+          successful_close_ctas: string[] | null
+          successful_close_layouts: string[] | null
           total_revenue: number | null
           updated_at: string | null
           usage_count: number | null
@@ -10950,6 +11067,7 @@ export type Database = {
           cta_style?: string | null
           font_pairing?: Json | null
           id?: string
+          industry_close_rates?: Json | null
           is_active?: boolean | null
           layout_preference?: string | null
           performance_rank?: number | null
@@ -10957,6 +11075,9 @@ export type Database = {
           revenue_score?: number | null
           spacing_system?: Json | null
           style_category: string
+          successful_close_colors?: Json | null
+          successful_close_ctas?: string[] | null
+          successful_close_layouts?: string[] | null
           total_revenue?: number | null
           updated_at?: string | null
           usage_count?: number | null
@@ -10972,6 +11093,7 @@ export type Database = {
           cta_style?: string | null
           font_pairing?: Json | null
           id?: string
+          industry_close_rates?: Json | null
           is_active?: boolean | null
           layout_preference?: string | null
           performance_rank?: number | null
@@ -10979,6 +11101,9 @@ export type Database = {
           revenue_score?: number | null
           spacing_system?: Json | null
           style_category?: string
+          successful_close_colors?: Json | null
+          successful_close_ctas?: string[] | null
+          successful_close_layouts?: string[] | null
           total_revenue?: number | null
           updated_at?: string | null
           usage_count?: number | null
@@ -11055,6 +11180,62 @@ export type Database = {
             columns: ["build_job_id"]
             isOneToOne: false
             referencedRelation: "brandaro_build_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_followup_sequences: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          lead_id: string | null
+          message_content: string | null
+          response_received: boolean | null
+          response_text: string | null
+          scheduled_at: string
+          sent_at: string | null
+          sequence_step: number
+          status: string
+          trigger_event: string
+          voice_call_id: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message_content?: string | null
+          response_received?: boolean | null
+          response_text?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          sequence_step?: number
+          status?: string
+          trigger_event?: string
+          voice_call_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message_content?: string | null
+          response_received?: boolean | null
+          response_text?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          sequence_step?: number
+          status?: string
+          trigger_event?: string
+          voice_call_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_followup_sequences_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -12451,18 +12632,60 @@ export type Database = {
           },
         ]
       }
+      brandaro_va_actions: {
+        Row: {
+          action_type: string
+          created_at: string
+          id: string
+          new_value: string | null
+          notes: string | null
+          original_value: string | null
+          target_call_id: string | null
+          target_lead_id: string | null
+          va_user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          original_value?: string | null
+          target_call_id?: string | null
+          target_lead_id?: string | null
+          va_user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          id?: string
+          new_value?: string | null
+          notes?: string | null
+          original_value?: string | null
+          target_call_id?: string | null
+          target_lead_id?: string | null
+          va_user_id?: string
+        }
+        Relationships: []
+      }
       brandaro_voice_agent_calls: {
         Row: {
+          ai_confidence_score: number | null
+          ai_control_score: number | null
           ai_notes: string | null
           call_duration_seconds: number | null
+          call_recording_url: string | null
           call_sid: string | null
           call_stage_reached: string | null
+          call_transcript: string | null
           campaign_id: string | null
           contact_captured: boolean | null
+          conversion_probability: number | null
           created_at: string
           demo_requested: boolean | null
           handoff_score: number | null
           id: string
+          improvement_suggestions: string[] | null
           intent_level: string | null
           lead_id: string | null
           objections_encountered: string[] | null
@@ -12474,16 +12697,22 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          ai_confidence_score?: number | null
+          ai_control_score?: number | null
           ai_notes?: string | null
           call_duration_seconds?: number | null
+          call_recording_url?: string | null
           call_sid?: string | null
           call_stage_reached?: string | null
+          call_transcript?: string | null
           campaign_id?: string | null
           contact_captured?: boolean | null
+          conversion_probability?: number | null
           created_at?: string
           demo_requested?: boolean | null
           handoff_score?: number | null
           id?: string
+          improvement_suggestions?: string[] | null
           intent_level?: string | null
           lead_id?: string | null
           objections_encountered?: string[] | null
@@ -12495,16 +12724,22 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          ai_confidence_score?: number | null
+          ai_control_score?: number | null
           ai_notes?: string | null
           call_duration_seconds?: number | null
+          call_recording_url?: string | null
           call_sid?: string | null
           call_stage_reached?: string | null
+          call_transcript?: string | null
           campaign_id?: string | null
           contact_captured?: boolean | null
+          conversion_probability?: number | null
           created_at?: string
           demo_requested?: boolean | null
           handoff_score?: number | null
           id?: string
+          improvement_suggestions?: string[] | null
           intent_level?: string | null
           lead_id?: string | null
           objections_encountered?: string[] | null
