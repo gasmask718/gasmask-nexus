@@ -11898,6 +11898,42 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_contact_limits: {
+        Row: {
+          cooldown_until: string | null
+          created_at: string | null
+          daily_contacts: number | null
+          id: string
+          last_contacted_at: string | null
+          lead_id: string
+          next_allowed_at: string | null
+          total_contacts: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          cooldown_until?: string | null
+          created_at?: string | null
+          daily_contacts?: number | null
+          id?: string
+          last_contacted_at?: string | null
+          lead_id: string
+          next_allowed_at?: string | null
+          total_contacts?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          cooldown_until?: string | null
+          created_at?: string | null
+          daily_contacts?: number | null
+          id?: string
+          last_contacted_at?: string | null
+          lead_id?: string
+          next_allowed_at?: string | null
+          total_contacts?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_content_blocks: {
         Row: {
           build_job_id: string | null
@@ -12572,6 +12608,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      brandaro_execution_log: {
+        Row: {
+          action_type: string
+          business_id: string | null
+          channel: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          personality_used: string | null
+          phone: string | null
+          provider_sid: string | null
+          result: string | null
+          revenue_attributed: number | null
+          trigger_source: string | null
+        }
+        Insert: {
+          action_type: string
+          business_id?: string | null
+          channel?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          personality_used?: string | null
+          phone?: string | null
+          provider_sid?: string | null
+          result?: string | null
+          revenue_attributed?: number | null
+          trigger_source?: string | null
+        }
+        Update: {
+          action_type?: string
+          business_id?: string | null
+          channel?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          personality_used?: string | null
+          phone?: string | null
+          provider_sid?: string | null
+          result?: string | null
+          revenue_attributed?: number | null
+          trigger_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_execution_log_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_extracted_templates: {
         Row: {
@@ -13255,6 +13347,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_lead_memory: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          id: string
+          lead_id: string
+          memory_key: string
+          memory_type: string
+          memory_value: string | null
+          source: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          memory_key: string
+          memory_type: string
+          memory_value?: string | null
+          source?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          memory_key?: string
+          memory_type?: string
+          memory_value?: string | null
+          source?: string | null
+        }
+        Relationships: []
       }
       brandaro_leads_master: {
         Row: {
