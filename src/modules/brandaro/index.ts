@@ -39,6 +39,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
   { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
   { path: '/os/brandaro/ads-engine', label: 'Ads Engine', icon: Megaphone },
+  { path: '/os/brandaro/google-domination', label: 'Google Domination', icon: Crown },
 ];
 
 export const BrandaroModule: DynastyModule = {
