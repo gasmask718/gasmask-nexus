@@ -91,13 +91,15 @@ export default function AdsEnginePage() {
           ) : (
             <div className="space-y-3">
               {internalAds.map((ad: any) => (
-                <Card key={ad.id}>
+                <Card key={ad.id} className={ad.kill_switch ? 'opacity-50 border-destructive/30' : ''}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <Badge variant={ad.status === 'active' ? 'default' : 'secondary'}>{ad.status}</Badge>
+                      <Badge variant={ad.kill_switch ? 'destructive' : ad.status === 'active' ? 'default' : 'secondary'}>
+                        {ad.kill_switch ? 'killed' : ad.status}
+                      </Badge>
                       <div>
                         <p className="font-medium text-foreground">{ad.campaign_name}</p>
-                        <p className="text-xs text-muted-foreground">{ad.platform} · ${Number(ad.budget_daily).toFixed(0)}/day</p>
+                        <p className="text-xs text-muted-foreground">{ad.platform} · ${Number(ad.budget_daily).toFixed(0)}/day · L{ad.scaling_level || 1}</p>
                       </div>
                     </div>
                     <div className="text-right">
@@ -105,6 +107,9 @@ export default function AdsEnginePage() {
                       <p className="text-xs text-muted-foreground">${Number(ad.cost_per_lead || 0).toFixed(2)}/lead</p>
                     </div>
                     <div className="text-right">
+                      {Number(ad.performance_score || 0) > 0 && (
+                        <p className="text-xs text-muted-foreground mb-0.5">Score: {Number(ad.performance_score).toFixed(1)}</p>
+                      )}
                       {Number(ad.roi_pct || 0) > 0 ? (
                         <p className="text-sm font-bold text-primary">+{Number(ad.roi_pct).toFixed(0)}% ROI</p>
                       ) : (
