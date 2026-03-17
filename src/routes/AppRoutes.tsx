@@ -2509,6 +2509,8 @@ export default function AppRoutes() {
         <Route path="/brandaro/google-domination" element={<GoogleDominationPage />} />
         <Route path="/brandaro/optimization" element={<OptimizationEnginePage />} />
         <Route path="/brandaro/closer-ai" element={<CloserAIPage />} />
+        <Route path="/brandaro/va-dashboard" element={<VADashboardPage />} />
+        <Route path="/brandaro/va-manager" element={<VAManagerPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
