@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     // QUALITY GATE DECISION
     if (qualityScore >= 80) {
       // AUTO-DEPLOY: High quality
-      await deploySite(supabase, buildJob.id, projectId, clientId, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
+      await deploySite(supabase, buildJob.id, project_id, client_id, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
       await supabase.from("brandaro_build_jobs").update({ deployment_decision: "auto_deployed" }).eq("id", buildJob.id);
       console.log(`[AUTO-BUILD] ✅ Auto-deployed (score: ${qualityScore}). URL: ${liveUrl}`);
 
