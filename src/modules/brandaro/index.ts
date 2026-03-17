@@ -18,6 +18,7 @@ import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
 import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
+import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
