@@ -10221,6 +10221,76 @@ export type Database = {
           },
         ]
       }
+      brandaro_call_outcomes: {
+        Row: {
+          area_code_matched: boolean | null
+          business_id: string | null
+          call_duration_seconds: number | null
+          call_sid: string | null
+          created_at: string
+          id: string
+          lead_location: string | null
+          lead_name: string | null
+          lead_phone: string
+          notes: string | null
+          number_id: string
+          outcome: string
+          va_id: string | null
+        }
+        Insert: {
+          area_code_matched?: boolean | null
+          business_id?: string | null
+          call_duration_seconds?: number | null
+          call_sid?: string | null
+          created_at?: string
+          id?: string
+          lead_location?: string | null
+          lead_name?: string | null
+          lead_phone: string
+          notes?: string | null
+          number_id: string
+          outcome: string
+          va_id?: string | null
+        }
+        Update: {
+          area_code_matched?: boolean | null
+          business_id?: string | null
+          call_duration_seconds?: number | null
+          call_sid?: string | null
+          created_at?: string
+          id?: string
+          lead_location?: string | null
+          lead_name?: string | null
+          lead_phone?: string
+          notes?: string | null
+          number_id?: string
+          outcome?: string
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_call_outcomes_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_call_outcomes_number_id_fkey"
+            columns: ["number_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_number_pool"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_call_outcomes_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_call_patterns: {
         Row: {
           conversion_probability: number | null
@@ -13232,6 +13302,122 @@ export type Database = {
           status?: string | null
         }
         Relationships: []
+      }
+      brandaro_number_alerts: {
+        Row: {
+          acknowledged: boolean | null
+          alert_type: string
+          created_at: string
+          id: string
+          message: string
+          number_id: string
+        }
+        Insert: {
+          acknowledged?: boolean | null
+          alert_type: string
+          created_at?: string
+          id?: string
+          message: string
+          number_id: string
+        }
+        Update: {
+          acknowledged?: boolean | null
+          alert_type?: string
+          created_at?: string
+          id?: string
+          message?: string
+          number_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_number_alerts_number_id_fkey"
+            columns: ["number_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_number_pool"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_number_pool: {
+        Row: {
+          answer_rate: number | null
+          area_code: string
+          assigned_to_va: string | null
+          business_id: string | null
+          city: string | null
+          created_at: string
+          daily_call_count: number
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          phone_number: string
+          provider: Database["public"]["Enums"]["number_provider"]
+          risk_score: number
+          state: string | null
+          status: Database["public"]["Enums"]["number_pool_status"]
+          total_answered: number
+          total_calls: number
+          total_conversions: number
+          updated_at: string
+        }
+        Insert: {
+          answer_rate?: number | null
+          area_code: string
+          assigned_to_va?: string | null
+          business_id?: string | null
+          city?: string | null
+          created_at?: string
+          daily_call_count?: number
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          phone_number: string
+          provider?: Database["public"]["Enums"]["number_provider"]
+          risk_score?: number
+          state?: string | null
+          status?: Database["public"]["Enums"]["number_pool_status"]
+          total_answered?: number
+          total_calls?: number
+          total_conversions?: number
+          updated_at?: string
+        }
+        Update: {
+          answer_rate?: number | null
+          area_code?: string
+          assigned_to_va?: string | null
+          business_id?: string | null
+          city?: string | null
+          created_at?: string
+          daily_call_count?: number
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          phone_number?: string
+          provider?: Database["public"]["Enums"]["number_provider"]
+          risk_score?: number
+          state?: string | null
+          status?: Database["public"]["Enums"]["number_pool_status"]
+          total_answered?: number
+          total_calls?: number
+          total_conversions?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_number_pool_assigned_to_va_fkey"
+            columns: ["assigned_to_va"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_number_pool_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_objection_handlers: {
         Row: {
@@ -69705,6 +69891,14 @@ export type Database = {
         Args: { p_promotion_id: string }
         Returns: string
       }
+      assign_best_number: {
+        Args: {
+          p_business_id?: string
+          p_target_area_code: string
+          p_target_state?: string
+        }
+        Returns: string
+      }
       audience_diagnostics: { Args: never; Returns: Json }
       audit_actor_role: { Args: never; Returns: string }
       audit_compute_hash: {
@@ -69746,6 +69940,7 @@ export type Database = {
         Returns: number
       }
       bulk_approve_enrichment: { Args: never; Returns: number }
+      bump_number_usage: { Args: { p_number_id: string }; Returns: undefined }
       calculate_and_persist_drift_alerts: { Args: never; Returns: number }
       calculate_predictive_profit_score: {
         Args: { p_business_id: string; p_store_id: string }
@@ -70646,6 +70841,7 @@ export type Database = {
         Args: { _device_id: string }
         Returns: boolean
       }
+      reset_daily_number_counts: { Args: never; Returns: undefined }
       resolve_audience_count: {
         Args: { p_segment_id: string }
         Returns: number
@@ -71138,6 +71334,8 @@ export type Database = {
         | "deferred"
         | "cancelled"
       notification_sent_status: "pending" | "sent" | "failed"
+      number_pool_status: "active" | "cooldown" | "flagged"
+      number_provider: "twilio" | "google"
       ops_task_event_type:
         | "created"
         | "status_changed"
@@ -71745,6 +71943,8 @@ export const Constants = {
         "cancelled",
       ],
       notification_sent_status: ["pending", "sent", "failed"],
+      number_pool_status: ["active", "cooldown", "flagged"],
+      number_provider: ["twilio", "google"],
       ops_task_event_type: [
         "created",
         "status_changed",
