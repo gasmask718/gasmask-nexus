@@ -13622,14 +13622,17 @@ export type Database = {
       }
       brandaro_offer_variants: {
         Row: {
+          conversion_count: number | null
           conversion_rate: number | null
           created_at: string | null
+          exposure_count: number | null
           guarantee: string | null
           headline: string | null
           id: string
           offer_name: string
           pricing: number | null
           revenue_generated: number | null
+          sample_size: number | null
           status: string | null
           target_segment: string | null
           updated_at: string | null
@@ -13637,14 +13640,17 @@ export type Database = {
           value_props: Json | null
         }
         Insert: {
+          conversion_count?: number | null
           conversion_rate?: number | null
           created_at?: string | null
+          exposure_count?: number | null
           guarantee?: string | null
           headline?: string | null
           id?: string
           offer_name: string
           pricing?: number | null
           revenue_generated?: number | null
+          sample_size?: number | null
           status?: string | null
           target_segment?: string | null
           updated_at?: string | null
@@ -13652,14 +13658,17 @@ export type Database = {
           value_props?: Json | null
         }
         Update: {
+          conversion_count?: number | null
           conversion_rate?: number | null
           created_at?: string | null
+          exposure_count?: number | null
           guarantee?: string | null
           headline?: string | null
           id?: string
           offer_name?: string
           pricing?: number | null
           revenue_generated?: number | null
+          sample_size?: number | null
           status?: string | null
           target_segment?: string | null
           updated_at?: string | null
@@ -13988,8 +13997,10 @@ export type Database = {
       brandaro_pricing_tests: {
         Row: {
           base_price: number
+          conversion_count: number | null
           conversion_rate: number | null
           created_at: string | null
+          exposure_count: number | null
           id: string
           revenue_per_lead: number | null
           segment: string | null
@@ -13999,8 +14010,10 @@ export type Database = {
         }
         Insert: {
           base_price: number
+          conversion_count?: number | null
           conversion_rate?: number | null
           created_at?: string | null
+          exposure_count?: number | null
           id?: string
           revenue_per_lead?: number | null
           segment?: string | null
@@ -14010,8 +14023,10 @@ export type Database = {
         }
         Update: {
           base_price?: number
+          conversion_count?: number | null
           conversion_rate?: number | null
           created_at?: string | null
+          exposure_count?: number | null
           id?: string
           revenue_per_lead?: number | null
           segment?: string | null
@@ -15086,6 +15101,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_system_decisions: {
+        Row: {
+          action_taken: string
+          created_at: string | null
+          decision_reason: string | null
+          decision_type: string
+          id: string
+          impact_score: number | null
+          input_snapshot: Json | null
+          output_snapshot: Json | null
+          request_id: string
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string | null
+          decision_reason?: string | null
+          decision_type: string
+          id?: string
+          impact_score?: number | null
+          input_snapshot?: Json | null
+          output_snapshot?: Json | null
+          request_id: string
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string | null
+          decision_reason?: string | null
+          decision_type?: string
+          id?: string
+          impact_score?: number | null
+          input_snapshot?: Json | null
+          output_snapshot?: Json | null
+          request_id?: string
+        }
+        Relationships: []
       }
       brandaro_tasks: {
         Row: {
