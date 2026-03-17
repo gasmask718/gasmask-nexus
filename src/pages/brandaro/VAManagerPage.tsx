@@ -20,7 +20,7 @@ import {
 import {
   useCompetitorIntel, useOfferVariants, usePricingTests, usePositioningTests,
   useOptimizeOffers, useEvaluatePricingTests, useUpsertCompetitor, useCreateOffer,
-  useCreatePricingTest, useCreatePositioningTest,
+  useCreatePricingTest, useCreatePositioningTest, useSystemDecisions,
 } from "@/hooks/useBrandaroMarketDomination";
 import { toast } from "sonner";
 import {
@@ -71,6 +71,7 @@ export default function VAManagerPage() {
   const createOffer = useCreateOffer();
   const createPricingTest = useCreatePricingTest();
   const createPositioning = useCreatePositioningTest();
+  const { data: decisions = [] } = useSystemDecisions();
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
@@ -184,6 +185,7 @@ export default function VAManagerPage() {
           <TabsTrigger value="offers"><Tag className="h-3 w-3 mr-1" /> Offers</TabsTrigger>
           <TabsTrigger value="pricing"><DollarSign className="h-3 w-3 mr-1" /> Pricing</TabsTrigger>
           <TabsTrigger value="positioning"><Crosshair className="h-3 w-3 mr-1" /> Position</TabsTrigger>
+          <TabsTrigger value="decisions"><Eye className="h-3 w-3 mr-1" /> Decisions</TabsTrigger>
         </TabsList>
 
         {/* ── Escalation Queue ── */}
@@ -693,6 +695,14 @@ export default function VAManagerPage() {
                           <p className="text-muted-foreground">price</p>
                         </div>
                         <div>
+                          <p className="font-bold">{o.exposure_count || 0}</p>
+                          <p className="text-muted-foreground">exposed</p>
+                        </div>
+                        <div>
+                          <p className={`font-bold ${(o.sample_size || 0) >= 20 ? "text-emerald-400" : "text-amber-400"}`}>{o.sample_size || 0}</p>
+                          <p className="text-muted-foreground">n</p>
+                        </div>
+                        <div>
                           <p className={`font-bold ${o.conversion_rate >= 15 ? "text-emerald-400" : ""}`}>{Math.round(o.conversion_rate || 0)}%</p>
                           <p className="text-muted-foreground">conv</p>
                         </div>
@@ -742,7 +752,11 @@ export default function VAManagerPage() {
                       </div>
                       <div className="flex items-center gap-3 text-xs">
                         <div className="text-right">
-                          <p className="font-bold">{Math.round(t.conversion_rate || 0)}%</p>
+                          <p className="font-bold">{t.exposure_count || 0}</p>
+                          <p className="text-muted-foreground">exposed</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${(t.exposure_count || 0) >= 20 ? "" : "text-amber-400"}`}>{Math.round(t.conversion_rate || 0)}%</p>
                           <p className="text-muted-foreground">conv</p>
                         </div>
                         <div className="text-right">
@@ -751,7 +765,8 @@ export default function VAManagerPage() {
                         </div>
                         <Badge variant="outline" className={`text-xs capitalize ${
                           t.test_status === "winner" ? "text-emerald-400" :
-                          t.test_status === "loser" ? "text-destructive" : ""
+                          t.test_status === "loser" ? "text-destructive" :
+                          t.test_status === "insufficient_data" ? "text-amber-400" : ""
                         }`}>{t.test_status}</Badge>
                       </div>
                     </div>
@@ -786,6 +801,43 @@ export default function VAManagerPage() {
                       </div>
                       {p.headline && <p className="text-xs italic text-muted-foreground">"{p.headline}"</p>}
                       {p.script_variant && <p className="text-xs text-muted-foreground">{p.script_variant}</p>}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: System Decisions Log ── */}
+        <TabsContent value="decisions" className="space-y-4">
+          <Card className="border-cyan-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Eye className="h-4 w-4 text-cyan-400" /> System Decision Log
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2">
+                  {decisions.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No decisions logged yet</p>}
+                  {decisions.map((d: any) => (
+                    <div key={d.id} className="p-3 rounded-lg border bg-card space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs capitalize">{d.decision_type?.replace(/_/g, " ")}</Badge>
+                          <span className="text-sm font-medium">{d.action_taken}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {d.impact_score > 0 && (
+                            <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs">
+                              +{d.impact_score} impact
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      {d.decision_reason && <p className="text-xs text-muted-foreground">{d.decision_reason}</p>}
                     </div>
                   ))}
                 </div>
