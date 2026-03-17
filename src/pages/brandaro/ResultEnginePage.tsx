@@ -361,7 +361,7 @@ export default function ResultEnginePage() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="font-medium">{client.business_name}</p>
-                        <p className="text-xs text-muted-foreground">{client.package_chosen} tier</p>
+                        <p className="text-xs text-muted-foreground">{client.website_package || 'standard'} tier</p>
                       </div>
                       <Badge variant={clientAlerts.length > 0 ? 'destructive' : 'default'}>
                         {clientAlerts.length > 0 ? `${clientAlerts.length} alerts` : 'Healthy'}
