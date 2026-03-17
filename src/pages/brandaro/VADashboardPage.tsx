@@ -5,15 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import {
   useMyDailyPerformance, useVATaskQueue, useCompleteVATask, useSkipVATask,
   useVALeaderboard, useVABadges, useVACoaching, useVAAlerts, useToggleShift,
 } from "@/hooks/useBrandaroVAPerformance";
+import {
+  useVACallSessions, useCreateCallSession, useEndCallSession, useAnalyzeCallSession,
+  useVALeadHeat, useVARecommendations, useApplyRecommendation,
+  useVAConversionMetrics, useVACloserHandoffs,
+} from "@/hooks/useBrandaroCloserBrain";
 import { toast } from "sonner";
 import {
   Phone, TrendingUp, Target, Flame, Clock, CheckCircle2,
   SkipForward, AlertTriangle, Award, Zap, Bell, Power,
-  MessageSquare, Calendar, Star, Trophy, Shield,
+  MessageSquare, Calendar, Star, Trophy, Shield, Brain,
+  ArrowUpRight, Eye, Sparkles, Send, ThermometerSun,
 } from "lucide-react";
 
 const TASK_ICONS: Record<string, any> = {
@@ -28,8 +35,19 @@ const TASK_ICONS: Record<string, any> = {
   default: CheckCircle2,
 };
 
+const HEAT_COLORS: Record<string, string> = {
+  closing_now: "text-red-500 bg-red-500/10 border-red-500/30",
+  hot: "text-orange-500 bg-orange-500/10 border-orange-500/30",
+  interested: "text-yellow-500 bg-yellow-500/10 border-yellow-500/30",
+  warming: "text-cyan-500 bg-cyan-500/10 border-cyan-500/30",
+  cold: "text-muted-foreground bg-muted/20 border-muted/30",
+};
+
 export default function VADashboardPage() {
   const [leaderboardPeriod, setLeaderboardPeriod] = useState<"today" | "week" | "month">("today");
+  const [callNotes, setCallNotes] = useState("");
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+
   const { data: perf } = useMyDailyPerformance();
   const { data: tasks = [] } = useVATaskQueue();
   const { data: leaderboard = [] } = useVALeaderboard(leaderboardPeriod);
@@ -40,12 +58,23 @@ export default function VADashboardPage() {
   const skipTask = useSkipVATask();
   const toggleShift = useToggleShift();
 
+  const { data: callSessions = [] } = useVACallSessions();
+  const { data: hotLeads = [] } = useVALeadHeat("hot");
+  const { data: recommendations = [] } = useVARecommendations();
+  const { data: convMetrics } = useVAConversionMetrics("today");
+  const { data: handoffs = [] } = useVACloserHandoffs();
+  const createSession = useCreateCallSession();
+  const endSession = useEndCallSession();
+  const analyzeCall = useAnalyzeCallSession();
+  const applyRec = useApplyRecommendation();
+
   const quotaProgress = (actual: number, target: number) =>
     target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0;
 
   const urgentTasks = tasks.filter((t: any) => t.priority >= 8 || t.status === "overdue");
   const callbackTasks = tasks.filter((t: any) => t.task_type === "scheduled_callback");
   const regularTasks = tasks.filter((t: any) => !urgentTasks.includes(t) && !callbackTasks.includes(t));
+  const closingNowLeads = hotLeads.filter((l: any) => l.status === "closing_now");
 
   return (
     <div className="space-y-6">
@@ -53,7 +82,7 @@ export default function VADashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">VA Sales Floor</h1>
-          <p className="text-muted-foreground text-sm">Your daily execution dashboard</p>
+          <p className="text-muted-foreground text-sm">AI-Powered Closer Brain Active</p>
         </div>
         <div className="flex items-center gap-3">
           {alerts.length > 0 && (
@@ -75,21 +104,35 @@ export default function VADashboardPage() {
         </div>
       </div>
 
-      {/* Alert Banner */}
-      {alerts.length > 0 && (
+      {/* Hot Lead Banners */}
+      {closingNowLeads.length > 0 && (
+        <div className="space-y-2">
+          {closingNowLeads.slice(0, 2).map((lead: any) => (
+            <div key={lead.id} className="rounded-lg px-4 py-3 bg-red-500/15 border border-red-500/40 flex items-center justify-between animate-pulse">
+              <div className="flex items-center gap-3">
+                <Flame className="h-5 w-5 text-red-500" />
+                <div>
+                  <p className="text-sm font-bold text-red-400">🔥 CLOSING NOW — Score: {Math.round(lead.heat_score)}</p>
+                  <p className="text-xs text-red-300/80">Action: {lead.next_best_action?.replace(/_/g, " ")}</p>
+                </div>
+              </div>
+              <Badge variant="destructive" className="text-xs">CRITICAL</Badge>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Alert Banners */}
+      {alerts.length > 0 && closingNowLeads.length === 0 && (
         <div className="space-y-2">
           {alerts.slice(0, 3).map((a: any) => (
-            <div
-              key={a.id}
-              className={`rounded-lg px-4 py-2 text-sm flex items-center gap-2 ${
-                a.severity === "critical" ? "bg-destructive/20 text-destructive border border-destructive/30" :
-                a.severity === "high" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" :
-                "bg-primary/10 text-primary border border-primary/20"
-              }`}
-            >
+            <div key={a.id} className={`rounded-lg px-4 py-2 text-sm flex items-center gap-2 ${
+              a.severity === "critical" ? "bg-destructive/20 text-destructive border border-destructive/30" :
+              a.severity === "high" ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" :
+              "bg-primary/10 text-primary border border-primary/20"
+            }`}>
               <AlertTriangle className="h-4 w-4 shrink-0" />
               <span className="font-medium">{a.title}</span>
-              {a.description && <span className="text-xs opacity-80">— {a.description}</span>}
             </div>
           ))}
         </div>
@@ -102,9 +145,9 @@ export default function VADashboardPage() {
           { label: "Conversations", val: perf?.conversations || 0, icon: TrendingUp, color: "text-green-500" },
           { label: "Interested", val: perf?.interested_leads || 0, icon: Target, color: "text-cyan-500" },
           { label: "Hot Leads", val: perf?.hot_leads || 0, icon: Flame, color: "text-orange-500" },
-          { label: "Demo Requests", val: perf?.demo_requests || 0, icon: Calendar, color: "text-purple-400" },
-          { label: "Callbacks Set", val: perf?.callbacks_booked || 0, icon: Clock, color: "text-yellow-500" },
-          { label: "No Answers", val: perf?.no_answers || 0, icon: Phone, color: "text-muted-foreground" },
+          { label: "Objections Handled", val: convMetrics?.objections_handled || 0, icon: Shield, color: "text-purple-400" },
+          { label: "Buying Signals", val: convMetrics?.buying_signals_detected || 0, icon: Sparkles, color: "text-emerald-400" },
+          { label: "Closer Handoffs", val: convMetrics?.closer_handoffs || 0, icon: ArrowUpRight, color: "text-amber-400" },
           { label: "Score", val: perf?.performance_score || 0, icon: Star, color: "text-amber-400" },
         ].map(({ label, val, icon: Icon, color }) => (
           <Card key={label}>
@@ -150,21 +193,197 @@ export default function VADashboardPage() {
       </Card>
 
       {/* Main Content Tabs */}
-      <Tabs defaultValue="tasks" className="space-y-4">
-        <TabsList className="grid grid-cols-4 w-full">
+      <Tabs defaultValue="ai-brain" className="space-y-4">
+        <TabsList className="grid grid-cols-5 w-full">
+          <TabsTrigger value="ai-brain" className="gap-1">
+            <Brain className="h-3 w-3" /> AI Brain
+          </TabsTrigger>
           <TabsTrigger value="tasks" className="gap-1">
             <CheckCircle2 className="h-3 w-3" /> Tasks {urgentTasks.length > 0 && `(${urgentTasks.length})`}
           </TabsTrigger>
           <TabsTrigger value="callbacks" className="gap-1">
-            <Clock className="h-3 w-3" /> Callbacks {callbackTasks.length > 0 && `(${callbackTasks.length})`}
+            <Clock className="h-3 w-3" /> Callbacks
           </TabsTrigger>
           <TabsTrigger value="leaderboard" className="gap-1">
-            <Trophy className="h-3 w-3" /> Leaderboard
+            <Trophy className="h-3 w-3" /> Rank
           </TabsTrigger>
           <TabsTrigger value="coaching" className="gap-1">
-            <Shield className="h-3 w-3" /> Coaching
+            <Shield className="h-3 w-3" /> Coach
           </TabsTrigger>
         </TabsList>
+
+        {/* AI Brain Tab */}
+        <TabsContent value="ai-brain" className="space-y-4">
+          {/* Call Intelligence Card */}
+          <Card className="border-primary/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" /> Live Call Intelligence
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {!activeSessionId ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">Start a call session to get real-time AI analysis</p>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      const session = await createSession.mutateAsync({ source: "va_dashboard" });
+                      setActiveSessionId(session.id);
+                      toast.success("Call session started");
+                    }}
+                  >
+                    <Phone className="h-3 w-3 mr-1" /> Start Call Session
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-sm font-medium text-green-500">Session Active</span>
+                  </div>
+                  <Textarea
+                    value={callNotes}
+                    onChange={(e) => setCallNotes(e.target.value)}
+                    placeholder="Paste transcript or type call notes here…&#10;&#10;Example: Lead said 'how much does it cost?' and 'can I see examples?' — seemed interested but mentioned budget concerns."
+                    className="min-h-[100px] text-sm"
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="gap-1"
+                      onClick={() => {
+                        analyzeCall.mutate({
+                          call_session_id: activeSessionId,
+                          notes: callNotes,
+                        });
+                      }}
+                      disabled={!callNotes.trim() || analyzeCall.isPending}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      {analyzeCall.isPending ? "Analyzing…" : "Analyze Call"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        endSession.mutate({ sessionId: activeSessionId });
+                        setActiveSessionId(null);
+                        setCallNotes("");
+                        toast("Session ended");
+                      }}
+                    >
+                      End Session
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AI Recommendations */}
+          {recommendations.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-400" /> AI Recommendations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[250px]">
+                  <div className="space-y-2">
+                    {recommendations.map((rec: any) => (
+                      <div key={rec.id} className="p-3 rounded-lg border bg-card space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{rec.recommendation_title}</span>
+                          <Badge variant={rec.priority >= 8 ? "destructive" : "secondary"} className="text-xs">
+                            P{rec.priority}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{rec.recommendation_body}</p>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="outline" className="text-xs">
+                            {rec.recommended_action?.replace(/_/g, " ")}
+                          </Badge>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => applyRec.mutate(rec.id)}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" /> Apply
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Hot Leads */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <ThermometerSun className="h-4 w-4 text-orange-500" /> Lead Heat Map
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {hotLeads.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No hot leads yet — keep calling!</p>}
+                  {hotLeads.map((lead: any) => (
+                    <div key={lead.id} className={`flex items-center justify-between p-3 rounded-lg border ${HEAT_COLORS[lead.status] || HEAT_COLORS.cold}`}>
+                      <div className="flex items-center gap-3">
+                        {lead.status === "closing_now" ? <Flame className="h-4 w-4 text-red-500 animate-pulse" /> :
+                         lead.status === "hot" ? <Flame className="h-4 w-4 text-orange-500" /> :
+                         <ThermometerSun className="h-4 w-4" />}
+                        <div>
+                          <p className="text-sm font-medium">Lead {lead.lead_id?.slice(0, 8)}…</p>
+                          <p className="text-xs opacity-75">{lead.next_best_action?.replace(/_/g, " ")}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold">{Math.round(lead.heat_score)}</span>
+                        <Badge variant="outline" className="text-xs capitalize">{lead.status?.replace(/_/g, " ")}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Recent Call Sessions */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Eye className="h-4 w-4" /> Recent Call Reviews
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {callSessions.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No call sessions yet</p>}
+                  {callSessions.slice(0, 8).map((s: any) => (
+                    <div key={s.id} className="flex items-center justify-between p-2 rounded-lg border bg-card text-xs">
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <Badge variant={s.ai_analyzed ? "default" : "secondary"} className="text-xs shrink-0">
+                          {s.ai_analyzed ? "Analyzed" : "Pending"}
+                        </Badge>
+                        <span className="truncate">{s.call_outcome || "—"}</span>
+                        {s.urgency_level === "high" || s.urgency_level === "immediate" ? (
+                          <Flame className="h-3 w-3 text-orange-500 shrink-0" />
+                        ) : null}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {s.objection_count > 0 && <Badge variant="outline" className="text-xs">{s.objection_count} obj</Badge>}
+                        {s.buying_signal_count > 0 && <Badge variant="outline" className="text-xs text-green-500">{s.buying_signal_count} sig</Badge>}
+                        <span className="text-muted-foreground">{new Date(s.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Tasks Tab */}
         <TabsContent value="tasks">
@@ -289,16 +508,14 @@ export default function VADashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {leaderboard.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No leaderboard data yet</p>}
+                {leaderboard.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No data yet</p>}
                 {leaderboard.map((va: any, i: number) => (
                   <div key={va.va_user_id} className={`flex items-center justify-between p-3 rounded-lg border ${i === 0 ? "border-amber-500/30 bg-amber-500/5" : "bg-card"}`}>
                     <div className="flex items-center gap-3">
                       <span className={`text-lg font-bold ${i === 0 ? "text-amber-400" : i === 1 ? "text-gray-400" : i === 2 ? "text-orange-700" : "text-muted-foreground"}`}>
                         #{i + 1}
                       </span>
-                      <div>
-                        <p className="text-sm font-medium">{va.name}</p>
-                      </div>
+                      <p className="text-sm font-medium">{va.name}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       {i === 0 && <Trophy className="h-4 w-4 text-amber-400" />}
@@ -309,8 +526,6 @@ export default function VADashboardPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Badges */}
           {badges.length > 0 && (
             <Card className="mt-4">
               <CardHeader className="pb-2">
@@ -353,16 +568,6 @@ export default function VADashboardPage() {
                           {Array.from({ length: 5 }).map((_, i) => (
                             <Star key={i} className={`h-3 w-3 ${i < c.quality_score ? "text-amber-400 fill-amber-400" : "text-muted"}`} />
                           ))}
-                        </div>
-                      )}
-                      {c.strengths?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {c.strengths.map((s: string) => <Badge key={s} variant="secondary" className="text-xs text-green-500">{s}</Badge>)}
-                        </div>
-                      )}
-                      {c.weak_points?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {c.weak_points.map((w: string) => <Badge key={w} variant="secondary" className="text-xs text-destructive">{w}</Badge>)}
                         </div>
                       )}
                       {c.improvement_target && <p className="text-xs text-muted-foreground">🎯 Target: {c.improvement_target}</p>}
