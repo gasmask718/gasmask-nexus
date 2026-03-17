@@ -10526,62 +10526,98 @@ export type Database = {
         Row: {
           assigned_va_id: string | null
           auto_actions_taken: string[] | null
+          auto_close_eligible: boolean | null
           closed_at: string | null
           created_at: string
           days_in_pipeline: number | null
           demo_sent_at: string | null
           demo_viewed_at: string | null
+          design_colors: string[] | null
+          design_cta_style: string | null
+          design_layout: string | null
+          design_profile_snapshot: Json | null
           id: string
           interested_at: string | null
+          last_nudge_at: string | null
           lead_id: string | null
           lost_at: string | null
           lost_reason: string | null
           negotiating_at: string | null
+          nudge_count: number | null
           package_tier: string | null
           payment_amount: number | null
+          payment_link_clicked: boolean | null
+          payment_link_sent_at: string | null
+          payment_link_url: string | null
           priority_score: number | null
+          revenue_amount: number | null
           stage: string
           updated_at: string
+          urgency_level: string | null
         }
         Insert: {
           assigned_va_id?: string | null
           auto_actions_taken?: string[] | null
+          auto_close_eligible?: boolean | null
           closed_at?: string | null
           created_at?: string
           days_in_pipeline?: number | null
           demo_sent_at?: string | null
           demo_viewed_at?: string | null
+          design_colors?: string[] | null
+          design_cta_style?: string | null
+          design_layout?: string | null
+          design_profile_snapshot?: Json | null
           id?: string
           interested_at?: string | null
+          last_nudge_at?: string | null
           lead_id?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           negotiating_at?: string | null
+          nudge_count?: number | null
           package_tier?: string | null
           payment_amount?: number | null
+          payment_link_clicked?: boolean | null
+          payment_link_sent_at?: string | null
+          payment_link_url?: string | null
           priority_score?: number | null
+          revenue_amount?: number | null
           stage?: string
           updated_at?: string
+          urgency_level?: string | null
         }
         Update: {
           assigned_va_id?: string | null
           auto_actions_taken?: string[] | null
+          auto_close_eligible?: boolean | null
           closed_at?: string | null
           created_at?: string
           days_in_pipeline?: number | null
           demo_sent_at?: string | null
           demo_viewed_at?: string | null
+          design_colors?: string[] | null
+          design_cta_style?: string | null
+          design_layout?: string | null
+          design_profile_snapshot?: Json | null
           id?: string
           interested_at?: string | null
+          last_nudge_at?: string | null
           lead_id?: string | null
           lost_at?: string | null
           lost_reason?: string | null
           negotiating_at?: string | null
+          nudge_count?: number | null
           package_tier?: string | null
           payment_amount?: number | null
+          payment_link_clicked?: boolean | null
+          payment_link_sent_at?: string | null
+          payment_link_url?: string | null
           priority_score?: number | null
+          revenue_amount?: number | null
           stage?: string
           updated_at?: string
+          urgency_level?: string | null
         }
         Relationships: [
           {
@@ -10816,6 +10852,65 @@ export type Database = {
             columns: ["demo_id"]
             isOneToOne: false
             referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_demo_quality_scores: {
+        Row: {
+          conversion_score: number | null
+          created_at: string | null
+          cta_present: boolean | null
+          demo_id: string | null
+          design_score: number | null
+          flagged: boolean | null
+          id: string
+          lead_id: string | null
+          mobile_friendly: boolean | null
+          overall_score: number | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          uniqueness_score: number | null
+        }
+        Insert: {
+          conversion_score?: number | null
+          created_at?: string | null
+          cta_present?: boolean | null
+          demo_id?: string | null
+          design_score?: number | null
+          flagged?: boolean | null
+          id?: string
+          lead_id?: string | null
+          mobile_friendly?: boolean | null
+          overall_score?: number | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          uniqueness_score?: number | null
+        }
+        Update: {
+          conversion_score?: number | null
+          created_at?: string | null
+          cta_present?: boolean | null
+          demo_id?: string | null
+          design_score?: number | null
+          flagged?: boolean | null
+          id?: string
+          lead_id?: string | null
+          mobile_friendly?: boolean | null
+          overall_score?: number | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          uniqueness_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_demo_quality_scores_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -11188,12 +11283,18 @@ export type Database = {
         Row: {
           channel: string
           created_at: string
+          delivered: boolean | null
+          failure_reason: string | null
           id: string
           lead_id: string | null
           message_content: string | null
+          provider_message_id: string | null
+          reply_received: boolean | null
           response_received: boolean | null
           response_text: string | null
+          retry_count: number | null
           scheduled_at: string
+          sent: boolean | null
           sent_at: string | null
           sequence_step: number
           status: string
@@ -11203,12 +11304,18 @@ export type Database = {
         Insert: {
           channel?: string
           created_at?: string
+          delivered?: boolean | null
+          failure_reason?: string | null
           id?: string
           lead_id?: string | null
           message_content?: string | null
+          provider_message_id?: string | null
+          reply_received?: boolean | null
           response_received?: boolean | null
           response_text?: string | null
+          retry_count?: number | null
           scheduled_at?: string
+          sent?: boolean | null
           sent_at?: string | null
           sequence_step?: number
           status?: string
@@ -11218,12 +11325,18 @@ export type Database = {
         Update: {
           channel?: string
           created_at?: string
+          delivered?: boolean | null
+          failure_reason?: string | null
           id?: string
           lead_id?: string | null
           message_content?: string | null
+          provider_message_id?: string | null
+          reply_received?: boolean | null
           response_received?: boolean | null
           response_text?: string | null
+          retry_count?: number | null
           scheduled_at?: string
+          sent?: boolean | null
           sent_at?: string | null
           sequence_step?: number
           status?: string
@@ -11339,6 +11452,65 @@ export type Database = {
           trigger_phrases?: string[] | null
         }
         Relationships: []
+      }
+      brandaro_inbound_messages: {
+        Row: {
+          ai_auto_responded: boolean | null
+          ai_response: string | null
+          channel: string
+          created_at: string | null
+          followup_id: string | null
+          id: string
+          intent_detected: string | null
+          lead_id: string | null
+          message: string
+          requires_va: boolean | null
+          resolved: boolean | null
+          resolved_by: string | null
+          sender_email: string | null
+          sender_phone: string | null
+        }
+        Insert: {
+          ai_auto_responded?: boolean | null
+          ai_response?: string | null
+          channel?: string
+          created_at?: string | null
+          followup_id?: string | null
+          id?: string
+          intent_detected?: string | null
+          lead_id?: string | null
+          message: string
+          requires_va?: boolean | null
+          resolved?: boolean | null
+          resolved_by?: string | null
+          sender_email?: string | null
+          sender_phone?: string | null
+        }
+        Update: {
+          ai_auto_responded?: boolean | null
+          ai_response?: string | null
+          channel?: string
+          created_at?: string | null
+          followup_id?: string | null
+          id?: string
+          intent_detected?: string | null
+          lead_id?: string | null
+          message?: string
+          requires_va?: boolean | null
+          resolved?: boolean | null
+          resolved_by?: string | null
+          sender_email?: string | null
+          sender_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_inbound_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_job_failures: {
         Row: {
