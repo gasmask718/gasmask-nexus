@@ -12981,6 +12981,45 @@ export type Database = {
           },
         ]
       }
+      brandaro_framework_stats: {
+        Row: {
+          avg_revenue_per_close: number | null
+          close_rate: number | null
+          created_at: string | null
+          framework_name: string
+          id: string
+          personality_id: string | null
+          times_closed: number | null
+          times_used: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_revenue_per_close?: number | null
+          close_rate?: number | null
+          created_at?: string | null
+          framework_name: string
+          id?: string
+          personality_id?: string | null
+          times_closed?: number | null
+          times_used?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_revenue_per_close?: number | null
+          close_rate?: number | null
+          created_at?: string | null
+          framework_name?: string
+          id?: string
+          personality_id?: string | null
+          times_closed?: number | null
+          times_used?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_handoff_rules: {
         Row: {
           auto_transfer: boolean | null
