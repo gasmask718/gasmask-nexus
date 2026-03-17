@@ -326,6 +326,27 @@ export default function VAWorkspacePage() {
               </div>
             )}
 
+            {/* Objection Tags */}
+            <div className="space-y-2">
+              <Label>Objections Heard</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {COMMON_OBJECTIONS.map((obj) => (
+                  <Button
+                    key={obj}
+                    type="button"
+                    variant={selectedObjections.includes(obj) ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => setSelectedObjections(prev =>
+                      prev.includes(obj) ? prev.filter(o => o !== obj) : [...prev, obj]
+                    )}
+                  >
+                    {obj}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <Label>Call Notes</Label>
               <Textarea
