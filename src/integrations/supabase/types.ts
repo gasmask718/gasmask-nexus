@@ -11123,6 +11123,42 @@ export type Database = {
           },
         ]
       }
+      brandaro_handoff_rules: {
+        Row: {
+          auto_transfer: boolean | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          min_intent_score: number
+          priority: number | null
+          required_stage: string | null
+          rule_name: string
+          trigger_phrases: string[] | null
+        }
+        Insert: {
+          auto_transfer?: boolean | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          min_intent_score?: number
+          priority?: number | null
+          required_stage?: string | null
+          rule_name: string
+          trigger_phrases?: string[] | null
+        }
+        Update: {
+          auto_transfer?: boolean | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          min_intent_score?: number
+          priority?: number | null
+          required_stage?: string | null
+          rule_name?: string
+          trigger_phrases?: string[] | null
+        }
+        Relationships: []
+      }
       brandaro_job_failures: {
         Row: {
           attempt_count: number | null
@@ -12411,6 +12447,194 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "brandaro_extracted_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_voice_agent_calls: {
+        Row: {
+          ai_notes: string | null
+          call_duration_seconds: number | null
+          call_sid: string | null
+          call_stage_reached: string | null
+          campaign_id: string | null
+          contact_captured: boolean | null
+          created_at: string
+          demo_requested: boolean | null
+          handoff_score: number | null
+          id: string
+          intent_level: string | null
+          lead_id: string | null
+          objections_encountered: string[] | null
+          objections_handled: string[] | null
+          outcome: string | null
+          script_id: string | null
+          transfer_reason: string | null
+          transferred_to_human: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          ai_notes?: string | null
+          call_duration_seconds?: number | null
+          call_sid?: string | null
+          call_stage_reached?: string | null
+          campaign_id?: string | null
+          contact_captured?: boolean | null
+          created_at?: string
+          demo_requested?: boolean | null
+          handoff_score?: number | null
+          id?: string
+          intent_level?: string | null
+          lead_id?: string | null
+          objections_encountered?: string[] | null
+          objections_handled?: string[] | null
+          outcome?: string | null
+          script_id?: string | null
+          transfer_reason?: string | null
+          transferred_to_human?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          ai_notes?: string | null
+          call_duration_seconds?: number | null
+          call_sid?: string | null
+          call_stage_reached?: string | null
+          campaign_id?: string | null
+          contact_captured?: boolean | null
+          created_at?: string
+          demo_requested?: boolean | null
+          handoff_score?: number | null
+          id?: string
+          intent_level?: string | null
+          lead_id?: string | null
+          objections_encountered?: string[] | null
+          objections_handled?: string[] | null
+          outcome?: string | null
+          script_id?: string | null
+          transfer_reason?: string | null
+          transferred_to_human?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_voice_agent_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_voice_agent_calls_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_voice_agent_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_voice_agent_scripts: {
+        Row: {
+          behavior_rules: Json | null
+          call_structure: Json
+          created_at: string
+          demo_offer: string | null
+          failsafe: string | null
+          hard_close: string | null
+          id: string
+          is_active: boolean
+          opening_lines: Json
+          qualification_questions: Json
+          script_name: string
+          script_version: number
+          soft_close: string | null
+          updated_at: string
+          value_positioning: string | null
+          voice_style: Json | null
+        }
+        Insert: {
+          behavior_rules?: Json | null
+          call_structure?: Json
+          created_at?: string
+          demo_offer?: string | null
+          failsafe?: string | null
+          hard_close?: string | null
+          id?: string
+          is_active?: boolean
+          opening_lines?: Json
+          qualification_questions?: Json
+          script_name: string
+          script_version?: number
+          soft_close?: string | null
+          updated_at?: string
+          value_positioning?: string | null
+          voice_style?: Json | null
+        }
+        Update: {
+          behavior_rules?: Json | null
+          call_structure?: Json
+          created_at?: string
+          demo_offer?: string | null
+          failsafe?: string | null
+          hard_close?: string | null
+          id?: string
+          is_active?: boolean
+          opening_lines?: Json
+          qualification_questions?: Json
+          script_name?: string
+          script_version?: number
+          soft_close?: string | null
+          updated_at?: string
+          value_positioning?: string | null
+          voice_style?: Json | null
+        }
+        Relationships: []
+      }
+      brandaro_voice_objections: {
+        Row: {
+          ai_response: string
+          created_at: string
+          effectiveness_rate: number | null
+          escalation_action: string | null
+          followup_question: string | null
+          id: string
+          objection_key: string
+          script_id: string | null
+          times_converted: number | null
+          times_used: number | null
+          trigger_phrases: string[]
+        }
+        Insert: {
+          ai_response: string
+          created_at?: string
+          effectiveness_rate?: number | null
+          escalation_action?: string | null
+          followup_question?: string | null
+          id?: string
+          objection_key: string
+          script_id?: string | null
+          times_converted?: number | null
+          times_used?: number | null
+          trigger_phrases?: string[]
+        }
+        Update: {
+          ai_response?: string
+          created_at?: string
+          effectiveness_rate?: number | null
+          escalation_action?: string | null
+          followup_question?: string | null
+          id?: string
+          objection_key?: string
+          script_id?: string | null
+          times_converted?: number | null
+          times_used?: number | null
+          trigger_phrases?: string[]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_voice_objections_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_voice_agent_scripts"
             referencedColumns: ["id"]
           },
         ]
