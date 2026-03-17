@@ -39,6 +39,7 @@ export default function VACommandCenterPage() {
   const completeTask = useCompleteVaTask();
   const submitFeedback = useSubmitLearningFeedback();
   const { data: objectionLibrary = [] } = useObjectionLibrary();
+  const logObjection = useLogObjection();
 
   const handlePostCallSubmit = async () => {
     if (!postCallOutcome) { toast.error("Select an outcome"); return; }
