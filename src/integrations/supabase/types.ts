@@ -9665,6 +9665,118 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_ads_campaigns: {
+        Row: {
+          budget: number | null
+          clicks: number | null
+          client_id: string | null
+          cost_per_lead: number | null
+          created_at: string | null
+          id: string
+          impressions: number | null
+          leads_generated: number | null
+          platform: string | null
+          revenue_attributed: number | null
+          roi_pct: number | null
+          spend: number | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          budget?: number | null
+          clicks?: number | null
+          client_id?: string | null
+          cost_per_lead?: number | null
+          created_at?: string | null
+          id?: string
+          impressions?: number | null
+          leads_generated?: number | null
+          platform?: string | null
+          revenue_attributed?: number | null
+          roi_pct?: number | null
+          spend?: number | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          budget?: number | null
+          clicks?: number | null
+          client_id?: string | null
+          cost_per_lead?: number | null
+          created_at?: string | null
+          id?: string
+          impressions?: number | null
+          leads_generated?: number | null
+          platform?: string | null
+          revenue_attributed?: number | null
+          roi_pct?: number | null
+          spend?: number | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_ads_campaigns_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_ai_account_manager: {
+        Row: {
+          auto_messages_sent: number | null
+          client_id: string | null
+          created_at: string | null
+          engagement_level: string | null
+          id: string
+          last_action: string | null
+          last_contact_at: string | null
+          last_message: string | null
+          next_scheduled_action: string | null
+          next_scheduled_at: string | null
+          satisfaction_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_messages_sent?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          engagement_level?: string | null
+          id?: string
+          last_action?: string | null
+          last_contact_at?: string | null
+          last_message?: string | null
+          next_scheduled_action?: string | null
+          next_scheduled_at?: string | null
+          satisfaction_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_messages_sent?: number | null
+          client_id?: string | null
+          created_at?: string | null
+          engagement_level?: string | null
+          id?: string
+          last_action?: string | null
+          last_contact_at?: string | null
+          last_message?: string | null
+          next_scheduled_action?: string | null
+          next_scheduled_at?: string | null
+          satisfaction_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_ai_account_manager_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_ai_conversations: {
         Row: {
           call_id: string | null
@@ -10542,6 +10654,68 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_client_reports: {
+        Row: {
+          calls_generated: number | null
+          client_id: string | null
+          conversions: number | null
+          created_at: string | null
+          growth_pct: number | null
+          highlights: string[] | null
+          id: string
+          leads_generated: number | null
+          period: string
+          period_end: string | null
+          period_start: string | null
+          report_url: string | null
+          revenue_estimate: number | null
+          sent_at: string | null
+          visitors: number | null
+        }
+        Insert: {
+          calls_generated?: number | null
+          client_id?: string | null
+          conversions?: number | null
+          created_at?: string | null
+          growth_pct?: number | null
+          highlights?: string[] | null
+          id?: string
+          leads_generated?: number | null
+          period?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_url?: string | null
+          revenue_estimate?: number | null
+          sent_at?: string | null
+          visitors?: number | null
+        }
+        Update: {
+          calls_generated?: number | null
+          client_id?: string | null
+          conversions?: number | null
+          created_at?: string | null
+          growth_pct?: number | null
+          highlights?: string[] | null
+          id?: string
+          leads_generated?: number | null
+          period?: string
+          period_end?: string | null
+          period_start?: string | null
+          report_url?: string | null
+          revenue_estimate?: number | null
+          sent_at?: string | null
+          visitors?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_reports_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
             referencedColumns: ["id"]
           },
         ]
