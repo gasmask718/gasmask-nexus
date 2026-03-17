@@ -10499,6 +10499,47 @@ export type Database = {
           },
         ]
       }
+      brandaro_client_services: {
+        Row: {
+          active: boolean | null
+          cancelled_at: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          monthly_value: number | null
+          service_type: string
+          started_at: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          cancelled_at?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          monthly_value?: number | null
+          service_type: string
+          started_at?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          cancelled_at?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          monthly_value?: number | null
+          service_type?: string
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_services_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_client_views: {
         Row: {
           access_token: string
@@ -11811,6 +11852,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_industry_performance: {
+        Row: {
+          avg_ltv: number | null
+          avg_revenue: number | null
+          close_rate: number | null
+          created_at: string | null
+          id: string
+          industry: string
+          total_clients: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_ltv?: number | null
+          avg_revenue?: number | null
+          close_rate?: number | null
+          created_at?: string | null
+          id?: string
+          industry: string
+          total_clients?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_ltv?: number | null
+          avg_revenue?: number | null
+          close_rate?: number | null
+          created_at?: string | null
+          id?: string
+          industry?: string
+          total_clients?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       brandaro_job_failures: {
         Row: {

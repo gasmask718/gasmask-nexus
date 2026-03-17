@@ -5,12 +5,14 @@ export function useCEODashboard() {
   return useQuery({
     queryKey: ['brandaro-ceo-dashboard'],
     queryFn: async () => {
-      const [leads, calls, payments, queue, performance] = await Promise.all([
+      const [leads, calls, payments, queue, performance, services, industries] = await Promise.all([
         (supabase as any).from('brandaro_leads_master').select('id, status, industry, created_at'),
         (supabase as any).from('brandaro_calls').select('id, outcome, ai_handled, duration_seconds, created_at'),
         (supabase as any).from('brandaro_payment_plans').select('total_amount, status, created_at'),
         (supabase as any).from('brandaro_call_queue').select('id, status'),
         (supabase as any).from('brandaro_performance_ai').select('*').order('created_at', { ascending: false }).limit(10),
+        (supabase as any).from('brandaro_client_services').select('*').eq('active', true),
+        (supabase as any).from('brandaro_industry_performance').select('*').order('total_revenue', { ascending: false }),
       ]);
 
       const today = new Date().toISOString().split('T')[0];
@@ -20,6 +22,8 @@ export function useCEODashboard() {
       const allCalls = (calls.data || []) as any[];
       const allPayments = (payments.data || []) as any[];
       const queueItems = (queue.data || []) as any[];
+      const activeServices = (services.data || []) as any[];
+      const industryData = (industries.data || []) as any[];
 
       const leadsToday = allLeads.filter((l: any) => l.created_at?.startsWith(today)).length;
       const callsToday = allCalls.filter((c: any) => c.created_at?.startsWith(today)).length;
@@ -33,6 +37,23 @@ export function useCEODashboard() {
       const closeRate = allCalls.length > 0 ? (closedDeals / allCalls.length) * 100 : 0;
       const pendingQueue = queueItems.filter((q: any) => q.status === 'pending').length;
 
+      // Recurring revenue from active client services
+      const monthlyRecurring = activeServices.reduce((sum: number, s: any) => sum + (s.monthly_value || 0), 0);
+      const totalActiveClients = new Set(activeServices.map((s: any) => s.client_id)).size;
+
+      // Service breakdown
+      const serviceBreakdown: Record<string, { count: number; revenue: number }> = {};
+      activeServices.forEach((s: any) => {
+        if (!serviceBreakdown[s.service_type]) serviceBreakdown[s.service_type] = { count: 0, revenue: 0 };
+        serviceBreakdown[s.service_type].count++;
+        serviceBreakdown[s.service_type].revenue += s.monthly_value || 0;
+      });
+
+      // LTV estimate
+      const avgLTV = totalActiveClients > 0
+        ? avgDealSize + (monthlyRecurring / totalActiveClients) * 12
+        : avgDealSize;
+
       const industryMap: Record<string, number> = {};
       allLeads.forEach((l: any) => {
         if (l.industry) industryMap[l.industry] = (industryMap[l.industry] || 0) + 1;
@@ -41,6 +62,8 @@ export function useCEODashboard() {
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([name, count]) => ({ name, count }));
+
+      const monthlyTarget = 1000000;
 
       return {
         leadsToday,
@@ -54,9 +77,14 @@ export function useCEODashboard() {
         pendingQueue,
         topIndustries,
         performanceData: (performance.data || []) as any[],
-        monthlyTarget: 100000,
-        monthlyProgress: (revenueThisMonth / 100000) * 100,
-        dailyTarget: 100000 / 30,
+        monthlyTarget,
+        monthlyProgress: (revenueThisMonth / monthlyTarget) * 100,
+        dailyTarget: monthlyTarget / 30,
+        monthlyRecurring,
+        totalActiveClients,
+        serviceBreakdown,
+        avgLTV,
+        industryPerformance: industryData,
       };
     },
     refetchInterval: 30000,
@@ -91,5 +119,34 @@ export function useCallQueue() {
       return data as any[];
     },
     refetchInterval: 10000,
+  });
+}
+
+export function useClientServices() {
+  return useQuery({
+    queryKey: ['brandaro-client-services'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('brandaro_client_services')
+        .select('*, brandaro_leads_master(business_name, industry)')
+        .eq('active', true)
+        .order('monthly_value', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+}
+
+export function useIndustryPerformance() {
+  return useQuery({
+    queryKey: ['brandaro-industry-performance'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('brandaro_industry_performance')
+        .select('*')
+        .order('total_revenue', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
   });
 }
