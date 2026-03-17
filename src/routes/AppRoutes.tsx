@@ -98,6 +98,7 @@ import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
 import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import ClientReportingPage from '@/pages/brandaro/ClientReportingPage';
+import AdsEnginePage from '@/pages/brandaro/AdsEnginePage';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
