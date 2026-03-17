@@ -265,3 +265,6 @@ verify_jwt = false
 
 [functions.brandaro-call-analyzer]
 verify_jwt = false
+
+[functions.brandaro-track-performance]
+verify_jwt = false

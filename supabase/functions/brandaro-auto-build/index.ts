@@ -522,6 +522,111 @@ function extractDemoStructure(html: string): any {
   };
 }
 
+// Taste Engine variant: uses a specific design profile palette
+function assembleProductionSiteWithProfile(
+  blocks: any[],
+  businessName: string,
+  industry: string,
+  palette: StylePalette,
+): string {
+  // Same assembly logic but with a pre-selected palette
+  const pageGroups: Record<string, any[]> = {};
+  for (const block of blocks) {
+    if (!pageGroups[block.page_type]) pageGroups[block.page_type] = [];
+    pageGroups[block.page_type].push(block);
+  }
+
+  const layoutSeed = Math.floor(Math.random() * 5);
+  const homepageBlocks = pageGroups["homepage"] || [];
+  const seoTitle = homepageBlocks.find((b: any) => b.seo_title)?.seo_title || `${businessName} | ${industry}`;
+  const seoDesc = homepageBlocks.find((b: any) => b.seo_description)?.seo_description || `${businessName} - Professional ${industry} services`;
+
+  const pageNames = Object.keys(pageGroups);
+  const navLinks = pageNames.map(p =>
+    `<a href="#${p}" class="nav-link">${p.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}</a>`
+  ).join("\n          ");
+
+  const sectionLayouts = ["full-width", "two-column", "offset-left", "centered-narrow", "wide-hero"];
+
+  let contentSections = "";
+  let sectionIdx = 0;
+  for (const [pageType, pageBlocks] of Object.entries(pageGroups)) {
+    const layoutClass = sectionLayouts[(sectionIdx + layoutSeed) % sectionLayouts.length];
+    const sectionStyle = getSectionStyle(layoutClass, palette);
+    contentSections += `\n    <section id="${pageType}" class="page-section" style="${sectionStyle}">\n`;
+    for (const block of pageBlocks) {
+      const componentVariant = getComponentVariant(block.section_name, sectionIdx, palette);
+      contentSections += `      <div class="content-block" style="${componentVariant.wrapperStyle}">\n        ${block.content_html || ""}\n      </div>\n`;
+    }
+    contentSections += `    </section>\n`;
+    sectionIdx++;
+  }
+
+  // Identical HTML shell but with taste-engine-selected palette
+  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette);
+}
+
+// Shared HTML shell to avoid duplication
+function assembleHtmlShell(
+  businessName: string, industry: string, seoTitle: string, seoDesc: string,
+  navLinks: string, contentSections: string, palette: StylePalette,
+): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${seoTitle}</title>
+  <meta name="description" content="${seoDesc}">
+  <meta property="og:title" content="${seoTitle}">
+  <meta property="og:description" content="${seoDesc}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=${palette.headingFont.replace(/ /g, "+")}:wght@400;600;700&family=${palette.bodyFont.replace(/ /g, "+")}:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <style>
+    :root { --primary: ${palette.primary}; --secondary: ${palette.secondary}; --accent: ${palette.accent}; --bg: ${palette.bg}; --text: ${palette.text}; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: '${palette.bodyFont}', system-ui, sans-serif; color: var(--text); background: var(--bg); }
+    h1,h2,h3,h4,h5 { font-family: '${palette.headingFont}', serif; }
+    .nav-link { padding: 0.5rem 1rem; text-decoration: none; color: var(--text); font-weight: 500; transition: color 0.2s; font-size: 0.9rem; }
+    .nav-link:hover { color: var(--primary); }
+    .page-section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .content-block { margin-bottom: 2.5rem; }
+    header { background: var(--bg); border-bottom: 1px solid ${palette.primary}15; padding: 1rem 2rem; position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
+    footer { background: ${palette.text}; color: ${palette.bg}; padding: 4rem 2rem; text-align: center; }
+    .btn-primary { background: var(--primary); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px ${palette.primary}40; }
+    @media (max-width: 768px) { .page-section { padding: 3rem 1.5rem; } header nav { flex-direction: column; gap: 0.5rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <nav style="display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;">
+      <div style="font-size:1.5rem;font-weight:700;color:var(--primary);font-family:'${palette.headingFont}',serif;">${businessName}</div>
+      <div style="display:flex;gap:0.25rem;align-items:center;">
+        ${navLinks}
+        <a href="#contact" class="btn-primary" style="margin-left:1rem;padding:0.5rem 1.25rem;font-size:0.85rem;">Get Started</a>
+      </div>
+    </nav>
+  </header>
+  <main>${contentSections}</main>
+  <footer>
+    <div style="max-width:1200px;margin:0 auto;">
+      <p style="font-size:1.25rem;font-weight:700;font-family:'${palette.headingFont}',serif;margin-bottom:1rem;">${businessName}</p>
+      <p style="opacity:0.7;">&copy; ${new Date().getFullYear()} ${businessName}. All rights reserved.</p>
+      <p style="margin-top:0.75rem;font-size:0.7rem;opacity:0.5;">Powered by Brandaro Digital</p>
+    </div>
+  </footer>
+  <script>document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});});});<\/script>
+  <!-- Brandaro Tracking -->
+  <script>
+  (function(){var baseUrl="TRACKING_BASE_URL";var anonKey="TRACKING_ANON_KEY";var clientId="TRACKING_CLIENT_ID";var projectId="TRACKING_PROJECT_ID";var sid=Math.random().toString(36).substring(2);function track(type,val){fetch(baseUrl+"/functions/v1/brandaro-track-lead-event",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+anonKey},body:JSON.stringify({client_id:clientId,project_id:projectId,event_type:type,event_value:val||"",source:document.referrer?"referral":"direct",page_url:location.href,session_id:sid})}).catch(function(){});}track("session");var maxScroll=0;window.addEventListener("scroll",function(){var pct=Math.round((window.scrollY/(document.body.scrollHeight-window.innerHeight))*100);if(pct>=25&&maxScroll<25){track("scroll_25");maxScroll=25;}if(pct>=50&&maxScroll<50){track("scroll_50");maxScroll=50;}if(pct>=75&&maxScroll<75){track("scroll_75");maxScroll=75;}});document.addEventListener("click",function(e){var t=e.target;if(t.tagName==="A"||t.tagName==="BUTTON"||(t.closest&&t.closest("a,button"))){var text=(t.textContent||"").trim().substring(0,50);track("cta_click",text);if(t.href&&t.href.startsWith("tel:"))track("phone_click",t.href);}});document.querySelectorAll("form").forEach(function(f){f.addEventListener("submit",function(){track("form_submit",f.id||f.action||"unknown");});});})();
+  <\/script>
+</body>
+</html>`;
+}
+
 function assembleProductionSite(
   blocks: any[],
   businessName: string,
