@@ -60,6 +60,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/qualification', component: LeadQualificationPage, label: 'Qualification', icon: Target, requiresAuth: true },
     { path: '/calling', component: CallingOpsPage, label: 'Calling Ops', icon: Phone, requiresAuth: true },
     { path: '/workspace', component: VAWorkspacePage, label: 'VA Workspace', icon: Headset, requiresAuth: true },
+    { path: '/command-center', component: VACommandCenterPage, label: 'VA Command Center', icon: Brain, requiresAuth: true },
     { path: '/performance', component: VAPerformancePage, label: 'VA Performance', icon: BarChart3, requiresAuth: true },
     { path: '/campaigns', component: CampaignManagerPage, label: 'Campaigns', icon: FolderOpen, requiresAuth: true },
     { path: '/demos', component: DemoEnginePage, label: 'Demo Engine', icon: Wand2, requiresAuth: true },
