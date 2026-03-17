@@ -288,4 +288,6 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.brandaro-score-demo]
+
+[functions.brandaro-create-payment-link]
 verify_jwt = false
