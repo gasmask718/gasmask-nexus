@@ -15,12 +15,13 @@ import {
   useVALeadHeat, useVARecommendations, useApplyRecommendation,
   useVAConversionMetrics, useVACloserHandoffs,
 } from "@/hooks/useBrandaroCloserBrain";
+import { useBrandaroLiveScript, type LiveResponse } from "@/hooks/useBrandaroLiveScript";
 import { toast } from "sonner";
 import {
   Phone, TrendingUp, Target, Flame, Clock, CheckCircle2,
   SkipForward, AlertTriangle, Award, Zap, Bell, Power,
   MessageSquare, Calendar, Star, Trophy, Shield, Brain,
-  ArrowUpRight, Eye, Sparkles, Send, ThermometerSun,
+  ArrowUpRight, Eye, Sparkles, Send, ThermometerSun, Mic,
 } from "lucide-react";
 
 const TASK_ICONS: Record<string, any> = {
