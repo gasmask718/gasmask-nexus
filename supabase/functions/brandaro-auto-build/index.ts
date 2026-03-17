@@ -970,7 +970,8 @@ function getComponentVariant(sectionName: string, idx: number, palette: StylePal
   }
   return { wrapperStyle: "" };
 }
-}
+
+
 
 function calculateQualityScore(blocks: any[], html: string): { score: number; breakdown: Record<string, number>; issues: string[] } {
   const breakdown: Record<string, number> = {};
