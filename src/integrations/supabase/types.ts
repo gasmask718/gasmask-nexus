@@ -9665,6 +9665,66 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_ad_leads: {
+        Row: {
+          auto_called: boolean | null
+          business_name: string | null
+          contact_name: string | null
+          converted: boolean | null
+          created_at: string
+          demo_generated: boolean | null
+          email: string | null
+          id: string
+          industry: string | null
+          landing_page: string | null
+          phone: string | null
+          source_campaign_id: string | null
+          source_type: string
+          status: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          auto_called?: boolean | null
+          business_name?: string | null
+          contact_name?: string | null
+          converted?: boolean | null
+          created_at?: string
+          demo_generated?: boolean | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          landing_page?: string | null
+          phone?: string | null
+          source_campaign_id?: string | null
+          source_type?: string
+          status?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          auto_called?: boolean | null
+          business_name?: string | null
+          contact_name?: string | null
+          converted?: boolean | null
+          created_at?: string
+          demo_generated?: boolean | null
+          email?: string | null
+          id?: string
+          industry?: string | null
+          landing_page?: string | null
+          phone?: string | null
+          source_campaign_id?: string | null
+          source_type?: string
+          status?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       brandaro_ads_campaigns: {
         Row: {
           budget: number | null
@@ -10501,6 +10561,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_client_ads: {
+        Row: {
+          campaign_name: string
+          client_id: string | null
+          client_name: string | null
+          conversions: number
+          cost_per_lead: number | null
+          created_at: string
+          id: string
+          leads_generated: number
+          monthly_budget: number
+          platform: string
+          revenue_attributed: number
+          roi_pct: number | null
+          service_fee: number
+          status: string
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          campaign_name: string
+          client_id?: string | null
+          client_name?: string | null
+          conversions?: number
+          cost_per_lead?: number | null
+          created_at?: string
+          id?: string
+          leads_generated?: number
+          monthly_budget?: number
+          platform?: string
+          revenue_attributed?: number
+          roi_pct?: number | null
+          service_fee?: number
+          status?: string
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          campaign_name?: string
+          client_id?: string | null
+          client_name?: string | null
+          conversions?: number
+          cost_per_lead?: number | null
+          created_at?: string
+          id?: string
+          leads_generated?: number
+          monthly_budget?: number
+          platform?: string
+          revenue_attributed?: number
+          roi_pct?: number | null
+          service_fee?: number
+          status?: string
+          total_spent?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       brandaro_client_alerts: {
         Row: {
@@ -12198,6 +12315,63 @@ export type Database = {
           total_clients?: number | null
           total_revenue?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_internal_ads: {
+        Row: {
+          budget_daily: number
+          campaign_name: string
+          conversions: number
+          cost_per_lead: number | null
+          created_at: string
+          funnel_stage: string | null
+          id: string
+          leads_generated: number
+          platform: string
+          revenue_generated: number
+          roi_pct: number | null
+          status: string
+          target_audience: string | null
+          target_keywords: string[] | null
+          total_spent: number
+          updated_at: string
+        }
+        Insert: {
+          budget_daily?: number
+          campaign_name: string
+          conversions?: number
+          cost_per_lead?: number | null
+          created_at?: string
+          funnel_stage?: string | null
+          id?: string
+          leads_generated?: number
+          platform?: string
+          revenue_generated?: number
+          roi_pct?: number | null
+          status?: string
+          target_audience?: string | null
+          target_keywords?: string[] | null
+          total_spent?: number
+          updated_at?: string
+        }
+        Update: {
+          budget_daily?: number
+          campaign_name?: string
+          conversions?: number
+          cost_per_lead?: number | null
+          created_at?: string
+          funnel_stage?: string | null
+          id?: string
+          leads_generated?: number
+          platform?: string
+          revenue_generated?: number
+          roi_pct?: number | null
+          status?: string
+          target_audience?: string | null
+          target_keywords?: string[] | null
+          total_spent?: number
+          updated_at?: string
         }
         Relationships: []
       }
