@@ -184,8 +184,38 @@ Deno.serve(async (req) => {
       content_generated: true,
     }).eq("id", buildJob.id);
 
-    // SECTION 5: Native Build - Assemble production HTML
-    await updateBuildStatus(supabase, buildJob.id, "building", "assembling_production_html");
+    // ===== DURABLE-FIRST HYBRID: EXTRACTION + STANDARDIZATION =====
+    // If initial engine was Durable and demo HTML exists, extract design patterns
+    // then rebuild using native engine for full control
+    if (initialEngine === "durable" && demoStructure?.generated_html) {
+      await updateBuildStatus(supabase, buildJob.id, "extracting_durable", "extracting_durable_patterns");
+      
+      const durablePatterns = extractDurableDesignPatterns(demoStructure.generated_html);
+      
+      // Store extracted template for reuse
+      await supabase.from("brandaro_extracted_templates").insert({
+        build_job_id: buildJob.id,
+        client_id,
+        source_engine: "durable",
+        extracted_html: demoStructure.generated_html,
+        extracted_sections: durablePatterns.sections,
+        design_patterns: durablePatterns.patterns,
+        layout_hierarchy: durablePatterns.layout,
+        color_scheme: durablePatterns.colors,
+        typography: durablePatterns.typography,
+      });
+
+      // Store raw Durable HTML for reference
+      await supabase.from("brandaro_build_jobs").update({
+        durable_raw_html: demoStructure.generated_html,
+      }).eq("id", buildJob.id);
+
+      console.log(`[AUTO-BUILD] Durable patterns extracted. Standardizing via native engine.`);
+    }
+
+    // SECTION 5: STANDARDIZATION — Always assemble final site via native engine
+    // This ensures full control regardless of initial engine
+    await updateBuildStatus(supabase, buildJob.id, "building", "standardizing_via_native");
 
     const { data: allBlocks } = await supabase
       .from("brandaro_content_blocks")
@@ -202,6 +232,13 @@ Deno.serve(async (req) => {
       .replace("TRACKING_ANON_KEY", Deno.env.get("SUPABASE_ANON_KEY") || "")
       .replace("TRACKING_CLIENT_ID", client_id)
       .replace("TRACKING_PROJECT_ID", project_id || "");
+
+    // Mark standardization complete — final engine is always native
+    await supabase.from("brandaro_build_jobs").update({
+      final_engine: "native",
+      standardization_applied: initialEngine === "durable",
+      engine_switched: initialEngine !== "native",
+    }).eq("id", buildJob.id);
 
     // Slug for deployment
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
