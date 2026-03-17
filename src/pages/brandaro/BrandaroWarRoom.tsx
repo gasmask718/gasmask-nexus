@@ -329,6 +329,125 @@ export default function BrandaroWarRoom() {
         </div>
       </div>
 
+      {/* ── AI Closing Psychology Panel ── */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              ⚔️ <span>AI Closing Psychology Engine</span>
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge className="text-[10px] bg-purple-500/10 text-purple-600 border-0">
+                {psyStats.interactions} interactions
+              </Badge>
+              {psyStats.revenue > 0 && (
+                <Badge className="text-[10px] bg-green-500/10 text-green-600 border-0">
+                  ${psyStats.revenue.toLocaleString()} closed
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Target className="h-3.5 w-3.5 mx-auto text-purple-500 mb-1" />
+              <p className="text-lg font-bold text-purple-500">{psyStats.closeRate}%</p>
+              <p className="text-[9px] text-muted-foreground">Close Rate</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Brain className="h-3.5 w-3.5 mx-auto text-blue-500 mb-1" />
+              <p className="text-lg font-bold text-blue-500">{psyStats.objectionWinRate}%</p>
+              <p className="text-[9px] text-muted-foreground">Objection Win</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Flame className="h-3.5 w-3.5 mx-auto text-orange-500 mb-1" />
+              <p className="text-lg font-bold text-orange-500">{psyStats.buyingSignals}</p>
+              <p className="text-[9px] text-muted-foreground">Buy Signals</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <CheckCircle className="h-3.5 w-3.5 mx-auto text-green-500 mb-1" />
+              <p className="text-lg font-bold text-green-600">{psyStats.closed}</p>
+              <p className="text-[9px] text-muted-foreground">Deals Closed</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <DollarSign className="h-3.5 w-3.5 mx-auto text-emerald-500 mb-1" />
+              <p className="text-lg font-bold text-emerald-500">${psyStats.revenue.toLocaleString()}</p>
+              <p className="text-[9px] text-muted-foreground">AI Revenue</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-2.5 text-center">
+              <Zap className="h-3.5 w-3.5 mx-auto text-amber-500 mb-1" />
+              <p className="text-lg font-bold text-amber-500">{psyStats.interactions}</p>
+              <p className="text-[9px] text-muted-foreground">Total Actions</p>
+            </div>
+          </div>
+
+          {/* Persuasion Pipeline */}
+          <div className="border rounded-lg p-3 mb-4 bg-muted/20">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">⚔️ Persuasion Pipeline</p>
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              {[
+                { label: "Detect Emotion", icon: "🧠", color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+                { label: "→", icon: "", color: "" },
+                { label: "Select Framework", icon: "📐", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+                { label: "→", icon: "", color: "" },
+                { label: "Handle Objections", icon: "🛡️", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+                { label: "→", icon: "", color: "" },
+                { label: "Inject Urgency", icon: "⏰", color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+                { label: "→", icon: "", color: "" },
+                { label: "Decision Control", icon: "🎯", color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" },
+                { label: "→", icon: "", color: "" },
+                { label: "Close Deal", icon: "💰", color: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
+              ].map((step, i) =>
+                step.icon ? (
+                  <span key={i} className={cn("text-[10px] font-medium px-2 py-1 rounded-md border whitespace-nowrap", step.color)}>
+                    {step.icon} {step.label}
+                  </span>
+                ) : (
+                  <span key={i} className="text-xs text-muted-foreground">→</span>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Top Frameworks + Objection Responses */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Top Frameworks</p>
+              <div className="space-y-1.5">
+                {psyStats.topFrameworks.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">No data yet</p>
+                ) : psyStats.topFrameworks.slice(0, 4).map((fw: any, i: number) => (
+                  <div key={fw.id || i} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                    <span className="font-medium">{fw.framework_name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">{fw.times_used} uses</span>
+                      <Badge variant="outline" className="text-[9px]">{Number(fw.close_rate || 0).toFixed(0)}%</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Top Objection Killers</p>
+              <div className="space-y-1.5">
+                {psyStats.topObjectionResponses.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">No data yet</p>
+                ) : psyStats.topObjectionResponses.slice(0, 4).map((obj: any, i: number) => (
+                  <div key={obj.id || i} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                    <span className="font-medium truncate max-w-[120px]">"{obj.objection_text}"</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={cn("text-[9px]",
+                        Number(obj.win_rate) >= 60 ? "border-green-500/30 text-green-600" : "border-amber-500/30 text-amber-600"
+                      )}>{Number(obj.win_rate || 0).toFixed(0)}% win</Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* ── Autonomous Execution Engine Panel ── */}
       <Card>
         <CardContent className="p-4">
