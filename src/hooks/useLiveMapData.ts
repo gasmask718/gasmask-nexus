@@ -365,38 +365,39 @@ export function useLiveDeliveryTasks() {
       if (error) throw error;
       if (!data || data.length === 0) return [] as LiveDeliveryTask[];
 
-      // Resolve user_ids and names from biker/driver record IDs
-      const bikerIds = [...new Set(data.map(t => t.biker_id).filter(Boolean))];
-      const driverIds = [...new Set(data.map(t => t.driver_id).filter(Boolean))];
+      // Auto-repair missing destination coordinates from delivery_address
+      // so trajectory lines can render immediately in /live-map.
+      const geocodeOverrides = new Map<string, { lat: number; lng: number }>();
+      const missingCoords = data.filter(
+        (t) => (!t.delivery_lat || !t.delivery_lng) && !!t.delivery_address
+      );
 
-      const [{ data: bikers }, { data: drivers }] = await Promise.all([
-        bikerIds.length > 0
-          ? supabase.from('bikers').select('id, user_id, full_name').in('id', bikerIds)
-          : Promise.resolve({ data: [] as any[] }),
-        driverIds.length > 0
-          ? supabase.from('drivers').select('id, user_id, full_name').in('id', driverIds)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
+      if (missingCoords.length > 0) {
+        await Promise.all(
+          missingCoords.map(async (task) => {
+            try {
+              const geo = await GeocodingService.geocodeAddress(task.delivery_address);
+              if ('lat' in geo && geo.lat && geo.lng) {
+                geocodeOverrides.set(task.id, { lat: geo.lat, lng: geo.lng });
 
-      const bikerMap = Object.fromEntries((bikers || []).map(b => [b.id, { user_id: b.user_id, name: b.full_name }]));
-      const driverMap = Object.fromEntries((drivers || []).map(d => [d.id, { user_id: d.user_id, name: d.full_name }]));
+                // Best-effort persistence back to database (may be blocked by RLS for non-managers)
+                const { error: updateError } = await supabase
+                  .from('delivery_tasks')
+                  .update({ delivery_lat: geo.lat, delivery_lng: geo.lng })
+                  .eq('id', task.id);
 
-      // Fetch store pickup coordinates for fallback trajectory lines
-      const storeIds = [...new Set(data.map(t => (t.store_order as any)?.store_id).filter(Boolean))];
-      let storeMap: Record<string, { lat: number; lng: number }> = {};
-      if (storeIds.length > 0) {
-        const { data: storesData } = await supabase
-          .from('stores')
-          .select('id, lat, lng')
-          .in('id', storeIds);
-        storeMap = Object.fromEntries(
-          (storesData || [])
-            .filter(s => s.lat && s.lng)
-            .map(s => [s.id, { lat: Number(s.lat), lng: Number(s.lng) }])
+                if (updateError) {
+                  console.warn('Could not persist geocoded delivery coordinates:', updateError.message);
+                }
+              }
+            } catch (geocodeError) {
+              console.warn('Geocoding failed for delivery task:', task.id, geocodeError);
+            }
+          })
         );
       }
 
-      return data.map(t => {
+      // Resolve user_ids and names from biker/driver record IDs
           const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
           const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
           const order = t.store_order as any;
