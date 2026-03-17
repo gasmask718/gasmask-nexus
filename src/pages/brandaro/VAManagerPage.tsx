@@ -37,6 +37,12 @@ export default function VAManagerPage() {
   const [qualityScore, setQualityScore] = useState("3");
   const [improvementTarget, setImprovementTarget] = useState("");
   const [patternFilter, setPatternFilter] = useState<string | undefined>();
+  const [newCompName, setNewCompName] = useState("");
+  const [newCompPricing, setNewCompPricing] = useState("");
+  const [newCompWeakness, setNewCompWeakness] = useState("");
+  const [newOfferName, setNewOfferName] = useState("");
+  const [newOfferPrice, setNewOfferPrice] = useState("");
+  const [newOfferHeadline, setNewOfferHeadline] = useState("");
 
   const { data: allPerf = [] } = useAllVAPerformance();
   const { data: leaderboard = [] } = useVALeaderboard(leaderboardPeriod);
