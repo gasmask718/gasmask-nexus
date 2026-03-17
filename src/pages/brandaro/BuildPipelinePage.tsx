@@ -29,6 +29,10 @@ interface BuildJob {
   started_at: string | null;
   completed_at: string | null;
   created_at: string;
+  initial_engine: string | null;
+  final_engine: string | null;
+  standardization_applied: boolean | null;
+  engine_switched: boolean | null;
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
