@@ -71,6 +71,7 @@ export default function VAManagerPage() {
   const createOffer = useCreateOffer();
   const createPricingTest = useCreatePricingTest();
   const createPositioning = useCreatePositioningTest();
+  const { data: decisions = [] } = useSystemDecisions();
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
