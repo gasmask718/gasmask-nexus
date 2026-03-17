@@ -82,12 +82,14 @@ Deno.serve(async (req) => {
       }
     }
 
-    // SECTION 2: Build Engine Decision
+    // SECTION 2: Build Engine Decision (Durable-First Hybrid)
     const tier = package_tier || client?.package_chosen || "starter";
-    const buildEngine = decideBuildEngine(tier);
+    const isRebuild = !!(await req.clone().json().catch(() => ({}))).rebuild;
+    const initialEngine = decideBuildEngine(tier, !isRebuild);
+    const buildEngine = initialEngine;
     const totalPages = decidePageCount(tier);
 
-    // Create build job
+    // Create build job with hybrid engine tracking
     const { data: buildJob, error: bjErr } = await supabase
       .from("brandaro_build_jobs")
       .insert({
@@ -96,6 +98,8 @@ Deno.serve(async (req) => {
         demo_id: demo_id || null,
         lead_id: client?.lead_id || null,
         build_engine: buildEngine,
+        initial_engine: initialEngine,
+        final_engine: buildEngine,
         build_status: "extracting_demo",
         progress_stage: "demo_extraction",
         package_tier: tier,
@@ -180,8 +184,38 @@ Deno.serve(async (req) => {
       content_generated: true,
     }).eq("id", buildJob.id);
 
-    // SECTION 5: Native Build - Assemble production HTML
-    await updateBuildStatus(supabase, buildJob.id, "building", "assembling_production_html");
+    // ===== DURABLE-FIRST HYBRID: EXTRACTION + STANDARDIZATION =====
+    // If initial engine was Durable and demo HTML exists, extract design patterns
+    // then rebuild using native engine for full control
+    if (initialEngine === "durable" && demoStructure?.generated_html) {
+      await updateBuildStatus(supabase, buildJob.id, "extracting_durable", "extracting_durable_patterns");
+      
+      const durablePatterns = extractDurableDesignPatterns(demoStructure.generated_html);
+      
+      // Store extracted template for reuse
+      await supabase.from("brandaro_extracted_templates").insert({
+        build_job_id: buildJob.id,
+        client_id,
+        source_engine: "durable",
+        extracted_html: demoStructure.generated_html,
+        extracted_sections: durablePatterns.sections,
+        design_patterns: durablePatterns.patterns,
+        layout_hierarchy: durablePatterns.layout,
+        color_scheme: durablePatterns.colors,
+        typography: durablePatterns.typography,
+      });
+
+      // Store raw Durable HTML for reference
+      await supabase.from("brandaro_build_jobs").update({
+        durable_raw_html: demoStructure.generated_html,
+      }).eq("id", buildJob.id);
+
+      console.log(`[AUTO-BUILD] Durable patterns extracted. Standardizing via native engine.`);
+    }
+
+    // SECTION 5: STANDARDIZATION — Always assemble final site via native engine
+    // This ensures full control regardless of initial engine
+    await updateBuildStatus(supabase, buildJob.id, "building", "standardizing_via_native");
 
     const { data: allBlocks } = await supabase
       .from("brandaro_content_blocks")
@@ -198,6 +232,13 @@ Deno.serve(async (req) => {
       .replace("TRACKING_ANON_KEY", Deno.env.get("SUPABASE_ANON_KEY") || "")
       .replace("TRACKING_CLIENT_ID", client_id)
       .replace("TRACKING_PROJECT_ID", project_id || "");
+
+    // Mark standardization complete — final engine is always native
+    await supabase.from("brandaro_build_jobs").update({
+      final_engine: "native",
+      standardization_applied: initialEngine === "durable",
+      engine_switched: initialEngine !== "native",
+    }).eq("id", buildJob.id);
 
     // Slug for deployment
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
@@ -331,9 +372,13 @@ Deno.serve(async (req) => {
 
 // --- Helper Functions ---
 
-function decideBuildEngine(tier: string): string {
-  // Premium/Elite → durable for complex layouts; Starter/Pro → native for speed
-  return ["premium", "elite"].includes(tier) ? "durable" : "native";
+function decideBuildEngine(tier: string, isFirstBuild: boolean = true): string {
+  // DURABLE-FIRST HYBRID: Use Durable for initial generation speed,
+  // then standardize internally via native engine for long-term control.
+  // Only skip Durable for rebuilds or when explicitly native-only.
+  if (isFirstBuild) return "durable";
+  // Fallback to native for rebuilds/retries
+  return "native";
 }
 
 function decidePageCount(tier: string): number {
@@ -684,4 +729,70 @@ async function logBuildError(supabase: any, jobId: string, message: string) {
   const errors = Array.isArray(job?.error_log) ? job.error_log : [];
   errors.push({ message, timestamp: new Date().toISOString() });
   await supabase.from("brandaro_build_jobs").update({ error_log: errors }).eq("id", jobId);
+}
+
+/**
+ * Extract design patterns from Durable-generated HTML
+ * Used to inform native builder standardization
+ */
+function extractDurableDesignPatterns(html: string): {
+  sections: any[]; patterns: any; layout: any; colors: any; typography: any;
+} {
+  const sections: any[] = [];
+  
+  // Extract sections with their types
+  const sectionRegex = /<section[^>]*(?:class|id)="([^"]*)"[^>]*>([\s\S]*?)<\/section>/gi;
+  let match;
+  while ((match = sectionRegex.exec(html)) !== null) {
+    const classOrId = match[1];
+    const content = match[2];
+    const hasImages = (content.match(/<img/gi) || []).length;
+    const hasButtons = (content.match(/<button|<a[^>]*class="[^"]*btn/gi) || []).length;
+    const textLength = content.replace(/<[^>]*>/g, "").trim().length;
+    
+    sections.push({
+      identifier: classOrId,
+      hasImages: hasImages > 0,
+      imageCount: hasImages,
+      hasCTA: hasButtons > 0,
+      ctaCount: hasButtons,
+      contentDensity: textLength > 500 ? "high" : textLength > 200 ? "medium" : "low",
+    });
+  }
+
+  // Extract color patterns
+  const colorRegex = /#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|hsl\([^)]+\)/g;
+  const colorsFound = [...new Set((html.match(colorRegex) || []))].slice(0, 10);
+
+  // Extract font patterns
+  const fontRegex = /font-family:\s*([^;}"]+)/gi;
+  const fontsFound: string[] = [];
+  while ((match = fontRegex.exec(html)) !== null) {
+    fontsFound.push(match[1].trim());
+  }
+
+  // Layout detection
+  const usesGrid = html.includes("display: grid") || html.includes("display:grid");
+  const usesFlex = html.includes("display: flex") || html.includes("display:flex");
+  const columnsDetected = (html.match(/grid-template-columns|col-span|columns/gi) || []).length;
+
+  return {
+    sections,
+    patterns: {
+      totalSections: sections.length,
+      sectionsWithCTA: sections.filter(s => s.hasCTA).length,
+      sectionsWithImages: sections.filter(s => s.hasImages).length,
+      avgContentDensity: sections.length > 0
+        ? sections.filter(s => s.contentDensity === "high").length / sections.length
+        : 0,
+    },
+    layout: {
+      usesGrid,
+      usesFlex,
+      columnsDetected,
+      estimatedComplexity: sections.length > 8 ? "high" : sections.length > 4 ? "medium" : "low",
+    },
+    colors: { palette: colorsFound },
+    typography: { fonts: [...new Set(fontsFound)] },
+  };
 }
