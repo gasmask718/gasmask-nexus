@@ -5,6 +5,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { GeocodingService } from "@/services/geocoding";
 import { useEffect, useState, useCallback } from "react";
 
 export interface WorkerLocation {
@@ -364,6 +365,38 @@ export function useLiveDeliveryTasks() {
       if (error) throw error;
       if (!data || data.length === 0) return [] as LiveDeliveryTask[];
 
+      // Auto-repair missing destination coordinates from delivery_address
+      // so trajectory lines can render immediately in /live-map.
+      const geocodeOverrides = new Map<string, { lat: number; lng: number }>();
+      const missingCoords = data.filter(
+        (t) => (!t.delivery_lat || !t.delivery_lng) && !!t.delivery_address
+      );
+
+      if (missingCoords.length > 0) {
+        await Promise.all(
+          missingCoords.map(async (task) => {
+            try {
+              const geo = await GeocodingService.geocodeAddress(task.delivery_address);
+              if ('lat' in geo && geo.lat && geo.lng) {
+                geocodeOverrides.set(task.id, { lat: geo.lat, lng: geo.lng });
+
+                // Best-effort persistence back to database (may be blocked by RLS for non-managers)
+                const { error: updateError } = await supabase
+                  .from('delivery_tasks')
+                  .update({ delivery_lat: geo.lat, delivery_lng: geo.lng })
+                  .eq('id', task.id);
+
+                if (updateError) {
+                  console.warn('Could not persist geocoded delivery coordinates:', updateError.message);
+                }
+              }
+            } catch (geocodeError) {
+              console.warn('Geocoding failed for delivery task:', task.id, geocodeError);
+            }
+          })
+        );
+      }
+
       // Resolve user_ids and names from biker/driver record IDs
       const bikerIds = [...new Set(data.map(t => t.biker_id).filter(Boolean))];
       const driverIds = [...new Set(data.map(t => t.driver_id).filter(Boolean))];
@@ -396,36 +429,37 @@ export function useLiveDeliveryTasks() {
       }
 
       return data.map(t => {
-          const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
-          const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
-          const order = t.store_order as any;
-          const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
+        const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
+        const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
+        const order = t.store_order as any;
+        const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
+        const overrideCoords = geocodeOverrides.get(t.id);
 
-          // Use delivery coords, fallback to store pickup coords
-          const deliveryLat = Number(t.delivery_lat) || storeCoords?.lat || 0;
-          const deliveryLng = Number(t.delivery_lng) || storeCoords?.lng || 0;
+        // Use geocoded override, then delivery coords, fallback to store pickup coords
+        const deliveryLat = overrideCoords?.lat ?? (Number(t.delivery_lat) || storeCoords?.lat || 0);
+        const deliveryLng = overrideCoords?.lng ?? (Number(t.delivery_lng) || storeCoords?.lng || 0);
 
-          return {
-            id: t.id,
-            biker_id: t.biker_id || null,
-            driver_id: t.driver_id || null,
-            biker_user_id: bikerInfo?.user_id || null,
-            driver_user_id: driverInfo?.user_id || null,
-            delivery_lat: deliveryLat,
-            delivery_lng: deliveryLng,
-            delivery_address: t.delivery_address,
-            recipient_name: t.recipient_name,
-            recipient_phone: t.recipient_phone,
-            delivery_notes: t.delivery_notes,
-            status: t.status,
-            worker_name: bikerInfo?.name || driverInfo?.name || null,
-            order_number: order?.order_number || null,
-            total_amount: order?.total_amount || null,
-            created_at: t.created_at,
-            pickup_lat: storeCoords?.lat || null,
-            pickup_lng: storeCoords?.lng || null,
-          };
-        }) as LiveDeliveryTask[];
+        return {
+          id: t.id,
+          biker_id: t.biker_id || null,
+          driver_id: t.driver_id || null,
+          biker_user_id: bikerInfo?.user_id || null,
+          driver_user_id: driverInfo?.user_id || null,
+          delivery_lat: deliveryLat,
+          delivery_lng: deliveryLng,
+          delivery_address: t.delivery_address,
+          recipient_name: t.recipient_name,
+          recipient_phone: t.recipient_phone,
+          delivery_notes: t.delivery_notes,
+          status: t.status,
+          worker_name: bikerInfo?.name || driverInfo?.name || null,
+          order_number: order?.order_number || null,
+          total_amount: order?.total_amount || null,
+          created_at: t.created_at,
+          pickup_lat: storeCoords?.lat || null,
+          pickup_lng: storeCoords?.lng || null,
+        };
+      }) as LiveDeliveryTask[];
     },
     refetchInterval: 15000,
   });
