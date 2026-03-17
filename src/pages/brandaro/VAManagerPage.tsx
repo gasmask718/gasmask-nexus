@@ -47,6 +47,16 @@ export default function VAManagerPage() {
   const [newOfferName, setNewOfferName] = useState("");
   const [newOfferPrice, setNewOfferPrice] = useState("");
   const [newOfferHeadline, setNewOfferHeadline] = useState("");
+  const [newPersonaName, setNewPersonaName] = useState("");
+  const [newPersonaTone, setNewPersonaTone] = useState("confident");
+  const [newPersonaCadence, setNewPersonaCadence] = useState("medium");
+  const [newPersonaPersuasion, setNewPersonaPersuasion] = useState("logical");
+  const [newPersonaObjection, setNewPersonaObjection] = useState("reframe");
+  const [newPersonaClosing, setNewPersonaClosing] = useState("direct");
+  const [newPersonaEnergy, setNewPersonaEnergy] = useState("7");
+  const [testTranscript, setTestTranscript] = useState("");
+  const [testPersonalityId, setTestPersonalityId] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
 
   const { data: allPerf = [] } = useAllVAPerformance();
   const { data: leaderboard = [] } = useVALeaderboard(leaderboardPeriod);
