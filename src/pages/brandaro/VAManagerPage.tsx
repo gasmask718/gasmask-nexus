@@ -594,6 +594,205 @@ export default function VAManagerPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── NEW: Competitor Intel ── */}
+        <TabsContent value="competitors" className="space-y-4">
+          <Card className="border-red-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Swords className="h-4 w-4 text-red-400" /> Competitor Intelligence
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Add Competitor Form */}
+              <div className="flex gap-2">
+                <Input placeholder="Competitor name" value={newCompName} onChange={e => setNewCompName(e.target.value)} className="flex-1" />
+                <Input placeholder="Pricing model" value={newCompPricing} onChange={e => setNewCompPricing(e.target.value)} className="flex-1" />
+                <Input placeholder="Key weakness" value={newCompWeakness} onChange={e => setNewCompWeakness(e.target.value)} className="flex-1" />
+                <Button size="sm" onClick={() => {
+                  if (!newCompName) return;
+                  upsertCompetitor.mutate({
+                    competitor_name: newCompName,
+                    pricing_model: newCompPricing,
+                    weaknesses: newCompWeakness ? [newCompWeakness] : [],
+                  });
+                  setNewCompName(""); setNewCompPricing(""); setNewCompWeakness("");
+                }}>Add</Button>
+              </div>
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-3">
+                  {competitors.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No competitor intel yet</p>}
+                  {competitors.map((c: any) => (
+                    <div key={c.id} className="p-3 rounded-lg border bg-card space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-bold">{c.competitor_name}</span>
+                        <span className="text-xs text-muted-foreground">{c.last_updated ? new Date(c.last_updated).toLocaleDateString() : ""}</span>
+                      </div>
+                      {c.pricing_model && <p className="text-xs"><span className="text-muted-foreground">Pricing:</span> {c.pricing_model}</p>}
+                      {c.positioning && <p className="text-xs"><span className="text-muted-foreground">Positioning:</span> {c.positioning}</p>}
+                      {c.guarantees && <p className="text-xs"><span className="text-muted-foreground">Guarantees:</span> {c.guarantees}</p>}
+                      <div className="flex flex-wrap gap-1">
+                        {Array.isArray(c.weaknesses) && c.weaknesses.map((w: string, i: number) => (
+                          <Badge key={i} className="bg-red-500/15 text-red-400 border-red-500/30 text-xs">⚠ {w}</Badge>
+                        ))}
+                        {Array.isArray(c.strengths) && c.strengths.map((s: string, i: number) => (
+                          <Badge key={i} className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs">✓ {s}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: Offer Variants ── */}
+        <TabsContent value="offers" className="space-y-4">
+          <Card className="border-amber-500/20">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Tag className="h-4 w-4 text-amber-400" /> Offer Variants
+              </CardTitle>
+              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => optimizeOffers.mutate()} disabled={optimizeOffers.isPending}>
+                <Zap className="h-3 w-3 mr-1" /> {optimizeOffers.isPending ? "Optimizing…" : "Auto-Optimize"}
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input placeholder="Offer name" value={newOfferName} onChange={e => setNewOfferName(e.target.value)} className="flex-1" />
+                <Input placeholder="Price" type="number" value={newOfferPrice} onChange={e => setNewOfferPrice(e.target.value)} className="w-24" />
+                <Input placeholder="Headline" value={newOfferHeadline} onChange={e => setNewOfferHeadline(e.target.value)} className="flex-1" />
+                <Button size="sm" onClick={() => {
+                  if (!newOfferName || !newOfferPrice) return;
+                  createOffer.mutate({ offer_name: newOfferName, pricing: Number(newOfferPrice), headline: newOfferHeadline });
+                  setNewOfferName(""); setNewOfferPrice(""); setNewOfferHeadline("");
+                }}>Test</Button>
+              </div>
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-2">
+                  {offers.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No offer variants yet</p>}
+                  {offers.map((o: any, i: number) => (
+                    <div key={o.id} className={`p-3 rounded-lg border bg-card flex items-center justify-between ${
+                      o.status === "winning" ? "border-emerald-500/30" : o.status === "losing" ? "border-destructive/30" : ""
+                    }`}>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {o.status === "winning" && <Star className="h-3 w-3 text-emerald-400" />}
+                          <span className="text-sm font-medium">{o.offer_name}</span>
+                          <Badge variant="outline" className={`text-xs capitalize ${
+                            o.status === "winning" ? "text-emerald-400 border-emerald-500/30" :
+                            o.status === "losing" ? "text-destructive border-destructive/30" : ""
+                          }`}>{o.status}</Badge>
+                        </div>
+                        {o.headline && <p className="text-xs text-muted-foreground italic">"{o.headline}"</p>}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-right">
+                        <div>
+                          <p className="font-bold">${o.pricing}</p>
+                          <p className="text-muted-foreground">price</p>
+                        </div>
+                        <div>
+                          <p className={`font-bold ${o.conversion_rate >= 15 ? "text-emerald-400" : ""}`}>{Math.round(o.conversion_rate || 0)}%</p>
+                          <p className="text-muted-foreground">conv</p>
+                        </div>
+                        <div>
+                          <p className="font-bold text-emerald-400">${Math.round(o.revenue_generated || 0)}</p>
+                          <p className="text-muted-foreground">rev</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: Pricing Tests ── */}
+        <TabsContent value="pricing" className="space-y-4">
+          <Card className="border-green-500/20">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-400" /> Pricing Experiments
+              </CardTitle>
+              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => evaluatePricing.mutate()} disabled={evaluatePricing.isPending}>
+                <Zap className="h-3 w-3 mr-1" /> Evaluate Running
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-2">
+                  {pricingTests.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No pricing tests yet</p>}
+                  {pricingTests.map((t: any) => (
+                    <div key={t.id} className={`p-3 rounded-lg border bg-card flex items-center justify-between ${
+                      t.test_status === "winner" ? "border-emerald-500/30" : t.test_status === "loser" ? "border-destructive/30" : ""
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Base</p>
+                          <p className="font-bold">${t.base_price}</p>
+                        </div>
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">Test</p>
+                          <p className="font-bold">${t.test_price}</p>
+                        </div>
+                        {t.segment && <Badge variant="outline" className="text-xs">{t.segment}</Badge>}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <div className="text-right">
+                          <p className="font-bold">{Math.round(t.conversion_rate || 0)}%</p>
+                          <p className="text-muted-foreground">conv</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">${Math.round(t.revenue_per_lead || 0)}</p>
+                          <p className="text-muted-foreground">RPL</p>
+                        </div>
+                        <Badge variant="outline" className={`text-xs capitalize ${
+                          t.test_status === "winner" ? "text-emerald-400" :
+                          t.test_status === "loser" ? "text-destructive" : ""
+                        }`}>{t.test_status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: Positioning Tests ── */}
+        <TabsContent value="positioning" className="space-y-4">
+          <Card className="border-purple-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Crosshair className="h-4 w-4 text-purple-400" /> Positioning & Messaging Tests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[350px]">
+                <div className="space-y-2">
+                  {positioningTests.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No positioning tests yet</p>}
+                  {positioningTests.map((p: any) => (
+                    <div key={p.id} className="p-3 rounded-lg border bg-card space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{p.positioning_angle}</span>
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className={`font-bold ${(p.win_rate || 0) >= 50 ? "text-emerald-400" : ""}`}>{Math.round(p.win_rate || 0)}% win</span>
+                          <span className="text-muted-foreground">{Math.round(p.engagement_rate || 0)}% engage</span>
+                          <span className="text-muted-foreground">{Math.round(p.conversion_rate || 0)}% conv</span>
+                        </div>
+                      </div>
+                      {p.headline && <p className="text-xs italic text-muted-foreground">"{p.headline}"</p>}
+                      {p.script_variant && <p className="text-xs text-muted-foreground">{p.script_variant}</p>}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
