@@ -581,8 +581,11 @@ function assembleProductionSiteWithProfile(
     sectionIdx++;
   }
 
-  // Identical HTML shell but with taste-engine-selected palette
-  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette);
+  // Generate conversion elements from patterns
+  const conversionHtml = generateConversionElements(patterns, palette);
+
+  // Identical HTML shell but with taste-engine-selected palette + conversion elements
+  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette, conversionHtml);
 }
 
 // Shared HTML shell to avoid duplication
