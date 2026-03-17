@@ -99,10 +99,10 @@ export default function CEODashboardPage() {
       )}
 
       {/* Speed Rule */}
-      <Card className="border-amber-500/30 bg-amber-500/5">
+      <Card className="border-accent/30 bg-accent/5">
         <CardContent className="pt-6">
           <div className="flex items-center gap-3">
-            <Clock className="h-6 w-6 text-amber-500" />
+            <Clock className="h-6 w-6 text-accent" />
             <div>
               <p className="font-semibold">Speed Rule Active</p>
               <p className="text-sm text-muted-foreground">Lead → Call → Demo → Payment must happen within 5–10 minutes</p>
