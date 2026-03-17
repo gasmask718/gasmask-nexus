@@ -297,3 +297,6 @@ verify_jwt = false
 
 [functions.brandaro-learning-engine]
 verify_jwt = false
+
+[functions.brandaro-market-domination]
+verify_jwt = false
