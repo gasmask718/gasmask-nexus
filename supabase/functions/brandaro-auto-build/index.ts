@@ -304,6 +304,12 @@ Deno.serve(async (req) => {
       if (designSelection) {
         await recordTemplatePerformance(supabase, designSelection.profileId, buildJob.id, client_id);
       }
+      // Create revenue attribution record for future tracking
+      await supabase.from("brandaro_revenue_attribution").insert({
+        design_profile_id: designSelection?.profileId || null,
+        build_job_id: buildJob.id,
+        client_id,
+      });
 
     } else if (qualityScore >= 60) {
       // DEPLOY + FLAG: Medium quality
