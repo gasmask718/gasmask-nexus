@@ -9674,11 +9674,17 @@ export type Database = {
           created_at: string
           demo_generated: boolean | null
           email: string | null
+          first_touch_campaign: string | null
+          first_touch_source: string | null
           id: string
           industry: string | null
           landing_page: string | null
+          last_touch_campaign: string | null
+          last_touch_source: string | null
+          lead_quality_score: number | null
           phone: string | null
           source_campaign_id: string | null
+          source_confidence: number | null
           source_type: string
           status: string
           utm_campaign: string | null
@@ -9693,11 +9699,17 @@ export type Database = {
           created_at?: string
           demo_generated?: boolean | null
           email?: string | null
+          first_touch_campaign?: string | null
+          first_touch_source?: string | null
           id?: string
           industry?: string | null
           landing_page?: string | null
+          last_touch_campaign?: string | null
+          last_touch_source?: string | null
+          lead_quality_score?: number | null
           phone?: string | null
           source_campaign_id?: string | null
+          source_confidence?: number | null
           source_type?: string
           status?: string
           utm_campaign?: string | null
@@ -9712,11 +9724,17 @@ export type Database = {
           created_at?: string
           demo_generated?: boolean | null
           email?: string | null
+          first_touch_campaign?: string | null
+          first_touch_source?: string | null
           id?: string
           industry?: string | null
           landing_page?: string | null
+          last_touch_campaign?: string | null
+          last_touch_source?: string | null
+          lead_quality_score?: number | null
           phone?: string | null
           source_campaign_id?: string | null
+          source_confidence?: number | null
           source_type?: string
           status?: string
           utm_campaign?: string | null
@@ -10571,11 +10589,14 @@ export type Database = {
           cost_per_lead: number | null
           created_at: string
           id: string
+          kill_switch: boolean | null
           leads_generated: number
           monthly_budget: number
+          performance_score: number | null
           platform: string
           revenue_attributed: number
           roi_pct: number | null
+          scaling_level: number | null
           service_fee: number
           status: string
           total_spent: number
@@ -10589,11 +10610,14 @@ export type Database = {
           cost_per_lead?: number | null
           created_at?: string
           id?: string
+          kill_switch?: boolean | null
           leads_generated?: number
           monthly_budget?: number
+          performance_score?: number | null
           platform?: string
           revenue_attributed?: number
           roi_pct?: number | null
+          scaling_level?: number | null
           service_fee?: number
           status?: string
           total_spent?: number
@@ -10607,11 +10631,14 @@ export type Database = {
           cost_per_lead?: number | null
           created_at?: string
           id?: string
+          kill_switch?: boolean | null
           leads_generated?: number
           monthly_budget?: number
+          performance_score?: number | null
           platform?: string
           revenue_attributed?: number
           roi_pct?: number | null
+          scaling_level?: number | null
           service_fee?: number
           status?: string
           total_spent?: number
@@ -12389,12 +12416,16 @@ export type Database = {
           created_at: string
           funnel_stage: string | null
           id: string
+          kill_switch: boolean | null
           leads_generated: number
+          performance_score: number | null
           platform: string
           revenue_generated: number
           roi_pct: number | null
+          scaling_level: number | null
           status: string
           target_audience: string | null
+          target_cpl: number | null
           target_keywords: string[] | null
           total_spent: number
           updated_at: string
@@ -12407,12 +12438,16 @@ export type Database = {
           created_at?: string
           funnel_stage?: string | null
           id?: string
+          kill_switch?: boolean | null
           leads_generated?: number
+          performance_score?: number | null
           platform?: string
           revenue_generated?: number
           roi_pct?: number | null
+          scaling_level?: number | null
           status?: string
           target_audience?: string | null
+          target_cpl?: number | null
           target_keywords?: string[] | null
           total_spent?: number
           updated_at?: string
@@ -12425,12 +12460,16 @@ export type Database = {
           created_at?: string
           funnel_stage?: string | null
           id?: string
+          kill_switch?: boolean | null
           leads_generated?: number
+          performance_score?: number | null
           platform?: string
           revenue_generated?: number
           roi_pct?: number | null
+          scaling_level?: number | null
           status?: string
           target_audience?: string | null
+          target_cpl?: number | null
           target_keywords?: string[] | null
           total_spent?: number
           updated_at?: string
@@ -12960,6 +12999,45 @@ export type Database = {
           tier?: string
           upsell_from?: string | null
           upsell_to?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_optimization_log: {
+        Row: {
+          action_type: string
+          auto_executed: boolean | null
+          created_at: string
+          engine: string
+          executed_at: string | null
+          id: string
+          priority: string | null
+          recommendation: string
+          target_id: string | null
+          target_name: string | null
+        }
+        Insert: {
+          action_type: string
+          auto_executed?: boolean | null
+          created_at?: string
+          engine: string
+          executed_at?: string | null
+          id?: string
+          priority?: string | null
+          recommendation: string
+          target_id?: string | null
+          target_name?: string | null
+        }
+        Update: {
+          action_type?: string
+          auto_executed?: boolean | null
+          created_at?: string
+          engine?: string
+          executed_at?: string | null
+          id?: string
+          priority?: string | null
+          recommendation?: string
+          target_id?: string | null
+          target_name?: string | null
         }
         Relationships: []
       }
@@ -13842,6 +13920,7 @@ export type Database = {
         Row: {
           city: string | null
           clicks: number | null
+          conversion_rate: number | null
           created_at: string
           ctr: number | null
           h1: string | null
@@ -13852,6 +13931,7 @@ export type Database = {
           industry: string | null
           keyword_primary: string | null
           keyword_secondary: string[] | null
+          leads_generated: number | null
           meta_description: string | null
           page_title: string | null
           page_type: string
@@ -13863,6 +13943,7 @@ export type Database = {
         Insert: {
           city?: string | null
           clicks?: number | null
+          conversion_rate?: number | null
           created_at?: string
           ctr?: number | null
           h1?: string | null
@@ -13873,6 +13954,7 @@ export type Database = {
           industry?: string | null
           keyword_primary?: string | null
           keyword_secondary?: string[] | null
+          leads_generated?: number | null
           meta_description?: string | null
           page_title?: string | null
           page_type?: string
@@ -13884,6 +13966,7 @@ export type Database = {
         Update: {
           city?: string | null
           clicks?: number | null
+          conversion_rate?: number | null
           created_at?: string
           ctr?: number | null
           h1?: string | null
@@ -13894,6 +13977,7 @@ export type Database = {
           industry?: string | null
           keyword_primary?: string | null
           keyword_secondary?: string[] | null
+          leads_generated?: number | null
           meta_description?: string | null
           page_title?: string | null
           page_type?: string
