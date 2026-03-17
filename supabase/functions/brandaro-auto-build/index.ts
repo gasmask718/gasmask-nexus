@@ -190,7 +190,14 @@ Deno.serve(async (req) => {
       .order("page_type")
       .order("section_order");
 
-    const productionHtml = assembleProductionSite(allBlocks || [], businessName, industry);
+    let productionHtml = assembleProductionSite(allBlocks || [], businessName, industry);
+
+    // Inject tracking values
+    productionHtml = productionHtml
+      .replace("TRACKING_BASE_URL", Deno.env.get("SUPABASE_URL") || "")
+      .replace("TRACKING_ANON_KEY", Deno.env.get("SUPABASE_ANON_KEY") || "")
+      .replace("TRACKING_CLIENT_ID", clientId)
+      .replace("TRACKING_PROJECT_ID", projectId || "");
 
     // Store production HTML in demo_sites for serving
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
