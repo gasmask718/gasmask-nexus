@@ -752,7 +752,11 @@ export default function VAManagerPage() {
                       </div>
                       <div className="flex items-center gap-3 text-xs">
                         <div className="text-right">
-                          <p className="font-bold">{Math.round(t.conversion_rate || 0)}%</p>
+                          <p className="font-bold">{t.exposure_count || 0}</p>
+                          <p className="text-muted-foreground">exposed</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${(t.exposure_count || 0) >= 20 ? "" : "text-amber-400"}`}>{Math.round(t.conversion_rate || 0)}%</p>
                           <p className="text-muted-foreground">conv</p>
                         </div>
                         <div className="text-right">
@@ -761,7 +765,8 @@ export default function VAManagerPage() {
                         </div>
                         <Badge variant="outline" className={`text-xs capitalize ${
                           t.test_status === "winner" ? "text-emerald-400" :
-                          t.test_status === "loser" ? "text-destructive" : ""
+                          t.test_status === "loser" ? "text-destructive" :
+                          t.test_status === "insufficient_data" ? "text-amber-400" : ""
                         }`}>{t.test_status}</Badge>
                       </div>
                     </div>
