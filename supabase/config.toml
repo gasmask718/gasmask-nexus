@@ -300,3 +300,6 @@ verify_jwt = false
 
 [functions.brandaro-market-domination]
 verify_jwt = false
+
+[functions.generate-live-response]
+verify_jwt = false
