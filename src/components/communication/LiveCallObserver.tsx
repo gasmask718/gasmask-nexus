@@ -149,6 +149,27 @@ function CallTimeline({ call }: { call: LiveCall }) {
   );
 }
 
+// Emotion + Personality Intelligence HUD
+const emotionColors: Record<string, string> = {
+  interested: "text-green-500 bg-green-500/10",
+  neutral: "text-muted-foreground bg-muted/50",
+  skeptical: "text-yellow-500 bg-yellow-500/10",
+  confused: "text-orange-500 bg-orange-500/10",
+  defensive: "text-red-500 bg-red-500/10",
+  frustrated: "text-red-600 bg-red-600/10",
+  curious: "text-blue-500 bg-blue-500/10",
+  excited: "text-emerald-500 bg-emerald-500/10",
+  hesitant: "text-amber-500 bg-amber-500/10",
+  disengaged: "text-gray-500 bg-gray-500/10",
+  ready_to_close: "text-green-600 bg-green-600/10",
+};
+
+const emotionEmoji: Record<string, string> = {
+  interested: "🟢", neutral: "⚪", skeptical: "🟡", confused: "🟠",
+  defensive: "🔴", frustrated: "😤", curious: "🔵", excited: "🟢",
+  hesitant: "🟡", disengaged: "⚫", ready_to_close: "🎯",
+};
+
 function CallDetailDrawer({ call, open, onClose }: { call: LiveCall | null; open: boolean; onClose: () => void }) {
   if (!call) return null;
   const config = stateConfig[call.state] || stateConfig.queued;

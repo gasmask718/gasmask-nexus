@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useBrandaroSalesIntelligence, type EmotionState, type PersonalitySelection } from "./useBrandaroSalesIntelligence";
 
 export interface LiveResponse {
   detected_objection: string;
@@ -35,37 +36,50 @@ export function useBrandaroLiveScript() {
     promises_made: [],
   });
 
+  // Intelligence layer
+  const intelligence = useBrandaroSalesIntelligence();
+
   const analyzeChunk = useCallback(async ({
     transcript_chunk,
     lead_id,
     call_session_id,
     lead_heat_score,
+    lead_type,
   }: {
     transcript_chunk: string;
     lead_id?: string;
     call_session_id?: string;
     lead_heat_score?: number;
+    lead_type?: string;
   }): Promise<LiveResponse | null> => {
     if (!transcript_chunk.trim()) return null;
     setIsAnalyzing(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke("generate-live-response", {
-        body: {
+      // Run emotion detection + live response in parallel
+      const [emotionResult, liveResult] = await Promise.all([
+        intelligence.detectEmotion({
           transcript_chunk,
-          lead_id,
-          call_session_id,
+          current_personality: intelligence.currentPersonality?.nickname,
           context_memory: contextMemory.current,
-          lead_heat_score,
-        },
-      });
+        }),
+        supabase.functions.invoke("generate-live-response", {
+          body: {
+            transcript_chunk,
+            lead_id,
+            call_session_id,
+            context_memory: contextMemory.current,
+            lead_heat_score,
+          },
+        }),
+      ]);
 
+      const { data, error } = liveResult;
       if (error) {
         console.error("Live response error:", error);
         toast.error("Failed to get AI response");
         return null;
       }
-
       if (!data?.ok) {
         if (data?.error) toast.error(data.error);
         return null;
@@ -84,7 +98,20 @@ export function useBrandaroLiveScript() {
         heat_delta: data.heat_delta,
       };
 
-      // Update context memory (prevent repeats)
+      // Trigger personality selection based on signals + emotion
+      if (emotionResult || response.detected_objection !== "none" || response.detected_signal !== "none") {
+        intelligence.selectPersonality({
+          lead_id,
+          lead_heat_score,
+          lead_type,
+          transcript_chunk,
+          detected_objection: response.detected_objection,
+          detected_signal: response.detected_signal,
+          emotion_state: emotionResult?.detected_emotion,
+        });
+      }
+
+      // Update context memory
       const mem = contextMemory.current;
       if (response.detected_objection !== "none" && !mem.objections_handled.includes(response.detected_objection)) {
         mem.objections_handled.push(response.detected_objection);
@@ -96,7 +123,6 @@ export function useBrandaroLiveScript() {
         mem.strategies_used.push(response.strategy_used);
       }
       mem.responses_given.push(response.response_text);
-      // Keep last 10 responses to avoid bloat
       if (mem.responses_given.length > 10) {
         mem.responses_given = mem.responses_given.slice(-10);
       }
@@ -111,7 +137,7 @@ export function useBrandaroLiveScript() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, []);
+  }, [intelligence]);
 
   const resetSession = useCallback(() => {
     setLastResponse(null);
@@ -123,7 +149,8 @@ export function useBrandaroLiveScript() {
       responses_given: [],
       promises_made: [],
     };
-  }, []);
+    intelligence.resetIntelligence();
+  }, [intelligence]);
 
   return {
     analyzeChunk,
@@ -132,5 +159,13 @@ export function useBrandaroLiveScript() {
     lastResponse,
     responseHistory,
     contextMemory: contextMemory.current,
+    // Intelligence layer exposed
+    currentEmotion: intelligence.currentEmotion,
+    emotionTimeline: intelligence.emotionTimeline,
+    currentPersonality: intelligence.currentPersonality,
+    personalitySwitches: intelligence.personalitySwitches,
+    isDetecting: intelligence.isDetecting,
+    isSelecting: intelligence.isSelecting,
+    switchCount: intelligence.switchCount,
   };
 }
