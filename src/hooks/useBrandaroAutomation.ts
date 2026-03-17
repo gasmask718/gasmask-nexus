@@ -2,6 +2,19 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useMemo } from "react";
 
+export interface ExecutionStats {
+  total24h: number;
+  callsInitiated: number;
+  smsSent: number;
+  paymentLinksSent: number;
+  successCount: number;
+  failCount: number;
+  pendingFollowups: number;
+  activeAutomations: number;
+  triggerCounts: Record<string, number>;
+  revenueGenerated: number;
+}
+
 export function useBrandaroAutomationStats() {
   const queryClient = useQueryClient();
 
@@ -12,6 +25,23 @@ export function useBrandaroAutomationStats() {
       const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { data, error } = await (supabase as any)
         .from("brandaro_automation_log")
+        .select("*")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 15000,
+  });
+
+  // Execution log (last 24h)
+  const { data: executionLogs = [] } = useQuery({
+    queryKey: ["brandaro-execution-logs"],
+    queryFn: async () => {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await (supabase as any)
+        .from("brandaro_execution_log")
         .select("*")
         .gte("created_at", since)
         .order("created_at", { ascending: false })
@@ -49,22 +79,29 @@ export function useBrandaroAutomationStats() {
     },
   });
 
-  // Realtime subscription for automation log
+  // Realtime subscriptions
   useEffect(() => {
-    const channel = supabase
+    const ch1 = supabase
       .channel("automation-log-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "brandaro_automation_log" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["brandaro-automation-logs"] });
-        }
-      )
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "brandaro_automation_log" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["brandaro-automation-logs"] });
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    const ch2 = supabase
+      .channel("execution-log-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "brandaro_execution_log" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["brandaro-execution-logs"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(ch1);
+      supabase.removeChannel(ch2);
+    };
   }, [queryClient]);
 
-  const stats = useMemo(() => {
+  const stats: ExecutionStats = useMemo(() => {
     const triggerCounts: Record<string, number> = {};
     let successCount = 0;
     let failCount = 0;
@@ -75,15 +112,24 @@ export function useBrandaroAutomationStats() {
       else if (log.result === "failed") failCount++;
     }
 
+    const callsInitiated = executionLogs.filter((l: any) => l.action_type === "ai_call").length;
+    const smsSent = executionLogs.filter((l: any) => l.action_type === "sms").length;
+    const paymentLinksSent = executionLogs.filter((l: any) => l.action_type === "payment_link").length;
+    const revenueGenerated = executionLogs.reduce((sum: number, l: any) => sum + (l.revenue_attributed || 0), 0);
+
     return {
       total24h: recentLogs.length,
+      callsInitiated,
+      smsSent,
+      paymentLinksSent,
       successCount,
       failCount,
       triggerCounts,
       pendingFollowups,
       activeAutomations,
+      revenueGenerated,
     };
-  }, [recentLogs, pendingFollowups, activeAutomations]);
+  }, [recentLogs, executionLogs, pendingFollowups, activeAutomations]);
 
-  return { stats, recentLogs, isLoading };
+  return { stats, recentLogs, executionLogs, isLoading };
 }
