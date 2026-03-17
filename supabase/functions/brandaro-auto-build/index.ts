@@ -730,3 +730,69 @@ async function logBuildError(supabase: any, jobId: string, message: string) {
   errors.push({ message, timestamp: new Date().toISOString() });
   await supabase.from("brandaro_build_jobs").update({ error_log: errors }).eq("id", jobId);
 }
+
+/**
+ * Extract design patterns from Durable-generated HTML
+ * Used to inform native builder standardization
+ */
+function extractDurableDesignPatterns(html: string): {
+  sections: any[]; patterns: any; layout: any; colors: any; typography: any;
+} {
+  const sections: any[] = [];
+  
+  // Extract sections with their types
+  const sectionRegex = /<section[^>]*(?:class|id)="([^"]*)"[^>]*>([\s\S]*?)<\/section>/gi;
+  let match;
+  while ((match = sectionRegex.exec(html)) !== null) {
+    const classOrId = match[1];
+    const content = match[2];
+    const hasImages = (content.match(/<img/gi) || []).length;
+    const hasButtons = (content.match(/<button|<a[^>]*class="[^"]*btn/gi) || []).length;
+    const textLength = content.replace(/<[^>]*>/g, "").trim().length;
+    
+    sections.push({
+      identifier: classOrId,
+      hasImages: hasImages > 0,
+      imageCount: hasImages,
+      hasCTA: hasButtons > 0,
+      ctaCount: hasButtons,
+      contentDensity: textLength > 500 ? "high" : textLength > 200 ? "medium" : "low",
+    });
+  }
+
+  // Extract color patterns
+  const colorRegex = /#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|hsl\([^)]+\)/g;
+  const colorsFound = [...new Set((html.match(colorRegex) || []))].slice(0, 10);
+
+  // Extract font patterns
+  const fontRegex = /font-family:\s*([^;}"]+)/gi;
+  const fontsFound: string[] = [];
+  while ((match = fontRegex.exec(html)) !== null) {
+    fontsFound.push(match[1].trim());
+  }
+
+  // Layout detection
+  const usesGrid = html.includes("display: grid") || html.includes("display:grid");
+  const usesFlex = html.includes("display: flex") || html.includes("display:flex");
+  const columnsDetected = (html.match(/grid-template-columns|col-span|columns/gi) || []).length;
+
+  return {
+    sections,
+    patterns: {
+      totalSections: sections.length,
+      sectionsWithCTA: sections.filter(s => s.hasCTA).length,
+      sectionsWithImages: sections.filter(s => s.hasImages).length,
+      avgContentDensity: sections.length > 0
+        ? sections.filter(s => s.contentDensity === "high").length / sections.length
+        : 0,
+    },
+    layout: {
+      usesGrid,
+      usesFlex,
+      columnsDetected,
+      estimatedComplexity: sections.length > 8 ? "high" : sections.length > 4 ? "medium" : "low",
+    },
+    colors: { palette: colorsFound },
+    typography: { fonts: [...new Set(fontsFound)] },
+  };
+}
