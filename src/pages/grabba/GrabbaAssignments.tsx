@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GeocodingService } from '@/services/geocoding';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -394,12 +395,28 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, allBiker
         storeOrderId = newStoreOrder.id;
       }
 
+      // Auto-geocode delivery address if no lat/lng already exists
+      let resolvedLat = order.delivery_lat || order.store?.lat || null;
+      let resolvedLng = order.delivery_lng || order.store?.lng || null;
+
+      if ((!resolvedLat || !resolvedLng) && deliveryAddress) {
+        try {
+          const geoResult = await GeocodingService.geocodeAddress(deliveryAddress);
+          if ('lat' in geoResult && geoResult.lat && geoResult.lng) {
+            resolvedLat = geoResult.lat;
+            resolvedLng = geoResult.lng;
+          }
+        } catch (e) {
+          console.warn('Geocoding failed for delivery address:', e);
+        }
+      }
+
       const taskData: any = {
         store_order_id: storeOrderId,
         assigned_by: user?.id || null,
         delivery_address: deliveryAddress || null,
-        delivery_lat: order.delivery_lat || order.store?.lat || null,
-        delivery_lng: order.delivery_lng || order.store?.lng || null,
+        delivery_lat: resolvedLat,
+        delivery_lng: resolvedLng,
         delivery_notes: deliveryNotes || null,
         recipient_name: recipientName || null,
         recipient_phone: recipientPhone || null,
