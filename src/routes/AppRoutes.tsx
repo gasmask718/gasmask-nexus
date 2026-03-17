@@ -2496,6 +2496,7 @@ export default function AppRoutes() {
         <Route path="/brandaro/calling" element={<CallingOpsPage />} />
         <Route path="/brandaro/va-command" element={<VACommandCenterPage />} />
         <Route path="/brandaro/revenue" element={<RevenueAnalyticsPage />} />
+        <Route path="/brandaro/retention" element={<RetentionDashboardPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
