@@ -10078,6 +10078,50 @@ export type Database = {
           },
         ]
       }
+      brandaro_conversations: {
+        Row: {
+          ai_response: string | null
+          channel: string | null
+          created_at: string | null
+          direction: string
+          id: string
+          lead_id: string
+          message_text: string
+          objection_type: string | null
+          response_effectiveness: string | null
+        }
+        Insert: {
+          ai_response?: string | null
+          channel?: string | null
+          created_at?: string | null
+          direction?: string
+          id?: string
+          lead_id: string
+          message_text: string
+          objection_type?: string | null
+          response_effectiveness?: string | null
+        }
+        Update: {
+          ai_response?: string | null
+          channel?: string | null
+          created_at?: string | null
+          direction?: string
+          id?: string
+          lead_id?: string
+          message_text?: string
+          objection_type?: string | null
+          response_effectiveness?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_demo_events: {
         Row: {
           created_at: string
@@ -10120,8 +10164,10 @@ export type Database = {
         Row: {
           business_name: string
           city: string | null
+          content_blocks: Json | null
           created_at: string
           delivery_method: string | null
+          demo_ready_for_conversion: boolean | null
           demo_url: string | null
           durable_generated_url: string | null
           durable_job_status: string | null
@@ -10138,6 +10184,7 @@ export type Database = {
           last_viewed_at: string | null
           lead_id: string
           preview_image: string | null
+          production_build_ready: boolean | null
           public_status: string | null
           published_at: string | null
           published_version: number | null
@@ -10154,8 +10201,10 @@ export type Database = {
         Insert: {
           business_name: string
           city?: string | null
+          content_blocks?: Json | null
           created_at?: string
           delivery_method?: string | null
+          demo_ready_for_conversion?: boolean | null
           demo_url?: string | null
           durable_generated_url?: string | null
           durable_job_status?: string | null
@@ -10172,6 +10221,7 @@ export type Database = {
           last_viewed_at?: string | null
           lead_id: string
           preview_image?: string | null
+          production_build_ready?: boolean | null
           public_status?: string | null
           published_at?: string | null
           published_version?: number | null
@@ -10188,8 +10238,10 @@ export type Database = {
         Update: {
           business_name?: string
           city?: string | null
+          content_blocks?: Json | null
           created_at?: string
           delivery_method?: string | null
+          demo_ready_for_conversion?: boolean | null
           demo_url?: string | null
           durable_generated_url?: string | null
           durable_job_status?: string | null
@@ -10206,6 +10258,7 @@ export type Database = {
           last_viewed_at?: string | null
           lead_id?: string
           preview_image?: string | null
+          production_build_ready?: boolean | null
           public_status?: string | null
           published_at?: string | null
           published_version?: number | null
@@ -10344,8 +10397,11 @@ export type Database = {
           id: string
           job_type: string
           last_error: string | null
+          max_retries: number | null
+          next_retry_at: string | null
           resolved_at: string | null
           retry_at: string | null
+          retry_count: number | null
           status: string | null
         }
         Insert: {
@@ -10356,8 +10412,11 @@ export type Database = {
           id?: string
           job_type: string
           last_error?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           resolved_at?: string | null
           retry_at?: string | null
+          retry_count?: number | null
           status?: string | null
         }
         Update: {
@@ -10368,8 +10427,11 @@ export type Database = {
           id?: string
           job_type?: string
           last_error?: string | null
+          max_retries?: number | null
+          next_retry_at?: string | null
           resolved_at?: string | null
           retry_at?: string | null
+          retry_count?: number | null
           status?: string | null
         }
         Relationships: []
@@ -10443,6 +10505,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_nightly_discovery_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          errors: Json | null
+          id: string
+          leads_found: number | null
+          run_date: string
+          sources_queried: Json | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          leads_found?: number | null
+          run_date?: string
+          sources_queried?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          leads_found?: number | null
+          run_date?: string
+          sources_queried?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
       }
       brandaro_projects: {
         Row: {
