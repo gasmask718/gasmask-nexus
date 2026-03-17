@@ -848,3 +848,4 @@ export default function VAManagerPage() {
       </Tabs>
     </div>
   );
+}
