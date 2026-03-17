@@ -15,6 +15,7 @@ import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
 import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
+import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -29,9 +30,9 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/followups', label: 'Follow-Ups', icon: Bell },
   { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
   { path: '/os/brandaro/build-pipeline', label: 'Build Pipeline', icon: Factory },
+  { path: '/os/brandaro/results', label: 'Result Engine', icon: TrendingUp },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
-  { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
   { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
 ];
 
