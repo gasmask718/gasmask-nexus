@@ -7,14 +7,16 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { useVaTasks, useCompleteVaTask, useSubmitLearningFeedback, useObjectionLibrary } from "@/hooks/useBrandaroLearning";
 import {
   Flame, Phone, Eye, FileText, Play,
   MessageSquare, Brain, Target, TrendingUp,
-  AlertTriangle, Send, Clock,
+  AlertTriangle, Send, Clock, ListTodo,
   CheckCircle2, Star, Zap, Inbox, ShieldCheck,
-  DollarSign, Reply
+  DollarSign, Reply, BookOpen, ClipboardList
 } from "lucide-react";
 
 export default function VACommandCenterPage() {
