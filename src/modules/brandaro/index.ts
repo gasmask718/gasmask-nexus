@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -14,6 +14,7 @@ import FollowUpEnginePage from '@/pages/brandaro/FollowUpEnginePage';
 import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
 import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
+import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
