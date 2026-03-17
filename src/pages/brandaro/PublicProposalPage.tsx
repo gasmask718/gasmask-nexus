@@ -30,9 +30,21 @@ const PACKAGE_DETAILS: Record<string, { name: string; features: string[] }> = {
 
 export default function PublicProposalPage() {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
   const [proposal, setProposal] = useState<ProposalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    if (searchParams.get('paid') === 'true' && proposal?.id) {
+      supabase.functions.invoke('brandaro-post-payment', {
+        body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
+      }).then(() => {
+        setProposal(p => p ? { ...p, status: 'accepted', payment_status: 'paid' } : p);
+      }).catch(console.error);
+    }
+  }, [searchParams, proposal?.id]);
 
   useEffect(() => {
     if (!token) return;
