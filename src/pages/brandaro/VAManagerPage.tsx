@@ -22,6 +22,10 @@ import {
   useOptimizeOffers, useEvaluatePricingTests, useUpsertCompetitor, useCreateOffer,
   useCreatePricingTest, useCreatePositioningTest, useSystemDecisions,
 } from "@/hooks/useBrandaroMarketDomination";
+import {
+  usePersonalities, useStrategyFrameworks, useCreatePersonality,
+  useCreateFramework, useTogglePersonality, useGeneratePersonalityResponse,
+} from "@/hooks/useBrandaroPersonalityEngine";
 import { toast } from "sonner";
 import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
