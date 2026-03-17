@@ -10401,6 +10401,62 @@ export type Database = {
           },
         ]
       }
+      brandaro_client_views: {
+        Row: {
+          access_token: string
+          change_requests: Json | null
+          created_at: string | null
+          custom_price: number | null
+          demo_html: string | null
+          id: string
+          last_viewed_at: string | null
+          lead_id: string | null
+          package_tier: string | null
+          payment_completed: boolean | null
+          status: string | null
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          access_token?: string
+          change_requests?: Json | null
+          created_at?: string | null
+          custom_price?: number | null
+          demo_html?: string | null
+          id?: string
+          last_viewed_at?: string | null
+          lead_id?: string | null
+          package_tier?: string | null
+          payment_completed?: boolean | null
+          status?: string | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          access_token?: string
+          change_requests?: Json | null
+          created_at?: string | null
+          custom_price?: number | null
+          demo_html?: string | null
+          id?: string
+          last_viewed_at?: string | null
+          lead_id?: string | null
+          package_tier?: string | null
+          payment_completed?: boolean | null
+          status?: string | null
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_views_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_clients: {
         Row: {
           addon_services: Json | null
@@ -11208,6 +11264,105 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_design_system: {
+        Row: {
+          animation_type: string | null
+          color_scheme: Json | null
+          conversion_elements: Json | null
+          created_at: string | null
+          css_snippet: string | null
+          effectiveness_score: number | null
+          font_pairing: Json | null
+          html_template: string | null
+          id: string
+          layout_type: string
+          section_type: string
+          times_converted: number | null
+          times_used: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          animation_type?: string | null
+          color_scheme?: Json | null
+          conversion_elements?: Json | null
+          created_at?: string | null
+          css_snippet?: string | null
+          effectiveness_score?: number | null
+          font_pairing?: Json | null
+          html_template?: string | null
+          id?: string
+          layout_type?: string
+          section_type: string
+          times_converted?: number | null
+          times_used?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          animation_type?: string | null
+          color_scheme?: Json | null
+          conversion_elements?: Json | null
+          created_at?: string | null
+          css_snippet?: string | null
+          effectiveness_score?: number | null
+          font_pairing?: Json | null
+          html_template?: string | null
+          id?: string
+          layout_type?: string
+          section_type?: string
+          times_converted?: number | null
+          times_used?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_design_variants: {
+        Row: {
+          animation_profile: string | null
+          avg_close_rate: number | null
+          color_profile: Json | null
+          created_at: string | null
+          deals_closed: number | null
+          font_profile: Json | null
+          id: string
+          industry: string
+          is_active: boolean | null
+          revenue_generated: number | null
+          section_sequence: Json | null
+          style: string
+          updated_at: string | null
+        }
+        Insert: {
+          animation_profile?: string | null
+          avg_close_rate?: number | null
+          color_profile?: Json | null
+          created_at?: string | null
+          deals_closed?: number | null
+          font_profile?: Json | null
+          id?: string
+          industry: string
+          is_active?: boolean | null
+          revenue_generated?: number | null
+          section_sequence?: Json | null
+          style?: string
+          updated_at?: string | null
+        }
+        Update: {
+          animation_profile?: string | null
+          avg_close_rate?: number | null
+          color_profile?: Json | null
+          created_at?: string | null
+          deals_closed?: number | null
+          font_profile?: Json | null
+          id?: string
+          industry?: string
+          is_active?: boolean | null
+          revenue_generated?: number | null
+          section_sequence?: Json | null
+          style?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_extracted_templates: {
         Row: {
           avg_score: number | null
@@ -11623,6 +11778,72 @@ export type Database = {
           },
         ]
       }
+      brandaro_learning_feedback: {
+        Row: {
+          ai_notes: string | null
+          call_id: string | null
+          created_at: string | null
+          deal_value: number | null
+          design_variant_id: string | null
+          feedback_type: string
+          follow_up_messages_sent: number | null
+          id: string
+          lead_id: string | null
+          objection_type: string | null
+          outcome: string | null
+          time_to_close_hours: number | null
+          va_notes: string | null
+          website_score: number | null
+        }
+        Insert: {
+          ai_notes?: string | null
+          call_id?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          design_variant_id?: string | null
+          feedback_type: string
+          follow_up_messages_sent?: number | null
+          id?: string
+          lead_id?: string | null
+          objection_type?: string | null
+          outcome?: string | null
+          time_to_close_hours?: number | null
+          va_notes?: string | null
+          website_score?: number | null
+        }
+        Update: {
+          ai_notes?: string | null
+          call_id?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          design_variant_id?: string | null
+          feedback_type?: string
+          follow_up_messages_sent?: number | null
+          id?: string
+          lead_id?: string | null
+          objection_type?: string | null
+          outcome?: string | null
+          time_to_close_hours?: number | null
+          va_notes?: string | null
+          website_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_learning_feedback_design_variant_id_fkey"
+            columns: ["design_variant_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_design_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_learning_feedback_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_message_log: {
         Row: {
           channel: string
@@ -11771,6 +11992,48 @@ export type Database = {
           times_converted?: number | null
           times_used?: number | null
           va_response?: string
+        }
+        Relationships: []
+      }
+      brandaro_objection_library: {
+        Row: {
+          alternative_responses: string[] | null
+          avg_deal_value_when_handled: number | null
+          best_response: string | null
+          category: string | null
+          created_at: string | null
+          frequency: number | null
+          id: string
+          industries_common: string[] | null
+          objection_type: string
+          success_rate: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          alternative_responses?: string[] | null
+          avg_deal_value_when_handled?: number | null
+          best_response?: string | null
+          category?: string | null
+          created_at?: string | null
+          frequency?: number | null
+          id?: string
+          industries_common?: string[] | null
+          objection_type: string
+          success_rate?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          alternative_responses?: string[] | null
+          avg_deal_value_when_handled?: number | null
+          best_response?: string | null
+          category?: string | null
+          created_at?: string | null
+          frequency?: number | null
+          id?: string
+          industries_common?: string[] | null
+          objection_type?: string
+          success_rate?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -12842,6 +13105,56 @@ export type Database = {
           va_user_id?: string
         }
         Relationships: []
+      }
+      brandaro_va_tasks: {
+        Row: {
+          call_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          demo_score_id: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          priority: string | null
+          status: string | null
+          task_type: string
+          va_user_id: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          demo_score_id?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          status?: string | null
+          task_type: string
+          va_user_id?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          demo_score_id?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: string | null
+          status?: string | null
+          task_type?: string
+          va_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_voice_agent_calls: {
         Row: {

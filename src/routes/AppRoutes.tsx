@@ -89,6 +89,7 @@ import AmbassadorRequestAmbassador from '@/pages/ambassador/AmbassadorRequestAmb
 import AmbassadorRequests from '@/pages/security/AmbassadorRequests';
 import AmbassadorInviteAccept from '@/pages/invite/AmbassadorInviteAccept';
 import PublicProposalPage from '@/pages/brandaro/PublicProposalPage';
+import ClientDemoViewPage from '@/pages/brandaro/ClientDemoViewPage';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
@@ -648,6 +649,8 @@ export default function AppRoutes() {
       <Route path="/accept-invite" element={<Navigate to="/signup" replace />} />
       {/* Brandaro Public Proposal Viewer */}
       <Route path="/proposal/:token" element={<PublicProposalPage />} />
+      {/* Brandaro Public Client Demo View */}
+      <Route path="/client/:token" element={<ClientDemoViewPage />} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}

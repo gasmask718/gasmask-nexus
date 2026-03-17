@@ -1,0 +1,320 @@
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
+  Globe, CheckCircle2, Smartphone, Zap, Shield,
+  Phone, MessageSquare, Star, ArrowRight, Sparkles,
+} from "lucide-react";
+
+/**
+ * Public client-facing demo preview page.
+ * Accessed via /client/:token (no auth required).
+ * Shows: website preview, value stack, pricing, action buttons.
+ */
+export default function ClientDemoViewPage() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token") || window.location.pathname.split("/client/")[1];
+
+  const [clientView, setClientView] = useState<any>(null);
+  const [lead, setLead] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [changeRequest, setChangeRequest] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    loadClientView();
+  }, [token]);
+
+  const loadClientView = async () => {
+    if (!token) { setLoading(false); return; }
+
+    const { data, error } = await (supabase as any)
+      .from("brandaro_client_views")
+      .select("*, brandaro_qualified_leads:lead_id(*)")
+      .eq("access_token", token)
+      .single();
+
+    if (error || !data) {
+      setLoading(false);
+      return;
+    }
+
+    setClientView(data);
+    setLead(data.brandaro_qualified_leads);
+
+    // Track view
+    await (supabase as any)
+      .from("brandaro_client_views")
+      .update({
+        views_count: (data.views_count || 0) + 1,
+        last_viewed_at: new Date().toISOString(),
+      })
+      .eq("id", data.id);
+
+    // Also advance pipeline if demo hasn't been viewed yet
+    if (data.lead_id) {
+      await (supabase as any)
+        .from("brandaro_close_pipeline")
+        .update({
+          stage: "demo_viewed",
+          demo_viewed_at: new Date().toISOString(),
+        })
+        .eq("lead_id", data.lead_id)
+        .eq("stage", "demo_sent");
+    }
+
+    setLoading(false);
+  };
+
+  const handleLaunch = async () => {
+    if (!clientView) return;
+    try {
+      const { data, error } = await supabase.functions.invoke("brandaro-create-payment-link", {
+        body: {
+          lead_id: clientView.lead_id,
+          package_tier: clientView.package_tier || "starter",
+          send_sms: false,
+        },
+      });
+      if (error) throw error;
+      if (data?.checkout_url) {
+        window.open(data.checkout_url, "_blank");
+      }
+    } catch (err: any) {
+      toast.error("Unable to process. Please call us directly.");
+    }
+  };
+
+  const handleChangeRequest = async () => {
+    if (!changeRequest.trim() || !clientView) return;
+    setSubmitting(true);
+    const existing = clientView.change_requests || [];
+    await (supabase as any)
+      .from("brandaro_client_views")
+      .update({
+        change_requests: [...existing, { text: changeRequest, created_at: new Date().toISOString() }],
+        status: "in_progress",
+      })
+      .eq("id", clientView.id);
+    toast.success("Change request submitted! We'll update your site shortly.");
+    setChangeRequest("");
+    setSubmitting(false);
+    loadClientView();
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950">
+        <div className="animate-pulse text-cyan-400 text-lg">Loading your preview...</div>
+      </div>
+    );
+  }
+
+  if (!clientView) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950">
+        <div className="text-center">
+          <Globe className="h-16 w-16 text-cyan-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-white mb-2">Preview Not Found</h1>
+          <p className="text-slate-400">This link may have expired or is invalid.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const businessName = lead?.business_name || "Your Business";
+  const packagePrices: Record<string, number> = {
+    starter: 750, growth: 1500, premium: 3000, elite: 5000,
+  };
+  const price = clientView.custom_price || packagePrices[clientView.package_tier] || 750;
+
+  const statusLabels: Record<string, { label: string; color: string }> = {
+    demo_ready: { label: "Demo Ready", color: "bg-cyan-500" },
+    in_progress: { label: "Updates In Progress", color: "bg-yellow-500" },
+    ready_to_launch: { label: "Ready to Launch! 🚀", color: "bg-green-500" },
+    launched: { label: "Live!", color: "bg-emerald-500" },
+  };
+  const statusInfo = statusLabels[clientView.status] || statusLabels.demo_ready;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950">
+      {/* Header */}
+      <header className="border-b border-slate-800/50 backdrop-blur-sm bg-slate-950/50 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Globe className="h-6 w-6 text-cyan-400" />
+            <span className="font-bold text-white text-lg">Brandaro</span>
+          </div>
+          <Badge className={`${statusInfo.color} text-white`}>{statusInfo.label}</Badge>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+        {/* Hero */}
+        <div className="text-center space-y-3">
+          <h1 className="text-3xl md:text-4xl font-bold text-white">
+            {businessName}'s Custom Website
+          </h1>
+          <p className="text-lg text-slate-300">
+            Built specifically for your business — ready to bring in new customers.
+          </p>
+        </div>
+
+        {/* Website Preview */}
+        {clientView.demo_html && (
+          <Card className="overflow-hidden border-cyan-500/20 bg-slate-900/50 backdrop-blur">
+            <CardContent className="p-0">
+              <div className="bg-slate-800 px-4 py-2 flex items-center gap-2 border-b border-slate-700">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-500" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                </div>
+                <div className="flex-1 text-center">
+                  <span className="text-xs text-slate-400 bg-slate-700 rounded px-3 py-0.5">
+                    {businessName.toLowerCase().replace(/\s+/g, "")}.com
+                  </span>
+                </div>
+              </div>
+              <div
+                className="w-full bg-white"
+                style={{ minHeight: 500 }}
+                dangerouslySetInnerHTML={{ __html: clientView.demo_html }}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Value Stack + Pricing */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Value Stack */}
+          <Card className="border-slate-700/50 bg-slate-900/50 backdrop-blur">
+            <CardContent className="p-6 space-y-4">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-cyan-400" />
+                What's Included
+              </h2>
+              {[
+                { icon: Globe, text: "Custom professional design tailored to your brand" },
+                { icon: Smartphone, text: "Mobile-optimized — looks perfect on every device" },
+                { icon: Zap, text: "Built-in lead capture system to get you new customers" },
+                { icon: Shield, text: "Fast, secure hosting with SSL certificate" },
+                { icon: Star, text: "30-day support & revisions after launch" },
+                { icon: CheckCircle2, text: "Go live within 48 hours of approval" },
+              ].map(({ icon: Icon, text }, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <Icon className="h-5 w-5 text-cyan-400 mt-0.5 shrink-0" />
+                  <span className="text-slate-300 text-sm">{text}</span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Pricing + Actions */}
+          <Card className="border-cyan-500/30 bg-gradient-to-br from-slate-900 to-cyan-950/30 backdrop-blur">
+            <CardContent className="p-6 space-y-5">
+              <div>
+                <p className="text-slate-400 text-sm">One-time setup</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-white">${price.toLocaleString()}</span>
+                </div>
+                <p className="text-slate-400 text-xs mt-1">+ Optional $150/mo maintenance & updates</p>
+              </div>
+
+              <div className="space-y-3">
+                <Button
+                  onClick={handleLaunch}
+                  className="w-full h-12 text-base bg-cyan-500 hover:bg-cyan-600 text-white font-semibold"
+                  disabled={clientView.payment_completed}
+                >
+                  {clientView.payment_completed ? (
+                    <><CheckCircle2 className="h-5 w-5 mr-2" /> Payment Confirmed</>
+                  ) : (
+                    <><ArrowRight className="h-5 w-5 mr-2" /> Launch My Site</>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  className="w-full border-slate-600 text-slate-300 hover:bg-slate-800"
+                  onClick={() => document.getElementById("changes-section")?.scrollIntoView({ behavior: "smooth" })}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" /> Request Changes
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  className="w-full text-slate-400 hover:text-white"
+                  onClick={() => window.open("tel:+1234567890")}
+                >
+                  <Phone className="h-4 w-4 mr-2" /> Talk to a Specialist
+                </Button>
+              </div>
+
+              <div className="pt-3 border-t border-slate-700/50 space-y-1">
+                <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                  <Shield className="h-3 w-3" /> Secure payment via Stripe
+                </p>
+                <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> 100% satisfaction guaranteed
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Change Request Section */}
+        <div id="changes-section">
+          <Card className="border-slate-700/50 bg-slate-900/50 backdrop-blur">
+            <CardContent className="p-6 space-y-3">
+              <h2 className="text-lg font-bold text-white">Request Changes</h2>
+              <p className="text-sm text-slate-400">
+                Want us to adjust anything? Describe the changes below and we'll update your preview.
+              </p>
+              <Textarea
+                placeholder="e.g., Change the hero image, update the phone number, make the colors darker..."
+                className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
+                value={changeRequest}
+                onChange={(e) => setChangeRequest(e.target.value)}
+                rows={3}
+              />
+              <Button
+                onClick={handleChangeRequest}
+                disabled={!changeRequest.trim() || submitting}
+                className="bg-cyan-500 hover:bg-cyan-600"
+              >
+                <Send className="h-4 w-4 mr-2" /> Submit Request
+              </Button>
+
+              {(clientView.change_requests || []).length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-slate-500 font-medium">Previous Requests:</p>
+                  {(clientView.change_requests as any[]).map((cr: any, i: number) => (
+                    <div key={i} className="bg-slate-800/50 rounded p-2 text-xs text-slate-400">
+                      "{cr.text}" — {new Date(cr.created_at).toLocaleDateString()}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-slate-800/50 mt-12 py-6">
+        <div className="max-w-6xl mx-auto px-4 text-center text-xs text-slate-500">
+          Powered by Brandaro · Custom website solutions for local businesses
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// Missing import fix
+const Send = MessageSquare; // alias to avoid adding another import
