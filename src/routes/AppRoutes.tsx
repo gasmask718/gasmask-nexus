@@ -2485,6 +2485,18 @@ export default function AppRoutes() {
         </ProtectedRoute>
       } />
 
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* BRANDARO DIGITAL FLOOR                                                       */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/brandaro" element={<BrandaroDashboard />} />
+        <Route path="/brandaro/ceo" element={<CEODashboardPage />} />
+        <Route path="/brandaro/leads" element={<LeadDatabasePage />} />
+        <Route path="/brandaro/calling" element={<CallingOpsPage />} />
+        <Route path="/brandaro/va-command" element={<VACommandCenterPage />} />
+        <Route path="/brandaro/revenue" element={<RevenueAnalyticsPage />} />
+      </Route>
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
