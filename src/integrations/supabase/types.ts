@@ -10605,6 +10605,8 @@ export type Database = {
       }
       brandaro_conversion_patterns: {
         Row: {
+          builds_with_payment: number | null
+          close_rate: number | null
           conversion_correlation: number | null
           created_at: string | null
           engagement_boost: number | null
@@ -10615,13 +10617,17 @@ export type Database = {
           pattern_key: string
           pattern_score: number | null
           pattern_type: string
+          revenue_score: number | null
           source_quality: string | null
           source_url: string | null
           times_used_in_builds: number | null
+          total_revenue: number | null
           updated_at: string | null
           usage_frequency: number | null
         }
         Insert: {
+          builds_with_payment?: number | null
+          close_rate?: number | null
           conversion_correlation?: number | null
           created_at?: string | null
           engagement_boost?: number | null
@@ -10632,13 +10638,17 @@ export type Database = {
           pattern_key: string
           pattern_score?: number | null
           pattern_type: string
+          revenue_score?: number | null
           source_quality?: string | null
           source_url?: string | null
           times_used_in_builds?: number | null
+          total_revenue?: number | null
           updated_at?: string | null
           usage_frequency?: number | null
         }
         Update: {
+          builds_with_payment?: number | null
+          close_rate?: number | null
           conversion_correlation?: number | null
           created_at?: string | null
           engagement_boost?: number | null
@@ -10649,9 +10659,11 @@ export type Database = {
           pattern_key?: string
           pattern_score?: number | null
           pattern_type?: string
+          revenue_score?: number | null
           source_quality?: string | null
           source_url?: string | null
           times_used_in_builds?: number | null
+          total_revenue?: number | null
           updated_at?: string | null
           usage_frequency?: number | null
         }
@@ -10907,6 +10919,9 @@ export type Database = {
       brandaro_design_profiles: {
         Row: {
           avg_conversion_rate: number | null
+          avg_order_value: number | null
+          builds_with_payment: number | null
+          close_rate: number | null
           color_palette: Json | null
           created_at: string | null
           cta_placement: string | null
@@ -10917,13 +10932,18 @@ export type Database = {
           layout_preference: string | null
           performance_rank: number | null
           profile_name: string
+          revenue_score: number | null
           spacing_system: Json | null
           style_category: string
+          total_revenue: number | null
           updated_at: string | null
           usage_count: number | null
         }
         Insert: {
           avg_conversion_rate?: number | null
+          avg_order_value?: number | null
+          builds_with_payment?: number | null
+          close_rate?: number | null
           color_palette?: Json | null
           created_at?: string | null
           cta_placement?: string | null
@@ -10934,13 +10954,18 @@ export type Database = {
           layout_preference?: string | null
           performance_rank?: number | null
           profile_name: string
+          revenue_score?: number | null
           spacing_system?: Json | null
           style_category: string
+          total_revenue?: number | null
           updated_at?: string | null
           usage_count?: number | null
         }
         Update: {
           avg_conversion_rate?: number | null
+          avg_order_value?: number | null
+          builds_with_payment?: number | null
+          close_rate?: number | null
           color_palette?: Json | null
           created_at?: string | null
           cta_placement?: string | null
@@ -10951,8 +10976,10 @@ export type Database = {
           layout_preference?: string | null
           performance_rank?: number | null
           profile_name?: string
+          revenue_score?: number | null
           spacing_system?: Json | null
           style_category?: string
+          total_revenue?: number | null
           updated_at?: string | null
           usage_count?: number | null
         }
@@ -10963,6 +10990,7 @@ export type Database = {
           avg_score: number | null
           build_job_id: string | null
           client_id: string | null
+          close_rate: number | null
           color_scheme: Json | null
           created_at: string | null
           design_patterns: Json | null
@@ -10971,9 +10999,11 @@ export type Database = {
           id: string
           last_used_at: string | null
           layout_hierarchy: Json | null
+          revenue_score: number | null
           source_engine: string
           standardized: boolean | null
           standardized_at: string | null
+          total_revenue: number | null
           typography: Json | null
           usage_count: number | null
         }
@@ -10981,6 +11011,7 @@ export type Database = {
           avg_score?: number | null
           build_job_id?: string | null
           client_id?: string | null
+          close_rate?: number | null
           color_scheme?: Json | null
           created_at?: string | null
           design_patterns?: Json | null
@@ -10989,9 +11020,11 @@ export type Database = {
           id?: string
           last_used_at?: string | null
           layout_hierarchy?: Json | null
+          revenue_score?: number | null
           source_engine?: string
           standardized?: boolean | null
           standardized_at?: string | null
+          total_revenue?: number | null
           typography?: Json | null
           usage_count?: number | null
         }
@@ -10999,6 +11032,7 @@ export type Database = {
           avg_score?: number | null
           build_job_id?: string | null
           client_id?: string | null
+          close_rate?: number | null
           color_scheme?: Json | null
           created_at?: string | null
           design_patterns?: Json | null
@@ -11007,9 +11041,11 @@ export type Database = {
           id?: string
           last_used_at?: string | null
           layout_hierarchy?: Json | null
+          revenue_score?: number | null
           source_engine?: string
           standardized?: boolean | null
           standardized_at?: string | null
+          total_revenue?: number | null
           typography?: Json | null
           usage_count?: number | null
         }
@@ -11761,6 +11797,98 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      brandaro_revenue_attribution: {
+        Row: {
+          average_order_value: number | null
+          build_job_id: string | null
+          client_id: string | null
+          close_rate: number | null
+          created_at: string | null
+          design_profile_id: string | null
+          id: string
+          lifetime_value: number | null
+          revenue_generated: number | null
+          subscription_months: number | null
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          average_order_value?: number | null
+          build_job_id?: string | null
+          client_id?: string | null
+          close_rate?: number | null
+          created_at?: string | null
+          design_profile_id?: string | null
+          id?: string
+          lifetime_value?: number | null
+          revenue_generated?: number | null
+          subscription_months?: number | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          average_order_value?: number | null
+          build_job_id?: string | null
+          client_id?: string | null
+          close_rate?: number | null
+          created_at?: string | null
+          design_profile_id?: string | null
+          id?: string
+          lifetime_value?: number | null
+          revenue_generated?: number | null
+          subscription_months?: number | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_revenue_events: {
+        Row: {
+          build_job_id: string | null
+          client_id: string | null
+          created_at: string | null
+          design_profile_id: string | null
+          event_type: string
+          event_value: number | null
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          template_id: string | null
+        }
+        Insert: {
+          build_job_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          design_profile_id?: string | null
+          event_type: string
+          event_value?: number | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          template_id?: string | null
+        }
+        Update: {
+          build_job_id?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          design_profile_id?: string | null
+          event_type?: string
+          event_value?: number | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_revenue_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_review_queue: {
         Row: {
