@@ -331,9 +331,13 @@ Deno.serve(async (req) => {
 
 // --- Helper Functions ---
 
-function decideBuildEngine(tier: string): string {
-  // Premium/Elite → durable for complex layouts; Starter/Pro → native for speed
-  return ["premium", "elite"].includes(tier) ? "durable" : "native";
+function decideBuildEngine(tier: string, isFirstBuild: boolean = true): string {
+  // DURABLE-FIRST HYBRID: Use Durable for initial generation speed,
+  // then standardize internally via native engine for long-term control.
+  // Only skip Durable for rebuilds or when explicitly native-only.
+  if (isFirstBuild) return "durable";
+  // Fallback to native for rebuilds/retries
+  return "native";
 }
 
 function decidePageCount(tier: string): number {
