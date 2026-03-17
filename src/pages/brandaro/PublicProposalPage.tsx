@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,9 +30,21 @@ const PACKAGE_DETAILS: Record<string, { name: string; features: string[] }> = {
 
 export default function PublicProposalPage() {
   const { token } = useParams<{ token: string }>();
+  const [searchParams] = useSearchParams();
   const [proposal, setProposal] = useState<ProposalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+
+  // Handle return from Stripe checkout
+  useEffect(() => {
+    if (searchParams.get('paid') === 'true' && proposal?.id) {
+      supabase.functions.invoke('brandaro-post-payment', {
+        body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
+      }).then(() => {
+        setProposal(p => p ? { ...p, status: 'accepted', payment_status: 'paid' } : p);
+      }).catch(console.error);
+    }
+  }, [searchParams, proposal?.id]);
 
   useEffect(() => {
     if (!token) return;
@@ -116,12 +128,21 @@ export default function PublicProposalPage() {
   const isPaid = proposal.status === 'accepted' || proposal.payment_status === 'paid';
 
   const handleAccept = async () => {
-    // For now, mark as accepted; Stripe checkout will be wired when enabled
     try {
-      await supabase.functions.invoke('brandaro-post-payment', {
-        body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
+      // Use Stripe checkout for real payment
+      const { data, error } = await supabase.functions.invoke('brandaro-create-checkout', {
+        body: { proposal_id: proposal.id, include_maintenance: true },
       });
-      setProposal({ ...proposal, status: 'accepted' });
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      } else {
+        // Fallback: direct post-payment if no Stripe URL
+        await supabase.functions.invoke('brandaro-post-payment', {
+          body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
+        });
+        setProposal({ ...proposal, status: 'accepted' });
+      }
     } catch (err) {
       console.error(err);
     }
