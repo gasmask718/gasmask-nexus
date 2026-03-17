@@ -7,10 +7,43 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useOffers, BrandaroOffer } from "@/hooks/useBrandaroUpsell";
+import { useTestimonials, useUrgency } from "@/hooks/useBrandaroConversion";
 import {
   Globe, CheckCircle2, Smartphone, Zap, Shield,
   Phone, MessageSquare, Star, ArrowRight, Sparkles, Crown, TrendingUp,
+  Clock, AlertTriangle, Users,
 } from "lucide-react";
+
+function CountdownTimer({ expiresAt }: { expiresAt: string }) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    const update = () => {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft("Expired"); return; }
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${h}h ${m}m ${s}s`);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  if (timeLeft === "Expired") return null;
+
+  return (
+    <div className="bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/30 rounded-lg p-4 text-center">
+      <div className="flex items-center justify-center gap-2 mb-1">
+        <Clock className="h-5 w-5 text-amber-400 animate-pulse" />
+        <span className="text-amber-300 font-bold text-sm uppercase tracking-wide">Limited Time Offer</span>
+      </div>
+      <div className="text-3xl font-bold text-white font-mono">{timeLeft}</div>
+      <p className="text-amber-200/70 text-xs mt-1">Your custom website is reserved — this demo expires soon</p>
+    </div>
+  );
+}
 
 export default function ClientDemoViewPage() {
   const [searchParams] = useSearchParams();
@@ -24,8 +57,21 @@ export default function ClientDemoViewPage() {
   const [selectedTier, setSelectedTier] = useState("starter");
 
   const { data: offers = [] } = useOffers();
+  const { data: testimonials = [] } = useTestimonials();
+  const { data: urgency } = useUrgency(clientView?.lead_id);
 
   useEffect(() => { loadClientView(); }, [token]);
+
+  // Create urgency record on first view
+  useEffect(() => {
+    if (clientView?.lead_id && !urgency) {
+      (supabase as any).from("brandaro_urgency").upsert({
+        lead_id: clientView.lead_id,
+        expires_at: new Date(Date.now() + 48 * 3600000).toISOString(),
+        urgency_level: "standard",
+      }, { onConflict: "lead_id" }).then(() => {});
+    }
+  }, [clientView?.lead_id, urgency]);
 
   const loadClientView = async () => {
     if (!token) { setLoading(false); return; }
@@ -136,6 +182,15 @@ export default function ClientDemoViewPage() {
           <p className="text-lg text-slate-300">Built specifically for your business — ready to bring in new customers.</p>
         </div>
 
+        {/* ═══ URGENCY TIMER ═══ */}
+        {urgency?.expires_at && <CountdownTimer expiresAt={urgency.expires_at} />}
+
+        {/* Scarcity Banner */}
+        <div className="flex items-center justify-center gap-2 text-amber-300/80 text-sm">
+          <AlertTriangle className="h-4 w-4" />
+          <span>Only <strong className="text-white">3 slots left</strong> this week — we can launch your site <strong className="text-white">TODAY</strong></span>
+        </div>
+
         {/* Website Preview */}
         {clientView.demo_html && (
           <Card className="overflow-hidden border-cyan-500/20 bg-slate-900/50 backdrop-blur">
@@ -232,13 +287,46 @@ export default function ClientDemoViewPage() {
             })}
           </div>
 
-          {/* Deposit option */}
           <div className="text-center">
             <p className="text-slate-500 text-xs">
               💡 For Growth, Premium & Elite packages — <span className="text-cyan-400 font-medium">50% deposit available</span> to get started today.
             </p>
           </div>
         </div>
+
+        {/* ═══ TESTIMONIALS — TRUST LAYER ═══ */}
+        {testimonials.length > 0 && (
+          <div className="space-y-4">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-white flex items-center justify-center gap-2">
+                <Users className="h-5 w-5 text-cyan-400" /> Trusted by Local Businesses
+              </h2>
+              <p className="text-slate-400 text-sm mt-1">Real results from real business owners</p>
+            </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {testimonials.map((t: any) => (
+                <Card key={t.id} className="border-slate-700/50 bg-slate-900/50 backdrop-blur">
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: t.rating }).map((_, i) => (
+                        <Star key={i} className="h-4 w-4 text-amber-400 fill-amber-400" />
+                      ))}
+                    </div>
+                    <p className="text-slate-300 text-sm italic">"{t.testimonial_text}"</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-medium text-sm">{t.business_name}</span>
+                      {t.industry && (
+                        <Badge variant="outline" className="text-[10px] text-slate-400 border-slate-600">
+                          {t.industry}
+                        </Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Value Stack */}
         <Card className="border-slate-700/50 bg-slate-900/50 backdrop-blur">
@@ -261,6 +349,13 @@ export default function ClientDemoViewPage() {
             ))}
           </CardContent>
         </Card>
+
+        {/* Guarantee */}
+        <div className="text-center bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/20 rounded-lg p-5">
+          <Shield className="h-8 w-8 text-emerald-400 mx-auto mb-2" />
+          <h3 className="text-white font-bold text-lg">100% Satisfaction Guarantee</h3>
+          <p className="text-slate-400 text-sm mt-1">If you're not happy with your website, we'll revise it until you are — or your money back.</p>
+        </div>
 
         {/* Action row */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useVaTasks, useCompleteVaTask, useSubmitLearningFeedback, useObjectionLibrary } from "@/hooks/useBrandaroLearning";
+import { useLogObjection } from "@/hooks/useBrandaroConversion";
 import {
   Flame, Phone, Eye, FileText, Play,
   MessageSquare, Brain, Target, TrendingUp,
@@ -38,6 +39,7 @@ export default function VACommandCenterPage() {
   const completeTask = useCompleteVaTask();
   const submitFeedback = useSubmitLearningFeedback();
   const { data: objectionLibrary = [] } = useObjectionLibrary();
+  const logObjection = useLogObjection();
 
   const handlePostCallSubmit = async () => {
     if (!postCallOutcome) { toast.error("Select an outcome"); return; }
@@ -832,6 +834,38 @@ export default function VACommandCenterPage() {
                           <Button size="sm" variant="outline" onClick={() => triggerFollowup(selectedCall.lead_id, "sms")}>
                             <Send className="h-3 w-3 mr-1" /> SMS
                           </Button>
+                        </div>
+
+                        {/* Objection Quick Actions */}
+                        <div className="mt-3">
+                          <p className="text-xs font-medium mb-2">⚡ Quick Objection Log</p>
+                          <div className="flex flex-wrap gap-1">
+                            {[
+                              { key: "too_expensive", label: "💰 Too Expensive", response: "I totally get that — most of our clients felt the same way at first. But when you see the calls and customers coming in, it pays for itself in the first week." },
+                              { key: "need_time", label: "⏰ Need Time", response: "Of course! But just so you know, we only have a few slots open this week. I can hold yours for 24 hours if you'd like." },
+                              { key: "not_interested", label: "❌ Not Interested", response: "No worries at all! Mind if I ask — do you currently have a way for new customers to find you online?" },
+                              { key: "already_have_website", label: "🌐 Has Website", response: "That's great! When's the last time it was updated? A lot of businesses we work with had a site but weren't getting results from it." },
+                            ].map((obj) => (
+                              <Button
+                                key={obj.key}
+                                size="sm"
+                                variant="outline"
+                                className="text-[10px] h-6"
+                                onClick={async () => {
+                                  if (selectedCall?.lead_id) {
+                                    await logObjection.mutateAsync({
+                                      lead_id: selectedCall.lead_id,
+                                      objection_type: obj.key,
+                                      response_sent: obj.response,
+                                    });
+                                    toast.success(`Objection "${obj.label}" logged`);
+                                  }
+                                }}
+                              >
+                                {obj.label}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>

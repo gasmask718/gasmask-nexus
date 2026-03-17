@@ -12037,6 +12037,33 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_objections: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          objection_type: string
+          resolved: boolean | null
+          response_sent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          objection_type: string
+          resolved?: boolean | null
+          response_sent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          objection_type?: string
+          resolved?: boolean | null
+          response_sent?: string | null
+        }
+        Relationships: []
+      }
       brandaro_offers: {
         Row: {
           active: boolean | null
@@ -12512,6 +12539,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_quality_reviews: {
+        Row: {
+          build_id: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          package_tier: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+        }
+        Insert: {
+          build_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          package_tier?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          build_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          package_tier?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+        }
+        Relationships: []
       }
       brandaro_raw_leads: {
         Row: {
@@ -13193,6 +13256,36 @@ export type Database = {
           },
         ]
       }
+      brandaro_testimonials: {
+        Row: {
+          business_name: string
+          created_at: string | null
+          id: string
+          industry: string | null
+          is_featured: boolean | null
+          rating: number | null
+          testimonial_text: string
+        }
+        Insert: {
+          business_name: string
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          is_featured?: boolean | null
+          rating?: number | null
+          testimonial_text: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          is_featured?: boolean | null
+          rating?: number | null
+          testimonial_text?: string
+        }
+        Relationships: []
+      }
       brandaro_upsell_engine: {
         Row: {
           acted_at: string | null
@@ -13226,6 +13319,30 @@ export type Database = {
           recommended_offer?: string | null
           status?: string | null
           upsell_reason?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_urgency: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          id: string
+          lead_id: string | null
+          urgency_level: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          lead_id?: string | null
+          urgency_level?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          lead_id?: string | null
+          urgency_level?: string | null
         }
         Relationships: []
       }
