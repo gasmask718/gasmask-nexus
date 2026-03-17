@@ -1,0 +1,328 @@
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DollarSign, Phone, Flame, TrendingUp, ListTodo, Bot,
+  Users, Brain, Theater, AlertTriangle, Zap, Target,
+  ArrowRight, Clock,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { useCloserKPIs } from "@/hooks/useBrandaroCloserAI";
+
+function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
+  label: string; value: string | number; icon: any; color: string; subtitle?: string; to?: string;
+}) {
+  const card = (
+    <Card className={cn("hover:shadow-md transition-all cursor-pointer group", to && "hover:border-primary/30")}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider">{label}</p>
+            <p className={cn("text-2xl font-bold tabular-nums mt-0.5", color)}>{value}</p>
+            {subtitle && <p className="text-[10px] text-muted-foreground mt-0.5">{subtitle}</p>}
+          </div>
+          <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center", color.replace("text-", "bg-") + "/10")}>
+            <Icon className={cn("h-5 w-5", color)} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+  return to ? <Link to={to}>{card}</Link> : card;
+}
+
+export default function BrandaroWarRoom() {
+  const { data: kpis } = useCloserKPIs();
+
+  // Active calls count
+  const { data: activeCalls = 0 } = useQuery({
+    queryKey: ["brandaro-war-active-calls"],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("live_calls")
+        .select("id", { count: "exact", head: true })
+        .not("state", "in", '("completed","failed")');
+      return count || 0;
+    },
+    refetchInterval: 10000,
+  });
+
+  // Hot leads
+  const { data: hotLeads = 0 } = useQuery({
+    queryKey: ["brandaro-war-hot-leads"],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("brandaro_va_lead_heat")
+        .select("id", { count: "exact", head: true })
+        .gte("heat_score", 70);
+      return count || 0;
+    },
+    refetchInterval: 15000,
+  });
+
+  // Pending tasks
+  const { data: pendingTasks = 0 } = useQuery({
+    queryKey: ["brandaro-war-pending-tasks"],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("brandaro_va_task_queue")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count || 0;
+    },
+    refetchInterval: 15000,
+  });
+
+  // Recent alerts
+  const { data: alerts = [] } = useQuery({
+    queryKey: ["brandaro-war-alerts"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("brandaro_va_alerts")
+        .select("*")
+        .eq("dismissed", false)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return data || [];
+    },
+    refetchInterval: 10000,
+  });
+
+  // VA leaderboard top 3
+  const { data: topVAs = [] } = useQuery({
+    queryKey: ["brandaro-war-top-vas"],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("brandaro_va_performance")
+        .select("va_user_id, daily_score, calls_today, interested_today")
+        .order("daily_score", { ascending: false })
+        .limit(3);
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  // Personality stats
+  const { data: activePersonalities = 0 } = useQuery({
+    queryKey: ["brandaro-war-personalities"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("brandaro_personalities")
+        .select("id", { count: "exact", head: true })
+        .eq("is_active", true);
+      return count || 0;
+    },
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          ⚔️ Brandaro War Room
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Real-time command center for the Brandaro sales machine
+        </p>
+      </div>
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <KPICard label="Revenue" value={`$${(kpis?.totalRevenue || 0).toLocaleString()}`} icon={DollarSign} color="text-green-600" to="/brandaro/revenue" />
+        <KPICard label="Active Calls" value={activeCalls} icon={Phone} color="text-blue-500" subtitle="Live now" to="/brandaro/calling" />
+        <KPICard label="Hot Leads" value={hotLeads} icon={Flame} color="text-orange-500" subtitle="Score ≥ 70" to="/brandaro/leads" />
+        <KPICard label="Close Rate" value={`${kpis?.closeRate || 0}%`} icon={TrendingUp} color="text-emerald-500" to="/brandaro/closer-ai" />
+        <KPICard label="Pending Tasks" value={pendingTasks} icon={ListTodo} color="text-amber-500" to="/brandaro/follow-ups" />
+        <KPICard label="AI Personas" value={activePersonalities} icon={Theater} color="text-purple-500" to="/brandaro/personalities" />
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Column 1: Alerts + Quick Actions */}
+        <div className="space-y-4">
+          {/* Alerts */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                  <AlertTriangle className="h-4 w-4 text-orange-500" /> Live Alerts
+                </h3>
+                <Badge variant="outline" className="text-[10px]">{alerts.length}</Badge>
+              </div>
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-2">
+                  {alerts.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">No active alerts</p>
+                  ) : alerts.map((a: any) => (
+                    <div key={a.id} className={cn(
+                      "p-2 rounded-md border text-xs",
+                      a.severity === "critical" ? "bg-red-500/5 border-red-500/20" : "bg-yellow-500/5 border-yellow-500/20"
+                    )}>
+                      <p className="font-medium">{a.title}</p>
+                      <p className="text-muted-foreground mt-0.5">{new Date(a.created_at).toLocaleTimeString()}</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardContent className="p-4 space-y-2">
+              <h3 className="text-sm font-semibold mb-2">⚡ Quick Actions</h3>
+              <Link to="/brandaro/calling">
+                <Button size="sm" className="w-full justify-start gap-2" variant="outline">
+                  <Phone className="h-3.5 w-3.5" /> Open Dialer
+                </Button>
+              </Link>
+              <Link to="/brandaro/closer-ai">
+                <Button size="sm" className="w-full justify-start gap-2" variant="outline">
+                  <Brain className="h-3.5 w-3.5" /> Closer AI Brain
+                </Button>
+              </Link>
+              <Link to="/brandaro/va-dashboard">
+                <Button size="sm" className="w-full justify-start gap-2" variant="outline">
+                  <Users className="h-3.5 w-3.5" /> VA Floor
+                </Button>
+              </Link>
+              <Link to="/brandaro/domination">
+                <Button size="sm" className="w-full justify-start gap-2" variant="outline">
+                  <Target className="h-3.5 w-3.5" /> Market Domination
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Column 2: Performance Summary */}
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-3">
+                <TrendingUp className="h-4 w-4 text-green-500" /> Sales Performance
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-green-600">{kpis?.won || 0}</p>
+                  <p className="text-[10px] text-muted-foreground">Wins</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-red-500">{kpis?.lost || 0}</p>
+                  <p className="text-[10px] text-muted-foreground">Losses</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-blue-500">{kpis?.totalSessions || 0}</p>
+                  <p className="text-[10px] text-muted-foreground">Total Sessions</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <p className="text-lg font-bold text-purple-500">{kpis?.linkConversion || 0}%</p>
+                  <p className="text-[10px] text-muted-foreground">Link Conv.</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                <div className="text-xs text-muted-foreground">
+                  <Bot className="h-3 w-3 inline mr-1" /> AI Wins: {kpis?.aiOnlyWins || 0}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <Users className="h-3 w-3 inline mr-1" /> Human Wins: {kpis?.humanAssistedWins || 0}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Top VAs */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-amber-500" /> Top VAs Today
+                </h3>
+                <Link to="/brandaro/va-dashboard" className="text-[10px] text-primary flex items-center gap-0.5">
+                  View All <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {topVAs.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No VA data yet</p>
+                ) : topVAs.map((va: any, i: number) => (
+                  <div key={va.va_user_id} className="flex items-center justify-between p-2 bg-muted/30 rounded-md">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-muted-foreground">#{i + 1}</span>
+                      <div>
+                        <p className="text-xs font-medium">{va.va_user_id?.slice(0, 8)}…</p>
+                        <p className="text-[10px] text-muted-foreground">{va.calls_today || 0} calls</p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">{va.daily_score || 0} pts</Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Column 3: AI Intelligence Feed */}
+        <div className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-3">
+                <Brain className="h-4 w-4 text-purple-500" /> AI Intelligence
+              </h3>
+              <div className="space-y-3">
+                <div className="p-2 bg-purple-500/5 border border-purple-500/10 rounded-lg">
+                  <p className="text-[10px] font-semibold text-purple-600 uppercase">Active Personas</p>
+                  <p className="text-lg font-bold">{activePersonalities}</p>
+                  <p className="text-[10px] text-muted-foreground">personalities deployed</p>
+                </div>
+                <div className="p-2 bg-blue-500/5 border border-blue-500/10 rounded-lg">
+                  <p className="text-[10px] font-semibold text-blue-600 uppercase">Avg Touches to Close</p>
+                  <p className="text-lg font-bold">{kpis?.avgTouchesToClose || 0}</p>
+                  <p className="text-[10px] text-muted-foreground">interactions per deal</p>
+                </div>
+                <div className="p-2 bg-green-500/5 border border-green-500/10 rounded-lg">
+                  <p className="text-[10px] font-semibold text-green-600 uppercase">Payment Links</p>
+                  <p className="text-lg font-bold">{kpis?.linksSent || 0} sent / {kpis?.linksClicked || 0} clicked</p>
+                  <p className="text-[10px] text-muted-foreground">{kpis?.linkConversion || 0}% conversion</p>
+                </div>
+              </div>
+              <Link to="/brandaro/ai-brain" className="flex items-center gap-1 text-xs text-primary mt-3 pt-2 border-t">
+                Open AI Brain <ArrowRight className="h-3 w-3" />
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Live Status */}
+          <Card>
+            <CardContent className="p-4">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-3">
+                <Zap className="h-4 w-4 text-yellow-500" /> System Status
+              </h3>
+              <div className="space-y-1.5">
+                {[
+                  { label: "Dialer", status: "online", color: "bg-green-500" },
+                  { label: "AI Brain", status: "active", color: "bg-green-500" },
+                  { label: "Persona Engine", status: `${activePersonalities} active`, color: "bg-green-500" },
+                  { label: "Emotion Detection", status: "ready", color: "bg-green-500" },
+                  { label: "Learning Engine", status: "running", color: "bg-green-500" },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center justify-between py-1">
+                    <span className="text-xs text-muted-foreground">{s.label}</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className={cn("h-1.5 w-1.5 rounded-full", s.color)} />
+                      <span className="text-[10px] font-medium">{s.status}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -93,7 +93,6 @@ import ClientDemoViewPage from '@/pages/brandaro/ClientDemoViewPage';
 import CEODashboardPage from '@/pages/brandaro/CEODashboardPage';
 import RetentionDashboardPage from '@/pages/brandaro/RetentionDashboardPage';
 import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
-import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
 import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
@@ -104,6 +103,20 @@ import OptimizationEnginePage from '@/pages/brandaro/OptimizationEnginePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import VADashboardPage from '@/pages/brandaro/VADashboardPage';
 import VAManagerPage from '@/pages/brandaro/VAManagerPage';
+import BrandaroHubLayout from '@/pages/brandaro/BrandaroHubLayout';
+import BrandaroWarRoom from '@/pages/brandaro/BrandaroWarRoom';
+import FollowUpEnginePage from '@/pages/brandaro/FollowUpEnginePage';
+import ProposalBuilderPage from '@/pages/brandaro/ProposalBuilderPage';
+import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
+import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
+import CampaignManagerPage from '@/pages/brandaro/CampaignManagerPage';
+import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
+import VAWorkspacePage from '@/pages/brandaro/VAWorkspacePage';
+import VAPerformancePage from '@/pages/brandaro/VAPerformancePage';
+import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
+import LeadQualificationPage from '@/pages/brandaro/LeadQualificationPage';
+import DemoEnginePage from '@/pages/brandaro/DemoEnginePage';
+import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
@@ -2494,23 +2507,47 @@ export default function AppRoutes() {
       } />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
-      {/* BRANDARO DIGITAL FLOOR                                                       */}
+      {/* BRANDARO DIGITAL HUB (THE SALES WAR ROOM)                                    */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/brandaro" element={<BrandaroDashboard />} />
-        <Route path="/brandaro/ceo" element={<CEODashboardPage />} />
-        <Route path="/brandaro/leads" element={<LeadDatabasePage />} />
-        <Route path="/brandaro/calling" element={<CallingOpsPage />} />
-        <Route path="/brandaro/va-command" element={<VACommandCenterPage />} />
-        <Route path="/brandaro/revenue" element={<RevenueAnalyticsPage />} />
-        <Route path="/brandaro/retention" element={<RetentionDashboardPage />} />
-        <Route path="/brandaro/reporting" element={<ClientReportingPage />} />
-        <Route path="/brandaro/ads-engine" element={<AdsEnginePage />} />
-        <Route path="/brandaro/google-domination" element={<GoogleDominationPage />} />
-        <Route path="/brandaro/optimization" element={<OptimizationEnginePage />} />
-        <Route path="/brandaro/closer-ai" element={<CloserAIPage />} />
-        <Route path="/brandaro/va-dashboard" element={<VADashboardPage />} />
-        <Route path="/brandaro/va-manager" element={<VAManagerPage />} />
+        <Route path="/brandaro" element={<BrandaroHubLayout />}>
+          {/* Command */}
+          <Route index element={<BrandaroWarRoom />} />
+          <Route path="ceo" element={<CEODashboardPage />} />
+          {/* Sales Floor */}
+          <Route path="calling" element={<CallingOpsPage />} />
+          <Route path="va-dashboard" element={<VADashboardPage />} />
+          <Route path="va-command" element={<VACommandCenterPage />} />
+          <Route path="va-manager" element={<VAManagerPage />} />
+          <Route path="va-workspace" element={<VAWorkspacePage />} />
+          <Route path="va-performance" element={<VAPerformancePage />} />
+          <Route path="closer-ai" element={<CloserAIPage />} />
+          {/* Pipeline */}
+          <Route path="leads" element={<LeadDatabasePage />} />
+          <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
+          <Route path="lead-qualification" element={<LeadQualificationPage />} />
+          <Route path="follow-ups" element={<FollowUpEnginePage />} />
+          <Route path="proposals" element={<ProposalBuilderPage />} />
+          <Route path="build-pipeline" element={<BuildPipelinePage />} />
+          <Route path="demo-engine" element={<DemoEnginePage />} />
+          <Route path="production-pipeline" element={<ProductionPipelinePage />} />
+          {/* Intelligence */}
+          <Route path="ai-brain" element={<CloserAIPage />} />
+          <Route path="personalities" element={<VAManagerPage />} />
+          <Route path="learning" element={<OptimizationEnginePage />} />
+          <Route path="domination" element={<OptimizationEnginePage />} />
+          {/* Growth */}
+          <Route path="revenue" element={<RevenueAnalyticsPage />} />
+          <Route path="ads-engine" element={<AdsEnginePage />} />
+          <Route path="google-domination" element={<GoogleDominationPage />} />
+          <Route path="optimization" element={<OptimizationEnginePage />} />
+          <Route path="result-engine" element={<ResultEnginePage />} />
+          {/* Clients */}
+          <Route path="retention" element={<RetentionDashboardPage />} />
+          <Route path="reporting" element={<ClientReportingPage />} />
+          <Route path="campaigns" element={<CampaignManagerPage />} />
+          <Route path="reviews" element={<ReviewQueuePage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
