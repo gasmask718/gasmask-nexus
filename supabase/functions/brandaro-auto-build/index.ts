@@ -196,8 +196,8 @@ Deno.serve(async (req) => {
     productionHtml = productionHtml
       .replace("TRACKING_BASE_URL", Deno.env.get("SUPABASE_URL") || "")
       .replace("TRACKING_ANON_KEY", Deno.env.get("SUPABASE_ANON_KEY") || "")
-      .replace("TRACKING_CLIENT_ID", clientId)
-      .replace("TRACKING_PROJECT_ID", projectId || "");
+      .replace("TRACKING_CLIENT_ID", client_id)
+      .replace("TRACKING_PROJECT_ID", project_id || "");
 
     // Store production HTML in demo_sites for serving
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
