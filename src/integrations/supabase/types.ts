@@ -11740,6 +11740,45 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_competitor_intel: {
+        Row: {
+          competitor_name: string
+          created_at: string | null
+          guarantees: string | null
+          id: string
+          last_updated: string | null
+          offer_structure: string | null
+          positioning: string | null
+          pricing_model: string | null
+          strengths: Json | null
+          weaknesses: Json | null
+        }
+        Insert: {
+          competitor_name: string
+          created_at?: string | null
+          guarantees?: string | null
+          id?: string
+          last_updated?: string | null
+          offer_structure?: string | null
+          positioning?: string | null
+          pricing_model?: string | null
+          strengths?: Json | null
+          weaknesses?: Json | null
+        }
+        Update: {
+          competitor_name?: string
+          created_at?: string | null
+          guarantees?: string | null
+          id?: string
+          last_updated?: string | null
+          offer_structure?: string | null
+          positioning?: string | null
+          pricing_model?: string | null
+          strengths?: Json | null
+          weaknesses?: Json | null
+        }
+        Relationships: []
+      }
       brandaro_content_blocks: {
         Row: {
           build_job_id: string | null
@@ -13581,6 +13620,54 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_offer_variants: {
+        Row: {
+          conversion_rate: number | null
+          created_at: string | null
+          guarantee: string | null
+          headline: string | null
+          id: string
+          offer_name: string
+          pricing: number | null
+          revenue_generated: number | null
+          status: string | null
+          target_segment: string | null
+          updated_at: string | null
+          urgency_trigger: string | null
+          value_props: Json | null
+        }
+        Insert: {
+          conversion_rate?: number | null
+          created_at?: string | null
+          guarantee?: string | null
+          headline?: string | null
+          id?: string
+          offer_name: string
+          pricing?: number | null
+          revenue_generated?: number | null
+          status?: string | null
+          target_segment?: string | null
+          updated_at?: string | null
+          urgency_trigger?: string | null
+          value_props?: Json | null
+        }
+        Update: {
+          conversion_rate?: number | null
+          created_at?: string | null
+          guarantee?: string | null
+          headline?: string | null
+          id?: string
+          offer_name?: string
+          pricing?: number | null
+          revenue_generated?: number | null
+          status?: string | null
+          target_segment?: string | null
+          updated_at?: string | null
+          urgency_trigger?: string | null
+          value_props?: Json | null
+        }
+        Relationships: []
+      }
       brandaro_offers: {
         Row: {
           active: boolean | null
@@ -13859,6 +13946,78 @@ export type Database = {
           script_version?: string | null
           total_calls?: number | null
           total_closes?: number | null
+        }
+        Relationships: []
+      }
+      brandaro_positioning_tests: {
+        Row: {
+          conversion_rate: number | null
+          created_at: string | null
+          engagement_rate: number | null
+          headline: string | null
+          id: string
+          positioning_angle: string
+          script_variant: string | null
+          updated_at: string | null
+          win_rate: number | null
+        }
+        Insert: {
+          conversion_rate?: number | null
+          created_at?: string | null
+          engagement_rate?: number | null
+          headline?: string | null
+          id?: string
+          positioning_angle: string
+          script_variant?: string | null
+          updated_at?: string | null
+          win_rate?: number | null
+        }
+        Update: {
+          conversion_rate?: number | null
+          created_at?: string | null
+          engagement_rate?: number | null
+          headline?: string | null
+          id?: string
+          positioning_angle?: string
+          script_variant?: string | null
+          updated_at?: string | null
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
+      brandaro_pricing_tests: {
+        Row: {
+          base_price: number
+          conversion_rate: number | null
+          created_at: string | null
+          id: string
+          revenue_per_lead: number | null
+          segment: string | null
+          test_price: number
+          test_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price: number
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          revenue_per_lead?: number | null
+          segment?: string | null
+          test_price: number
+          test_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          revenue_per_lead?: number | null
+          segment?: string | null
+          test_price?: number
+          test_status?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
