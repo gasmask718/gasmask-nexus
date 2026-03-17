@@ -90,6 +90,12 @@ import AmbassadorRequests from '@/pages/security/AmbassadorRequests';
 import AmbassadorInviteAccept from '@/pages/invite/AmbassadorInviteAccept';
 import PublicProposalPage from '@/pages/brandaro/PublicProposalPage';
 import ClientDemoViewPage from '@/pages/brandaro/ClientDemoViewPage';
+import CEODashboardPage from '@/pages/brandaro/CEODashboardPage';
+import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
+import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
+import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
+import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
+import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
@@ -2478,6 +2484,18 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* BRANDARO DIGITAL FLOOR                                                       */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/brandaro" element={<BrandaroDashboard />} />
+        <Route path="/brandaro/ceo" element={<CEODashboardPage />} />
+        <Route path="/brandaro/leads" element={<LeadDatabasePage />} />
+        <Route path="/brandaro/calling" element={<CallingOpsPage />} />
+        <Route path="/brandaro/va-command" element={<VACommandCenterPage />} />
+        <Route path="/brandaro/revenue" element={<RevenueAnalyticsPage />} />
+      </Route>
 
       <Route path="*" element={<NotFound />} />
     </Routes>

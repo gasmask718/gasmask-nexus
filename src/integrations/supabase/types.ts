@@ -9665,6 +9665,60 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_ai_conversations: {
+        Row: {
+          call_id: string | null
+          close_attempted: boolean | null
+          created_at: string | null
+          handoff_score: number | null
+          id: string
+          intent_detected: string | null
+          lead_id: string
+          objection_type: string | null
+          result: string | null
+          transcript: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          close_attempted?: boolean | null
+          created_at?: string | null
+          handoff_score?: number | null
+          id?: string
+          intent_detected?: string | null
+          lead_id: string
+          objection_type?: string | null
+          result?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          close_attempted?: boolean | null
+          created_at?: string | null
+          handoff_score?: number | null
+          id?: string
+          intent_detected?: string | null
+          lead_id?: string
+          objection_type?: string | null
+          result?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_ai_conversations_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_ai_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_build_jobs: {
         Row: {
           auto_retry_count: number | null
@@ -10163,6 +10217,50 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_calls: {
+        Row: {
+          ai_handled: boolean | null
+          call_status: string | null
+          caller_id: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          lead_id: string
+          outcome: string | null
+          transcript: string | null
+        }
+        Insert: {
+          ai_handled?: boolean | null
+          call_status?: string | null
+          caller_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          lead_id: string
+          outcome?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          ai_handled?: boolean | null
+          call_status?: string | null
+          caller_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string
+          outcome?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
             referencedColumns: ["id"]
           },
         ]
@@ -11437,6 +11535,50 @@ export type Database = {
           },
         ]
       }
+      brandaro_followup_automation: {
+        Row: {
+          channel: string | null
+          created_at: string | null
+          id: string
+          lead_id: string
+          message: string
+          scheduled_time: string
+          sent: boolean | null
+          sent_at: string | null
+          step: number | null
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          message: string
+          scheduled_time: string
+          sent?: boolean | null
+          sent_at?: string | null
+          step?: number | null
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          message?: string
+          scheduled_time?: string
+          sent?: boolean | null
+          sent_at?: string | null
+          step?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_followup_automation_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_followup_sequences: {
         Row: {
           channel: string
@@ -11777,6 +11919,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_leads_master: {
+        Row: {
+          business_name: string
+          created_at: string | null
+          email: string | null
+          has_website: boolean | null
+          id: string
+          industry: string | null
+          intent_score: number | null
+          location: string | null
+          phone: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          business_name: string
+          created_at?: string | null
+          email?: string | null
+          has_website?: boolean | null
+          id?: string
+          industry?: string | null
+          intent_score?: number | null
+          location?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          business_name?: string
+          created_at?: string | null
+          email?: string | null
+          has_website?: boolean | null
+          id?: string
+          industry?: string | null
+          intent_score?: number | null
+          location?: string | null
+          phone?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
       }
       brandaro_learning_feedback: {
         Row: {
@@ -12211,6 +12401,45 @@ export type Database = {
           stripe_session_id?: string | null
           total_amount?: number
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_performance_ai: {
+        Row: {
+          avg_deal_size: number | null
+          close_rate: number | null
+          created_at: string | null
+          id: string
+          industry: string | null
+          period: string | null
+          revenue_generated: number | null
+          script_version: string | null
+          total_calls: number | null
+          total_closes: number | null
+        }
+        Insert: {
+          avg_deal_size?: number | null
+          close_rate?: number | null
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          period?: string | null
+          revenue_generated?: number | null
+          script_version?: string | null
+          total_calls?: number | null
+          total_closes?: number | null
+        }
+        Update: {
+          avg_deal_size?: number | null
+          close_rate?: number | null
+          created_at?: string | null
+          id?: string
+          industry?: string | null
+          period?: string | null
+          revenue_generated?: number | null
+          script_version?: string | null
+          total_calls?: number | null
+          total_closes?: number | null
         }
         Relationships: []
       }
