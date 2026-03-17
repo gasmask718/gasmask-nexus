@@ -22,12 +22,16 @@ import {
   useOptimizeOffers, useEvaluatePricingTests, useUpsertCompetitor, useCreateOffer,
   useCreatePricingTest, useCreatePositioningTest, useSystemDecisions,
 } from "@/hooks/useBrandaroMarketDomination";
+import {
+  usePersonalities, useStrategyFrameworks, useCreatePersonality,
+  useCreateFramework, useTogglePersonality, useGeneratePersonalityResponse,
+} from "@/hooks/useBrandaroPersonalityEngine";
 import { toast } from "sonner";
 import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
   Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2, Bell,
   Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap, BookOpen, BarChart3,
-  Crosshair, DollarSign, Swords, Tag,
+  Crosshair, DollarSign, Swords, Tag, UserCircle,
 } from "lucide-react";
 
 export default function VAManagerPage() {
@@ -43,6 +47,16 @@ export default function VAManagerPage() {
   const [newOfferName, setNewOfferName] = useState("");
   const [newOfferPrice, setNewOfferPrice] = useState("");
   const [newOfferHeadline, setNewOfferHeadline] = useState("");
+  const [newPersonaName, setNewPersonaName] = useState("");
+  const [newPersonaTone, setNewPersonaTone] = useState("confident");
+  const [newPersonaCadence, setNewPersonaCadence] = useState("medium");
+  const [newPersonaPersuasion, setNewPersonaPersuasion] = useState("logical");
+  const [newPersonaObjection, setNewPersonaObjection] = useState("reframe");
+  const [newPersonaClosing, setNewPersonaClosing] = useState("direct");
+  const [newPersonaEnergy, setNewPersonaEnergy] = useState("7");
+  const [testTranscript, setTestTranscript] = useState("");
+  const [testPersonalityId, setTestPersonalityId] = useState("");
+  const [testResult, setTestResult] = useState<any>(null);
 
   const { data: allPerf = [] } = useAllVAPerformance();
   const { data: leaderboard = [] } = useVALeaderboard(leaderboardPeriod);
@@ -72,6 +86,14 @@ export default function VAManagerPage() {
   const createPricingTest = useCreatePricingTest();
   const createPositioning = useCreatePositioningTest();
   const { data: decisions = [] } = useSystemDecisions();
+
+  // Personality engine hooks
+  const { data: personalities = [] } = usePersonalities();
+  const { data: frameworks = [] } = useStrategyFrameworks();
+  const createPersonality = useCreatePersonality();
+  const createFramework = useCreateFramework();
+  const togglePersonality = useTogglePersonality();
+  const generatePersonalityResponse = useGeneratePersonalityResponse();
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
@@ -186,6 +208,7 @@ export default function VAManagerPage() {
           <TabsTrigger value="pricing"><DollarSign className="h-3 w-3 mr-1" /> Pricing</TabsTrigger>
           <TabsTrigger value="positioning"><Crosshair className="h-3 w-3 mr-1" /> Position</TabsTrigger>
           <TabsTrigger value="decisions"><Eye className="h-3 w-3 mr-1" /> Decisions</TabsTrigger>
+          <TabsTrigger value="personalities"><UserCircle className="h-3 w-3 mr-1" /> Personas</TabsTrigger>
         </TabsList>
 
         {/* ── Escalation Queue ── */}
@@ -840,6 +863,204 @@ export default function VAManagerPage() {
                       {d.decision_reason && <p className="text-xs text-muted-foreground">{d.decision_reason}</p>}
                     </div>
                   ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Personality Engine ── */}
+        <TabsContent value="personalities" className="space-y-4">
+          {/* Create Personality */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <UserCircle className="h-4 w-4 text-primary" /> Create Sales Personality
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Input placeholder="Name (e.g. Tony Robbins Style)" value={newPersonaName} onChange={e => setNewPersonaName(e.target.value)} />
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <Select value={newPersonaTone} onValueChange={setNewPersonaTone}>
+                  <SelectTrigger><SelectValue placeholder="Tone" /></SelectTrigger>
+                  <SelectContent>
+                    {["energetic","calm","aggressive","logical","confident","empathetic","authoritative"].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={newPersonaCadence} onValueChange={setNewPersonaCadence}>
+                  <SelectTrigger><SelectValue placeholder="Cadence" /></SelectTrigger>
+                  <SelectContent>
+                    {["fast","medium","slow"].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={newPersonaPersuasion} onValueChange={setNewPersonaPersuasion}>
+                  <SelectTrigger><SelectValue placeholder="Persuasion" /></SelectTrigger>
+                  <SelectContent>
+                    {["emotional","logical","authority","curiosity"].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={newPersonaObjection} onValueChange={setNewPersonaObjection}>
+                  <SelectTrigger><SelectValue placeholder="Objection Style" /></SelectTrigger>
+                  <SelectContent>
+                    {["reframe","challenge","validate","redirect"].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={newPersonaClosing} onValueChange={setNewPersonaClosing}>
+                  <SelectTrigger><SelectValue placeholder="Closing Style" /></SelectTrigger>
+                  <SelectContent>
+                    {["direct","assumptive","soft","urgency-driven"].map(t => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={newPersonaEnergy} onValueChange={setNewPersonaEnergy}>
+                  <SelectTrigger><SelectValue placeholder="Energy" /></SelectTrigger>
+                  <SelectContent>
+                    {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                      <SelectItem key={n} value={String(n)}>⚡ {n}/10</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                size="sm"
+                disabled={!newPersonaName}
+                onClick={() => {
+                  createPersonality.mutate({
+                    name: newPersonaName,
+                    tone: newPersonaTone,
+                    cadence: newPersonaCadence,
+                    persuasion_style: newPersonaPersuasion,
+                    objection_style: newPersonaObjection,
+                    closing_style: newPersonaClosing,
+                    energy_level: parseInt(newPersonaEnergy),
+                  });
+                  setNewPersonaName("");
+                }}
+              >
+                <Zap className="h-3 w-3 mr-1" /> Create Personality
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Active Personalities */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Active Personalities ({personalities.filter((p: any) => p.is_active).length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px]">
+                <div className="space-y-2">
+                  {personalities.map((p: any) => (
+                    <div key={p.id} className={`rounded-lg border p-3 space-y-1 ${p.is_active ? 'border-primary/30 bg-primary/5' : 'border-muted opacity-60'}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{p.name}</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{p.tone}</Badge>
+                          <Badge variant="secondary" className="text-xs">⚡{p.energy_level}</Badge>
+                          <Button
+                            size="sm"
+                            variant={p.is_active ? "destructive" : "default"}
+                            className="h-6 text-xs"
+                            onClick={() => togglePersonality.mutate({ id: p.id, is_active: !p.is_active })}
+                          >
+                            {p.is_active ? "Disable" : "Enable"}
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 flex-wrap">
+                        <span className="text-xs text-muted-foreground">Persuasion: {p.persuasion_style}</span>
+                        <span className="text-xs text-muted-foreground">Objection: {p.objection_style}</span>
+                        <span className="text-xs text-muted-foreground">Close: {p.closing_style}</span>
+                        <span className="text-xs text-muted-foreground">Cadence: {p.cadence}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {personalities.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No personalities created yet</p>}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Test Personality */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" /> Test Personality Response
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex gap-2">
+                <Select value={testPersonalityId} onValueChange={setTestPersonalityId}>
+                  <SelectTrigger className="w-[200px]"><SelectValue placeholder="Select personality" /></SelectTrigger>
+                  <SelectContent>
+                    {personalities.filter((p: any) => p.is_active).map((p: any) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Textarea
+                placeholder="Enter sample transcript (e.g. 'I think it's too expensive for what you're offering')"
+                value={testTranscript}
+                onChange={e => setTestTranscript(e.target.value)}
+                rows={2}
+              />
+              <Button
+                size="sm"
+                disabled={!testTranscript || generatePersonalityResponse.isPending}
+                onClick={async () => {
+                  const result = await generatePersonalityResponse.mutateAsync({
+                    transcript_chunk: testTranscript,
+                    personality_id: testPersonalityId || undefined,
+                  });
+                  setTestResult(result);
+                }}
+              >
+                {generatePersonalityResponse.isPending ? "Generating..." : "Test Response"}
+              </Button>
+              {testResult && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 space-y-2">
+                  <p className="text-sm font-medium">{testResult.response_text}</p>
+                  <div className="flex gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs">Tone: {testResult.tone}</Badge>
+                    <Badge variant="outline" className="text-xs">Strategy: {testResult.strategy_used}</Badge>
+                    <Badge variant="outline" className="text-xs">Persona: {testResult.personality_used}</Badge>
+                    <Badge variant="outline" className="text-xs">Mood: {testResult.mood}</Badge>
+                    <Badge variant="outline" className="text-xs">Confidence: {testResult.confidence_score}%</Badge>
+                    {testResult.should_close_now && <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs">🎯 CLOSE NOW</Badge>}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Strategy Frameworks */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Strategy Frameworks ({frameworks.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {frameworks.map((f: any) => (
+                    <div key={f.id} className="rounded-lg border p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm">{f.name}</span>
+                        <Badge variant="secondary" className="text-xs">{f.success_rate}% success</Badge>
+                      </div>
+                      {f.best_use_case && <p className="text-xs text-muted-foreground mt-1">{f.best_use_case}</p>}
+                    </div>
+                  ))}
+                  {frameworks.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No frameworks yet</p>}
                 </div>
               </ScrollArea>
             </CardContent>

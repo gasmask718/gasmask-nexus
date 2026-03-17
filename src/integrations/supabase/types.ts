@@ -13958,6 +13958,124 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_personalities: {
+        Row: {
+          cadence: string
+          closing_style: string
+          created_at: string
+          description: string | null
+          energy_level: number
+          id: string
+          is_active: boolean
+          name: string
+          objection_style: string
+          persuasion_style: string
+          tone: string
+          voice_id: string | null
+          voice_provider: string | null
+        }
+        Insert: {
+          cadence?: string
+          closing_style?: string
+          created_at?: string
+          description?: string | null
+          energy_level?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          objection_style?: string
+          persuasion_style?: string
+          tone?: string
+          voice_id?: string | null
+          voice_provider?: string | null
+        }
+        Update: {
+          cadence?: string
+          closing_style?: string
+          created_at?: string
+          description?: string | null
+          energy_level?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          objection_style?: string
+          persuasion_style?: string
+          tone?: string
+          voice_id?: string | null
+          voice_provider?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_personality_assignments: {
+        Row: {
+          assigned_reason: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          personality_id: string
+        }
+        Insert: {
+          assigned_reason?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          personality_id: string
+        }
+        Update: {
+          assigned_reason?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          personality_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_personality_assignments_personality_id_fkey"
+            columns: ["personality_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_personality_scripts: {
+        Row: {
+          created_at: string
+          id: string
+          performance_score: number | null
+          personality_id: string
+          scenario: string
+          script: string
+          usage_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          performance_score?: number | null
+          personality_id: string
+          scenario: string
+          script: string
+          usage_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          performance_score?: number | null
+          personality_id?: string
+          scenario?: string
+          script?: string
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_personality_scripts_personality_id_fkey"
+            columns: ["personality_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_positioning_tests: {
         Row: {
           conversion_rate: number | null
@@ -14981,6 +15099,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_strategy_frameworks: {
+        Row: {
+          best_use_case: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          structure: Json
+          success_rate: number | null
+        }
+        Insert: {
+          best_use_case?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          structure?: Json
+          success_rate?: number | null
+        }
+        Update: {
+          best_use_case?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          structure?: Json
+          success_rate?: number | null
+        }
+        Relationships: []
       }
       brandaro_style_palettes: {
         Row: {
