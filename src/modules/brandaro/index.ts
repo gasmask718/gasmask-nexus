@@ -66,6 +66,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/production', component: ProductionPipelinePage, label: 'Production', icon: Hammer, requiresAuth: true },
     { path: '/build-pipeline', component: BuildPipelinePage, label: 'Build Pipeline', icon: Factory, requiresAuth: true },
     { path: '/results', component: ResultEnginePage, label: 'Result Engine', icon: TrendingUp, requiresAuth: true },
+    { path: '/review-queue', component: ReviewQueuePage, label: 'Quality Review', icon: ShieldCheck, requiresAuth: true },
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
     { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
   ],
