@@ -39,6 +39,7 @@ function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
 
 export default function BrandaroWarRoom() {
   const { data: kpis } = useCloserKPIs();
+  const { stats: autoStats, recentLogs } = useBrandaroAutomationStats();
 
   // Active calls count
   const { data: activeCalls = 0 } = useQuery({
