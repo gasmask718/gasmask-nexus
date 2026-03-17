@@ -82,9 +82,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // SECTION 2: Build Engine Decision
+    // SECTION 2: Build Engine Decision (Durable-First Hybrid)
     const tier = package_tier || client?.package_chosen || "starter";
-    const buildEngine = decideBuildEngine(tier);
+    const isRebuild = !!(await req.clone().json().catch(() => ({}))).rebuild;
+    const initialEngine = decideBuildEngine(tier, !isRebuild);
+    const buildEngine = initialEngine;
     const totalPages = decidePageCount(tier);
 
     // Create build job
