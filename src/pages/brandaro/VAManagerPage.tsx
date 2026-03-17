@@ -695,6 +695,14 @@ export default function VAManagerPage() {
                           <p className="text-muted-foreground">price</p>
                         </div>
                         <div>
+                          <p className="font-bold">{o.exposure_count || 0}</p>
+                          <p className="text-muted-foreground">exposed</p>
+                        </div>
+                        <div>
+                          <p className={`font-bold ${(o.sample_size || 0) >= 20 ? "text-emerald-400" : "text-amber-400"}`}>{o.sample_size || 0}</p>
+                          <p className="text-muted-foreground">n</p>
+                        </div>
+                        <div>
                           <p className={`font-bold ${o.conversion_rate >= 15 ? "text-emerald-400" : ""}`}>{Math.round(o.conversion_rate || 0)}%</p>
                           <p className="text-muted-foreground">conv</p>
                         </div>
