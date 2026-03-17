@@ -2511,10 +2511,11 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
         <Route path="/brandaro" element={<BrandaroHubLayout />}>
-          {/* Command */}
+          {/* ── Command ── */}
           <Route index element={<BrandaroWarRoom />} />
           <Route path="ceo" element={<CEODashboardPage />} />
-          {/* Sales Floor */}
+
+          {/* ── Sales Floor ── */}
           <Route path="calling" element={<CallingOpsPage />} />
           <Route path="va-dashboard" element={<VADashboardPage />} />
           <Route path="va-command" element={<VACommandCenterPage />} />
@@ -2522,7 +2523,8 @@ export default function AppRoutes() {
           <Route path="va-workspace" element={<VAWorkspacePage />} />
           <Route path="va-performance" element={<VAPerformancePage />} />
           <Route path="closer-ai" element={<CloserAIPage />} />
-          {/* Pipeline */}
+
+          {/* ── Pipeline ── */}
           <Route path="leads" element={<LeadDatabasePage />} />
           <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
           <Route path="lead-qualification" element={<LeadQualificationPage />} />
@@ -2530,19 +2532,35 @@ export default function AppRoutes() {
           <Route path="proposals" element={<ProposalBuilderPage />} />
           <Route path="build-pipeline" element={<BuildPipelinePage />} />
           <Route path="demo-engine" element={<DemoEnginePage />} />
+
+          {/* ── Execution ── */}
           <Route path="production-pipeline" element={<ProductionPipelinePage />} />
-          {/* Intelligence */}
+          <Route path="callbacks" element={<FollowUpEnginePage />} />
+          <Route path="tasks" element={<ProductionPipelinePage />} />
+          <Route path="alerts" element={<BrandaroWarRoom />} />
+
+          {/* ── Intelligence ── */}
           <Route path="ai-brain" element={<CloserAIPage />} />
           <Route path="personalities" element={<VAManagerPage />} />
+          <Route path="emotion-engine" element={<CloserAIPage />} />
           <Route path="learning" element={<OptimizationEnginePage />} />
+          <Route path="patterns" element={<ResultEnginePage />} />
+
+          {/* ── Domination ── */}
           <Route path="domination" element={<OptimizationEnginePage />} />
-          {/* Growth */}
+          <Route path="competitors" element={<OptimizationEnginePage />} />
+          <Route path="offers" element={<OptimizationEnginePage />} />
+          <Route path="positioning" element={<OptimizationEnginePage />} />
+
+          {/* ── Growth ── */}
           <Route path="revenue" element={<RevenueAnalyticsPage />} />
           <Route path="ads-engine" element={<AdsEnginePage />} />
           <Route path="google-domination" element={<GoogleDominationPage />} />
           <Route path="optimization" element={<OptimizationEnginePage />} />
           <Route path="result-engine" element={<ResultEnginePage />} />
-          {/* Clients */}
+
+          {/* ── Clients ── */}
+          <Route path="clients" element={<ClientPortalPage />} />
           <Route path="retention" element={<RetentionDashboardPage />} />
           <Route path="reporting" element={<ClientReportingPage />} />
           <Route path="campaigns" element={<CampaignManagerPage />} />
