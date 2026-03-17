@@ -597,16 +597,94 @@ function assembleProductionSite(
 </html>`;
 }
 
-function calculateQualityScore(blocks: any[], html: string): number {
-  let score = 50; // Base
-  if (blocks.length >= 10) score += 15;
-  else if (blocks.length >= 5) score += 10;
-  if (html.includes("<meta name=\"description\"")) score += 10;
-  if (html.includes("<nav")) score += 5;
-  if (html.includes("<footer")) score += 5;
-  if (html.includes("viewport")) score += 5;
-  if (html.length > 5000) score += 10;
-  return Math.min(score, 100);
+function calculateQualityScore(blocks: any[], html: string): { score: number; breakdown: Record<string, number>; issues: string[] } {
+  const breakdown: Record<string, number> = {};
+  const issues: string[] = [];
+
+  // Content completeness (0-25)
+  if (blocks.length >= 12) breakdown.content_completeness = 25;
+  else if (blocks.length >= 8) breakdown.content_completeness = 20;
+  else if (blocks.length >= 5) breakdown.content_completeness = 15;
+  else { breakdown.content_completeness = 5; issues.push("Too few content sections"); }
+
+  // SEO presence (0-20)
+  let seo = 0;
+  if (html.includes('<meta name="description"')) seo += 5;
+  else issues.push("Missing meta description");
+  if (html.includes('<meta property="og:title"')) seo += 5;
+  else issues.push("Missing Open Graph tags");
+  if (html.includes("viewport")) seo += 5;
+  if (html.includes("<title>") && !html.includes("<title></title>")) seo += 5;
+  else issues.push("Missing or empty title tag");
+  breakdown.seo_presence = seo;
+
+  // CTA strength (0-20)
+  const ctaPatterns = ["Get Started", "Contact Us", "Call Now", "Book Now", "Free Quote", "Get Quote", "Learn More", "Schedule"];
+  const ctaCount = ctaPatterns.filter(p => html.toLowerCase().includes(p.toLowerCase())).length;
+  if (ctaCount >= 3) breakdown.cta_strength = 20;
+  else if (ctaCount >= 2) breakdown.cta_strength = 15;
+  else if (ctaCount >= 1) breakdown.cta_strength = 10;
+  else { breakdown.cta_strength = 0; issues.push("No call-to-action buttons detected"); }
+
+  // Design consistency (0-15)
+  let design = 0;
+  if (html.includes("<nav")) design += 5;
+  else issues.push("Missing navigation");
+  if (html.includes("<footer")) design += 5;
+  else issues.push("Missing footer");
+  if (html.includes("<header")) design += 5;
+  breakdown.design_consistency = design;
+
+  // Content volume (0-20)
+  const textLength = html.replace(/<[^>]*>/g, "").length;
+  if (textLength > 3000) breakdown.content_volume = 20;
+  else if (textLength > 1500) breakdown.content_volume = 15;
+  else if (textLength > 500) breakdown.content_volume = 10;
+  else { breakdown.content_volume = 5; issues.push("Very low content volume"); }
+
+  const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
+  return { score: Math.min(score, 100), breakdown, issues };
+}
+
+async function deploySite(
+  supabase: any, buildJobId: string, projectId: string, clientId: string,
+  liveUrl: string, slug: string, html: string, client: any,
+  buildEngine: string, industry: string, blocks: any[], pagesBuilt: number
+) {
+  // Store production site
+  await supabase.from("brandaro_demo_sites").insert({
+    lead_id: client?.lead_id,
+    slug,
+    generated_html: html,
+    engine_used: buildEngine,
+    industry,
+    demo_ready_for_conversion: false,
+    production_build_ready: true,
+  });
+
+  // Update project
+  await supabase.from("brandaro_projects").update({
+    live_url: liveUrl,
+    deployment_status: "active",
+    deployed_at: new Date().toISOString(),
+    build_status: "live",
+    domain_type: "subdomain",
+  }).eq("id", projectId);
+
+  // Mark build complete
+  await supabase.from("brandaro_build_jobs").update({
+    build_status: "completed",
+    progress_stage: "done",
+    deployed_url: liveUrl,
+    completed_at: new Date().toISOString(),
+    pages_built: pagesBuilt,
+    deployed_at: new Date().toISOString(),
+  }).eq("id", buildJobId);
+
+  // Update client
+  await supabase.from("brandaro_clients").update({
+    onboarding_status: "launched",
+  }).eq("id", clientId);
 }
 
 async function updateBuildStatus(supabase: any, jobId: string, status: string, stage: string) {
