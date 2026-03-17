@@ -980,6 +980,13 @@ export default function VAManagerPage() {
               >
                 <Zap className="h-3 w-3 mr-1" /> Create Personality
               </Button>
+                </>
+              )}
+              {personalities.length === 0 && (
+                <Button size="sm" variant="outline" disabled={seedStarters.isPending} onClick={() => seedStarters.mutate()}>
+                  {seedStarters.isPending ? "Deploying..." : "🚀 Deploy 5 Starter Personalities"}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
