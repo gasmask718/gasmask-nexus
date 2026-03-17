@@ -309,3 +309,9 @@ verify_jwt = false
 
 [functions.ingest-personality]
 verify_jwt = false
+
+[functions.select-personality]
+verify_jwt = false
+
+[functions.detect-emotion]
+verify_jwt = false
