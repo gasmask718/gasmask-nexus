@@ -91,6 +91,7 @@ import AmbassadorInviteAccept from '@/pages/invite/AmbassadorInviteAccept';
 import PublicProposalPage from '@/pages/brandaro/PublicProposalPage';
 import ClientDemoViewPage from '@/pages/brandaro/ClientDemoViewPage';
 import CEODashboardPage from '@/pages/brandaro/CEODashboardPage';
+import RetentionDashboardPage from '@/pages/brandaro/RetentionDashboardPage';
 import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
