@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { useCEODashboard } from '@/hooks/useBrandaroCEO';
 import {
   DollarSign, TrendingUp, Phone, Users, Target, Zap,
-  BarChart3, ArrowUpRight, Clock, Flame
+  BarChart3, ArrowUpRight, Clock, Flame, Repeat, Crown,
+  Building2, Layers
 } from 'lucide-react';
 
 export default function CEODashboardPage() {
@@ -22,10 +23,20 @@ export default function CEODashboardPage() {
     leadsToday: 0, totalLeads: 0, callsToday: 0, closedDeals: 0,
     revenueThisMonth: 0, totalRevenue: 0, avgDealSize: 0, closeRate: 0,
     pendingQueue: 0, topIndustries: [], performanceData: [],
-    monthlyTarget: 100000, monthlyProgress: 0, dailyTarget: 3333,
+    monthlyTarget: 1000000, monthlyProgress: 0, dailyTarget: 33333,
+    monthlyRecurring: 0, totalActiveClients: 0, serviceBreakdown: {},
+    avgLTV: 0, industryPerformance: [],
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+
+  const serviceLabels: Record<string, string> = {
+    website: '🌐 Website Build',
+    maintenance: '🔧 Monthly Maintenance',
+    seo: '📈 SEO Package',
+    ads: '📣 Ads Management',
+    lead_gen: '🎯 Lead Gen System',
+  };
 
   return (
     <div className="space-y-6">
@@ -33,10 +44,10 @@ export default function CEODashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">CEO Command Center</h1>
-          <p className="text-muted-foreground">Brandaro Revenue Engine — Real-time Performance</p>
+          <p className="text-muted-foreground">Brandaro $1M Revenue Engine — Real-time Performance</p>
         </div>
         <Badge variant="outline" className="text-lg px-4 py-2 border-primary text-primary">
-          <Target className="h-4 w-4 mr-2" />
+          <Crown className="h-4 w-4 mr-2" />
           Target: {fmt(stats.monthlyTarget)}/mo
         </Badge>
       </div>
@@ -58,26 +69,96 @@ export default function CEODashboardPage() {
         </CardContent>
       </Card>
 
-      {/* KPI Grid */}
+      {/* Revenue KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <MetricCard icon={DollarSign} label="Revenue (Month)" value={fmt(stats.revenueThisMonth)} sub={`Total: ${fmt(stats.totalRevenue)}`} color="text-emerald-500" />
+        <MetricCard icon={Repeat} label="Monthly Recurring" value={fmt(stats.monthlyRecurring)} sub={`${stats.totalActiveClients} active clients`} color="text-blue-500" />
+        <MetricCard icon={Crown} label="Avg LTV" value={fmt(stats.avgLTV)} sub="Per client lifetime" color="text-amber-500" />
+        <MetricCard icon={BarChart3} label="Avg Deal Size" value={fmt(stats.avgDealSize)} sub="Per closed deal" color="text-purple-500" />
+      </div>
+
+      {/* Operational KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <MetricCard icon={Users} label="Leads Today" value={stats.leadsToday} sub={`${stats.totalLeads} total`} color="text-blue-500" />
         <MetricCard icon={Phone} label="Calls Today" value={stats.callsToday} sub={`${stats.pendingQueue} in queue`} color="text-green-500" />
-        <MetricCard icon={DollarSign} label="Revenue (Month)" value={fmt(stats.revenueThisMonth)} sub={`Total: ${fmt(stats.totalRevenue)}`} color="text-emerald-500" />
         <MetricCard icon={TrendingUp} label="Close Rate" value={`${stats.closeRate.toFixed(1)}%`} sub={`${stats.closedDeals} deals closed`} color="text-purple-500" />
+        <MetricCard icon={Zap} label="Queue Active" value={stats.pendingQueue} sub="Leads waiting" color="text-red-500" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <MetricCard icon={BarChart3} label="Avg Deal Size" value={fmt(stats.avgDealSize)} sub="Per closed deal" color="text-amber-500" />
-        <MetricCard icon={Zap} label="Queue Active" value={stats.pendingQueue} sub="Leads waiting for call" color="text-red-500" />
+      {/* Service Breakdown + Industry Domination */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Recurring Revenue Breakdown */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" />
+              Active Service Revenue Stack
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {Object.keys(stats.serviceBreakdown).length > 0 ? (
+              <div className="space-y-3">
+                {Object.entries(stats.serviceBreakdown)
+                  .sort(([, a]: any, [, b]: any) => b.revenue - a.revenue)
+                  .map(([type, data]: any) => (
+                    <div key={type} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                      <div>
+                        <p className="font-medium">{serviceLabels[type] || type}</p>
+                        <p className="text-xs text-muted-foreground">{data.count} active clients</p>
+                      </div>
+                      <span className="text-lg font-bold text-primary">{fmt(data.revenue)}/mo</span>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">No active services yet. Push clients into monthly packages.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Industry Domination */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Industry Domination Board
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {stats.industryPerformance.length > 0 ? (
+              <div className="space-y-3">
+                {stats.industryPerformance.slice(0, 6).map((ind: any, i: number) => (
+                  <div key={ind.industry} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <Badge variant={i < 3 ? "default" : "outline"} className="w-6 h-6 flex items-center justify-center text-xs p-0">
+                        {i + 1}
+                      </Badge>
+                      <div>
+                        <p className="font-medium capitalize">{ind.industry.replace(/_/g, ' ')}</p>
+                        <p className="text-xs text-muted-foreground">{ind.total_clients} clients • {ind.close_rate}% close rate</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-primary">{fmt(ind.total_revenue)}</p>
+                      <p className="text-xs text-muted-foreground">LTV: {fmt(ind.avg_ltv)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-sm">Industry data accumulating...</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Top Industries */}
+      {/* Top Lead Industries */}
       {stats.topIndustries.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ArrowUpRight className="h-5 w-5 text-primary" />
-              Top Converting Industries
+              Top Lead Sources by Industry
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -88,7 +169,7 @@ export default function CEODashboardPage() {
                     <Badge variant="outline" className="w-6 h-6 flex items-center justify-center text-xs p-0">
                       {i + 1}
                     </Badge>
-                    <span className="font-medium capitalize">{ind.name}</span>
+                    <span className="font-medium capitalize">{ind.name.replace(/_/g, ' ')}</span>
                   </div>
                   <Badge>{ind.count} leads</Badge>
                 </div>
@@ -98,18 +179,31 @@ export default function CEODashboardPage() {
         </Card>
       )}
 
-      {/* Speed Rule */}
-      <Card className="border-accent/30 bg-accent/5">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-3">
-            <Clock className="h-6 w-6 text-accent" />
-            <div>
-              <p className="font-semibold">Speed Rule Active</p>
-              <p className="text-sm text-muted-foreground">Lead → Call → Demo → Payment must happen within 5–10 minutes</p>
+      {/* Speed + Domination Rules */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border-accent/30 bg-accent/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Clock className="h-6 w-6 text-accent" />
+              <div>
+                <p className="font-semibold">Speed Rule Active</p>
+                <p className="text-sm text-muted-foreground">Lead → Call → Demo → Payment within 5–10 minutes</p>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Target className="h-6 w-6 text-primary" />
+              <div>
+                <p className="font-semibold">Empire Rules</p>
+                <p className="text-sm text-muted-foreground">Own relationship • Never lose a lead • Maximize LTV • Automate everything</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
