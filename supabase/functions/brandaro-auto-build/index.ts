@@ -213,8 +213,24 @@ Deno.serve(async (req) => {
       console.log(`[AUTO-BUILD] Durable patterns extracted. Standardizing via native engine.`);
     }
 
+    // ===== TASTE ENGINE: Select Design Profile =====
+    await updateBuildStatus(supabase, buildJob.id, "selecting_design", "taste_engine_selecting");
+
+    const designSelection = await selectDesignProfile(supabase, industry);
+    if (designSelection) {
+      await supabase.from("brandaro_build_jobs").update({
+        design_profile_id: designSelection.profileId,
+      }).eq("id", buildJob.id);
+      console.log(`[AUTO-BUILD] Taste Engine selected profile: ${designSelection.palette.mood}`);
+    }
+
+    // Check for high-performing reusable template
+    const bestTemplate = await selectBestTemplate(supabase, industry);
+    if (bestTemplate) {
+      console.log(`[AUTO-BUILD] Reusing top template (score: ${bestTemplate.avg_score})`);
+    }
+
     // SECTION 5: STANDARDIZATION — Always assemble final site via native engine
-    // This ensures full control regardless of initial engine
     await updateBuildStatus(supabase, buildJob.id, "building", "standardizing_via_native");
 
     const { data: allBlocks } = await supabase
@@ -224,7 +240,10 @@ Deno.serve(async (req) => {
       .order("page_type")
       .order("section_order");
 
-    let productionHtml = assembleProductionSite(allBlocks || [], businessName, industry);
+    // Use taste engine palette if available, otherwise random
+    let productionHtml = designSelection
+      ? assembleProductionSiteWithProfile(allBlocks || [], businessName, industry, designSelection.palette)
+      : assembleProductionSite(allBlocks || [], businessName, industry);
 
     // Inject tracking values
     productionHtml = productionHtml
