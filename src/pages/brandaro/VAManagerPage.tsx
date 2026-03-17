@@ -20,7 +20,7 @@ import {
 import {
   useCompetitorIntel, useOfferVariants, usePricingTests, usePositioningTests,
   useOptimizeOffers, useEvaluatePricingTests, useUpsertCompetitor, useCreateOffer,
-  useCreatePricingTest, useCreatePositioningTest,
+  useCreatePricingTest, useCreatePositioningTest, useSystemDecisions,
 } from "@/hooks/useBrandaroMarketDomination";
 import { toast } from "sonner";
 import {
