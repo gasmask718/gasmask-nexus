@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { proposal_id, payment_amount, stripe_checkout_id, stripe_customer_id } = await req.json();
+    const { proposal_id, payment_amount, stripe_checkout_id, stripe_customer_id, webhook_verified } = await req.json();
 
     if (!proposal_id) {
       return new Response(JSON.stringify({ error: "proposal_id required" }), {
@@ -31,6 +31,14 @@ Deno.serve(async (req) => {
       .eq("id", proposal_id)
       .single();
     if (pErr || !proposal) throw new Error("Proposal not found");
+
+    // IDEMPOTENCY GUARD: If already paid, exit early
+    if (proposal.payment_status === "paid") {
+      console.log(`[POST-PAYMENT] Proposal ${proposal_id} already paid, skipping`);
+      return new Response(JSON.stringify({ ok: true, already_processed: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // 2. Update proposal to paid
     await supabase.from("brandaro_proposals").update({
@@ -49,7 +57,20 @@ Deno.serve(async (req) => {
       .eq("id", proposal.lead_id)
       .single();
 
-    // 4. Create client record
+    // 4. Create client record (IDEMPOTENCY: check for existing client by lead_id)
+    const { data: existingClient } = await supabase
+      .from("brandaro_clients")
+      .select("id")
+      .eq("lead_id", proposal.lead_id)
+      .single();
+
+    if (existingClient) {
+      console.log(`[POST-PAYMENT] Client already exists for lead ${proposal.lead_id}, skipping creation`);
+      return new Response(JSON.stringify({ ok: true, already_processed: true, client_id: existingClient.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: client, error: cErr } = await supabase
       .from("brandaro_clients")
       .insert({

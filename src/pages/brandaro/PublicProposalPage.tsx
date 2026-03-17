@@ -35,14 +35,11 @@ export default function PublicProposalPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
-  // Handle return from Stripe checkout
+  // Handle return from Stripe checkout — payment confirmed via webhook, just update UI
   useEffect(() => {
     if (searchParams.get('paid') === 'true' && proposal?.id) {
-      supabase.functions.invoke('brandaro-post-payment', {
-        body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
-      }).then(() => {
-        setProposal(p => p ? { ...p, status: 'accepted', payment_status: 'paid' } : p);
-      }).catch(console.error);
+      // Payment is verified server-side via Stripe webhook — just refresh status
+      setProposal(p => p ? { ...p, status: 'accepted', payment_status: 'paid' } : p);
     }
   }, [searchParams, proposal?.id]);
 
@@ -135,13 +132,10 @@ export default function PublicProposalPage() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
+        // Redirect in same window for better conversion (especially mobile)
+        window.location.href = data.url;
       } else {
-        // Fallback: direct post-payment if no Stripe URL
-        await supabase.functions.invoke('brandaro-post-payment', {
-          body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
-        });
-        setProposal({ ...proposal, status: 'accepted' });
+        console.error('No checkout URL returned');
       }
     } catch (err) {
       console.error(err);
