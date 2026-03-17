@@ -14,6 +14,11 @@ const handler = async (req: Request): Promise<Response> => {
     const agentIdParam = url.searchParams.get("agent_id");
     const brandKey = url.searchParams.get("brand_key");
     const handoffNumber = url.searchParams.get("handoff_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
+    const brandароMode = url.searchParams.get("brandaro_mode") === "true";
+    const leadId = url.searchParams.get("lead_id") || "";
+    const leadName = url.searchParams.get("lead_name") || "";
+    const businessName = url.searchParams.get("business_name") || "";
+    const businessType = url.searchParams.get("business_type") || "";
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -51,24 +56,65 @@ const handler = async (req: Request): Promise<Response> => {
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
     const handoffUrl = `https://${projectId}.supabase.co/functions/v1/call-live-handoff`;
 
+    // --- Brandaro Voice Agent: Fetch dynamic system prompt ---
+    let conversationOverride: any = undefined;
+    if (brandароMode) {
+      try {
+        const promptResp = await fetch(`${supabaseUrl}/functions/v1/brandaro-voice-agent`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${supabaseServiceRoleKey}`,
+          },
+          body: JSON.stringify({
+            action: "get_system_prompt",
+            lead_name: decodeURIComponent(leadName),
+            business_name: decodeURIComponent(businessName),
+            business_type: decodeURIComponent(businessType),
+          }),
+        });
+        if (promptResp.ok) {
+          const promptData = await promptResp.json();
+          conversationOverride = {
+            agent: {
+              prompt: { prompt: promptData.system_prompt },
+              first_message: `Hey, is this the owner or manager at ${decodeURIComponent(businessName) || "the business"}?`,
+            },
+          };
+          console.log(`🧠 Brandaro voice agent prompt loaded (${promptData.system_prompt.length} chars)`);
+        }
+      } catch (e) {
+        console.warn("⚠️ Failed to load Brandaro prompt, using default agent config:", e);
+      }
+    }
+
     // --- Call ElevenLabs API ---
+    const registerBody: any = {
+      agent_id: agentId,
+      from_number: fromNumber,
+      to_number: toNumber,
+      direction: "outbound",
+      dynamic_variables: {
+        call_sid: callSid,
+        handoff_url: handoffUrl,
+        handoff_number: handoffNumber,
+        lead_id: leadId,
+        business_name: decodeURIComponent(businessName),
+      },
+    };
+
+    // Inject Brandaro conversation override if available
+    if (conversationOverride) {
+      registerBody.conversation_config_override = conversationOverride;
+    }
+
     const registerResponse = await fetch("https://api.elevenlabs.io/v1/convai/twilio/register-call", {
       method: "POST",
       headers: {
         "xi-api-key": ELEVENLABS_API_KEY!,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        agent_id: agentId,
-        from_number: fromNumber,
-        to_number: toNumber,
-        direction: "outbound",
-        dynamic_variables: {
-          call_sid: callSid,
-          handoff_url: handoffUrl,
-          handoff_number: handoffNumber,
-        },
-      }),
+      body: JSON.stringify(registerBody),
     });
 
     if (!registerResponse.ok) {
