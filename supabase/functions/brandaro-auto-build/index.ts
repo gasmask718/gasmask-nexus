@@ -1159,3 +1159,125 @@ function extractDurableDesignPatterns(html: string): {
     typography: { fonts: [...new Set(fontsFound)] },
   };
 }
+
+// ===== CONVERSION INTELLIGENCE ENGINE =====
+
+async function selectConversionPatterns(
+  supabase: any,
+  industry: string,
+): Promise<any[]> {
+  // Get industry-specific patterns first, then universal ones
+  const { data: industryPatterns } = await supabase
+    .from("brandaro_conversion_patterns")
+    .select("*")
+    .eq("industry_type", industry.toLowerCase())
+    .eq("is_active", true)
+    .order("pattern_score", { ascending: false })
+    .limit(10);
+
+  const { data: universalPatterns } = await supabase
+    .from("brandaro_conversion_patterns")
+    .select("*")
+    .is("industry_type", null)
+    .eq("is_active", true)
+    .order("pattern_score", { ascending: false })
+    .limit(15);
+
+  // Merge: industry-specific take priority, fill remaining with universal
+  const selected: any[] = [];
+  const usedTypes = new Set<string>();
+
+  // Add best industry pattern per type
+  for (const p of (industryPatterns || [])) {
+    if (!usedTypes.has(p.pattern_type)) {
+      selected.push(p);
+      usedTypes.add(p.pattern_type);
+    }
+  }
+
+  // Fill with top universal patterns (avoid duplicate types unless score is very high)
+  for (const p of (universalPatterns || [])) {
+    if (selected.length >= 12) break;
+    if (!usedTypes.has(p.pattern_type) || p.pattern_score >= 85) {
+      selected.push(p);
+      usedTypes.add(p.pattern_type);
+    }
+  }
+
+  // Increment times_used
+  for (const p of selected) {
+    await supabase.from("brandaro_conversion_patterns").update({
+      times_used_in_builds: (p.times_used_in_builds || 0) + 1,
+    }).eq("id", p.id);
+  }
+
+  return selected;
+}
+
+function generateConversionElements(patterns: any[], palette: any): string {
+  let html = "";
+
+  for (const p of patterns) {
+    const data = p.pattern_data || {};
+
+    switch (p.pattern_type) {
+      case "trust_element":
+        if (data.position === "below_hero" && data.elements) {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="display:flex;justify-content:center;gap:2rem;padding:1.5rem 2rem;background:${palette.primary}08;flex-wrap:wrap;">
+      ${(data.elements as string[]).map((el: string) =>
+        `<span style="display:flex;align-items:center;gap:0.5rem;font-size:0.9rem;font-weight:500;color:${palette.text};">✓ ${el.replace(/_/g, " ")}</span>`
+      ).join("\n      ")}
+    </div>\n`;
+        }
+        break;
+
+      case "social_proof":
+        if (data.type === "animated_counters") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="display:flex;justify-content:center;gap:3rem;padding:3rem 2rem;flex-wrap:wrap;">
+      ${(data.metrics as string[] || ["500+ Projects", "100+ Clients", "10+ Years"]).map((m: string) =>
+        `<div style="text-align:center;"><div style="font-size:2rem;font-weight:700;color:${palette.primary};">${m.replace(/_/g, " ")}</div></div>`
+      ).join("\n      ")}
+    </div>\n`;
+        }
+        break;
+
+      case "risk_reversal":
+        if (data.type === "guarantee_badge" || data.type === "free_offer") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.75rem;padding:1rem;background:${palette.accent}10;border-radius:8px;margin:1rem auto;max-width:400px;">
+      <span style="font-size:1.5rem;">🛡️</span>
+      <span style="font-weight:600;color:${palette.text};">${data.text || "100% Satisfaction Guaranteed"}</span>
+    </div>\n`;
+        }
+        break;
+
+      case "urgency_trigger":
+        if (data.position === "top_bar" || data.position === "hero_or_cta") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} -->
+    <div style="background:${palette.primary};color:white;text-align:center;padding:0.5rem;font-size:0.85rem;font-weight:600;">
+      ⚡ ${data.text_pattern || "Limited Availability - Book Now"}
+    </div>\n`;
+        }
+        break;
+
+      case "cta_placement":
+        if (data.position === "sticky_bottom" && data.visibility === "mobile_only") {
+          html += `\n<!-- Conversion Pattern: ${p.pattern_key} (mobile sticky CTA) -->
+    <style>
+      @media (max-width: 768px) {
+        .mobile-sticky-cta { display: block !important; }
+      }
+    </style>
+    <div class="mobile-sticky-cta" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;padding:0.75rem;background:${palette.primary};text-align:center;">
+      <a href="#contact" style="color:white;font-weight:700;text-decoration:none;font-size:1.1rem;">Get Your Free Quote →</a>
+    </div>\n`;
+        }
+        break;
+    }
+  }
+
+  return html;
+}
+
