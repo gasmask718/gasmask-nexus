@@ -48,28 +48,40 @@ export function DeliveryMapPreview({
     if (!bikerId && !driverId) return;
 
     const fetchWorkerLocation = async () => {
-      // Get worker's user_id to find their GPS position
       const table = bikerId ? 'bikers' : 'drivers';
       const workerId = bikerId || driverId;
       
       const { data: worker } = await supabase
-        .from(table)
+        .from(table as any)
         .select('user_id')
         .eq('id', workerId!)
         .maybeSingle();
 
       if (!worker?.user_id) return;
 
-      const { data: gps } = await supabase
-        .from('worker_gps_log')
+      // Try drivers_live_location first
+      const { data: liveRow } = await supabase
+        .from('drivers_live_location')
         .select('lat, lng')
-        .eq('worker_id', worker.user_id)
-        .order('recorded_at', { ascending: false })
-        .limit(1)
+        .eq('driver_id', worker.user_id)
         .maybeSingle();
 
-      if (gps?.lat && gps?.lng) {
-        setWorkerLocation([gps.lng, gps.lat]);
+      if (liveRow?.lat && liveRow?.lng && liveRow.lat !== 0 && liveRow.lng !== 0) {
+        setWorkerLocation([Number(liveRow.lng), Number(liveRow.lat)]);
+        return;
+      }
+
+      // Fallback: latest location_events
+      const { data: events } = await supabase
+        .from('location_events')
+        .select('lat, lng')
+        .eq('user_id', worker.user_id)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      const validEvent = (events || []).find((e: any) => e.lat !== 0 && e.lng !== 0);
+      if (validEvent) {
+        setWorkerLocation([Number(validEvent.lng), Number(validEvent.lat)]);
       }
     };
 
