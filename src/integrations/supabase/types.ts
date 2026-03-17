@@ -11586,6 +11586,7 @@ export type Database = {
           id: string
           last_recovery_at: string | null
           lead_id: string | null
+          lead_phone: string | null
           lost_reason: string | null
           objection_detected: string | null
           opener_used: string | null
@@ -11616,6 +11617,7 @@ export type Database = {
           id?: string
           last_recovery_at?: string | null
           lead_id?: string | null
+          lead_phone?: string | null
           lost_reason?: string | null
           objection_detected?: string | null
           opener_used?: string | null
@@ -11646,6 +11648,7 @@ export type Database = {
           id?: string
           last_recovery_at?: string | null
           lead_id?: string | null
+          lead_phone?: string | null
           lost_reason?: string | null
           objection_detected?: string | null
           opener_used?: string | null

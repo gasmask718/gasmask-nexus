@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Brain, Users, CreditCard, Flame, Trophy, Shield, Crown, TrendingUp, Zap, Target, DollarSign, BarChart3, Phone, MessageSquare, ArrowUpRight, ArrowDownRight, Clock, AlertTriangle, Bell, RefreshCw, Siren, RotateCcw } from "lucide-react";
 import {
   useCloserKPIs,
@@ -16,6 +17,7 @@ import {
   useResolveHandoff,
   usePlaybooks,
 } from "@/hooks/useBrandaroCloserAI";
+import { useCloserAction } from "@/hooks/useBrandaroCloserActions";
 import {
   usePaymentRecoveryQueue,
   useTriggerPaymentRecovery,
@@ -165,13 +167,20 @@ function HumanHandoffQueue() {
   const { data: inProgress = [] } = useHandoffQueue("in_progress");
   const pickHandoff = usePickHandoff();
   const resolveHandoff = useResolveHandoff();
+  const closerAction = useCloserAction();
   const [notes, setNotes] = useState<Record<string, string>>({});
+  const [smsText, setSmsText] = useState<Record<string, string>>({});
+  const [showSms, setShowSms] = useState<Record<string, boolean>>({});
 
   // Sort by deal value DESC
   const sortedQueue = [...queue].sort((a: any, b: any) => (b.deal_value || 0) - (a.deal_value || 0));
   const sortedInProgress = [...inProgress].sort((a: any, b: any) => (b.deal_value || 0) - (a.deal_value || 0));
 
-  const renderCard = (h: any, isPicked: boolean) => (
+  const getLeadPhone = (h: any) => h.brandaro_closer_sessions?.lead_phone || "";
+
+  const renderCard = (h: any, isPicked: boolean) => {
+    const phone = getLeadPhone(h);
+    return (
     <Card key={h.id} className={`bg-card border-border border-l-4 ${isPicked ? 'border-l-emerald-500' : 'border-l-amber-500'}`}>
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
@@ -187,6 +196,7 @@ function HumanHandoffQueue() {
               }`}>{h.package_tier?.toUpperCase()}</Badge>
             )}
             {h.deal_value > 0 && <span className="text-sm text-green-400 font-bold">${h.deal_value.toLocaleString()}</span>}
+            {phone && <span className="text-xs text-muted-foreground">📞 {phone}</span>}
           </div>
           <Badge variant="outline" className="text-[10px]">{isPicked ? "In Progress" : "Pending"}</Badge>
         </div>
@@ -208,22 +218,47 @@ function HumanHandoffQueue() {
                 onClick={() => resolveHandoff.mutate({ handoffId: h.id, outcome: "lost", notes: notes[h.id] })}>
                 Mark Lost
               </Button>
-              <Button size="sm" variant="outline" className="text-[11px]"><Phone className="h-3 w-3 mr-1" /> Call Now</Button>
-              <Button size="sm" variant="outline" className="text-[11px]"><MessageSquare className="h-3 w-3 mr-1" /> Text</Button>
-              <Button size="sm" variant="outline" className="text-[11px]"><CreditCard className="h-3 w-3 mr-1" /> Send Payment Link</Button>
+              <Button size="sm" variant="outline" className="text-[11px]"
+                disabled={!phone || closerAction.isPending}
+                onClick={() => closerAction.mutate({ action: "call", phone, leadId: h.lead_id, sessionId: h.session_id })}>
+                <Phone className="h-3 w-3 mr-1" /> Call Now
+              </Button>
+              <Button size="sm" variant="outline" className="text-[11px]"
+                onClick={() => setShowSms(p => ({ ...p, [h.id]: !p[h.id] }))}>
+                <MessageSquare className="h-3 w-3 mr-1" /> Text
+              </Button>
+              <Button size="sm" variant="outline" className="text-[11px]"
+                disabled={!phone || closerAction.isPending}
+                onClick={() => closerAction.mutate({ action: "payment_link", phone, leadId: h.lead_id, sessionId: h.session_id })}>
+                <CreditCard className="h-3 w-3 mr-1" /> Send Payment Link
+              </Button>
               <Button size="sm" variant="outline" className="text-[11px]"><ArrowUpRight className="h-3 w-3 mr-1" /> Upgrade</Button>
               <Button size="sm" variant="outline" className="text-[11px]"><ArrowDownRight className="h-3 w-3 mr-1" /> Downgrade Save</Button>
               <Button size="sm" variant="outline" className="text-[11px]"><Clock className="h-3 w-3 mr-1" /> Set Callback</Button>
             </>
           )}
         </div>
+
+        {/* Inline SMS Composer */}
+        {showSms[h.id] && isPicked && (
+          <div className="flex gap-2">
+            <Input placeholder="Type message..." className="text-xs flex-1"
+              value={smsText[h.id] || ""} onChange={(e) => setSmsText(p => ({ ...p, [h.id]: e.target.value }))} />
+            <Button size="sm" disabled={!phone || !smsText[h.id] || closerAction.isPending}
+              onClick={() => { closerAction.mutate({ action: "sms", phone, message: smsText[h.id], leadId: h.lead_id, sessionId: h.session_id }); setSmsText(p => ({ ...p, [h.id]: "" })); }}>
+              Send
+            </Button>
+          </div>
+        )}
+
         {isPicked && (
           <Textarea placeholder="Closer notes — what closed or lost the deal?" className="text-xs h-16"
             value={notes[h.id] || ""} onChange={(e) => setNotes(prev => ({ ...prev, [h.id]: e.target.value }))} />
         )}
       </CardContent>
     </Card>
-  );
+  );};
+
 
   return (
     <div className="space-y-4">
