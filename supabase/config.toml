@@ -271,3 +271,6 @@ verify_jwt = false
 
 [functions.brandaro-analyze-site]
 verify_jwt = false
+
+[functions.brandaro-track-revenue]
+verify_jwt = false
