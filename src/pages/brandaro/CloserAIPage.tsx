@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Brain, Users, CreditCard, Flame, Trophy, Shield, Crown, TrendingUp, Zap, Target, DollarSign, BarChart3, Phone, MessageSquare, ArrowUpRight, ArrowDownRight, Clock, AlertTriangle, Bell, RefreshCw, Siren, RotateCcw } from "lucide-react";
 import {
   useCloserKPIs,
@@ -16,6 +17,7 @@ import {
   useResolveHandoff,
   usePlaybooks,
 } from "@/hooks/useBrandaroCloserAI";
+import { useCloserAction } from "@/hooks/useBrandaroCloserActions";
 import {
   usePaymentRecoveryQueue,
   useTriggerPaymentRecovery,
