@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -39,6 +39,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
   { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
   { path: '/os/brandaro/ads-engine', label: 'Ads Engine', icon: Megaphone },
+  { path: '/os/brandaro/google-domination', label: 'Google Domination', icon: Crown },
 ];
 
 export const BrandaroModule: DynastyModule = {
