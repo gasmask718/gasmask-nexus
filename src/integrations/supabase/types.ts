@@ -9679,8 +9679,12 @@ export type Database = {
           deployed_url: string | null
           deployment_decision: string | null
           domain_connected: boolean | null
+          durable_raw_html: string | null
+          engine_switched: boolean | null
           error_log: Json | null
+          final_engine: string | null
           id: string
+          initial_engine: string | null
           lead_id: string | null
           max_retries: number | null
           package_tier: string | null
@@ -9690,6 +9694,7 @@ export type Database = {
           quality_breakdown: Json | null
           quality_score: number | null
           retry_count: number | null
+          standardization_applied: boolean | null
           started_at: string | null
           total_pages: number | null
           updated_at: string | null
@@ -9707,8 +9712,12 @@ export type Database = {
           deployed_url?: string | null
           deployment_decision?: string | null
           domain_connected?: boolean | null
+          durable_raw_html?: string | null
+          engine_switched?: boolean | null
           error_log?: Json | null
+          final_engine?: string | null
           id?: string
+          initial_engine?: string | null
           lead_id?: string | null
           max_retries?: number | null
           package_tier?: string | null
@@ -9718,6 +9727,7 @@ export type Database = {
           quality_breakdown?: Json | null
           quality_score?: number | null
           retry_count?: number | null
+          standardization_applied?: boolean | null
           started_at?: string | null
           total_pages?: number | null
           updated_at?: string | null
@@ -9735,8 +9745,12 @@ export type Database = {
           deployed_url?: string | null
           deployment_decision?: string | null
           domain_connected?: boolean | null
+          durable_raw_html?: string | null
+          engine_switched?: boolean | null
           error_log?: Json | null
+          final_engine?: string | null
           id?: string
+          initial_engine?: string | null
           lead_id?: string | null
           max_retries?: number | null
           package_tier?: string | null
@@ -9746,6 +9760,7 @@ export type Database = {
           quality_breakdown?: Json | null
           quality_score?: number | null
           retry_count?: number | null
+          standardization_applied?: boolean | null
           started_at?: string | null
           total_pages?: number | null
           updated_at?: string | null
@@ -10629,6 +10644,62 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      brandaro_extracted_templates: {
+        Row: {
+          build_job_id: string | null
+          client_id: string | null
+          color_scheme: Json | null
+          created_at: string | null
+          design_patterns: Json | null
+          extracted_html: string | null
+          extracted_sections: Json | null
+          id: string
+          layout_hierarchy: Json | null
+          source_engine: string
+          standardized: boolean | null
+          standardized_at: string | null
+          typography: Json | null
+        }
+        Insert: {
+          build_job_id?: string | null
+          client_id?: string | null
+          color_scheme?: Json | null
+          created_at?: string | null
+          design_patterns?: Json | null
+          extracted_html?: string | null
+          extracted_sections?: Json | null
+          id?: string
+          layout_hierarchy?: Json | null
+          source_engine?: string
+          standardized?: boolean | null
+          standardized_at?: string | null
+          typography?: Json | null
+        }
+        Update: {
+          build_job_id?: string | null
+          client_id?: string | null
+          color_scheme?: Json | null
+          created_at?: string | null
+          design_patterns?: Json | null
+          extracted_html?: string | null
+          extracted_sections?: Json | null
+          id?: string
+          layout_hierarchy?: Json | null
+          source_engine?: string
+          standardized?: boolean | null
+          standardized_at?: string | null
+          typography?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_extracted_templates_build_job_id_fkey"
+            columns: ["build_job_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_build_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_followups: {
         Row: {
