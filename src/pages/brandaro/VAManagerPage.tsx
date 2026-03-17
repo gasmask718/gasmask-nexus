@@ -808,7 +808,47 @@ export default function VAManagerPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── NEW: System Decisions Log ── */}
+        <TabsContent value="decisions" className="space-y-4">
+          <Card className="border-cyan-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Eye className="h-4 w-4 text-cyan-400" /> System Decision Log
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2">
+                  {decisions.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">No decisions logged yet</p>}
+                  {decisions.map((d: any) => (
+                    <div key={d.id} className="p-3 rounded-lg border bg-card space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs capitalize">{d.decision_type?.replace(/_/g, " ")}</Badge>
+                          <span className="text-sm font-medium">{d.action_taken}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {d.impact_score > 0 && (
+                            <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs">
+                              +{d.impact_score} impact
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">{new Date(d.created_at).toLocaleString()}</span>
+                        </div>
+                      </div>
+                      {d.decision_reason && <p className="text-xs text-muted-foreground">{d.decision_reason}</p>}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
     </div>
   );
 }
