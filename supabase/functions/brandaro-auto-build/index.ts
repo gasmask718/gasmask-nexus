@@ -700,6 +700,122 @@ function selectStylePalette(): StylePalette {
   return STYLE_PALETTES[Math.floor(Math.random() * STYLE_PALETTES.length)];
 }
 
+// ===== TASTE ENGINE: Design Profile Selection =====
+
+async function selectDesignProfile(
+  supabase: any,
+  industry: string,
+): Promise<{ profileId: string; palette: StylePalette } | null> {
+  // Fetch active design profiles ranked by performance
+  const { data: profiles } = await supabase
+    .from("brandaro_design_profiles")
+    .select("*")
+    .eq("is_active", true)
+    .order("avg_conversion_rate", { ascending: false });
+
+  if (!profiles || profiles.length === 0) return null;
+
+  // Industry → style category mapping
+  const industryStyleMap: Record<string, string[]> = {
+    "restaurant": ["modern", "bold"],
+    "plumbing": ["local_service", "corporate"],
+    "hvac": ["local_service", "corporate"],
+    "cleaning": ["minimal", "local_service"],
+    "law": ["luxury", "corporate"],
+    "real estate": ["luxury", "modern"],
+    "salon": ["modern", "bold"],
+    "landscaping": ["local_service", "bold"],
+    "dental": ["minimal", "corporate"],
+    "fitness": ["bold", "modern"],
+  };
+
+  const preferredStyles = industryStyleMap[industry.toLowerCase()] || ["modern", "corporate"];
+
+  // Weighted selection: 60% performance rank, 30% style match, 10% novelty
+  const scored = profiles.map((p: any) => {
+    let score = 0;
+    // Performance score (higher rank = higher score)
+    score += (1 - (p.performance_rank || profiles.length) / profiles.length) * 60;
+    // Style match
+    if (preferredStyles.includes(p.style_category)) score += 30;
+    // Novelty bonus (less used = more novel)
+    const usagePenalty = Math.min((p.usage_count || 0) / 50, 1) * 10;
+    score += 10 - usagePenalty;
+    return { ...p, selectionScore: score };
+  });
+
+  scored.sort((a: any, b: any) => b.selectionScore - a.selectionScore);
+
+  // Pick from top 3 with slight randomness to avoid staleness
+  const topN = scored.slice(0, Math.min(3, scored.length));
+  const selected = topN[Math.floor(Math.random() * topN.length)];
+
+  // Increment usage count
+  await supabase
+    .from("brandaro_design_profiles")
+    .update({ usage_count: (selected.usage_count || 0) + 1, updated_at: new Date().toISOString() })
+    .eq("id", selected.id);
+
+  // Convert DB palette to StylePalette
+  const cp = selected.color_palette || {};
+  const fp = selected.font_pairing || {};
+  const palette: StylePalette = {
+    primary: cp.primary || "#1e40af",
+    secondary: cp.secondary || "#0369a1",
+    accent: cp.accent || "#06b6d4",
+    bg: cp.bg || "#f8fafc",
+    text: cp.text || "#0f172a",
+    headingFont: fp.heading || "Montserrat",
+    bodyFont: fp.body || "Open Sans",
+    mood: selected.style_category,
+  };
+
+  return { profileId: selected.id, palette };
+}
+
+// Select best-performing template for reuse
+async function selectBestTemplate(
+  supabase: any,
+  industry: string,
+): Promise<any | null> {
+  const { data: templates } = await supabase
+    .from("brandaro_extracted_templates")
+    .select("*, brandaro_template_performance(*)")
+    .gt("avg_score", 60)
+    .order("avg_score", { ascending: false })
+    .limit(5);
+
+  if (!templates || templates.length === 0) return null;
+
+  // Avoid over-reuse: skip templates used more than 10 times
+  const eligible = templates.filter((t: any) => (t.usage_count || 0) < 10);
+  if (eligible.length === 0) return null;
+
+  const selected = eligible[0];
+
+  // Increment usage
+  await supabase
+    .from("brandaro_extracted_templates")
+    .update({ usage_count: (selected.usage_count || 0) + 1, last_used_at: new Date().toISOString() })
+    .eq("id", selected.id);
+
+  return selected;
+}
+
+// Record template performance after deployment
+async function recordTemplatePerformance(
+  supabase: any,
+  templateId: string,
+  buildJobId: string,
+  clientId: string,
+): Promise<void> {
+  await supabase.from("brandaro_template_performance").insert({
+    template_id: templateId,
+    build_job_id: buildJobId,
+    client_id: clientId,
+  });
+}
+
 function getSectionStyle(layout: string, palette: StylePalette): string {
   const styles: Record<string, string> = {
     "full-width": `max-width:100%;padding:5rem 4rem;`,
