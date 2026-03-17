@@ -250,3 +250,15 @@ verify_jwt = false
 
 [functions.twilio-recording-callback]
 verify_jwt = false
+
+[functions.brandaro-track-lead-event]
+verify_jwt = false
+
+[functions.brandaro-ai-optimizer]
+verify_jwt = false
+
+[functions.brandaro-monthly-report]
+verify_jwt = false
+
+[functions.brandaro-metrics-worker]
+verify_jwt = false
