@@ -658,12 +658,19 @@ export function MapCanvas({
         const isCompleted = task.status === 'delivered' || task.status === 'failed' || task.status === 'cancelled';
         if (isCompleted) return; // No trajectory for completed tasks
 
-        const worker = workers.find(w =>
-          (task.biker_user_id && w.worker_id === task.biker_user_id) ||
-          (task.driver_user_id && w.worker_id === task.driver_user_id) ||
-          (task.biker_id && w.id === task.biker_id) ||
-          (task.driver_id && w.id === task.driver_id)
-        ) || null;
+        // Match worker by user_id or record_id (both paths from useLiveWorkers)
+        const worker = workers.find(w => {
+          // Match via user_id (worker_id in workers array = user_id)
+          if (task.biker_user_id && w.worker_id === task.biker_user_id) return true;
+          if (task.driver_user_id && w.worker_id === task.driver_user_id) return true;
+          // Match via record id (worker.id = biker/driver table id for manually-added workers)
+          if (task.biker_id && w.id === task.biker_id) return true;
+          if (task.driver_id && w.id === task.driver_id) return true;
+          // Match via worker_id being the record id (fallback workers use recordId as worker_id)
+          if (task.biker_id && w.worker_id === task.biker_id) return true;
+          if (task.driver_id && w.worker_id === task.driver_id) return true;
+          return false;
+        }) || null;
 
         const useWorkerOrigin = !!worker && worker.lat !== 0 && worker.lng !== 0;
         const origin = useWorkerOrigin
