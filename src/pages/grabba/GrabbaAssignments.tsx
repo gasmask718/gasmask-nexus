@@ -18,10 +18,11 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
   Package, Search, User, MapPin, Phone, Truck, Bike,
-  Clock, CheckCircle, ArrowRight, Eye, ClipboardList
+  Clock, CheckCircle, ArrowRight, Eye, ClipboardList, Map
 } from 'lucide-react';
 import { useGrabbaBrand } from '@/contexts/GrabbaBrandContext';
 import { BrandFilterBar } from '@/components/grabba/BrandFilterBar';
+import { DeliveryMapPreview } from '@/components/delivery/DeliveryMapPreview';
 
 type DeliveryStatus = 'pending' | 'delivering' | 'delivered' | 'declined';
 
