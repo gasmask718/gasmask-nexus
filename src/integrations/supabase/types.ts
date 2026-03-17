@@ -11345,6 +11345,286 @@ export type Database = {
           },
         ]
       }
+      brandaro_close_reviews: {
+        Row: {
+          created_at: string | null
+          final_outcome: string | null
+          human_correction: string | null
+          id: string
+          lead_id: string | null
+          original_ai_classification: string | null
+          package_sold: string | null
+          reason_bought: string | null
+          reason_lost: string | null
+          reviewer_id: string | null
+          session_id: string | null
+          winning_message: string | null
+          winning_rebuttal: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          final_outcome?: string | null
+          human_correction?: string | null
+          id?: string
+          lead_id?: string | null
+          original_ai_classification?: string | null
+          package_sold?: string | null
+          reason_bought?: string | null
+          reason_lost?: string | null
+          reviewer_id?: string | null
+          session_id?: string | null
+          winning_message?: string | null
+          winning_rebuttal?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          final_outcome?: string | null
+          human_correction?: string | null
+          id?: string
+          lead_id?: string | null
+          original_ai_classification?: string | null
+          package_sold?: string | null
+          reason_bought?: string | null
+          reason_lost?: string | null
+          reviewer_id?: string | null
+          session_id?: string | null
+          winning_message?: string | null
+          winning_rebuttal?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_close_reviews_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_closer_events: {
+        Row: {
+          actor: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          message_content: string | null
+          metadata: Json | null
+          session_id: string | null
+        }
+        Insert: {
+          actor?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          message_content?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+        }
+        Update: {
+          actor?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          message_content?: string | null
+          metadata?: Json | null
+          session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_closer_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_closer_playbooks: {
+        Row: {
+          created_at: string | null
+          cta: string | null
+          emotional_frame: string | null
+          handoff_condition: string | null
+          id: string
+          is_active: boolean | null
+          label: string
+          opening_line: string | null
+          playbook_key: string
+          stop_condition: string | null
+          urgency_line: string | null
+          value_positioning: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          cta?: string | null
+          emotional_frame?: string | null
+          handoff_condition?: string | null
+          id?: string
+          is_active?: boolean | null
+          label: string
+          opening_line?: string | null
+          playbook_key: string
+          stop_condition?: string | null
+          urgency_line?: string | null
+          value_positioning?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          cta?: string | null
+          emotional_frame?: string | null
+          handoff_condition?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          opening_line?: string | null
+          playbook_key?: string
+          stop_condition?: string | null
+          urgency_line?: string | null
+          value_positioning?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_closer_rebuttals: {
+        Row: {
+          aggressive_rebuttal: string | null
+          ai_response: string | null
+          close_success_rate: number | null
+          created_at: string | null
+          downgrade_path: string | null
+          human_response: string | null
+          id: string
+          label: string
+          objection_key: string
+          premium_rebuttal: string | null
+          soft_rebuttal: string | null
+          times_used: number | null
+          times_won: number | null
+          updated_at: string | null
+          upsell_path: string | null
+        }
+        Insert: {
+          aggressive_rebuttal?: string | null
+          ai_response?: string | null
+          close_success_rate?: number | null
+          created_at?: string | null
+          downgrade_path?: string | null
+          human_response?: string | null
+          id?: string
+          label: string
+          objection_key: string
+          premium_rebuttal?: string | null
+          soft_rebuttal?: string | null
+          times_used?: number | null
+          times_won?: number | null
+          updated_at?: string | null
+          upsell_path?: string | null
+        }
+        Update: {
+          aggressive_rebuttal?: string | null
+          ai_response?: string | null
+          close_success_rate?: number | null
+          created_at?: string | null
+          downgrade_path?: string | null
+          human_response?: string | null
+          id?: string
+          label?: string
+          objection_key?: string
+          premium_rebuttal?: string | null
+          soft_rebuttal?: string | null
+          times_used?: number | null
+          times_won?: number | null
+          updated_at?: string | null
+          upsell_path?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_closer_sessions: {
+        Row: {
+          assigned_human_closer: string | null
+          close_probability: number | null
+          closed: boolean | null
+          confidence_score: number | null
+          created_at: string | null
+          handoff_score: number | null
+          human_takeover_at: string | null
+          id: string
+          lead_id: string | null
+          lost_reason: string | null
+          objection_detected: string | null
+          opener_used: string | null
+          outcome: string | null
+          package_interest: string | null
+          payment_abandoned: boolean | null
+          payment_link_clicked: boolean | null
+          payment_link_clicked_at: string | null
+          payment_link_sent: boolean | null
+          payment_link_sent_at: string | null
+          playbook_used: string | null
+          price_anchor_seen: boolean | null
+          priority_score: number | null
+          rebuttal_used: string | null
+          session_type: string
+          updated_at: string | null
+          urgency_score: number | null
+        }
+        Insert: {
+          assigned_human_closer?: string | null
+          close_probability?: number | null
+          closed?: boolean | null
+          confidence_score?: number | null
+          created_at?: string | null
+          handoff_score?: number | null
+          human_takeover_at?: string | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          objection_detected?: string | null
+          opener_used?: string | null
+          outcome?: string | null
+          package_interest?: string | null
+          payment_abandoned?: boolean | null
+          payment_link_clicked?: boolean | null
+          payment_link_clicked_at?: string | null
+          payment_link_sent?: boolean | null
+          payment_link_sent_at?: string | null
+          playbook_used?: string | null
+          price_anchor_seen?: boolean | null
+          priority_score?: number | null
+          rebuttal_used?: string | null
+          session_type?: string
+          updated_at?: string | null
+          urgency_score?: number | null
+        }
+        Update: {
+          assigned_human_closer?: string | null
+          close_probability?: number | null
+          closed?: boolean | null
+          confidence_score?: number | null
+          created_at?: string | null
+          handoff_score?: number | null
+          human_takeover_at?: string | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          objection_detected?: string | null
+          opener_used?: string | null
+          outcome?: string | null
+          package_interest?: string | null
+          payment_abandoned?: boolean | null
+          payment_link_clicked?: boolean | null
+          payment_link_clicked_at?: string | null
+          payment_link_sent?: boolean | null
+          payment_link_sent_at?: string | null
+          playbook_used?: string | null
+          price_anchor_seen?: boolean | null
+          priority_score?: number | null
+          rebuttal_used?: string | null
+          session_type?: string
+          updated_at?: string | null
+          urgency_score?: number | null
+        }
+        Relationships: []
+      }
       brandaro_content_blocks: {
         Row: {
           build_job_id: string | null
@@ -12311,6 +12591,65 @@ export type Database = {
           trigger_phrases?: string[] | null
         }
         Relationships: []
+      }
+      brandaro_human_handoff_queue: {
+        Row: {
+          assigned_closer: string | null
+          closer_notes: string | null
+          created_at: string | null
+          deal_value: number | null
+          handoff_score: number | null
+          id: string
+          lead_id: string | null
+          outcome: string | null
+          package_tier: string | null
+          picked_at: string | null
+          reason: string
+          resolved_at: string | null
+          session_id: string | null
+          status: string | null
+        }
+        Insert: {
+          assigned_closer?: string | null
+          closer_notes?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          handoff_score?: number | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          package_tier?: string | null
+          picked_at?: string | null
+          reason: string
+          resolved_at?: string | null
+          session_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          assigned_closer?: string | null
+          closer_notes?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          handoff_score?: number | null
+          id?: string
+          lead_id?: string | null
+          outcome?: string | null
+          package_tier?: string | null
+          picked_at?: string | null
+          reason?: string
+          resolved_at?: string | null
+          session_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_human_handoff_queue_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_inbound_messages: {
         Row: {
@@ -14722,6 +15061,68 @@ export type Database = {
             columns: ["script_id"]
             isOneToOne: false
             referencedRelation: "brandaro_voice_agent_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_win_loss_analysis: {
+        Row: {
+          closer_type: string | null
+          created_at: string | null
+          deal_value: number | null
+          id: string
+          lead_id: string | null
+          lost_reason: string | null
+          objection_overcome: string | null
+          package: string | null
+          payment_plan_used: boolean | null
+          proof_used: string | null
+          result: string
+          session_id: string | null
+          touches_to_close: number | null
+          urgency_trigger: string | null
+          won_trigger: string | null
+        }
+        Insert: {
+          closer_type?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          objection_overcome?: string | null
+          package?: string | null
+          payment_plan_used?: boolean | null
+          proof_used?: string | null
+          result: string
+          session_id?: string | null
+          touches_to_close?: number | null
+          urgency_trigger?: string | null
+          won_trigger?: string | null
+        }
+        Update: {
+          closer_type?: string | null
+          created_at?: string | null
+          deal_value?: number | null
+          id?: string
+          lead_id?: string | null
+          lost_reason?: string | null
+          objection_overcome?: string | null
+          package?: string | null
+          payment_plan_used?: boolean | null
+          proof_used?: string | null
+          result?: string
+          session_id?: string | null
+          touches_to_close?: number | null
+          urgency_trigger?: string | null
+          won_trigger?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_win_loss_analysis_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_sessions"
             referencedColumns: ["id"]
           },
         ]

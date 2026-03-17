@@ -18,6 +18,7 @@ import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
 import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
+import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -41,6 +42,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/ads-engine', label: 'Ads Engine', icon: Megaphone },
   { path: '/os/brandaro/google-domination', label: 'Google Domination', icon: Crown },
   { path: '/os/brandaro/optimization', label: 'Optimization Engine', icon: Cpu },
+  { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
 ];
 
 export const BrandaroModule: DynastyModule = {
@@ -75,6 +77,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/review-queue', component: ReviewQueuePage, label: 'Quality Review', icon: ShieldCheck, requiresAuth: true },
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
     { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
+    { path: '/closer-ai', component: CloserAIPage, label: 'Closer AI', icon: Brain, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,
