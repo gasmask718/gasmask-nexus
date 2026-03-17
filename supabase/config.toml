@@ -280,3 +280,12 @@ verify_jwt = false
 
 [functions.brandaro-call-analysis]
 verify_jwt = false
+
+[functions.brandaro-send-followups]
+verify_jwt = false
+
+[functions.brandaro-handle-inbound]
+verify_jwt = false
+
+[functions.brandaro-score-demo]
+verify_jwt = false
