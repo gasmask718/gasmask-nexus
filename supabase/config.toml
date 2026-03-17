@@ -291,3 +291,6 @@ verify_jwt = false
 
 [functions.brandaro-create-payment-link]
 verify_jwt = false
+
+[functions.brandaro-analyze-call]
+verify_jwt = false

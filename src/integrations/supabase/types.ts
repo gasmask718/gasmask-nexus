@@ -15093,6 +15093,56 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_va_ai_recommendations: {
+        Row: {
+          call_session_id: string | null
+          created_at: string | null
+          id: string
+          is_applied: boolean | null
+          lead_id: string | null
+          priority: number | null
+          recommendation_body: string
+          recommendation_title: string
+          recommendation_type: string
+          recommended_action: string
+          va_user_id: string | null
+        }
+        Insert: {
+          call_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_applied?: boolean | null
+          lead_id?: string | null
+          priority?: number | null
+          recommendation_body: string
+          recommendation_title: string
+          recommendation_type: string
+          recommended_action: string
+          va_user_id?: string | null
+        }
+        Update: {
+          call_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_applied?: boolean | null
+          lead_id?: string | null
+          priority?: number | null
+          recommendation_body?: string
+          recommendation_title?: string
+          recommendation_type?: string
+          recommended_action?: string
+          va_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_ai_recommendations_call_session_id_fkey"
+            columns: ["call_session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_va_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_va_alerts: {
         Row: {
           alert_type: string
@@ -15159,6 +15209,163 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_va_buying_signals: {
+        Row: {
+          call_session_id: string
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          signal_strength: number | null
+          signal_text: string | null
+          signal_type: string
+          va_user_id: string
+        }
+        Insert: {
+          call_session_id: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          signal_strength?: number | null
+          signal_text?: string | null
+          signal_type: string
+          va_user_id: string
+        }
+        Update: {
+          call_session_id?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          signal_strength?: number | null
+          signal_text?: string | null
+          signal_type?: string
+          va_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_buying_signals_call_session_id_fkey"
+            columns: ["call_session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_va_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_va_call_sessions: {
+        Row: {
+          ai_analyzed: boolean | null
+          buying_signal_count: number | null
+          call_outcome: string | null
+          call_sid: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          interest_level: string | null
+          lead_id: string | null
+          objection_count: number | null
+          phone_number: string | null
+          source: string | null
+          started_at: string | null
+          summary: string | null
+          transcript: string | null
+          updated_at: string | null
+          urgency_level: string | null
+          va_user_id: string
+        }
+        Insert: {
+          ai_analyzed?: boolean | null
+          buying_signal_count?: number | null
+          call_outcome?: string | null
+          call_sid?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          interest_level?: string | null
+          lead_id?: string | null
+          objection_count?: number | null
+          phone_number?: string | null
+          source?: string | null
+          started_at?: string | null
+          summary?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+          urgency_level?: string | null
+          va_user_id: string
+        }
+        Update: {
+          ai_analyzed?: boolean | null
+          buying_signal_count?: number | null
+          call_outcome?: string | null
+          call_sid?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          interest_level?: string | null
+          lead_id?: string | null
+          objection_count?: number | null
+          phone_number?: string | null
+          source?: string | null
+          started_at?: string | null
+          summary?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+          urgency_level?: string | null
+          va_user_id?: string
+        }
+        Relationships: []
+      }
+      brandaro_va_closer_handoffs: {
+        Row: {
+          closer_user_id: string | null
+          created_at: string | null
+          handoff_reason: string | null
+          id: string
+          lead_heat_score: number | null
+          lead_id: string
+          qualification_notes: string | null
+          source_call_session_id: string | null
+          status: string | null
+          updated_at: string | null
+          va_user_id: string
+        }
+        Insert: {
+          closer_user_id?: string | null
+          created_at?: string | null
+          handoff_reason?: string | null
+          id?: string
+          lead_heat_score?: number | null
+          lead_id: string
+          qualification_notes?: string | null
+          source_call_session_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          va_user_id: string
+        }
+        Update: {
+          closer_user_id?: string | null
+          created_at?: string | null
+          handoff_reason?: string | null
+          id?: string
+          lead_heat_score?: number | null
+          lead_id?: string
+          qualification_notes?: string | null
+          source_call_session_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          va_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_closer_handoffs_source_call_session_id_fkey"
+            columns: ["source_call_session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_va_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_va_coaching: {
         Row: {
           call_quality_score: number | null
@@ -15204,6 +15411,69 @@ export type Database = {
           strengths?: string[] | null
           va_user_id?: string
           weak_points?: string[] | null
+        }
+        Relationships: []
+      }
+      brandaro_va_conversion_metrics: {
+        Row: {
+          avg_call_duration_seconds: number | null
+          avg_objections_per_call: number | null
+          buying_signals_detected: number | null
+          calls_completed: number | null
+          close_rate: number | null
+          closer_handoffs: number | null
+          closes: number | null
+          conversations: number | null
+          created_at: string | null
+          demos_booked: number | null
+          id: string
+          interested_leads: number | null
+          metric_date: string
+          objections_handled: number | null
+          payment_ready_leads: number | null
+          revenue_generated: number | null
+          updated_at: string | null
+          va_user_id: string
+        }
+        Insert: {
+          avg_call_duration_seconds?: number | null
+          avg_objections_per_call?: number | null
+          buying_signals_detected?: number | null
+          calls_completed?: number | null
+          close_rate?: number | null
+          closer_handoffs?: number | null
+          closes?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          demos_booked?: number | null
+          id?: string
+          interested_leads?: number | null
+          metric_date: string
+          objections_handled?: number | null
+          payment_ready_leads?: number | null
+          revenue_generated?: number | null
+          updated_at?: string | null
+          va_user_id: string
+        }
+        Update: {
+          avg_call_duration_seconds?: number | null
+          avg_objections_per_call?: number | null
+          buying_signals_detected?: number | null
+          calls_completed?: number | null
+          close_rate?: number | null
+          closer_handoffs?: number | null
+          closes?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          demos_booked?: number | null
+          id?: string
+          interested_leads?: number | null
+          metric_date?: string
+          objections_handled?: number | null
+          payment_ready_leads?: number | null
+          revenue_generated?: number | null
+          updated_at?: string | null
+          va_user_id?: string
         }
         Relationships: []
       }
@@ -15296,6 +15566,104 @@ export type Database = {
           va_user_id?: string
         }
         Relationships: []
+      }
+      brandaro_va_lead_heat: {
+        Row: {
+          closing_probability: number | null
+          created_at: string | null
+          escalation_level: string | null
+          heat_score: number | null
+          id: string
+          last_objection_at: string | null
+          last_signal_at: string | null
+          latest_call_session_id: string | null
+          lead_id: string
+          next_best_action: string | null
+          recommended_callback_at: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          closing_probability?: number | null
+          created_at?: string | null
+          escalation_level?: string | null
+          heat_score?: number | null
+          id?: string
+          last_objection_at?: string | null
+          last_signal_at?: string | null
+          latest_call_session_id?: string | null
+          lead_id: string
+          next_best_action?: string | null
+          recommended_callback_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          closing_probability?: number | null
+          created_at?: string | null
+          escalation_level?: string | null
+          heat_score?: number | null
+          id?: string
+          last_objection_at?: string | null
+          last_signal_at?: string | null
+          latest_call_session_id?: string | null
+          lead_id?: string
+          next_best_action?: string | null
+          recommended_callback_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_va_objection_events: {
+        Row: {
+          ai_recommended_response: string | null
+          ai_strategy: string | null
+          call_session_id: string
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          objection_text: string | null
+          objection_type: string
+          resolved: boolean | null
+          severity: string | null
+          va_user_id: string
+        }
+        Insert: {
+          ai_recommended_response?: string | null
+          ai_strategy?: string | null
+          call_session_id: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          objection_text?: string | null
+          objection_type: string
+          resolved?: boolean | null
+          severity?: string | null
+          va_user_id: string
+        }
+        Update: {
+          ai_recommended_response?: string | null
+          ai_strategy?: string | null
+          call_session_id?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          objection_text?: string | null
+          objection_type?: string
+          resolved?: boolean | null
+          severity?: string | null
+          va_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_objection_events_call_session_id_fkey"
+            columns: ["call_session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_va_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_va_score_events: {
         Row: {
