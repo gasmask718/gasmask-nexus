@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner";
 import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
-  Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2,
+  Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2, Bell,
   Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap,
 } from "lucide-react";
 
