@@ -117,6 +117,7 @@ import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadQualificationPage from '@/pages/brandaro/LeadQualificationPage';
 import DemoEnginePage from '@/pages/brandaro/DemoEnginePage';
 import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
+import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
