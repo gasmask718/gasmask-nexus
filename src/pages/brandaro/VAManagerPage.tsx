@@ -14,11 +14,14 @@ import {
 import {
   useAllLeadHeat, useVACloserHandoffs, useAssignCloserHandoff, useAllConversionMetrics,
 } from "@/hooks/useBrandaroCloserBrain";
+import {
+  useWinningPatterns, useResponseLibrary, useVASkillProfiles, useOptimizeResponses,
+} from "@/hooks/useBrandaroLearningEngine";
 import { toast } from "sonner";
 import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
   Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2, Bell,
-  Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap,
+  Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap, BookOpen, BarChart3,
 } from "lucide-react";
 
 export default function VAManagerPage() {
@@ -27,17 +30,23 @@ export default function VAManagerPage() {
   const [coachingNotes, setCoachingNotes] = useState("");
   const [qualityScore, setQualityScore] = useState("3");
   const [improvementTarget, setImprovementTarget] = useState("");
+  const [patternFilter, setPatternFilter] = useState<string | undefined>();
 
   const { data: allPerf = [] } = useAllVAPerformance();
   const { data: leaderboard = [] } = useVALeaderboard(leaderboardPeriod);
   const { data: alerts = [] } = useVAAlerts();
   const addCoaching = useAddCoachingNote();
 
-  // AI Closer Brain hooks
   const { data: hotLeads = [] } = useAllLeadHeat(45);
   const { data: handoffs = [] } = useVACloserHandoffs("pending");
   const { data: allMetrics = [] } = useAllConversionMetrics();
   const assignHandoff = useAssignCloserHandoff();
+
+  // Learning engine hooks
+  const { data: patterns = [] } = useWinningPatterns(patternFilter);
+  const { data: responses = [] } = useResponseLibrary();
+  const { data: skills = [] } = useVASkillProfiles();
+  const optimizeResponses = useOptimizeResponses();
 
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
@@ -67,17 +76,22 @@ export default function VAManagerPage() {
     toast.success("Coaching note added");
   };
 
-  // Risk analysis: VAs with high calls but low conversion
   const riskVAs = allPerf.filter((p: any) => {
     const metric = allMetrics.find((m: any) => m.va_user_id === p.va_user_id);
     return p.calls_made >= 20 && (metric?.interested_leads || 0) === 0;
   });
 
+  const getSkillColor = (score: number) => {
+    if (score >= 70) return "text-emerald-400";
+    if (score >= 40) return "text-amber-400";
+    return "text-destructive";
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Manager Oversight</h1>
-        <p className="text-muted-foreground text-sm">AI Closer Brain Intelligence Controls</p>
+        <p className="text-muted-foreground text-sm">AI Closer Brain + Self-Learning Intelligence</p>
       </div>
 
       {/* Critical Alerts + Hot Lead Banners */}
@@ -132,18 +146,20 @@ export default function VAManagerPage() {
       </div>
 
       <Tabs defaultValue="escalation" className="space-y-4">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="grid grid-cols-9 w-full">
           <TabsTrigger value="escalation"><Flame className="h-3 w-3 mr-1" /> Escalation</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-3 w-3 mr-1" /> Team</TabsTrigger>
           <TabsTrigger value="risk"><AlertTriangle className="h-3 w-3 mr-1" /> Risk</TabsTrigger>
           <TabsTrigger value="leaderboard"><Trophy className="h-3 w-3 mr-1" /> Rank</TabsTrigger>
           <TabsTrigger value="coaching"><Shield className="h-3 w-3 mr-1" /> Coach</TabsTrigger>
           <TabsTrigger value="alerts"><Bell className="h-3 w-3 mr-1" /> Alerts</TabsTrigger>
+          <TabsTrigger value="patterns"><Brain className="h-3 w-3 mr-1" /> Patterns</TabsTrigger>
+          <TabsTrigger value="responses"><BookOpen className="h-3 w-3 mr-1" /> Responses</TabsTrigger>
+          <TabsTrigger value="skills"><BarChart3 className="h-3 w-3 mr-1" /> Skills</TabsTrigger>
         </TabsList>
 
-        {/* Escalation Queue */}
+        {/* ── Escalation Queue ── */}
         <TabsContent value="escalation" className="space-y-4">
-          {/* Closer Handoff Queue */}
           <Card className="border-orange-500/20">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -166,13 +182,9 @@ export default function VAManagerPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">{h.handoff_reason}</p>
                       {h.qualification_notes && <p className="text-xs">{h.qualification_notes}</p>}
-                      <div className="flex gap-2">
-                        <Button size="sm" className="text-xs h-7" onClick={() => {
-                          assignHandoff.mutate({ handoffId: h.id, closerId: h.va_user_id });
-                        }}>
-                          <CheckCircle2 className="h-3 w-3 mr-1" /> Assign Closer
-                        </Button>
-                      </div>
+                      <Button size="sm" className="text-xs h-7" onClick={() => assignHandoff.mutate({ handoffId: h.id, closerId: h.va_user_id })}>
+                        <CheckCircle2 className="h-3 w-3 mr-1" /> Assign Closer
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -180,7 +192,6 @@ export default function VAManagerPage() {
             </CardContent>
           </Card>
 
-          {/* Lead Heat Board */}
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -194,8 +205,7 @@ export default function VAManagerPage() {
                   {hotLeads.map((lead: any) => (
                     <div key={lead.id} className="flex items-center justify-between p-2 rounded-lg border bg-card text-xs">
                       <div className="flex items-center gap-2">
-                        {lead.status === "closing_now" ? <Flame className="h-3 w-3 text-red-500 animate-pulse" /> :
-                         <Flame className="h-3 w-3 text-orange-500" />}
+                        {lead.status === "closing_now" ? <Flame className="h-3 w-3 text-red-500 animate-pulse" /> : <Flame className="h-3 w-3 text-orange-500" />}
                         <span>Lead {lead.lead_id?.slice(0, 8)}…</span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -211,7 +221,7 @@ export default function VAManagerPage() {
           </Card>
         </TabsContent>
 
-        {/* Team Status */}
+        {/* ── Team Status ── */}
         <TabsContent value="team">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">VA Team — Today's Performance</CardTitle></CardHeader>
@@ -258,7 +268,7 @@ export default function VAManagerPage() {
           </Card>
         </TabsContent>
 
-        {/* Risk Board */}
+        {/* ── Risk Board ── */}
         <TabsContent value="risk">
           <Card className="border-destructive/20">
             <CardHeader className="pb-2">
@@ -283,13 +293,11 @@ export default function VAManagerPage() {
                         <div><p className="font-bold text-destructive">{va.interested_leads}</p><p className="text-muted-foreground">Interested</p></div>
                       </div>
                       <p className="text-xs text-destructive">⚠ High call volume with zero interested leads — coaching needed</p>
-                      <Button size="sm" variant="outline" className="text-xs" onClick={() => { setSelectedVA(va.va_user_id); }}>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => setSelectedVA(va.va_user_id)}>
                         <Shield className="h-3 w-3 mr-1" /> Coach Now
                       </Button>
                     </div>
                   ))}
-
-                  {/* Behind Quota VAs */}
                   {behindQuota.length > 0 && (
                     <>
                       <div className="text-xs text-muted-foreground mt-4 mb-2">VAs behind quota (&lt;50%)</div>
@@ -299,9 +307,7 @@ export default function VAManagerPage() {
                             <Clock className="h-4 w-4 text-orange-500" />
                             <span className="text-sm">{va.va_user_id.slice(0, 8)}…</span>
                           </div>
-                          <Badge variant="outline" className="text-xs text-orange-500">
-                            {va.calls_made}/{va.quota_calls} calls
-                          </Badge>
+                          <Badge variant="outline" className="text-xs text-orange-500">{va.calls_made}/{va.quota_calls} calls</Badge>
                         </div>
                       ))}
                     </>
@@ -312,7 +318,7 @@ export default function VAManagerPage() {
           </Card>
         </TabsContent>
 
-        {/* Leaderboard */}
+        {/* ── Leaderboard ── */}
         <TabsContent value="leaderboard">
           <Card>
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -345,7 +351,7 @@ export default function VAManagerPage() {
           </Card>
         </TabsContent>
 
-        {/* Coaching */}
+        {/* ── Coaching ── */}
         <TabsContent value="coaching">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Add Coaching Note</CardTitle></CardHeader>
@@ -379,7 +385,7 @@ export default function VAManagerPage() {
           </Card>
         </TabsContent>
 
-        {/* Alerts */}
+        {/* ── Alerts ── */}
         <TabsContent value="alerts">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">Active Alerts</CardTitle></CardHeader>
@@ -402,6 +408,157 @@ export default function VAManagerPage() {
                         <p className="text-xs text-muted-foreground mt-1">{new Date(a.created_at).toLocaleString()}</p>
                       </div>
                       <Badge variant="outline" className="shrink-0 text-xs">{a.severity}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: Winning Patterns ── */}
+        <TabsContent value="patterns" className="space-y-4">
+          <Card className="border-purple-500/20">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Brain className="h-4 w-4 text-purple-400" /> Winning Patterns
+              </CardTitle>
+              <div className="flex gap-1">
+                {[undefined, "objection", "signal", "strategy"].map(t => (
+                  <Button key={t || "all"} size="sm" variant={patternFilter === t ? "default" : "ghost"} onClick={() => setPatternFilter(t)} className="text-xs h-7">
+                    {t ? t.charAt(0).toUpperCase() + t.slice(1) : "All"}
+                  </Button>
+                ))}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2">
+                  {patterns.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Not enough data yet (min 3 samples)</p>}
+                  {patterns.map((p: any) => (
+                    <div key={p.id} className="p-3 rounded-lg border bg-card flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="text-xs capitalize">{p.pattern_type}</Badge>
+                        <span className="text-sm font-medium">{p.pattern_key?.replace(/_/g, " ")}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs">
+                        <div className="text-right">
+                          <p className={`font-bold ${p.success_rate >= 60 ? "text-emerald-400" : p.success_rate >= 30 ? "text-amber-400" : "text-destructive"}`}>
+                            {Math.round(p.success_rate)}%
+                          </p>
+                          <p className="text-muted-foreground">win rate</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold">{p.sample_size}</p>
+                          <p className="text-muted-foreground">samples</p>
+                        </div>
+                        {p.avg_revenue > 0 && (
+                          <div className="text-right">
+                            <p className="font-bold text-emerald-400">${Math.round(p.avg_revenue)}</p>
+                            <p className="text-muted-foreground">avg rev</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: Response Library ── */}
+        <TabsContent value="responses" className="space-y-4">
+          <Card className="border-blue-500/20">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-blue-400" /> Response Leaderboard
+              </CardTitle>
+              <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => optimizeResponses.mutate()} disabled={optimizeResponses.isPending}>
+                <Zap className="h-3 w-3 mr-1" /> {optimizeResponses.isPending ? "Optimizing…" : "Optimize"}
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-3">
+                  {responses.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No responses yet — run Optimize to seed</p>}
+                  {responses.map((r: any, i: number) => (
+                    <div key={r.id} className={`p-3 rounded-lg border bg-card space-y-2 ${i === 0 ? "border-emerald-500/30" : ""}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {i === 0 && <Star className="h-3 w-3 text-emerald-400" />}
+                          <Badge variant="outline" className="text-xs capitalize">{r.objection_type?.replace(/_/g, " ")}</Badge>
+                          {r.strategy && <span className="text-xs text-muted-foreground">• {r.strategy}</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${r.success_rate >= 60 ? "text-emerald-400" : r.success_rate >= 30 ? "text-amber-400" : "text-muted-foreground"}`}>
+                            {Math.round(r.success_rate)}%
+                          </span>
+                          <span className="text-xs text-muted-foreground">{r.usage_count} uses</span>
+                        </div>
+                      </div>
+                      <p className="text-sm italic text-muted-foreground">"{r.response_text}"</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── NEW: VA Skill Heatmap ── */}
+        <TabsContent value="skills" className="space-y-4">
+          <Card className="border-cyan-500/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-cyan-400" /> VA Skill Heatmap
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-3">
+                  {skills.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">No skill profiles yet — data builds after call analyses</p>}
+                  {skills.map((s: any) => (
+                    <div key={s.id} className="p-4 rounded-lg border bg-card space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium">{s.va_user_id?.slice(0, 8)}…</span>
+                        <Badge variant="outline" className="text-xs">{Math.round(s.conversion_rate)}% conversion</Badge>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Objection Handling</span>
+                            <span className={`font-bold ${getSkillColor(s.objection_handling_score)}`}>{Math.round(s.objection_handling_score)}%</span>
+                          </div>
+                          <Progress value={s.objection_handling_score} className="h-1.5" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Closing</span>
+                            <span className={`font-bold ${getSkillColor(s.closing_score)}`}>{Math.round(s.closing_score)}%</span>
+                          </div>
+                          <Progress value={s.closing_score} className="h-1.5" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Follow-up</span>
+                            <span className={`font-bold ${getSkillColor(s.followup_score)}`}>{Math.round(s.followup_score)}%</span>
+                          </div>
+                          <Progress value={s.followup_score} className="h-1.5" />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        {s.strongest_area && (
+                          <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">
+                            💪 {s.strongest_area.replace(/_/g, " ")}
+                          </Badge>
+                        )}
+                        {s.weakest_area && (
+                          <Badge className="bg-red-500/15 text-red-400 border-red-500/30">
+                            ⚠ {s.weakest_area.replace(/_/g, " ")}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>

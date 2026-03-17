@@ -294,3 +294,6 @@ verify_jwt = false
 
 [functions.brandaro-analyze-call]
 verify_jwt = false
+
+[functions.brandaro-learning-engine]
+verify_jwt = false
