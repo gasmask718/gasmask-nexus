@@ -591,7 +591,7 @@ function assembleProductionSiteWithProfile(
 // Shared HTML shell to avoid duplication
 function assembleHtmlShell(
   businessName: string, industry: string, seoTitle: string, seoDesc: string,
-  navLinks: string, contentSections: string, palette: StylePalette,
+  navLinks: string, contentSections: string, palette: StylePalette, conversionHtml: string = "",
 ): string {
   return `<!DOCTYPE html>
 <html lang="en">
