@@ -60,6 +60,13 @@ export default function VAWorkspacePage() {
   const [notes, setNotes] = useState("");
   const [callbackTime, setCallbackTime] = useState("");
   const [showScript, setShowScript] = useState(true);
+  const [selectedObjections, setSelectedObjections] = useState<string[]>([]);
+
+  const COMMON_OBJECTIONS = [
+    "too expensive", "not now", "already have website", "too busy",
+    "need to think", "use social media", "no budget", "bad timing",
+    "talk to partner", "not interested",
+  ];
 
   // Get next lead from queue
   const { data: nextInQueue } = useQuery({
