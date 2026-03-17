@@ -11401,6 +11401,42 @@ export type Database = {
           },
         ]
       }
+      brandaro_closer_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          detail: string | null
+          id: string
+          lead_id: string | null
+          priority: number | null
+          seen: boolean | null
+          session_id: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          detail?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: number | null
+          seen?: boolean | null
+          session_id?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          detail?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: number | null
+          seen?: boolean | null
+          session_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       brandaro_closer_events: {
         Row: {
           actor: string | null
@@ -11548,6 +11584,7 @@ export type Database = {
           handoff_score: number | null
           human_takeover_at: string | null
           id: string
+          last_recovery_at: string | null
           lead_id: string | null
           lost_reason: string | null
           objection_detected: string | null
@@ -11563,6 +11600,7 @@ export type Database = {
           price_anchor_seen: boolean | null
           priority_score: number | null
           rebuttal_used: string | null
+          recovery_attempts: number | null
           session_type: string
           updated_at: string | null
           urgency_score: number | null
@@ -11576,6 +11614,7 @@ export type Database = {
           handoff_score?: number | null
           human_takeover_at?: string | null
           id?: string
+          last_recovery_at?: string | null
           lead_id?: string | null
           lost_reason?: string | null
           objection_detected?: string | null
@@ -11591,6 +11630,7 @@ export type Database = {
           price_anchor_seen?: boolean | null
           priority_score?: number | null
           rebuttal_used?: string | null
+          recovery_attempts?: number | null
           session_type?: string
           updated_at?: string | null
           urgency_score?: number | null
@@ -11604,6 +11644,7 @@ export type Database = {
           handoff_score?: number | null
           human_takeover_at?: string | null
           id?: string
+          last_recovery_at?: string | null
           lead_id?: string | null
           lost_reason?: string | null
           objection_detected?: string | null
@@ -11619,6 +11660,7 @@ export type Database = {
           price_anchor_seen?: boolean | null
           priority_score?: number | null
           rebuttal_used?: string | null
+          recovery_attempts?: number | null
           session_type?: string
           updated_at?: string | null
           urgency_score?: number | null
@@ -13490,6 +13532,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      brandaro_payment_recovery: {
+        Row: {
+          channel: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          message_content: string
+          recovered: boolean | null
+          recovered_amount: number | null
+          scheduled_at: string
+          sent_at: string | null
+          session_id: string | null
+          status: string
+          step: number
+        }
+        Insert: {
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          message_content: string
+          recovered?: boolean | null
+          recovered_amount?: number | null
+          scheduled_at: string
+          sent_at?: string | null
+          session_id?: string | null
+          status?: string
+          step?: number
+        }
+        Update: {
+          channel?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          message_content?: string
+          recovered?: boolean | null
+          recovered_amount?: number | null
+          scheduled_at?: string
+          sent_at?: string | null
+          session_id?: string | null
+          status?: string
+          step?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_payment_recovery_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_performance_ai: {
         Row: {
