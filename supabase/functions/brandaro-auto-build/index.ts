@@ -546,6 +546,7 @@ function assembleProductionSiteWithProfile(
   businessName: string,
   industry: string,
   palette: StylePalette,
+  patterns: any[] = [],
 ): string {
   // Same assembly logic but with a pre-selected palette
   const pageGroups: Record<string, any[]> = {};
