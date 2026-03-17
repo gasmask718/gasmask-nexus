@@ -1058,21 +1058,26 @@ function extractDurableDesignPatterns(html: string): {
 async function selectConversionPatterns(
   supabase: any,
   industry: string,
+  eliteMode: boolean = false,
 ): Promise<any[]> {
-  // Get industry-specific patterns first, then universal ones
+  // REVENUE INTELLIGENCE: Sort by composite score (revenue_score weighted highest)
+  const orderCol = "revenue_score"; // Revenue is now primary signal
+  
   const { data: industryPatterns } = await supabase
     .from("brandaro_conversion_patterns")
     .select("*")
     .eq("industry_type", industry.toLowerCase())
     .eq("is_active", true)
+    .order(orderCol, { ascending: false })
     .order("pattern_score", { ascending: false })
-    .limit(10);
+    .limit(eliteMode ? 5 : 10);
 
   const { data: universalPatterns } = await supabase
     .from("brandaro_conversion_patterns")
     .select("*")
     .is("industry_type", null)
     .eq("is_active", true)
+    .order(orderCol, { ascending: false })
     .order("pattern_score", { ascending: false })
     .limit(15);
 
