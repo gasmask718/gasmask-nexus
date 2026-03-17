@@ -306,3 +306,6 @@ verify_jwt = false
 
 [functions.generate-personality-response]
 verify_jwt = false
+
+[functions.ingest-personality]
+verify_jwt = false

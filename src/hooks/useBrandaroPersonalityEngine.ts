@@ -156,3 +156,67 @@ export function useGeneratePersonalityResponse() {
     onError: (e: any) => toast.error(e.message),
   });
 }
+
+// ── Personality Ingestion ──
+
+export function useIngestFromTranscript() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { input_text: string; personality_name?: string; description?: string }) => {
+      const { data, error } = await supabase.functions.invoke("ingest-personality", {
+        body: { action: "extract-from-transcript", ...params },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Extraction failed");
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["brandaro-personalities"] });
+      qc.invalidateQueries({ queryKey: ["brandaro-strategy-frameworks"] });
+      qc.invalidateQueries({ queryKey: ["brandaro-personality-scripts"] });
+      toast.success("Personality extracted from transcript");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useGenerateFromDescription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { description: string; personality_name?: string }) => {
+      const { data, error } = await supabase.functions.invoke("ingest-personality", {
+        body: { action: "generate-from-description", ...params },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Generation failed");
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["brandaro-personalities"] });
+      qc.invalidateQueries({ queryKey: ["brandaro-personality-scripts"] });
+      toast.success("Personality generated from description");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
+
+export function useSeedStarterPersonalities() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("ingest-personality", {
+        body: { action: "seed-starters" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Seeding failed");
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["brandaro-personalities"] });
+      qc.invalidateQueries({ queryKey: ["brandaro-personality-scripts"] });
+      const created = data.results?.filter((r: any) => r.status === "created").length || 0;
+      toast.success(`${created} starter personalities deployed`);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+}
