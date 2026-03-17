@@ -170,7 +170,7 @@ export default function VAManagerPage() {
       </div>
 
       <Tabs defaultValue="escalation" className="space-y-4">
-        <TabsList className="grid grid-cols-9 w-full">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1">
           <TabsTrigger value="escalation"><Flame className="h-3 w-3 mr-1" /> Escalation</TabsTrigger>
           <TabsTrigger value="team"><Users className="h-3 w-3 mr-1" /> Team</TabsTrigger>
           <TabsTrigger value="risk"><AlertTriangle className="h-3 w-3 mr-1" /> Risk</TabsTrigger>
@@ -180,6 +180,10 @@ export default function VAManagerPage() {
           <TabsTrigger value="patterns"><Brain className="h-3 w-3 mr-1" /> Patterns</TabsTrigger>
           <TabsTrigger value="responses"><BookOpen className="h-3 w-3 mr-1" /> Responses</TabsTrigger>
           <TabsTrigger value="skills"><BarChart3 className="h-3 w-3 mr-1" /> Skills</TabsTrigger>
+          <TabsTrigger value="competitors"><Swords className="h-3 w-3 mr-1" /> Intel</TabsTrigger>
+          <TabsTrigger value="offers"><Tag className="h-3 w-3 mr-1" /> Offers</TabsTrigger>
+          <TabsTrigger value="pricing"><DollarSign className="h-3 w-3 mr-1" /> Pricing</TabsTrigger>
+          <TabsTrigger value="positioning"><Crosshair className="h-3 w-3 mr-1" /> Position</TabsTrigger>
         </TabsList>
 
         {/* ── Escalation Queue ── */}
