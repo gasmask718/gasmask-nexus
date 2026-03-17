@@ -2507,23 +2507,47 @@ export default function AppRoutes() {
       } />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
-      {/* BRANDARO DIGITAL FLOOR                                                       */}
+      {/* BRANDARO DIGITAL HUB (THE SALES WAR ROOM)                                    */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
-        <Route path="/brandaro" element={<BrandaroDashboard />} />
-        <Route path="/brandaro/ceo" element={<CEODashboardPage />} />
-        <Route path="/brandaro/leads" element={<LeadDatabasePage />} />
-        <Route path="/brandaro/calling" element={<CallingOpsPage />} />
-        <Route path="/brandaro/va-command" element={<VACommandCenterPage />} />
-        <Route path="/brandaro/revenue" element={<RevenueAnalyticsPage />} />
-        <Route path="/brandaro/retention" element={<RetentionDashboardPage />} />
-        <Route path="/brandaro/reporting" element={<ClientReportingPage />} />
-        <Route path="/brandaro/ads-engine" element={<AdsEnginePage />} />
-        <Route path="/brandaro/google-domination" element={<GoogleDominationPage />} />
-        <Route path="/brandaro/optimization" element={<OptimizationEnginePage />} />
-        <Route path="/brandaro/closer-ai" element={<CloserAIPage />} />
-        <Route path="/brandaro/va-dashboard" element={<VADashboardPage />} />
-        <Route path="/brandaro/va-manager" element={<VAManagerPage />} />
+        <Route path="/brandaro" element={<BrandaroHubLayout />}>
+          {/* Command */}
+          <Route index element={<BrandaroWarRoom />} />
+          <Route path="ceo" element={<CEODashboardPage />} />
+          {/* Sales Floor */}
+          <Route path="calling" element={<CallingOpsPage />} />
+          <Route path="va-dashboard" element={<VADashboardPage />} />
+          <Route path="va-command" element={<VACommandCenterPage />} />
+          <Route path="va-manager" element={<VAManagerPage />} />
+          <Route path="va-workspace" element={<VAWorkspacePage />} />
+          <Route path="va-performance" element={<VAPerformancePage />} />
+          <Route path="closer-ai" element={<CloserAIPage />} />
+          {/* Pipeline */}
+          <Route path="leads" element={<LeadDatabasePage />} />
+          <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
+          <Route path="lead-qualification" element={<LeadQualificationPage />} />
+          <Route path="follow-ups" element={<FollowUpEnginePage />} />
+          <Route path="proposals" element={<ProposalBuilderPage />} />
+          <Route path="build-pipeline" element={<BuildPipelinePage />} />
+          <Route path="demo-engine" element={<DemoEnginePage />} />
+          <Route path="production-pipeline" element={<ProductionPipelinePage />} />
+          {/* Intelligence */}
+          <Route path="ai-brain" element={<CloserAIPage />} />
+          <Route path="personalities" element={<VAManagerPage />} />
+          <Route path="learning" element={<OptimizationEnginePage />} />
+          <Route path="domination" element={<OptimizationEnginePage />} />
+          {/* Growth */}
+          <Route path="revenue" element={<RevenueAnalyticsPage />} />
+          <Route path="ads-engine" element={<AdsEnginePage />} />
+          <Route path="google-domination" element={<GoogleDominationPage />} />
+          <Route path="optimization" element={<OptimizationEnginePage />} />
+          <Route path="result-engine" element={<ResultEnginePage />} />
+          {/* Clients */}
+          <Route path="retention" element={<RetentionDashboardPage />} />
+          <Route path="reporting" element={<ClientReportingPage />} />
+          <Route path="campaigns" element={<CampaignManagerPage />} />
+          <Route path="reviews" element={<ReviewQueuePage />} />
+        </Route>
       </Route>
 
       <Route path="*" element={<NotFound />} />
