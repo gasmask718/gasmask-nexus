@@ -326,6 +326,99 @@ export default function BrandaroWarRoom() {
           </Card>
         </div>
       </div>
+
+      {/* ── Automation Engine Panel ── */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Cpu className="h-4 w-4 text-primary" /> Automation Engine
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px]">
+                {autoStats.activeAutomations} rules active
+              </Badge>
+              <Badge className="text-[10px] bg-primary/10 text-primary border-0">
+                {autoStats.total24h} actions today
+              </Badge>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+              </div>
+              <p className="text-lg font-bold text-green-600">{autoStats.successCount}</p>
+              <p className="text-[10px] text-muted-foreground">Successful</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <XCircle className="h-3.5 w-3.5 text-red-500" />
+              </div>
+              <p className="text-lg font-bold text-red-500">{autoStats.failCount}</p>
+              <p className="text-[10px] text-muted-foreground">Failed</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Flame className="h-3.5 w-3.5 text-orange-500" />
+              </div>
+              <p className="text-lg font-bold text-orange-500">{autoStats.triggerCounts.hot_lead || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Hot Escalations</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <Play className="h-3.5 w-3.5 text-blue-500" />
+              </div>
+              <p className="text-lg font-bold text-blue-500">{autoStats.triggerCounts.new_lead || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Auto-Assigned</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <RefreshCw className="h-3.5 w-3.5 text-amber-500" />
+              </div>
+              <p className="text-lg font-bold text-amber-500">{autoStats.triggerCounts.stale_lead || 0}</p>
+              <p className="text-[10px] text-muted-foreground">Re-engaged</p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3 text-center">
+              <div className="flex items-center justify-center gap-1 mb-1">
+                <MailCheck className="h-3.5 w-3.5 text-purple-500" />
+              </div>
+              <p className="text-lg font-bold text-purple-500">{autoStats.pendingFollowups}</p>
+              <p className="text-[10px] text-muted-foreground">Queued Follow-ups</p>
+            </div>
+          </div>
+
+          {/* Recent automation activity feed */}
+          <div className="border-t pt-3">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">Recent Activity</p>
+            <ScrollArea className="h-[120px]">
+              <div className="space-y-1.5">
+                {recentLogs.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No automation activity yet</p>
+                ) : recentLogs.slice(0, 10).map((log: any) => (
+                  <div key={log.id} className="flex items-center justify-between p-1.5 rounded bg-muted/30 text-xs">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={cn("text-[9px] px-1.5",
+                        log.trigger_type === "hot_lead" ? "border-orange-500/30 text-orange-600" :
+                        log.trigger_type === "new_lead" ? "border-blue-500/30 text-blue-600" :
+                        log.trigger_type === "stale_lead" ? "border-amber-500/30 text-amber-600" :
+                        "border-muted-foreground/30"
+                      )}>
+                        {log.trigger_type}
+                      </Badge>
+                      <span className="text-muted-foreground">{log.action_taken}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(log.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
