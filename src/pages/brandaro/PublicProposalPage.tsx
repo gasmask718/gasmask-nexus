@@ -132,13 +132,10 @@ export default function PublicProposalPage() {
       });
       if (error) throw error;
       if (data?.url) {
-        window.open(data.url, '_blank');
+        // Redirect in same window for better conversion (especially mobile)
+        window.location.href = data.url;
       } else {
-        // Fallback: direct post-payment if no Stripe URL
-        await supabase.functions.invoke('brandaro-post-payment', {
-          body: { proposal_id: proposal.id, payment_amount: proposal.total_price },
-        });
-        setProposal({ ...proposal, status: 'accepted' });
+        console.error('No checkout URL returned');
       }
     } catch (err) {
       console.error(err);

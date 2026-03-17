@@ -57,7 +57,20 @@ Deno.serve(async (req) => {
       .eq("id", proposal.lead_id)
       .single();
 
-    // 4. Create client record
+    // 4. Create client record (IDEMPOTENCY: check for existing client by lead_id)
+    const { data: existingClient } = await supabase
+      .from("brandaro_clients")
+      .select("id")
+      .eq("lead_id", proposal.lead_id)
+      .single();
+
+    if (existingClient) {
+      console.log(`[POST-PAYMENT] Client already exists for lead ${proposal.lead_id}, skipping creation`);
+      return new Response(JSON.stringify({ ok: true, already_processed: true, client_id: existingClient.id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: client, error: cErr } = await supabase
       .from("brandaro_clients")
       .insert({
