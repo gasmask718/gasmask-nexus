@@ -10434,6 +10434,53 @@ export type Database = {
           },
         ]
       }
+      brandaro_client_lifecycle: {
+        Row: {
+          assigned_manager: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          last_contact_at: string | null
+          next_action: string | null
+          onboarded_at: string | null
+          satisfaction_score: number | null
+          stage: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_manager?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_contact_at?: string | null
+          next_action?: string | null
+          onboarded_at?: string | null
+          satisfaction_score?: number | null
+          stage?: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_manager?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_contact_at?: string | null
+          next_action?: string | null
+          onboarded_at?: string | null
+          satisfaction_score?: number | null
+          stage?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_lifecycle_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_client_metrics: {
         Row: {
           avg_session_duration: number | null
@@ -10535,6 +10582,97 @@ export type Database = {
             foreignKeyName: "brandaro_client_services_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_client_touchpoints: {
+        Row: {
+          channel: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          message: string | null
+          message_type: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          channel?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          message_type: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          channel?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          message_type?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_touchpoints_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_client_value: {
+        Row: {
+          churn_risk: number | null
+          client_grade: string | null
+          client_id: string | null
+          created_at: string | null
+          id: string
+          last_payment_at: string | null
+          monthly_value: number | null
+          months_active: number | null
+          total_spent: number | null
+          updated_at: string | null
+          upsell_probability: number | null
+        }
+        Insert: {
+          churn_risk?: number | null
+          client_grade?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_payment_at?: string | null
+          monthly_value?: number | null
+          months_active?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          upsell_probability?: number | null
+        }
+        Update: {
+          churn_risk?: number | null
+          client_grade?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_payment_at?: string | null
+          monthly_value?: number | null
+          months_active?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          upsell_probability?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_value_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: true
             referencedRelation: "brandaro_leads_master"
             referencedColumns: ["id"]
           },
