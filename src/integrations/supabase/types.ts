@@ -9678,6 +9678,7 @@ export type Database = {
           deployed_at: string | null
           deployed_url: string | null
           deployment_decision: string | null
+          design_variant_seed: number | null
           domain_connected: boolean | null
           durable_raw_html: string | null
           engine_switched: boolean | null
@@ -9696,6 +9697,7 @@ export type Database = {
           retry_count: number | null
           standardization_applied: boolean | null
           started_at: string | null
+          style_palette_id: string | null
           total_pages: number | null
           updated_at: string | null
         }
@@ -9711,6 +9713,7 @@ export type Database = {
           deployed_at?: string | null
           deployed_url?: string | null
           deployment_decision?: string | null
+          design_variant_seed?: number | null
           domain_connected?: boolean | null
           durable_raw_html?: string | null
           engine_switched?: boolean | null
@@ -9729,6 +9732,7 @@ export type Database = {
           retry_count?: number | null
           standardization_applied?: boolean | null
           started_at?: string | null
+          style_palette_id?: string | null
           total_pages?: number | null
           updated_at?: string | null
         }
@@ -9744,6 +9748,7 @@ export type Database = {
           deployed_at?: string | null
           deployed_url?: string | null
           deployment_decision?: string | null
+          design_variant_seed?: number | null
           domain_connected?: boolean | null
           durable_raw_html?: string | null
           engine_switched?: boolean | null
@@ -9762,6 +9767,7 @@ export type Database = {
           retry_count?: number | null
           standardization_applied?: boolean | null
           started_at?: string | null
+          style_palette_id?: string | null
           total_pages?: number | null
           updated_at?: string | null
         }
@@ -9789,10 +9795,70 @@ export type Database = {
           },
         ]
       }
+      brandaro_call_insights: {
+        Row: {
+          ai_recommended_next: string | null
+          ai_summary: string | null
+          business_type: string | null
+          call_log_id: string | null
+          closing_angle: string | null
+          created_at: string | null
+          id: string
+          intent_level: string | null
+          key_phrases: string[] | null
+          lead_id: string | null
+          objections: string[] | null
+          sentiment: string | null
+          services_requested: string[] | null
+          urgency: string | null
+        }
+        Insert: {
+          ai_recommended_next?: string | null
+          ai_summary?: string | null
+          business_type?: string | null
+          call_log_id?: string | null
+          closing_angle?: string | null
+          created_at?: string | null
+          id?: string
+          intent_level?: string | null
+          key_phrases?: string[] | null
+          lead_id?: string | null
+          objections?: string[] | null
+          sentiment?: string | null
+          services_requested?: string[] | null
+          urgency?: string | null
+        }
+        Update: {
+          ai_recommended_next?: string | null
+          ai_summary?: string | null
+          business_type?: string | null
+          call_log_id?: string | null
+          closing_angle?: string | null
+          created_at?: string | null
+          id?: string
+          intent_level?: string | null
+          key_phrases?: string[] | null
+          lead_id?: string | null
+          objections?: string[] | null
+          sentiment?: string | null
+          services_requested?: string[] | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_call_insights_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_call_logs: {
         Row: {
           call_attempt_number: number
           call_duration: number | null
+          call_duration_seconds: number | null
           call_notes: string | null
           call_outcome: string
           call_timestamp: string
@@ -9804,11 +9870,14 @@ export type Database = {
           lead_id: string
           next_action: string | null
           next_call_time: string | null
+          objection_tags: string[] | null
           phone_used: string | null
+          recording_url: string | null
         }
         Insert: {
           call_attempt_number?: number
           call_duration?: number | null
+          call_duration_seconds?: number | null
           call_notes?: string | null
           call_outcome: string
           call_timestamp?: string
@@ -9820,11 +9889,14 @@ export type Database = {
           lead_id: string
           next_action?: string | null
           next_call_time?: string | null
+          objection_tags?: string[] | null
           phone_used?: string | null
+          recording_url?: string | null
         }
         Update: {
           call_attempt_number?: number
           call_duration?: number | null
+          call_duration_seconds?: number | null
           call_notes?: string | null
           call_outcome?: string
           call_timestamp?: string
@@ -9836,7 +9908,9 @@ export type Database = {
           lead_id?: string
           next_action?: string | null
           next_call_time?: string | null
+          objection_tags?: string[] | null
           phone_used?: string | null
+          recording_url?: string | null
         }
         Relationships: [
           {
@@ -9917,6 +9991,47 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: true
             referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_call_transcripts: {
+        Row: {
+          call_log_id: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          lead_id: string | null
+          recording_url: string | null
+          transcript_text: string | null
+          transcription_source: string | null
+        }
+        Insert: {
+          call_log_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          recording_url?: string | null
+          transcript_text?: string | null
+          transcription_source?: string | null
+        }
+        Update: {
+          call_log_id?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          recording_url?: string | null
+          transcript_text?: string | null
+          transcription_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_call_transcripts_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_call_logs"
             referencedColumns: ["id"]
           },
         ]
@@ -10642,6 +10757,48 @@ export type Database = {
           sections?: Json | null
           template_name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_design_components: {
+        Row: {
+          component_type: string
+          conversion_rate: number | null
+          created_at: string | null
+          html_template: string
+          id: string
+          performance_score: number | null
+          preview_thumbnail: string | null
+          tags: string[] | null
+          times_used: number | null
+          variant_index: number | null
+          variant_name: string
+        }
+        Insert: {
+          component_type: string
+          conversion_rate?: number | null
+          created_at?: string | null
+          html_template: string
+          id?: string
+          performance_score?: number | null
+          preview_thumbnail?: string | null
+          tags?: string[] | null
+          times_used?: number | null
+          variant_index?: number | null
+          variant_name: string
+        }
+        Update: {
+          component_type?: string
+          conversion_rate?: number | null
+          created_at?: string | null
+          html_template?: string
+          id?: string
+          performance_score?: number | null
+          preview_thumbnail?: string | null
+          tags?: string[] | null
+          times_used?: number | null
+          variant_index?: number | null
+          variant_name?: string
         }
         Relationships: []
       }
@@ -11625,6 +11782,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_style_palettes: {
+        Row: {
+          accent_color: string
+          avg_quality_score: number | null
+          bg_color: string | null
+          body_font: string
+          created_at: string | null
+          heading_font: string
+          id: string
+          palette_name: string
+          primary_color: string
+          secondary_color: string
+          style_mood: string | null
+          text_color: string | null
+          times_used: number | null
+        }
+        Insert: {
+          accent_color: string
+          avg_quality_score?: number | null
+          bg_color?: string | null
+          body_font: string
+          created_at?: string | null
+          heading_font: string
+          id?: string
+          palette_name: string
+          primary_color: string
+          secondary_color: string
+          style_mood?: string | null
+          text_color?: string | null
+          times_used?: number | null
+        }
+        Update: {
+          accent_color?: string
+          avg_quality_score?: number | null
+          bg_color?: string | null
+          body_font?: string
+          created_at?: string | null
+          heading_font?: string
+          id?: string
+          palette_name?: string
+          primary_color?: string
+          secondary_color?: string
+          style_mood?: string | null
+          text_color?: string | null
+          times_used?: number | null
+        }
+        Relationships: []
       }
       brandaro_subscriptions: {
         Row: {

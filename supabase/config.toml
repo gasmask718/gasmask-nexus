@@ -262,3 +262,6 @@ verify_jwt = false
 
 [functions.brandaro-metrics-worker]
 verify_jwt = false
+
+[functions.brandaro-call-analyzer]
+verify_jwt = false

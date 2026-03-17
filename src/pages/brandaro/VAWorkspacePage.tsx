@@ -60,6 +60,13 @@ export default function VAWorkspacePage() {
   const [notes, setNotes] = useState("");
   const [callbackTime, setCallbackTime] = useState("");
   const [showScript, setShowScript] = useState(true);
+  const [selectedObjections, setSelectedObjections] = useState<string[]>([]);
+
+  const COMMON_OBJECTIONS = [
+    "too expensive", "not now", "already have website", "too busy",
+    "need to think", "use social media", "no budget", "bad timing",
+    "talk to partner", "not interested",
+  ];
 
   // Get next lead from queue
   const { data: nextInQueue } = useQuery({
@@ -133,17 +140,25 @@ export default function VAWorkspacePage() {
       }
 
       // Insert call log (immutable)
-      const { error: logErr } = await supabase.from("brandaro_call_logs").insert({
+      const { data: logData, error: logErr } = await supabase.from("brandaro_call_logs").insert({
         lead_id: currentLeadId,
         call_attempt_number: attemptNumber,
         called_by_user_id: user.id,
         call_outcome: outcome,
         call_notes: notes || null,
+        objection_tags: selectedObjections,
         next_action: outcome === "interested" ? "demo_generation" : outcome === "callback_requested" ? "callback" : null,
         next_call_time: nextCallTime,
         industry_context: currentLead?.industry,
-      });
+      }).select("id").single();
       if (logErr) throw logErr;
+
+      // Trigger AI call analysis in background (non-blocking)
+      if (notes && logData?.id) {
+        supabase.functions.invoke("brandaro-call-analyzer", {
+          body: { call_log_id: logData.id },
+        }).catch(err => console.warn("Call analyzer failed:", err));
+      }
 
       // Update lead record
       const leadUpdate: any = {
@@ -310,6 +325,27 @@ export default function VAWorkspacePage() {
                 />
               </div>
             )}
+
+            {/* Objection Tags */}
+            <div className="space-y-2">
+              <Label>Objections Heard</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {COMMON_OBJECTIONS.map((obj) => (
+                  <Button
+                    key={obj}
+                    type="button"
+                    variant={selectedObjections.includes(obj) ? "default" : "outline"}
+                    size="sm"
+                    className="text-xs h-7"
+                    onClick={() => setSelectedObjections(prev =>
+                      prev.includes(obj) ? prev.filter(o => o !== obj) : [...prev, obj]
+                    )}
+                  >
+                    {obj}
+                  </Button>
+                ))}
+              </div>
+            </div>
 
             <div className="space-y-2">
               <Label>Call Notes</Label>

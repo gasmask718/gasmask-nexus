@@ -515,25 +515,41 @@ function assembleProductionSite(
     pageGroups[block.page_type].push(block);
   }
 
+  // DESIGN INTELLIGENCE: Select random style palette
+  const palette = selectStylePalette();
+  const layoutSeed = Math.floor(Math.random() * 5);
+
   // Get SEO from homepage blocks
   const homepageBlocks = pageGroups["homepage"] || [];
   const seoTitle = homepageBlocks.find(b => b.seo_title)?.seo_title || `${businessName} | ${industry}`;
   const seoDesc = homepageBlocks.find(b => b.seo_description)?.seo_description || `${businessName} - Professional ${industry} services`;
 
-  // Build nav links
+  // Build nav links with palette styling
   const pageNames = Object.keys(pageGroups);
   const navLinks = pageNames.map(p => 
     `<a href="#${p}" class="nav-link">${p.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}</a>`
   ).join("\n          ");
 
-  // Build page sections
+  // LAYOUT VARIATIONS: Different section arrangements per seed
+  const sectionLayouts = [
+    "full-width", "two-column", "offset-left", "centered-narrow", "wide-hero"
+  ];
+  
+  // Build page sections with component variants
   let contentSections = "";
+  let sectionIdx = 0;
   for (const [pageType, pageBlocks] of Object.entries(pageGroups)) {
-    contentSections += `\n    <section id="${pageType}" class="page-section">\n`;
+    const layoutClass = sectionLayouts[(sectionIdx + layoutSeed) % sectionLayouts.length];
+    const sectionStyle = getSectionStyle(layoutClass, palette);
+    
+    contentSections += `\n    <section id="${pageType}" class="page-section" style="${sectionStyle}">\n`;
+    
     for (const block of pageBlocks) {
-      contentSections += `      <div class="content-block">\n        ${block.content_html || ""}\n      </div>\n`;
+      const componentVariant = getComponentVariant(block.section_name, sectionIdx, palette);
+      contentSections += `      <div class="content-block" style="${componentVariant.wrapperStyle}">\n        ${block.content_html || ""}\n      </div>\n`;
     }
     contentSections += `    </section>\n`;
+    sectionIdx++;
   }
 
   return `<!DOCTYPE html>
@@ -545,24 +561,54 @@ function assembleProductionSite(
   <meta name="description" content="${seoDesc}">
   <meta property="og:title" content="${seoTitle}">
   <meta property="og:description" content="${seoDesc}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=${palette.headingFont.replace(/ /g, "+")}:wght@400;600;700&family=${palette.bodyFont.replace(/ /g, "+")}:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
+    :root {
+      --primary: ${palette.primary};
+      --secondary: ${palette.secondary};
+      --accent: ${palette.accent};
+      --bg: ${palette.bg};
+      --text: ${palette.text};
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: system-ui, -apple-system, sans-serif; color: #1a1a1a; }
-    .nav-link { padding: 0.5rem 1rem; text-decoration: none; color: #333; font-weight: 500; transition: color 0.2s; }
-    .nav-link:hover { color: #2563eb; }
-    .page-section { padding: 4rem 2rem; max-width: 1200px; margin: 0 auto; }
-    .content-block { margin-bottom: 2rem; }
-    header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 1rem 2rem; position: sticky; top: 0; z-index: 50; }
-    footer { background: #111827; color: #9ca3af; padding: 3rem 2rem; text-align: center; }
+    body { font-family: '${palette.bodyFont}', system-ui, sans-serif; color: var(--text); background: var(--bg); }
+    h1, h2, h3, h4, h5 { font-family: '${palette.headingFont}', serif; }
+    .nav-link { padding: 0.5rem 1rem; text-decoration: none; color: var(--text); font-weight: 500; transition: color 0.2s; font-size: 0.9rem; }
+    .nav-link:hover { color: var(--primary); }
+    .page-section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .content-block { margin-bottom: 2.5rem; }
+    header { background: var(--bg); border-bottom: 1px solid ${palette.primary}15; padding: 1rem 2rem; position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
+    footer { background: ${palette.text}; color: ${palette.bg}; padding: 4rem 2rem; text-align: center; }
+    footer a { color: var(--accent); }
+    .btn-primary { background: var(--primary); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; font-size: 1rem; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px ${palette.primary}40; }
+    .btn-secondary { background: transparent; color: var(--primary); padding: 0.75rem 2rem; border: 2px solid var(--primary); border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+    .btn-secondary:hover { background: var(--primary); color: white; }
+    /* Layout variants */
+    .layout-full-width { max-width: 100%; padding: 5rem 4rem; }
+    .layout-two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+    .layout-offset-left { max-width: 900px; margin-left: 10%; }
+    .layout-centered-narrow { max-width: 800px; text-align: center; }
+    .layout-wide-hero { max-width: 100%; padding: 6rem 4rem; background: linear-gradient(135deg, ${palette.primary}08, ${palette.accent}08); }
+    @media (max-width: 768px) {
+      .layout-two-column { grid-template-columns: 1fr; }
+      .layout-offset-left { margin-left: auto; }
+      .layout-full-width, .layout-wide-hero { padding: 3rem 1.5rem; }
+      .page-section { padding: 3rem 1.5rem; }
+      header nav { flex-direction: column; gap: 0.5rem; }
+    }
   </style>
 </head>
 <body>
   <header>
     <nav style="display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;">
-      <div style="font-size:1.5rem;font-weight:700;color:#1a1a1a;">${businessName}</div>
-      <div style="display:flex;gap:0.5rem;">
+      <div style="font-size:1.5rem;font-weight:700;color:var(--primary);font-family:'${palette.headingFont}',serif;">${businessName}</div>
+      <div style="display:flex;gap:0.25rem;align-items:center;">
         ${navLinks}
+        <a href="#contact" class="btn-primary" style="margin-left:1rem;padding:0.5rem 1.25rem;font-size:0.85rem;">Get Started</a>
       </div>
     </nav>
   </header>
@@ -572,12 +618,14 @@ function assembleProductionSite(
   </main>
 
   <footer>
-    <p>&copy; ${new Date().getFullYear()} ${businessName}. All rights reserved.</p>
-    <p style="margin-top:0.5rem;font-size:0.75rem;">Powered by Brandaro Digital</p>
+    <div style="max-width:1200px;margin:0 auto;">
+      <p style="font-size:1.25rem;font-weight:700;font-family:'${palette.headingFont}',serif;margin-bottom:1rem;">${businessName}</p>
+      <p style="opacity:0.7;">&copy; ${new Date().getFullYear()} ${businessName}. All rights reserved.</p>
+      <p style="margin-top:0.75rem;font-size:0.7rem;opacity:0.5;">Powered by Brandaro Digital</p>
+    </div>
   </footer>
 
   <script>
-    // Smooth scroll
     document.querySelectorAll('a[href^="#"]').forEach(a => {
       a.addEventListener('click', e => {
         e.preventDefault();
@@ -624,6 +672,60 @@ function assembleProductionSite(
   </script>
 </body>
 </html>`;
+}
+
+// ===== DESIGN INTELLIGENCE HELPERS =====
+
+interface StylePalette {
+  primary: string; secondary: string; accent: string;
+  bg: string; text: string;
+  headingFont: string; bodyFont: string;
+  mood: string;
+}
+
+const STYLE_PALETTES: StylePalette[] = [
+  { primary: "#1e40af", secondary: "#0369a1", accent: "#06b6d4", bg: "#f8fafc", text: "#0f172a", headingFont: "Montserrat", bodyFont: "Open Sans", mood: "professional" },
+  { primary: "#166534", secondary: "#15803d", accent: "#84cc16", bg: "#f0fdf4", text: "#14532d", headingFont: "Playfair Display", bodyFont: "Lato", mood: "trustworthy" },
+  { primary: "#c2410c", secondary: "#ea580c", accent: "#fbbf24", bg: "#fffbeb", text: "#431407", headingFont: "Poppins", bodyFont: "Inter", mood: "energetic" },
+  { primary: "#1e1b4b", secondary: "#312e81", accent: "#818cf8", bg: "#eef2ff", text: "#1e1b4b", headingFont: "Space Grotesk", bodyFont: "DM Sans", mood: "bold" },
+  { primary: "#9f1239", secondary: "#e11d48", accent: "#fb7185", bg: "#fff1f2", text: "#4c0519", headingFont: "Merriweather", bodyFont: "Source Sans 3", mood: "warm" },
+  { primary: "#334155", secondary: "#475569", accent: "#38bdf8", bg: "#f1f5f9", text: "#0f172a", headingFont: "Inter", bodyFont: "Inter", mood: "minimal" },
+  { primary: "#7e22ce", secondary: "#a855f7", accent: "#c084fc", bg: "#faf5ff", text: "#3b0764", headingFont: "Cinzel", bodyFont: "Raleway", mood: "luxurious" },
+  { primary: "#713f12", secondary: "#a16207", accent: "#65a30d", bg: "#fefce8", text: "#422006", headingFont: "Vollkorn", bodyFont: "Nunito", mood: "organic" },
+  { primary: "#18181b", secondary: "#3f3f46", accent: "#f97316", bg: "#fafafa", text: "#09090b", headingFont: "Oswald", bodyFont: "Roboto", mood: "industrial" },
+  { primary: "#0284c7", secondary: "#0ea5e9", accent: "#22d3ee", bg: "#ecfeff", text: "#0c4a6e", headingFont: "Quicksand", bodyFont: "Work Sans", mood: "fresh" },
+];
+
+function selectStylePalette(): StylePalette {
+  return STYLE_PALETTES[Math.floor(Math.random() * STYLE_PALETTES.length)];
+}
+
+function getSectionStyle(layout: string, palette: StylePalette): string {
+  const styles: Record<string, string> = {
+    "full-width": `max-width:100%;padding:5rem 4rem;`,
+    "two-column": `display:grid;grid-template-columns:1fr 1fr;gap:3rem;align-items:center;`,
+    "offset-left": `max-width:900px;margin-left:10%;`,
+    "centered-narrow": `max-width:800px;margin:0 auto;text-align:center;`,
+    "wide-hero": `max-width:100%;padding:6rem 4rem;background:linear-gradient(135deg,${palette.primary}08,${palette.accent}08);border-radius:0;`,
+  };
+  return styles[layout] || "";
+}
+
+function getComponentVariant(sectionName: string, idx: number, palette: StylePalette): { wrapperStyle: string } {
+  // Alternate between card-style and flush based on index
+  const isCard = idx % 3 === 1;
+  if (isCard) {
+    return {
+      wrapperStyle: `background:white;border-radius:12px;padding:2rem;box-shadow:0 4px 20px ${palette.primary}10;border:1px solid ${palette.primary}10;`,
+    };
+  }
+  if (idx % 3 === 2) {
+    return {
+      wrapperStyle: `border-left:4px solid ${palette.primary};padding-left:1.5rem;`,
+    };
+  }
+  return { wrapperStyle: "" };
+}
 }
 
 function calculateQualityScore(blocks: any[], html: string): { score: number; breakdown: Record<string, number>; issues: string[] } {
