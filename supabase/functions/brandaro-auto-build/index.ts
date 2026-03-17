@@ -230,6 +230,19 @@ Deno.serve(async (req) => {
       console.log(`[AUTO-BUILD] Reusing top template (score: ${bestTemplate.avg_score})`);
     }
 
+    // ===== CONVERSION INTELLIGENCE: Select best patterns for this industry =====
+    await updateBuildStatus(supabase, buildJob.id, "selecting_patterns", "conversion_intelligence");
+    const conversionPatterns = await selectConversionPatterns(supabase, industry);
+    console.log(`[AUTO-BUILD] Conversion Intelligence selected ${conversionPatterns.length} patterns`);
+
+    // Record which patterns were used in this build
+    for (const pattern of conversionPatterns) {
+      await supabase.from("brandaro_build_patterns").insert({
+        build_job_id: buildJob.id,
+        pattern_id: pattern.id,
+      });
+    }
+
     // SECTION 5: STANDARDIZATION — Always assemble final site via native engine
     await updateBuildStatus(supabase, buildJob.id, "building", "standardizing_via_native");
 
@@ -241,9 +254,10 @@ Deno.serve(async (req) => {
       .order("section_order");
 
     // Use taste engine palette if available, otherwise random
+    // Pass conversion patterns for structural integration
     let productionHtml = designSelection
-      ? assembleProductionSiteWithProfile(allBlocks || [], businessName, industry, designSelection.palette)
-      : assembleProductionSite(allBlocks || [], businessName, industry);
+      ? assembleProductionSiteWithProfile(allBlocks || [], businessName, industry, designSelection.palette, conversionPatterns)
+      : assembleProductionSite(allBlocks || [], businessName, industry, conversionPatterns);
 
     // Inject tracking values
     productionHtml = productionHtml
