@@ -5,6 +5,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { GeocodingService } from "@/services/geocoding";
 import { useEffect, useState, useCallback } from "react";
 
 export interface WorkerLocation {

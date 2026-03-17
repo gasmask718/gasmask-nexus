@@ -396,8 +396,9 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, allBiker
       }
 
       // Auto-geocode delivery address if no lat/lng already exists
-      let resolvedLat = order.delivery_lat || order.store?.lat || null;
-      let resolvedLng = order.delivery_lng || order.store?.lng || null;
+      // Keep existing task coordinates when editing an assignment to avoid wiping them out
+      let resolvedLat = order.delivery_lat || existingTask?.delivery_lat || order.store?.lat || null;
+      let resolvedLng = order.delivery_lng || existingTask?.delivery_lng || order.store?.lng || null;
 
       if ((!resolvedLat || !resolvedLng) && deliveryAddress) {
         try {
