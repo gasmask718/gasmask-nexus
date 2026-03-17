@@ -32,6 +32,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
   { path: '/os/brandaro/build-pipeline', label: 'Build Pipeline', icon: Factory },
   { path: '/os/brandaro/results', label: 'Result Engine', icon: TrendingUp },
+  { path: '/os/brandaro/review-queue', label: 'Quality Review', icon: ShieldCheck },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
   { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
