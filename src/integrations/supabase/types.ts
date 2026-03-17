@@ -13960,14 +13960,17 @@ export type Database = {
       }
       brandaro_personalities: {
         Row: {
+          archetype: string | null
           cadence: string
           closing_style: string
           created_at: string
           description: string | null
           energy_level: number
           id: string
+          inspiration_tags: string[] | null
           is_active: boolean
           name: string
+          nickname: string | null
           objection_style: string
           persuasion_style: string
           tone: string
@@ -13975,14 +13978,17 @@ export type Database = {
           voice_provider: string | null
         }
         Insert: {
+          archetype?: string | null
           cadence?: string
           closing_style?: string
           created_at?: string
           description?: string | null
           energy_level?: number
           id?: string
+          inspiration_tags?: string[] | null
           is_active?: boolean
           name: string
+          nickname?: string | null
           objection_style?: string
           persuasion_style?: string
           tone?: string
@@ -13990,14 +13996,17 @@ export type Database = {
           voice_provider?: string | null
         }
         Update: {
+          archetype?: string | null
           cadence?: string
           closing_style?: string
           created_at?: string
           description?: string | null
           energy_level?: number
           id?: string
+          inspiration_tags?: string[] | null
           is_active?: boolean
           name?: string
+          nickname?: string | null
           objection_style?: string
           persuasion_style?: string
           tone?: string
