@@ -24,9 +24,40 @@ export default function VACommandCenterPage() {
   const [selectedCall, setSelectedCall] = useState<any>(null);
   const [vaNote, setVaNote] = useState("");
   const [overrideOutcome, setOverrideOutcome] = useState("");
-  const [activeTab, setActiveTab] = useState("hot-leads");
+  const [activeTab, setActiveTab] = useState("tasks");
 
-  // ─── HOT LEADS (handoff_score > 80) ───────────────────
+  // Post-call form state
+  const [postCallOutcome, setPostCallOutcome] = useState("");
+  const [postCallObjection, setPostCallObjection] = useState("");
+  const [postCallNotes, setPostCallNotes] = useState("");
+  const [postCallDealValue, setPostCallDealValue] = useState("");
+  const [postCallLeadId, setPostCallLeadId] = useState("");
+
+  // Learning hooks
+  const { data: vaTasks = [] } = useVaTasks();
+  const completeTask = useCompleteVaTask();
+  const submitFeedback = useSubmitLearningFeedback();
+  const { data: objectionLibrary = [] } = useObjectionLibrary();
+
+  const handlePostCallSubmit = async () => {
+    if (!postCallOutcome) { toast.error("Select an outcome"); return; }
+    await submitFeedback.mutateAsync({
+      lead_id: postCallLeadId || undefined,
+      call_id: selectedCall?.id,
+      feedback_type: postCallOutcome === "closed" ? "deal_closed" : postCallOutcome === "lost" ? "deal_lost" : "va_override",
+      objection_type: postCallObjection || undefined,
+      outcome: postCallOutcome,
+      deal_value: postCallDealValue ? parseFloat(postCallDealValue) : undefined,
+      va_notes: postCallNotes,
+    });
+    toast.success("Post-call feedback logged → system learning updated");
+    setPostCallOutcome("");
+    setPostCallObjection("");
+    setPostCallNotes("");
+    setPostCallDealValue("");
+    setPostCallLeadId("");
+  };
+
   const { data: hotLeads = [] } = useQuery({
     queryKey: ["brandaro-hot-leads"],
     queryFn: async () => {
