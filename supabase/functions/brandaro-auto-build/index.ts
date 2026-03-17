@@ -217,43 +217,115 @@ Deno.serve(async (req) => {
       .select()
       .single();
 
-    // SECTION 7: Deployment
-    await updateBuildStatus(supabase, buildJob.id, "deploying", "setting_up_deployment");
+    // ===== QUALITY GATE SYSTEM =====
+    await updateBuildStatus(supabase, buildJob.id, "quality_check", "scoring_quality");
 
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const liveUrl = `${SUPABASE_URL}/functions/v1/brandaro-serve-demo?slug=${productionSlug}`;
+    const qualityResult = calculateQualityScore(allBlocks || [], productionHtml);
+    const qualityScore = qualityResult.score;
+    const qualityBreakdown = qualityResult.breakdown;
+    const issueReasons = qualityResult.issues;
 
-    // Update project with live URL
-    await supabase.from("brandaro_projects").update({
-      live_url: liveUrl,
-      deployment_status: "active",
-      deployed_at: new Date().toISOString(),
-      build_status: "live",
-      domain_type: "subdomain",
-    }).eq("id", project_id);
-
-    // SECTION 10: Quality check
-    await updateBuildStatus(supabase, buildJob.id, "quality_check", "validating_deployment");
-
-    const qualityScore = calculateQualityScore(allBlocks || [], productionHtml);
-
-    // Mark complete
+    // Store quality data on build job
     await supabase.from("brandaro_build_jobs").update({
-      build_status: "completed",
-      progress_stage: "done",
-      deployed_url: liveUrl,
       quality_score: qualityScore,
-      completed_at: new Date().toISOString(),
-      pages_built: pagesBuilt,
+      quality_breakdown: qualityBreakdown,
     }).eq("id", buildJob.id);
 
-    // Update client onboarding
-    await supabase.from("brandaro_clients").update({
-      onboarding_status: "launched",
-    }).eq("id", client_id);
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
+    const productionSlug = `${slug}-live`;
+    const liveUrl = `${SUPABASE_URL}/functions/v1/brandaro-serve-demo?slug=${productionSlug}`;
 
-    // SECTION 9: Post-launch - send notification
-    console.log(`[AUTO-BUILD] ✅ Build complete for ${businessName}. URL: ${liveUrl}`);
+    // QUALITY GATE DECISION
+    if (qualityScore >= 80) {
+      // AUTO-DEPLOY: High quality
+      await deploySite(supabase, buildJob.id, projectId, clientId, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
+      await supabase.from("brandaro_build_jobs").update({ deployment_decision: "auto_deployed" }).eq("id", buildJob.id);
+      console.log(`[AUTO-BUILD] ✅ Auto-deployed (score: ${qualityScore}). URL: ${liveUrl}`);
+
+    } else if (qualityScore >= 60) {
+      // DEPLOY + FLAG: Medium quality
+      await deploySite(supabase, buildJob.id, projectId, clientId, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
+      await supabase.from("brandaro_build_jobs").update({ deployment_decision: "review_recommended" }).eq("id", buildJob.id);
+      
+      // Add to review queue as advisory
+      await supabase.from("brandaro_review_queue").insert({
+        build_job_id: buildJob.id,
+        client_id: clientId,
+        project_id: projectId,
+        quality_score: qualityScore,
+        quality_breakdown: qualityBreakdown,
+        issue_reasons: issueReasons,
+        priority: "low",
+        status: "pending_review",
+      });
+      console.log(`[AUTO-BUILD] ⚠️ Deployed with review flag (score: ${qualityScore}). URL: ${liveUrl}`);
+
+    } else {
+      // BLOCK: Low quality — attempt auto-improvement first
+      const currentRetries = buildJob.auto_retry_count || 0;
+      const maxRetries = 2;
+
+      if (currentRetries < maxRetries) {
+        // AUTO-IMPROVEMENT: Ask AI to fix weak areas
+        await supabase.from("brandaro_build_jobs").update({
+          auto_retry_count: currentRetries + 1,
+          build_status: "auto_improving",
+          progress_stage: "ai_regenerating_weak_sections",
+        }).eq("id", buildJob.id);
+
+        console.log(`[AUTO-BUILD] 🔄 Auto-improving attempt ${currentRetries + 1}/${maxRetries} (score: ${qualityScore})`);
+
+        // Trigger rebuild via self-invocation
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/brandaro-auto-build`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+            },
+            body: JSON.stringify({
+              client_id: clientId,
+              project_id: projectId,
+              demo_id: demoId || null,
+              package_tier: packageTier,
+              rebuild: true,
+              improvement_hints: issueReasons,
+            }),
+          });
+        } catch (retryErr) {
+          console.error("[AUTO-BUILD] Retry trigger failed:", retryErr);
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          action: "auto_improving",
+          quality_score: qualityScore,
+          retry_attempt: currentRetries + 1,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      } else {
+        // MAX RETRIES EXHAUSTED: Send to human review
+        await supabase.from("brandaro_build_jobs").update({
+          build_status: "needs_review",
+          deployment_decision: "needs_review",
+        }).eq("id", buildJob.id);
+
+        await supabase.from("brandaro_review_queue").insert({
+          build_job_id: buildJob.id,
+          client_id: clientId,
+          project_id: projectId,
+          quality_score: qualityScore,
+          quality_breakdown: qualityBreakdown,
+          issue_reasons: issueReasons,
+          priority: qualityScore < 40 ? "high" : "medium",
+          status: "pending_review",
+          auto_retry_count: currentRetries,
+        });
+
+        console.log(`[AUTO-BUILD] 🛑 Sent to human review (score: ${qualityScore}, retries exhausted)`);
+      }
+    }
 
     return new Response(JSON.stringify({
       ok: true,
