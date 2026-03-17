@@ -877,9 +877,40 @@ export default function VAManagerPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <UserCircle className="h-4 w-4 text-primary" /> Create Sales Personality
+                <div className="ml-auto flex gap-1">
+                  <Button size="sm" variant={ingestMode === "manual" ? "default" : "outline"} className="h-6 text-xs" onClick={() => setIngestMode("manual")}>Manual</Button>
+                  <Button size="sm" variant={ingestMode === "transcript" ? "default" : "outline"} className="h-6 text-xs" onClick={() => setIngestMode("transcript")}>From Transcript</Button>
+                  <Button size="sm" variant={ingestMode === "description" ? "default" : "outline"} className="h-6 text-xs" onClick={() => setIngestMode("description")}>AI Generate</Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+              {ingestMode === "transcript" && (
+                <>
+                  <Input placeholder="Personality name (optional)" value={ingestName} onChange={e => setIngestName(e.target.value)} />
+                  <Textarea placeholder="Paste sales transcript, script, or ad copy here..." value={ingestText} onChange={e => setIngestText(e.target.value)} rows={5} />
+                  <Button size="sm" disabled={!ingestText || ingestFromTranscript.isPending} onClick={() => {
+                    ingestFromTranscript.mutate({ input_text: ingestText, personality_name: ingestName || undefined });
+                    setIngestText(""); setIngestName("");
+                  }}>
+                    {ingestFromTranscript.isPending ? "Extracting..." : "🧠 Extract Personality"}
+                  </Button>
+                </>
+              )}
+              {ingestMode === "description" && (
+                <>
+                  <Input placeholder="Personality name (optional)" value={ingestName} onChange={e => setIngestName(e.target.value)} />
+                  <Textarea placeholder="Describe the personality (e.g. 'High-energy closer with strong ROI logic and urgency')" value={ingestText} onChange={e => setIngestText(e.target.value)} rows={3} />
+                  <Button size="sm" disabled={!ingestText || generateFromDescription.isPending} onClick={() => {
+                    generateFromDescription.mutate({ description: ingestText, personality_name: ingestName || undefined });
+                    setIngestText(""); setIngestName("");
+                  }}>
+                    {generateFromDescription.isPending ? "Generating..." : "⚡ AI Generate Personality"}
+                  </Button>
+                </>
+              )}
+              {ingestMode === "manual" && (
+                <>
               <Input placeholder="Name (e.g. Tony Robbins Style)" value={newPersonaName} onChange={e => setNewPersonaName(e.target.value)} />
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <Select value={newPersonaTone} onValueChange={setNewPersonaTone}>
