@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useVaTasks, useCompleteVaTask, useSubmitLearningFeedback, useObjectionLibrary } from "@/hooks/useBrandaroLearning";
+import { useLogObjection } from "@/hooks/useBrandaroConversion";
 import {
   Flame, Phone, Eye, FileText, Play,
   MessageSquare, Brain, Target, TrendingUp,
