@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
 
     } else if (qualityScore >= 60) {
       // DEPLOY + FLAG: Medium quality
-      await deploySite(supabase, buildJob.id, projectId, clientId, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
+      await deploySite(supabase, buildJob.id, project_id, client_id, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
       await supabase.from("brandaro_build_jobs").update({ deployment_decision: "review_recommended" }).eq("id", buildJob.id);
       
       // Add to review queue as advisory
