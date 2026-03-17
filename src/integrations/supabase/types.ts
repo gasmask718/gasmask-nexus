@@ -9678,6 +9678,7 @@ export type Database = {
           deployed_at: string | null
           deployed_url: string | null
           deployment_decision: string | null
+          design_profile_id: string | null
           design_variant_seed: number | null
           domain_connected: boolean | null
           durable_raw_html: string | null
@@ -9698,6 +9699,7 @@ export type Database = {
           standardization_applied: boolean | null
           started_at: string | null
           style_palette_id: string | null
+          template_performance_id: string | null
           total_pages: number | null
           updated_at: string | null
         }
@@ -9713,6 +9715,7 @@ export type Database = {
           deployed_at?: string | null
           deployed_url?: string | null
           deployment_decision?: string | null
+          design_profile_id?: string | null
           design_variant_seed?: number | null
           domain_connected?: boolean | null
           durable_raw_html?: string | null
@@ -9733,6 +9736,7 @@ export type Database = {
           standardization_applied?: boolean | null
           started_at?: string | null
           style_palette_id?: string | null
+          template_performance_id?: string | null
           total_pages?: number | null
           updated_at?: string | null
         }
@@ -9748,6 +9752,7 @@ export type Database = {
           deployed_at?: string | null
           deployed_url?: string | null
           deployment_decision?: string | null
+          design_profile_id?: string | null
           design_variant_seed?: number | null
           domain_connected?: boolean | null
           durable_raw_html?: string | null
@@ -9768,6 +9773,7 @@ export type Database = {
           standardization_applied?: boolean | null
           started_at?: string | null
           style_palette_id?: string | null
+          template_performance_id?: string | null
           total_pages?: number | null
           updated_at?: string | null
         }
@@ -9784,6 +9790,13 @@ export type Database = {
             columns: ["demo_id"]
             isOneToOne: false
             referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_build_jobs_design_profile_id_fkey"
+            columns: ["design_profile_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_design_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -10802,8 +10815,63 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_design_profiles: {
+        Row: {
+          avg_conversion_rate: number | null
+          color_palette: Json | null
+          created_at: string | null
+          cta_placement: string | null
+          cta_style: string | null
+          font_pairing: Json | null
+          id: string
+          is_active: boolean | null
+          layout_preference: string | null
+          performance_rank: number | null
+          profile_name: string
+          spacing_system: Json | null
+          style_category: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          avg_conversion_rate?: number | null
+          color_palette?: Json | null
+          created_at?: string | null
+          cta_placement?: string | null
+          cta_style?: string | null
+          font_pairing?: Json | null
+          id?: string
+          is_active?: boolean | null
+          layout_preference?: string | null
+          performance_rank?: number | null
+          profile_name: string
+          spacing_system?: Json | null
+          style_category: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          avg_conversion_rate?: number | null
+          color_palette?: Json | null
+          created_at?: string | null
+          cta_placement?: string | null
+          cta_style?: string | null
+          font_pairing?: Json | null
+          id?: string
+          is_active?: boolean | null
+          layout_preference?: string | null
+          performance_rank?: number | null
+          profile_name?: string
+          spacing_system?: Json | null
+          style_category?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       brandaro_extracted_templates: {
         Row: {
+          avg_score: number | null
           build_job_id: string | null
           client_id: string | null
           color_scheme: Json | null
@@ -10812,13 +10880,16 @@ export type Database = {
           extracted_html: string | null
           extracted_sections: Json | null
           id: string
+          last_used_at: string | null
           layout_hierarchy: Json | null
           source_engine: string
           standardized: boolean | null
           standardized_at: string | null
           typography: Json | null
+          usage_count: number | null
         }
         Insert: {
+          avg_score?: number | null
           build_job_id?: string | null
           client_id?: string | null
           color_scheme?: Json | null
@@ -10827,13 +10898,16 @@ export type Database = {
           extracted_html?: string | null
           extracted_sections?: Json | null
           id?: string
+          last_used_at?: string | null
           layout_hierarchy?: Json | null
           source_engine?: string
           standardized?: boolean | null
           standardized_at?: string | null
           typography?: Json | null
+          usage_count?: number | null
         }
         Update: {
+          avg_score?: number | null
           build_job_id?: string | null
           client_id?: string | null
           color_scheme?: Json | null
@@ -10842,11 +10916,13 @@ export type Database = {
           extracted_html?: string | null
           extracted_sections?: Json | null
           id?: string
+          last_used_at?: string | null
           layout_hierarchy?: Json | null
           source_engine?: string
           standardized?: boolean | null
           standardized_at?: string | null
           typography?: Json | null
+          usage_count?: number | null
         }
         Relationships: [
           {
@@ -11969,6 +12045,65 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_template_performance: {
+        Row: {
+          avg_engagement_seconds: number | null
+          avg_scroll_depth: number | null
+          build_job_id: string | null
+          client_id: string | null
+          conversion_rate: number | null
+          created_at: string | null
+          id: string
+          last_scored_at: string | null
+          lead_generation_rate: number | null
+          score_breakdown: Json | null
+          template_id: string | null
+          template_score: number | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          avg_engagement_seconds?: number | null
+          avg_scroll_depth?: number | null
+          build_job_id?: string | null
+          client_id?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          last_scored_at?: string | null
+          lead_generation_rate?: number | null
+          score_breakdown?: Json | null
+          template_id?: string | null
+          template_score?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          avg_engagement_seconds?: number | null
+          avg_scroll_depth?: number | null
+          build_job_id?: string | null
+          client_id?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          last_scored_at?: string | null
+          lead_generation_rate?: number | null
+          score_breakdown?: Json | null
+          template_id?: string | null
+          template_score?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_template_performance_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_extracted_templates"
             referencedColumns: ["id"]
           },
         ]
