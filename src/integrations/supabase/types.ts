@@ -15093,6 +15093,297 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_va_alerts: {
+        Row: {
+          alert_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_read: boolean | null
+          related_lead_id: string | null
+          severity: string | null
+          target_va_id: string | null
+          title: string
+        }
+        Insert: {
+          alert_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_read?: boolean | null
+          related_lead_id?: string | null
+          severity?: string | null
+          target_va_id?: string | null
+          title: string
+        }
+        Update: {
+          alert_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_read?: boolean | null
+          related_lead_id?: string | null
+          severity?: string | null
+          target_va_id?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      brandaro_va_badges: {
+        Row: {
+          badge_icon: string | null
+          badge_key: string
+          badge_label: string
+          earned_at: string | null
+          earned_date: string | null
+          id: string
+          va_user_id: string
+        }
+        Insert: {
+          badge_icon?: string | null
+          badge_key: string
+          badge_label: string
+          earned_at?: string | null
+          earned_date?: string | null
+          id?: string
+          va_user_id: string
+        }
+        Update: {
+          badge_icon?: string | null
+          badge_key?: string
+          badge_label?: string
+          earned_at?: string | null
+          earned_date?: string | null
+          id?: string
+          va_user_id?: string
+        }
+        Relationships: []
+      }
+      brandaro_va_coaching: {
+        Row: {
+          call_quality_score: number | null
+          coaching_type: string | null
+          created_at: string | null
+          followup_quality_score: number | null
+          id: string
+          improvement_target: string | null
+          manager_user_id: string
+          note_quality_score: number | null
+          notes: string | null
+          quality_score: number | null
+          strengths: string[] | null
+          va_user_id: string
+          weak_points: string[] | null
+        }
+        Insert: {
+          call_quality_score?: number | null
+          coaching_type?: string | null
+          created_at?: string | null
+          followup_quality_score?: number | null
+          id?: string
+          improvement_target?: string | null
+          manager_user_id: string
+          note_quality_score?: number | null
+          notes?: string | null
+          quality_score?: number | null
+          strengths?: string[] | null
+          va_user_id: string
+          weak_points?: string[] | null
+        }
+        Update: {
+          call_quality_score?: number | null
+          coaching_type?: string | null
+          created_at?: string | null
+          followup_quality_score?: number | null
+          id?: string
+          improvement_target?: string | null
+          manager_user_id?: string
+          note_quality_score?: number | null
+          notes?: string | null
+          quality_score?: number | null
+          strengths?: string[] | null
+          va_user_id?: string
+          weak_points?: string[] | null
+        }
+        Relationships: []
+      }
+      brandaro_va_daily_performance: {
+        Row: {
+          callbacks_booked: number | null
+          callbacks_completed: number | null
+          calls_answered: number | null
+          calls_made: number | null
+          conversations: number | null
+          created_at: string | null
+          demo_requests: number | null
+          followups_sent: number | null
+          hot_leads: number | null
+          id: string
+          interested_leads: number | null
+          is_on_shift: boolean | null
+          no_answers: number | null
+          payment_leads: number | null
+          performance_date: string
+          performance_score: number | null
+          quota_calls: number | null
+          quota_conversations: number | null
+          quota_demos: number | null
+          quota_interested: number | null
+          shift_end: string | null
+          shift_start: string | null
+          tasks_completed: number | null
+          tasks_overdue: number | null
+          tasks_skipped: number | null
+          updated_at: string | null
+          va_user_id: string
+        }
+        Insert: {
+          callbacks_booked?: number | null
+          callbacks_completed?: number | null
+          calls_answered?: number | null
+          calls_made?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          demo_requests?: number | null
+          followups_sent?: number | null
+          hot_leads?: number | null
+          id?: string
+          interested_leads?: number | null
+          is_on_shift?: boolean | null
+          no_answers?: number | null
+          payment_leads?: number | null
+          performance_date?: string
+          performance_score?: number | null
+          quota_calls?: number | null
+          quota_conversations?: number | null
+          quota_demos?: number | null
+          quota_interested?: number | null
+          shift_end?: string | null
+          shift_start?: string | null
+          tasks_completed?: number | null
+          tasks_overdue?: number | null
+          tasks_skipped?: number | null
+          updated_at?: string | null
+          va_user_id: string
+        }
+        Update: {
+          callbacks_booked?: number | null
+          callbacks_completed?: number | null
+          calls_answered?: number | null
+          calls_made?: number | null
+          conversations?: number | null
+          created_at?: string | null
+          demo_requests?: number | null
+          followups_sent?: number | null
+          hot_leads?: number | null
+          id?: string
+          interested_leads?: number | null
+          is_on_shift?: boolean | null
+          no_answers?: number | null
+          payment_leads?: number | null
+          performance_date?: string
+          performance_score?: number | null
+          quota_calls?: number | null
+          quota_conversations?: number | null
+          quota_demos?: number | null
+          quota_interested?: number | null
+          shift_end?: string | null
+          shift_start?: string | null
+          tasks_completed?: number | null
+          tasks_overdue?: number | null
+          tasks_skipped?: number | null
+          updated_at?: string | null
+          va_user_id?: string
+        }
+        Relationships: []
+      }
+      brandaro_va_score_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          points: number
+          reason: string | null
+          related_lead_id: string | null
+          related_task_id: string | null
+          va_user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          points: number
+          reason?: string | null
+          related_lead_id?: string | null
+          related_task_id?: string | null
+          va_user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          points?: number
+          reason?: string | null
+          related_lead_id?: string | null
+          related_task_id?: string | null
+          va_user_id?: string
+        }
+        Relationships: []
+      }
+      brandaro_va_task_queue: {
+        Row: {
+          auto_generated: boolean | null
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          due_at: string | null
+          escalated_at: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          priority: number | null
+          skipped_at: string | null
+          source_reason: string | null
+          status: string | null
+          task_type: string
+          va_user_id: string
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: number | null
+          skipped_at?: string | null
+          source_reason?: string | null
+          status?: string | null
+          task_type: string
+          va_user_id: string
+        }
+        Update: {
+          auto_generated?: boolean | null
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          due_at?: string | null
+          escalated_at?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          priority?: number | null
+          skipped_at?: string | null
+          source_reason?: string | null
+          status?: string | null
+          task_type?: string
+          va_user_id?: string
+        }
+        Relationships: []
+      }
       brandaro_va_tasks: {
         Row: {
           call_id: string | null
