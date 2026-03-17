@@ -64,7 +64,7 @@ export function DeliveryMapPreview({
       const { data: liveRow } = await supabase
         .from('drivers_live_location')
         .select('lat, lng')
-        .eq('driver_id', worker.user_id)
+        .eq('driver_id', userId)
         .maybeSingle();
 
       if (liveRow?.lat && liveRow?.lng && liveRow.lat !== 0 && liveRow.lng !== 0) {
@@ -76,7 +76,7 @@ export function DeliveryMapPreview({
       const { data: events } = await supabase
         .from('location_events')
         .select('lat, lng')
-        .eq('user_id', worker.user_id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false })
         .limit(5);
 
