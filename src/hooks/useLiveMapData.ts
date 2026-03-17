@@ -398,36 +398,68 @@ export function useLiveDeliveryTasks() {
       }
 
       // Resolve user_ids and names from biker/driver record IDs
-          const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
-          const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
-          const order = t.store_order as any;
-          const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
+      const bikerIds = [...new Set(data.map(t => t.biker_id).filter(Boolean))];
+      const driverIds = [...new Set(data.map(t => t.driver_id).filter(Boolean))];
 
-          // Use delivery coords, fallback to store pickup coords
-          const deliveryLat = Number(t.delivery_lat) || storeCoords?.lat || 0;
-          const deliveryLng = Number(t.delivery_lng) || storeCoords?.lng || 0;
+      const [{ data: bikers }, { data: drivers }] = await Promise.all([
+        bikerIds.length > 0
+          ? supabase.from('bikers').select('id, user_id, full_name').in('id', bikerIds)
+          : Promise.resolve({ data: [] as any[] }),
+        driverIds.length > 0
+          ? supabase.from('drivers').select('id, user_id, full_name').in('id', driverIds)
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
-          return {
-            id: t.id,
-            biker_id: t.biker_id || null,
-            driver_id: t.driver_id || null,
-            biker_user_id: bikerInfo?.user_id || null,
-            driver_user_id: driverInfo?.user_id || null,
-            delivery_lat: deliveryLat,
-            delivery_lng: deliveryLng,
-            delivery_address: t.delivery_address,
-            recipient_name: t.recipient_name,
-            recipient_phone: t.recipient_phone,
-            delivery_notes: t.delivery_notes,
-            status: t.status,
-            worker_name: bikerInfo?.name || driverInfo?.name || null,
-            order_number: order?.order_number || null,
-            total_amount: order?.total_amount || null,
-            created_at: t.created_at,
-            pickup_lat: storeCoords?.lat || null,
-            pickup_lng: storeCoords?.lng || null,
-          };
-        }) as LiveDeliveryTask[];
+      const bikerMap = Object.fromEntries((bikers || []).map(b => [b.id, { user_id: b.user_id, name: b.full_name }]));
+      const driverMap = Object.fromEntries((drivers || []).map(d => [d.id, { user_id: d.user_id, name: d.full_name }]));
+
+      // Fetch store pickup coordinates for fallback trajectory lines
+      const storeIds = [...new Set(data.map(t => (t.store_order as any)?.store_id).filter(Boolean))];
+      let storeMap: Record<string, { lat: number; lng: number }> = {};
+      if (storeIds.length > 0) {
+        const { data: storesData } = await supabase
+          .from('stores')
+          .select('id, lat, lng')
+          .in('id', storeIds);
+        storeMap = Object.fromEntries(
+          (storesData || [])
+            .filter(s => s.lat && s.lng)
+            .map(s => [s.id, { lat: Number(s.lat), lng: Number(s.lng) }])
+        );
+      }
+
+      return data.map(t => {
+        const bikerInfo = t.biker_id ? bikerMap[t.biker_id] : null;
+        const driverInfo = t.driver_id ? driverMap[t.driver_id] : null;
+        const order = t.store_order as any;
+        const storeCoords = order?.store_id ? storeMap[order.store_id] : null;
+        const overrideCoords = geocodeOverrides.get(t.id);
+
+        // Use geocoded override, then delivery coords, fallback to store pickup coords
+        const deliveryLat = overrideCoords?.lat ?? (Number(t.delivery_lat) || storeCoords?.lat || 0);
+        const deliveryLng = overrideCoords?.lng ?? (Number(t.delivery_lng) || storeCoords?.lng || 0);
+
+        return {
+          id: t.id,
+          biker_id: t.biker_id || null,
+          driver_id: t.driver_id || null,
+          biker_user_id: bikerInfo?.user_id || null,
+          driver_user_id: driverInfo?.user_id || null,
+          delivery_lat: deliveryLat,
+          delivery_lng: deliveryLng,
+          delivery_address: t.delivery_address,
+          recipient_name: t.recipient_name,
+          recipient_phone: t.recipient_phone,
+          delivery_notes: t.delivery_notes,
+          status: t.status,
+          worker_name: bikerInfo?.name || driverInfo?.name || null,
+          order_number: order?.order_number || null,
+          total_amount: order?.total_amount || null,
+          created_at: t.created_at,
+          pickup_lat: storeCoords?.lat || null,
+          pickup_lng: storeCoords?.lng || null,
+        };
+      }) as LiveDeliveryTask[];
     },
     refetchInterval: 15000,
   });
