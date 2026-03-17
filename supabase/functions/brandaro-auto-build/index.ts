@@ -632,6 +632,7 @@ function assembleHtmlShell(
       </div>
     </nav>
   </header>
+  ${conversionHtml}
   <main>${contentSections}</main>
   <footer>
     <div style="max-width:1200px;margin:0 auto;">
