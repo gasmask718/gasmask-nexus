@@ -249,8 +249,8 @@ Deno.serve(async (req) => {
       // Add to review queue as advisory
       await supabase.from("brandaro_review_queue").insert({
         build_job_id: buildJob.id,
-        client_id: clientId,
-        project_id: projectId,
+        client_id: client_id,
+        project_id: project_id,
         quality_score: qualityScore,
         quality_breakdown: qualityBreakdown,
         issue_reasons: issueReasons,
