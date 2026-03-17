@@ -9667,6 +9667,7 @@ export type Database = {
       }
       brandaro_build_jobs: {
         Row: {
+          auto_retry_count: number | null
           build_engine: string
           build_status: string
           client_id: string | null
@@ -9674,7 +9675,9 @@ export type Database = {
           content_generated: boolean | null
           created_at: string | null
           demo_id: string | null
+          deployed_at: string | null
           deployed_url: string | null
+          deployment_decision: string | null
           domain_connected: boolean | null
           error_log: Json | null
           id: string
@@ -9684,6 +9687,7 @@ export type Database = {
           pages_built: number | null
           progress_stage: string | null
           project_id: string | null
+          quality_breakdown: Json | null
           quality_score: number | null
           retry_count: number | null
           started_at: string | null
@@ -9691,6 +9695,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          auto_retry_count?: number | null
           build_engine?: string
           build_status?: string
           client_id?: string | null
@@ -9698,7 +9703,9 @@ export type Database = {
           content_generated?: boolean | null
           created_at?: string | null
           demo_id?: string | null
+          deployed_at?: string | null
           deployed_url?: string | null
+          deployment_decision?: string | null
           domain_connected?: boolean | null
           error_log?: Json | null
           id?: string
@@ -9708,6 +9715,7 @@ export type Database = {
           pages_built?: number | null
           progress_stage?: string | null
           project_id?: string | null
+          quality_breakdown?: Json | null
           quality_score?: number | null
           retry_count?: number | null
           started_at?: string | null
@@ -9715,6 +9723,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          auto_retry_count?: number | null
           build_engine?: string
           build_status?: string
           client_id?: string | null
@@ -9722,7 +9731,9 @@ export type Database = {
           content_generated?: boolean | null
           created_at?: string | null
           demo_id?: string | null
+          deployed_at?: string | null
           deployed_url?: string | null
+          deployment_decision?: string | null
           domain_connected?: boolean | null
           error_log?: Json | null
           id?: string
@@ -9732,6 +9743,7 @@ export type Database = {
           pages_built?: number | null
           progress_stage?: string | null
           project_id?: string | null
+          quality_breakdown?: Json | null
           quality_score?: number | null
           retry_count?: number | null
           started_at?: string | null
@@ -11356,6 +11368,85 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      brandaro_review_queue: {
+        Row: {
+          assigned_to: string | null
+          auto_retry_count: number | null
+          build_job_id: string | null
+          client_id: string
+          created_at: string | null
+          id: string
+          issue_reasons: string[] | null
+          max_auto_retries: number | null
+          priority: string | null
+          project_id: string | null
+          quality_breakdown: Json | null
+          quality_score: number | null
+          reviewed_at: string | null
+          reviewer_notes: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          auto_retry_count?: number | null
+          build_job_id?: string | null
+          client_id: string
+          created_at?: string | null
+          id?: string
+          issue_reasons?: string[] | null
+          max_auto_retries?: number | null
+          priority?: string | null
+          project_id?: string | null
+          quality_breakdown?: Json | null
+          quality_score?: number | null
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          auto_retry_count?: number | null
+          build_job_id?: string | null
+          client_id?: string
+          created_at?: string | null
+          id?: string
+          issue_reasons?: string[] | null
+          max_auto_retries?: number | null
+          priority?: string | null
+          project_id?: string | null
+          quality_breakdown?: Json | null
+          quality_score?: number | null
+          reviewed_at?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_review_queue_build_job_id_fkey"
+            columns: ["build_job_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_build_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_review_queue_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_review_queue_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_seo_tasks: {
         Row: {

@@ -196,64 +196,120 @@ Deno.serve(async (req) => {
     productionHtml = productionHtml
       .replace("TRACKING_BASE_URL", Deno.env.get("SUPABASE_URL") || "")
       .replace("TRACKING_ANON_KEY", Deno.env.get("SUPABASE_ANON_KEY") || "")
-      .replace("TRACKING_CLIENT_ID", clientId)
-      .replace("TRACKING_PROJECT_ID", projectId || "");
+      .replace("TRACKING_CLIENT_ID", client_id)
+      .replace("TRACKING_PROJECT_ID", project_id || "");
 
-    // Store production HTML in demo_sites for serving
+    // Slug for deployment
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
     const productionSlug = `${slug}-live`;
 
-    const { data: prodSite } = await supabase
-      .from("brandaro_demo_sites")
-      .insert({
-        lead_id: client?.lead_id,
-        slug: productionSlug,
-        generated_html: productionHtml,
-        engine_used: buildEngine,
-        industry,
-        demo_ready_for_conversion: false,
-        production_build_ready: true,
-      })
-      .select()
-      .single();
+    // ===== QUALITY GATE SYSTEM =====
+    await updateBuildStatus(supabase, buildJob.id, "quality_check", "scoring_quality");
 
-    // SECTION 7: Deployment
-    await updateBuildStatus(supabase, buildJob.id, "deploying", "setting_up_deployment");
+    const qualityResult = calculateQualityScore(allBlocks || [], productionHtml);
+    const qualityScore = qualityResult.score;
+    const qualityBreakdown = qualityResult.breakdown;
+    const issueReasons = qualityResult.issues;
+
+    // Store quality data on build job
+    await supabase.from("brandaro_build_jobs").update({
+      quality_score: qualityScore,
+      quality_breakdown: qualityBreakdown,
+    }).eq("id", buildJob.id);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const liveUrl = `${SUPABASE_URL}/functions/v1/brandaro-serve-demo?slug=${productionSlug}`;
 
-    // Update project with live URL
-    await supabase.from("brandaro_projects").update({
-      live_url: liveUrl,
-      deployment_status: "active",
-      deployed_at: new Date().toISOString(),
-      build_status: "live",
-      domain_type: "subdomain",
-    }).eq("id", project_id);
+    // QUALITY GATE DECISION
+    if (qualityScore >= 80) {
+      // AUTO-DEPLOY: High quality
+      await deploySite(supabase, buildJob.id, project_id, client_id, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
+      await supabase.from("brandaro_build_jobs").update({ deployment_decision: "auto_deployed" }).eq("id", buildJob.id);
+      console.log(`[AUTO-BUILD] ✅ Auto-deployed (score: ${qualityScore}). URL: ${liveUrl}`);
 
-    // SECTION 10: Quality check
-    await updateBuildStatus(supabase, buildJob.id, "quality_check", "validating_deployment");
+    } else if (qualityScore >= 60) {
+      // DEPLOY + FLAG: Medium quality
+      await deploySite(supabase, buildJob.id, project_id, client_id, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
+      await supabase.from("brandaro_build_jobs").update({ deployment_decision: "review_recommended" }).eq("id", buildJob.id);
+      
+      // Add to review queue as advisory
+      await supabase.from("brandaro_review_queue").insert({
+        build_job_id: buildJob.id,
+        client_id: client_id,
+        project_id: project_id,
+        quality_score: qualityScore,
+        quality_breakdown: qualityBreakdown,
+        issue_reasons: issueReasons,
+        priority: "low",
+        status: "pending_review",
+      });
+      console.log(`[AUTO-BUILD] ⚠️ Deployed with review flag (score: ${qualityScore}). URL: ${liveUrl}`);
 
-    const qualityScore = calculateQualityScore(allBlocks || [], productionHtml);
+    } else {
+      // BLOCK: Low quality — attempt auto-improvement first
+      const currentRetries = buildJob.auto_retry_count || 0;
+      const maxRetries = 2;
 
-    // Mark complete
-    await supabase.from("brandaro_build_jobs").update({
-      build_status: "completed",
-      progress_stage: "done",
-      deployed_url: liveUrl,
-      quality_score: qualityScore,
-      completed_at: new Date().toISOString(),
-      pages_built: pagesBuilt,
-    }).eq("id", buildJob.id);
+      if (currentRetries < maxRetries) {
+        // AUTO-IMPROVEMENT: Ask AI to fix weak areas
+        await supabase.from("brandaro_build_jobs").update({
+          auto_retry_count: currentRetries + 1,
+          build_status: "auto_improving",
+          progress_stage: "ai_regenerating_weak_sections",
+        }).eq("id", buildJob.id);
 
-    // Update client onboarding
-    await supabase.from("brandaro_clients").update({
-      onboarding_status: "launched",
-    }).eq("id", client_id);
+        console.log(`[AUTO-BUILD] 🔄 Auto-improving attempt ${currentRetries + 1}/${maxRetries} (score: ${qualityScore})`);
 
-    // SECTION 9: Post-launch - send notification
-    console.log(`[AUTO-BUILD] ✅ Build complete for ${businessName}. URL: ${liveUrl}`);
+        // Trigger rebuild via self-invocation
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/brandaro-auto-build`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+            },
+            body: JSON.stringify({
+              client_id: client_id,
+              project_id: project_id,
+              demo_id: demo_id || null,
+              package_tier: package_tier,
+              rebuild: true,
+              improvement_hints: issueReasons,
+            }),
+          });
+        } catch (retryErr) {
+          console.error("[AUTO-BUILD] Retry trigger failed:", retryErr);
+        }
+
+        return new Response(JSON.stringify({
+          ok: true,
+          action: "auto_improving",
+          quality_score: qualityScore,
+          retry_attempt: currentRetries + 1,
+        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+
+      } else {
+        // MAX RETRIES EXHAUSTED: Send to human review
+        await supabase.from("brandaro_build_jobs").update({
+          build_status: "needs_review",
+          deployment_decision: "needs_review",
+        }).eq("id", buildJob.id);
+
+        await supabase.from("brandaro_review_queue").insert({
+          build_job_id: buildJob.id,
+          client_id: client_id,
+          project_id: project_id,
+          quality_score: qualityScore,
+          quality_breakdown: qualityBreakdown,
+          issue_reasons: issueReasons,
+          priority: qualityScore < 40 ? "high" : "medium",
+          status: "pending_review",
+          auto_retry_count: currentRetries,
+        });
+
+        console.log(`[AUTO-BUILD] 🛑 Sent to human review (score: ${qualityScore}, retries exhausted)`);
+      }
+    }
 
     return new Response(JSON.stringify({
       ok: true,
@@ -525,16 +581,94 @@ function assembleProductionSite(
 </html>`;
 }
 
-function calculateQualityScore(blocks: any[], html: string): number {
-  let score = 50; // Base
-  if (blocks.length >= 10) score += 15;
-  else if (blocks.length >= 5) score += 10;
-  if (html.includes("<meta name=\"description\"")) score += 10;
-  if (html.includes("<nav")) score += 5;
-  if (html.includes("<footer")) score += 5;
-  if (html.includes("viewport")) score += 5;
-  if (html.length > 5000) score += 10;
-  return Math.min(score, 100);
+function calculateQualityScore(blocks: any[], html: string): { score: number; breakdown: Record<string, number>; issues: string[] } {
+  const breakdown: Record<string, number> = {};
+  const issues: string[] = [];
+
+  // Content completeness (0-25)
+  if (blocks.length >= 12) breakdown.content_completeness = 25;
+  else if (blocks.length >= 8) breakdown.content_completeness = 20;
+  else if (blocks.length >= 5) breakdown.content_completeness = 15;
+  else { breakdown.content_completeness = 5; issues.push("Too few content sections"); }
+
+  // SEO presence (0-20)
+  let seo = 0;
+  if (html.includes('<meta name="description"')) seo += 5;
+  else issues.push("Missing meta description");
+  if (html.includes('<meta property="og:title"')) seo += 5;
+  else issues.push("Missing Open Graph tags");
+  if (html.includes("viewport")) seo += 5;
+  if (html.includes("<title>") && !html.includes("<title></title>")) seo += 5;
+  else issues.push("Missing or empty title tag");
+  breakdown.seo_presence = seo;
+
+  // CTA strength (0-20)
+  const ctaPatterns = ["Get Started", "Contact Us", "Call Now", "Book Now", "Free Quote", "Get Quote", "Learn More", "Schedule"];
+  const ctaCount = ctaPatterns.filter(p => html.toLowerCase().includes(p.toLowerCase())).length;
+  if (ctaCount >= 3) breakdown.cta_strength = 20;
+  else if (ctaCount >= 2) breakdown.cta_strength = 15;
+  else if (ctaCount >= 1) breakdown.cta_strength = 10;
+  else { breakdown.cta_strength = 0; issues.push("No call-to-action buttons detected"); }
+
+  // Design consistency (0-15)
+  let design = 0;
+  if (html.includes("<nav")) design += 5;
+  else issues.push("Missing navigation");
+  if (html.includes("<footer")) design += 5;
+  else issues.push("Missing footer");
+  if (html.includes("<header")) design += 5;
+  breakdown.design_consistency = design;
+
+  // Content volume (0-20)
+  const textLength = html.replace(/<[^>]*>/g, "").length;
+  if (textLength > 3000) breakdown.content_volume = 20;
+  else if (textLength > 1500) breakdown.content_volume = 15;
+  else if (textLength > 500) breakdown.content_volume = 10;
+  else { breakdown.content_volume = 5; issues.push("Very low content volume"); }
+
+  const score = Object.values(breakdown).reduce((s, v) => s + v, 0);
+  return { score: Math.min(score, 100), breakdown, issues };
+}
+
+async function deploySite(
+  supabase: any, buildJobId: string, projectId: string, clientId: string,
+  liveUrl: string, slug: string, html: string, client: any,
+  buildEngine: string, industry: string, blocks: any[], pagesBuilt: number
+) {
+  // Store production site
+  await supabase.from("brandaro_demo_sites").insert({
+    lead_id: client?.lead_id,
+    slug,
+    generated_html: html,
+    engine_used: buildEngine,
+    industry,
+    demo_ready_for_conversion: false,
+    production_build_ready: true,
+  });
+
+  // Update project
+  await supabase.from("brandaro_projects").update({
+    live_url: liveUrl,
+    deployment_status: "active",
+    deployed_at: new Date().toISOString(),
+    build_status: "live",
+    domain_type: "subdomain",
+  }).eq("id", projectId);
+
+  // Mark build complete
+  await supabase.from("brandaro_build_jobs").update({
+    build_status: "completed",
+    progress_stage: "done",
+    deployed_url: liveUrl,
+    completed_at: new Date().toISOString(),
+    pages_built: pagesBuilt,
+    deployed_at: new Date().toISOString(),
+  }).eq("id", buildJobId);
+
+  // Update client
+  await supabase.from("brandaro_clients").update({
+    onboarding_status: "launched",
+  }).eq("id", clientId);
 }
 
 async function updateBuildStatus(supabase: any, jobId: string, status: string, stage: string) {
