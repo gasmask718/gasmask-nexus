@@ -506,9 +506,30 @@ function OrderAssignmentDialog({ order, open, onClose, bikers, drivers, allBiker
               </div>
             </div>
 
-            <Separator />
+            {/* Live Map Preview */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2"><Map className="h-4 w-4" /> Live Map Preview</h3>
+              <DeliveryMapPreview
+                deliveryLat={existingTask?.delivery_lat || order.delivery_lat || null}
+                deliveryLng={existingTask?.delivery_lng || order.delivery_lng || null}
+                deliveryAddress={deliveryAddress}
+                recipientName={recipientName}
+                pickupLat={order.store?.lat || null}
+                pickupLng={order.store?.lng || null}
+                pickupAddress={order.store?.address || order.store?.store_name}
+                workerName={
+                  existingTask?.biker_id
+                    ? allBikers.find((b: any) => b.id === existingTask.biker_id)?.full_name
+                    : existingTask?.driver_id
+                    ? allDrivers.find((d: any) => d.id === existingTask.driver_id)?.full_name
+                    : undefined
+                }
+                bikerId={existingTask?.biker_id}
+                driverId={existingTask?.driver_id}
+              />
+            </div>
 
-            {/* Assignment */}
+            <Separator />
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Truck className="h-4 w-4" /> Assign Delivery
