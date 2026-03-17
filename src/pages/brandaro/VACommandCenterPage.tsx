@@ -214,6 +214,29 @@ export default function VACommandCenterPage() {
     queryClient.invalidateQueries({ queryKey: ["brandaro-close-pipeline"] });
   };
 
+  const sendPaymentLink = async (deal: any) => {
+    try {
+      toast.loading("Generating payment link...");
+      const { data, error } = await supabase.functions.invoke("brandaro-create-payment-link", {
+        body: {
+          deal_id: deal.id,
+          lead_id: deal.lead_id,
+          package_tier: deal.package_tier || "starter",
+          send_sms: true,
+        },
+      });
+      toast.dismiss();
+      if (error) throw error;
+      if (data?.checkout_url) {
+        toast.success(`Payment link sent! ${data.reused ? "(reused existing)" : ""}`);
+        queryClient.invalidateQueries({ queryKey: ["brandaro-close-pipeline"] });
+      }
+    } catch (err: any) {
+      toast.dismiss();
+      toast.error(`Payment link failed: ${err.message}`);
+    }
+  };
+
   const stageCounts = {
     demo_sent: pipeline.filter((p: any) => p.stage === "demo_sent").length,
     demo_viewed: pipeline.filter((p: any) => p.stage === "demo_viewed").length,

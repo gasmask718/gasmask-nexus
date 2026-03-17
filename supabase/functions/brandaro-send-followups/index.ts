@@ -167,18 +167,32 @@ Deno.serve(async (req) => {
       const lead = deal.brandaro_qualified_leads;
       if (!lead?.phone || deal.payment_link_url) continue;
 
-      // Send urgency SMS with payment context
-      const paymentMsg = `Hey! We can get your site live TODAY. Here's everything we discussed — ready to lock it in? Reply YES and I'll send over the details.`;
-      
+      // Generate real Stripe payment link via brandaro-create-payment-link
       try {
-        await sendTwilioSms(lead.phone, paymentMsg, lead.business_name);
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         
-        await supabase.from("brandaro_close_pipeline").update({
-          payment_link_sent_at: now,
-          urgency_level: "critical",
-        }).eq("id", deal.id);
+        const linkRes = await fetch(`${supabaseUrl}/functions/v1/brandaro-create-payment-link`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({
+            deal_id: deal.id,
+            lead_id: deal.lead_id,
+            package_tier: deal.package_tier || "starter",
+            send_sms: true,
+          }),
+        });
 
-        paymentPushed++;
+        if (linkRes.ok) {
+          paymentPushed++;
+          console.log(`💳 Payment link created for deal ${deal.id}`);
+        } else {
+          const errText = await linkRes.text();
+          console.error(`Payment link creation failed for deal ${deal.id}:`, errText);
+        }
       } catch (e) {
         console.error(`Payment push failed for deal ${deal.id}:`, e);
       }

@@ -58,9 +58,112 @@ serve(async (req) => {
       const session = event.data.object as Stripe.Checkout.Session;
       const metadata = session.metadata || {};
       const proposalId = metadata.proposal_id;
+      const dealId = metadata.deal_id;
+      const leadId = metadata.lead_id;
+
+      // ─── CLOSE PIPELINE ADVANCEMENT (Phase 4/5/14) ─────────
+      if (dealId || leadId) {
+        console.log(`[BRANDARO-WEBHOOK] Close pipeline payment: deal=${dealId} lead=${leadId}`);
+        const paymentAmount = (session.amount_total || 0) / 100;
+
+        // Advance pipeline to "closed"
+        const pipelineFilter = dealId
+          ? supabase.from("brandaro_close_pipeline").update({
+              stage: "closed",
+              closed_at: new Date().toISOString(),
+              payment_completed: true,
+              payment_amount: paymentAmount,
+              revenue_amount: paymentAmount,
+              payment_link_clicked: true,
+              package_tier: metadata.package_tier || "custom",
+            }).eq("id", dealId)
+          : supabase.from("brandaro_close_pipeline").update({
+              stage: "closed",
+              closed_at: new Date().toISOString(),
+              payment_completed: true,
+              payment_amount: paymentAmount,
+              revenue_amount: paymentAmount,
+              payment_link_clicked: true,
+              package_tier: metadata.package_tier || "custom",
+            }).eq("lead_id", leadId);
+
+        const { error: pipeErr } = await pipelineFilter;
+        if (pipeErr) console.error("[BRANDARO-WEBHOOK] Pipeline update error:", pipeErr);
+
+        // ─── DESIGN LEARNING (Phase 14) ───────────────────────
+        // Capture design data from the demo for revenue-weighted learning
+        if (leadId) {
+          const { data: demoScore } = await supabase
+            .from("brandaro_demo_quality_scores")
+            .select("design_score, uniqueness_score, conversion_score")
+            .eq("lead_id", leadId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (demoScore) {
+            // Update design profile with revenue signal
+            await supabase.from("brandaro_call_patterns").insert({
+              pattern_type: "design_revenue",
+              pattern_data: {
+                lead_id: leadId,
+                payment_amount: paymentAmount,
+                design_score: demoScore.design_score,
+                conversion_score: demoScore.conversion_score,
+                package_tier: metadata.package_tier,
+                business_name: metadata.business_name,
+              },
+              source_call_ids: [],
+              effectiveness_score: paymentAmount > 1500 ? 95 : paymentAmount > 750 ? 80 : 65,
+            }).then(() => {});
+          }
+
+          // Cancel any remaining follow-ups for this lead
+          await supabase
+            .from("brandaro_followup_sequences")
+            .update({ status: "cancelled" })
+            .eq("lead_id", leadId)
+            .eq("status", "pending");
+
+          // Update lead status
+          await supabase
+            .from("brandaro_qualified_leads")
+            .update({ status: "client", updated_at: new Date().toISOString() })
+            .eq("id", leadId);
+
+          // Send congratulations SMS
+          const { data: lead } = await supabase
+            .from("brandaro_qualified_leads")
+            .select("phone, business_name")
+            .eq("id", leadId)
+            .single();
+
+          if (lead?.phone) {
+            const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
+            const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
+            const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
+            if (accountSid && authToken && fromNumber) {
+              const digits = lead.phone.replace(/\D/g, "");
+              const normalizedPhone = digits.length === 10 ? `+1${digits}` : digits.length === 11 && digits.startsWith("1") ? `+${digits}` : lead.phone;
+              await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+                method: "POST",
+                headers: {
+                  Authorization: `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: new URLSearchParams({
+                  To: normalizedPhone,
+                  From: fromNumber,
+                  Body: `🎉 Payment confirmed! We're getting started on ${lead.business_name}'s website right now. Our team will reach out within 24 hours with your first draft. Welcome aboard!`,
+                }),
+              }).catch(e => console.error("Congrats SMS failed:", e));
+            }
+          }
+        }
+      }
 
       if (!proposalId) {
-        console.log("[BRANDARO-WEBHOOK] No proposal_id in metadata, skipping");
+        console.log("[BRANDARO-WEBHOOK] No proposal_id in metadata, skipping proposal flow");
         return new Response(JSON.stringify({ received: true }), {
           headers: { "Content-Type": "application/json" },
         });
