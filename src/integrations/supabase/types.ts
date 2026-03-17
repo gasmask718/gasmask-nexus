@@ -12037,6 +12037,45 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_offers: {
+        Row: {
+          active: boolean | null
+          conversion_priority: number | null
+          created_at: string | null
+          features: Json | null
+          id: string
+          name: string
+          price: number
+          tier: string
+          upsell_from: string | null
+          upsell_to: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          conversion_priority?: number | null
+          created_at?: string | null
+          features?: Json | null
+          id?: string
+          name: string
+          price?: number
+          tier: string
+          upsell_from?: string | null
+          upsell_to?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          conversion_priority?: number | null
+          created_at?: string | null
+          features?: Json | null
+          id?: string
+          name?: string
+          price?: number
+          tier?: string
+          upsell_from?: string | null
+          upsell_to?: string | null
+        }
+        Relationships: []
+      }
       brandaro_optimization_tasks: {
         Row: {
           ai_reasoning: string | null
@@ -12105,6 +12144,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_payment_plans: {
+        Row: {
+          created_at: string | null
+          deposit_amount: number
+          deposit_paid: boolean | null
+          fully_paid: boolean | null
+          id: string
+          lead_id: string | null
+          offer_tier: string
+          remaining_amount: number
+          stripe_session_id: string | null
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          deposit_amount: number
+          deposit_paid?: boolean | null
+          fully_paid?: boolean | null
+          id?: string
+          lead_id?: string | null
+          offer_tier?: string
+          remaining_amount?: number
+          stripe_session_id?: string | null
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          deposit_amount?: number
+          deposit_paid?: boolean | null
+          fully_paid?: boolean | null
+          id?: string
+          lead_id?: string | null
+          offer_tier?: string
+          remaining_amount?: number
+          stripe_session_id?: string | null
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       brandaro_projects: {
         Row: {
@@ -12590,6 +12671,48 @@ export type Database = {
           },
         ]
       }
+      brandaro_revenue_metrics: {
+        Row: {
+          avg_deal_size: number | null
+          created_at: string | null
+          id: string
+          monthly_revenue: number | null
+          period: string
+          revenue_per_lead: number | null
+          top_industry: string | null
+          top_offer_tier: string | null
+          total_closed: number | null
+          total_leads: number | null
+          upsell_rate: number | null
+        }
+        Insert: {
+          avg_deal_size?: number | null
+          created_at?: string | null
+          id?: string
+          monthly_revenue?: number | null
+          period: string
+          revenue_per_lead?: number | null
+          top_industry?: string | null
+          top_offer_tier?: string | null
+          total_closed?: number | null
+          total_leads?: number | null
+          upsell_rate?: number | null
+        }
+        Update: {
+          avg_deal_size?: number | null
+          created_at?: string | null
+          id?: string
+          monthly_revenue?: number | null
+          period?: string
+          revenue_per_lead?: number | null
+          top_industry?: string | null
+          top_offer_tier?: string | null
+          total_closed?: number | null
+          total_leads?: number | null
+          upsell_rate?: number | null
+        }
+        Relationships: []
+      }
       brandaro_review_queue: {
         Row: {
           assigned_to: string | null
@@ -13069,6 +13192,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_upsell_engine: {
+        Row: {
+          acted_at: string | null
+          created_at: string | null
+          current_offer: string | null
+          id: string
+          lead_id: string | null
+          probability_score: number | null
+          recommended_offer: string | null
+          status: string | null
+          upsell_reason: string | null
+        }
+        Insert: {
+          acted_at?: string | null
+          created_at?: string | null
+          current_offer?: string | null
+          id?: string
+          lead_id?: string | null
+          probability_score?: number | null
+          recommended_offer?: string | null
+          status?: string | null
+          upsell_reason?: string | null
+        }
+        Update: {
+          acted_at?: string | null
+          created_at?: string | null
+          current_offer?: string | null
+          id?: string
+          lead_id?: string | null
+          probability_score?: number | null
+          recommended_offer?: string | null
+          status?: string | null
+          upsell_reason?: string | null
+        }
+        Relationships: []
       }
       brandaro_va_actions: {
         Row: {
