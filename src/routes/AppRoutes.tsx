@@ -102,6 +102,8 @@ import AdsEnginePage from '@/pages/brandaro/AdsEnginePage';
 import GoogleDominationPage from '@/pages/brandaro/GoogleDominationPage';
 import OptimizationEnginePage from '@/pages/brandaro/OptimizationEnginePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
+import VADashboardPage from '@/pages/brandaro/VADashboardPage';
+import VAManagerPage from '@/pages/brandaro/VAManagerPage';
 import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
 import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
 import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
@@ -2507,6 +2509,8 @@ export default function AppRoutes() {
         <Route path="/brandaro/google-domination" element={<GoogleDominationPage />} />
         <Route path="/brandaro/optimization" element={<OptimizationEnginePage />} />
         <Route path="/brandaro/closer-ai" element={<CloserAIPage />} />
+        <Route path="/brandaro/va-dashboard" element={<VADashboardPage />} />
+        <Route path="/brandaro/va-manager" element={<VAManagerPage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
