@@ -232,8 +232,6 @@ Deno.serve(async (req) => {
     }).eq("id", buildJob.id);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-    const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
-    const productionSlug = `${slug}-live`;
     const liveUrl = `${SUPABASE_URL}/functions/v1/brandaro-serve-demo?slug=${productionSlug}`;
 
     // QUALITY GATE DECISION
