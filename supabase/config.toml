@@ -277,3 +277,6 @@ verify_jwt = false
 
 [functions.brandaro-voice-agent]
 verify_jwt = false
+
+[functions.brandaro-call-analysis]
+verify_jwt = false

@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -7,6 +7,7 @@ import LeadQualificationPage from '@/pages/brandaro/LeadQualificationPage';
 import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import VAWorkspacePage from '@/pages/brandaro/VAWorkspacePage';
 import VAPerformancePage from '@/pages/brandaro/VAPerformancePage';
+import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
 import CampaignManagerPage from '@/pages/brandaro/CampaignManagerPage';
 import DemoEnginePage from '@/pages/brandaro/DemoEnginePage';
 import ProposalBuilderPage from '@/pages/brandaro/ProposalBuilderPage';
@@ -25,6 +26,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/qualification', label: 'Qualification', icon: Target },
   { path: '/os/brandaro/calling', label: 'Calling Ops', icon: Phone },
   { path: '/os/brandaro/workspace', label: 'VA Workspace', icon: Headset },
+  { path: '/os/brandaro/command-center', label: 'VA Command Center', icon: Brain },
   { path: '/os/brandaro/campaigns', label: 'Campaigns', icon: FolderOpen },
   { path: '/os/brandaro/demos', label: 'Demo Engine', icon: Wand2 },
   { path: '/os/brandaro/proposals', label: 'Proposals', icon: FileText },
@@ -58,6 +60,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/qualification', component: LeadQualificationPage, label: 'Qualification', icon: Target, requiresAuth: true },
     { path: '/calling', component: CallingOpsPage, label: 'Calling Ops', icon: Phone, requiresAuth: true },
     { path: '/workspace', component: VAWorkspacePage, label: 'VA Workspace', icon: Headset, requiresAuth: true },
+    { path: '/command-center', component: VACommandCenterPage, label: 'VA Command Center', icon: Brain, requiresAuth: true },
     { path: '/performance', component: VAPerformancePage, label: 'VA Performance', icon: BarChart3, requiresAuth: true },
     { path: '/campaigns', component: CampaignManagerPage, label: 'Campaigns', icon: FolderOpen, requiresAuth: true },
     { path: '/demos', component: DemoEnginePage, label: 'Demo Engine', icon: Wand2, requiresAuth: true },

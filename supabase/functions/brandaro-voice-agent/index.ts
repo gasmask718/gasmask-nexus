@@ -368,9 +368,9 @@ async function handleLogOutcome(supabase: any, body: any) {
     }
   }
 
-  // If demo requested, trigger demo generation
+  // If demo requested, trigger demo generation + close pipeline + follow-up sequences
   if (demo_requested && lead_id) {
-    console.log(`🎯 Demo requested by lead ${lead_id} — triggering generation`);
+    console.log(`🎯 Demo requested by lead ${lead_id} — triggering generation + pipeline`);
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     
     // Update lead status
@@ -381,6 +381,35 @@ async function handleLogOutcome(supabase: any, body: any) {
       })
       .eq("id", lead_id);
 
+    // Create close pipeline entry
+    await supabase.from("brandaro_close_pipeline").upsert({
+      lead_id,
+      stage: "demo_sent",
+      demo_sent_at: new Date().toISOString(),
+      priority_score: (handoff_score || 0) >= 80 ? 90 : 50,
+    }, { onConflict: "lead_id" }).then(() => {});
+
+    // Create auto follow-up sequence
+    const delays = [
+      { step: 1, minutes: 2, msg: "Hey! Just sent over a quick demo for your business — check it out when you get a sec 🔥" },
+      { step: 2, minutes: 120, msg: "Quick follow-up — did you get a chance to look at the demo? Happy to walk you through it." },
+      { step: 3, minutes: 1440, msg: "Hey! Just wanted to make sure you saw what we put together. It's ready whenever you are." },
+      { step: 4, minutes: 4320, msg: "Last check-in — your custom demo is still available. Want me to get this set up for you?" },
+    ];
+
+    for (const d of delays) {
+      await supabase.from("brandaro_followup_sequences").insert({
+        lead_id,
+        voice_call_id: callRecord.id,
+        trigger_event: "demo_requested",
+        sequence_step: d.step,
+        channel: "sms",
+        message_content: d.msg,
+        scheduled_at: new Date(Date.now() + d.minutes * 60000).toISOString(),
+        status: "pending",
+      }).then(() => {});
+    }
+
     // Fire and forget: trigger demo generation
     fetch(`${supabaseUrl}/functions/v1/brandaro-generate-demo`, {
       method: "POST",
@@ -390,6 +419,31 @@ async function handleLogOutcome(supabase: any, body: any) {
       },
       body: JSON.stringify({ lead_id }),
     }).catch((e) => console.error("Demo trigger failed:", e));
+  }
+
+  // Hot lead auto-attack: if handoff_score > 80 and not already demo'd
+  if ((handoff_score || 0) >= 80 && !demo_requested && lead_id) {
+    console.log(`🔥 Hot lead detected (score ${handoff_score}) — auto-attack triggered`);
+    
+    // Create pipeline entry at "interested" stage
+    await supabase.from("brandaro_close_pipeline").upsert({
+      lead_id,
+      stage: "interested",
+      interested_at: new Date().toISOString(),
+      priority_score: 95,
+    }, { onConflict: "lead_id" }).then(() => {});
+
+    // Instant SMS follow-up
+    await supabase.from("brandaro_followup_sequences").insert({
+      lead_id,
+      voice_call_id: callRecord.id,
+      trigger_event: "hot_lead_auto",
+      sequence_step: 1,
+      channel: "sms",
+      message_content: "Hey! Great chatting with you — I'm putting together something specifically for your business. You'll have it shortly 🚀",
+      scheduled_at: new Date(Date.now() + 60000).toISOString(), // 1 min
+      status: "pending",
+    }).then(() => {});
   }
 
   // If contact info captured, update lead
