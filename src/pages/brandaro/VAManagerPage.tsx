@@ -31,7 +31,7 @@ import {
   Users, Phone, TrendingUp, Target, Flame, Clock, AlertTriangle,
   Trophy, Shield, Star, Eye, MessageSquare, CheckCircle2, Bell,
   Brain, ArrowUpRight, ThermometerSun, Sparkles, Zap, BookOpen, BarChart3,
-  Crosshair, DollarSign, Swords, Tag,
+  Crosshair, DollarSign, Swords, Tag, UserCircle,
 } from "lucide-react";
 
 export default function VAManagerPage() {
