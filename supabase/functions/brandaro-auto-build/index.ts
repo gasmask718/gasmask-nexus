@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
     const buildEngine = initialEngine;
     const totalPages = decidePageCount(tier);
 
-    // Create build job
+    // Create build job with hybrid engine tracking
     const { data: buildJob, error: bjErr } = await supabase
       .from("brandaro_build_jobs")
       .insert({
@@ -98,6 +98,8 @@ Deno.serve(async (req) => {
         demo_id: demo_id || null,
         lead_id: client?.lead_id || null,
         build_engine: buildEngine,
+        initial_engine: initialEngine,
+        final_engine: buildEngine,
         build_status: "extracting_demo",
         progress_stage: "demo_extraction",
         package_tier: tier,
