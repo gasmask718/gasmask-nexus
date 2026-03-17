@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -14,6 +14,7 @@ import FollowUpEnginePage from '@/pages/brandaro/FollowUpEnginePage';
 import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
 import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
+import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -27,8 +28,10 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/proposals', label: 'Proposals', icon: FileText },
   { path: '/os/brandaro/followups', label: 'Follow-Ups', icon: Bell },
   { path: '/os/brandaro/production', label: 'Production', icon: Hammer },
+  { path: '/os/brandaro/build-pipeline', label: 'Build Pipeline', icon: Factory },
   { path: '/os/brandaro/clients', label: 'Client Portal', icon: Users },
   { path: '/os/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
+  { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
   { path: '/os/brandaro/performance', label: 'VA Performance', icon: BarChart3 },
 ];
 
@@ -58,6 +61,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/proposals', component: ProposalBuilderPage, label: 'Proposals', icon: FileText, requiresAuth: true },
     { path: '/followups', component: FollowUpEnginePage, label: 'Follow-Ups', icon: Bell, requiresAuth: true },
     { path: '/production', component: ProductionPipelinePage, label: 'Production', icon: Hammer, requiresAuth: true },
+    { path: '/build-pipeline', component: BuildPipelinePage, label: 'Build Pipeline', icon: Factory, requiresAuth: true },
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
     { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
   ],

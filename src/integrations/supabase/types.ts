@@ -9665,6 +9665,103 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_build_jobs: {
+        Row: {
+          build_engine: string
+          build_status: string
+          client_id: string | null
+          completed_at: string | null
+          content_generated: boolean | null
+          created_at: string | null
+          demo_id: string | null
+          deployed_url: string | null
+          domain_connected: boolean | null
+          error_log: Json | null
+          id: string
+          lead_id: string | null
+          max_retries: number | null
+          package_tier: string | null
+          pages_built: number | null
+          progress_stage: string | null
+          project_id: string | null
+          quality_score: number | null
+          retry_count: number | null
+          started_at: string | null
+          total_pages: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          build_engine?: string
+          build_status?: string
+          client_id?: string | null
+          completed_at?: string | null
+          content_generated?: boolean | null
+          created_at?: string | null
+          demo_id?: string | null
+          deployed_url?: string | null
+          domain_connected?: boolean | null
+          error_log?: Json | null
+          id?: string
+          lead_id?: string | null
+          max_retries?: number | null
+          package_tier?: string | null
+          pages_built?: number | null
+          progress_stage?: string | null
+          project_id?: string | null
+          quality_score?: number | null
+          retry_count?: number | null
+          started_at?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          build_engine?: string
+          build_status?: string
+          client_id?: string | null
+          completed_at?: string | null
+          content_generated?: boolean | null
+          created_at?: string | null
+          demo_id?: string | null
+          deployed_url?: string | null
+          domain_connected?: boolean | null
+          error_log?: Json | null
+          id?: string
+          lead_id?: string | null
+          max_retries?: number | null
+          package_tier?: string | null
+          pages_built?: number | null
+          progress_stage?: string | null
+          project_id?: string | null
+          quality_score?: number | null
+          retry_count?: number | null
+          started_at?: string | null
+          total_pages?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_build_jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_build_jobs_demo_id_fkey"
+            columns: ["demo_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_demo_sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_build_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_call_logs: {
         Row: {
           call_attempt_number: number
@@ -10078,6 +10175,85 @@ export type Database = {
           },
         ]
       }
+      brandaro_content_blocks: {
+        Row: {
+          build_job_id: string | null
+          client_id: string | null
+          content_html: string | null
+          content_text: string | null
+          created_at: string | null
+          generated_by: string | null
+          id: string
+          metadata: Json | null
+          page_type: string
+          project_id: string | null
+          section_name: string
+          section_order: number | null
+          seo_description: string | null
+          seo_title: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          build_job_id?: string | null
+          client_id?: string | null
+          content_html?: string | null
+          content_text?: string | null
+          created_at?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          page_type: string
+          project_id?: string | null
+          section_name: string
+          section_order?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          build_job_id?: string | null
+          client_id?: string | null
+          content_html?: string | null
+          content_text?: string | null
+          created_at?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          page_type?: string
+          project_id?: string | null
+          section_name?: string
+          section_order?: number | null
+          seo_description?: string | null
+          seo_title?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_content_blocks_build_job_id_fkey"
+            columns: ["build_job_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_build_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_content_blocks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_content_blocks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_conversations: {
         Row: {
           ai_response: string | null
@@ -10175,6 +10351,7 @@ export type Database = {
           durable_screenshot_url: string | null
           durable_site_id: string | null
           engine_status: string
+          extracted_structure: Json | null
           generated_html: string | null
           generation_engine: string
           generation_status: string
@@ -10212,6 +10389,7 @@ export type Database = {
           durable_screenshot_url?: string | null
           durable_site_id?: string | null
           engine_status?: string
+          extracted_structure?: Json | null
           generated_html?: string | null
           generation_engine?: string
           generation_status?: string
@@ -10249,6 +10427,7 @@ export type Database = {
           durable_screenshot_url?: string | null
           durable_site_id?: string | null
           engine_status?: string
+          extracted_structure?: Json | null
           generated_html?: string | null
           generation_engine?: string
           generation_status?: string
@@ -10546,57 +10725,78 @@ export type Database = {
         Row: {
           assigned_ai_agent: string | null
           assigned_builder: string | null
+          build_job_id: string | null
           build_status: string
           client_id: string
           created_at: string
+          custom_domain: string | null
           deadline: string | null
           demo_id: string | null
+          deployed_at: string | null
+          deployment_status: string | null
           domain: string | null
+          domain_type: string | null
           hosting_status: string | null
           id: string
           launched_at: string | null
           lead_id: string | null
+          live_url: string | null
           package_tier: string
           project_name: string
           proposal_id: string | null
+          ssl_provisioned: boolean | null
           ssl_status: string | null
           updated_at: string
         }
         Insert: {
           assigned_ai_agent?: string | null
           assigned_builder?: string | null
+          build_job_id?: string | null
           build_status?: string
           client_id: string
           created_at?: string
+          custom_domain?: string | null
           deadline?: string | null
           demo_id?: string | null
+          deployed_at?: string | null
+          deployment_status?: string | null
           domain?: string | null
+          domain_type?: string | null
           hosting_status?: string | null
           id?: string
           launched_at?: string | null
           lead_id?: string | null
+          live_url?: string | null
           package_tier?: string
           project_name: string
           proposal_id?: string | null
+          ssl_provisioned?: boolean | null
           ssl_status?: string | null
           updated_at?: string
         }
         Update: {
           assigned_ai_agent?: string | null
           assigned_builder?: string | null
+          build_job_id?: string | null
           build_status?: string
           client_id?: string
           created_at?: string
+          custom_domain?: string | null
           deadline?: string | null
           demo_id?: string | null
+          deployed_at?: string | null
+          deployment_status?: string | null
           domain?: string | null
+          domain_type?: string | null
           hosting_status?: string | null
           id?: string
           launched_at?: string | null
           lead_id?: string | null
+          live_url?: string | null
           package_tier?: string
           project_name?: string
           proposal_id?: string | null
+          ssl_provisioned?: boolean | null
           ssl_status?: string | null
           updated_at?: string
         }

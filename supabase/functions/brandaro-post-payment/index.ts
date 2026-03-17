@@ -157,10 +157,42 @@ Deno.serve(async (req) => {
         .eq("id", proposal.lead_id);
     }
 
+    // 9. TRIGGER AUTO-BUILD ENGINE
+    // Find demo for this lead
+    const { data: demo } = await supabase
+      .from("brandaro_demo_sites")
+      .select("id")
+      .eq("lead_id", proposal.lead_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    try {
+      const buildResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/brandaro-auto-build`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+        },
+        body: JSON.stringify({
+          client_id: client.id,
+          project_id: project?.id,
+          demo_id: demo?.id || null,
+          package_tier: proposal.package_tier,
+        }),
+      });
+      const buildResult = await buildResp.json();
+      console.log("[POST-PAYMENT] Auto-build triggered:", buildResult);
+    } catch (buildErr) {
+      // Non-blocking: log failure, build worker will pick it up
+      console.error("[POST-PAYMENT] Auto-build trigger failed (will retry):", buildErr);
+    }
+
     return new Response(JSON.stringify({
       ok: true,
       client_id: client.id,
       project_id: project?.id,
+      auto_build_triggered: true,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
