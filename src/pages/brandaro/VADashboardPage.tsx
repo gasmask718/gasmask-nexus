@@ -272,6 +272,7 @@ export default function VADashboardPage() {
                         endSession.mutate({ sessionId: activeSessionId });
                         setActiveSessionId(null);
                         setCallNotes("");
+                        resetLiveScript();
                         toast("Session ended");
                       }}
                     >
@@ -282,6 +283,151 @@ export default function VADashboardPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* LIVE SCRIPT ENGINE — Real-Time AI Closer */}
+          {activeSessionId && (
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Mic className="h-4 w-4 text-amber-400 animate-pulse" /> Live Script Engine
+                  {isLiveAnalyzing && <Badge variant="outline" className="text-xs animate-pulse">Thinking…</Badge>}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {/* Live transcript input */}
+                <div className="flex gap-2">
+                  <Textarea
+                    value={liveTranscript}
+                    onChange={(e) => setLiveTranscript(e.target.value)}
+                    placeholder="Type what the lead just said…"
+                    className="min-h-[60px] text-sm flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    className="h-auto gap-1"
+                    disabled={!liveTranscript.trim() || isLiveAnalyzing}
+                    onClick={async () => {
+                      await analyzeChunk({
+                        transcript_chunk: liveTranscript,
+                        call_session_id: activeSessionId,
+                      });
+                      setLiveTranscript("");
+                    }}
+                  >
+                    <Send className="h-3 w-3" />
+                    Get Response
+                  </Button>
+                </div>
+
+                {/* AI Response Card */}
+                {liveResponse && (
+                  <div className="rounded-lg border bg-card p-4 space-y-3">
+                    {/* Detected Signals */}
+                    <div className="flex flex-wrap gap-2">
+                      {liveResponse.detected_objection !== "none" && (
+                        <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs">
+                          ⚠ {liveResponse.detected_objection.replace(/_/g, " ")}
+                        </Badge>
+                      )}
+                      {liveResponse.detected_signal !== "none" && (
+                        <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 text-xs">
+                          ✓ {liveResponse.detected_signal.replace(/_/g, " ")}
+                        </Badge>
+                      )}
+                      <Badge variant="outline" className={`text-xs ${
+                        liveResponse.mood === "positive" || liveResponse.mood === "ready_to_close" ? "text-emerald-400" :
+                        liveResponse.mood === "resistant" || liveResponse.mood === "skeptical" ? "text-red-400" : ""
+                      }`}>
+                        {liveResponse.mood.replace(/_/g, " ")}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {liveResponse.strategy_used.replace(/_/g, " ")}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {liveResponse.confidence_score}% confident
+                      </Badge>
+                    </div>
+
+                    {/* The Response */}
+                    <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <p className="text-sm font-medium leading-relaxed">
+                        💬 "{liveResponse.response_text}"
+                      </p>
+                    </div>
+
+                    {/* Close Alert */}
+                    {liveResponse.should_close_now && (
+                      <div className="rounded-lg px-3 py-2 bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-emerald-400" />
+                        <span className="text-sm font-bold text-emerald-400">
+                          🎯 CLOSE NOW → {liveResponse.close_type?.replace(/_/g, " ")}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Escalation Alert */}
+                    {liveResponse.escalation_needed && (
+                      <div className="rounded-lg px-3 py-2 bg-red-500/15 border border-red-500/30 flex items-center gap-2 animate-pulse">
+                        <Flame className="h-4 w-4 text-red-500" />
+                        <span className="text-sm font-bold text-red-400">
+                          🔥 ESCALATE TO CLOSER IMMEDIATELY
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Heat Delta */}
+                    {liveResponse.heat_delta !== 0 && (
+                      <div className="flex items-center gap-1 text-xs">
+                        <ThermometerSun className="h-3 w-3" />
+                        <span className={liveResponse.heat_delta > 0 ? "text-emerald-400" : "text-red-400"}>
+                          {liveResponse.heat_delta > 0 ? "+" : ""}{liveResponse.heat_delta} heat
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Response History */}
+                {responseHistory.length > 1 && (
+                  <details className="text-xs">
+                    <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                      Response History ({responseHistory.length})
+                    </summary>
+                    <ScrollArea className="h-[150px] mt-2">
+                      <div className="space-y-1.5">
+                        {[...responseHistory].reverse().slice(1).map((r, i) => (
+                          <div key={i} className="p-2 rounded border bg-muted/30 text-xs">
+                            <div className="flex gap-1 mb-1">
+                              {r.detected_objection !== "none" && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1 text-red-400">⚠ {r.detected_objection.replace(/_/g, " ")}</Badge>
+                              )}
+                              {r.detected_signal !== "none" && (
+                                <Badge variant="outline" className="text-[10px] h-4 px-1 text-emerald-400">✓ {r.detected_signal.replace(/_/g, " ")}</Badge>
+                              )}
+                            </div>
+                            <p className="text-muted-foreground italic">"{r.response_text}"</p>
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </details>
+                )}
+
+                {/* Context Memory */}
+                {(contextMemory.objections_handled.length > 0 || contextMemory.signals_detected.length > 0) && (
+                  <div className="flex flex-wrap gap-1 pt-1 border-t border-border/50">
+                    <span className="text-[10px] text-muted-foreground mr-1">Memory:</span>
+                    {contextMemory.objections_handled.map((o, i) => (
+                      <Badge key={`o-${i}`} variant="outline" className="text-[10px] h-4 px-1">handled: {o.replace(/_/g, " ")}</Badge>
+                    ))}
+                    {contextMemory.signals_detected.map((s, i) => (
+                      <Badge key={`s-${i}`} variant="outline" className="text-[10px] h-4 px-1 text-emerald-400">signal: {s.replace(/_/g, " ")}</Badge>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* AI Recommendations */}
           {recommendations.length > 0 && (
