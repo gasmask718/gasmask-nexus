@@ -315,3 +315,6 @@ verify_jwt = false
 
 [functions.detect-emotion]
 verify_jwt = false
+
+[functions.brandaro-automation-engine]
+verify_jwt = false
