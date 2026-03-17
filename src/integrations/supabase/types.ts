@@ -11337,6 +11337,51 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_objection_handlers: {
+        Row: {
+          coaching_tip: string | null
+          created_at: string | null
+          effectiveness_score: number | null
+          follow_up_question: string | null
+          id: string
+          industry_type: string | null
+          is_active: boolean | null
+          objection_key: string
+          objection_label: string
+          times_converted: number | null
+          times_used: number | null
+          va_response: string
+        }
+        Insert: {
+          coaching_tip?: string | null
+          created_at?: string | null
+          effectiveness_score?: number | null
+          follow_up_question?: string | null
+          id?: string
+          industry_type?: string | null
+          is_active?: boolean | null
+          objection_key: string
+          objection_label: string
+          times_converted?: number | null
+          times_used?: number | null
+          va_response: string
+        }
+        Update: {
+          coaching_tip?: string | null
+          created_at?: string | null
+          effectiveness_score?: number | null
+          follow_up_question?: string | null
+          id?: string
+          industry_type?: string | null
+          is_active?: boolean | null
+          objection_key?: string
+          objection_label?: string
+          times_converted?: number | null
+          times_used?: number | null
+          va_response?: string
+        }
+        Relationships: []
+      }
       brandaro_optimization_tasks: {
         Row: {
           ai_reasoning: string | null
@@ -11968,6 +12013,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_sales_script_steps: {
+        Row: {
+          coaching_tip: string | null
+          created_at: string | null
+          display_label: string
+          id: string
+          industry_type: string | null
+          is_active: boolean | null
+          step_key: string
+          step_name: string
+          step_number: number
+          tag_lead_as: string | null
+          va_says: string
+          wait_for_response: boolean | null
+        }
+        Insert: {
+          coaching_tip?: string | null
+          created_at?: string | null
+          display_label: string
+          id?: string
+          industry_type?: string | null
+          is_active?: boolean | null
+          step_key: string
+          step_name: string
+          step_number: number
+          tag_lead_as?: string | null
+          va_says: string
+          wait_for_response?: boolean | null
+        }
+        Update: {
+          coaching_tip?: string | null
+          created_at?: string | null
+          display_label?: string
+          id?: string
+          industry_type?: string | null
+          is_active?: boolean | null
+          step_key?: string
+          step_name?: string
+          step_number?: number
+          tag_lead_as?: string | null
+          va_says?: string
+          wait_for_response?: boolean | null
+        }
+        Relationships: []
       }
       brandaro_seo_tasks: {
         Row: {
