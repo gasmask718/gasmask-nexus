@@ -87,6 +87,14 @@ export default function VAManagerPage() {
   const createPositioning = useCreatePositioningTest();
   const { data: decisions = [] } = useSystemDecisions();
 
+  // Personality engine hooks
+  const { data: personalities = [] } = usePersonalities();
+  const { data: frameworks = [] } = useStrategyFrameworks();
+  const createPersonality = useCreatePersonality();
+  const createFramework = useCreateFramework();
+  const togglePersonality = useTogglePersonality();
+  const generatePersonalityResponse = useGeneratePersonalityResponse();
+
   const totalCalls = allPerf.reduce((s: number, p: any) => s + (p.calls_made || 0), 0);
   const totalConversations = allPerf.reduce((s: number, p: any) => s + (p.conversations || 0), 0);
   const totalInterested = allPerf.reduce((s: number, p: any) => s + (p.interested_leads || 0), 0);
