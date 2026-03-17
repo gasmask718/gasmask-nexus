@@ -10546,6 +10546,7 @@ export type Database = {
           nudge_count: number | null
           package_tier: string | null
           payment_amount: number | null
+          payment_completed: boolean | null
           payment_link_clicked: boolean | null
           payment_link_sent_at: string | null
           payment_link_url: string | null
@@ -10578,6 +10579,7 @@ export type Database = {
           nudge_count?: number | null
           package_tier?: string | null
           payment_amount?: number | null
+          payment_completed?: boolean | null
           payment_link_clicked?: boolean | null
           payment_link_sent_at?: string | null
           payment_link_url?: string | null
@@ -10610,6 +10612,7 @@ export type Database = {
           nudge_count?: number | null
           package_tier?: string | null
           payment_amount?: number | null
+          payment_completed?: boolean | null
           payment_link_clicked?: boolean | null
           payment_link_sent_at?: string | null
           payment_link_url?: string | null
