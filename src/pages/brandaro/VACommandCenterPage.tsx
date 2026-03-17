@@ -10,10 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
-  Flame, Phone, Eye, FileText, Play, Pause,
+  Flame, Phone, Eye, FileText, Play,
   MessageSquare, Brain, Target, TrendingUp,
-  UserCheck, AlertTriangle, Send, Clock,
-  CheckCircle2, Star, BarChart3, Zap
+  AlertTriangle, Send, Clock,
+  CheckCircle2, Star, Zap, Inbox, ShieldCheck,
+  DollarSign, Reply
 } from "lucide-react";
 
 export default function VACommandCenterPage() {
@@ -21,6 +22,7 @@ export default function VACommandCenterPage() {
   const [selectedCall, setSelectedCall] = useState<any>(null);
   const [vaNote, setVaNote] = useState("");
   const [overrideOutcome, setOverrideOutcome] = useState("");
+  const [activeTab, setActiveTab] = useState("hot-leads");
 
   // ─── HOT LEADS (handoff_score > 80) ───────────────────
   const { data: hotLeads = [] } = useQuery({
@@ -89,8 +91,40 @@ export default function VACommandCenterPage() {
       const { data, error } = await (supabase as any)
         .from("brandaro_followup_sequences")
         .select("*, brandaro_qualified_leads:lead_id(*)")
-        .eq("status", "pending")
+        .in("status", ["pending", "sent"])
         .order("scheduled_at", { ascending: true })
+        .limit(30);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // ─── INBOUND REPLIES ─────────────────────────────────
+  const { data: inboundMessages = [] } = useQuery({
+    queryKey: ["brandaro-inbound-messages"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("brandaro_inbound_messages")
+        .select("*, brandaro_qualified_leads:lead_id(*)")
+        .eq("resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      return data || [];
+    },
+    refetchInterval: 10000,
+  });
+
+  // ─── DEMO QUALITY SCORES ─────────────────────────────
+  const { data: flaggedDemos = [] } = useQuery({
+    queryKey: ["brandaro-flagged-demos"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("brandaro_demo_quality_scores")
+        .select("*, brandaro_qualified_leads:lead_id(*)")
+        .eq("flagged", true)
+        .is("reviewed_at", null)
+        .order("created_at", { ascending: false })
         .limit(20);
       if (error) throw error;
       return data || [];
@@ -102,7 +136,6 @@ export default function VACommandCenterPage() {
     mutationFn: async ({ actionType, targetCallId, targetLeadId, originalValue, newValue, notes }: any) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
       const { error } = await (supabase as any).from("brandaro_va_actions").insert({
         va_user_id: user.id,
         action_type: actionType,
@@ -116,10 +149,8 @@ export default function VACommandCenterPage() {
     },
   });
 
-  // ─── OVERRIDE OUTCOME ────────────────────────────────
   const handleOverrideOutcome = async (call: any) => {
     if (!overrideOutcome) return;
-
     await logVaAction.mutateAsync({
       actionType: "override_outcome",
       targetCallId: call.id,
@@ -128,18 +159,15 @@ export default function VACommandCenterPage() {
       newValue: overrideOutcome,
       notes: vaNote,
     });
-
     await (supabase as any).from("brandaro_voice_agent_calls")
       .update({ outcome: overrideOutcome, ai_notes: `VA Override: ${vaNote}` })
       .eq("id", call.id);
-
     toast.success("Outcome overridden");
     setOverrideOutcome("");
     setVaNote("");
     queryClient.invalidateQueries({ queryKey: ["brandaro-recent-ai-calls"] });
   };
 
-  // ─── TRIGGER FOLLOW-UP ───────────────────────────────
   const triggerFollowup = async (leadId: string, channel: string) => {
     await (supabase as any).from("brandaro_followup_sequences").insert({
       lead_id: leadId,
@@ -149,15 +177,41 @@ export default function VACommandCenterPage() {
       scheduled_at: new Date().toISOString(),
       status: "pending",
     });
-
     await logVaAction.mutateAsync({
       actionType: "trigger_followup",
       targetLeadId: leadId,
       notes: `Manual ${channel} follow-up triggered`,
     });
-
     toast.success(`${channel.toUpperCase()} follow-up queued`);
     queryClient.invalidateQueries({ queryKey: ["brandaro-pending-followups"] });
+  };
+
+  const resolveInbound = async (messageId: string) => {
+    await (supabase as any).from("brandaro_inbound_messages")
+      .update({ resolved: true })
+      .eq("id", messageId);
+    toast.success("Message resolved");
+    queryClient.invalidateQueries({ queryKey: ["brandaro-inbound-messages"] });
+  };
+
+  const approveFlaggedDemo = async (scoreId: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    await (supabase as any).from("brandaro_demo_quality_scores")
+      .update({ flagged: false, reviewed_at: new Date().toISOString(), reviewed_by: user?.id })
+      .eq("id", scoreId);
+    toast.success("Demo approved for send");
+    queryClient.invalidateQueries({ queryKey: ["brandaro-flagged-demos"] });
+  };
+
+  const advancePipelineStage = async (dealId: string, newStage: string) => {
+    const updates: any = { stage: newStage };
+    if (newStage === "demo_viewed") updates.demo_viewed_at = new Date().toISOString();
+    if (newStage === "interested") updates.interested_at = new Date().toISOString();
+    if (newStage === "closed") updates.closed_at = new Date().toISOString();
+
+    await (supabase as any).from("brandaro_close_pipeline").update(updates).eq("id", dealId);
+    toast.success(`Stage → ${newStage.replace("_", " ")}`);
+    queryClient.invalidateQueries({ queryKey: ["brandaro-close-pipeline"] });
   };
 
   const stageCounts = {
@@ -167,6 +221,8 @@ export default function VACommandCenterPage() {
     negotiating: pipeline.filter((p: any) => p.stage === "negotiating").length,
     closed: pipeline.filter((p: any) => p.stage === "closed").length,
   };
+
+  const unresolvedInbound = inboundMessages.filter((m: any) => m.requires_va);
 
   return (
     <div className="p-4 space-y-4">
@@ -183,10 +239,13 @@ export default function VACommandCenterPage() {
             <Flame className="h-3 w-3 text-orange-500" /> {hotLeads.length} Hot
           </Badge>
           <Badge variant="outline" className="gap-1">
-            <Eye className="h-3 w-3 text-blue-500" /> {demoRequests.length} Demos
+            <Reply className="h-3 w-3 text-green-500" /> {unresolvedInbound.length} Replies
           </Badge>
           <Badge variant="outline" className="gap-1">
-            <Clock className="h-3 w-3 text-yellow-500" /> {followups.length} Follow-ups
+            <ShieldCheck className="h-3 w-3 text-red-500" /> {flaggedDemos.length} Flagged
+          </Badge>
+          <Badge variant="outline" className="gap-1">
+            <Clock className="h-3 w-3 text-yellow-500" /> {followups.filter((f: any) => f.status === "pending").length} Pending
           </Badge>
         </div>
       </div>
@@ -203,22 +262,31 @@ export default function VACommandCenterPage() {
         ))}
       </div>
 
-      <Tabs defaultValue="hot-leads" className="space-y-3">
-        <TabsList className="grid grid-cols-5 w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
+        <TabsList className="grid grid-cols-7 w-full">
           <TabsTrigger value="hot-leads" className="gap-1 text-xs">
-            <Flame className="h-3 w-3" /> Hot Leads
+            <Flame className="h-3 w-3" /> Hot
           </TabsTrigger>
-          <TabsTrigger value="demo-requests" className="gap-1 text-xs">
-            <Eye className="h-3 w-3" /> Demos
+          <TabsTrigger value="inbound" className="gap-1 text-xs">
+            <Inbox className="h-3 w-3" /> Replies
+            {unresolvedInbound.length > 0 && (
+              <span className="ml-1 bg-red-500 text-white rounded-full px-1 text-[10px]">{unresolvedInbound.length}</span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="demo-quality" className="gap-1 text-xs">
+            <ShieldCheck className="h-3 w-3" /> QC
           </TabsTrigger>
           <TabsTrigger value="call-review" className="gap-1 text-xs">
-            <FileText className="h-3 w-3" /> Call Review
+            <FileText className="h-3 w-3" /> Calls
           </TabsTrigger>
           <TabsTrigger value="follow-ups" className="gap-1 text-xs">
             <Send className="h-3 w-3" /> Follow-Ups
           </TabsTrigger>
           <TabsTrigger value="pipeline" className="gap-1 text-xs">
             <Target className="h-3 w-3" /> Pipeline
+          </TabsTrigger>
+          <TabsTrigger value="payments" className="gap-1 text-xs">
+            <DollarSign className="h-3 w-3" /> Close
           </TabsTrigger>
         </TabsList>
 
@@ -228,21 +296,26 @@ export default function VACommandCenterPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <Flame className="h-4 w-4 text-orange-500" />
-                Hot Leads — Handoff Score 80+
+                Hot Leads — Score 80+ (90+ = Immediate Action)
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
                 {hotLeads.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4">No hot leads right now. AI is working on it.</p>
+                  <p className="text-sm text-muted-foreground p-4">No hot leads right now.</p>
                 ) : (
                   <div className="space-y-2">
                     {hotLeads.map((lead: any) => (
-                      <Card key={lead.id} className="border-l-4 border-l-orange-500">
+                      <Card key={lead.id} className={`border-l-4 ${(lead.handoff_score || 0) >= 90 ? "border-l-red-500 bg-red-500/5" : "border-l-orange-500"}`}>
                         <CardContent className="p-3">
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-medium">{lead.brandaro_qualified_leads?.business_name || "Unknown"}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium">{lead.brandaro_qualified_leads?.business_name || "Unknown"}</p>
+                                {(lead.handoff_score || 0) >= 90 && (
+                                  <Badge className="bg-red-500 text-[10px]">🔥 PRIORITY</Badge>
+                                )}
+                              </div>
                               <p className="text-xs text-muted-foreground">
                                 {lead.brandaro_qualified_leads?.industry} · Score: {lead.handoff_score}
                               </p>
@@ -257,7 +330,7 @@ export default function VACommandCenterPage() {
                                 <MessageSquare className="h-3 w-3 mr-1" /> SMS
                               </Button>
                               <Button size="sm" onClick={() => setSelectedCall(lead)}>
-                                <Phone className="h-3 w-3 mr-1" /> Call
+                                <Phone className="h-3 w-3 mr-1" /> Review
                               </Button>
                             </div>
                           </div>
@@ -271,36 +344,124 @@ export default function VACommandCenterPage() {
           </Card>
         </TabsContent>
 
-        {/* ─── DEMO REQUESTS TAB ─────────────────── */}
-        <TabsContent value="demo-requests">
+        {/* ─── INBOUND REPLIES TAB ────────────────── */}
+        <TabsContent value="inbound">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Eye className="h-4 w-4 text-blue-500" />
-                Pending Demo Requests
+                <Inbox className="h-4 w-4 text-green-500" />
+                Inbound Replies — {unresolvedInbound.length} Need VA
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {demoRequests.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4">No pending demos.</p>
+                {inboundMessages.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-4">No unresolved replies.</p>
                 ) : (
                   <div className="space-y-2">
-                    {demoRequests.map((lead: any) => (
-                      <Card key={lead.id}>
+                    {inboundMessages.map((msg: any) => (
+                      <Card key={msg.id} className={`border-l-4 ${msg.requires_va ? "border-l-red-500" : "border-l-green-500"}`}>
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-sm">
+                                  {msg.brandaro_qualified_leads?.business_name || msg.sender_phone || "Unknown"}
+                                </p>
+                                <Badge variant={msg.requires_va ? "destructive" : "secondary"} className="text-[10px]">
+                                  {msg.intent_detected}
+                                </Badge>
+                                {msg.ai_auto_responded && (
+                                  <Badge variant="outline" className="text-[10px]">AI Replied</Badge>
+                                )}
+                              </div>
+                              <p className="text-xs mt-1 bg-muted/50 rounded p-2">"{msg.message}"</p>
+                              {msg.ai_response && (
+                                <p className="text-xs mt-1 text-muted-foreground">
+                                  AI: "{msg.ai_response}"
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              {msg.requires_va && msg.lead_id && (
+                                <Button size="sm" variant="outline" onClick={() => triggerFollowup(msg.lead_id, "sms")}>
+                                  <Send className="h-3 w-3" />
+                                </Button>
+                              )}
+                              <Button size="sm" variant="ghost" onClick={() => resolveInbound(msg.id)}>
+                                <CheckCircle2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── DEMO QUALITY CONTROL TAB ───────────── */}
+        <TabsContent value="demo-quality">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-red-500" />
+                Demo Quality Control — {flaggedDemos.length} Flagged
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                {flaggedDemos.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-4">All demos passed quality check ✅</p>
+                ) : (
+                  <div className="space-y-2">
+                    {flaggedDemos.map((demo: any) => (
+                      <Card key={demo.id} className="border-l-4 border-l-red-500">
                         <CardContent className="p-3">
                           <div className="flex justify-between items-start">
                             <div>
-                              <p className="font-medium">{lead.business_name}</p>
-                              <p className="text-xs text-muted-foreground">{lead.industry} · {lead.city}</p>
-                              <p className="text-xs text-muted-foreground">{lead.email || lead.phone || "No contact"}</p>
+                              <p className="font-medium text-sm">
+                                {demo.brandaro_qualified_leads?.business_name || "Unknown Lead"}
+                              </p>
+                              <div className="flex gap-3 mt-1">
+                                <div className="text-center">
+                                  <div className="text-sm font-bold">{demo.design_score}</div>
+                                  <div className="text-[10px] text-muted-foreground">Design</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-sm font-bold">{demo.uniqueness_score}</div>
+                                  <div className="text-[10px] text-muted-foreground">Unique</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-sm font-bold">{demo.conversion_score}</div>
+                                  <div className="text-[10px] text-muted-foreground">Convert</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className={`text-sm font-bold ${demo.overall_score < 70 ? "text-red-500" : "text-green-500"}`}>
+                                    {demo.overall_score}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">Overall</div>
+                                </div>
+                              </div>
+                              <div className="flex gap-1 mt-1">
+                                {demo.cta_present ? (
+                                  <Badge variant="outline" className="text-[10px]">CTA ✓</Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-[10px]">No CTA</Badge>
+                                )}
+                                {demo.mobile_friendly ? (
+                                  <Badge variant="outline" className="text-[10px]">Mobile ✓</Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-[10px]">Not Mobile</Badge>
+                                )}
+                              </div>
                             </div>
                             <div className="flex gap-1">
-                              <Button size="sm" variant="outline" onClick={() => triggerFollowup(lead.id, "sms")}>
-                                <Send className="h-3 w-3 mr-1" /> Push
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => triggerFollowup(lead.id, "email")}>
-                                <FileText className="h-3 w-3 mr-1" /> Email
+                              <Button size="sm" variant="outline" className="text-green-600" onClick={() => approveFlaggedDemo(demo.id)}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Approve
                               </Button>
                             </div>
                           </div>
@@ -317,7 +478,6 @@ export default function VACommandCenterPage() {
         {/* ─── CALL REVIEW TAB ───────────────────── */}
         <TabsContent value="call-review">
           <div className="grid grid-cols-2 gap-3">
-            {/* Call List */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">AI Call History</CardTitle>
@@ -340,12 +500,8 @@ export default function VACommandCenterPage() {
                           </Badge>
                         </div>
                         <div className="flex gap-2 text-[10px] text-muted-foreground mt-1">
-                          {call.ai_confidence_score != null && (
-                            <span>Conf: {call.ai_confidence_score}%</span>
-                          )}
-                          {call.conversion_probability != null && (
-                            <span>Conv: {call.conversion_probability}%</span>
-                          )}
+                          {call.ai_confidence_score != null && <span>Conf: {call.ai_confidence_score}%</span>}
+                          {call.conversion_probability != null && <span>Conv: {call.conversion_probability}%</span>}
                           <span>HS: {call.handoff_score}</span>
                         </div>
                       </div>
@@ -355,7 +511,6 @@ export default function VACommandCenterPage() {
               </CardContent>
             </Card>
 
-            {/* Call Detail */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Call Detail</CardTitle>
@@ -373,7 +528,6 @@ export default function VACommandCenterPage() {
                         </p>
                       </div>
 
-                      {/* Scores */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="text-center p-2 rounded bg-muted/50">
                           <div className="text-lg font-bold">{selectedCall.ai_confidence_score ?? "—"}</div>
@@ -389,76 +543,42 @@ export default function VACommandCenterPage() {
                         </div>
                       </div>
 
-                      {/* Transcript */}
                       {selectedCall.call_transcript && (
                         <div>
                           <p className="text-xs font-medium mb-1">Transcript</p>
-                          <div className="text-xs bg-muted/30 p-2 rounded max-h-32 overflow-y-auto whitespace-pre-wrap">
+                          <div className="bg-muted/50 rounded p-2 text-xs max-h-32 overflow-y-auto">
                             {selectedCall.call_transcript}
                           </div>
                         </div>
                       )}
 
-                      {/* Recording */}
-                      {selectedCall.call_recording_url && (
-                        <div>
-                          <p className="text-xs font-medium mb-1">Recording</p>
-                          <audio controls className="w-full h-8" src={selectedCall.call_recording_url} />
-                        </div>
-                      )}
-
-                      {/* Improvements */}
-                      {selectedCall.improvement_suggestions?.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium mb-1">AI Suggestions</p>
-                          <ul className="text-xs space-y-1">
-                            {selectedCall.improvement_suggestions.map((s: string, i: number) => (
-                              <li key={i} className="flex gap-1">
-                                <Zap className="h-3 w-3 text-yellow-500 shrink-0 mt-0.5" />
-                                {s}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {/* VA Override */}
-                      <div className="border-t pt-2 space-y-2">
-                        <p className="text-xs font-medium">VA Actions</p>
+                      <div>
+                        <p className="text-xs font-medium mb-1">Override Outcome</p>
                         <Select value={overrideOutcome} onValueChange={setOverrideOutcome}>
                           <SelectTrigger className="h-8 text-xs">
-                            <SelectValue placeholder="Override outcome..." />
+                            <SelectValue placeholder="Select outcome..." />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="demo_requested">Demo Requested</SelectItem>
                             <SelectItem value="contact_captured">Contact Captured</SelectItem>
                             <SelectItem value="interested">Interested</SelectItem>
                             <SelectItem value="not_interested">Not Interested</SelectItem>
-                            <SelectItem value="callback_needed">Callback Needed</SelectItem>
+                            <SelectItem value="callback">Callback</SelectItem>
+                            <SelectItem value="wrong_number">Wrong Number</SelectItem>
                           </SelectContent>
                         </Select>
                         <Textarea
-                          className="text-xs h-16"
+                          className="mt-2 text-xs h-16"
                           placeholder="VA notes..."
                           value={vaNote}
                           onChange={(e) => setVaNote(e.target.value)}
                         />
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 text-xs"
-                            onClick={() => handleOverrideOutcome(selectedCall)}
-                            disabled={!overrideOutcome}
-                          >
-                            <UserCheck className="h-3 w-3 mr-1" /> Override
+                        <div className="flex gap-2 mt-2">
+                          <Button size="sm" onClick={() => handleOverrideOutcome(selectedCall)} disabled={!overrideOutcome}>
+                            <Star className="h-3 w-3 mr-1" /> Override
                           </Button>
-                          <Button
-                            size="sm"
-                            className="flex-1 text-xs"
-                            onClick={() => triggerFollowup(selectedCall.lead_id, "sms")}
-                          >
-                            <Send className="h-3 w-3 mr-1" /> Follow-Up
+                          <Button size="sm" variant="outline" onClick={() => triggerFollowup(selectedCall.lead_id, "sms")}>
+                            <Send className="h-3 w-3 mr-1" /> SMS
                           </Button>
                         </div>
                       </div>
@@ -475,44 +595,42 @@ export default function VACommandCenterPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Clock className="h-4 w-4 text-yellow-500" />
-                Pending Follow-Up Queue
+                <Send className="h-4 w-4 text-blue-500" />
+                Follow-Up Queue
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {followups.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4">No pending follow-ups.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {followups.map((fu: any) => (
-                      <Card key={fu.id}>
-                        <CardContent className="p-3">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium text-sm">{fu.brandaro_qualified_leads?.business_name || "Unknown"}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Step {fu.sequence_step} · {fu.channel?.toUpperCase()} · {fu.trigger_event}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{fu.message_content}</p>
-                            </div>
-                            <div className="flex gap-1">
-                              <Button size="sm" variant="outline" onClick={async () => {
-                                await (supabase as any).from("brandaro_followup_sequences")
-                                  .update({ status: "sent", sent_at: new Date().toISOString() })
-                                  .eq("id", fu.id);
-                                toast.success("Follow-up sent");
-                                queryClient.invalidateQueries({ queryKey: ["brandaro-pending-followups"] });
-                              }}>
-                                <Send className="h-3 w-3 mr-1" /> Send
-                              </Button>
-                            </div>
+                <div className="space-y-2">
+                  {followups.map((fu: any) => (
+                    <Card key={fu.id}>
+                      <CardContent className="p-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium text-sm">{fu.brandaro_qualified_leads?.business_name || "Unknown"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Step {fu.sequence_step} · {fu.channel} · {fu.trigger_event}
+                            </p>
+                            <p className="text-xs mt-1 text-muted-foreground truncate max-w-[300px]">
+                              "{fu.message_content}"
+                            </p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={fu.status === "sent" ? "default" : fu.status === "failed" ? "destructive" : "secondary"}
+                              className="text-[10px]"
+                            >
+                              {fu.sent ? "✓ Sent" : fu.status}
+                            </Badge>
+                            {fu.reply_received && (
+                              <Badge className="bg-green-500 text-[10px]">Replied!</Badge>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               </ScrollArea>
             </CardContent>
           </Card>
@@ -523,62 +641,111 @@ export default function VACommandCenterPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
-                <Target className="h-4 w-4 text-primary" />
+                <Target className="h-4 w-4 text-purple-500" />
                 Close Pipeline
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {pipeline.length === 0 ? (
-                  <p className="text-sm text-muted-foreground p-4">Pipeline empty — start closing deals!</p>
-                ) : (
-                  <div className="space-y-2">
-                    {pipeline.map((deal: any) => (
-                      <Card key={deal.id} className={`border-l-4 ${
-                        deal.stage === "closed" ? "border-l-green-500" :
-                        deal.stage === "negotiating" ? "border-l-yellow-500" :
-                        deal.stage === "interested" ? "border-l-blue-500" :
-                        "border-l-muted"
-                      }`}>
+                <div className="space-y-2">
+                  {pipeline.map((deal: any) => {
+                    const stageColors: Record<string, string> = {
+                      demo_sent: "border-l-blue-500",
+                      demo_viewed: "border-l-cyan-500",
+                      interested: "border-l-green-500",
+                      negotiating: "border-l-orange-500",
+                      closed: "border-l-emerald-500",
+                    };
+                    const nextStages: Record<string, string[]> = {
+                      demo_sent: ["demo_viewed", "interested"],
+                      demo_viewed: ["interested", "negotiating"],
+                      interested: ["negotiating", "closed"],
+                      negotiating: ["closed"],
+                    };
+
+                    return (
+                      <Card key={deal.id} className={`border-l-4 ${stageColors[deal.stage] || ""}`}>
                         <CardContent className="p-3">
                           <div className="flex justify-between items-start">
                             <div>
                               <p className="font-medium text-sm">{deal.brandaro_qualified_leads?.business_name || "Unknown"}</p>
-                              <div className="flex gap-1 mt-1">
-                                <Badge variant="outline" className="text-[10px] capitalize">{deal.stage.replace("_", " ")}</Badge>
-                                {deal.package_tier && <Badge className="text-[10px]">{deal.package_tier}</Badge>}
-                                {deal.payment_amount && <Badge variant="secondary" className="text-[10px]">${deal.payment_amount}</Badge>}
+                              <div className="flex gap-2 items-center mt-1">
+                                <Badge variant="outline" className="text-[10px]">{deal.stage?.replace("_", " ")}</Badge>
+                                {deal.urgency_level === "critical" && (
+                                  <Badge className="bg-red-500 text-[10px]">URGENT</Badge>
+                                )}
+                                {deal.urgency_level === "high" && (
+                                  <Badge className="bg-orange-500 text-[10px]">HIGH</Badge>
+                                )}
+                                <span className="text-[10px] text-muted-foreground">Priority: {deal.priority_score}</span>
                               </div>
-                              <p className="text-[10px] text-muted-foreground mt-1">
-                                {deal.days_in_pipeline}d in pipeline · Priority: {deal.priority_score}
-                              </p>
+                              {deal.nudge_count > 0 && (
+                                <p className="text-[10px] text-muted-foreground mt-1">
+                                  Nudged {deal.nudge_count}x · Last: {deal.last_nudge_at ? new Date(deal.last_nudge_at).toLocaleDateString() : "—"}
+                                </p>
+                              )}
                             </div>
                             <div className="flex gap-1">
-                              <Button size="sm" variant="outline" onClick={async () => {
-                                const stages = ["demo_sent", "demo_viewed", "interested", "negotiating", "closed"];
-                                const currentIdx = stages.indexOf(deal.stage);
-                                if (currentIdx < stages.length - 1) {
-                                  const nextStage = stages[currentIdx + 1];
-                                  await (supabase as any).from("brandaro_close_pipeline")
-                                    .update({
-                                      stage: nextStage,
-                                      [`${nextStage}_at`]: new Date().toISOString(),
-                                      updated_at: new Date().toISOString(),
-                                    })
-                                    .eq("id", deal.id);
-                                  toast.success(`Moved to ${nextStage.replace("_", " ")}`);
-                                  queryClient.invalidateQueries({ queryKey: ["brandaro-close-pipeline"] });
-                                }
-                              }}>
-                                <CheckCircle2 className="h-3 w-3 mr-1" /> Advance
+                              {(nextStages[deal.stage] || []).map((ns: string) => (
+                                <Button key={ns} size="sm" variant="outline" className="text-[10px] h-7" onClick={() => advancePipelineStage(deal.id, ns)}>
+                                  → {ns.replace("_", " ")}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── CLOSE / PAYMENTS TAB ──────────────── */}
+        <TabsContent value="payments">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-500" />
+                Close Acceleration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2">
+                  {pipeline
+                    .filter((d: any) => ["negotiating", "interested", "demo_viewed"].includes(d.stage))
+                    .map((deal: any) => (
+                      <Card key={deal.id} className="border-l-4 border-l-green-500">
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="font-medium text-sm">{deal.brandaro_qualified_leads?.business_name || "Unknown"}</p>
+                              <Badge variant="outline" className="text-[10px] mt-1">{deal.stage?.replace("_", " ")}</Badge>
+                              <div className="flex gap-2 mt-2">
+                                {deal.payment_link_sent_at && (
+                                  <Badge className="text-[10px]">💳 Link Sent</Badge>
+                                )}
+                                {deal.payment_link_clicked && (
+                                  <Badge className="bg-green-500 text-[10px]">👀 Link Clicked!</Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <Button size="sm" onClick={() => triggerFollowup(deal.lead_id, "sms")}>
+                                <Zap className="h-3 w-3 mr-1" /> Push Close
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => advancePipelineStage(deal.id, "closed")}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" /> Mark Closed
                               </Button>
                             </div>
                           </div>
                         </CardContent>
                       </Card>
                     ))}
-                  </div>
-                )}
+                </div>
               </ScrollArea>
             </CardContent>
           </Card>
