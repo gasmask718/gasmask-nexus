@@ -109,14 +109,14 @@ export function useVALeaderboard(period: "today" | "week" | "month" = "today") {
 
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, name, avatar_url")
         .in("id", vaIds);
 
       return vaIds
         .map(id => ({
           va_user_id: id,
           score: map.get(id) || 0,
-          name: (profiles || []).find((p: any) => p.id === id)?.display_name || "VA",
+          name: (profiles || []).find((p: any) => p.id === id)?.name || "VA",
           avatar: (profiles || []).find((p: any) => p.id === id)?.avatar_url,
         }))
         .sort((a, b) => b.score - a.score);
