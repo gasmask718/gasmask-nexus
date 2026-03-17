@@ -13086,6 +13086,54 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_learning_events: {
+        Row: {
+          buying_signals: Json | null
+          call_session_id: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          next_action_taken: string | null
+          objections: Json | null
+          outcome: string | null
+          revenue_generated: number | null
+          strategies_used: Json | null
+          va_user_id: string
+          was_close: boolean | null
+          was_success: boolean | null
+        }
+        Insert: {
+          buying_signals?: Json | null
+          call_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          next_action_taken?: string | null
+          objections?: Json | null
+          outcome?: string | null
+          revenue_generated?: number | null
+          strategies_used?: Json | null
+          va_user_id: string
+          was_close?: boolean | null
+          was_success?: boolean | null
+        }
+        Update: {
+          buying_signals?: Json | null
+          call_session_id?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          next_action_taken?: string | null
+          objections?: Json | null
+          outcome?: string | null
+          revenue_generated?: number | null
+          strategies_used?: Json | null
+          va_user_id?: string
+          was_close?: boolean | null
+          was_success?: boolean | null
+        }
+        Relationships: []
+      }
       brandaro_learning_feedback: {
         Row: {
           ai_notes: string | null
@@ -14239,6 +14287,48 @@ export type Database = {
           website_status?: string | null
           website_url?: string | null
           zip_code?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_response_library: {
+        Row: {
+          avg_outcome_score: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          objection_type: string
+          response_text: string
+          strategy: string | null
+          success_count: number | null
+          success_rate: number | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          avg_outcome_score?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          objection_type: string
+          response_text: string
+          strategy?: string | null
+          success_count?: number | null
+          success_rate?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          avg_outcome_score?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          objection_type?: string
+          response_text?: string
+          strategy?: string | null
+          success_count?: number | null
+          success_rate?: number | null
+          updated_at?: string | null
+          usage_count?: number | null
         }
         Relationships: []
       }
@@ -15698,6 +15788,45 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_va_skill_profiles: {
+        Row: {
+          closing_score: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          followup_score: number | null
+          id: string
+          last_updated: string | null
+          objection_handling_score: number | null
+          strongest_area: string | null
+          va_user_id: string
+          weakest_area: string | null
+        }
+        Insert: {
+          closing_score?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          followup_score?: number | null
+          id?: string
+          last_updated?: string | null
+          objection_handling_score?: number | null
+          strongest_area?: string | null
+          va_user_id: string
+          weakest_area?: string | null
+        }
+        Update: {
+          closing_score?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          followup_score?: number | null
+          id?: string
+          last_updated?: string | null
+          objection_handling_score?: number | null
+          strongest_area?: string | null
+          va_user_id?: string
+          weakest_area?: string | null
+        }
+        Relationships: []
+      }
       brandaro_va_task_queue: {
         Row: {
           auto_generated: boolean | null
@@ -16069,6 +16198,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_winning_patterns: {
+        Row: {
+          avg_revenue: number | null
+          created_at: string | null
+          id: string
+          last_updated: string | null
+          pattern_key: string
+          pattern_type: string
+          sample_size: number | null
+          success_rate: number | null
+        }
+        Insert: {
+          avg_revenue?: number | null
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          pattern_key: string
+          pattern_type: string
+          sample_size?: number | null
+          success_rate?: number | null
+        }
+        Update: {
+          avg_revenue?: number | null
+          created_at?: string | null
+          id?: string
+          last_updated?: string | null
+          pattern_key?: string
+          pattern_type?: string
+          sample_size?: number | null
+          success_rate?: number | null
+        }
+        Relationships: []
       }
       brands: {
         Row: {
