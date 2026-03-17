@@ -650,6 +650,7 @@ function assembleProductionSite(
   blocks: any[],
   businessName: string,
   industry: string,
+  patterns: any[] = [],
 ): string {
   // Group blocks by page
   const pageGroups: Record<string, any[]> = {};
