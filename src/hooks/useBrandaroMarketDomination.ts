@@ -30,14 +30,17 @@ export function useUpsertCompetitor() {
       weaknesses?: string[];
     }) => {
       const { data, error } = await supabase.functions.invoke("brandaro-market-domination", {
-        body: { action: "analyze-competitors", ...params },
+        body: { action: "analyze-competitors", request_id: crypto.randomUUID(), ...params },
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["competitor-intel"] });
-      toast.success("Competitor intel updated");
+      qc.invalidateQueries({ queryKey: ["offer-variants"] });
+      qc.invalidateQueries({ queryKey: ["system-decisions"] });
+      const autoCount = data?.auto_offers_created?.length || 0;
+      toast.success(`Competitor intel updated${autoCount > 0 ? `, ${autoCount} auto-offers generated` : ""}`);
     },
   });
 }
@@ -73,7 +76,7 @@ export function useCreateOffer() {
     }) => {
       const { error } = await (supabase as any)
         .from("brandaro_offer_variants")
-        .insert({ ...offer, status: "testing" });
+        .insert({ ...offer, status: "testing", sample_size: 0, exposure_count: 0, conversion_count: 0 });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -88,14 +91,20 @@ export function useOptimizeOffers() {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("brandaro-market-domination", {
-        body: { action: "optimize-offers" },
+        body: { action: "optimize-offers", request_id: crypto.randomUUID() },
       });
       if (error) throw error;
       return data;
     },
     onSuccess: (data: any) => {
       qc.invalidateQueries({ queryKey: ["offer-variants"] });
-      toast.success(`Promoted ${data?.promoted?.length || 0}, killed ${data?.killed?.length || 0}`);
+      qc.invalidateQueries({ queryKey: ["system-decisions"] });
+      const msg = [
+        data?.promoted?.length ? `${data.promoted.length} promoted` : null,
+        data?.killed?.length ? `${data.killed.length} killed` : null,
+        data?.skipped?.length ? `${data.skipped.length} skipped (low sample)` : null,
+      ].filter(Boolean).join(", ");
+      toast.success(msg || "Offers optimized");
     },
   });
 }
@@ -121,13 +130,14 @@ export function useCreatePricingTest() {
   return useMutation({
     mutationFn: async (params: { base_price: number; test_price: number; segment?: string }) => {
       const { data, error } = await supabase.functions.invoke("brandaro-market-domination", {
-        body: { action: "run-pricing-test", ...params },
+        body: { action: "run-pricing-test", request_id: crypto.randomUUID(), ...params },
       });
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pricing-tests"] });
+      qc.invalidateQueries({ queryKey: ["system-decisions"] });
       toast.success("Pricing test started");
     },
   });
@@ -138,13 +148,14 @@ export function useEvaluatePricingTests() {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("brandaro-market-domination", {
-        body: { action: "evaluate-pricing-tests" },
+        body: { action: "evaluate-pricing-tests", request_id: crypto.randomUUID() },
       });
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pricing-tests"] });
+      qc.invalidateQueries({ queryKey: ["system-decisions"] });
       toast.success("Pricing tests evaluated");
     },
   });
@@ -182,6 +193,47 @@ export function useCreatePositioningTest() {
   });
 }
 
+// ── Winning Script (for call injection) ──
+export function useWinningScript() {
+  return useQuery({
+    queryKey: ["winning-script"],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke("brandaro-market-domination", {
+        body: { action: "get-winning-script" },
+      });
+      if (error) throw error;
+      return data as {
+        offer: any;
+        positioning: any;
+        script_inject: {
+          headline: string | null;
+          pricing: number | null;
+          value_props: string[];
+          urgency: string | null;
+          guarantee: string | null;
+        };
+      };
+    },
+    refetchInterval: 300000, // 5 min
+  });
+}
+
+// ── System Decisions (audit log) ──
+export function useSystemDecisions(limit = 20) {
+  return useQuery({
+    queryKey: ["system-decisions", limit],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("brandaro_system_decisions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+}
+
 // ── Full Dashboard ──
 export function useDominationDashboard() {
   return useQuery({
@@ -198,6 +250,7 @@ export function useDominationDashboard() {
         pricing_tests: any[];
         active_pricing_tests: number;
         positioning: any[];
+        decisions: any[];
       };
     },
     refetchInterval: 60000,
