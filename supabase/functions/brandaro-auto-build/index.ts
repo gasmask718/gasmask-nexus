@@ -190,7 +190,14 @@ Deno.serve(async (req) => {
       .order("page_type")
       .order("section_order");
 
-    const productionHtml = assembleProductionSite(allBlocks || [], businessName, industry);
+    let productionHtml = assembleProductionSite(allBlocks || [], businessName, industry);
+
+    // Inject tracking values
+    productionHtml = productionHtml
+      .replace("TRACKING_BASE_URL", Deno.env.get("SUPABASE_URL") || "")
+      .replace("TRACKING_ANON_KEY", Deno.env.get("SUPABASE_ANON_KEY") || "")
+      .replace("TRACKING_CLIENT_ID", clientId)
+      .replace("TRACKING_PROJECT_ID", projectId || "");
 
     // Store production HTML in demo_sites for serving
     const slug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "");
@@ -476,6 +483,43 @@ function assembleProductionSite(
         document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
       });
     });
+  </script>
+
+  <!-- Brandaro Result Engine Tracking -->
+  <script>
+  (function(){
+    var baseUrl="TRACKING_BASE_URL";
+    var anonKey="TRACKING_ANON_KEY";
+    var clientId="TRACKING_CLIENT_ID";
+    var projectId="TRACKING_PROJECT_ID";
+    var sid=Math.random().toString(36).substring(2);
+    function track(type,val){
+      fetch(baseUrl+"/functions/v1/brandaro-track-lead-event",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+anonKey},
+        body:JSON.stringify({client_id:clientId,project_id:projectId,event_type:type,event_value:val||"",source:document.referrer?"referral":"direct",page_url:location.href,session_id:sid})
+      }).catch(function(){});
+    }
+    track("session");
+    var maxScroll=0;
+    window.addEventListener("scroll",function(){
+      var pct=Math.round((window.scrollY/(document.body.scrollHeight-window.innerHeight))*100);
+      if(pct>=25&&maxScroll<25){track("scroll_25");maxScroll=25;}
+      if(pct>=50&&maxScroll<50){track("scroll_50");maxScroll=50;}
+      if(pct>=75&&maxScroll<75){track("scroll_75");maxScroll=75;}
+    });
+    document.addEventListener("click",function(e){
+      var t=e.target;
+      if(t.tagName==="A"||t.tagName==="BUTTON"||(t.closest&&t.closest("a,button"))){
+        var text=(t.textContent||"").trim().substring(0,50);
+        track("cta_click",text);
+        if(t.href&&t.href.startsWith("tel:")) track("phone_click",t.href);
+      }
+    });
+    document.querySelectorAll("form").forEach(function(f){
+      f.addEventListener("submit",function(){track("form_submit",f.id||f.action||"unknown");});
+    });
+  })();
   </script>
 </body>
 </html>`;

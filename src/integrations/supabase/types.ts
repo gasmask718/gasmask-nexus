@@ -10060,6 +10060,115 @@ export type Database = {
           },
         ]
       }
+      brandaro_client_alerts: {
+        Row: {
+          alert_type: string
+          client_id: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          is_resolved: boolean | null
+          message: string
+          resolved_at: string | null
+          severity: string | null
+        }
+        Insert: {
+          alert_type: string
+          client_id: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Update: {
+          alert_type?: string
+          client_id?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_alerts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_client_metrics: {
+        Row: {
+          avg_session_duration: number | null
+          bounce_rate: number | null
+          calls_generated: number | null
+          client_id: string
+          conversion_rate: number | null
+          created_at: string | null
+          cta_clicks: number | null
+          estimated_revenue_impact: number | null
+          form_submissions: number | null
+          id: string
+          leads_generated: number | null
+          period_date: string
+          top_pages: Json | null
+          total_visitors: number | null
+          traffic_sources: Json | null
+          unique_visitors: number | null
+        }
+        Insert: {
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
+          calls_generated?: number | null
+          client_id: string
+          conversion_rate?: number | null
+          created_at?: string | null
+          cta_clicks?: number | null
+          estimated_revenue_impact?: number | null
+          form_submissions?: number | null
+          id?: string
+          leads_generated?: number | null
+          period_date: string
+          top_pages?: Json | null
+          total_visitors?: number | null
+          traffic_sources?: Json | null
+          unique_visitors?: number | null
+        }
+        Update: {
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
+          calls_generated?: number | null
+          client_id?: string
+          conversion_rate?: number | null
+          created_at?: string | null
+          cta_clicks?: number | null
+          estimated_revenue_impact?: number | null
+          form_submissions?: number | null
+          id?: string
+          leads_generated?: number | null
+          period_date?: string
+          top_pages?: Json | null
+          total_visitors?: number | null
+          traffic_sources?: Json | null
+          unique_visitors?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_metrics_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_clients: {
         Row: {
           addon_services: Json | null
@@ -10067,6 +10176,7 @@ export type Database = {
           assigned_builder: string | null
           brand_colors: Json | null
           business_name: string
+          client_status: string | null
           created_at: string | null
           domain_info: string | null
           email: string | null
@@ -10079,6 +10189,7 @@ export type Database = {
           onboarding_checklist: Json | null
           onboarding_status: string | null
           owner_name: string | null
+          package_chosen: string | null
           phone: string | null
           portal_access_enabled: boolean | null
           project_deadline: string | null
@@ -10097,6 +10208,7 @@ export type Database = {
           assigned_builder?: string | null
           brand_colors?: Json | null
           business_name: string
+          client_status?: string | null
           created_at?: string | null
           domain_info?: string | null
           email?: string | null
@@ -10109,6 +10221,7 @@ export type Database = {
           onboarding_checklist?: Json | null
           onboarding_status?: string | null
           owner_name?: string | null
+          package_chosen?: string | null
           phone?: string | null
           portal_access_enabled?: boolean | null
           project_deadline?: string | null
@@ -10127,6 +10240,7 @@ export type Database = {
           assigned_builder?: string | null
           brand_colors?: Json | null
           business_name?: string
+          client_status?: string | null
           created_at?: string | null
           domain_info?: string | null
           email?: string | null
@@ -10139,6 +10253,7 @@ export type Database = {
           onboarding_checklist?: Json | null
           onboarding_status?: string | null
           owner_name?: string | null
+          package_chosen?: string | null
           phone?: string | null
           portal_access_enabled?: boolean | null
           project_deadline?: string | null
@@ -10615,6 +10730,66 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_lead_events: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          event_type: string
+          event_value: string | null
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          page_url: string | null
+          project_id: string | null
+          session_id: string | null
+          source: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          event_type: string
+          event_value?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          page_url?: string | null
+          project_id?: string | null
+          session_id?: string | null
+          source?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          event_value?: string | null
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          page_url?: string | null
+          project_id?: string | null
+          session_id?: string | null
+          source?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_lead_events_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_lead_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_message_log: {
         Row: {
           channel: string
@@ -10721,6 +10896,75 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_optimization_tasks: {
+        Row: {
+          ai_reasoning: string | null
+          applied_at: string | null
+          approved_by: string | null
+          client_id: string
+          created_at: string | null
+          current_value: string | null
+          id: string
+          page_target: string | null
+          performance_after: Json | null
+          performance_before: Json | null
+          priority: string | null
+          project_id: string | null
+          status: string | null
+          suggested_value: string | null
+          task_type: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          applied_at?: string | null
+          approved_by?: string | null
+          client_id: string
+          created_at?: string | null
+          current_value?: string | null
+          id?: string
+          page_target?: string | null
+          performance_after?: Json | null
+          performance_before?: Json | null
+          priority?: string | null
+          project_id?: string | null
+          status?: string | null
+          suggested_value?: string | null
+          task_type: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          applied_at?: string | null
+          approved_by?: string | null
+          client_id?: string
+          created_at?: string | null
+          current_value?: string | null
+          id?: string
+          page_target?: string | null
+          performance_after?: Json | null
+          performance_before?: Json | null
+          priority?: string | null
+          project_id?: string | null
+          status?: string | null
+          suggested_value?: string | null
+          task_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_optimization_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_optimization_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_projects: {
         Row: {
           assigned_ai_agent: string | null
@@ -10738,14 +10982,19 @@ export type Database = {
           domain_type: string | null
           hosting_status: string | null
           id: string
+          last_report_sent_at: string | null
           launched_at: string | null
           lead_id: string | null
           live_url: string | null
+          monthly_report_enabled: boolean | null
           package_tier: string
           project_name: string
           proposal_id: string | null
+          seo_status: string | null
           ssl_provisioned: boolean | null
           ssl_status: string | null
+          tracking_number: string | null
+          tracking_script_installed: boolean | null
           updated_at: string
         }
         Insert: {
@@ -10764,14 +11013,19 @@ export type Database = {
           domain_type?: string | null
           hosting_status?: string | null
           id?: string
+          last_report_sent_at?: string | null
           launched_at?: string | null
           lead_id?: string | null
           live_url?: string | null
+          monthly_report_enabled?: boolean | null
           package_tier?: string
           project_name: string
           proposal_id?: string | null
+          seo_status?: string | null
           ssl_provisioned?: boolean | null
           ssl_status?: string | null
+          tracking_number?: string | null
+          tracking_script_installed?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -10790,14 +11044,19 @@ export type Database = {
           domain_type?: string | null
           hosting_status?: string | null
           id?: string
+          last_report_sent_at?: string | null
           launched_at?: string | null
           lead_id?: string | null
           live_url?: string | null
+          monthly_report_enabled?: boolean | null
           package_tier?: string
           project_name?: string
           proposal_id?: string | null
+          seo_status?: string | null
           ssl_provisioned?: boolean | null
           ssl_status?: string | null
+          tracking_number?: string | null
+          tracking_script_installed?: boolean | null
           updated_at?: string
         }
         Relationships: [
@@ -11098,12 +11357,121 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_seo_tasks: {
+        Row: {
+          client_id: string
+          content: string | null
+          created_at: string | null
+          id: string
+          performance_data: Json | null
+          project_id: string | null
+          published_at: string | null
+          published_url: string | null
+          status: string | null
+          target_keyword: string | null
+          target_location: string | null
+          task_type: string
+          title: string
+        }
+        Insert: {
+          client_id: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          performance_data?: Json | null
+          project_id?: string | null
+          published_at?: string | null
+          published_url?: string | null
+          status?: string | null
+          target_keyword?: string | null
+          target_location?: string | null
+          task_type: string
+          title: string
+        }
+        Update: {
+          client_id?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          performance_data?: Json | null
+          project_id?: string | null
+          published_at?: string | null
+          published_url?: string | null
+          status?: string | null
+          target_keyword?: string | null
+          target_location?: string | null
+          task_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_seo_tasks_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_seo_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_site_versions: {
+        Row: {
+          content_snapshot: Json | null
+          created_at: string | null
+          html_snapshot: string | null
+          id: string
+          is_active: boolean | null
+          page_path: string
+          performance_metrics: Json | null
+          project_id: string
+          version_number: number | null
+        }
+        Insert: {
+          content_snapshot?: Json | null
+          created_at?: string | null
+          html_snapshot?: string | null
+          id?: string
+          is_active?: boolean | null
+          page_path: string
+          performance_metrics?: Json | null
+          project_id: string
+          version_number?: number | null
+        }
+        Update: {
+          content_snapshot?: Json | null
+          created_at?: string | null
+          html_snapshot?: string | null
+          id?: string
+          is_active?: boolean | null
+          page_path?: string
+          performance_metrics?: Json | null
+          project_id?: string
+          version_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_site_versions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_subscriptions: {
         Row: {
           cancelled_at: string | null
           client_id: string
           created_at: string
           id: string
+          includes_ads: boolean | null
+          includes_seo: boolean | null
           monthly_fee: number
           next_billing_at: string | null
           project_id: string | null
@@ -11112,6 +11480,7 @@ export type Database = {
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          tier: string | null
           updated_at: string
         }
         Insert: {
@@ -11119,6 +11488,8 @@ export type Database = {
           client_id: string
           created_at?: string
           id?: string
+          includes_ads?: boolean | null
+          includes_seo?: boolean | null
           monthly_fee: number
           next_billing_at?: string | null
           project_id?: string | null
@@ -11127,6 +11498,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          tier?: string | null
           updated_at?: string
         }
         Update: {
@@ -11134,6 +11506,8 @@ export type Database = {
           client_id?: string
           created_at?: string
           id?: string
+          includes_ads?: boolean | null
+          includes_seo?: boolean | null
           monthly_fee?: number
           next_billing_at?: string | null
           project_id?: string | null
@@ -11142,6 +11516,7 @@ export type Database = {
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          tier?: string | null
           updated_at?: string
         }
         Relationships: [
