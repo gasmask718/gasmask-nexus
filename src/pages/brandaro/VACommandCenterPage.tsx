@@ -319,15 +319,22 @@ export default function VACommandCenterPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-3">
-        <TabsList className="grid grid-cols-7 w-full">
+        <TabsList className="grid grid-cols-9 w-full">
+          <TabsTrigger value="tasks" className="gap-1 text-xs">
+            <ListTodo className="h-3 w-3" /> Tasks
+            {vaTasks.length > 0 && <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1 text-[10px]">{vaTasks.length}</span>}
+          </TabsTrigger>
           <TabsTrigger value="hot-leads" className="gap-1 text-xs">
             <Flame className="h-3 w-3" /> Hot
           </TabsTrigger>
           <TabsTrigger value="inbound" className="gap-1 text-xs">
             <Inbox className="h-3 w-3" /> Replies
             {unresolvedInbound.length > 0 && (
-              <span className="ml-1 bg-red-500 text-white rounded-full px-1 text-[10px]">{unresolvedInbound.length}</span>
+              <span className="ml-1 bg-destructive text-destructive-foreground rounded-full px-1 text-[10px]">{unresolvedInbound.length}</span>
             )}
+          </TabsTrigger>
+          <TabsTrigger value="post-call" className="gap-1 text-xs">
+            <ClipboardList className="h-3 w-3" /> Log
           </TabsTrigger>
           <TabsTrigger value="demo-quality" className="gap-1 text-xs">
             <ShieldCheck className="h-3 w-3" /> QC
@@ -345,6 +352,195 @@ export default function VACommandCenterPage() {
             <DollarSign className="h-3 w-3" /> Close
           </TabsTrigger>
         </TabsList>
+
+        {/* ─── VA TASK QUEUE TAB ─────────────────────── */}
+        <TabsContent value="tasks">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListTodo className="h-4 w-4 text-primary" />
+                Task Queue — {vaTasks.length} Active
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                {vaTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground p-4">No tasks right now. 🎉</p>
+                ) : (
+                  <div className="space-y-2">
+                    {vaTasks.map((task: any) => {
+                      const typeIcons: Record<string, any> = {
+                        call_lead: Phone,
+                        review_demo: Eye,
+                        fix_website: ShieldCheck,
+                        respond_inbound: MessageSquare,
+                        manual_close: DollarSign,
+                        approve_demo: CheckCircle2,
+                      };
+                      const Icon = typeIcons[task.task_type] || ListTodo;
+                      const priorityColors: Record<string, string> = {
+                        critical: "border-l-destructive",
+                        high: "border-l-orange-500",
+                        normal: "border-l-primary",
+                        low: "border-l-muted",
+                      };
+
+                      return (
+                        <Card key={task.id} className={`border-l-4 ${priorityColors[task.priority] || "border-l-primary"}`}>
+                          <CardContent className="p-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <Icon className="h-4 w-4 text-muted-foreground" />
+                                  <span className="font-medium text-sm capitalize">{task.task_type.replace(/_/g, " ")}</span>
+                                  <Badge variant={task.priority === "critical" ? "destructive" : "secondary"} className="text-[10px]">
+                                    {task.priority}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  {task.brandaro_qualified_leads?.business_name || "Unknown"} · {new Date(task.created_at).toLocaleTimeString()}
+                                </p>
+                                {task.notes && <p className="text-xs mt-1">"{task.notes}"</p>}
+                              </div>
+                              <div className="flex gap-1">
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  completeTask.mutate({ taskId: task.id });
+                                  toast.success("Task completed");
+                                }}>
+                                  <CheckCircle2 className="h-3 w-3 mr-1" /> Done
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── POST-CALL FEEDBACK TAB ────────────────── */}
+        <TabsContent value="post-call">
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-primary" />
+                  Post-Call Input (Mandatory)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Outcome *</label>
+                  <Select value={postCallOutcome} onValueChange={setPostCallOutcome}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select outcome..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="closed">🎉 Deal Closed</SelectItem>
+                      <SelectItem value="interested">👍 Interested</SelectItem>
+                      <SelectItem value="callback">📞 Callback Scheduled</SelectItem>
+                      <SelectItem value="nurture">🌱 Nurture / Follow-up</SelectItem>
+                      <SelectItem value="lost">❌ Lost / Not Interested</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Objection Type</label>
+                  <Select value={postCallObjection} onValueChange={setPostCallObjection}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="None / select..." /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="too_expensive">💰 Too Expensive</SelectItem>
+                      <SelectItem value="already_have_website">🌐 Already Has Website</SelectItem>
+                      <SelectItem value="not_right_now">⏰ Not Right Now</SelectItem>
+                      <SelectItem value="need_to_think">🤔 Need to Think</SelectItem>
+                      <SelectItem value="dont_trust_online">🛡️ Doesn't Trust Online</SelectItem>
+                      <SelectItem value="bad_timing">📅 Bad Timing</SelectItem>
+                      <SelectItem value="competition">🏢 Using Competitor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {postCallOutcome === "closed" && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Deal Value ($)</label>
+                    <Input
+                      type="number"
+                      className="h-8 text-xs"
+                      placeholder="750"
+                      value={postCallDealValue}
+                      onChange={(e) => setPostCallDealValue(e.target.value)}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">VA Notes</label>
+                  <Textarea
+                    className="text-xs h-20"
+                    placeholder="What happened on the call? Key details..."
+                    value={postCallNotes}
+                    onChange={(e) => setPostCallNotes(e.target.value)}
+                  />
+                </div>
+
+                <Button
+                  className="w-full"
+                  onClick={handlePostCallSubmit}
+                  disabled={!postCallOutcome || submitFeedback.isPending}
+                >
+                  <Brain className="h-4 w-4 mr-2" /> Submit → Feed AI Learning
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  Objection Playbook
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[350px]">
+                  {objectionLibrary.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No objections tracked yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {objectionLibrary.map((obj: any) => (
+                        <div key={obj.id} className="border rounded p-3 space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium text-sm capitalize">{obj.objection_type.replace(/_/g, " ")}</span>
+                            <div className="flex gap-2">
+                              <Badge variant="outline" className="text-[10px]">{obj.frequency}x</Badge>
+                              <Badge
+                                variant={obj.success_rate >= 50 ? "default" : "secondary"}
+                                className="text-[10px]"
+                              >
+                                {obj.success_rate}% win
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground italic">"{obj.best_response}"</p>
+                          {obj.alternative_responses?.length > 0 && (
+                            <div className="text-[10px] text-muted-foreground">
+                              Alt: {obj.alternative_responses.map((r: string, i: number) => (
+                                <span key={i} className="block">• {r}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
 
         {/* ─── HOT LEADS TAB ──────────────────────── */}
         <TabsContent value="hot-leads">
