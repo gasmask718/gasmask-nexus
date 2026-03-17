@@ -321,3 +321,9 @@ verify_jwt = false
 
 [functions.brandaro-autonomous-executor]
 verify_jwt = false
+
+[functions.brandaro-channel-orchestrator]
+verify_jwt = false
+
+[functions.brandaro-ai-conversation-engine]
+verify_jwt = false
