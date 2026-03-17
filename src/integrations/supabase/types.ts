@@ -10176,6 +10176,7 @@ export type Database = {
           assigned_builder: string | null
           brand_colors: Json | null
           business_name: string
+          client_status: string | null
           created_at: string | null
           domain_info: string | null
           email: string | null
@@ -10188,6 +10189,7 @@ export type Database = {
           onboarding_checklist: Json | null
           onboarding_status: string | null
           owner_name: string | null
+          package_chosen: string | null
           phone: string | null
           portal_access_enabled: boolean | null
           project_deadline: string | null
@@ -10206,6 +10208,7 @@ export type Database = {
           assigned_builder?: string | null
           brand_colors?: Json | null
           business_name: string
+          client_status?: string | null
           created_at?: string | null
           domain_info?: string | null
           email?: string | null
@@ -10218,6 +10221,7 @@ export type Database = {
           onboarding_checklist?: Json | null
           onboarding_status?: string | null
           owner_name?: string | null
+          package_chosen?: string | null
           phone?: string | null
           portal_access_enabled?: boolean | null
           project_deadline?: string | null
@@ -10236,6 +10240,7 @@ export type Database = {
           assigned_builder?: string | null
           brand_colors?: Json | null
           business_name?: string
+          client_status?: string | null
           created_at?: string | null
           domain_info?: string | null
           email?: string | null
@@ -10248,6 +10253,7 @@ export type Database = {
           onboarding_checklist?: Json | null
           onboarding_status?: string | null
           owner_name?: string | null
+          package_chosen?: string | null
           phone?: string | null
           portal_access_enabled?: boolean | null
           project_deadline?: string | null

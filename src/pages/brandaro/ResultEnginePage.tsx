@@ -22,11 +22,10 @@ export default function ResultEnginePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('brandaro_clients')
-        .select('id, business_name, client_status, package_chosen, monthly_recurring')
-        .eq('client_status', 'active')
+        .select('id, business_name, monthly_recurring, website_package, maintenance_status')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      return (data || []) as any[];
     },
   });
 
