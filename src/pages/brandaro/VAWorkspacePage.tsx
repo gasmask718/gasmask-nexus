@@ -133,17 +133,25 @@ export default function VAWorkspacePage() {
       }
 
       // Insert call log (immutable)
-      const { error: logErr } = await supabase.from("brandaro_call_logs").insert({
+      const { data: logData, error: logErr } = await supabase.from("brandaro_call_logs").insert({
         lead_id: currentLeadId,
         call_attempt_number: attemptNumber,
         called_by_user_id: user.id,
         call_outcome: outcome,
         call_notes: notes || null,
+        objection_tags: selectedObjections,
         next_action: outcome === "interested" ? "demo_generation" : outcome === "callback_requested" ? "callback" : null,
         next_call_time: nextCallTime,
         industry_context: currentLead?.industry,
-      });
+      }).select("id").single();
       if (logErr) throw logErr;
+
+      // Trigger AI call analysis in background (non-blocking)
+      if (notes && logData?.id) {
+        supabase.functions.invoke("brandaro-call-analyzer", {
+          body: { call_log_id: logData.id },
+        }).catch(err => console.warn("Call analyzer failed:", err));
+      }
 
       // Update lead record
       const leadUpdate: any = {
