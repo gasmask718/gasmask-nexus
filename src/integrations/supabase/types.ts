@@ -10837,6 +10837,68 @@ export type Database = {
           },
         ]
       }
+      brandaro_client_seo: {
+        Row: {
+          city: string | null
+          client_id: string | null
+          client_name: string | null
+          created_at: string
+          current_traffic: number | null
+          domain: string | null
+          estimated_leads: number | null
+          id: string
+          pages_created: number | null
+          ranking_growth_pct: number | null
+          service_fee: number | null
+          state: string | null
+          status: string
+          target_keywords: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          current_traffic?: number | null
+          domain?: string | null
+          estimated_leads?: number | null
+          id?: string
+          pages_created?: number | null
+          ranking_growth_pct?: number | null
+          service_fee?: number | null
+          state?: string | null
+          status?: string
+          target_keywords?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          client_id?: string | null
+          client_name?: string | null
+          created_at?: string
+          current_traffic?: number | null
+          domain?: string | null
+          estimated_leads?: number | null
+          id?: string
+          pages_created?: number | null
+          ranking_growth_pct?: number | null
+          service_fee?: number | null
+          state?: string | null
+          status?: string
+          target_keywords?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_client_seo_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_client_services: {
         Row: {
           active: boolean | null
@@ -12597,6 +12659,51 @@ export type Database = {
           },
         ]
       }
+      brandaro_local_rankings: {
+        Row: {
+          avg_position: number | null
+          city: string | null
+          clicks: number | null
+          created_at: string
+          ctr: number | null
+          domain: string | null
+          id: string
+          impressions: number | null
+          last_checked_at: string | null
+          rank_score: number | null
+          state: string | null
+          target_keyword: string
+        }
+        Insert: {
+          avg_position?: number | null
+          city?: string | null
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          domain?: string | null
+          id?: string
+          impressions?: number | null
+          last_checked_at?: string | null
+          rank_score?: number | null
+          state?: string | null
+          target_keyword: string
+        }
+        Update: {
+          avg_position?: number | null
+          city?: string | null
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          domain?: string | null
+          id?: string
+          impressions?: number | null
+          last_checked_at?: string | null
+          rank_score?: number | null
+          state?: string | null
+          target_keyword?: string
+        }
+        Relationships: []
+      }
       brandaro_message_log: {
         Row: {
           channel: string
@@ -13689,6 +13796,111 @@ export type Database = {
           tag_lead_as?: string | null
           va_says?: string
           wait_for_response?: boolean | null
+        }
+        Relationships: []
+      }
+      brandaro_seo_clusters: {
+        Row: {
+          city: string | null
+          cluster_name: string
+          created_at: string
+          id: string
+          industry: string | null
+          page_count: number | null
+          pillar_keyword: string | null
+          status: string
+          support_keywords: string[] | null
+          traffic_estimate: number | null
+        }
+        Insert: {
+          city?: string | null
+          cluster_name: string
+          created_at?: string
+          id?: string
+          industry?: string | null
+          page_count?: number | null
+          pillar_keyword?: string | null
+          status?: string
+          support_keywords?: string[] | null
+          traffic_estimate?: number | null
+        }
+        Update: {
+          city?: string | null
+          cluster_name?: string
+          created_at?: string
+          id?: string
+          industry?: string | null
+          page_count?: number | null
+          pillar_keyword?: string | null
+          status?: string
+          support_keywords?: string[] | null
+          traffic_estimate?: number | null
+        }
+        Relationships: []
+      }
+      brandaro_seo_pages: {
+        Row: {
+          city: string | null
+          clicks: number | null
+          created_at: string
+          ctr: number | null
+          h1: string | null
+          html_content: string | null
+          id: string
+          impressions: number | null
+          indexed: boolean | null
+          industry: string | null
+          keyword_primary: string | null
+          keyword_secondary: string[] | null
+          meta_description: string | null
+          page_title: string | null
+          page_type: string
+          slug: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          h1?: string | null
+          html_content?: string | null
+          id?: string
+          impressions?: number | null
+          indexed?: boolean | null
+          industry?: string | null
+          keyword_primary?: string | null
+          keyword_secondary?: string[] | null
+          meta_description?: string | null
+          page_title?: string | null
+          page_type?: string
+          slug?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          clicks?: number | null
+          created_at?: string
+          ctr?: number | null
+          h1?: string | null
+          html_content?: string | null
+          id?: string
+          impressions?: number | null
+          indexed?: boolean | null
+          industry?: string | null
+          keyword_primary?: string | null
+          keyword_secondary?: string[] | null
+          meta_description?: string | null
+          page_title?: string | null
+          page_type?: string
+          slug?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
