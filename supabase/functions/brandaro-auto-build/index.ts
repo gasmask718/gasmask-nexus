@@ -213,8 +213,24 @@ Deno.serve(async (req) => {
       console.log(`[AUTO-BUILD] Durable patterns extracted. Standardizing via native engine.`);
     }
 
+    // ===== TASTE ENGINE: Select Design Profile =====
+    await updateBuildStatus(supabase, buildJob.id, "selecting_design", "taste_engine_selecting");
+
+    const designSelection = await selectDesignProfile(supabase, industry);
+    if (designSelection) {
+      await supabase.from("brandaro_build_jobs").update({
+        design_profile_id: designSelection.profileId,
+      }).eq("id", buildJob.id);
+      console.log(`[AUTO-BUILD] Taste Engine selected profile: ${designSelection.palette.mood}`);
+    }
+
+    // Check for high-performing reusable template
+    const bestTemplate = await selectBestTemplate(supabase, industry);
+    if (bestTemplate) {
+      console.log(`[AUTO-BUILD] Reusing top template (score: ${bestTemplate.avg_score})`);
+    }
+
     // SECTION 5: STANDARDIZATION — Always assemble final site via native engine
-    // This ensures full control regardless of initial engine
     await updateBuildStatus(supabase, buildJob.id, "building", "standardizing_via_native");
 
     const { data: allBlocks } = await supabase
@@ -224,7 +240,10 @@ Deno.serve(async (req) => {
       .order("page_type")
       .order("section_order");
 
-    let productionHtml = assembleProductionSite(allBlocks || [], businessName, industry);
+    // Use taste engine palette if available, otherwise random
+    let productionHtml = designSelection
+      ? assembleProductionSiteWithProfile(allBlocks || [], businessName, industry, designSelection.palette)
+      : assembleProductionSite(allBlocks || [], businessName, industry);
 
     // Inject tracking values
     productionHtml = productionHtml
@@ -267,6 +286,10 @@ Deno.serve(async (req) => {
       await deploySite(supabase, buildJob.id, project_id, client_id, liveUrl, productionSlug, productionHtml, client, buildEngine, industry, allBlocks || [], pagesBuilt);
       await supabase.from("brandaro_build_jobs").update({ deployment_decision: "auto_deployed" }).eq("id", buildJob.id);
       console.log(`[AUTO-BUILD] ✅ Auto-deployed (score: ${qualityScore}). URL: ${liveUrl}`);
+      // Record template performance for taste engine learning
+      if (designSelection) {
+        await recordTemplatePerformance(supabase, designSelection.profileId, buildJob.id, client_id);
+      }
 
     } else if (qualityScore >= 60) {
       // DEPLOY + FLAG: Medium quality
@@ -503,6 +526,111 @@ function extractDemoStructure(html: string): any {
   };
 }
 
+// Taste Engine variant: uses a specific design profile palette
+function assembleProductionSiteWithProfile(
+  blocks: any[],
+  businessName: string,
+  industry: string,
+  palette: StylePalette,
+): string {
+  // Same assembly logic but with a pre-selected palette
+  const pageGroups: Record<string, any[]> = {};
+  for (const block of blocks) {
+    if (!pageGroups[block.page_type]) pageGroups[block.page_type] = [];
+    pageGroups[block.page_type].push(block);
+  }
+
+  const layoutSeed = Math.floor(Math.random() * 5);
+  const homepageBlocks = pageGroups["homepage"] || [];
+  const seoTitle = homepageBlocks.find((b: any) => b.seo_title)?.seo_title || `${businessName} | ${industry}`;
+  const seoDesc = homepageBlocks.find((b: any) => b.seo_description)?.seo_description || `${businessName} - Professional ${industry} services`;
+
+  const pageNames = Object.keys(pageGroups);
+  const navLinks = pageNames.map(p =>
+    `<a href="#${p}" class="nav-link">${p.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}</a>`
+  ).join("\n          ");
+
+  const sectionLayouts = ["full-width", "two-column", "offset-left", "centered-narrow", "wide-hero"];
+
+  let contentSections = "";
+  let sectionIdx = 0;
+  for (const [pageType, pageBlocks] of Object.entries(pageGroups)) {
+    const layoutClass = sectionLayouts[(sectionIdx + layoutSeed) % sectionLayouts.length];
+    const sectionStyle = getSectionStyle(layoutClass, palette);
+    contentSections += `\n    <section id="${pageType}" class="page-section" style="${sectionStyle}">\n`;
+    for (const block of pageBlocks) {
+      const componentVariant = getComponentVariant(block.section_name, sectionIdx, palette);
+      contentSections += `      <div class="content-block" style="${componentVariant.wrapperStyle}">\n        ${block.content_html || ""}\n      </div>\n`;
+    }
+    contentSections += `    </section>\n`;
+    sectionIdx++;
+  }
+
+  // Identical HTML shell but with taste-engine-selected palette
+  return assembleHtmlShell(businessName, industry, seoTitle, seoDesc, navLinks, contentSections, palette);
+}
+
+// Shared HTML shell to avoid duplication
+function assembleHtmlShell(
+  businessName: string, industry: string, seoTitle: string, seoDesc: string,
+  navLinks: string, contentSections: string, palette: StylePalette,
+): string {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${seoTitle}</title>
+  <meta name="description" content="${seoDesc}">
+  <meta property="og:title" content="${seoTitle}">
+  <meta property="og:description" content="${seoDesc}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=${palette.headingFont.replace(/ /g, "+")}:wght@400;600;700&family=${palette.bodyFont.replace(/ /g, "+")}:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"><\/script>
+  <style>
+    :root { --primary: ${palette.primary}; --secondary: ${palette.secondary}; --accent: ${palette.accent}; --bg: ${palette.bg}; --text: ${palette.text}; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: '${palette.bodyFont}', system-ui, sans-serif; color: var(--text); background: var(--bg); }
+    h1,h2,h3,h4,h5 { font-family: '${palette.headingFont}', serif; }
+    .nav-link { padding: 0.5rem 1rem; text-decoration: none; color: var(--text); font-weight: 500; transition: color 0.2s; font-size: 0.9rem; }
+    .nav-link:hover { color: var(--primary); }
+    .page-section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .content-block { margin-bottom: 2.5rem; }
+    header { background: var(--bg); border-bottom: 1px solid ${palette.primary}15; padding: 1rem 2rem; position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
+    footer { background: ${palette.text}; color: ${palette.bg}; padding: 4rem 2rem; text-align: center; }
+    .btn-primary { background: var(--primary); color: white; padding: 0.75rem 2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px ${palette.primary}40; }
+    @media (max-width: 768px) { .page-section { padding: 3rem 1.5rem; } header nav { flex-direction: column; gap: 0.5rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <nav style="display:flex;align-items:center;justify-content:space-between;max-width:1200px;margin:0 auto;">
+      <div style="font-size:1.5rem;font-weight:700;color:var(--primary);font-family:'${palette.headingFont}',serif;">${businessName}</div>
+      <div style="display:flex;gap:0.25rem;align-items:center;">
+        ${navLinks}
+        <a href="#contact" class="btn-primary" style="margin-left:1rem;padding:0.5rem 1.25rem;font-size:0.85rem;">Get Started</a>
+      </div>
+    </nav>
+  </header>
+  <main>${contentSections}</main>
+  <footer>
+    <div style="max-width:1200px;margin:0 auto;">
+      <p style="font-size:1.25rem;font-weight:700;font-family:'${palette.headingFont}',serif;margin-bottom:1rem;">${businessName}</p>
+      <p style="opacity:0.7;">&copy; ${new Date().getFullYear()} ${businessName}. All rights reserved.</p>
+      <p style="margin-top:0.75rem;font-size:0.7rem;opacity:0.5;">Powered by Brandaro Digital</p>
+    </div>
+  </footer>
+  <script>document.querySelectorAll('a[href^="#"]').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();document.querySelector(a.getAttribute('href'))?.scrollIntoView({behavior:'smooth'});});});<\/script>
+  <!-- Brandaro Tracking -->
+  <script>
+  (function(){var baseUrl="TRACKING_BASE_URL";var anonKey="TRACKING_ANON_KEY";var clientId="TRACKING_CLIENT_ID";var projectId="TRACKING_PROJECT_ID";var sid=Math.random().toString(36).substring(2);function track(type,val){fetch(baseUrl+"/functions/v1/brandaro-track-lead-event",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+anonKey},body:JSON.stringify({client_id:clientId,project_id:projectId,event_type:type,event_value:val||"",source:document.referrer?"referral":"direct",page_url:location.href,session_id:sid})}).catch(function(){});}track("session");var maxScroll=0;window.addEventListener("scroll",function(){var pct=Math.round((window.scrollY/(document.body.scrollHeight-window.innerHeight))*100);if(pct>=25&&maxScroll<25){track("scroll_25");maxScroll=25;}if(pct>=50&&maxScroll<50){track("scroll_50");maxScroll=50;}if(pct>=75&&maxScroll<75){track("scroll_75");maxScroll=75;}});document.addEventListener("click",function(e){var t=e.target;if(t.tagName==="A"||t.tagName==="BUTTON"||(t.closest&&t.closest("a,button"))){var text=(t.textContent||"").trim().substring(0,50);track("cta_click",text);if(t.href&&t.href.startsWith("tel:"))track("phone_click",t.href);}});document.querySelectorAll("form").forEach(function(f){f.addEventListener("submit",function(){track("form_submit",f.id||f.action||"unknown");});});})();
+  <\/script>
+</body>
+</html>`;
+}
+
 function assembleProductionSite(
   blocks: any[],
   businessName: string,
@@ -698,6 +826,122 @@ const STYLE_PALETTES: StylePalette[] = [
 
 function selectStylePalette(): StylePalette {
   return STYLE_PALETTES[Math.floor(Math.random() * STYLE_PALETTES.length)];
+}
+
+// ===== TASTE ENGINE: Design Profile Selection =====
+
+async function selectDesignProfile(
+  supabase: any,
+  industry: string,
+): Promise<{ profileId: string; palette: StylePalette } | null> {
+  // Fetch active design profiles ranked by performance
+  const { data: profiles } = await supabase
+    .from("brandaro_design_profiles")
+    .select("*")
+    .eq("is_active", true)
+    .order("avg_conversion_rate", { ascending: false });
+
+  if (!profiles || profiles.length === 0) return null;
+
+  // Industry → style category mapping
+  const industryStyleMap: Record<string, string[]> = {
+    "restaurant": ["modern", "bold"],
+    "plumbing": ["local_service", "corporate"],
+    "hvac": ["local_service", "corporate"],
+    "cleaning": ["minimal", "local_service"],
+    "law": ["luxury", "corporate"],
+    "real estate": ["luxury", "modern"],
+    "salon": ["modern", "bold"],
+    "landscaping": ["local_service", "bold"],
+    "dental": ["minimal", "corporate"],
+    "fitness": ["bold", "modern"],
+  };
+
+  const preferredStyles = industryStyleMap[industry.toLowerCase()] || ["modern", "corporate"];
+
+  // Weighted selection: 60% performance rank, 30% style match, 10% novelty
+  const scored = profiles.map((p: any) => {
+    let score = 0;
+    // Performance score (higher rank = higher score)
+    score += (1 - (p.performance_rank || profiles.length) / profiles.length) * 60;
+    // Style match
+    if (preferredStyles.includes(p.style_category)) score += 30;
+    // Novelty bonus (less used = more novel)
+    const usagePenalty = Math.min((p.usage_count || 0) / 50, 1) * 10;
+    score += 10 - usagePenalty;
+    return { ...p, selectionScore: score };
+  });
+
+  scored.sort((a: any, b: any) => b.selectionScore - a.selectionScore);
+
+  // Pick from top 3 with slight randomness to avoid staleness
+  const topN = scored.slice(0, Math.min(3, scored.length));
+  const selected = topN[Math.floor(Math.random() * topN.length)];
+
+  // Increment usage count
+  await supabase
+    .from("brandaro_design_profiles")
+    .update({ usage_count: (selected.usage_count || 0) + 1, updated_at: new Date().toISOString() })
+    .eq("id", selected.id);
+
+  // Convert DB palette to StylePalette
+  const cp = selected.color_palette || {};
+  const fp = selected.font_pairing || {};
+  const palette: StylePalette = {
+    primary: cp.primary || "#1e40af",
+    secondary: cp.secondary || "#0369a1",
+    accent: cp.accent || "#06b6d4",
+    bg: cp.bg || "#f8fafc",
+    text: cp.text || "#0f172a",
+    headingFont: fp.heading || "Montserrat",
+    bodyFont: fp.body || "Open Sans",
+    mood: selected.style_category,
+  };
+
+  return { profileId: selected.id, palette };
+}
+
+// Select best-performing template for reuse
+async function selectBestTemplate(
+  supabase: any,
+  industry: string,
+): Promise<any | null> {
+  const { data: templates } = await supabase
+    .from("brandaro_extracted_templates")
+    .select("*, brandaro_template_performance(*)")
+    .gt("avg_score", 60)
+    .order("avg_score", { ascending: false })
+    .limit(5);
+
+  if (!templates || templates.length === 0) return null;
+
+  // Avoid over-reuse: skip templates used more than 10 times
+  const eligible = templates.filter((t: any) => (t.usage_count || 0) < 10);
+  if (eligible.length === 0) return null;
+
+  const selected = eligible[0];
+
+  // Increment usage
+  await supabase
+    .from("brandaro_extracted_templates")
+    .update({ usage_count: (selected.usage_count || 0) + 1, last_used_at: new Date().toISOString() })
+    .eq("id", selected.id);
+
+  return selected;
+}
+
+// Record template performance after deployment
+async function recordTemplatePerformance(
+  supabase: any,
+  templateId: string,
+  buildJobId: string,
+  clientId: string,
+): Promise<void> {
+  await supabase.from("brandaro_template_performance").insert({
+    template_id: templateId,
+    build_job_id: buildJobId,
+    client_id: clientId,
+  });
 }
 
 function getSectionStyle(layout: string, palette: StylePalette): string {
