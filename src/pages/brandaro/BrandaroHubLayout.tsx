@@ -76,7 +76,7 @@ function BrandaroSidebar() {
         )}
 
         {hubNav.map((group) => (
-          <SidebarGroup key={group.section} defaultOpen>
+          <SidebarGroup key={group.section}>
             <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/70">
               {group.section}
             </SidebarGroupLabel>
