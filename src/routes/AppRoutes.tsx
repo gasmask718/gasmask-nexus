@@ -2504,6 +2504,7 @@ export default function AppRoutes() {
         <Route path="/brandaro/reporting" element={<ClientReportingPage />} />
         <Route path="/brandaro/ads-engine" element={<AdsEnginePage />} />
         <Route path="/brandaro/google-domination" element={<GoogleDominationPage />} />
+        <Route path="/brandaro/optimization" element={<OptimizationEnginePage />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
