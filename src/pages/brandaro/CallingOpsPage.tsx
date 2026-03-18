@@ -12,8 +12,10 @@ import { toast } from "sonner";
 import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
-  XCircle, PhoneForwarded, Bell, MessageSquare, Loader2
+  XCircle, PhoneForwarded, Bell, MessageSquare, Loader2,
+  Brain, Target, Trophy, ArrowUpRight
 } from "lucide-react";
+import { useScriptPerformance, useLeadPerformanceStats } from "@/hooks/useBrandaroIntelligence";
 import {
   useNumberPool,
   useNumberAlerts,
