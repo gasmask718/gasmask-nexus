@@ -278,6 +278,10 @@ export default function LeadDiscoveryPage() {
   });
 
   const pendingJobs = recentJobs?.filter(j => j.status === "pending") || [];
+  const delayedJobs = pendingJobs.filter(j => {
+    const created = new Date(j.created_at).getTime();
+    return Date.now() - created > 2 * 60 * 1000; // > 2 minutes
+  });
 
   // ── Live Outscraper Generation (async mode) ──
   const generateMutation = useMutation({
