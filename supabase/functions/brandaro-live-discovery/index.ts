@@ -27,17 +27,19 @@ serve(async (req: Request) => {
     const outscrapeApiKey = Deno.env.get("OUTSCRAPER_API_KEY");
     if (!outscrapeApiKey) throw new Error("OUTSCRAPER_API_KEY not configured");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // Call Outscraper Google Maps API
     const searchQuery = `${query} ${location}`;
     const outscrapeLimit = Math.min(limit || 50, 100);
-    const url = `https://api.app.outscraper.com/maps/search-v3?query=${encodeURIComponent(searchQuery)}&limit=${outscrapeLimit}&async=false`;
 
-    console.log(`[LIVE-DISCOVERY] Querying Outscraper: ${searchQuery}, limit=${outscrapeLimit}`);
+    // Build webhook URL for async results
+    const webhookUrl = `${supabaseUrl}/functions/v1/outscraper-webhook`;
+
+    // Submit async job to Outscraper
+    const url = `https://api.app.outscraper.com/maps/search-v3?query=${encodeURIComponent(searchQuery)}&limit=${outscrapeLimit}&async=true&webhook=${encodeURIComponent(webhookUrl)}`;
+
+    console.log(`[LIVE-DISCOVERY] Submitting async job: ${searchQuery}, limit=${outscrapeLimit}, webhook=${webhookUrl}`);
 
     const response = await fetch(url, {
       headers: { "X-API-KEY": outscrapeApiKey },
@@ -49,62 +51,36 @@ serve(async (req: Request) => {
     }
 
     const result = await response.json();
-    const businesses = result?.data?.[0] || result?.data || [];
+    const requestId = result?.id || result?.request_id || null;
 
-    if (!Array.isArray(businesses) || businesses.length === 0) {
-      return new Response(JSON.stringify({ success: true, inserted: 0, duplicates: 0, total_found: 0, message: "No results found" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    console.log(`[LIVE-DISCOVERY] Async job submitted, request_id=${requestId}`);
+
+    // Extract user from auth header if available
+    let userId: string | null = null;
+    const authHeader = req.headers.get("authorization");
+    if (authHeader) {
+      const { data: { user } } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+      userId = user?.id || null;
     }
 
-    console.log(`[LIVE-DISCOVERY] Got ${businesses.length} results from Outscraper`);
+    // Create job tracking row
+    const { data: job, error: jobErr } = await supabase.from("brandaro_lead_jobs").insert({
+      outscraper_request_id: requestId,
+      search_query: query,
+      location,
+      lead_limit: outscrapeLimit,
+      status: "pending",
+      created_by: userId,
+    }).select().single();
 
-    // Normalize and prepare for insert
-    const batchId = `live_${Date.now()}`;
-    const leads = businesses.map((b: any) => ({
-      business_name: b.name || b.query || "Unknown",
-      phone_number: b.phone || b.phone_number || null,
-      address: b.full_address || b.address || null,
-      city: b.city || null,
-      state: b.state || null,
-      zip_code: b.postal_code || b.zip_code || null,
-      industry: b.category || b.type || null,
-      rating: b.rating ? parseFloat(b.rating) : null,
-      review_count: b.reviews ? parseInt(b.reviews) : 0,
-      website_url: b.site || b.website || null,
-      website_status: (!b.site && !b.website) || b.site === "" ? "no_website" : "has_website",
-      email: b.email_1 || b.email || null,
-      google_maps_url: b.google_maps_url || b.link || null,
-      source: "outscraper_live",
-      import_batch_id: batchId,
-      raw_data: b,
-    }));
-
-    // Deduplicate by phone against existing leads
-    const phones = leads.filter((l: any) => l.phone_number).map((l: any) => l.phone_number);
-    const { data: existing } = await supabase
-      .from("brandaro_raw_leads")
-      .select("phone_number")
-      .in("phone_number", phones.slice(0, 200));
-    const existingPhones = new Set((existing || []).map((e: any) => e.phone_number));
-
-    const unique = leads.filter((l: any) => !l.phone_number || !existingPhones.has(l.phone_number));
-    const duplicates = leads.length - unique.length;
-
-    if (unique.length > 0) {
-      const { error } = await supabase.from("brandaro_raw_leads").insert(unique);
-      if (error) throw error;
-    }
-
-    console.log(`[LIVE-DISCOVERY] Inserted ${unique.length}, skipped ${duplicates} duplicates`);
+    if (jobErr) console.error("[LIVE-DISCOVERY] Job tracking insert error:", jobErr);
 
     return new Response(JSON.stringify({
       success: true,
-      total_found: businesses.length,
-      inserted: unique.length,
-      duplicates,
-      no_website: unique.filter((l: any) => l.website_status === "no_website").length,
-      batch_id: batchId,
+      mode: "async",
+      request_id: requestId,
+      job_id: job?.id || null,
+      message: "Job submitted. Results will arrive via webhook automatically.",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
