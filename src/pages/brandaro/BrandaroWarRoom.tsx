@@ -9,6 +9,7 @@ import {
   Users, Brain, Theater, AlertTriangle, Zap, Target,
   ArrowRight, Clock, Cpu, Play, CheckCircle, XCircle,
   RefreshCw, MailCheck, Dna, Crown, Skull, Sparkles,
+  Swords, ShieldAlert, Crosshair, Eye,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { useClosingPsychologyStats } from "@/hooks/useBrandaroClosingPsychology"
 import { useEvolutionDashboard, useRunEvolutionCycle } from "@/hooks/useBrandaroPersonalityEvolution";
 import { useRevenueAutopilotDashboard, useRunAutopilotCycle } from "@/hooks/useBrandaroRevenueAutopilot";
 import { useGlobalScalingDashboard, useRunGlobalCycle } from "@/hooks/useBrandaroGlobalScaling";
+import { useCompetitorDashboard, useRunCompetitorCycle } from "@/hooks/useBrandaroCompetitorTakeover";
 import { Repeat, Rocket, PiggyBank, BarChart3, Globe, MapPinPlus, Building2 } from "lucide-react";
 
 function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
