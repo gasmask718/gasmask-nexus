@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, Search, Globe, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Upload, FileSpreadsheet, Search, Globe, AlertTriangle, CheckCircle2, Rocket, Loader2, MapPin } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Column mapping for Outscraper CSV
 const COLUMN_MAP: Record<string, string> = {
