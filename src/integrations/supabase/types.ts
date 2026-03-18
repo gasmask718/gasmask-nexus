@@ -12997,6 +12997,75 @@ export type Database = {
           },
         ]
       }
+      brandaro_execution_queue: {
+        Row: {
+          action_strategy: string
+          attempts: number
+          conversion_probability: number | null
+          cooldown_until: string | null
+          created_at: string
+          id: string
+          last_attempt_at: string | null
+          lead_id: string
+          max_attempts: number
+          next_attempt_at: string | null
+          prediction_id: string | null
+          priority_tier: string
+          result: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action_strategy?: string
+          attempts?: number
+          conversion_probability?: number | null
+          cooldown_until?: string | null
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          lead_id: string
+          max_attempts?: number
+          next_attempt_at?: string | null
+          prediction_id?: string | null
+          priority_tier?: string
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          action_strategy?: string
+          attempts?: number
+          conversion_probability?: number | null
+          cooldown_until?: string | null
+          created_at?: string
+          id?: string
+          last_attempt_at?: string | null
+          lead_id?: string
+          max_attempts?: number
+          next_attempt_at?: string | null
+          prediction_id?: string | null
+          priority_tier?: string
+          result?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_execution_queue_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_execution_queue_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_conversion_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_expansion_suggestions: {
         Row: {
           created_at: string | null
