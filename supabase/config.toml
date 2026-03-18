@@ -354,3 +354,6 @@ verify_jwt = false
 
 [functions.brandaro-execution-worker]
 verify_jwt = false
+
+[functions.brandaro-pipeline-automator]
+verify_jwt = false
