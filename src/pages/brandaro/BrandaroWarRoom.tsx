@@ -9,6 +9,7 @@ import {
   Users, Brain, Theater, AlertTriangle, Zap, Target,
   ArrowRight, Clock, Cpu, Play, CheckCircle, XCircle,
   RefreshCw, MailCheck, Dna, Crown, Skull, Sparkles,
+  Swords, ShieldAlert, Crosshair, Eye,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { useClosingPsychologyStats } from "@/hooks/useBrandaroClosingPsychology"
 import { useEvolutionDashboard, useRunEvolutionCycle } from "@/hooks/useBrandaroPersonalityEvolution";
 import { useRevenueAutopilotDashboard, useRunAutopilotCycle } from "@/hooks/useBrandaroRevenueAutopilot";
 import { useGlobalScalingDashboard, useRunGlobalCycle } from "@/hooks/useBrandaroGlobalScaling";
+import { useCompetitorDashboard, useRunCompetitorCycle } from "@/hooks/useBrandaroCompetitorTakeover";
 import { Repeat, Rocket, PiggyBank, BarChart3, Globe, MapPinPlus, Building2 } from "lucide-react";
 
 function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
@@ -52,6 +54,8 @@ export default function BrandaroWarRoom() {
   const runAutopilot = useRunAutopilotCycle();
   const { data: globalDash } = useGlobalScalingDashboard();
   const runGlobalCycle = useRunGlobalCycle();
+  const { data: compDash } = useCompetitorDashboard();
+  const runCompetitorCycle = useRunCompetitorCycle();
 
   // Active calls count
   const { data: activeCalls = 0 } = useQuery({
@@ -997,6 +1001,124 @@ export default function BrandaroWarRoom() {
               </div>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* ── Competitor Takeover Panel ── */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Swords className="h-4 w-4 text-red-500" /> Competitor Takeover Command
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge className="text-[10px] bg-red-500/10 text-red-600 border-0">
+                {compDash?.stats?.totalCompetitors || 0} tracked
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                onClick={() => runCompetitorCycle.mutate()}
+                disabled={runCompetitorCycle.isPending}
+              >
+                <Swords className="h-3 w-3" /> {runCompetitorCycle.isPending ? "Running…" : "Run Cycle"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <Eye className="h-3.5 w-3.5 mx-auto text-red-500 mb-1" />
+              <p className="text-xl font-bold text-red-500">{compDash?.stats?.totalCompetitors || 0}</p>
+              <p className="text-[9px] text-muted-foreground">Competitors Tracked</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <Crosshair className="h-3.5 w-3.5 mx-auto text-orange-500 mb-1" />
+              <p className="text-xl font-bold text-orange-500">{compDash?.stats?.totalCaptured || 0}</p>
+              <p className="text-[9px] text-muted-foreground">Leads Captured</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <DollarSign className="h-3.5 w-3.5 mx-auto text-green-500 mb-1" />
+              <p className="text-xl font-bold text-green-500">${(compDash?.stats?.totalRevenue || 0).toLocaleString()}</p>
+              <p className="text-[9px] text-muted-foreground">Revenue Captured</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <Target className="h-3.5 w-3.5 mx-auto text-purple-500 mb-1" />
+              <p className="text-xl font-bold text-purple-500">{compDash?.stats?.avgWinRate || 0}%</p>
+              <p className="text-[9px] text-muted-foreground">Avg Win Rate</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Competitors */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🎯 Competitor Intel</p>
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-2">
+                  {(!compDash?.competitors || compDash.competitors.length === 0) ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No competitors tracked yet</p>
+                  ) : compDash.competitors.slice(0, 8).map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div>
+                        <p className="text-xs font-medium">{c.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{(c.weaknesses || []).length} weaknesses</p>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] border-red-500/30 text-red-600">
+                        {c.source}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Weaknesses */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">⚡ Exploitable Weaknesses</p>
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-2">
+                  {(!compDash?.weaknesses || compDash.weaknesses.length === 0) ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Run a cycle to discover weaknesses</p>
+                  ) : compDash.weaknesses.slice(0, 8).map((w: any) => (
+                    <div key={w.id} className="p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">{w.weakness_type?.replace(/_/g, " ")}</span>
+                        <Badge variant="outline" className={cn("text-[9px]",
+                          Number(w.exploitability_score) >= 85 ? "border-red-500/30 text-red-600" : "border-amber-500/30 text-amber-600"
+                        )}>
+                          {w.exploitability_score}% exploit
+                        </Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{w.exploit_strategy}</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Counter-Offers */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">💰 Active Counter-Offers</p>
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-2">
+                  {(!compDash?.offers || compDash.offers.length === 0) ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No counter-offers generated yet</p>
+                  ) : compDash.offers.slice(0, 8).map((o: any) => (
+                    <div key={o.id} className="p-2 bg-muted/30 rounded-lg">
+                      <p className="text-xs font-medium">{o.strategy?.replace(/_/g, " ")}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{o.brandaro_counter_offer}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[9px] text-muted-foreground">{o.times_used || 0}x used</span>
+                        <span className="text-[9px] font-medium text-green-600">{o.conversion_rate || 0}% conv</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

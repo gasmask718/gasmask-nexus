@@ -339,3 +339,6 @@ verify_jwt = false
 
 [functions.brandaro-global-scaling]
 verify_jwt = false
+
+[functions.brandaro-competitor-takeover]
+verify_jwt = false
