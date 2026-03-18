@@ -342,6 +342,15 @@ serve(async (req: Request) => {
             await supabase.from("brandaro_qualified_leads")
               .update({ lead_status: "calling", updated_at: new Date().toISOString() })
               .eq("id", leadId);
+            // Pipeline event: call_made
+            fetch(`${supabaseUrl}/functions/v1/brandaro-pipeline-automator`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+              body: JSON.stringify({ action: "record_event", lead_id: leadId, event_type: "call_made" }),
+            }).catch((e: any) => {
+              console.warn(`[AUTO-STRIKER] Pipeline event failed:`, e.message);
+              supabase.from("brandaro_event_failures").insert({ lead_id: leadId, event_type: "call_made", error_message: e.message });
+            });
             results.push({ lead_id: leadId, status: "call_triggered", sid: callResult.result?.sid });
           } else {
             // ── FALLBACK: SMS (WEIGHTED A/B) ──
