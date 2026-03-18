@@ -1453,7 +1453,14 @@ export default function AppRoutes() {
           </RequireRole>
         } />
 
-        {/* Legacy accounting routes → redirect to Penthouse */}
+        {/* ═══ PENTHOUSE — Floor Blueprint (Operating Manual) ═══ */}
+        <Route path="/penthouse/blueprint" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <FloorBlueprint />
+          </RequireRole>
+        } />
+
+
         <Route path="/grabba/personal-finance" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/grabba/financial-dashboard" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/accounting-os" element={<Navigate to="/penthouse/accounting" replace />} />
