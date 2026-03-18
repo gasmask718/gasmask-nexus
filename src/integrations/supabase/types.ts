@@ -15677,6 +15677,7 @@ export type Database = {
           lead_status: string | null
           next_callback_at: string | null
           phone_number: string | null
+          pipeline_stage: string
           priority_score: number | null
           priority_tier: string | null
           proposal_amount: number | null
@@ -15709,6 +15710,7 @@ export type Database = {
           lead_status?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
+          pipeline_stage?: string
           priority_score?: number | null
           priority_tier?: string | null
           proposal_amount?: number | null
@@ -15741,6 +15743,7 @@ export type Database = {
           lead_status?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
+          pipeline_stage?: string
           priority_score?: number | null
           priority_tier?: string | null
           proposal_amount?: number | null

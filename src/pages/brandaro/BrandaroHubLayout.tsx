@@ -28,7 +28,8 @@ const hubNav = [
     { title: "Closer AI", path: "/brandaro/closer-ai", icon: Flame },
   ]},
   { section: "Pipeline", items: [
-    { title: "Leads", path: "/brandaro/leads", icon: Target },
+    { title: "CRM Pipeline", path: "/brandaro/crm-pipeline", icon: Target },
+    { title: "Leads", path: "/brandaro/leads", icon: ListTodo },
     { title: "Discovery", path: "/brandaro/lead-discovery", icon: Search },
     { title: "Qualification", path: "/brandaro/lead-qualification", icon: Shield },
     { title: "Follow-Ups", path: "/brandaro/follow-ups", icon: ListTodo },

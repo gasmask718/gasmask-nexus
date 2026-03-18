@@ -94,6 +94,7 @@ import CEODashboardPage from '@/pages/brandaro/CEODashboardPage';
 import RetentionDashboardPage from '@/pages/brandaro/RetentionDashboardPage';
 import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
+import CRMPipelinePage from '@/pages/brandaro/CRMPipelinePage';
 import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import ClientReportingPage from '@/pages/brandaro/ClientReportingPage';
@@ -2536,6 +2537,7 @@ export default function AppRoutes() {
 
           {/* ── Pipeline ── */}
           <Route path="leads" element={<LeadDatabasePage />} />
+          <Route path="crm-pipeline" element={<CRMPipelinePage />} />
           <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
           <Route path="lead-qualification" element={<LeadQualificationPage />} />
           <Route path="follow-ups" element={<FollowUpEnginePage />} />
