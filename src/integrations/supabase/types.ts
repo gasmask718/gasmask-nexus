@@ -14358,6 +14358,82 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_personality_ab_tests: {
+        Row: {
+          completed_at: string | null
+          conversions_a: number | null
+          conversions_b: number | null
+          created_at: string | null
+          id: string
+          leads_routed_a: number | null
+          leads_routed_b: number | null
+          name: string
+          personality_a_id: string
+          personality_b_id: string
+          revenue_a: number | null
+          revenue_b: number | null
+          started_at: string | null
+          status: string | null
+          winner_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          conversions_a?: number | null
+          conversions_b?: number | null
+          created_at?: string | null
+          id?: string
+          leads_routed_a?: number | null
+          leads_routed_b?: number | null
+          name: string
+          personality_a_id: string
+          personality_b_id: string
+          revenue_a?: number | null
+          revenue_b?: number | null
+          started_at?: string | null
+          status?: string | null
+          winner_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          conversions_a?: number | null
+          conversions_b?: number | null
+          created_at?: string | null
+          id?: string
+          leads_routed_a?: number | null
+          leads_routed_b?: number | null
+          name?: string
+          personality_a_id?: string
+          personality_b_id?: string
+          revenue_a?: number | null
+          revenue_b?: number | null
+          started_at?: string | null
+          status?: string | null
+          winner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_personality_ab_tests_personality_a_id_fkey"
+            columns: ["personality_a_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_personality_ab_tests_personality_b_id_fkey"
+            columns: ["personality_b_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_personality_ab_tests_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_personality_assignments: {
         Row: {
           assigned_reason: string | null
@@ -14385,6 +14461,166 @@ export type Database = {
             foreignKeyName: "brandaro_personality_assignments_personality_id_fkey"
             columns: ["personality_id"]
             isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_personality_evolution: {
+        Row: {
+          created_at: string | null
+          evolution_type: string
+          generation: number | null
+          id: string
+          parent_personality_id: string | null
+          performance_after: Json | null
+          performance_before: Json | null
+          personality_id: string | null
+          reason: string | null
+          traits_inherited: Json | null
+          traits_modified: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          evolution_type: string
+          generation?: number | null
+          id?: string
+          parent_personality_id?: string | null
+          performance_after?: Json | null
+          performance_before?: Json | null
+          personality_id?: string | null
+          reason?: string | null
+          traits_inherited?: Json | null
+          traits_modified?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          evolution_type?: string
+          generation?: number | null
+          id?: string
+          parent_personality_id?: string | null
+          performance_after?: Json | null
+          performance_before?: Json | null
+          personality_id?: string | null
+          reason?: string | null
+          traits_inherited?: Json | null
+          traits_modified?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_personality_evolution_parent_personality_id_fkey"
+            columns: ["parent_personality_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_personality_evolution_personality_id_fkey"
+            columns: ["personality_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_personality_performance: {
+        Row: {
+          avg_time_to_close_mins: number | null
+          conversions: number | null
+          created_at: string | null
+          date: string
+          engagement_score: number | null
+          id: string
+          objection_total: number | null
+          objection_wins: number | null
+          personality_id: string
+          revenue_generated: number | null
+          total_calls: number | null
+          total_messages: number | null
+        }
+        Insert: {
+          avg_time_to_close_mins?: number | null
+          conversions?: number | null
+          created_at?: string | null
+          date?: string
+          engagement_score?: number | null
+          id?: string
+          objection_total?: number | null
+          objection_wins?: number | null
+          personality_id: string
+          revenue_generated?: number | null
+          total_calls?: number | null
+          total_messages?: number | null
+        }
+        Update: {
+          avg_time_to_close_mins?: number | null
+          conversions?: number | null
+          created_at?: string | null
+          date?: string
+          engagement_score?: number | null
+          id?: string
+          objection_total?: number | null
+          objection_wins?: number | null
+          personality_id?: string
+          revenue_generated?: number | null
+          total_calls?: number | null
+          total_messages?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_personality_performance_personality_id_fkey"
+            columns: ["personality_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_personalities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_personality_rankings: {
+        Row: {
+          composite_score: number | null
+          conversion_rate: number | null
+          id: string
+          last_evaluated_at: string | null
+          objection_win_rate: number | null
+          personality_id: string
+          rank_position: number | null
+          revenue_per_lead: number | null
+          speed_score: number | null
+          tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          composite_score?: number | null
+          conversion_rate?: number | null
+          id?: string
+          last_evaluated_at?: string | null
+          objection_win_rate?: number | null
+          personality_id: string
+          rank_position?: number | null
+          revenue_per_lead?: number | null
+          speed_score?: number | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          composite_score?: number | null
+          conversion_rate?: number | null
+          id?: string
+          last_evaluated_at?: string | null
+          objection_win_rate?: number | null
+          personality_id?: string
+          rank_position?: number | null
+          revenue_per_lead?: number | null
+          speed_score?: number | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_personality_rankings_personality_id_fkey"
+            columns: ["personality_id"]
+            isOneToOne: true
             referencedRelation: "brandaro_personalities"
             referencedColumns: ["id"]
           },

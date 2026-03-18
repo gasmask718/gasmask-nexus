@@ -8,13 +8,14 @@ import {
   DollarSign, Phone, Flame, TrendingUp, ListTodo, Bot,
   Users, Brain, Theater, AlertTriangle, Zap, Target,
   ArrowRight, Clock, Cpu, Play, CheckCircle, XCircle,
-  RefreshCw, MailCheck,
+  RefreshCw, MailCheck, Dna, Crown, Skull, Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useCloserKPIs } from "@/hooks/useBrandaroCloserAI";
 import { useBrandaroAutomationStats } from "@/hooks/useBrandaroAutomation";
 import { useClosingPsychologyStats } from "@/hooks/useBrandaroClosingPsychology";
+import { useEvolutionDashboard, useRunEvolutionCycle } from "@/hooks/useBrandaroPersonalityEvolution";
 
 function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
   label: string; value: string | number; icon: any; color: string; subtitle?: string; to?: string;
@@ -42,6 +43,8 @@ export default function BrandaroWarRoom() {
   const { data: kpis } = useCloserKPIs();
   const { stats: autoStats, recentLogs } = useBrandaroAutomationStats();
   const { stats: psyStats } = useClosingPsychologyStats();
+  const { data: evoDash } = useEvolutionDashboard();
+  const runEvolution = useRunEvolutionCycle();
 
   // Active calls count
   const { data: activeCalls = 0 } = useQuery({
@@ -576,6 +579,153 @@ export default function BrandaroWarRoom() {
               </div>
             </ScrollArea>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Personality Evolution Panel ── */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Dna className="h-4 w-4 text-fuchsia-500" /> Personality Evolution Engine
+            </h3>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px]">
+                {evoDash?.rankings?.length || 0} ranked
+              </Badge>
+              <Badge className="text-[10px] bg-fuchsia-500/10 text-fuchsia-600 border-0">
+                {evoDash?.evolutions?.length || 0} evolutions
+              </Badge>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-[10px] gap-1"
+                onClick={() => runEvolution.mutate()}
+                disabled={runEvolution.isPending}
+              >
+                <Sparkles className="h-3 w-3" />
+                {runEvolution.isPending ? "Evolving…" : "Run Cycle"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Evolution Pipeline */}
+          <div className="border rounded-lg p-3 mb-4 bg-muted/20">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🧬 Evolution Pipeline</p>
+            <div className="flex items-center gap-1 overflow-x-auto pb-1">
+              {[
+                { label: "Track Metrics", icon: "📊", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" },
+                { label: "→" },
+                { label: "Evaluate", icon: "⚖️", color: "bg-purple-500/10 text-purple-600 border-purple-500/20" },
+                { label: "→" },
+                { label: "Rank", icon: "🏆", color: "bg-amber-500/10 text-amber-600 border-amber-500/20" },
+                { label: "→" },
+                { label: "Evolve Winners", icon: "🧬", color: "bg-fuchsia-500/10 text-fuchsia-600 border-fuchsia-500/20" },
+                { label: "→" },
+                { label: "Breed New", icon: "🤖", color: "bg-cyan-500/10 text-cyan-600 border-cyan-500/20" },
+                { label: "→" },
+                { label: "A/B Test", icon: "🔬", color: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20" },
+                { label: "→" },
+                { label: "Retire Losers", icon: "💀", color: "bg-red-500/10 text-red-600 border-red-500/20" },
+              ].map((step, i) =>
+                step.icon ? (
+                  <span key={i} className={cn("text-[10px] font-medium px-2 py-1 rounded-md border whitespace-nowrap", step.color)}>
+                    {step.icon} {step.label}
+                  </span>
+                ) : (
+                  <span key={i} className="text-xs text-muted-foreground">→</span>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Rankings + Evolution Log */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Rankings */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🏆 Personality Rankings</p>
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-1.5">
+                  {!evoDash?.rankings?.length ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No rankings yet — run an evolution cycle</p>
+                  ) : evoDash.rankings.map((r: any) => (
+                    <div key={r.id} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-muted-foreground w-5 text-center">
+                          {r.rank_position <= 3 ? ["🥇", "🥈", "🥉"][r.rank_position - 1] : `#${r.rank_position}`}
+                        </span>
+                        <div>
+                          <p className="font-medium">{r.brandaro_personalities?.name || "Unknown"}</p>
+                          <p className="text-[9px] text-muted-foreground">{r.brandaro_personalities?.tone}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className={cn("text-[9px]",
+                          r.tier === "scaling" ? "border-green-500/30 text-green-600" :
+                          r.tier === "optimizing" ? "border-blue-500/30 text-blue-600" :
+                          r.tier === "retired" ? "border-red-500/30 text-red-600" :
+                          "border-amber-500/30 text-amber-600"
+                        )}>
+                          {r.tier}
+                        </Badge>
+                        <span className="text-[10px] font-semibold tabular-nums">{Number(r.composite_score || 0).toFixed(1)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Evolution Log */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🧬 Evolution History</p>
+              <ScrollArea className="h-[180px]">
+                <div className="space-y-1.5">
+                  {!evoDash?.evolutions?.length ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No evolutions yet</p>
+                  ) : evoDash.evolutions.map((e: any) => (
+                    <div key={e.id} className="p-1.5 bg-muted/30 rounded text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className={cn("text-[9px]",
+                            e.evolution_type === "crossover" ? "border-fuchsia-500/30 text-fuchsia-600" :
+                            e.evolution_type === "enhancement" ? "border-green-500/30 text-green-600" :
+                            "border-blue-500/30 text-blue-600"
+                          )}>
+                            {e.evolution_type}
+                          </Badge>
+                          <span className="font-medium">{e.brandaro_personalities?.name || "New"}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(e.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      {e.reason && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{e.reason}</p>}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Active A/B Tests */}
+          {evoDash?.tests?.length > 0 && (
+            <div className="border-t pt-3 mt-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🔬 Active A/B Tests</p>
+              <div className="space-y-1.5">
+                {evoDash.tests.filter((t: any) => t.status === "running").slice(0, 3).map((t: any) => (
+                  <div key={t.id} className="flex items-center justify-between p-2 bg-muted/30 rounded text-xs">
+                    <span className="font-medium">{t.personality_a?.name} vs {t.personality_b?.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-green-600">{t.conversions_a} conv</span>
+                      <span className="text-muted-foreground">vs</span>
+                      <span className="text-blue-600">{t.conversions_b} conv</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
