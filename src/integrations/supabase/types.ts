@@ -12399,6 +12399,62 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_conversion_predictions: {
+        Row: {
+          acted_on: boolean
+          action_strategy: string
+          best_contact_day: number | null
+          best_contact_hour: number | null
+          conversion_probability: number
+          created_at: string
+          id: string
+          lead_id: string
+          outcome: string | null
+          predicted_at: string
+          priority_tier: string
+          scoring_factors: Json
+          updated_at: string
+        }
+        Insert: {
+          acted_on?: boolean
+          action_strategy?: string
+          best_contact_day?: number | null
+          best_contact_hour?: number | null
+          conversion_probability?: number
+          created_at?: string
+          id?: string
+          lead_id: string
+          outcome?: string | null
+          predicted_at?: string
+          priority_tier?: string
+          scoring_factors?: Json
+          updated_at?: string
+        }
+        Update: {
+          acted_on?: boolean
+          action_strategy?: string
+          best_contact_day?: number | null
+          best_contact_hour?: number | null
+          conversion_probability?: number
+          created_at?: string
+          id?: string
+          lead_id?: string
+          outcome?: string | null
+          predicted_at?: string
+          priority_tier?: string
+          scoring_factors?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_conversion_predictions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_demo_events: {
         Row: {
           created_at: string
@@ -14219,6 +14275,57 @@ export type Database = {
           },
         ]
       }
+      brandaro_niche_performance: {
+        Row: {
+          avg_response_time_min: number | null
+          best_day: number | null
+          best_hour: number | null
+          conversion_rate: number
+          id: string
+          industry: string
+          is_hot_niche: boolean
+          revenue_per_lead: number
+          total_contacted: number
+          total_converted: number
+          total_leads: number
+          total_replied: number
+          total_revenue: number
+          updated_at: string
+        }
+        Insert: {
+          avg_response_time_min?: number | null
+          best_day?: number | null
+          best_hour?: number | null
+          conversion_rate?: number
+          id?: string
+          industry: string
+          is_hot_niche?: boolean
+          revenue_per_lead?: number
+          total_contacted?: number
+          total_converted?: number
+          total_leads?: number
+          total_replied?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_response_time_min?: number | null
+          best_day?: number | null
+          best_hour?: number | null
+          conversion_rate?: number
+          id?: string
+          industry?: string
+          is_hot_niche?: boolean
+          revenue_per_lead?: number
+          total_contacted?: number
+          total_converted?: number
+          total_leads?: number
+          total_replied?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       brandaro_nightly_discovery_log: {
         Row: {
           completed_at: string | null
@@ -15915,6 +16022,50 @@ export type Database = {
           upsell_rate?: number | null
         }
         Relationships: []
+      }
+      brandaro_revenue_tracking: {
+        Row: {
+          attributed_campaign: string | null
+          attributed_industry: string | null
+          attributed_script_variant: string | null
+          close_time_hours: number | null
+          created_at: string
+          id: string
+          lead_id: string | null
+          revenue_amount: number
+          revenue_type: string
+        }
+        Insert: {
+          attributed_campaign?: string | null
+          attributed_industry?: string | null
+          attributed_script_variant?: string | null
+          close_time_hours?: number | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          revenue_amount?: number
+          revenue_type?: string
+        }
+        Update: {
+          attributed_campaign?: string | null
+          attributed_industry?: string | null
+          attributed_script_variant?: string | null
+          close_time_hours?: number | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          revenue_amount?: number
+          revenue_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_revenue_tracking_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_review_queue: {
         Row: {
