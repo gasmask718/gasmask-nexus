@@ -190,7 +190,22 @@ export default function LeadDatabasePage() {
                 <SelectItem value="callback">Callback</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterWebsite} onValueChange={setFilterWebsite}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Website" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leads</SelectItem>
+                <SelectItem value="no_website">🔥 No Website Only</SelectItem>
+                <SelectItem value="has_website">Has Website</SelectItem>
+              </SelectContent>
+            </Select>
             <Badge variant="outline">{leads?.length || 0} leads</Badge>
+            {leads && (
+              <Badge variant="destructive" className="gap-1">
+                🔥 {leads.filter(l => (l as any).website_status === "no_website").length} No Website
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
