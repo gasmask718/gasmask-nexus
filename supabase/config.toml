@@ -336,3 +336,6 @@ verify_jwt = false
 
 [functions.brandaro-revenue-autopilot]
 verify_jwt = false
+
+[functions.brandaro-global-scaling]
+verify_jwt = false
