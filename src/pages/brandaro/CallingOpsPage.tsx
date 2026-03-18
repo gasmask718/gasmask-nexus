@@ -523,15 +523,33 @@ export default function CallingOpsPage() {
                           <TableCell className="font-mono text-xs">{lead?.phone_number}</TableCell>
                           <TableCell>{item.retry_count}</TableCell>
                           <TableCell>
-                            <Button
-                              size="sm"
-                              variant={isActive ? "secondary" : "default"}
-                              onClick={() => handlePrepareCall(item)}
-                              disabled={isActive || assignNumber.isPending}
-                            >
-                              <Zap className="h-3 w-3 mr-1" />
-                              {isActive ? "Active" : "Call"}
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant={isActive ? "secondary" : "default"}
+                                onClick={() => handlePrepareCall(item)}
+                                disabled={isActive || assignNumber.isPending}
+                              >
+                                <Zap className="h-3 w-3 mr-1" />
+                                {isActive ? "Active" : "Prepare"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleLiveDial(item)}
+                                disabled={dialingId === item.id || !lead?.phone_number}
+                              >
+                                {dialingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleQuickSms(item)}
+                                disabled={sendingSmsId === item.id || !lead?.phone_number}
+                              >
+                                {sendingSmsId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
