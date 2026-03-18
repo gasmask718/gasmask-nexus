@@ -110,6 +110,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useBrandaroVerify, ensureBrandaroInNav } from '@/hooks/useBrandaroVerify';
 
 interface LayoutProps {
   children: ReactNode;
@@ -469,19 +470,23 @@ const DYNASTY_NAVIGATION = {
 
 const Layout = ({ children }: LayoutProps) => {
   const { signOut } = useAuth();
-  const { role, isAdmin } = useUserRole(); // Single source of truth for role
+  const { role, isAdmin } = useUserRole();
   const { currentBusiness, loading: businessLoading } = useBusiness();
   const location = useLocation();
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
+
+  // ⚔️ BRANDARO PERMANENT VERIFICATION — Self-heal if missing
+  const verifiedNav = ensureBrandaroInNav(DYNASTY_NAVIGATION);
+  const brandaroStatus = useBrandaroVerify(verifiedNav);
   
-  // All sections open by default
+  // All sections open by default — brandaro-hub PERMANENTLY included
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'global-dashboard', 'portals'
+    'brandaro-hub', 'global-dashboard', 'portals'
   ]);
   
   const currentPath = location.pathname;
