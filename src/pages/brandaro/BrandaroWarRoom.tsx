@@ -47,6 +47,8 @@ export default function BrandaroWarRoom() {
   const { stats: psyStats } = useClosingPsychologyStats();
   const { data: evoDash } = useEvolutionDashboard();
   const runEvolution = useRunEvolutionCycle();
+  const autopilot = useRevenueAutopilotDashboard();
+  const runAutopilot = useRunAutopilotCycle();
 
   // Active calls count
   const { data: activeCalls = 0 } = useQuery({
