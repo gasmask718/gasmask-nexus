@@ -13,9 +13,13 @@ import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
   XCircle, PhoneForwarded, Bell, MessageSquare, Loader2,
-  Brain, Target, Trophy, ArrowUpRight
+  Brain, Target, Trophy, ArrowUpRight, DollarSign, Flame, Activity
 } from "lucide-react";
 import { useScriptPerformance, useLeadPerformanceStats } from "@/hooks/useBrandaroIntelligence";
+import {
+  useConversionPredictions, usePredictionStats, useNichePerformance,
+  useRevenueStats, useRunPredictiveScoring, useUpdateNiches
+} from "@/hooks/useBrandaroPredictive";
 import {
   useNumberPool,
   useNumberAlerts,
@@ -49,6 +53,12 @@ export default function CallingOpsPage() {
   const { data: alerts = [] } = useNumberAlerts();
   const { data: scriptPerf = [] } = useScriptPerformance();
   const { data: leadPerfStats } = useLeadPerformanceStats();
+  const { data: predictions = [] } = useConversionPredictions();
+  const { data: predStats } = usePredictionStats();
+  const { data: nichePerf = [] } = useNichePerformance();
+  const { data: revenueStats } = useRevenueStats();
+  const runScoring = useRunPredictiveScoring();
+  const updateNiches = useUpdateNiches();
 
   const { data: queueItems = [], isLoading: queueLoading } = useQuery({
     queryKey: ["brandaro-call-queue", selectedCampaign],
@@ -396,6 +406,7 @@ export default function CallingOpsPage() {
       <Tabs defaultValue="desk" className="space-y-4">
         <TabsList>
           <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
+          <TabsTrigger value="predictive">🔮 Predictive</TabsTrigger>
           <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
           <TabsTrigger value="numbers">Number Pool</TabsTrigger>
           <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
@@ -617,6 +628,208 @@ export default function CallingOpsPage() {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── PREDICTIVE ENGINE ── */}
+        <TabsContent value="predictive" className="space-y-4">
+          {/* Controls */}
+          <div className="flex gap-2">
+            <Button onClick={() => runScoring.mutate()} disabled={runScoring.isPending}>
+              <Activity className="h-4 w-4 mr-2" />
+              {runScoring.isPending ? "Scoring..." : "Run Predictive Scoring"}
+            </Button>
+            <Button variant="outline" onClick={() => updateNiches.mutate()} disabled={updateNiches.isPending}>
+              <Flame className="h-4 w-4 mr-2" />
+              Update Niches
+            </Button>
+          </div>
+
+          {/* Prediction Distribution */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            {[
+              { label: "Total Scored", value: predStats?.total || 0, icon: Target },
+              { label: "High Priority", value: predStats?.high || 0, icon: Flame },
+              { label: "Medium", value: predStats?.medium || 0, icon: Activity },
+              { label: "Low", value: predStats?.low || 0, icon: Clock },
+              { label: "Avg Probability", value: `${predStats?.avgProb || 0}%`, icon: Brain },
+              { label: "Converted", value: predStats?.converted || 0, icon: Trophy },
+            ].map(({ label, value, icon: Icon }) => (
+              <Card key={label}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-xl font-bold">{value}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Revenue Summary */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <DollarSign className="h-6 w-6 mx-auto text-primary mb-1" />
+                <p className="text-3xl font-bold text-primary">${(revenueStats?.totalRevenue || 0).toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Total Revenue</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <Trophy className="h-6 w-6 mx-auto text-primary mb-1" />
+                <p className="text-3xl font-bold">{revenueStats?.totalDeals || 0}</p>
+                <p className="text-sm text-muted-foreground">Deals Closed</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Revenue by Script */}
+          {revenueStats?.byScript && Object.keys(revenueStats.byScript).length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Revenue by Script Variant</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {Object.entries(revenueStats.byScript).map(([variant, amount]) => (
+                    <div key={variant} className="flex justify-between items-center">
+                      <Badge>{variant}</Badge>
+                      <span className="font-bold text-primary">${Number(amount).toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Priority Queue */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Predictive Priority Queue
+              </CardTitle>
+              <CardDescription>Leads ranked by conversion probability — take action on high-priority first</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Prob</TableHead>
+                    <TableHead>Tier</TableHead>
+                    <TableHead>Strategy</TableHead>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Industry</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Factors</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {predictions.slice(0, 30).map((p: any) => {
+                    const lead = p.brandaro_qualified_leads;
+                    const factorKeys = Object.keys(p.scoring_factors || {});
+                    return (
+                      <TableRow key={p.id}>
+                        <TableCell>
+                          <Badge variant={p.conversion_probability >= 70 ? "default" : p.conversion_probability >= 40 ? "secondary" : "outline"}>
+                            {Number(p.conversion_probability).toFixed(0)}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={p.priority_tier === "high" ? "destructive" : p.priority_tier === "medium" ? "default" : "secondary"}>
+                            {p.priority_tier}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">{p.action_strategy?.replace(/_/g, " ")}</TableCell>
+                        <TableCell className="font-medium">{lead?.business_name || "—"}</TableCell>
+                        <TableCell className="text-xs">{lead?.industry || "—"}</TableCell>
+                        <TableCell className="text-xs">{lead?.city}, {lead?.state}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {factorKeys.slice(0, 3).map(k => (
+                              <Badge key={k} variant="outline" className="text-xs">
+                                {k.replace(/_/g, " ")} +{(p.scoring_factors as any)[k]}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {predictions.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-6">
+                        No predictions yet — click "Run Predictive Scoring" to analyze leads
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Hot Niches */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Flame className="h-5 w-5" />
+                Niche Performance
+              </CardTitle>
+              <CardDescription>Industries ranked by revenue per lead — hot niches get auto-scaled</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Industry</TableHead>
+                    <TableHead>Leads</TableHead>
+                    <TableHead>Contacted</TableHead>
+                    <TableHead>Replied</TableHead>
+                    <TableHead>Converted</TableHead>
+                    <TableHead>Conv Rate</TableHead>
+                    <TableHead>RPL</TableHead>
+                    <TableHead>Revenue</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {nichePerf.map((n: any) => (
+                    <TableRow key={n.id}>
+                      <TableCell className="font-medium capitalize">{n.industry}</TableCell>
+                      <TableCell>{n.total_leads}</TableCell>
+                      <TableCell>{n.total_contacted}</TableCell>
+                      <TableCell>{n.total_replied}</TableCell>
+                      <TableCell>{n.total_converted}</TableCell>
+                      <TableCell>
+                        <Badge variant={n.conversion_rate > 10 ? "default" : "outline"}>
+                          {Number(n.conversion_rate).toFixed(1)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-bold">${Number(n.revenue_per_lead).toFixed(0)}</TableCell>
+                      <TableCell>${Number(n.total_revenue).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {n.is_hot_niche ? (
+                          <Badge variant="destructive"><Flame className="h-3 w-3 mr-1" />HOT</Badge>
+                        ) : (
+                          <Badge variant="secondary">Normal</Badge>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {nichePerf.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center text-muted-foreground py-6">
+                        No niche data yet — click "Update Niches" after leads are processed
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>

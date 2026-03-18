@@ -348,3 +348,6 @@ verify_jwt = false
 
 [functions.brandaro-auto-striker]
 verify_jwt = false
+
+[functions.brandaro-predictive-engine]
+verify_jwt = false
