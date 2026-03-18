@@ -732,6 +732,148 @@ export default function BrandaroWarRoom() {
           )}
         </CardContent>
       </Card>
+
+      {/* ═══════ REVENUE AUTOPILOT ═══════ */}
+      <Card className="col-span-full border-2 border-emerald-500/20">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Repeat className="h-5 w-5 text-emerald-500" />
+              <h2 className="font-bold text-lg">💰 REVENUE AUTOPILOT</h2>
+              <Badge variant="outline" className="text-emerald-600 border-emerald-500/30 text-[10px]">CLOSED LOOP</Badge>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs border-emerald-500/30 text-emerald-600"
+              onClick={() => runAutopilot.mutate()}
+              disabled={runAutopilot.isPending}
+            >
+              {runAutopilot.isPending ? <RefreshCw className="h-3 w-3 animate-spin mr-1" /> : <Rocket className="h-3 w-3 mr-1" />}
+              Run Cycle
+            </Button>
+          </div>
+
+          {/* Autopilot Loop Visualization */}
+          <div className="flex items-center justify-center gap-1 text-[10px] font-medium mb-4 flex-wrap">
+            {["Traffic", "Leads", "AI Calls", "AI Closing", "Revenue", "Reinvest"].map((step, i) => (
+              <div key={step} className="flex items-center gap-1">
+                <span className={cn(
+                  "px-2 py-1 rounded",
+                  i === 4 ? "bg-emerald-500/20 text-emerald-700" :
+                  i === 5 ? "bg-amber-500/20 text-amber-700" :
+                  "bg-muted text-muted-foreground"
+                )}>{step}</span>
+                {i < 5 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+              </div>
+            ))}
+            <ArrowRight className="h-3 w-3 text-emerald-500" />
+            <span className="px-2 py-1 rounded bg-emerald-500/20 text-emerald-700">↻ LOOP</span>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Total Revenue</p>
+              <p className="text-xl font-bold text-emerald-600">${(autopilot.totalRevenue / 1000).toFixed(1)}k</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Overall ROI</p>
+              <p className={cn("text-xl font-bold", autopilot.overallROI > 0 ? "text-emerald-600" : "text-red-500")}>
+                {autopilot.overallROI.toFixed(0)}%
+              </p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Reinvest Rate</p>
+              <p className="text-xl font-bold text-amber-600">{autopilot.reinvestmentRate}%</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">MRR</p>
+              <p className="text-xl font-bold text-blue-600">${(autopilot.monthlyRecurring / 1000).toFixed(1)}k</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Channel Performance */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">📊 Channel ROI</p>
+              <div className="space-y-1.5">
+                {autopilot.channels.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No attribution data yet</p>
+                ) : autopilot.channels.slice(0, 6).map((ch) => (
+                  <div key={ch.name} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                    <div className="flex items-center gap-2">
+                      <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                      <span className="font-medium capitalize">{ch.name}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-muted-foreground">{ch.leads} leads</span>
+                      <span className="text-emerald-600 font-medium">${ch.revenue.toFixed(0)}</span>
+                      <Badge variant="outline" className={cn("text-[9px]",
+                        ch.roi > 100 ? "border-emerald-500/30 text-emerald-600" :
+                        ch.roi > 0 ? "border-blue-500/30 text-blue-600" :
+                        "border-red-500/30 text-red-600"
+                      )}>
+                        {ch.roi.toFixed(0)}% ROI
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Scaling Actions + Reinvestment Cycles */}
+            <div className="space-y-3">
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">⚡ Scaling Actions</p>
+                <ScrollArea className="h-[100px]">
+                  <div className="space-y-1.5">
+                    {autopilot.scalingActions.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-2">No actions yet</p>
+                    ) : autopilot.scalingActions.slice(0, 8).map((a: any) => (
+                      <div key={a.id} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant="outline" className={cn("text-[9px]",
+                            a.action_type === "scale_up" ? "border-emerald-500/30 text-emerald-600" :
+                            a.action_type === "kill" ? "border-red-500/30 text-red-600" :
+                            "border-blue-500/30 text-blue-600"
+                          )}>
+                            {a.action_type === "scale_up" ? "↑ SCALE" : a.action_type === "kill" ? "✕ KILL" : a.action_type}
+                          </Badge>
+                          <span className="truncate max-w-[120px]">{a.target_campaign}</span>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{a.roi_at_decision?.toFixed(0)}% ROI</span>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              <div className="border rounded-lg p-3">
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🔄 Reinvestment Cycles</p>
+                <div className="space-y-1.5">
+                  {autopilot.cycles.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">No cycles run yet</p>
+                  ) : autopilot.cycles.slice(0, 4).map((c: any) => (
+                    <div key={c.id} className="flex items-center justify-between p-1.5 bg-muted/30 rounded text-xs">
+                      <div className="flex items-center gap-2">
+                        <PiggyBank className="h-3 w-3 text-amber-500" />
+                        <span className="font-medium">Cycle #{c.cycle_number}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-emerald-600">${Number(c.reinvestment_amount).toFixed(0)} reinvested</span>
+                        <span className="text-muted-foreground">
+                          ↑{c.campaigns_scaled} ✕{c.campaigns_killed}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
