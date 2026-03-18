@@ -47,6 +47,9 @@ export default function CallingOpsPage() {
   const logOutcome = useLogCallOutcome();
   const { data: analytics } = useNumberAnalytics();
   const { data: alerts = [] } = useNumberAlerts();
+  const { data: scriptPerf = [] } = useScriptPerformance();
+  const { data: leadPerfStats } = useLeadPerformanceStats();
+  const { data: alerts = [] } = useNumberAlerts();
 
   const { data: queueItems = [], isLoading: queueLoading } = useQuery({
     queryKey: ["brandaro-call-queue", selectedCampaign],
