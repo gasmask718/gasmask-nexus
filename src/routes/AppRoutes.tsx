@@ -2558,7 +2558,7 @@ export default function AppRoutes() {
 
           {/* ── Domination ── */}
           <Route path="domination" element={<OptimizationEnginePage />} />
-          <Route path="competitors" element={<OptimizationEnginePage />} />
+          <Route path="competitors" element={<CompetitorTakeoverPage />} />
           <Route path="offers" element={<OptimizationEnginePage />} />
           <Route path="positioning" element={<OptimizationEnginePage />} />
 
