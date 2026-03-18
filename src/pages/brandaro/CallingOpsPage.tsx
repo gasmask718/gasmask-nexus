@@ -101,6 +101,27 @@ export default function CallingOpsPage() {
     },
   });
 
+  // Auto-Striker metrics
+  const { data: autoStrikerStats } = useQuery({
+    queryKey: ["brandaro-auto-striker-stats"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await (supabase as any)
+        .from("brandaro_auto_actions")
+        .select("action_type, status")
+        .gte("created_at", today);
+      const actions = data || [];
+      return {
+        totalActions: actions.length,
+        callsTriggered: actions.filter((a: any) => a.action_type === "ai_call" && a.status === "success").length,
+        smsSent: actions.filter((a: any) => (a.action_type === "sms" || a.action_type === "follow_up_sms") && a.status === "success").length,
+        failed: actions.filter((a: any) => a.status === "failed").length,
+        skipped: actions.filter((a: any) => a.status === "skipped").length,
+      };
+    },
+    refetchInterval: 15000,
+  });
+
   const { data: callbacks = [] } = useQuery({
     queryKey: ["brandaro-callbacks-pending"],
     queryFn: async () => {
