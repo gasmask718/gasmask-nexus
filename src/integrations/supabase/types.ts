@@ -12749,6 +12749,50 @@ export type Database = {
           },
         ]
       }
+      brandaro_expansion_suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          market_size_estimate: string | null
+          reason: string | null
+          similar_to_territory_id: string | null
+          similarity_score: number | null
+          status: string | null
+          suggested_city: string
+          suggested_state: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          market_size_estimate?: string | null
+          reason?: string | null
+          similar_to_territory_id?: string | null
+          similarity_score?: number | null
+          status?: string | null
+          suggested_city: string
+          suggested_state?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          market_size_estimate?: string | null
+          reason?: string | null
+          similar_to_territory_id?: string | null
+          similarity_score?: number | null
+          status?: string | null
+          suggested_city?: string
+          suggested_state?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_expansion_suggestions_similar_to_territory_id_fkey"
+            columns: ["similar_to_territory_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_extracted_templates: {
         Row: {
           avg_score: number | null
@@ -13710,6 +13754,54 @@ export type Database = {
           target_keyword?: string
         }
         Relationships: []
+      }
+      brandaro_market_duplications: {
+        Row: {
+          completed_at: string | null
+          components_cloned: Json | null
+          created_at: string | null
+          id: string
+          initiated_by: string | null
+          source_territory_id: string | null
+          status: string | null
+          target_territory_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          components_cloned?: Json | null
+          created_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          source_territory_id?: string | null
+          status?: string | null
+          target_territory_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          components_cloned?: Json | null
+          created_at?: string | null
+          id?: string
+          initiated_by?: string | null
+          source_territory_id?: string | null
+          status?: string | null
+          target_territory_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_market_duplications_source_territory_id_fkey"
+            columns: ["source_territory_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_territories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_market_duplications_target_territory_id_fkey"
+            columns: ["target_territory_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_territories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_message_log: {
         Row: {
@@ -15641,6 +15733,41 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_scaling_log: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          result: string | null
+          territory_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          result?: string | null
+          territory_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          result?: string | null
+          territory_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_scaling_log_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_seo_clusters: {
         Row: {
           city: string | null
@@ -16170,6 +16297,109 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "brandaro_extracted_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_territories: {
+        Row: {
+          assigned_team: Json | null
+          city: string
+          cloned_from: string | null
+          created_at: string | null
+          id: string
+          launched_at: string | null
+          localization_profile: Json | null
+          name: string
+          region: string | null
+          state: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_team?: Json | null
+          city: string
+          cloned_from?: string | null
+          created_at?: string | null
+          id?: string
+          launched_at?: string | null
+          localization_profile?: Json | null
+          name: string
+          region?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_team?: Json | null
+          city?: string
+          cloned_from?: string | null
+          created_at?: string | null
+          id?: string
+          launched_at?: string | null
+          localization_profile?: Json | null
+          name?: string
+          region?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_territories_cloned_from_fkey"
+            columns: ["cloned_from"]
+            isOneToOne: false
+            referencedRelation: "brandaro_territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_territory_performance: {
+        Row: {
+          best_offer: string | null
+          best_personality: string | null
+          computed_at: string | null
+          conversion_rate: number | null
+          cost_per_lead: number | null
+          id: string
+          leads_generated: number | null
+          period: string
+          revenue: number | null
+          roi: number | null
+          territory_id: string
+        }
+        Insert: {
+          best_offer?: string | null
+          best_personality?: string | null
+          computed_at?: string | null
+          conversion_rate?: number | null
+          cost_per_lead?: number | null
+          id?: string
+          leads_generated?: number | null
+          period: string
+          revenue?: number | null
+          roi?: number | null
+          territory_id: string
+        }
+        Update: {
+          best_offer?: string | null
+          best_personality?: string | null
+          computed_at?: string | null
+          conversion_rate?: number | null
+          cost_per_lead?: number | null
+          id?: string
+          leads_generated?: number | null
+          period?: string
+          revenue?: number | null
+          roi?: number | null
+          territory_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_territory_performance_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_territories"
             referencedColumns: ["id"]
           },
         ]
