@@ -39,6 +39,9 @@ export default function LeadDatabasePage() {
   const [filterTier, setFilterTier] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [callingId, setCallingId] = useState<string | null>(null);
+  const [textingId, setTextingId] = useState<string | null>(null);
+  const [queuingId, setQueuingId] = useState<string | null>(null);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, search],
