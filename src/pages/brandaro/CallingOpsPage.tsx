@@ -207,7 +207,7 @@ export default function CallingOpsPage() {
       if (error || !data?.success) throw new Error(data?.error || error?.message || 'Call failed');
       toast.success(`📞 Call initiated to ${lead.business_name}`);
       // Update queue item status
-      await supabase.from("brandaro_call_queue").update({ last_called_at: new Date().toISOString() }).eq("id", item.id);
+      await (supabase as any).from("brandaro_call_queue").update({ updated_at: new Date().toISOString() }).eq("id", item.id);
       queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
     } catch (err: any) {
       toast.error(`Call failed: ${err.message}`);
