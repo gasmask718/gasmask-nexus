@@ -345,3 +345,6 @@ verify_jwt = false
 
 [functions.outscraper-webhook]
 verify_jwt = false
+
+[functions.brandaro-auto-striker]
+verify_jwt = false
