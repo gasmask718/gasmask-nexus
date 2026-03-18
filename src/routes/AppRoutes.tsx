@@ -100,6 +100,7 @@ import ClientReportingPage from '@/pages/brandaro/ClientReportingPage';
 import AdsEnginePage from '@/pages/brandaro/AdsEnginePage';
 import GoogleDominationPage from '@/pages/brandaro/GoogleDominationPage';
 import OptimizationEnginePage from '@/pages/brandaro/OptimizationEnginePage';
+import CompetitorTakeoverPage from '@/pages/brandaro/CompetitorTakeoverPage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import VADashboardPage from '@/pages/brandaro/VADashboardPage';
 import VAManagerPage from '@/pages/brandaro/VAManagerPage';
