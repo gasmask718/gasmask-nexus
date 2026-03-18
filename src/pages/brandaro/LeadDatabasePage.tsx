@@ -254,24 +254,50 @@ export default function LeadDatabasePage() {
                     </TableCell>
                     <TableCell className="text-sm text-center">{lead.call_attempts || 0}</TableCell>
                     <TableCell>
-                      <Select
-                        value={lead.lead_status || "new"}
-                        onValueChange={(val) => updateStatus.mutate({ id: lead.id, status: val })}
-                      >
-                        <SelectTrigger className="h-7 text-xs w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">New</SelectItem>
-                          <SelectItem value="queued">Queue</SelectItem>
-                          <SelectItem value="interested">Interested</SelectItem>
-                          <SelectItem value="hot_lead">Hot Lead</SelectItem>
-                          <SelectItem value="sold">Sold</SelectItem>
-                          <SelectItem value="not_interested">Not Interested</SelectItem>
-                          <SelectItem value="callback">Callback</SelectItem>
-                          <SelectItem value="disqualified">Disqualify</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm" variant="default"
+                          onClick={() => handleCallNow(lead)}
+                          disabled={!lead.phone_number || callingId === lead.id}
+                          title="Call Now"
+                        >
+                          {callingId === lead.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+                        </Button>
+                        <Button
+                          size="sm" variant="outline"
+                          onClick={() => handleTextNow(lead)}
+                          disabled={!lead.phone_number || textingId === lead.id}
+                          title="Text Now"
+                        >
+                          {textingId === lead.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                        </Button>
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => handleAddToQueue(lead)}
+                          disabled={queuingId === lead.id || lead.lead_status === 'queued'}
+                          title="Add to Queue"
+                        >
+                          {queuingId === lead.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
+                        </Button>
+                        <Select
+                          value={lead.lead_status || "new"}
+                          onValueChange={(val) => updateStatus.mutate({ id: lead.id, status: val })}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="queued">Queue</SelectItem>
+                            <SelectItem value="interested">Interested</SelectItem>
+                            <SelectItem value="hot_lead">Hot Lead</SelectItem>
+                            <SelectItem value="sold">Sold</SelectItem>
+                            <SelectItem value="not_interested">Not Interested</SelectItem>
+                            <SelectItem value="callback">Callback</SelectItem>
+                            <SelectItem value="disqualified">Disqualify</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
