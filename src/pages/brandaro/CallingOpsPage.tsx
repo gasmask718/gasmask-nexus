@@ -12,8 +12,10 @@ import { toast } from "sonner";
 import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
-  XCircle, PhoneForwarded, Bell, MessageSquare, Loader2
+  XCircle, PhoneForwarded, Bell, MessageSquare, Loader2,
+  Brain, Target, Trophy, ArrowUpRight
 } from "lucide-react";
+import { useScriptPerformance, useLeadPerformanceStats } from "@/hooks/useBrandaroIntelligence";
 import {
   useNumberPool,
   useNumberAlerts,
@@ -45,6 +47,8 @@ export default function CallingOpsPage() {
   const logOutcome = useLogCallOutcome();
   const { data: analytics } = useNumberAnalytics();
   const { data: alerts = [] } = useNumberAlerts();
+  const { data: scriptPerf = [] } = useScriptPerformance();
+  const { data: leadPerfStats } = useLeadPerformanceStats();
 
   const { data: queueItems = [], isLoading: queueLoading } = useQuery({
     queryKey: ["brandaro-call-queue", selectedCampaign],
@@ -392,6 +396,7 @@ export default function CallingOpsPage() {
       <Tabs defaultValue="desk" className="space-y-4">
         <TabsList>
           <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
+          <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
           <TabsTrigger value="numbers">Number Pool</TabsTrigger>
           <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
         </TabsList>
@@ -612,6 +617,150 @@ export default function CallingOpsPage() {
                   </TableBody>
                 </Table>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── INTELLIGENCE ENGINE ── */}
+        <TabsContent value="intelligence" className="space-y-4">
+          {/* Conversion Funnel */}
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+            {[
+              { label: "Tracked", value: leadPerfStats?.totalTracked || 0, icon: Target },
+              { label: "SMS Replied", value: leadPerfStats?.smsReplied || 0, icon: MessageSquare },
+              { label: "Calls Answered", value: leadPerfStats?.callsAnswered || 0, icon: Phone },
+              { label: "Interested", value: leadPerfStats?.interested || 0, icon: ArrowUpRight },
+              { label: "Converted", value: leadPerfStats?.converted || 0, icon: Trophy },
+              { label: "Avg Score", value: leadPerfStats?.avgScore || 0, icon: Brain },
+            ].map(({ label, value, icon: Icon }) => (
+              <Card key={label}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-xl font-bold">{value}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Rates */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <p className="text-4xl font-bold text-primary">{leadPerfStats?.replyRate || 0}%</p>
+                <p className="text-sm text-muted-foreground">Reply Rate</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 text-center">
+                <p className="text-4xl font-bold text-primary">{leadPerfStats?.conversionRate || 0}%</p>
+                <p className="text-sm text-muted-foreground">Conversion Rate</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Script A/B Performance */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5" />
+                Script A/B Performance
+              </CardTitle>
+              <CardDescription>Auto-optimizing — winner gets more weight after 50+ sends</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Variant</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Sends</TableHead>
+                    <TableHead>Replies</TableHead>
+                    <TableHead>Reply Rate</TableHead>
+                    <TableHead>Conversions</TableHead>
+                    <TableHead>Conv Rate</TableHead>
+                    <TableHead>Weight</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {scriptPerf.map((v: any) => (
+                    <TableRow key={v.id}>
+                      <TableCell>
+                        <Badge variant={v.usage_weight >= 60 ? "default" : "secondary"}>
+                          {v.variant_key} {v.usage_weight >= 60 && "👑"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs">{v.variant_label || v.script_type}</TableCell>
+                      <TableCell>{v.send_count}</TableCell>
+                      <TableCell>{v.reply_count}</TableCell>
+                      <TableCell>
+                        <Badge variant={v.reply_rate > 10 ? "default" : "outline"}>
+                          {Number(v.reply_rate).toFixed(1)}%
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{v.conversion_count}</TableCell>
+                      <TableCell>{Number(v.conversion_rate).toFixed(1)}%</TableCell>
+                      <TableCell>
+                        <span className={v.usage_weight >= 60 ? "font-bold text-primary" : "text-muted-foreground"}>
+                          {Number(v.usage_weight).toFixed(0)}%
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {scriptPerf.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                        No script data yet — actions will populate automatically
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          {/* Top Scored Leads */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Top Scored Leads
+              </CardTitle>
+              <CardDescription>Highest engagement + response signals</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Score</TableHead>
+                    <TableHead>SMS</TableHead>
+                    <TableHead>Replied</TableHead>
+                    <TableHead>Call</TableHead>
+                    <TableHead>Interested</TableHead>
+                    <TableHead>Converted</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(leadPerfStats?.topLeads || []).map((l: any) => (
+                    <TableRow key={l.id}>
+                      <TableCell>
+                        <Badge variant={l.lead_score >= 50 ? "default" : "secondary"}>
+                          {l.lead_score}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{l.sms_sent}</TableCell>
+                      <TableCell>{l.sms_replied ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "—"}</TableCell>
+                      <TableCell>{l.call_picked_up ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "—"}</TableCell>
+                      <TableCell>{l.interested ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "—"}</TableCell>
+                      <TableCell>{l.converted ? <Trophy className="h-4 w-4 text-primary" /> : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>
