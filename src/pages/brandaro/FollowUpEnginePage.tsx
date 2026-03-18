@@ -213,9 +213,11 @@ export default function FollowUpEnginePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-1">
-                        {fu.status === 'pending' && (
+                      {fu.status === 'pending' && (
                           <>
-                            <Button size="sm" onClick={() => sendNow(fu)}><Send className="h-3 w-3" /></Button>
+                            <Button size="sm" onClick={() => sendNow(fu)} disabled={sendingIds.has(fu.id)}>
+                              {sendingIds.has(fu.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => cancelFollowup(fu.id)}><XCircle className="h-3 w-3" /></Button>
                           </>
                         )}
