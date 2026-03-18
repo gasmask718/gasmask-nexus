@@ -342,3 +342,6 @@ verify_jwt = false
 
 [functions.brandaro-competitor-takeover]
 verify_jwt = false
+
+[functions.outscraper-webhook]
+verify_jwt = false

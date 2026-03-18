@@ -237,7 +237,23 @@ export default function LeadDiscoveryPage() {
     },
   });
 
-  // ── Live Outscraper Generation ──
+  // ── Job tracking ──
+  const { data: recentJobs, refetch: refetchJobs } = useQuery({
+    queryKey: ["brandaro-lead-jobs"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("brandaro_lead_jobs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    refetchInterval: 10000, // Poll every 10s to catch webhook completions
+  });
+
+  const pendingJobs = recentJobs?.filter(j => j.status === "pending") || [];
+
+  // ── Live Outscraper Generation (async mode) ──
   const generateMutation = useMutation({
     mutationFn: async () => {
       if (!genQuery || !genLocation) throw new Error("Business type and location are required");
@@ -249,10 +265,10 @@ export default function LeadDiscoveryPage() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["brandaro-raw-leads"] });
+      refetchJobs();
       toast({
-        title: "🚀 Lead Generation Complete",
-        description: `Found ${data.total_found} · Inserted ${data.inserted} · ${data.no_website} have no website · ${data.duplicates} duplicates skipped`,
+        title: "🚀 Job Submitted",
+        description: `Outscraper is processing your request. Results will arrive automatically via webhook.${data.request_id ? ` Job ID: ${data.request_id}` : ''}`,
       });
     },
     onError: (err: any) => {
@@ -322,11 +338,34 @@ export default function LeadDiscoveryPage() {
             </Button>
           </div>
           {generateMutation.data && (
-            <div className="mt-3 flex gap-3 text-sm">
-              <Badge variant="outline">Found: {generateMutation.data.total_found}</Badge>
-              <Badge>Inserted: {generateMutation.data.inserted}</Badge>
-              <Badge variant="destructive">No Website: {generateMutation.data.no_website}</Badge>
-              <Badge variant="secondary">Dupes: {generateMutation.data.duplicates}</Badge>
+            <div className="mt-3 p-2 rounded bg-muted text-sm">
+              ✅ Job submitted in async mode. Results will auto-import via webhook.
+            </div>
+          )}
+          {pendingJobs.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {pendingJobs.map(job => (
+                <div key={job.id} className="flex items-center gap-2 text-sm p-2 rounded border border-primary/20 bg-primary/5">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span className="font-medium">{job.search_query}</span>
+                  <span className="text-muted-foreground">in {job.location}</span>
+                  <Badge variant="outline">Pending</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+          {recentJobs && recentJobs.filter(j => j.status === "completed").length > 0 && (
+            <div className="mt-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Recent Completed Jobs</p>
+              {recentJobs.filter(j => j.status === "completed").slice(0, 3).map(job => (
+                <div key={job.id} className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>{job.search_query} · {job.location}</span>
+                  <Badge>+{job.inserted_count}</Badge>
+                  <Badge variant="secondary">Dupes: {job.duplicate_count}</Badge>
+                  <Badge variant="destructive">No Site: {job.no_website_count}</Badge>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
