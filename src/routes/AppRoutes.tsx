@@ -587,6 +587,7 @@ import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
 import AdvisorPenthouse from '@/pages/grabba/AdvisorPenthouse';
 import AuditEnginePage from '@/pages/penthouse/AuditEnginePage';
+import FloorBlueprint from '@/pages/penthouse/FloorBlueprint';
 import InstinctLog from '@/pages/grabba/InstinctLog';
 import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerformance';
 import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
