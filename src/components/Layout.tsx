@@ -929,7 +929,7 @@ const Layout = ({ children }: LayoutProps) => {
 
       <div className="flex">
         {/* Sidebar - Desktop */}
-        <aside className="hidden md:flex w-72 flex-col border-r border-border/50 bg-card/50 h-[calc(100vh-3.5rem)] overflow-hidden">
+        <aside className="hidden md:flex w-72 flex-col border-r border-border/50 bg-card h-[calc(100vh-3.5rem)] overflow-hidden" style={{ opacity: 1, filter: 'none', backdropFilter: 'none', zIndex: 40 }}>
           <div className="p-3 border-b border-border/50">
             <h2 className="text-sm font-bold mb-1">🏛️ Dynasty OS</h2>
             <p className="text-xs text-muted-foreground mb-2">Empire Command Center</p>
