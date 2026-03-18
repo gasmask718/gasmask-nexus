@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Upload, FileSpreadsheet, Brain, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { cleanCsvData, detectNumericColumns } from '@/utils/csvCleaner';
 
 export function ExcelAnalysisUpload() {
   const { toast } = useToast();
