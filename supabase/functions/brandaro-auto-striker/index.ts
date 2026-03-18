@@ -321,6 +321,14 @@ serve(async (req: Request) => {
           if (smsResult.success) {
             await trackScriptSend(supabase, variant, "sms_followup");
             await upsertLeadPerformance(supabase, leadId, { sms_sent: (count || 0) + 1 });
+            // Pipeline event: sms_sent (follow-up)
+            fetch(`${supabaseUrl}/functions/v1/brandaro-pipeline-automator`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+              body: JSON.stringify({ action: "record_event", lead_id: leadId, event_type: "sms_sent" }),
+            }).catch((e: any) => {
+              supabase.from("brandaro_event_failures").insert({ lead_id: leadId, event_type: "sms_sent", error_message: e.message });
+            });
           }
 
           results.push({ lead_id: leadId, status: smsResult.success ? "follow_up_sent" : "follow_up_failed", variant });
