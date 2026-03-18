@@ -75,6 +75,70 @@ export default function LeadDatabasePage() {
     },
   });
 
+  // ── Call Now ──
+  const handleCallNow = async (lead: any) => {
+    if (!lead.phone_number) { sonnerToast.error("No phone number"); return; }
+    setCallingId(lead.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: { action: 'call', phone: lead.phone_number, lead_id: lead.id },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'Call failed');
+      sonnerToast.success(`📞 Call initiated to ${lead.business_name}`);
+      // Update last contact
+      await (supabase as any).from("brandaro_qualified_leads")
+        .update({ lead_status: 'calling', updated_at: new Date().toISOString() })
+        .eq("id", lead.id);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-leads"] });
+    } catch (err: any) {
+      sonnerToast.error(`Call failed: ${err.message}`);
+    } finally {
+      setCallingId(null);
+    }
+  };
+
+  // ── Text Now ──
+  const handleTextNow = async (lead: any) => {
+    if (!lead.phone_number) { sonnerToast.error("No phone number"); return; }
+    setTextingId(lead.id);
+    try {
+      const message = `Hi! This is Brandaro Digital. We build professional websites for businesses like ${lead.business_name || 'yours'}. Interested in a free demo? Reply YES!`;
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: { action: 'sms', phone: lead.phone_number, message, lead_id: lead.id },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'SMS failed');
+      sonnerToast.success(`💬 SMS sent to ${lead.business_name}`);
+    } catch (err: any) {
+      sonnerToast.error(`SMS failed: ${err.message}`);
+    } finally {
+      setTextingId(null);
+    }
+  };
+
+  // ── Add to Queue ──
+  const handleAddToQueue = async (lead: any) => {
+    setQueuingId(lead.id);
+    try {
+      const { error } = await (supabase as any).from("brandaro_call_queue").insert({
+        lead_id: lead.id,
+        priority_tier: lead.priority_tier === "tier_1" ? 1 : lead.priority_tier === "tier_2" ? 2 : 3,
+        priority_score: lead.priority_score || 50,
+        retry_count: lead.call_attempts || 0,
+      });
+      if (error) throw error;
+      sonnerToast.success(`Added ${lead.business_name} to call queue`);
+      // Update status
+      await (supabase as any).from("brandaro_qualified_leads")
+        .update({ lead_status: 'queued', updated_at: new Date().toISOString() })
+        .eq("id", lead.id);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-leads"] });
+    } catch (err: any) {
+      sonnerToast.error(`Queue failed: ${err.message}`);
+    } finally {
+      setQueuingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
