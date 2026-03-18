@@ -8,7 +8,7 @@ import {
   DollarSign, Phone, Flame, TrendingUp, ListTodo, Bot,
   Users, Brain, Theater, AlertTriangle, Zap, Target,
   ArrowRight, Clock, Cpu, Play, CheckCircle, XCircle,
-  RefreshCw, MailCheck,
+  RefreshCw, MailCheck, Dna, Crown, Skull, Sparkles,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
