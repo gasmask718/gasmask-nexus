@@ -11943,6 +11943,53 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_competitor_captures: {
+        Row: {
+          capture_method: string | null
+          competitor_id: string | null
+          competitor_mentioned: boolean | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          original_objection: string | null
+          outcome: string | null
+          reposition_strategy: string | null
+          revenue_captured: number | null
+        }
+        Insert: {
+          capture_method?: string | null
+          competitor_id?: string | null
+          competitor_mentioned?: boolean | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          original_objection?: string | null
+          outcome?: string | null
+          reposition_strategy?: string | null
+          revenue_captured?: number | null
+        }
+        Update: {
+          capture_method?: string | null
+          competitor_id?: string | null
+          competitor_mentioned?: boolean | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          original_objection?: string | null
+          outcome?: string | null
+          reposition_strategy?: string | null
+          revenue_captured?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_competitor_captures_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_competitor_intel: {
         Row: {
           competitor_name: string
@@ -11979,6 +12026,101 @@ export type Database = {
           pricing_model?: string | null
           strengths?: Json | null
           weaknesses?: Json | null
+        }
+        Relationships: []
+      }
+      brandaro_competitor_weaknesses: {
+        Row: {
+          competitor_id: string
+          created_at: string | null
+          description: string
+          exploit_strategy: string | null
+          exploitability_score: number | null
+          id: string
+          source: string | null
+          validated: boolean | null
+          weakness_type: string
+        }
+        Insert: {
+          competitor_id: string
+          created_at?: string | null
+          description: string
+          exploit_strategy?: string | null
+          exploitability_score?: number | null
+          id?: string
+          source?: string | null
+          validated?: boolean | null
+          weakness_type: string
+        }
+        Update: {
+          competitor_id?: string
+          created_at?: string | null
+          description?: string
+          exploit_strategy?: string | null
+          exploitability_score?: number | null
+          id?: string
+          source?: string | null
+          validated?: boolean | null
+          weakness_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_competitor_weaknesses_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_competitors: {
+        Row: {
+          created_at: string | null
+          guarantees: string[] | null
+          id: string
+          is_active: boolean | null
+          name: string
+          offers: Json | null
+          positioning: string | null
+          pricing: Json | null
+          reviews_summary: string | null
+          source: string | null
+          territory_id: string | null
+          updated_at: string | null
+          weaknesses: string[] | null
+          website: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          guarantees?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          offers?: Json | null
+          positioning?: string | null
+          pricing?: Json | null
+          reviews_summary?: string | null
+          source?: string | null
+          territory_id?: string | null
+          updated_at?: string | null
+          weaknesses?: string[] | null
+          website?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          guarantees?: string[] | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          offers?: Json | null
+          positioning?: string | null
+          pricing?: Json | null
+          reviews_summary?: string | null
+          source?: string | null
+          territory_id?: string | null
+          updated_at?: string | null
+          weaknesses?: string[] | null
+          website?: string | null
         }
         Relationships: []
       }
@@ -13799,6 +13941,53 @@ export type Database = {
             columns: ["target_territory_id"]
             isOneToOne: false
             referencedRelation: "brandaro_territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_market_share: {
+        Row: {
+          brandaro_leads: number | null
+          competitor_id: string | null
+          competitor_leads_estimated: number | null
+          created_at: string | null
+          id: string
+          market_share_pct: number | null
+          period: string
+          revenue_captured: number | null
+          territory_id: string | null
+          win_rate: number | null
+        }
+        Insert: {
+          brandaro_leads?: number | null
+          competitor_id?: string | null
+          competitor_leads_estimated?: number | null
+          created_at?: string | null
+          id?: string
+          market_share_pct?: number | null
+          period: string
+          revenue_captured?: number | null
+          territory_id?: string | null
+          win_rate?: number | null
+        }
+        Update: {
+          brandaro_leads?: number | null
+          competitor_id?: string | null
+          competitor_leads_estimated?: number | null
+          created_at?: string | null
+          id?: string
+          market_share_pct?: number | null
+          period?: string
+          revenue_captured?: number | null
+          territory_id?: string | null
+          win_rate?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_market_share_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_competitors"
             referencedColumns: ["id"]
           },
         ]
@@ -16433,6 +16622,56 @@ export type Database = {
           testimonial_text?: string
         }
         Relationships: []
+      }
+      brandaro_undercut_offers: {
+        Row: {
+          brandaro_counter_offer: string
+          competitor_id: string | null
+          competitor_offer: string | null
+          conversion_rate: number | null
+          created_at: string | null
+          discount_pct: number | null
+          id: string
+          is_active: boolean | null
+          strategy: string | null
+          times_used: number | null
+          urgency_trigger: string | null
+        }
+        Insert: {
+          brandaro_counter_offer: string
+          competitor_id?: string | null
+          competitor_offer?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          discount_pct?: number | null
+          id?: string
+          is_active?: boolean | null
+          strategy?: string | null
+          times_used?: number | null
+          urgency_trigger?: string | null
+        }
+        Update: {
+          brandaro_counter_offer?: string
+          competitor_id?: string | null
+          competitor_offer?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          discount_pct?: number | null
+          id?: string
+          is_active?: boolean | null
+          strategy?: string | null
+          times_used?: number | null
+          urgency_trigger?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_undercut_offers_competitor_id_fkey"
+            columns: ["competitor_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_competitors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_upsell_engine: {
         Row: {
