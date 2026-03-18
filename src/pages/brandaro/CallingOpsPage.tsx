@@ -13,9 +13,13 @@ import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
   XCircle, PhoneForwarded, Bell, MessageSquare, Loader2,
-  Brain, Target, Trophy, ArrowUpRight
+  Brain, Target, Trophy, ArrowUpRight, DollarSign, Flame, Activity
 } from "lucide-react";
 import { useScriptPerformance, useLeadPerformanceStats } from "@/hooks/useBrandaroIntelligence";
+import {
+  useConversionPredictions, usePredictionStats, useNichePerformance,
+  useRevenueStats, useRunPredictiveScoring, useUpdateNiches
+} from "@/hooks/useBrandaroPredictive";
 import {
   useNumberPool,
   useNumberAlerts,
