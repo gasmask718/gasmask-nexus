@@ -237,7 +237,23 @@ export default function LeadDiscoveryPage() {
     },
   });
 
-  // ── Live Outscraper Generation ──
+  // ── Job tracking ──
+  const { data: recentJobs, refetch: refetchJobs } = useQuery({
+    queryKey: ["brandaro-lead-jobs"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("brandaro_lead_jobs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+    refetchInterval: 10000, // Poll every 10s to catch webhook completions
+  });
+
+  const pendingJobs = recentJobs?.filter(j => j.status === "pending") || [];
+
+  // ── Live Outscraper Generation (async mode) ──
   const generateMutation = useMutation({
     mutationFn: async () => {
       if (!genQuery || !genLocation) throw new Error("Business type and location are required");
@@ -249,10 +265,10 @@ export default function LeadDiscoveryPage() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["brandaro-raw-leads"] });
+      refetchJobs();
       toast({
-        title: "🚀 Lead Generation Complete",
-        description: `Found ${data.total_found} · Inserted ${data.inserted} · ${data.no_website} have no website · ${data.duplicates} duplicates skipped`,
+        title: "🚀 Job Submitted",
+        description: `Outscraper is processing your request. Results will arrive automatically via webhook.${data.request_id ? ` Job ID: ${data.request_id}` : ''}`,
       });
     },
     onError: (err: any) => {
