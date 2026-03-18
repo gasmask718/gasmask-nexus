@@ -1,0 +1,1 @@
+ALTER TABLE public.brandaro_qualified_leads ADD COLUMN IF NOT EXISTS website_status text DEFAULT 'unknown';
