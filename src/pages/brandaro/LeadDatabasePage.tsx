@@ -45,7 +45,7 @@ export default function LeadDatabasePage() {
   const [queuingId, setQueuingId] = useState<string | null>(null);
 
   const { data: leads, isLoading } = useQuery({
-    queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, search],
+    queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, filterWebsite, search],
     queryFn: async () => {
       let query = supabase
         .from("brandaro_qualified_leads")
@@ -55,6 +55,8 @@ export default function LeadDatabasePage() {
 
       if (filterTier !== "all") query = query.eq("priority_tier", filterTier);
       if (filterStatus !== "all") query = query.eq("lead_status", filterStatus);
+      if (filterWebsite === "no_website") query = query.eq("website_status", "no_website");
+      if (filterWebsite === "has_website") query = query.eq("website_status", "has_website");
       if (search) query = query.ilike("business_name", `%${search}%`);
 
       const { data } = await query;
