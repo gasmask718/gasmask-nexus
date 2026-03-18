@@ -9909,6 +9909,56 @@ export type Database = {
           },
         ]
       }
+      brandaro_auto_actions: {
+        Row: {
+          action_type: string
+          attempt_number: number | null
+          created_at: string | null
+          error_message: string | null
+          executed_at: string | null
+          id: string
+          lead_id: string | null
+          provider_sid: string | null
+          scheduled_for: string | null
+          status: string
+          trigger_source: string | null
+        }
+        Insert: {
+          action_type: string
+          attempt_number?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          lead_id?: string | null
+          provider_sid?: string | null
+          scheduled_for?: string | null
+          status?: string
+          trigger_source?: string | null
+        }
+        Update: {
+          action_type?: string
+          attempt_number?: number | null
+          created_at?: string | null
+          error_message?: string | null
+          executed_at?: string | null
+          id?: string
+          lead_id?: string | null
+          provider_sid?: string | null
+          scheduled_for?: string | null
+          status?: string
+          trigger_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_auto_actions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_automation_log: {
         Row: {
           action_details: Json | null
