@@ -227,6 +227,23 @@ serve(async (req: Request) => {
         executed_at: new Date().toISOString(),
       });
 
+      // ── PIPELINE EVENT INJECTION ──
+      if (success) {
+        const eventType = actionType! === "ai_call" ? "call_made" : "sms_sent";
+        try {
+          await fetch(`${supabaseUrl}/functions/v1/brandaro-pipeline-automator`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+            body: JSON.stringify({ action: "record_event", lead_id: item.lead_id, event_type: eventType }),
+          });
+        } catch (pipeErr: any) {
+          console.warn(`[EXECUTION-WORKER] Pipeline event failed for ${item.lead_id}:`, pipeErr.message);
+          await supabase.from("brandaro_event_failures").insert({
+            lead_id: item.lead_id, event_type: eventType, error_message: pipeErr.message,
+          });
+        }
+      }
+
       // Update queue item
       const newAttempts = item.attempts + 1;
       if (success) {

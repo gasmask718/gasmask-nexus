@@ -380,6 +380,15 @@ serve(async (req: Request) => {
             if (smsResult.success) {
               await trackScriptSend(supabase, variant, "sms_opener");
               await upsertLeadPerformance(supabase, leadId, { sms_sent: 1, last_action_at: new Date().toISOString() });
+              // Pipeline event: sms_sent
+              fetch(`${supabaseUrl}/functions/v1/brandaro-pipeline-automator`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+                body: JSON.stringify({ action: "record_event", lead_id: leadId, event_type: "sms_sent" }),
+              }).catch((e: any) => {
+                console.warn(`[AUTO-STRIKER] Pipeline event failed:`, e.message);
+                supabase.from("brandaro_event_failures").insert({ lead_id: leadId, event_type: "sms_sent", error_message: e.message });
+              });
 
               // Schedule adaptive follow-up
               const followUpDelay = getFollowUpDelay(lead, 0);

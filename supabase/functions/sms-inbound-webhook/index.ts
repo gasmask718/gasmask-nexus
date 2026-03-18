@@ -100,6 +100,40 @@ serve(async (req: Request) => {
       console.error("❌ Failed to log inbound communication_messages row:", inboundInsertError);
     }
 
+    // ── PIPELINE EVENT INJECTION ──
+    // Match to brandaro_qualified_leads by phone
+    const fromLast10 = normalizedPhone.slice(-10);
+    const { data: brandaroLead } = await supabase
+      .from("brandaro_qualified_leads")
+      .select("id")
+      .or(`phone_number.ilike.%${fromLast10}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (brandaroLead) {
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/brandaro-pipeline-automator`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+          body: JSON.stringify({
+            action: "record_event",
+            lead_id: brandaroLead.id,
+            event_type: "sms_reply",
+            message_content: trimmedBody,
+          }),
+        });
+        console.log(`✅ Pipeline event injected: sms_reply for lead ${brandaroLead.id}`);
+      } catch (pipeErr: any) {
+        console.error(`⚠️ Pipeline event failed, logging to failures:`, pipeErr.message);
+        await supabase.from("brandaro_event_failures").insert({
+          lead_id: brandaroLead.id,
+          event_type: "sms_reply",
+          message_content: trimmedBody,
+          error_message: pipeErr.message,
+        });
+      }
+    }
+
     // Check if STOP word
     if (STOP_WORDS.includes(upperBody)) {
       console.log(`🛑 STOP detected from ${normalizedPhone}`);
