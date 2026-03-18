@@ -95,7 +95,7 @@ export default function FollowUpEnginePage() {
   const cancelFollowup = async (id: string) => {
     await (supabase as any).from('brandaro_followups').update({ status: 'cancelled' }).eq('id', id);
     toast.success('Cancelled');
-    fetch();
+    fetchData();
   };
 
   const overdue = followups.filter(f => f.status === 'pending' && new Date(f.scheduled_at) < new Date());
