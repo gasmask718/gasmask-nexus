@@ -101,6 +101,27 @@ export default function CallingOpsPage() {
     },
   });
 
+  // Auto-Striker metrics
+  const { data: autoStrikerStats } = useQuery({
+    queryKey: ["brandaro-auto-striker-stats"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data } = await (supabase as any)
+        .from("brandaro_auto_actions")
+        .select("action_type, status")
+        .gte("created_at", today);
+      const actions = data || [];
+      return {
+        totalActions: actions.length,
+        callsTriggered: actions.filter((a: any) => a.action_type === "ai_call" && a.status === "success").length,
+        smsSent: actions.filter((a: any) => (a.action_type === "sms" || a.action_type === "follow_up_sms") && a.status === "success").length,
+        failed: actions.filter((a: any) => a.status === "failed").length,
+        skipped: actions.filter((a: any) => a.status === "skipped").length,
+      };
+    },
+    refetchInterval: 15000,
+  });
+
   const { data: callbacks = [] } = useQuery({
     queryKey: ["brandaro-callbacks-pending"],
     queryFn: async () => {
@@ -333,6 +354,40 @@ export default function CallingOpsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Auto-Striker Stats */}
+      {autoStrikerStats && autoStrikerStats.totalActions > 0 && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="h-4 w-4 text-primary" />
+              <span className="font-semibold text-sm">Auto-Striker Today</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div>
+                <p className="text-xl font-bold">{autoStrikerStats.totalActions}</p>
+                <p className="text-xs text-muted-foreground">Total Actions</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-primary">{autoStrikerStats.callsTriggered}</p>
+                <p className="text-xs text-muted-foreground">AI Calls</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-cyan-500">{autoStrikerStats.smsSent}</p>
+                <p className="text-xs text-muted-foreground">SMS Sent</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-destructive">{autoStrikerStats.failed}</p>
+                <p className="text-xs text-muted-foreground">Failed</p>
+              </div>
+              <div>
+                <p className="text-xl font-bold text-muted-foreground">{autoStrikerStats.skipped}</p>
+                <p className="text-xs text-muted-foreground">Skipped</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs defaultValue="desk" className="space-y-4">
         <TabsList>
