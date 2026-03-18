@@ -166,7 +166,7 @@ export default function FollowUpEnginePage() {
                   <SelectItem value="converted">Converted</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={fetch}><RefreshCw className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" onClick={() => fetchData()}><RefreshCw className="h-4 w-4" /></Button>
             </div>
           </div>
         </CardHeader>
