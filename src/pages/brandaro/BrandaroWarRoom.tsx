@@ -17,7 +17,8 @@ import { useBrandaroAutomationStats } from "@/hooks/useBrandaroAutomation";
 import { useClosingPsychologyStats } from "@/hooks/useBrandaroClosingPsychology";
 import { useEvolutionDashboard, useRunEvolutionCycle } from "@/hooks/useBrandaroPersonalityEvolution";
 import { useRevenueAutopilotDashboard, useRunAutopilotCycle } from "@/hooks/useBrandaroRevenueAutopilot";
-import { Repeat, Rocket, PiggyBank, BarChart3 } from "lucide-react";
+import { useGlobalScalingDashboard, useRunGlobalCycle } from "@/hooks/useBrandaroGlobalScaling";
+import { Repeat, Rocket, PiggyBank, BarChart3, Globe, MapPinPlus, Building2 } from "lucide-react";
 
 function KPICard({ label, value, icon: Icon, color, subtitle, to }: {
   label: string; value: string | number; icon: any; color: string; subtitle?: string; to?: string;
