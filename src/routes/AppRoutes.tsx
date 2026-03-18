@@ -94,6 +94,7 @@ import CEODashboardPage from '@/pages/brandaro/CEODashboardPage';
 import RetentionDashboardPage from '@/pages/brandaro/RetentionDashboardPage';
 import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
+import CRMPipelinePage from '@/pages/brandaro/CRMPipelinePage';
 import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
 import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
 import ClientReportingPage from '@/pages/brandaro/ClientReportingPage';
