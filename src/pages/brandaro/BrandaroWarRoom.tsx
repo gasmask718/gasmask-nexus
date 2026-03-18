@@ -877,6 +877,128 @@ export default function BrandaroWarRoom() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ── 🌍 GLOBAL SCALING COMMAND ── */}
+      <Card className="border-cyan-500/20">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Globe className="h-5 w-5 text-cyan-500" />
+              <h2 className="font-bold text-lg">🌍 Global Scaling Command</h2>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-cyan-500/30 text-cyan-600 hover:bg-cyan-500/10"
+              onClick={() => runGlobalCycle.mutate()}
+              disabled={runGlobalCycle.isPending}
+            >
+              {runGlobalCycle.isPending ? <RefreshCw className="h-3 w-3 animate-spin mr-1" /> : <Play className="h-3 w-3 mr-1" />}
+              Run Global Cycle
+            </Button>
+          </div>
+
+          {/* Global KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Territories</p>
+              <p className="text-xl font-bold text-cyan-500">{globalDash?.global?.totalTerritories || 0}</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Active</p>
+              <p className="text-xl font-bold text-emerald-500">{globalDash?.global?.activeCount || 0}</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Total Revenue</p>
+              <p className="text-xl font-bold text-amber-500">${(globalDash?.global?.totalRevenue || 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Avg ROI</p>
+              <p className="text-xl font-bold text-purple-500">{(globalDash?.global?.avgROI || 0).toFixed(0)}%</p>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-3 text-center">
+              <p className="text-[10px] text-muted-foreground uppercase">Total Leads</p>
+              <p className="text-xl font-bold text-blue-500">{(globalDash?.global?.totalLeads || 0).toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Territory Map */}
+            <div className="md:col-span-2 border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🗺️ Active Territories</p>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {(!globalDash?.territories || globalDash.territories.length === 0) ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No territories yet — launch your first market</p>
+                  ) : globalDash.territories.map((t: any) => (
+                    <div key={t.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4 text-cyan-500" />
+                        <div>
+                          <p className="text-sm font-medium">{t.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{t.city}{t.state ? `, ${t.state}` : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className={cn("text-[9px]",
+                          t.status === "scaling" ? "border-emerald-500/30 text-emerald-600" :
+                          t.status === "active" ? "border-blue-500/30 text-blue-600" :
+                          t.status === "testing" ? "border-amber-500/30 text-amber-600" :
+                          t.status === "paused" ? "border-red-500/30 text-red-600" :
+                          "border-muted-foreground/30"
+                        )}>
+                          {t.status?.toUpperCase()}
+                        </Badge>
+                        <span className="text-xs font-medium">${Number(t.latest_revenue || 0).toLocaleString()}</span>
+                        <span className="text-[10px] text-muted-foreground">{Number(t.latest_roi || 0).toFixed(0)}% ROI</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Expansion Suggestions */}
+            <div className="border rounded-lg p-3">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">🚀 Expansion Opportunities</p>
+              <ScrollArea className="h-[200px]">
+                <div className="space-y-2">
+                  {(!globalDash?.suggestions || globalDash.suggestions.length === 0) ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">Run a cycle to discover opportunities</p>
+                  ) : globalDash.suggestions.map((s: any) => (
+                    <div key={s.id} className="p-2 bg-muted/30 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <MapPinPlus className="h-3 w-3 text-cyan-500" />
+                          <span className="text-xs font-medium">{s.suggested_city}{s.suggested_state ? `, ${s.suggested_state}` : ""}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] border-cyan-500/30 text-cyan-600">
+                          {Number(s.similarity_score || 0).toFixed(0)}% match
+                        </Badge>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">{s.reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Recent Actions */}
+          {globalDash?.recentActions && globalDash.recentActions.length > 0 && (
+            <div className="border rounded-lg p-3 mt-4">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-2">⚡ Scaling Actions</p>
+              <div className="flex flex-wrap gap-1.5">
+                {globalDash.recentActions.slice(0, 6).map((a: any) => (
+                  <Badge key={a.id} variant="outline" className="text-[9px]">
+                    {a.action_type}: {(a.details as any)?.territory || (a.details as any)?.name || "system"}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
