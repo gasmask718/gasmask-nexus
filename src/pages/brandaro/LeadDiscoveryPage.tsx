@@ -255,7 +255,8 @@ export default function LeadDiscoveryPage() {
     },
     onSuccess: (stats) => {
       queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-stats"] });
-      toast({ title: "Qualification Complete", description: `${stats.qualified} leads qualified. ${stats.tier1} are Tier 1 (call immediately).` });
+      queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
+      toast({ title: "Qualification Complete", description: `${stats.qualified} leads qualified. ${stats.tier1} Tier 1. ${stats.autoQueued} no-website leads auto-queued for calling.` });
     },
     onError: (err: any) => {
       toast({ title: "Qualification Failed", description: err.message, variant: "destructive" });

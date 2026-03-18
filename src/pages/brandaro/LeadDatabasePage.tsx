@@ -239,9 +239,14 @@ export default function LeadDatabasePage() {
                 ) : leads?.map(lead => (
                   <TableRow key={lead.id}>
                     <TableCell>
-                      <Badge className={TIER_COLORS[lead.priority_tier || "tier_3"]}>
-                        {lead.priority_tier?.replace("_", " ").toUpperCase()}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge className={TIER_COLORS[lead.priority_tier || "tier_3"]}>
+                          {lead.priority_tier?.replace("_", " ").toUpperCase()}
+                        </Badge>
+                        {(lead as any).website_status === "no_website" && (
+                          <Badge className="bg-red-600/20 text-red-400 border-red-600/30 text-[10px]">🔥 NO SITE</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{lead.priority_score}</TableCell>
                     <TableCell className="font-medium max-w-[200px] truncate">{lead.business_name}</TableCell>
