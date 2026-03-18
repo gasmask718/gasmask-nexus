@@ -12941,6 +12941,42 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_event_failures: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          lead_id: string
+          message_content: string | null
+          resolved_at: string | null
+          retry_count: number | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          lead_id: string
+          message_content?: string | null
+          resolved_at?: string | null
+          retry_count?: number | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          lead_id?: string
+          message_content?: string | null
+          resolved_at?: string | null
+          retry_count?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       brandaro_execution_log: {
         Row: {
           action_type: string
