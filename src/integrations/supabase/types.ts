@@ -15404,6 +15404,7 @@ export type Database = {
           review_count: number | null
           state: string | null
           updated_at: string | null
+          website_status: string | null
         }
         Insert: {
           assigned_va?: string | null
@@ -15435,6 +15436,7 @@ export type Database = {
           review_count?: number | null
           state?: string | null
           updated_at?: string | null
+          website_status?: string | null
         }
         Update: {
           assigned_va?: string | null
@@ -15466,6 +15468,7 @@ export type Database = {
           review_count?: number | null
           state?: string | null
           updated_at?: string | null
+          website_status?: string | null
         }
         Relationships: [
           {

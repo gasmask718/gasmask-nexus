@@ -91,6 +91,68 @@ serve(async (req: Request) => {
         console.error("[OUTSCRAPER-WEBHOOK] Insert error:", error);
         throw error;
       }
+
+      // Auto-qualify no-website leads with phone numbers → insert into clean + qualified + call queue
+      const noWebsiteWithPhone = unique.filter((l: any) => l.website_status === "no_website" && l.phone_number);
+      if (noWebsiteWithPhone.length > 0) {
+        // Insert clean leads
+        const cleanRows = noWebsiteWithPhone.map((l: any) => ({
+          business_name: l.business_name,
+          phone_number: l.phone_number,
+          phone_valid: l.phone_number.length >= 10,
+          address: l.address,
+          city: l.city,
+          state: l.state,
+          zip_code: l.zip_code,
+          industry: l.industry,
+          rating: l.rating,
+          review_count: l.review_count,
+          website_status: "no_website",
+          email: l.email,
+          google_maps_url: l.google_maps_url,
+        }));
+        const { data: cleanInserted } = await supabase.from("brandaro_clean_leads").insert(cleanRows).select();
+
+        if (cleanInserted && cleanInserted.length > 0) {
+          // Score and insert qualified
+          const qualifiedRows = cleanInserted.map((cl: any) => {
+            let score = 25; // no-website boost
+            if (cl.phone_valid) score += 30;
+            if (cl.rating && Number(cl.rating) >= 4.0) score += 20;
+            if (cl.review_count && cl.review_count >= 10) score += 15;
+            if (cl.industry) score += 10;
+            if (cl.city) score += 5;
+            return {
+              clean_lead_id: cl.id,
+              business_name: cl.business_name,
+              phone_number: cl.phone_number,
+              city: cl.city,
+              state: cl.state,
+              industry: cl.industry,
+              rating: cl.rating,
+              review_count: cl.review_count,
+              priority_score: score,
+              priority_tier: score >= 60 ? "tier_1" : score >= 35 ? "tier_2" : "tier_3",
+              lead_status: "new",
+              website_status: "no_website",
+            };
+          });
+          const { data: qualInserted } = await supabase.from("brandaro_qualified_leads").insert(qualifiedRows).select("id, priority_score, priority_tier");
+
+          // Auto-insert into call queue
+          if (qualInserted && qualInserted.length > 0) {
+            const queueRows = qualInserted.map((q: any, idx: number) => ({
+              lead_id: q.id,
+              priority_tier: q.priority_tier === "tier_1" ? 1 : q.priority_tier === "tier_2" ? 2 : 3,
+              priority_score: q.priority_score || 70,
+              queue_position: idx + 1,
+              retry_count: 0,
+            }));
+            await supabase.from("brandaro_call_queue").insert(queueRows);
+            console.log(`[OUTSCRAPER-WEBHOOK] Auto-queued ${queueRows.length} no-website leads`);
+          }
+        }
+      }
     }
 
     console.log(`[OUTSCRAPER-WEBHOOK] Inserted ${unique.length}, dupes ${duplicates}, no_website ${noWebsite}`);

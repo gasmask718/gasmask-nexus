@@ -38,13 +38,14 @@ export default function LeadDatabasePage() {
   const queryClient = useQueryClient();
   const [filterTier, setFilterTier] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterWebsite, setFilterWebsite] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [callingId, setCallingId] = useState<string | null>(null);
   const [textingId, setTextingId] = useState<string | null>(null);
   const [queuingId, setQueuingId] = useState<string | null>(null);
 
   const { data: leads, isLoading } = useQuery({
-    queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, search],
+    queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, filterWebsite, search],
     queryFn: async () => {
       let query = supabase
         .from("brandaro_qualified_leads")
@@ -54,6 +55,8 @@ export default function LeadDatabasePage() {
 
       if (filterTier !== "all") query = query.eq("priority_tier", filterTier);
       if (filterStatus !== "all") query = query.eq("lead_status", filterStatus);
+      if (filterWebsite === "no_website") query = query.eq("website_status", "no_website");
+      if (filterWebsite === "has_website") query = query.eq("website_status", "has_website");
       if (search) query = query.ilike("business_name", `%${search}%`);
 
       const { data } = await query;
@@ -187,7 +190,22 @@ export default function LeadDatabasePage() {
                 <SelectItem value="callback">Callback</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={filterWebsite} onValueChange={setFilterWebsite}>
+              <SelectTrigger className="w-44">
+                <SelectValue placeholder="Website" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leads</SelectItem>
+                <SelectItem value="no_website">🔥 No Website Only</SelectItem>
+                <SelectItem value="has_website">Has Website</SelectItem>
+              </SelectContent>
+            </Select>
             <Badge variant="outline">{leads?.length || 0} leads</Badge>
+            {leads && (
+              <Badge variant="destructive" className="gap-1">
+                🔥 {leads.filter(l => (l as any).website_status === "no_website").length} No Website
+              </Badge>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -221,9 +239,14 @@ export default function LeadDatabasePage() {
                 ) : leads?.map(lead => (
                   <TableRow key={lead.id}>
                     <TableCell>
-                      <Badge className={TIER_COLORS[lead.priority_tier || "tier_3"]}>
-                        {lead.priority_tier?.replace("_", " ").toUpperCase()}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge className={TIER_COLORS[lead.priority_tier || "tier_3"]}>
+                          {lead.priority_tier?.replace("_", " ").toUpperCase()}
+                        </Badge>
+                        {(lead as any).website_status === "no_website" && (
+                          <Badge className="bg-red-600/20 text-red-400 border-red-600/30 text-[10px]">🔥 NO SITE</Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-mono text-sm">{lead.priority_score}</TableCell>
                     <TableCell className="font-medium max-w-[200px] truncate">{lead.business_name}</TableCell>

@@ -196,9 +196,11 @@ export default function LeadDiscoveryPage() {
         .select();
       if (cleanErr) throw cleanErr;
 
-      // Score and insert qualified leads
+      // Score and insert qualified leads — no-website leads get a massive boost
       const qualified = (inserted || []).map(cl => {
         let score = 0;
+        const isNoWebsite = cl.website_status === "no_website";
+        if (isNoWebsite) score += 25; // 🔥 No website = high value target
         if (cl.phone_valid) score += 30;
         if (cl.rating && Number(cl.rating) >= 4.0) score += 20;
         if (cl.review_count && cl.review_count >= 10) score += 15;
@@ -220,17 +222,41 @@ export default function LeadDiscoveryPage() {
           priority_score: score,
           priority_tier: tier,
           lead_status: "new" as const,
+          website_status: cl.website_status || "unknown",
         };
       });
 
-      const { error: qualErr } = await supabase.from("brandaro_qualified_leads").insert(qualified);
+      const { data: qualifiedInserted, error: qualErr } = await supabase
+        .from("brandaro_qualified_leads")
+        .insert(qualified)
+        .select("id, priority_score, priority_tier, website_status, phone_number");
       if (qualErr) throw qualErr;
 
-      return { qualified: qualified.length, tier1: qualified.filter(q => q.priority_tier === "tier_1").length };
+      // Auto-insert no-website leads with phone numbers into call queue
+      const noWebsiteForQueue = (qualifiedInserted || []).filter(
+        q => (q as any).website_status === "no_website" && q.phone_number
+      );
+      if (noWebsiteForQueue.length > 0) {
+        const queueRows = noWebsiteForQueue.map((q, idx) => ({
+          lead_id: q.id,
+          priority_tier: q.priority_tier === "tier_1" ? 1 : q.priority_tier === "tier_2" ? 2 : 3,
+          priority_score: q.priority_score || 70,
+          queue_position: idx + 1,
+          retry_count: 0,
+        }));
+        await supabase.from("brandaro_call_queue").insert(queueRows);
+      }
+
+      return {
+        qualified: qualified.length,
+        tier1: qualified.filter(q => q.priority_tier === "tier_1").length,
+        autoQueued: noWebsiteForQueue.length,
+      };
     },
     onSuccess: (stats) => {
       queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-stats"] });
-      toast({ title: "Qualification Complete", description: `${stats.qualified} leads qualified. ${stats.tier1} are Tier 1 (call immediately).` });
+      queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
+      toast({ title: "Qualification Complete", description: `${stats.qualified} leads qualified. ${stats.tier1} Tier 1. ${stats.autoQueued} no-website leads auto-queued for calling.` });
     },
     onError: (err: any) => {
       toast({ title: "Qualification Failed", description: err.message, variant: "destructive" });
