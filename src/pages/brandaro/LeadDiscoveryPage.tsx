@@ -237,6 +237,29 @@ export default function LeadDiscoveryPage() {
     },
   });
 
+  // ── Live Outscraper Generation ──
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      if (!genQuery || !genLocation) throw new Error("Business type and location are required");
+      const { data, error } = await supabase.functions.invoke('brandaro-live-discovery', {
+        body: { query: genQuery, location: genLocation, limit: parseInt(genLimit) || 50 },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Generation failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["brandaro-raw-leads"] });
+      toast({
+        title: "🚀 Lead Generation Complete",
+        description: `Found ${data.total_found} · Inserted ${data.inserted} · ${data.no_website} have no website · ${data.duplicates} duplicates skipped`,
+      });
+    },
+    onError: (err: any) => {
+      toast({ title: "Generation Failed", description: err.message, variant: "destructive" });
+    },
+  });
+
   const noWebsiteCount = rawLeads?.filter(l => l.website_status === "no_website").length || 0;
 
   return (
@@ -246,8 +269,68 @@ export default function LeadDiscoveryPage() {
           <Search className="h-6 w-6 text-cyan-500" />
           Lead Discovery Engine
         </h1>
-        <p className="text-muted-foreground">Import Google Maps leads, detect missing websites, auto-qualify</p>
+        <p className="text-muted-foreground">Generate leads from Google Maps, import CSVs, detect missing websites, auto-qualify</p>
       </div>
+
+      {/* ── LIVE GENERATION ── */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Rocket className="h-5 w-5 text-primary" /> Generate Leads from Google Maps
+          </CardTitle>
+          <CardDescription>Live search via Outscraper API — find businesses without websites</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Business Type</label>
+              <Input
+                placeholder="e.g. restaurants, plumber, salon..."
+                value={genQuery}
+                onChange={e => setGenQuery(e.target.value)}
+              />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <label className="text-xs text-muted-foreground mb-1 block">Location</label>
+              <Input
+                placeholder="e.g. Brooklyn, NY"
+                value={genLocation}
+                onChange={e => setGenLocation(e.target.value)}
+              />
+            </div>
+            <div className="w-24">
+              <label className="text-xs text-muted-foreground mb-1 block">Limit</label>
+              <Select value={genLimit} onValueChange={setGenLimit}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => generateMutation.mutate()}
+              disabled={generateMutation.isPending || !genQuery || !genLocation}
+              className="min-w-[160px]"
+            >
+              {generateMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+              ) : (
+                <><MapPin className="h-4 w-4 mr-2" /> Generate Leads</>
+              )}
+            </Button>
+          </div>
+          {generateMutation.data && (
+            <div className="mt-3 flex gap-3 text-sm">
+              <Badge variant="outline">Found: {generateMutation.data.total_found}</Badge>
+              <Badge>Inserted: {generateMutation.data.inserted}</Badge>
+              <Badge variant="destructive">No Website: {generateMutation.data.no_website}</Badge>
+              <Badge variant="secondary">Dupes: {generateMutation.data.duplicates}</Badge>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Import Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
