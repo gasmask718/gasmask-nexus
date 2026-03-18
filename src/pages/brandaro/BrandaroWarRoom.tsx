@@ -43,6 +43,8 @@ export default function BrandaroWarRoom() {
   const { data: kpis } = useCloserKPIs();
   const { stats: autoStats, recentLogs } = useBrandaroAutomationStats();
   const { stats: psyStats } = useClosingPsychologyStats();
+  const { data: evoDash } = useEvolutionDashboard();
+  const runEvolution = useRunEvolutionCycle();
 
   // Active calls count
   const { data: activeCalls = 0 } = useQuery({

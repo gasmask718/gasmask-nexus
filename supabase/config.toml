@@ -330,3 +330,6 @@ verify_jwt = false
 
 [functions.brandaro-closing-psychology]
 verify_jwt = false
+
+[functions.brandaro-personality-evolution]
+verify_jwt = false
