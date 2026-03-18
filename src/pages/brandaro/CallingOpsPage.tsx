@@ -38,6 +38,8 @@ export default function CallingOpsPage() {
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [callNotes, setCallNotes] = useState("");
   const [assignedNumber, setAssignedNumber] = useState<any>(null);
+  const [dialingId, setDialingId] = useState<string | null>(null);
+  const [sendingSmsId, setSendingSmsId] = useState<string | null>(null);
 
   const assignNumber = useAssignNumber();
   const logOutcome = useLogCallOutcome();
