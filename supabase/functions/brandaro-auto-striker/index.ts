@@ -170,14 +170,16 @@ serve(async (req: Request) => {
         last_response_at: new Date().toISOString(),
       };
 
+      // Map response_type to pipeline event
+      let pipelineEvent: string | null = null;
+
       if (response_type === "sms_reply") {
         perfUpdates.sms_replied = true;
-        // +25 score boost for SMS response
+        pipelineEvent = "sms_reply";
         const { data: perf } = await supabase.from("brandaro_lead_performance")
           .select("lead_score").eq("lead_id", lead_id).maybeSingle();
         perfUpdates.lead_score = ((perf?.lead_score || 0) + 25);
 
-        // Update script reply count
         if (variant_key && script_type) {
           const { data: sv } = await supabase.from("brandaro_script_performance")
             .select("id, reply_count, send_count")
@@ -192,18 +194,19 @@ serve(async (req: Request) => {
         }
       } else if (response_type === "call_answered") {
         perfUpdates.call_picked_up = true;
+        pipelineEvent = "call_answered";
         const { data: perf } = await supabase.from("brandaro_lead_performance")
           .select("lead_score").eq("lead_id", lead_id).maybeSingle();
         perfUpdates.lead_score = ((perf?.lead_score || 0) + 40);
       } else if (response_type === "interested") {
         perfUpdates.interested = true;
-        // AUTO-ESCALATE: Move to hot_lead immediately
+        pipelineEvent = "interest_detected";
         await supabase.from("brandaro_qualified_leads")
           .update({ lead_status: "hot_lead", updated_at: new Date().toISOString() })
           .eq("id", lead_id);
       } else if (response_type === "converted") {
         perfUpdates.converted = true;
-        // Track script conversion
+        pipelineEvent = "revenue_recorded";
         if (variant_key && script_type) {
           const { data: sv } = await supabase.from("brandaro_script_performance")
             .select("id, conversion_count, send_count")
@@ -219,8 +222,18 @@ serve(async (req: Request) => {
       }
 
       await upsertLeadPerformance(supabase, lead_id, perfUpdates);
-      // Run winner evaluation after each response
       await evaluateAndPromoteWinners(supabase);
+
+      // Inject pipeline event
+      if (pipelineEvent) {
+        fetch(`${supabaseUrl}/functions/v1/brandaro-pipeline-automator`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${supabaseKey}` },
+          body: JSON.stringify({ action: "record_event", lead_id, event_type: pipelineEvent }),
+        }).catch((e: any) => {
+          supabase.from("brandaro_event_failures").insert({ lead_id, event_type: pipelineEvent!, error_message: e.message });
+        });
+      }
 
       return new Response(JSON.stringify({ success: true, action: "response_recorded" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
