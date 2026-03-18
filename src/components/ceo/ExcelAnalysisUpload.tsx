@@ -28,20 +28,33 @@ export function ExcelAnalysisUpload() {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, unknown>[];
       const columns = Object.keys(jsonData[0] || {});
+
+      // Auto-detect and clean numeric columns
+      const numericCols = detectNumericColumns(jsonData);
+      const { cleanedRows, totalWarnings, overflowDetected } = cleanCsvData(jsonData, numericCols);
+
+      if (overflowDetected) {
+        toast({
+          title: "⚠️ Large Values Detected",
+          description: `${totalWarnings} values were cleaned/flagged. Data has been normalized for safe import.`,
+        });
+      }
 
       console.log('Parsed Excel:', {
         fileName: file.name,
-        rows: jsonData.length,
+        rows: cleanedRows.length,
         columns,
+        numericColumnsDetected: numericCols,
+        warningsCount: totalWarnings,
       });
 
-      // Send to AI for analysis
+      // Send cleaned data to AI for analysis
       const { data: analysisData, error } = await supabase.functions.invoke('excel-analysis-ai', {
         body: {
           fileName: file.name,
-          data: jsonData,
+          data: cleanedRows,
           columns,
           attachToBrand: (selectedBrand && selectedBrand !== '__none__') ? selectedBrand : null,
           attachToStore: null,
