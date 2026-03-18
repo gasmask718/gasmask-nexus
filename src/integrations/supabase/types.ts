@@ -13657,6 +13657,57 @@ export type Database = {
           },
         ]
       }
+      brandaro_lead_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          duplicate_count: number | null
+          error_message: string | null
+          id: string
+          inserted_count: number | null
+          lead_limit: number | null
+          location: string
+          no_website_count: number | null
+          outscraper_request_id: string | null
+          search_query: string
+          status: string
+          total_received: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duplicate_count?: number | null
+          error_message?: string | null
+          id?: string
+          inserted_count?: number | null
+          lead_limit?: number | null
+          location: string
+          no_website_count?: number | null
+          outscraper_request_id?: string | null
+          search_query: string
+          status?: string
+          total_received?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          duplicate_count?: number | null
+          error_message?: string | null
+          id?: string
+          inserted_count?: number | null
+          lead_limit?: number | null
+          location?: string
+          no_website_count?: number | null
+          outscraper_request_id?: string | null
+          search_query?: string
+          status?: string
+          total_received?: number | null
+        }
+        Relationships: []
+      }
       brandaro_lead_memory: {
         Row: {
           confidence: number | null
