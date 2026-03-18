@@ -157,19 +157,38 @@ serve(async (req: Request) => {
 
     console.log(`[OUTSCRAPER-WEBHOOK] Inserted ${unique.length}, dupes ${duplicates}, no_website ${noWebsite}`);
 
-    // Update job tracking row
+    // Update job tracking row — or create fallback if unmatched
     if (jobId) {
-      const { error: jobErr } = await supabase.from("brandaro_lead_jobs")
-        .update({
+      const { data: existingJob } = await supabase.from("brandaro_lead_jobs")
+        .select("id")
+        .eq("outscraper_request_id", jobId)
+        .maybeSingle();
+
+      if (existingJob) {
+        await supabase.from("brandaro_lead_jobs")
+          .update({
+            status: "completed",
+            total_received: businesses.length,
+            inserted_count: unique.length,
+            duplicate_count: duplicates,
+            no_website_count: noWebsite,
+            completed_at: new Date().toISOString(),
+          })
+          .eq("id", existingJob.id);
+      } else {
+        console.warn(`[OUTSCRAPER-WEBHOOK] UNMATCHED JOB: ${jobId} — creating fallback entry`);
+        await supabase.from("brandaro_lead_jobs").insert({
+          outscraper_request_id: jobId,
+          search_query: "webhook_fallback",
+          location: "unknown",
           status: "completed",
           total_received: businesses.length,
           inserted_count: unique.length,
           duplicate_count: duplicates,
           no_website_count: noWebsite,
           completed_at: new Date().toISOString(),
-        })
-        .eq("outscraper_request_id", jobId);
-      if (jobErr) console.error("[OUTSCRAPER-WEBHOOK] Job update error:", jobErr);
+        });
+      }
     }
 
     return new Response(JSON.stringify({
