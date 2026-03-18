@@ -110,6 +110,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useBrandaroVerify, ensureBrandaroInNav } from '@/hooks/useBrandaroVerify';
 
 interface LayoutProps {
   children: ReactNode;
