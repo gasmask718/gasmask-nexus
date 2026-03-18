@@ -10028,6 +10028,90 @@ export type Database = {
           },
         ]
       }
+      brandaro_autopilot_config: {
+        Row: {
+          anomaly_detection_enabled: boolean | null
+          auto_kill_enabled: boolean | null
+          auto_scale_enabled: boolean | null
+          created_at: string | null
+          id: string
+          max_budget_per_campaign: number | null
+          min_roi_to_scale: number | null
+          reinvestment_pct: number | null
+          stop_loss_threshold: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          anomaly_detection_enabled?: boolean | null
+          auto_kill_enabled?: boolean | null
+          auto_scale_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_budget_per_campaign?: number | null
+          min_roi_to_scale?: number | null
+          reinvestment_pct?: number | null
+          stop_loss_threshold?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          anomaly_detection_enabled?: boolean | null
+          auto_kill_enabled?: boolean | null
+          auto_scale_enabled?: boolean | null
+          created_at?: string | null
+          id?: string
+          max_budget_per_campaign?: number | null
+          min_roi_to_scale?: number | null
+          reinvestment_pct?: number | null
+          stop_loss_threshold?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      brandaro_budget_allocations: {
+        Row: {
+          allocated_amount: number | null
+          campaign_id: string | null
+          campaign_name: string | null
+          channel: string
+          created_at: string | null
+          id: string
+          revenue_attributed: number | null
+          roi_pct: number | null
+          scaling_action: string | null
+          spent_amount: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allocated_amount?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          channel: string
+          created_at?: string | null
+          id?: string
+          revenue_attributed?: number | null
+          roi_pct?: number | null
+          scaling_action?: string | null
+          spent_amount?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allocated_amount?: number | null
+          campaign_id?: string | null
+          campaign_name?: string | null
+          channel?: string
+          created_at?: string | null
+          id?: string
+          revenue_attributed?: number | null
+          roi_pct?: number | null
+          scaling_action?: string | null
+          spent_amount?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_build_jobs: {
         Row: {
           auto_retry_count: number | null
@@ -15170,6 +15254,51 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_reinvestment_cycles: {
+        Row: {
+          allocations: Json | null
+          campaigns_created: number | null
+          campaigns_killed: number | null
+          campaigns_scaled: number | null
+          created_at: string | null
+          cycle_number: number | null
+          id: string
+          net_roi: number | null
+          reinvestment_amount: number | null
+          reinvestment_pct: number | null
+          status: string | null
+          total_revenue: number | null
+        }
+        Insert: {
+          allocations?: Json | null
+          campaigns_created?: number | null
+          campaigns_killed?: number | null
+          campaigns_scaled?: number | null
+          created_at?: string | null
+          cycle_number?: number | null
+          id?: string
+          net_roi?: number | null
+          reinvestment_amount?: number | null
+          reinvestment_pct?: number | null
+          status?: string | null
+          total_revenue?: number | null
+        }
+        Update: {
+          allocations?: Json | null
+          campaigns_created?: number | null
+          campaigns_killed?: number | null
+          campaigns_scaled?: number | null
+          created_at?: string | null
+          cycle_number?: number | null
+          id?: string
+          net_roi?: number | null
+          reinvestment_amount?: number | null
+          reinvestment_pct?: number | null
+          status?: string | null
+          total_revenue?: number | null
+        }
+        Relationships: []
+      }
       brandaro_response_library: {
         Row: {
           avg_outcome_score: number | null
@@ -15467,6 +15596,48 @@ export type Database = {
           tag_lead_as?: string | null
           va_says?: string
           wait_for_response?: boolean | null
+        }
+        Relationships: []
+      }
+      brandaro_scaling_actions: {
+        Row: {
+          action_type: string
+          automated: boolean | null
+          conversion_rate_at_decision: number | null
+          created_at: string | null
+          id: string
+          new_budget: number | null
+          previous_budget: number | null
+          reason: string | null
+          roi_at_decision: number | null
+          target_campaign: string | null
+          target_channel: string | null
+        }
+        Insert: {
+          action_type: string
+          automated?: boolean | null
+          conversion_rate_at_decision?: number | null
+          created_at?: string | null
+          id?: string
+          new_budget?: number | null
+          previous_budget?: number | null
+          reason?: string | null
+          roi_at_decision?: number | null
+          target_campaign?: string | null
+          target_channel?: string | null
+        }
+        Update: {
+          action_type?: string
+          automated?: boolean | null
+          conversion_rate_at_decision?: number | null
+          created_at?: string | null
+          id?: string
+          new_budget?: number | null
+          previous_budget?: number | null
+          reason?: string | null
+          roi_at_decision?: number | null
+          target_campaign?: string | null
+          target_channel?: string | null
         }
         Relationships: []
       }
