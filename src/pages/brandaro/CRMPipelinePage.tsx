@@ -73,6 +73,28 @@ function LeadCard({
           </p>
         )}
 
+        {/* Quick action buttons for manual event injection */}
+        <div className="flex gap-1 pt-1" onClick={(e) => e.stopPropagation()}>
+          {lead.phone_number && (
+            <Button size="sm" variant="ghost" className="h-5 px-1 text-[10px]"
+              onClick={() => {
+                window.open(`tel:${lead.phone_number}`);
+              }}
+            >
+              <Phone className="h-3 w-3" />
+            </Button>
+          )}
+          {lead.phone_number && (
+            <Button size="sm" variant="ghost" className="h-5 px-1 text-[10px]"
+              onClick={() => {
+                window.open(`sms:${lead.phone_number}`);
+              }}
+            >
+              <MessageSquare className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pt-1"
           onClick={(e) => e.stopPropagation()}
         >
