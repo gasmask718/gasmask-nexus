@@ -104,6 +104,7 @@ import {
   Accessibility,
   Star,
   Link2,
+  Swords,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
