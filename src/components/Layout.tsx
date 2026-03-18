@@ -666,6 +666,20 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* ⚔️ BRANDARO DIGITAL HUB — SALES WAR ROOM */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-orange-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-orange-400/80 tracking-wider">
+          ⚔️ Brandaro Digital Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.brandaroHub.id,
+          DYNASTY_NAVIGATION.brandaroHub.name,
+          DYNASTY_NAVIGATION.brandaroHub.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🔴 GRABBA PRODUCT BRANDS */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
