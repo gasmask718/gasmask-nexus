@@ -63,6 +63,11 @@ export default function LeadDiscoveryPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [importStats, setImportStats] = useState<{ total: number; noWebsite: number; duplicates: number } | null>(null);
+  
+  // Live generation state
+  const [genQuery, setGenQuery] = useState("");
+  const [genLocation, setGenLocation] = useState("");
+  const [genLimit, setGenLimit] = useState("50");
 
   const { data: rawLeads, isLoading } = useQuery({
     queryKey: ["brandaro-raw-leads"],
