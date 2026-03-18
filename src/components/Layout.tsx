@@ -828,7 +828,7 @@ const Layout = ({ children }: LayoutProps) => {
       <SystemCheckpointBar />
       
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-area-top">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/95 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 safe-area-top">
         <div className="flex h-14 items-center px-3 sm:px-4 gap-2 sm:gap-4">
           <Sheet>
             <SheetTrigger asChild>
