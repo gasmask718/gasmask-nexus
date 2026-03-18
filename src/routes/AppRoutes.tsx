@@ -100,6 +100,7 @@ import ClientReportingPage from '@/pages/brandaro/ClientReportingPage';
 import AdsEnginePage from '@/pages/brandaro/AdsEnginePage';
 import GoogleDominationPage from '@/pages/brandaro/GoogleDominationPage';
 import OptimizationEnginePage from '@/pages/brandaro/OptimizationEnginePage';
+import CompetitorTakeoverPage from '@/pages/brandaro/CompetitorTakeoverPage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import VADashboardPage from '@/pages/brandaro/VADashboardPage';
 import VAManagerPage from '@/pages/brandaro/VAManagerPage';
@@ -2557,7 +2558,7 @@ export default function AppRoutes() {
 
           {/* ── Domination ── */}
           <Route path="domination" element={<OptimizationEnginePage />} />
-          <Route path="competitors" element={<OptimizationEnginePage />} />
+          <Route path="competitors" element={<CompetitorTakeoverPage />} />
           <Route path="offers" element={<OptimizationEnginePage />} />
           <Route path="positioning" element={<OptimizationEnginePage />} />
 
