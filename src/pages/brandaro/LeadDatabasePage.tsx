@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Database, Phone, Star, MapPin, Filter } from "lucide-react";
+import { Database, Phone, Star, MapPin, Filter, MessageSquare, ListPlus, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { toast as sonnerToast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-500/10 text-blue-500",
@@ -38,6 +39,9 @@ export default function LeadDatabasePage() {
   const [filterTier, setFilterTier] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [callingId, setCallingId] = useState<string | null>(null);
+  const [textingId, setTextingId] = useState<string | null>(null);
+  const [queuingId, setQueuingId] = useState<string | null>(null);
 
   const { data: leads, isLoading } = useQuery({
     queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, search],
@@ -70,6 +74,70 @@ export default function LeadDatabasePage() {
       queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-stats"] });
     },
   });
+
+  // ── Call Now ──
+  const handleCallNow = async (lead: any) => {
+    if (!lead.phone_number) { sonnerToast.error("No phone number"); return; }
+    setCallingId(lead.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: { action: 'call', phone: lead.phone_number, lead_id: lead.id },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'Call failed');
+      sonnerToast.success(`📞 Call initiated to ${lead.business_name}`);
+      // Update last contact
+      await (supabase as any).from("brandaro_qualified_leads")
+        .update({ lead_status: 'calling', updated_at: new Date().toISOString() })
+        .eq("id", lead.id);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-leads"] });
+    } catch (err: any) {
+      sonnerToast.error(`Call failed: ${err.message}`);
+    } finally {
+      setCallingId(null);
+    }
+  };
+
+  // ── Text Now ──
+  const handleTextNow = async (lead: any) => {
+    if (!lead.phone_number) { sonnerToast.error("No phone number"); return; }
+    setTextingId(lead.id);
+    try {
+      const message = `Hi! This is Brandaro Digital. We build professional websites for businesses like ${lead.business_name || 'yours'}. Interested in a free demo? Reply YES!`;
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: { action: 'sms', phone: lead.phone_number, message, lead_id: lead.id },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'SMS failed');
+      sonnerToast.success(`💬 SMS sent to ${lead.business_name}`);
+    } catch (err: any) {
+      sonnerToast.error(`SMS failed: ${err.message}`);
+    } finally {
+      setTextingId(null);
+    }
+  };
+
+  // ── Add to Queue ──
+  const handleAddToQueue = async (lead: any) => {
+    setQueuingId(lead.id);
+    try {
+      const { error } = await (supabase as any).from("brandaro_call_queue").insert({
+        lead_id: lead.id,
+        priority_tier: lead.priority_tier === "tier_1" ? 1 : lead.priority_tier === "tier_2" ? 2 : 3,
+        priority_score: lead.priority_score || 50,
+        retry_count: lead.call_attempts || 0,
+      });
+      if (error) throw error;
+      sonnerToast.success(`Added ${lead.business_name} to call queue`);
+      // Update status
+      await (supabase as any).from("brandaro_qualified_leads")
+        .update({ lead_status: 'queued', updated_at: new Date().toISOString() })
+        .eq("id", lead.id);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-leads"] });
+    } catch (err: any) {
+      sonnerToast.error(`Queue failed: ${err.message}`);
+    } finally {
+      setQueuingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -186,24 +254,50 @@ export default function LeadDatabasePage() {
                     </TableCell>
                     <TableCell className="text-sm text-center">{lead.call_attempts || 0}</TableCell>
                     <TableCell>
-                      <Select
-                        value={lead.lead_status || "new"}
-                        onValueChange={(val) => updateStatus.mutate({ id: lead.id, status: val })}
-                      >
-                        <SelectTrigger className="h-7 text-xs w-28">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="new">New</SelectItem>
-                          <SelectItem value="queued">Queue</SelectItem>
-                          <SelectItem value="interested">Interested</SelectItem>
-                          <SelectItem value="hot_lead">Hot Lead</SelectItem>
-                          <SelectItem value="sold">Sold</SelectItem>
-                          <SelectItem value="not_interested">Not Interested</SelectItem>
-                          <SelectItem value="callback">Callback</SelectItem>
-                          <SelectItem value="disqualified">Disqualify</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm" variant="default"
+                          onClick={() => handleCallNow(lead)}
+                          disabled={!lead.phone_number || callingId === lead.id}
+                          title="Call Now"
+                        >
+                          {callingId === lead.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+                        </Button>
+                        <Button
+                          size="sm" variant="outline"
+                          onClick={() => handleTextNow(lead)}
+                          disabled={!lead.phone_number || textingId === lead.id}
+                          title="Text Now"
+                        >
+                          {textingId === lead.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                        </Button>
+                        <Button
+                          size="sm" variant="ghost"
+                          onClick={() => handleAddToQueue(lead)}
+                          disabled={queuingId === lead.id || lead.lead_status === 'queued'}
+                          title="Add to Queue"
+                        >
+                          {queuingId === lead.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <ListPlus className="h-3 w-3" />}
+                        </Button>
+                        <Select
+                          value={lead.lead_status || "new"}
+                          onValueChange={(val) => updateStatus.mutate({ id: lead.id, status: val })}
+                        >
+                          <SelectTrigger className="h-7 text-xs w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="new">New</SelectItem>
+                            <SelectItem value="queued">Queue</SelectItem>
+                            <SelectItem value="interested">Interested</SelectItem>
+                            <SelectItem value="hot_lead">Hot Lead</SelectItem>
+                            <SelectItem value="sold">Sold</SelectItem>
+                            <SelectItem value="not_interested">Not Interested</SelectItem>
+                            <SelectItem value="callback">Callback</SelectItem>
+                            <SelectItem value="disqualified">Disqualify</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

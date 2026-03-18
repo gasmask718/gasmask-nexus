@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import {
   Phone, PhoneOff, Users, Clock, TrendingUp, RefreshCw,
   AlertTriangle, BarChart3, Shield, MapPin, Zap, CheckCircle2,
-  XCircle, PhoneForwarded, Bell
+  XCircle, PhoneForwarded, Bell, MessageSquare, Loader2
 } from "lucide-react";
 import {
   useNumberPool,
@@ -38,6 +38,8 @@ export default function CallingOpsPage() {
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null);
   const [callNotes, setCallNotes] = useState("");
   const [assignedNumber, setAssignedNumber] = useState<any>(null);
+  const [dialingId, setDialingId] = useState<string | null>(null);
+  const [sendingSmsId, setSendingSmsId] = useState<string | null>(null);
 
   const assignNumber = useAssignNumber();
   const logOutcome = useLogCallOutcome();
@@ -184,6 +186,61 @@ export default function CallingOpsPage() {
     setAssignedNumber(null);
     setCallNotes("");
     queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
+  };
+
+  // ── LIVE DIAL via Twilio ──
+  const handleLiveDial = async (item: any) => {
+    const lead = item.brandaro_qualified_leads;
+    if (!lead?.phone_number) {
+      toast.error("No phone number for this lead");
+      return;
+    }
+    setDialingId(item.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: {
+          action: 'call',
+          phone: lead.phone_number,
+          lead_id: item.lead_id || item.id,
+        },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'Call failed');
+      toast.success(`📞 Call initiated to ${lead.business_name}`);
+      // Update queue item status
+      await (supabase as any).from("brandaro_call_queue").update({ updated_at: new Date().toISOString() }).eq("id", item.id);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
+    } catch (err: any) {
+      toast.error(`Call failed: ${err.message}`);
+    } finally {
+      setDialingId(null);
+    }
+  };
+
+  // ── QUICK SMS from queue ──
+  const handleQuickSms = async (item: any) => {
+    const lead = item.brandaro_qualified_leads;
+    if (!lead?.phone_number) {
+      toast.error("No phone number for this lead");
+      return;
+    }
+    setSendingSmsId(item.id);
+    try {
+      const message = `Hi! This is Brandaro Digital. We noticed ${lead.business_name || 'your business'} could benefit from a professional website. Want to see a free demo? Reply YES!`;
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: {
+          action: 'sms',
+          phone: lead.phone_number,
+          message,
+          lead_id: item.lead_id || item.id,
+        },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'SMS failed');
+      toast.success(`💬 SMS sent to ${lead.business_name}`);
+    } catch (err: any) {
+      toast.error(`SMS failed: ${err.message}`);
+    } finally {
+      setSendingSmsId(null);
+    }
   };
 
   return (
@@ -466,15 +523,33 @@ export default function CallingOpsPage() {
                           <TableCell className="font-mono text-xs">{lead?.phone_number}</TableCell>
                           <TableCell>{item.retry_count}</TableCell>
                           <TableCell>
-                            <Button
-                              size="sm"
-                              variant={isActive ? "secondary" : "default"}
-                              onClick={() => handlePrepareCall(item)}
-                              disabled={isActive || assignNumber.isPending}
-                            >
-                              <Zap className="h-3 w-3 mr-1" />
-                              {isActive ? "Active" : "Call"}
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant={isActive ? "secondary" : "default"}
+                                onClick={() => handlePrepareCall(item)}
+                                disabled={isActive || assignNumber.isPending}
+                              >
+                                <Zap className="h-3 w-3 mr-1" />
+                                {isActive ? "Active" : "Prepare"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleLiveDial(item)}
+                                disabled={dialingId === item.id || !lead?.phone_number}
+                              >
+                                {dialingId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Phone className="h-3 w-3" />}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleQuickSms(item)}
+                                disabled={sendingSmsId === item.id || !lead?.phone_number}
+                              >
+                                {sendingSmsId === item.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       );

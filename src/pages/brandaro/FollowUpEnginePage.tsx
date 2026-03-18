@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Bell, Send, Clock, CheckCircle, XCircle, Loader2, RefreshCw, MessageSquare } from 'lucide-react';
+import { Bell, Send, Clock, CheckCircle, XCircle, Loader2, RefreshCw, MessageSquare, AlertTriangle } from 'lucide-react';
 
 interface Followup {
   id: string;
@@ -26,8 +26,9 @@ export default function FollowUpEnginePage() {
   const [followups, setFollowups] = useState<Followup[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
+  const [sendingIds, setSendingIds] = useState<Set<string>>(new Set());
 
-  const fetch = async () => {
+  const fetchData = async () => {
     setLoading(true);
     let query = (supabase as any).from('brandaro_followups').select('*').order('scheduled_at', { ascending: true });
     if (filter !== 'all') query = query.eq('status', filter);
@@ -36,20 +37,65 @@ export default function FollowUpEnginePage() {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [filter]);
+  useEffect(() => { fetchData(); }, [filter]);
 
   const sendNow = async (fu: Followup) => {
-    await (supabase as any).from('brandaro_followups')
-      .update({ status: 'sent', sent_at: new Date().toISOString() })
-      .eq('id', fu.id);
-    toast.success('Follow-up sent');
-    fetch();
+    // Resolve lead phone for dispatch
+    setSendingIds(prev => new Set(prev).add(fu.id));
+    try {
+      // Get lead phone number
+      let phone = '';
+      if (fu.lead_id) {
+        const { data: lead } = await (supabase as any)
+          .from('brandaro_qualified_leads')
+          .select('phone_number, business_name')
+          .eq('id', fu.lead_id)
+          .single();
+        phone = lead?.phone_number || '';
+      }
+
+      if (!phone) {
+        toast.error('Cannot send: lead has no phone number');
+        setSendingIds(prev => { const s = new Set(prev); s.delete(fu.id); return s; });
+        return;
+      }
+
+      const message = fu.message_template || `Hi! Following up on our conversation. Would love to connect — let me know a good time!`;
+
+      if (fu.channel === 'sms' || fu.channel === 'text' || !fu.channel) {
+        // Invoke real Twilio SMS via brandaro-closer-action
+        const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+          body: {
+            action: 'sms',
+            phone,
+            message,
+            lead_id: fu.lead_id,
+          },
+        });
+
+        if (error || !data?.success) {
+          throw new Error(data?.error || error?.message || 'SMS dispatch failed');
+        }
+      }
+
+      // Only mark as sent AFTER successful dispatch
+      await (supabase as any).from('brandaro_followups')
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('id', fu.id);
+
+      toast.success('Follow-up sent via SMS ✅');
+      fetchData();
+    } catch (err: any) {
+      toast.error(`Send failed: ${err.message}`);
+    } finally {
+      setSendingIds(prev => { const s = new Set(prev); s.delete(fu.id); return s; });
+    }
   };
 
   const cancelFollowup = async (id: string) => {
     await (supabase as any).from('brandaro_followups').update({ status: 'cancelled' }).eq('id', id);
     toast.success('Cancelled');
-    fetch();
+    fetchData();
   };
 
   const overdue = followups.filter(f => f.status === 'pending' && new Date(f.scheduled_at) < new Date());
@@ -120,7 +166,7 @@ export default function FollowUpEnginePage() {
                   <SelectItem value="converted">Converted</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={fetch}><RefreshCw className="h-4 w-4" /></Button>
+              <Button variant="outline" size="sm" onClick={() => fetchData()}><RefreshCw className="h-4 w-4" /></Button>
             </div>
           </div>
         </CardHeader>
@@ -167,9 +213,11 @@ export default function FollowUpEnginePage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right space-x-1">
-                        {fu.status === 'pending' && (
+                      {fu.status === 'pending' && (
                           <>
-                            <Button size="sm" onClick={() => sendNow(fu)}><Send className="h-3 w-3" /></Button>
+                            <Button size="sm" onClick={() => sendNow(fu)} disabled={sendingIds.has(fu.id)}>
+                              {sendingIds.has(fu.id) ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                            </Button>
                             <Button variant="ghost" size="sm" onClick={() => cancelFollowup(fu.id)}><XCircle className="h-3 w-3" /></Button>
                           </>
                         )}
