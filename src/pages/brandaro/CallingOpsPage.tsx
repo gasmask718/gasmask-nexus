@@ -21,6 +21,9 @@ import {
   useRevenueStats, useRunPredictiveScoring, useUpdateNiches
 } from "@/hooks/useBrandaroPredictive";
 import {
+  useExecutionQueue, useExecutionQueueStats, usePopulateQueue, useRunExecutionWorker
+} from "@/hooks/useBrandaroExecutionQueue";
+import {
   useNumberPool,
   useNumberAlerts,
   useNumberAnalytics,
@@ -59,6 +62,10 @@ export default function CallingOpsPage() {
   const { data: revenueStats } = useRevenueStats();
   const runScoring = useRunPredictiveScoring();
   const updateNiches = useUpdateNiches();
+  const { data: execQueue = [] } = useExecutionQueue();
+  const { data: execStats } = useExecutionQueueStats();
+  const populateQueue = usePopulateQueue();
+  const runWorker = useRunExecutionWorker();
 
   const { data: queueItems = [], isLoading: queueLoading } = useQuery({
     queryKey: ["brandaro-call-queue", selectedCampaign],
@@ -403,14 +410,148 @@ export default function CallingOpsPage() {
         </Card>
       )}
 
-      <Tabs defaultValue="desk" className="space-y-4">
+      <Tabs defaultValue="execution" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="execution">⚔️ Execution</TabsTrigger>
           <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
           <TabsTrigger value="predictive">🔮 Predictive</TabsTrigger>
           <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
           <TabsTrigger value="numbers">Number Pool</TabsTrigger>
           <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
         </TabsList>
+
+        {/* ── AUTO EXECUTION ENGINE ── */}
+        <TabsContent value="execution" className="space-y-4">
+          {/* Controls */}
+          <div className="flex gap-3">
+            <Button onClick={() => populateQueue.mutate()} disabled={populateQueue.isPending} variant="outline">
+              {populateQueue.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Target className="h-4 w-4 mr-2" />}
+              Populate Queue from Predictions
+            </Button>
+            <Button onClick={() => runWorker.mutate()} disabled={runWorker.isPending} className="bg-primary">
+              {runWorker.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+              Execute Now
+            </Button>
+            <Button onClick={() => runScoring.mutate()} disabled={runScoring.isPending} variant="outline">
+              {runScoring.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Brain className="h-4 w-4 mr-2" />}
+              Re-Score Leads
+            </Button>
+          </div>
+
+          {/* Queue Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {[
+              { label: "Pending", value: execStats?.pending || 0, icon: Clock, color: "text-amber-500" },
+              { label: "Completed", value: execStats?.completed || 0, icon: CheckCircle2, color: "text-emerald-500" },
+              { label: "Failed", value: execStats?.failed || 0, icon: XCircle, color: "text-destructive" },
+              { label: "Exhausted", value: execStats?.exhausted || 0, icon: PhoneOff, color: "text-muted-foreground" },
+              { label: "Total Queued", value: execStats?.total || 0, icon: Activity, color: "text-primary" },
+            ].map(({ label, value, icon: Icon, color }) => (
+              <Card key={label}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-4 w-4 ${color}`} />
+                    <div>
+                      <p className="text-xl font-bold">{value}</p>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Priority Breakdown */}
+          <div className="grid grid-cols-3 gap-3">
+            <Card className="border-destructive/30">
+              <CardContent className="pt-4 text-center">
+                <p className="text-3xl font-bold text-destructive">{execStats?.highPriority || 0}</p>
+                <p className="text-xs text-muted-foreground">🔴 High → Auto Call</p>
+              </CardContent>
+            </Card>
+            <Card className="border-amber-500/30">
+              <CardContent className="pt-4 text-center">
+                <p className="text-3xl font-bold text-amber-500">{execStats?.mediumPriority || 0}</p>
+                <p className="text-xs text-muted-foreground">🟡 Medium → SMS First</p>
+              </CardContent>
+            </Card>
+            <Card className="border-muted">
+              <CardContent className="pt-4 text-center">
+                <p className="text-3xl font-bold text-muted-foreground">{execStats?.lowPriority || 0}</p>
+                <p className="text-xs text-muted-foreground">⚪ Low → Nurture</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Live Queue */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5" />
+                Execution Queue
+              </CardTitle>
+              <CardDescription>Actions auto-dispatched based on priority tier — high calls, medium SMS, low nurture</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Prob</TableHead>
+                    <TableHead>Tier</TableHead>
+                    <TableHead>Strategy</TableHead>
+                    <TableHead>Business</TableHead>
+                    <TableHead>Industry</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Attempts</TableHead>
+                    <TableHead>Next</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {execQueue.slice(0, 40).map((q: any) => {
+                    const lead = q.brandaro_qualified_leads;
+                    return (
+                      <TableRow key={q.id}>
+                        <TableCell>
+                          <Badge variant={q.conversion_probability >= 70 ? "default" : q.conversion_probability >= 40 ? "secondary" : "outline"}>
+                            {Number(q.conversion_probability).toFixed(0)}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={q.priority_tier === "high" ? "destructive" : q.priority_tier === "medium" ? "default" : "secondary"}>
+                            {q.priority_tier}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">{q.action_strategy?.replace(/_/g, " ")}</TableCell>
+                        <TableCell className="font-medium">{lead?.business_name || "—"}</TableCell>
+                        <TableCell className="text-xs">{lead?.industry || "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            q.status === "completed" ? "default" :
+                            q.status === "pending" ? "secondary" :
+                            q.status === "exhausted" ? "outline" : "destructive"
+                          }>
+                            {q.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{q.attempts}/{q.max_attempts}</TableCell>
+                        <TableCell className="text-xs">
+                          {q.next_attempt_at ? new Date(q.next_attempt_at).toLocaleString() : "—"}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {execQueue.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-6">
+                        Queue empty — click "Populate Queue from Predictions" to load leads
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* ── VA CALLING DESK ── */}
         <TabsContent value="desk" className="space-y-4">

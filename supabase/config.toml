@@ -351,3 +351,6 @@ verify_jwt = false
 
 [functions.brandaro-predictive-engine]
 verify_jwt = false
+
+[functions.brandaro-execution-worker]
+verify_jwt = false
