@@ -53,6 +53,12 @@ export default function CallingOpsPage() {
   const { data: alerts = [] } = useNumberAlerts();
   const { data: scriptPerf = [] } = useScriptPerformance();
   const { data: leadPerfStats } = useLeadPerformanceStats();
+  const { data: predictions = [] } = useConversionPredictions();
+  const { data: predStats } = usePredictionStats();
+  const { data: nichePerf = [] } = useNichePerformance();
+  const { data: revenueStats } = useRevenueStats();
+  const runScoring = useRunPredictiveScoring();
+  const updateNiches = useUpdateNiches();
 
   const { data: queueItems = [], isLoading: queueLoading } = useQuery({
     queryKey: ["brandaro-call-queue", selectedCampaign],
