@@ -587,6 +587,7 @@ import PersonalFinance from '@/pages/grabba/PersonalFinance';
 import PayrollManager from '@/pages/grabba/PayrollManager';
 import AdvisorPenthouse from '@/pages/grabba/AdvisorPenthouse';
 import AuditEnginePage from '@/pages/penthouse/AuditEnginePage';
+import FloorBlueprint from '@/pages/penthouse/FloorBlueprint';
 import InstinctLog from '@/pages/grabba/InstinctLog';
 import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerformance';
 import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
@@ -1452,7 +1453,14 @@ export default function AppRoutes() {
           </RequireRole>
         } />
 
-        {/* Legacy accounting routes → redirect to Penthouse */}
+        {/* ═══ PENTHOUSE — Floor Blueprint (Operating Manual) ═══ */}
+        <Route path="/penthouse/blueprint" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <FloorBlueprint />
+          </RequireRole>
+        } />
+
+
         <Route path="/grabba/personal-finance" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/grabba/financial-dashboard" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/accounting-os" element={<Navigate to="/penthouse/accounting" replace />} />
