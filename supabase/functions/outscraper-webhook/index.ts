@@ -150,6 +150,23 @@ serve(async (req: Request) => {
             }));
             await supabase.from("brandaro_call_queue").insert(queueRows);
             console.log(`[OUTSCRAPER-WEBHOOK] Auto-queued ${queueRows.length} no-website leads`);
+
+            // 🔥 FIRE AUTO-STRIKER — trigger AI calls immediately
+            const strikerLeadIds = qualInserted.map((q: any) => q.id);
+            try {
+              const strikerUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/brandaro-auto-striker`;
+              await fetch(strikerUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+                },
+                body: JSON.stringify({ lead_ids: strikerLeadIds }),
+              });
+              console.log(`[OUTSCRAPER-WEBHOOK] Auto-striker fired for ${strikerLeadIds.length} leads`);
+            } catch (strikerErr: any) {
+              console.error("[OUTSCRAPER-WEBHOOK] Auto-striker invocation failed:", strikerErr.message);
+            }
           }
         }
       }
