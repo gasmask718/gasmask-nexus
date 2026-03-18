@@ -188,7 +188,61 @@ export default function CallingOpsPage() {
     queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
   };
 
-  return (
+  // ── LIVE DIAL via Twilio ──
+  const handleLiveDial = async (item: any) => {
+    const lead = item.brandaro_qualified_leads;
+    if (!lead?.phone_number) {
+      toast.error("No phone number for this lead");
+      return;
+    }
+    setDialingId(item.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: {
+          action: 'call',
+          phone: lead.phone_number,
+          lead_id: item.lead_id || item.id,
+        },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'Call failed');
+      toast.success(`📞 Call initiated to ${lead.business_name}`);
+      // Update queue item status
+      await supabase.from("brandaro_call_queue").update({ last_called_at: new Date().toISOString() }).eq("id", item.id);
+      queryClient.invalidateQueries({ queryKey: ["brandaro-call-queue"] });
+    } catch (err: any) {
+      toast.error(`Call failed: ${err.message}`);
+    } finally {
+      setDialingId(null);
+    }
+  };
+
+  // ── QUICK SMS from queue ──
+  const handleQuickSms = async (item: any) => {
+    const lead = item.brandaro_qualified_leads;
+    if (!lead?.phone_number) {
+      toast.error("No phone number for this lead");
+      return;
+    }
+    setSendingSmsId(item.id);
+    try {
+      const message = `Hi! This is Brandaro Digital. We noticed ${lead.business_name || 'your business'} could benefit from a professional website. Want to see a free demo? Reply YES!`;
+      const { data, error } = await supabase.functions.invoke('brandaro-closer-action', {
+        body: {
+          action: 'sms',
+          phone: lead.phone_number,
+          message,
+          lead_id: item.lead_id || item.id,
+        },
+      });
+      if (error || !data?.success) throw new Error(data?.error || error?.message || 'SMS failed');
+      toast.success(`💬 SMS sent to ${lead.business_name}`);
+    } catch (err: any) {
+      toast.error(`SMS failed: ${err.message}`);
+    } finally {
+      setSendingSmsId(null);
+    }
+  };
+
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
