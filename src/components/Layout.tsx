@@ -475,13 +475,13 @@ const Layout = ({ children }: LayoutProps) => {
   const [unreadReportsCount, setUnreadReportsCount] = useState(0);
   const [sendMessageOpen, setSendMessageOpen] = useState(false);
   
-  // All sections open by default
+  // All sections open by default — brandaro-hub PERMANENTLY included
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'global-dashboard', 'portals'
+    'brandaro-hub', 'global-dashboard', 'portals'
   ]);
   
   const currentPath = location.pathname;
