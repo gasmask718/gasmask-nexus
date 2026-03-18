@@ -13791,6 +13791,62 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_lead_performance: {
+        Row: {
+          call_picked_up: boolean
+          converted: boolean
+          created_at: string
+          id: string
+          interested: boolean
+          last_action_at: string | null
+          last_response_at: string | null
+          lead_id: string
+          lead_score: number
+          response_time_seconds: number | null
+          sms_replied: boolean
+          sms_sent: number
+          updated_at: string
+        }
+        Insert: {
+          call_picked_up?: boolean
+          converted?: boolean
+          created_at?: string
+          id?: string
+          interested?: boolean
+          last_action_at?: string | null
+          last_response_at?: string | null
+          lead_id: string
+          lead_score?: number
+          response_time_seconds?: number | null
+          sms_replied?: boolean
+          sms_sent?: number
+          updated_at?: string
+        }
+        Update: {
+          call_picked_up?: boolean
+          converted?: boolean
+          created_at?: string
+          id?: string
+          interested?: boolean
+          last_action_at?: string | null
+          last_response_at?: string | null
+          lead_id?: string
+          lead_score?: number
+          response_time_seconds?: number | null
+          sms_replied?: boolean
+          sms_sent?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_lead_performance_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_leads_master: {
         Row: {
           business_name: string
@@ -16060,6 +16116,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_script_performance: {
+        Row: {
+          conversion_count: number
+          conversion_rate: number
+          created_at: string
+          id: string
+          is_active: boolean
+          last_evaluated_at: string | null
+          reply_count: number
+          reply_rate: number
+          script_type: string
+          send_count: number
+          updated_at: string
+          usage_weight: number
+          variant_key: string
+          variant_label: string
+        }
+        Insert: {
+          conversion_count?: number
+          conversion_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_evaluated_at?: string | null
+          reply_count?: number
+          reply_rate?: number
+          script_type?: string
+          send_count?: number
+          updated_at?: string
+          usage_weight?: number
+          variant_key: string
+          variant_label?: string
+        }
+        Update: {
+          conversion_count?: number
+          conversion_rate?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          last_evaluated_at?: string | null
+          reply_count?: number
+          reply_rate?: number
+          script_type?: string
+          send_count?: number
+          updated_at?: string
+          usage_weight?: number
+          variant_key?: string
+          variant_label?: string
+        }
+        Relationships: []
       }
       brandaro_seo_clusters: {
         Row: {
