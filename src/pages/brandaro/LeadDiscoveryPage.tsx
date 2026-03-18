@@ -278,6 +278,10 @@ export default function LeadDiscoveryPage() {
   });
 
   const pendingJobs = recentJobs?.filter(j => j.status === "pending") || [];
+  const delayedJobs = pendingJobs.filter(j => {
+    const created = new Date(j.created_at).getTime();
+    return Date.now() - created > 2 * 60 * 1000; // > 2 minutes
+  });
 
   // ── Live Outscraper Generation (async mode) ──
   const generateMutation = useMutation({
@@ -370,14 +374,23 @@ export default function LeadDiscoveryPage() {
           )}
           {pendingJobs.length > 0 && (
             <div className="mt-3 space-y-2">
-              {pendingJobs.map(job => (
-                <div key={job.id} className="flex items-center gap-2 text-sm p-2 rounded border border-primary/20 bg-primary/5">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span className="font-medium">{job.search_query}</span>
-                  <span className="text-muted-foreground">in {job.location}</span>
-                  <Badge variant="outline">Pending</Badge>
-                </div>
-              ))}
+              {pendingJobs.map(job => {
+                const isDelayed = delayedJobs.some(d => d.id === job.id);
+                return (
+                  <div key={job.id} className={`flex items-center gap-2 text-sm p-2 rounded border ${isDelayed ? 'border-amber-500/40 bg-amber-500/10' : 'border-primary/20 bg-primary/5'}`}>
+                    {isDelayed ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    ) : (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    )}
+                    <span className="font-medium">{job.search_query}</span>
+                    <span className="text-muted-foreground">in {job.location}</span>
+                    <Badge variant={isDelayed ? "destructive" : "outline"}>
+                      {isDelayed ? "Delayed" : "Pending"}
+                    </Badge>
+                  </div>
+                );
+              })}
             </div>
           )}
           {recentJobs && recentJobs.filter(j => j.status === "completed").length > 0 && (
