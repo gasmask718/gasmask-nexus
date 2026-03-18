@@ -50,6 +50,8 @@ export default function BrandaroWarRoom() {
   const runEvolution = useRunEvolutionCycle();
   const autopilot = useRevenueAutopilotDashboard();
   const runAutopilot = useRunAutopilotCycle();
+  const { data: globalDash } = useGlobalScalingDashboard();
+  const runGlobalCycle = useRunGlobalCycle();
 
   // Active calls count
   const { data: activeCalls = 0 } = useQuery({
