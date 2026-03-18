@@ -396,6 +396,7 @@ export default function CallingOpsPage() {
       <Tabs defaultValue="desk" className="space-y-4">
         <TabsList>
           <TabsTrigger value="desk">VA Calling Desk</TabsTrigger>
+          <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
           <TabsTrigger value="numbers">Number Pool</TabsTrigger>
           <TabsTrigger value="analytics">Number Analytics</TabsTrigger>
         </TabsList>
