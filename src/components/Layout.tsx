@@ -419,6 +419,22 @@ const DYNASTY_NAVIGATION = {
       { path: '/portal/ambassador', label: '🎖️ Ambassador OS', icon: Award },
     ],
   },
+  brandaroHub: {
+    id: 'brandaro-hub',
+    name: '⚔️ Brandaro Digital Hub',
+    items: [
+      { path: '/brandaro', label: '⚔️ War Room', icon: Swords },
+      { path: '/brandaro/ceo', label: 'CEO Dashboard', icon: Crown },
+      { path: '/brandaro/leads', label: 'Lead Database', icon: Target },
+      { path: '/brandaro/calling', label: 'Calling Ops', icon: PhoneCall },
+      { path: '/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
+      { path: '/brandaro/revenue', label: 'Revenue Analytics', icon: TrendingUp },
+      { path: '/brandaro/competitors', label: 'Competitor Takeover', icon: Swords },
+      { path: '/brandaro/proposals', label: 'Proposal Builder', icon: FileText },
+      { path: '/brandaro/campaigns', label: 'Campaign Manager', icon: Target },
+      { path: '/brandaro/clients', label: 'Client Portal', icon: Users },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
