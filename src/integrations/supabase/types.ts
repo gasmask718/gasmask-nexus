@@ -15833,14 +15833,18 @@ export type Database = {
       }
       brandaro_qualified_leads: {
         Row: {
+          address: string | null
           ai_paused: boolean | null
           assigned_va: string | null
           business_name: string
+          business_status: string | null
           call_attempts: number | null
           call_notes: string | null
           campaign_id: string | null
+          category: string | null
           city: string | null
           clean_lead_id: string | null
+          contact_title: string | null
           conversion_date: string | null
           converted: boolean | null
           created_at: string | null
@@ -15850,7 +15854,10 @@ export type Database = {
           demo_status: string | null
           demo_url: string | null
           discovery_job_id: string | null
+          email: string | null
           engagement_score: number | null
+          first_name: string | null
+          full_name: string | null
           google_maps_url: string | null
           google_place_id: string | null
           has_website: boolean | null
@@ -15858,33 +15865,45 @@ export type Database = {
           industry: string | null
           last_call_at: string | null
           last_called_at: string | null
+          last_name: string | null
           lead_status: string | null
+          name_for_emails: string | null
           next_callback_at: string | null
           phone_number: string | null
           pipeline_stage: string
+          place_id: string | null
+          postal_code: string | null
           priority_score: number | null
           priority_tier: string | null
           proposal_amount: number | null
           proposal_package: string | null
           proposal_status: string | null
+          query_source: string | null
           rating: number | null
           revenue_amount: number | null
           review_count: number | null
           service_interest: string | null
+          source_file: string | null
           state: string | null
+          street: string | null
           stripe_payment_link: string | null
+          subtypes: string | null
           updated_at: string | null
           website_status: string | null
         }
         Insert: {
+          address?: string | null
           ai_paused?: boolean | null
           assigned_va?: string | null
           business_name: string
+          business_status?: string | null
           call_attempts?: number | null
           call_notes?: string | null
           campaign_id?: string | null
+          category?: string | null
           city?: string | null
           clean_lead_id?: string | null
+          contact_title?: string | null
           conversion_date?: string | null
           converted?: boolean | null
           created_at?: string | null
@@ -15894,7 +15913,10 @@ export type Database = {
           demo_status?: string | null
           demo_url?: string | null
           discovery_job_id?: string | null
+          email?: string | null
           engagement_score?: number | null
+          first_name?: string | null
+          full_name?: string | null
           google_maps_url?: string | null
           google_place_id?: string | null
           has_website?: boolean | null
@@ -15902,33 +15924,45 @@ export type Database = {
           industry?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
+          last_name?: string | null
           lead_status?: string | null
+          name_for_emails?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
           pipeline_stage?: string
+          place_id?: string | null
+          postal_code?: string | null
           priority_score?: number | null
           priority_tier?: string | null
           proposal_amount?: number | null
           proposal_package?: string | null
           proposal_status?: string | null
+          query_source?: string | null
           rating?: number | null
           revenue_amount?: number | null
           review_count?: number | null
           service_interest?: string | null
+          source_file?: string | null
           state?: string | null
+          street?: string | null
           stripe_payment_link?: string | null
+          subtypes?: string | null
           updated_at?: string | null
           website_status?: string | null
         }
         Update: {
+          address?: string | null
           ai_paused?: boolean | null
           assigned_va?: string | null
           business_name?: string
+          business_status?: string | null
           call_attempts?: number | null
           call_notes?: string | null
           campaign_id?: string | null
+          category?: string | null
           city?: string | null
           clean_lead_id?: string | null
+          contact_title?: string | null
           conversion_date?: string | null
           converted?: boolean | null
           created_at?: string | null
@@ -15938,7 +15972,10 @@ export type Database = {
           demo_status?: string | null
           demo_url?: string | null
           discovery_job_id?: string | null
+          email?: string | null
           engagement_score?: number | null
+          first_name?: string | null
+          full_name?: string | null
           google_maps_url?: string | null
           google_place_id?: string | null
           has_website?: boolean | null
@@ -15946,21 +15983,29 @@ export type Database = {
           industry?: string | null
           last_call_at?: string | null
           last_called_at?: string | null
+          last_name?: string | null
           lead_status?: string | null
+          name_for_emails?: string | null
           next_callback_at?: string | null
           phone_number?: string | null
           pipeline_stage?: string
+          place_id?: string | null
+          postal_code?: string | null
           priority_score?: number | null
           priority_tier?: string | null
           proposal_amount?: number | null
           proposal_package?: string | null
           proposal_status?: string | null
+          query_source?: string | null
           rating?: number | null
           revenue_amount?: number | null
           review_count?: number | null
           service_interest?: string | null
+          source_file?: string | null
           state?: string | null
+          street?: string | null
           stripe_payment_link?: string | null
+          subtypes?: string | null
           updated_at?: string | null
           website_status?: string | null
         }

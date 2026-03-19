@@ -11,9 +11,13 @@ import * as XLSX from "xlsx";
 // Only these columns are allowed into the DB
 const ALLOWED_COLUMNS = [
   "business_name", "phone_number", "city", "state",
-  "address", "industry", "rating", "pipeline_stage",
-  "lead_status", "website_status", "call_attempts",
-  "priority_score", "engagement_score", "ai_paused", "converted",
+  "address", "street", "postal_code", "industry", "rating",
+  "pipeline_stage", "lead_status", "website_status",
+  "call_attempts", "priority_score", "engagement_score",
+  "ai_paused", "converted", "review_count", "category",
+  "subtypes", "query_source", "name_for_emails",
+  "business_status", "full_name", "first_name", "last_name",
+  "email", "contact_title", "place_id", "source_file",
 ] as const;
 
 const COLUMN_ALIASES: Record<string, string> = {
