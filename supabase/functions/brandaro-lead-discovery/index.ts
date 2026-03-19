@@ -35,7 +35,7 @@ serve(async (req) => {
       .update({ status: 'running', started_at: new Date().toISOString() })
       .eq('id', job_id);
 
-    // Step 1: Geocode city — also serves as API key validation
+    // Step 1: Geocode city
     const geoRes = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city + ', ' + state)}&key=${googleKey}`
     );
@@ -52,7 +52,7 @@ serve(async (req) => {
     const { lat, lng } = location;
     console.log('GEOCODED:', lat, lng);
 
-    // Step 2: Text Search — use only 2 queries to stay fast
+    // Step 2: Text Search — primary queries
     const searchQueries = [
       `${industry} in ${city}`,
       `${industry} near ${city} ${state}`,
@@ -67,8 +67,29 @@ serve(async (req) => {
 
       console.log(`SEARCH "${query}": status=${searchData.status}, results=${searchData.results?.length || 0}`);
 
+      if (searchData.status === 'REQUEST_DENIED') {
+        console.log('PLACES API DENIED — error:', searchData.error_message || 'Places API not enabled for this key');
+      }
+
       if (searchData.results) allPlaces = [...allPlaces, ...searchData.results];
       await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Fallback queries if primary returned nothing
+    if (allPlaces.length === 0) {
+      console.log('PRIMARY QUERIES RETURNED 0 — trying fallbacks');
+      const fallbackQueries = [
+        `${industry} ${city}`,
+        `${industry}`,
+      ];
+      for (const query of fallbackQueries) {
+        const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius_meters}&key=${googleKey}`;
+        const searchRes = await fetch(searchUrl);
+        const searchData = await searchRes.json();
+        console.log(`FALLBACK SEARCH "${query}": status=${searchData.status}, results=${searchData.results?.length || 0}`);
+        if (searchData.results) allPlaces = [...allPlaces, ...searchData.results];
+        await new Promise(r => setTimeout(r, 300));
+      }
     }
 
     // Deduplicate by place_id
@@ -80,9 +101,18 @@ serve(async (req) => {
     });
 
     // Hard limit to stay under edge function timeout
-    allPlaces = allPlaces.slice(0, 25);
+    allPlaces = allPlaces.slice(0, 40);
 
     console.log(`AFTER DEDUP+LIMIT: ${allPlaces.length} places to process`);
+
+    // Log sample places
+    for (const place of allPlaces.slice(0, 5)) {
+      console.log('SAMPLE PLACE:', JSON.stringify({
+        name: place.name,
+        place_id: place.place_id,
+        types: place.types,
+      }));
+    }
 
     // Step 3: Get details for each place, filter no-website, import
     let imported = 0;
@@ -97,28 +127,49 @@ serve(async (req) => {
         const detailData = await detailRes.json();
         const p = detailData.result;
         if (!p) continue;
-        if (!p.formatted_phone_number) continue;
         if (p.business_status && p.business_status !== 'OPERATIONAL') continue;
 
-        const hasWebsite = !!(p.website && p.website.trim() !== '' && !p.website.includes('facebook.com'));
-        if (hasWebsite) {
-          console.log(`SKIP (has website): ${p.name}`);
+        // Relaxed website filter — social media pages don't count as real websites
+        const websiteUrl = (p.website || '').trim().toLowerCase();
+        const hasRealWebsite = websiteUrl !== ''
+          && !websiteUrl.includes('facebook.com')
+          && !websiteUrl.includes('fb.com')
+          && !websiteUrl.includes('instagram.com')
+          && !websiteUrl.includes('yelp.com')
+          && !websiteUrl.includes('google.com')
+          && !websiteUrl.includes('maps.google')
+          && !websiteUrl.includes('goo.gl');
+
+        console.log(`DETAIL: ${p.name} | website: "${p.website || 'none'}" | phone: "${p.formatted_phone_number || 'none'}" | status: ${p.business_status}`);
+
+        if (hasRealWebsite) {
+          console.log(`SKIP (has real website): ${p.name} → ${websiteUrl}`);
           continue;
         }
         noWebsiteCount++;
 
-        const phone = normalizePhone(p.formatted_phone_number);
-        if (!phone) continue;
+        // Phone is optional now
+        const rawPhone = p.formatted_phone_number || '';
+        const phone = rawPhone ? normalizePhone(rawPhone) : null;
 
         // Dedup check
-        const { data: existing } = await supabase
-          .from('brandaro_qualified_leads')
-          .select('id')
-          .or(`phone_number.eq.${phone},google_place_id.eq.${place.place_id}`)
-          .limit(1)
-          .maybeSingle();
-
-        if (existing) { skipped++; continue; }
+        if (phone) {
+          const { data: existing } = await supabase
+            .from('brandaro_qualified_leads')
+            .select('id')
+            .or(`phone_number.eq.${phone},google_place_id.eq.${place.place_id}`)
+            .limit(1)
+            .maybeSingle();
+          if (existing) { skipped++; continue; }
+        } else {
+          const { data: existing } = await supabase
+            .from('brandaro_qualified_leads')
+            .select('id')
+            .eq('google_place_id', place.place_id)
+            .limit(1)
+            .maybeSingle();
+          if (existing) { skipped++; continue; }
+        }
 
         const addressComps = p.address_components || [];
         const getComp = (type: string) => addressComps.find((c: any) => c.types.includes(type))?.long_name || '';

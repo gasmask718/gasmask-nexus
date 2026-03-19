@@ -1,0 +1,1 @@
+ALTER TABLE brandaro_qualified_leads ALTER COLUMN phone_number DROP NOT NULL;
