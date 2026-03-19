@@ -369,3 +369,6 @@ verify_jwt = false
 
 [functions.objection-handler]
 verify_jwt = false
+
+[functions.brandaro-lead-discovery]
+verify_jwt = false
