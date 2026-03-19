@@ -44,6 +44,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/google-domination', label: 'Google Domination', icon: Crown },
   { path: '/os/brandaro/optimization', label: 'Optimization Engine', icon: Cpu },
   { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
+  { path: '/os/brandaro/system-status', label: 'System Status', icon: Activity },
 ];
 
 export const BrandaroModule: DynastyModule = {
