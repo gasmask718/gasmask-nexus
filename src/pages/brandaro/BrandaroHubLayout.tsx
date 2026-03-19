@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { AIApprovalDrawer } from "@/components/brandaro/AIApprovalDrawer";
 
 const hubNav = [
   { section: "Command", items: [
