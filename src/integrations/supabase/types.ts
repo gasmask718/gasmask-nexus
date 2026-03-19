@@ -14901,6 +14901,36 @@ export type Database = {
           },
         ]
       }
+      brandaro_payment_links: {
+        Row: {
+          amount: number
+          created_at: string | null
+          id: string
+          name: string
+          service_type: string
+          stripe_payment_link_url: string | null
+          stripe_price_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          id?: string
+          name: string
+          service_type: string
+          stripe_payment_link_url?: string | null
+          stripe_price_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          id?: string
+          name?: string
+          service_type?: string
+          stripe_payment_link_url?: string | null
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
       brandaro_payment_plans: {
         Row: {
           created_at: string | null
@@ -14992,6 +15022,62 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "brandaro_closer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_pending_messages: {
+        Row: {
+          ai_agent: string | null
+          approved_at: string | null
+          created_at: string | null
+          id: string
+          intent_score: number | null
+          lead_id: string | null
+          lead_name: string | null
+          message_body: string
+          message_type: string
+          objection_responses: Json | null
+          phone_number: string | null
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          ai_agent?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string
+          intent_score?: number | null
+          lead_id?: string | null
+          lead_name?: string | null
+          message_body: string
+          message_type: string
+          objection_responses?: Json | null
+          phone_number?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          ai_agent?: string | null
+          approved_at?: string | null
+          created_at?: string | null
+          id?: string
+          intent_score?: number | null
+          lead_id?: string | null
+          lead_name?: string | null
+          message_body?: string
+          message_type?: string
+          objection_responses?: Json | null
+          phone_number?: string | null
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_pending_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -15693,6 +15779,7 @@ export type Database = {
       }
       brandaro_qualified_leads: {
         Row: {
+          ai_paused: boolean | null
           assigned_va: string | null
           business_name: string
           call_attempts: number | null
@@ -15700,11 +15787,14 @@ export type Database = {
           campaign_id: string | null
           city: string | null
           clean_lead_id: string | null
+          conversion_date: string | null
+          converted: boolean | null
           created_at: string | null
           demo_created_at: string | null
           demo_link: string | null
           demo_sent_at: string | null
           demo_status: string | null
+          demo_url: string | null
           engagement_score: number | null
           id: string
           industry: string | null
@@ -15720,12 +15810,16 @@ export type Database = {
           proposal_package: string | null
           proposal_status: string | null
           rating: number | null
+          revenue_amount: number | null
           review_count: number | null
+          service_interest: string | null
           state: string | null
+          stripe_payment_link: string | null
           updated_at: string | null
           website_status: string | null
         }
         Insert: {
+          ai_paused?: boolean | null
           assigned_va?: string | null
           business_name: string
           call_attempts?: number | null
@@ -15733,11 +15827,14 @@ export type Database = {
           campaign_id?: string | null
           city?: string | null
           clean_lead_id?: string | null
+          conversion_date?: string | null
+          converted?: boolean | null
           created_at?: string | null
           demo_created_at?: string | null
           demo_link?: string | null
           demo_sent_at?: string | null
           demo_status?: string | null
+          demo_url?: string | null
           engagement_score?: number | null
           id?: string
           industry?: string | null
@@ -15753,12 +15850,16 @@ export type Database = {
           proposal_package?: string | null
           proposal_status?: string | null
           rating?: number | null
+          revenue_amount?: number | null
           review_count?: number | null
+          service_interest?: string | null
           state?: string | null
+          stripe_payment_link?: string | null
           updated_at?: string | null
           website_status?: string | null
         }
         Update: {
+          ai_paused?: boolean | null
           assigned_va?: string | null
           business_name?: string
           call_attempts?: number | null
@@ -15766,11 +15867,14 @@ export type Database = {
           campaign_id?: string | null
           city?: string | null
           clean_lead_id?: string | null
+          conversion_date?: string | null
+          converted?: boolean | null
           created_at?: string | null
           demo_created_at?: string | null
           demo_link?: string | null
           demo_sent_at?: string | null
           demo_status?: string | null
+          demo_url?: string | null
           engagement_score?: number | null
           id?: string
           industry?: string | null
@@ -15786,8 +15890,11 @@ export type Database = {
           proposal_package?: string | null
           proposal_status?: string | null
           rating?: number | null
+          revenue_amount?: number | null
           review_count?: number | null
+          service_interest?: string | null
           state?: string | null
+          stripe_payment_link?: string | null
           updated_at?: string | null
           website_status?: string | null
         }
@@ -73621,7 +73728,7 @@ export type Database = {
         Returns: undefined
       }
       normalize_brand_name: { Args: { raw_brand: string }; Returns: string }
-      normalize_phone: { Args: { input: string }; Returns: string }
+      normalize_phone: { Args: { raw_phone: string }; Returns: string }
       not_developer: { Args: { _user_id: string }; Returns: boolean }
       override_intent_resolution: {
         Args: {
