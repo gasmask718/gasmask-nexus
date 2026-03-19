@@ -180,15 +180,40 @@ export function BuildDemoModal({
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={handleApproveQueue} disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
-                Approve & Queue
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Button onClick={handleApproveQueue} disabled={loading} className="flex-1 bg-purple-600 hover:bg-purple-700">
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  Approve & Queue
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => resetToInput(true)}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" onClick={onClose}>Cancel</Button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={loading}
+                onClick={async () => {
+                  try {
+                    await (supabase as any)
+                      .from("brandaro_pending_messages")
+                      .insert({
+                        lead_id: lead.id,
+                        message_body: `Hi ${lead.business_name || "there"}, if you'd like to see the demo on a call first, grab a time here: https://calendly.com/brandarodigital-sales/website-strategy-call`,
+                        message_type: "sms",
+                        status: "pending",
+                      });
+                    toast.success("Booking link queued for approval");
+                  } catch {
+                    toast.error("Failed to queue booking link");
+                  }
+                }}
+              >
+                📅 Also send booking link
               </Button>
-              <Button variant="outline" size="icon" onClick={() => resetToInput(true)}>
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" onClick={onClose}>Cancel</Button>
             </div>
           </div>
         )}

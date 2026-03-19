@@ -79,7 +79,7 @@ serve(async (req) => {
         const stageOrder = ["new", "contacted", "responded", "interested", "booked", "closed"];
         const { data: currentLead } = await sb
           .from("brandaro_qualified_leads")
-          .select("pipeline_stage")
+          .select("pipeline_stage, phone_number, business_name")
           .eq("id", lead_id)
           .single();
 
@@ -93,6 +93,26 @@ serve(async (req) => {
             .eq("id", lead_id);
 
           console.log(`✅ Lead ${lead_id}: ${currentLead?.pipeline_stage} → ${newStage}`);
+
+          // Send Calendly booking SMS when stage moves to 'booked'
+          if (newStage === "booked" && currentLead?.phone_number) {
+            const calendlyLink = Deno.env.get("CALENDLY_LINK") || "https://calendly.com/brandarodigital-sales/website-strategy-call";
+            const bizName = currentLead.business_name || "there";
+            const bookingMsg = `Hi ${bizName}, great news — I'd love to show you your website demo on a quick call. Book a time that works for you here: ${calendlyLink} Talk soon!`;
+            
+            try {
+              const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+              const svcKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+              await fetch(`${supabaseUrl}/functions/v1/send-sms`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Authorization: `Bearer ${svcKey}` },
+                body: JSON.stringify({ phone_number: currentLead.phone_number, message: bookingMsg }),
+              });
+              console.log(`📅 Calendly booking SMS sent to lead ${lead_id}`);
+            } catch (e) {
+              console.error(`Failed to send Calendly SMS for lead ${lead_id}:`, e);
+            }
+          }
         }
       }
 

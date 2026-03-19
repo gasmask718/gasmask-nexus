@@ -110,15 +110,63 @@ function LeadProfileDialog({
             </CardContent>
           </Card>
 
-          {/* AI Takeover Toggle */}
-          <div className="space-y-3">
-            <AITakeoverToggle
-              leadId={lead.id}
-              businessName={lead.business_name || "Lead"}
-              phoneNumber={lead.phone_number}
-              aiPaused={aiPaused}
-              onToggle={setLocalAiPaused}
-            />
+           {/* Calendly Buttons */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">📅 Booking Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  size="sm"
+                  className="w-full justify-start"
+                  onClick={async () => {
+                    if (!lead.phone_number) { toast.error("No phone number"); return; }
+                    try {
+                      await supabase.functions.invoke("send-sms", {
+                        body: {
+                          phone_number: lead.phone_number,
+                          message: `Hi ${lead.business_name || "there"}, here's my booking link to schedule your website review call: https://calendly.com/brandarodigital-sales/website-strategy-call`,
+                        },
+                      });
+                      toast.success("Booking link sent");
+                    } catch { toast.error("Failed to send"); }
+                  }}
+                >
+                  📅 Send Booking Link
+                </Button>
+                {(lead.pipeline_stage === "interested" || ((lead as any).service_interest || "").includes("funding")) && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={async () => {
+                      if (!lead.phone_number) { toast.error("No phone number"); return; }
+                      try {
+                        await supabase.functions.invoke("send-sms", {
+                          body: {
+                            phone_number: lead.phone_number,
+                            message: `Hi ${lead.business_name || "there"}, here's the link to book your free funding consultation: https://calendly.com/brandarodigital-sales/funding-consultation`,
+                          },
+                        });
+                        toast.success("Funding link sent");
+                      } catch { toast.error("Failed to send"); }
+                    }}
+                  >
+                    💰 Send Funding Call Link
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* AI Takeover Toggle */}
+            <div className="space-y-3">
+              <AITakeoverToggle
+                leadId={lead.id}
+                businessName={lead.business_name || "Lead"}
+                phoneNumber={lead.phone_number}
+                aiPaused={aiPaused}
+                onToggle={setLocalAiPaused}
+              />
 
             <Card>
               <CardHeader className="pb-2">
