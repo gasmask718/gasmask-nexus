@@ -155,40 +155,39 @@ export function CsvLeadImporter({ onComplete }: { onComplete?: () => void }) {
         }
       }
 
-      // Insert in batches
-      for (let b = 0; b < cleanedRows.length; b += batchSize) {
-        const batch = cleanedRows.slice(b, b + batchSize);
+      // Insert row-by-row with dedup check
+      for (let i = 0; i < cleanedRows.length; i++) {
+        const row = cleanedRows[i];
         try {
-          const { error } = await (supabase as any)
+          // Check for existing lead by phone
+          const { data: existing } = await (supabase as any)
             .from("brandaro_qualified_leads")
-            .upsert(batch, { onConflict: "phone_number", ignoreDuplicates: true });
+            .select("id")
+            .eq("phone_number", row.phone_number)
+            .limit(1)
+            .maybeSingle();
 
-          if (error) {
-            // Try row-by-row for this batch
-            for (const singleRow of batch) {
-              try {
-                const { error: sErr } = await (supabase as any)
-                  .from("brandaro_qualified_leads")
-                  .upsert([singleRow], { onConflict: "phone_number", ignoreDuplicates: true });
-                if (sErr) {
-                  skipped++;
-                  errors.push(`"${singleRow.business_name}": ${sErr.message}`);
-                } else {
-                  imported++;
-                }
-              } catch {
-                skipped++;
-              }
-            }
+          if (existing) {
+            skipped++;
           } else {
-            imported += batch.length;
+            const { error: insertErr } = await (supabase as any)
+              .from("brandaro_qualified_leads")
+              .insert([row]);
+            if (insertErr) {
+              skipped++;
+              errors.push(`"${row.business_name}": ${insertErr.message}`);
+            } else {
+              imported++;
+            }
           }
-        } catch (batchErr: any) {
-          errors.push(`Batch error: ${batchErr.message}`);
-          skipped += batch.length;
+        } catch (rowErr: any) {
+          skipped++;
+          errors.push(`"${row.business_name}": ${rowErr.message}`);
         }
 
-        setProgress(Math.round(((b + batch.length) / cleanedRows.length) * 100));
+        if (i % 10 === 0) {
+          setProgress(Math.round(((i + 1) / cleanedRows.length) * 100));
+        }
       }
 
       setResult({ imported, skipped, errors: errors.slice(0, 20), total: rawRows.length });
