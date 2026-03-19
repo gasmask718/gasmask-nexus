@@ -151,6 +151,46 @@ export default function SystemStatusPage() {
             : data?.edge_function_checks.map((check) => <CheckRow key={check.name} check={check} />)}
         </CardContent>
       </Card>
+
+      {/* Booking Links */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            📅 Booking Links
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {[
+            { label: "Website Strategy Call", url: "https://calendly.com/brandarodigital-sales/website-strategy-call" },
+            { label: "Funding Consultation", url: "https://calendly.com/brandarodigital-sales/funding-consultation" },
+          ].map((link) => (
+            <div key={link.label} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <div>
+                  <span className="font-medium">{link.label}</span>
+                  <p className="text-xs text-muted-foreground">{link.url}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(link.url);
+                    window.alert("Copied!");
+                  }}
+                >
+                  Copy Link
+                </Button>
+                <Button size="sm" variant="outline" asChild>
+                  <a href={link.url} target="_blank" rel="noreferrer">Open</a>
+                </Button>
+              </div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

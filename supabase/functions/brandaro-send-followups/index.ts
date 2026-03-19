@@ -66,7 +66,15 @@ Deno.serve(async (req) => {
             continue;
           }
 
-          const result = await sendTwilioSms(phone, followup.message_content, lead.business_name);
+          // Append Calendly link on 2nd+ follow-up attempt
+          let messageContent = followup.message_content;
+          const attemptNumber = followup.retry_count || 0;
+          if (attemptNumber >= 2) {
+            const calendlyLink = Deno.env.get("CALENDLY_LINK") || "https://calendly.com/brandarodigital-sales/website-strategy-call";
+            messageContent += ` P.S. You can also grab a quick 15-min call here to see your demo live: ${calendlyLink}`;
+          }
+
+          const result = await sendTwilioSms(phone, messageContent, lead.business_name);
           
           await supabase.from("brandaro_followup_sequences").update({
             status: "sent",
