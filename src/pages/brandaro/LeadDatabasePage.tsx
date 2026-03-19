@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Database, Phone, Star, MapPin, Filter, MessageSquare, ListPlus, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast as sonnerToast } from "sonner";
+import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-500/10 text-blue-500",
