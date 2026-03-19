@@ -92,7 +92,6 @@ export default function LeadDatabasePage() {
   const leads = leadsResult?.rows || [];
   const filteredCount = leadsResult?.filteredCount || 0;
   const totalPages = Math.ceil(filteredCount / pageSize);
-  });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
