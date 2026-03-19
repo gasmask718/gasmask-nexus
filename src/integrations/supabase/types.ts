@@ -12941,6 +12941,60 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_discovery_jobs: {
+        Row: {
+          city: string
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          imported_count: number | null
+          industry: string
+          no_website_count: number | null
+          radius_meters: number | null
+          search_query: string
+          skipped_duplicates: number | null
+          started_at: string | null
+          state: string | null
+          status: string | null
+          total_found: number | null
+        }
+        Insert: {
+          city: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          imported_count?: number | null
+          industry: string
+          no_website_count?: number | null
+          radius_meters?: number | null
+          search_query: string
+          skipped_duplicates?: number | null
+          started_at?: string | null
+          state?: string | null
+          status?: string | null
+          total_found?: number | null
+        }
+        Update: {
+          city?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          imported_count?: number | null
+          industry?: string
+          no_website_count?: number | null
+          radius_meters?: number | null
+          search_query?: string
+          skipped_duplicates?: number | null
+          started_at?: string | null
+          state?: string | null
+          status?: string | null
+          total_found?: number | null
+        }
+        Relationships: []
+      }
       brandaro_event_failures: {
         Row: {
           created_at: string | null
@@ -15795,7 +15849,11 @@ export type Database = {
           demo_sent_at: string | null
           demo_status: string | null
           demo_url: string | null
+          discovery_job_id: string | null
           engagement_score: number | null
+          google_maps_url: string | null
+          google_place_id: string | null
+          has_website: boolean | null
           id: string
           industry: string | null
           last_call_at: string | null
@@ -15835,7 +15893,11 @@ export type Database = {
           demo_sent_at?: string | null
           demo_status?: string | null
           demo_url?: string | null
+          discovery_job_id?: string | null
           engagement_score?: number | null
+          google_maps_url?: string | null
+          google_place_id?: string | null
+          has_website?: boolean | null
           id?: string
           industry?: string | null
           last_call_at?: string | null
@@ -15875,7 +15937,11 @@ export type Database = {
           demo_sent_at?: string | null
           demo_status?: string | null
           demo_url?: string | null
+          discovery_job_id?: string | null
           engagement_score?: number | null
+          google_maps_url?: string | null
+          google_place_id?: string | null
+          has_website?: boolean | null
           id?: string
           industry?: string | null
           last_call_at?: string | null
