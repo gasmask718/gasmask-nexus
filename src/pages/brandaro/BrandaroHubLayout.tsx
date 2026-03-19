@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
+import { AIApprovalDrawer } from "@/components/brandaro/AIApprovalDrawer";
 
 const hubNav = [
   { section: "Command", items: [
@@ -165,10 +166,11 @@ export default function BrandaroHubLayout() {
 
       {/* Content area */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-9 flex items-center border-b border-border/30 px-3 gap-2 shrink-0">
+        <header className="h-9 flex items-center justify-between border-b border-border/30 px-3 gap-2 shrink-0">
           <Badge variant="outline" className="text-[10px] border-orange-500/30 text-orange-600">
             <Swords className="h-3 w-3 mr-1" /> BRANDARO HUB
           </Badge>
+          <AIApprovalDrawer />
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Outlet />
