@@ -211,6 +211,33 @@ serve(async (req) => {
         console.log(`[BRANDARO-WEBHOOK] Post-payment success for ${proposalId}`, postResult);
       }
 
+      // FIX 3: Pipeline automator event for revenue attribution
+      if (leadId) {
+        try {
+          await supabase.functions.invoke("brandaro-pipeline-automator", {
+            body: {
+              action: "record_event",
+              lead_id: leadId,
+              event_type: "revenue_recorded",
+              message_content: `Payment confirmed: $${(session.amount_total || 0) / 100}`,
+            },
+          });
+
+          await supabase
+            .from("brandaro_qualified_leads")
+            .update({
+              converted: true,
+              revenue_amount: (session.amount_total || 0) / 100,
+              conversion_date: new Date().toISOString(),
+            })
+            .eq("id", leadId);
+
+          console.log(`[BRANDARO-WEBHOOK] Revenue event + conversion recorded for lead ${leadId}`);
+        } catch (revErr: any) {
+          console.error("[BRANDARO-WEBHOOK] Revenue pipeline event failed:", revErr.message);
+        }
+      }
+
       // If maintenance was selected, create Stripe subscription
       if (metadata.include_maintenance === "true" && session.customer) {
         try {
