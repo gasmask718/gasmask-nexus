@@ -49,7 +49,7 @@ export function useBrandaroPipeline(filters?: {
         .from("brandaro_qualified_leads")
         .select("*")
         .order("priority_score", { ascending: false })
-        .limit(500);
+        .limit(1000);
 
       if (filters?.city) query = query.ilike("city", `%${filters.city}%`);
       if (filters?.industry) query = query.ilike("industry", `%${filters.industry}%`);
