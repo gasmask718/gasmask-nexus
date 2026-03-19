@@ -360,6 +360,28 @@ export default function LeadDatabasePage() {
             </Table>
           </div>
         </CardContent>
+        {/* Pagination */}
+        <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+          <span className="text-sm text-muted-foreground">
+            Displaying {filteredCount === 0 ? 0 : page * pageSize + 1}–{Math.min((page + 1) * pageSize, filteredCount)} of {filteredCount} leads
+          </span>
+          <div className="flex items-center gap-2">
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(0); }}>
+              <SelectTrigger className="h-8 w-24 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+                <SelectItem value="200">200</SelectItem>
+                <SelectItem value="1000">All</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Previous</Button>
+            <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages || 1}</span>
+            <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</Button>
+          </div>
+        </div>
       </Card>
     </div>
   );
