@@ -64,7 +64,7 @@ export default function LeadDatabasePage() {
       const { count } = await supabase
         .from("brandaro_qualified_leads")
         .select("*", { count: "exact", head: true })
-        .or("website_status.eq.no_website,has_website.eq.false,website.is.null");
+        .or("has_website.eq.false,has_website.is.null,website_status.eq.no_website,website_status.is.null");
       return count || 0;
     },
   });
