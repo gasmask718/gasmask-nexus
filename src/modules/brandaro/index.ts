@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -19,6 +19,7 @@ import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
 import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
+import SystemStatusPage from '@/pages/brandaro/SystemStatusPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -43,6 +44,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/google-domination', label: 'Google Domination', icon: Crown },
   { path: '/os/brandaro/optimization', label: 'Optimization Engine', icon: Cpu },
   { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
+  { path: '/os/brandaro/system-status', label: 'System Status', icon: Activity },
 ];
 
 export const BrandaroModule: DynastyModule = {
@@ -78,6 +80,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/clients', component: ClientPortalPage, label: 'Client Portal', icon: Users, requiresAuth: true },
     { path: '/revenue', component: RevenueAnalyticsPage, label: 'Revenue Analytics', icon: TrendingUp, requiresAuth: true },
     { path: '/closer-ai', component: CloserAIPage, label: 'Closer AI', icon: Brain, requiresAuth: true },
+    { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,
