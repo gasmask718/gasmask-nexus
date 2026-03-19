@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Database, Phone, Star, MapPin, Filter, MessageSquare, ListPlus, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast as sonnerToast } from "sonner";
+import { CsvLeadImporter } from "@/components/brandaro/CsvLeadImporter";
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-500/10 text-blue-500",
@@ -144,12 +145,17 @@ export default function LeadDatabasePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Database className="h-6 w-6 text-cyan-500" />
-          Lead Database
-        </h1>
-        <p className="text-muted-foreground">Qualified leads with priority scoring and status tracking</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Database className="h-6 w-6 text-cyan-500" />
+            Lead Database
+          </h1>
+          <p className="text-muted-foreground">Qualified leads with priority scoring and status tracking</p>
+        </div>
+        <div className="w-80 shrink-0">
+          <CsvLeadImporter onComplete={() => queryClient.invalidateQueries({ queryKey: ["brandaro-qualified-leads"] })} />
+        </div>
       </div>
 
       {/* Filters */}
