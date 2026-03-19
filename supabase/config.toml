@@ -372,3 +372,6 @@ verify_jwt = false
 
 [functions.brandaro-lead-discovery]
 verify_jwt = false
+
+[functions.system-health-check]
+verify_jwt = false
