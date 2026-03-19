@@ -44,15 +44,39 @@ export default function LeadDatabasePage() {
   const [callingId, setCallingId] = useState<string | null>(null);
   const [textingId, setTextingId] = useState<string | null>(null);
   const [queuingId, setQueuingId] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(100);
 
-  const { data: leads, isLoading } = useQuery({
-    queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, filterWebsite, search],
+  // Total counts query (unfiltered)
+  const { data: totalCount } = useQuery({
+    queryKey: ["brandaro-leads-total"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("brandaro_qualified_leads")
+        .select("*", { count: "exact", head: true });
+      return count || 0;
+    },
+  });
+
+  const { data: noWebsiteCount } = useQuery({
+    queryKey: ["brandaro-leads-no-website"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("brandaro_qualified_leads")
+        .select("*", { count: "exact", head: true })
+        .or("website_status.eq.no_website,has_website.eq.false,website.is.null");
+      return count || 0;
+    },
+  });
+
+  const { data: leadsResult, isLoading } = useQuery({
+    queryKey: ["brandaro-qualified-leads", filterTier, filterStatus, filterWebsite, search, page, pageSize],
     queryFn: async () => {
       let query = supabase
         .from("brandaro_qualified_leads")
-        .select("*")
+        .select("*", { count: "exact" })
         .order("priority_score", { ascending: false })
-        .limit(200);
+        .range(page * pageSize, (page + 1) * pageSize - 1);
 
       if (filterTier !== "all") query = query.eq("priority_tier", filterTier);
       if (filterStatus !== "all") query = query.eq("lead_status", filterStatus);
@@ -60,9 +84,14 @@ export default function LeadDatabasePage() {
       if (filterWebsite === "has_website") query = query.eq("website_status", "has_website");
       if (search) query = query.ilike("business_name", `%${search}%`);
 
-      const { data } = await query;
-      return data || [];
+      const { data, count } = await query;
+      return { rows: data || [], filteredCount: count || 0 };
     },
+  });
+
+  const leads = leadsResult?.rows || [];
+  const filteredCount = leadsResult?.filteredCount || 0;
+  const totalPages = Math.ceil(filteredCount / pageSize);
   });
 
   const updateStatus = useMutation({
