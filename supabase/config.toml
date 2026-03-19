@@ -375,3 +375,6 @@ verify_jwt = false
 
 [functions.system-health-check]
 verify_jwt = false
+
+[functions.brandaro-ai-caller]
+verify_jwt = false
