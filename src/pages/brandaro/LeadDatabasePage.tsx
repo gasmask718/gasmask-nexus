@@ -234,12 +234,10 @@ export default function LeadDatabasePage() {
                 <SelectItem value="has_website">Has Website</SelectItem>
               </SelectContent>
             </Select>
-            <Badge variant="outline">{leads?.length || 0} leads</Badge>
-            {leads && (
-              <Badge variant="destructive" className="gap-1">
-                🔥 {leads.filter(l => (l as any).website_status === "no_website").length} No Website
-              </Badge>
-            )}
+            <Badge variant="outline">{totalCount ?? "..."} total leads</Badge>
+            <Badge variant="destructive" className="gap-1">
+              🔥 {noWebsiteCount ?? "..."} No Website
+            </Badge>
           </div>
         </CardContent>
       </Card>
