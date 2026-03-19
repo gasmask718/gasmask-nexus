@@ -80,7 +80,7 @@ export default function LeadDatabasePage() {
 
       if (filterTier !== "all") query = query.eq("priority_tier", filterTier);
       if (filterStatus !== "all") query = query.eq("lead_status", filterStatus);
-      if (filterWebsite === "no_website") query = query.eq("website_status", "no_website");
+      if (filterWebsite === "no_website") query = query.or("has_website.eq.false,has_website.is.null,website_status.eq.no_website,website_status.is.null");
       if (filterWebsite === "has_website") query = query.eq("website_status", "has_website");
       if (search) query = query.ilike("business_name", `%${search}%`);
 
