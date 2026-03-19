@@ -71,13 +71,11 @@ serve(async (req) => {
         } else if (interestKeywords.some((k) => lower.includes(k))) {
           newStage = "interested";
         } else {
-          // Any reply = at least "responded"
           newStage = "responded";
         }
       }
 
       if (newStage) {
-        // Only advance forward (never regress), except for "lost"
         const stageOrder = ["new", "contacted", "responded", "interested", "booked", "closed"];
         const { data: currentLead } = await sb
           .from("brandaro_qualified_leads")
@@ -132,6 +130,39 @@ serve(async (req) => {
         }
       }
 
+      // FIX 4: Auto-trigger follow-ups for responded leads needing attention
+      const { data: followUpLeads } = await sb
+        .from("brandaro_qualified_leads")
+        .select("id, phone_number, business_name, pipeline_stage, last_call_at")
+        .eq("pipeline_stage", "responded")
+        .lt("last_call_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .eq("ai_paused", false)
+        .limit(10);
+
+      if (followUpLeads && followUpLeads.length > 0) {
+        await sb.functions.invoke("brandaro-send-followups", {
+          body: { leads: followUpLeads, trigger: "pipeline_automator_auto" },
+        });
+        console.log(`📤 Auto-triggered follow-ups for ${followUpLeads.length} responded leads`);
+      }
+
+      // FIX 4: Re-engage stuck leads (contacted > 48h, no response)
+      const { data: stuckLeads } = await sb
+        .from("brandaro_qualified_leads")
+        .select("id, phone_number, business_name, pipeline_stage, last_call_at, call_attempts")
+        .eq("pipeline_stage", "contacted")
+        .lt("last_call_at", new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
+        .eq("ai_paused", false)
+        .lt("call_attempts", 4)
+        .limit(5);
+
+      if (stuckLeads && stuckLeads.length > 0) {
+        await sb.functions.invoke("brandaro-auto-striker", {
+          body: { leads: stuckLeads, trigger: "stuck_reengagement" },
+        });
+        console.log(`🔁 Auto-triggered re-engagement for ${stuckLeads.length} stuck leads`);
+      }
+
       return new Response(JSON.stringify({ success: true, leads_moved: moved }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -141,7 +172,6 @@ serve(async (req) => {
     if (action === "get_insights") {
       const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-      // Stuck: in "contacted" for >48h with no advancement
       const { data: stuck } = await sb
         .from("brandaro_qualified_leads")
         .select("id, business_name, phone_number, city, industry, pipeline_stage, updated_at, priority_score")
@@ -150,7 +180,6 @@ serve(async (req) => {
         .order("priority_score", { ascending: false })
         .limit(20);
 
-      // Needs follow-up: "responded" but not yet "interested"
       const { data: needsFollowup } = await sb
         .from("brandaro_qualified_leads")
         .select("id, business_name, phone_number, city, industry, pipeline_stage, updated_at, priority_score, engagement_score")
@@ -158,13 +187,27 @@ serve(async (req) => {
         .order("priority_score", { ascending: false })
         .limit(20);
 
-      // Hot leads: high engagement/score in interested+
       const { data: hot } = await sb
         .from("brandaro_qualified_leads")
         .select("id, business_name, phone_number, city, industry, pipeline_stage, priority_score, engagement_score")
         .in("pipeline_stage", ["interested", "booked"])
         .order("priority_score", { ascending: false })
         .limit(20);
+
+      // FIX 4: Auto-trigger follow-ups for identified leads
+      if (needsFollowup && needsFollowup.length > 0) {
+        const staleFollowups = needsFollowup.filter((l: any) => {
+          if (!l.updated_at) return true;
+          return new Date(l.updated_at).getTime() < Date.now() - 24 * 60 * 60 * 1000;
+        });
+
+        if (staleFollowups.length > 0) {
+          await sb.functions.invoke("brandaro-send-followups", {
+            body: { leads: staleFollowups.slice(0, 10), trigger: "insights_auto" },
+          });
+          console.log(`📤 Insights auto-triggered follow-ups for ${staleFollowups.length} leads`);
+        }
+      }
 
       return new Response(JSON.stringify({ stuck: stuck || [], needsFollowup: needsFollowup || [], hot: hot || [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -174,7 +217,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: "Unknown action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e) {
+  } catch (e: any) {
     console.error("Pipeline automator error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },

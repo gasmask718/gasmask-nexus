@@ -357,3 +357,15 @@ verify_jwt = false
 
 [functions.brandaro-pipeline-automator]
 verify_jwt = false
+
+[functions.intent-classifier]
+verify_jwt = false
+
+[functions.sms-writer]
+verify_jwt = false
+
+[functions.website-pitch-writer]
+verify_jwt = false
+
+[functions.objection-handler]
+verify_jwt = false
