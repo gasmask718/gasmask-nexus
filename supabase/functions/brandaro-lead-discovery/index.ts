@@ -29,6 +29,16 @@ serve(async (req) => {
 
     if (!googleKey) throw new Error('GOOGLE_PLACES_API_KEY secret is not configured');
 
+    // Test the API key works at all
+    const testUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=restaurant+Miami&key=${googleKey}`;
+    const testRes = await fetch(testUrl);
+    const testData = await testRes.json();
+    console.log('API KEY TEST:', testData.status, 'results:', testData.results?.length || 0);
+
+    if (testData.status === 'REQUEST_DENIED') {
+      throw new Error('Google Places API key is denied — check API restrictions in Google Console: ' + (testData.error_message || ''));
+    }
+
     // Update job status
     await supabase
       .from('brandaro_discovery_jobs')
@@ -52,18 +62,20 @@ serve(async (req) => {
     const { lat, lng } = location;
     console.log('GEOCODED:', lat, lng);
 
-    // Step 2: Text Search — primary queries
+    // Step 2: Text Search — plain text query (no location/radius for primary)
     const searchQueries = [
-      `${industry} in ${city}`,
+      `${industry} in ${city} ${state}`,
       `${industry} near ${city} ${state}`,
     ];
 
     let allPlaces: any[] = [];
 
     for (const query of searchQueries) {
-      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius_meters}&key=${googleKey}`;
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${googleKey}`;
       const searchRes = await fetch(searchUrl);
-      const searchData = await searchRes.json();
+      const rawText = await searchRes.text();
+      console.log(`RAW SEARCH "${query}":`, rawText.substring(0, 1000));
+      const searchData = JSON.parse(rawText);
 
       console.log(`SEARCH "${query}": status=${searchData.status}, results=${searchData.results?.length || 0}`);
 
@@ -75,17 +87,19 @@ serve(async (req) => {
       await new Promise(r => setTimeout(r, 300));
     }
 
-    // Fallback queries if primary returned nothing
+    // Fallback queries with location/radius if primary returned nothing
     if (allPlaces.length === 0) {
-      console.log('PRIMARY QUERIES RETURNED 0 — trying fallbacks');
+      console.log('PRIMARY QUERIES RETURNED 0 — trying fallback with location/radius');
       const fallbackQueries = [
         `${industry} ${city}`,
         `${industry}`,
       ];
       for (const query of fallbackQueries) {
-        const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius_meters}&key=${googleKey}`;
-        const searchRes = await fetch(searchUrl);
-        const searchData = await searchRes.json();
+        const backupUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=50000&key=${googleKey}`;
+        const searchRes = await fetch(backupUrl);
+        const rawText = await searchRes.text();
+        console.log(`RAW FALLBACK "${query}":`, rawText.substring(0, 1000));
+        const searchData = JSON.parse(rawText);
         console.log(`FALLBACK SEARCH "${query}": status=${searchData.status}, results=${searchData.results?.length || 0}`);
         if (searchData.results) allPlaces = [...allPlaces, ...searchData.results];
         await new Promise(r => setTimeout(r, 300));
@@ -100,7 +114,7 @@ serve(async (req) => {
       return true;
     });
 
-    // Hard limit to stay under edge function timeout
+    // Hard limit
     allPlaces = allPlaces.slice(0, 40);
 
     console.log(`AFTER DEDUP+LIMIT: ${allPlaces.length} places to process`);
@@ -136,6 +150,7 @@ serve(async (req) => {
           && !websiteUrl.includes('fb.com')
           && !websiteUrl.includes('instagram.com')
           && !websiteUrl.includes('yelp.com')
+          && !websiteUrl.includes('yellowpages.com')
           && !websiteUrl.includes('google.com')
           && !websiteUrl.includes('maps.google')
           && !websiteUrl.includes('goo.gl');
@@ -148,9 +163,10 @@ serve(async (req) => {
         }
         noWebsiteCount++;
 
-        // Phone is optional now
+        // Phone is optional — still import without it
         const rawPhone = p.formatted_phone_number || '';
         const phone = rawPhone ? normalizePhone(rawPhone) : null;
+        // Don't skip if no phone — still import the lead
 
         // Dedup check
         if (phone) {
