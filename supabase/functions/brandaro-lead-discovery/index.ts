@@ -20,8 +20,14 @@ serve(async (req) => {
     const { job_id, city, state, industry, radius_meters = 40000 } = await req.json();
     jobId = job_id;
 
-    const googleKey = Deno.env.get('GOOGLE_PLACES_API_KEY')!;
-    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY')!;
+    const googleKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
+    const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
+
+    console.log('JOB STARTED:', job_id, city, state, industry, radius_meters);
+    console.log('GOOGLE KEY EXISTS:', !!googleKey);
+    console.log('ANTHROPIC KEY EXISTS:', !!anthropicKey);
+
+    if (!googleKey) throw new Error('GOOGLE_PLACES_API_KEY secret is not configured');
 
     // Update job status
     await supabase
@@ -29,46 +35,40 @@ serve(async (req) => {
       .update({ status: 'running', started_at: new Date().toISOString() })
       .eq('id', job_id);
 
-    // Step 1: Geocode city
+    // Step 1: Geocode city — also serves as API key validation
     const geoRes = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(city + ', ' + state)}&key=${googleKey}`
     );
     const geoData = await geoRes.json();
+    console.log('GEOCODE STATUS:', geoData.status);
+
+    if (geoData.status === 'REQUEST_DENIED' || geoData.status === 'INVALID_REQUEST') {
+      throw new Error(`Google API error: ${geoData.status} — ${geoData.error_message || 'check API key'}`);
+    }
+
     const location = geoData.results?.[0]?.geometry?.location;
     if (!location) throw new Error(`Could not geocode: ${city}, ${state}`);
 
     const { lat, lng } = location;
+    console.log('GEOCODED:', lat, lng);
 
-    // Step 2: Text Search for businesses
+    // Step 2: Text Search — use only 2 queries to stay fast
     const searchQueries = [
       `${industry} in ${city}`,
-      `${industry} near ${city}`,
-      `${industry} company ${city}`,
-      `${industry} service ${city}`,
-      `${industry} business ${city}`,
+      `${industry} near ${city} ${state}`,
     ];
 
     let allPlaces: any[] = [];
 
     for (const query of searchQueries) {
-      let nextPageToken: string | null = null;
-      let pageCount = 0;
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius_meters}&key=${googleKey}`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
 
-      do {
-        const searchUrl = nextPageToken
-          ? `https://maps.googleapis.com/maps/api/place/textsearch/json?pagetoken=${nextPageToken}&key=${googleKey}`
-          : `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${lat},${lng}&radius=${radius_meters}&key=${googleKey}`;
+      console.log(`SEARCH "${query}": status=${searchData.status}, results=${searchData.results?.length || 0}`);
 
-        const searchRes = await fetch(searchUrl);
-        const searchData = await searchRes.json();
-        if (searchData.results) allPlaces = [...allPlaces, ...searchData.results];
-
-        nextPageToken = searchData.next_page_token || null;
-        pageCount++;
-        if (nextPageToken && pageCount < 3) await new Promise(r => setTimeout(r, 2000));
-      } while (nextPageToken && pageCount < 3);
-
-      await new Promise(r => setTimeout(r, 500));
+      if (searchData.results) allPlaces = [...allPlaces, ...searchData.results];
+      await new Promise(r => setTimeout(r, 300));
     }
 
     // Deduplicate by place_id
@@ -79,9 +79,12 @@ serve(async (req) => {
       return true;
     });
 
-    console.log(`Found ${allPlaces.length} total places for ${industry} in ${city}`);
+    // Hard limit to stay under edge function timeout
+    allPlaces = allPlaces.slice(0, 25);
 
-    // Step 3: Get details, filter no-website, import
+    console.log(`AFTER DEDUP+LIMIT: ${allPlaces.length} places to process`);
+
+    // Step 3: Get details for each place, filter no-website, import
     let imported = 0;
     let skipped = 0;
     let noWebsiteCount = 0;
@@ -89,7 +92,7 @@ serve(async (req) => {
     for (const place of allPlaces) {
       try {
         const detailRes = await fetch(
-          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,formatted_address,website,rating,user_ratings_total,business_status,address_components,geometry,types&key=${googleKey}`
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=name,formatted_phone_number,formatted_address,website,rating,user_ratings_total,business_status,address_components,types&key=${googleKey}`
         );
         const detailData = await detailRes.json();
         const p = detailData.result;
@@ -98,7 +101,10 @@ serve(async (req) => {
         if (p.business_status && p.business_status !== 'OPERATIONAL') continue;
 
         const hasWebsite = !!(p.website && p.website.trim() !== '' && !p.website.includes('facebook.com'));
-        if (hasWebsite) continue;
+        if (hasWebsite) {
+          console.log(`SKIP (has website): ${p.name}`);
+          continue;
+        }
         noWebsiteCount++;
 
         const phone = normalizePhone(p.formatted_phone_number);
@@ -117,13 +123,16 @@ serve(async (req) => {
         const addressComps = p.address_components || [];
         const getComp = (type: string) => addressComps.find((c: any) => c.types.includes(type))?.long_name || '';
         const cityName = getComp('locality') || getComp('sublocality') || city;
-        const stateName = getComp('administrative_area_level_1');
+        const stateName = getComp('administrative_area_level_1') || state;
         const postalCode = getComp('postal_code');
         const streetNum = getComp('street_number');
         const streetName = getComp('route');
         const address = [streetNum, streetName].filter(Boolean).join(' ');
 
-        const score = await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types);
+        // Score with Claude (or fallback)
+        const score = anthropicKey
+          ? await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types)
+          : { priority_score: 5 };
 
         await supabase.from('brandaro_qualified_leads').insert({
           business_name: p.name,
@@ -152,12 +161,15 @@ serve(async (req) => {
         });
 
         imported++;
-        await new Promise(r => setTimeout(r, 200));
+        console.log(`IMPORTED: ${p.name} (score: ${score.priority_score})`);
+        await new Promise(r => setTimeout(r, 150));
       } catch (leadErr) {
-        console.error('Error processing place:', leadErr);
+        console.error('Error processing place:', (leadErr as Error).message);
         continue;
       }
     }
+
+    console.log(`JOB COMPLETE: found=${allPlaces.length}, noWebsite=${noWebsiteCount}, imported=${imported}, skipped=${skipped}`);
 
     // Update job completed
     await supabase.from('brandaro_discovery_jobs').update({
@@ -175,7 +187,7 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e: any) {
-    console.error('Discovery error:', e);
+    console.error('Discovery error:', e.message);
     if (jobId) {
       await supabase.from('brandaro_discovery_jobs').update({
         status: 'failed', error_message: e.message,
