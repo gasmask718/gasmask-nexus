@@ -234,6 +234,15 @@ serve(async (req) => {
           converted: false,
         });
 
+        // Wire into pipeline automator
+        try {
+          await supabase.functions.invoke("brandaro-pipeline-automator", {
+            body: { action: "record_event", lead_id: place.place_id, event_type: "lead_imported" },
+          });
+        } catch {
+          // Non-blocking — lead is already saved
+        }
+
         imported++;
         console.log(`IMPORTED: ${p.name} (score: ${score.priority_score})`);
         await new Promise(r => setTimeout(r, 150));
