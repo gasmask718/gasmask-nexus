@@ -247,10 +247,26 @@ export default function CRMPipelinePage() {
 
   const { autoMove } = usePipelineInsights();
 
-  const handleMove = (id: string, stage: string) => {
-    moveLead.mutate({ leadId: id, stage });
-    if (selectedLead?.id === id) {
-      setSelectedLead({ ...selectedLead, pipeline_stage: stage });
+  const syncPipeline = async () => {
+    setSyncing(true);
+    try {
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-fix-imports`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      await queryClient.invalidateQueries();
+      toast.success("Pipeline synced — all leads refreshed");
+    } catch (err: any) {
+      toast.error(err?.message || "Sync failed");
+    } finally {
+      setSyncing(false);
     }
   };
 
