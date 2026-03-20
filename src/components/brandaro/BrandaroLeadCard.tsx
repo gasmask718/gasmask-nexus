@@ -5,8 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   Phone, MessageSquare, Globe, User, ArrowUp, ArrowDown, Minus,
-  Link2, ChevronLeft, ChevronRight, Loader2, Pause,
+  Link2, ChevronLeft, ChevronRight, Loader2, Pause, Bot,
 } from "lucide-react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import { PipelineLead, PIPELINE_STAGES } from "@/hooks/useBrandaroPipeline";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -33,6 +39,7 @@ export function BrandaroLeadCard({
   onBuildDemo?: (lead: PipelineLead) => void;
 }) {
   const [smsLoading, setSmsLoading] = useState(false);
+  const [aiCallLoading, setAiCallLoading] = useState(false);
   const stageIdx = PIPELINE_STAGES.findIndex((s) => s.key === lead.pipeline_stage);
   const nextStage = PIPELINE_STAGES[stageIdx + 1];
   const prevStage = stageIdx > 0 ? PIPELINE_STAGES[stageIdx - 1] : null;
@@ -62,6 +69,21 @@ export function BrandaroLeadCard({
       toast.error("Failed to generate SMS");
     } finally {
       setSmsLoading(false);
+    }
+  };
+
+  const handleAiCall = async () => {
+    setAiCallLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("brandaro-ai-caller", {
+        body: { lead_id: lead.id },
+      });
+      if (error) throw error;
+      toast.success(`AI call initiated to ${lead.business_name || "lead"}`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to initiate AI call");
+    } finally {
+      setAiCallLoading(false);
     }
   };
 
@@ -132,15 +154,41 @@ export function BrandaroLeadCard({
         className="grid grid-cols-4 border-t border-border/50"
         onClick={(e) => e.stopPropagation()}
       >
-        <Button
-          variant="ghost"
-          className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
-          onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)}
-          disabled={!lead.phone_number}
-        >
-          <Phone className="h-3.5 w-3.5" />
-          Call
-        </Button>
+        {/* Call button with context menu for AI call option */}
+        <ContextMenu>
+          <ContextMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
+              onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)}
+              disabled={!lead.phone_number || aiCallLoading}
+            >
+              {aiCallLoading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Phone className="h-3.5 w-3.5" />
+              )}
+              Call
+            </Button>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem
+              onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)}
+              disabled={!lead.phone_number}
+            >
+              <Phone className="h-3.5 w-3.5 mr-2" />
+              📞 Call manually
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={handleAiCall}
+              disabled={!lead.phone_number || aiCallLoading}
+            >
+              <Bot className="h-3.5 w-3.5 mr-2" />
+              🤖 Send AI call
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+
         <Button
           variant="ghost"
           className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
