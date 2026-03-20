@@ -374,6 +374,9 @@ export default function AppSidebar() {
 
             {/* Floor 9 - AI Operations */}
             {renderSection('floor-9', 'Floor 9: AI Operations', '🤖', [
+              { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
+              { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🚚' },
+              { path: '/gasmask/driver-route', label: 'Driver View', emoji: '📍' },
               { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
               { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
               { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
@@ -400,24 +403,29 @@ export default function AppSidebar() {
                 { path: '/grabba/brand/gasmask', label: 'GasMask Dashboard', emoji: '📊' },
                 { path: '/gasmask/stores', label: 'GasMask Stores', emoji: '🏪' },
                 { path: '/gasmask/inventory', label: 'GasMask Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
+                { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🚚' },
               ], "text-red-400 hover:bg-red-500/10")}
 
               {renderSection('hotmama-os', 'HotMama OS', '🟣', [
                 { path: '/grabba/brand/hotmama', label: 'HotMama Dashboard', emoji: '📊' },
                 { path: '/hotmama/stores', label: 'HotMama Stores', emoji: '🏪' },
                 { path: '/hotmama/inventory', label: 'HotMama Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-rose-400 hover:bg-rose-500/10")}
 
               {renderSection('scalati-os', 'Hot Scalati OS', '🟠', [
                 { path: '/grabba/brand/scalati', label: 'Scalati Dashboard', emoji: '📊' },
                 { path: '/scalati/stores', label: 'Scalati Stores', emoji: '🏪' },
                 { path: '/scalati/inventory', label: 'Scalati Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-orange-400 hover:bg-orange-500/10")}
 
               {renderSection('grabba-rus-os', 'Grabba R Us OS', '🟪', [
                 { path: '/grabba/brand/grabba', label: 'Grabba Dashboard', emoji: '📊' },
                 { path: '/grabba/stores', label: 'Grabba Stores', emoji: '🏪' },
                 { path: '/grabba/brand-inventory', label: 'Grabba Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-purple-400 hover:bg-purple-500/10")}
             </div>
           )}
