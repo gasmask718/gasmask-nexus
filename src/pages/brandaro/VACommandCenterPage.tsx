@@ -272,15 +272,25 @@ export default function VACommandCenterPage() {
     }
   };
 
+  const safePipeline = Array.isArray(pipeline) ? pipeline : [];
+  const safeFollowups = Array.isArray(followups) ? followups : [];
+  const safeInbound = Array.isArray(inboundMessages) ? inboundMessages : [];
+  const safeHotLeads = Array.isArray(hotLeads) ? hotLeads : [];
+  const safeDemoRequests = Array.isArray(demoRequests) ? demoRequests : [];
+  const safeFlaggedDemos = Array.isArray(flaggedDemos) ? flaggedDemos : [];
+  const safeRecentCalls = Array.isArray(recentCalls) ? recentCalls : [];
+  const safeVaTasks = Array.isArray(vaTasks) ? vaTasks : [];
+  const safeObjectionLibrary = Array.isArray(objectionLibrary) ? objectionLibrary : [];
+
   const stageCounts = {
-    demo_sent: pipeline.filter((p: any) => p.stage === "demo_sent").length,
-    demo_viewed: pipeline.filter((p: any) => p.stage === "demo_viewed").length,
-    interested: pipeline.filter((p: any) => p.stage === "interested").length,
-    negotiating: pipeline.filter((p: any) => p.stage === "negotiating").length,
-    closed: pipeline.filter((p: any) => p.stage === "closed").length,
+    demo_sent: safePipeline.filter((p: any) => p.stage === "demo_sent").length,
+    demo_viewed: safePipeline.filter((p: any) => p.stage === "demo_viewed").length,
+    interested: safePipeline.filter((p: any) => p.stage === "interested").length,
+    negotiating: safePipeline.filter((p: any) => p.stage === "negotiating").length,
+    closed: safePipeline.filter((p: any) => p.stage === "closed").length,
   };
 
-  const unresolvedInbound = inboundMessages.filter((m: any) => m.requires_va);
+  const unresolvedInbound = safeInbound.filter((m: any) => m.requires_va);
 
   return (
     <div className="p-4 space-y-4">
@@ -294,16 +304,16 @@ export default function VACommandCenterPage() {
         </div>
         <div className="flex gap-2">
           <Badge variant="outline" className="gap-1">
-            <Flame className="h-3 w-3 text-orange-500" /> {hotLeads.length} Hot
+            <Flame className="h-3 w-3 text-orange-500" /> {safeHotLeads.length} Hot
           </Badge>
           <Badge variant="outline" className="gap-1">
             <Reply className="h-3 w-3 text-green-500" /> {unresolvedInbound.length} Replies
           </Badge>
           <Badge variant="outline" className="gap-1">
-            <ShieldCheck className="h-3 w-3 text-red-500" /> {flaggedDemos.length} Flagged
+            <ShieldCheck className="h-3 w-3 text-red-500" /> {safeFlaggedDemos.length} Flagged
           </Badge>
           <Badge variant="outline" className="gap-1">
-            <Clock className="h-3 w-3 text-yellow-500" /> {followups.filter((f: any) => f.status === "pending").length} Pending
+            <Clock className="h-3 w-3 text-yellow-500" /> {safeFollowups.filter((f: any) => f.status === "pending").length} Pending
           </Badge>
         </div>
       </div>
@@ -324,7 +334,7 @@ export default function VACommandCenterPage() {
         <TabsList className="grid grid-cols-9 w-full">
           <TabsTrigger value="tasks" className="gap-1 text-xs">
             <ListTodo className="h-3 w-3" /> Tasks
-            {vaTasks.length > 0 && <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1 text-[10px]">{vaTasks.length}</span>}
+            {safeVaTasks.length > 0 && <span className="ml-1 bg-primary text-primary-foreground rounded-full px-1 text-[10px]">{safeVaTasks.length}</span>}
           </TabsTrigger>
           <TabsTrigger value="hot-leads" className="gap-1 text-xs">
             <Flame className="h-3 w-3" /> Hot
@@ -347,7 +357,7 @@ export default function VACommandCenterPage() {
           <TabsTrigger value="follow-ups" className="gap-1 text-xs">
             <Send className="h-3 w-3" /> Follow-Ups
           </TabsTrigger>
-          <TabsTrigger value="pipeline" className="gap-1 text-xs">
+          <TabsTrigger value="safePipeline" className="gap-1 text-xs">
             <Target className="h-3 w-3" /> Pipeline
           </TabsTrigger>
           <TabsTrigger value="payments" className="gap-1 text-xs">
@@ -361,16 +371,16 @@ export default function VACommandCenterPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <ListTodo className="h-4 w-4 text-primary" />
-                Task Queue — {vaTasks.length} Active
+                Task Queue — {safeVaTasks.length} Active
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {vaTasks.length === 0 ? (
+                {safeVaTasks.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-4">No tasks right now. 🎉</p>
                 ) : (
                   <div className="space-y-2">
-                    {vaTasks.map((task: any) => {
+                    {safeVaTasks.map((task: any) => {
                       const typeIcons: Record<string, any> = {
                         call_lead: Phone,
                         review_demo: Eye,
@@ -507,11 +517,11 @@ export default function VACommandCenterPage() {
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[350px]">
-                  {objectionLibrary.length === 0 ? (
+                  {safeObjectionLibrary.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No objections tracked yet.</p>
                   ) : (
                     <div className="space-y-3">
-                      {objectionLibrary.map((obj: any) => (
+                      {safeObjectionLibrary.map((obj: any) => (
                         <div key={obj.id} className="border rounded p-3 space-y-1">
                           <div className="flex justify-between items-center">
                             <span className="font-medium text-sm capitalize">{obj.objection_type.replace(/_/g, " ")}</span>
@@ -555,11 +565,11 @@ export default function VACommandCenterPage() {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {hotLeads.length === 0 ? (
+                {safeHotLeads.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-4">No hot leads right now.</p>
                 ) : (
                   <div className="space-y-2">
-                    {hotLeads.map((lead: any) => (
+                    {safeHotLeads.map((lead: any) => (
                       <Card key={lead.id} className={`border-l-4 ${(lead.handoff_score || 0) >= 90 ? "border-l-red-500 bg-red-500/5" : "border-l-orange-500"}`}>
                         <CardContent className="p-3">
                           <div className="flex justify-between items-start">
@@ -609,11 +619,11 @@ export default function VACommandCenterPage() {
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {inboundMessages.length === 0 ? (
+                {safeInbound.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-4">No unresolved replies.</p>
                 ) : (
                   <div className="space-y-2">
-                    {inboundMessages.map((msg: any) => (
+                    {safeInbound.map((msg: any) => (
                       <Card key={msg.id} className={`border-l-4 ${msg.requires_va ? "border-l-red-500" : "border-l-green-500"}`}>
                         <CardContent className="p-3">
                           <div className="flex justify-between items-start">
@@ -663,16 +673,16 @@ export default function VACommandCenterPage() {
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-red-500" />
-                Demo Quality Control — {flaggedDemos.length} Flagged
+                Demo Quality Control — {safeFlaggedDemos.length} Flagged
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ScrollArea className="h-[400px]">
-                {flaggedDemos.length === 0 ? (
+                {safeFlaggedDemos.length === 0 ? (
                   <p className="text-sm text-muted-foreground p-4">All demos passed quality check ✅</p>
                 ) : (
                   <div className="space-y-2">
-                    {flaggedDemos.map((demo: any) => (
+                    {safeFlaggedDemos.map((demo: any) => (
                       <Card key={demo.id} className="border-l-4 border-l-red-500">
                         <CardContent className="p-3">
                           <div className="flex justify-between items-start">
@@ -739,7 +749,7 @@ export default function VACommandCenterPage() {
               <CardContent>
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-1">
-                    {recentCalls.map((call: any) => (
+                    {safeRecentCalls.map((call: any) => (
                       <div
                         key={call.id}
                         className={`p-2 rounded cursor-pointer border text-sm ${selectedCall?.id === call.id ? "bg-accent border-primary" : "hover:bg-muted/50"}`}
@@ -888,7 +898,7 @@ export default function VACommandCenterPage() {
             <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-2">
-                  {followups.map((fu: any) => (
+                  {safeFollowups.map((fu: any) => (
                     <Card key={fu.id}>
                       <CardContent className="p-3">
                         <div className="flex justify-between items-start">
@@ -923,7 +933,7 @@ export default function VACommandCenterPage() {
         </TabsContent>
 
         {/* ─── PIPELINE TAB ──────────────────────── */}
-        <TabsContent value="pipeline">
+        <TabsContent value="safePipeline">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-base flex items-center gap-2">
@@ -934,7 +944,7 @@ export default function VACommandCenterPage() {
             <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-2">
-                  {pipeline.map((deal: any) => {
+                  {safePipeline.map((deal: any) => {
                     const stageColors: Record<string, string> = {
                       demo_sent: "border-l-blue-500",
                       demo_viewed: "border-l-cyan-500",
@@ -1001,7 +1011,7 @@ export default function VACommandCenterPage() {
             <CardContent>
               <ScrollArea className="h-[400px]">
                 <div className="space-y-2">
-                  {pipeline
+                  {safePipeline
                     .filter((d: any) => ["negotiating", "interested", "demo_viewed"].includes(d.stage))
                     .map((deal: any) => (
                       <Card key={deal.id} className="border-l-4 border-l-green-500">
