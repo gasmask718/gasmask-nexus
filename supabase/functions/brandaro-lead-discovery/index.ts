@@ -36,7 +36,14 @@ serve(async (req) => {
     console.log('API KEY TEST:', testData.status, 'results:', testData.results?.length || 0);
 
     if (testData.status === 'REQUEST_DENIED') {
-      throw new Error('Google Places API key is denied — check API restrictions in Google Console: ' + (testData.error_message || ''));
+      const errMsg = 'Google Places API is not enabled for your API key. Go to Google Cloud Console → APIs & Services → Library → search "Places API" (NOT "Places API New") → click Enable. Then wait 2-3 minutes and try again.';
+      console.error('PLACES API DENIED:', testData.error_message);
+      if (jobId) {
+        await supabase.from('brandaro_discovery_jobs').update({ status: 'failed', error_message: errMsg }).eq('id', jobId);
+      }
+      return new Response(JSON.stringify({ error: errMsg, fix: 'Enable "Places API" in Google Cloud Console' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Update job status
