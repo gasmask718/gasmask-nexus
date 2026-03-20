@@ -146,7 +146,7 @@ serve(async (req: Request) => {
         .update({
           ai_paused: true,
           pipeline_stage: "lost",
-          lead_status: "opted_out",
+          lead_status: "not_interested",
           updated_at: new Date().toISOString(),
         })
         .eq("id", lead.id);
