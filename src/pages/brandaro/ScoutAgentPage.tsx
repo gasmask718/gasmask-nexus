@@ -381,6 +381,9 @@ export default function ScoutAgentPage() {
         <Card><CardContent className="py-3 text-center"><p className="text-2xl font-bold">${costPerLead}</p><p className="text-[10px] text-muted-foreground">Cost Per Lead</p></CardContent></Card>
       </div>
 
+      {/* Verification Panel */}
+      <ScoutVerificationPanel />
+
       {/* ── Tabs: Config / Runs / Memory / Intelligence ── */}
       <Tabs defaultValue="config">
         <TabsList className="w-full grid grid-cols-4">
