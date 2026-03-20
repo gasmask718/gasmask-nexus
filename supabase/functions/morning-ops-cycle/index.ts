@@ -273,6 +273,45 @@ serve(async (req) => {
       console.error('❌ Task creation error:', e);
     }
 
+    // Brandaro AI Calling — trigger for 48h+ no-reply leads
+    try {
+      console.log('📞 Running Brandaro AI calling for stale leads...');
+      const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: staleLeads } = await supabase
+        .from('brandaro_qualified_leads')
+        .select('id, phone_number')
+        .eq('pipeline_stage', 'contacted')
+        .eq('call_attempts', 0)
+        .eq('ai_paused', false)
+        .not('phone_number', 'is', null)
+        .or(`last_call_at.is.null,last_call_at.lt.${cutoff48h}`)
+        .limit(10);
+
+      let aiCallsTriggered = 0;
+      if (staleLeads && staleLeads.length > 0) {
+        for (const lead of staleLeads) {
+          try {
+            const callRes = await fetch(`${supabaseUrl}/functions/v1/brandaro-ai-caller`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${supabaseKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ lead_id: lead.id }),
+            });
+            if (callRes.ok) aiCallsTriggered++;
+          } catch (callErr) {
+            console.warn(`[MORNING-OPS] AI call failed for ${lead.id}:`, callErr);
+          }
+        }
+      }
+      results.aiCallsTriggered = aiCallsTriggered;
+      console.log(`✅ Triggered ${aiCallsTriggered} AI calls for stale Brandaro leads`);
+    } catch (e) {
+      errors.push(`Brandaro AI calling failed: ${e}`);
+      console.error('❌ Brandaro AI calling error:', e);
+    }
+
     // Log the ops cycle
     const duration = Date.now() - startTime;
     await supabase.from('ai_ops_log').insert({
