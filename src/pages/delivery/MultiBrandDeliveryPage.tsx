@@ -34,7 +34,9 @@ import {
   CheckCircle2,
   XCircle,
   Info,
-  History
+  History,
+  Route,
+  Navigation
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
