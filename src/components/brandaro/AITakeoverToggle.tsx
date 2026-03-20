@@ -49,7 +49,7 @@ export function AITakeoverToggle({
     setSending(true);
     try {
       await supabase.functions.invoke("send-sms", {
-        body: { phone_number: phoneNumber, message: manualMsg },
+        body: { to_number: phoneNumber, message_body: manualMsg, idempotency_key: `manual-${leadId}-${Date.now()}` },
       });
       await (supabase as any).from("brandaro_pending_messages").insert({
         lead_id: leadId,
