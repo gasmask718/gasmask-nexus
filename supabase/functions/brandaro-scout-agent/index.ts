@@ -7,7 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Cost estimates per operation
 const COSTS = {
   ai_decision_per_call: 0.008,
   ai_scoring_per_lead: 0.001,
@@ -15,6 +14,60 @@ const COSTS = {
   get total_per_search() {
     return this.google_places_per_search + this.ai_scoring_per_lead * 8;
   },
+};
+
+// All 50 states with cities, market tier, and service business index
+const STATE_CITIES: Record<string, { cities: string[]; market_tier: 1 | 2 | 3; population_density: string; service_business_index: number }> = {
+  NY: { cities: ["Brooklyn","Bronx","Queens","Staten Island","Yonkers","Buffalo","Rochester","Syracuse","Albany","New Rochelle","Mount Vernon","Schenectady","White Plains","Hempstead","Troy","Niagara Falls","Binghamton","Freeport","Valley Stream","Levittown","Hicksville","Uniondale","Elmont","Spring Valley","New City","Middletown","Poughkeepsie"], market_tier: 1, population_density: "very high", service_business_index: 95 },
+  NJ: { cities: ["Newark","Jersey City","Paterson","Elizabeth","Edison","Woodbridge","Lakewood","Toms River","Hamilton","Trenton","Clifton","Camden","Brick","Cherry Hill","Passaic","Union City","Old Bridge","Bayonne","East Orange","Vineland","Atlantic City","Hoboken","Perth Amboy","Hackensack","Sayreville","Kearny","Linden","New Brunswick","Plainfield"], market_tier: 1, population_density: "very high", service_business_index: 92 },
+  FL: { cities: ["Miami","Orlando","Tampa","Jacksonville","Fort Lauderdale","Hialeah","Tallahassee","Cape Coral","St Petersburg","Port St Lucie","Pembroke Pines","Hollywood","Miramar","Gainesville","Coral Springs","Miami Gardens","West Palm Beach","Clearwater","Brandon","Spring Hill","Lakeland","Pompano Beach","Davie","Boca Raton","Deltona","Deerfield Beach","Palm Bay","Sunrise","Plantation","Kissimmee","Homestead","Boynton Beach"], market_tier: 1, population_density: "high", service_business_index: 90 },
+  TX: { cities: ["Houston","San Antonio","Dallas","Austin","Fort Worth","El Paso","Arlington","Corpus Christi","Plano","Laredo","Lubbock","Garland","Irving","Amarillo","Grand Prairie","McKinney","Frisco","Brownsville","Pasadena","Mesquite","Killeen","McAllen","Waco","Carrollton","Denton","Midland","Abilene","Beaumont","Round Rock","Odessa","Richardson","Pearland","Sugar Land"], market_tier: 1, population_density: "high", service_business_index: 88 },
+  CA: { cities: ["Los Angeles","San Diego","San Jose","San Francisco","Fresno","Sacramento","Long Beach","Oakland","Bakersfield","Anaheim","Santa Ana","Stockton","Riverside","Chula Vista","Irvine","Fremont","San Bernardino","Modesto","Fontana","Moreno Valley","Glendale","Huntington Beach","Santa Clarita","Garden Grove","Oceanside","Rancho Cucamonga","Santa Rosa","Ontario","Elk Grove","Corona","Hayward","Salinas"], market_tier: 1, population_density: "high", service_business_index: 85 },
+  GA: { cities: ["Atlanta","Augusta","Columbus","Macon","Savannah","Athens","Sandy Springs","Roswell","Albany","Johns Creek","Warner Robins","Alpharetta","Marietta","Smyrna","Valdosta","Brookhaven","Dunwoody","Newnan","South Fulton","Gainesville","Peachtree City","Kennesaw","Rome","Woodstock","Dalton","Canton"], market_tier: 2, population_density: "medium", service_business_index: 82 },
+  PA: { cities: ["Philadelphia","Pittsburgh","Allentown","Erie","Reading","Scranton","Bethlehem","Lancaster","York","Harrisburg","Altoona","State College","Wilkes-Barre","Chester","Easton","Lebanon","Hazleton","New Castle","McKeesport","Norristown"], market_tier: 2, population_density: "medium", service_business_index: 80 },
+  IL: { cities: ["Chicago","Aurora","Joliet","Naperville","Rockford","Springfield","Elgin","Peoria","Champaign","Waukegan","Cicero","Bloomington","Arlington Heights","Evanston","Schaumburg","Bolingbrook","Palatine","Skokie","Des Plaines","Orland Park"], market_tier: 2, population_density: "medium", service_business_index: 82 },
+  OH: { cities: ["Columbus","Cleveland","Cincinnati","Toledo","Akron","Dayton","Parma","Canton","Youngstown","Lorain","Hamilton","Springfield","Kettering","Elyria","Newark","Lakewood","Cuyahoga Falls","Middletown","Euclid","Mansfield"], market_tier: 2, population_density: "medium", service_business_index: 78 },
+  NC: { cities: ["Charlotte","Raleigh","Greensboro","Durham","Winston-Salem","Fayetteville","Cary","Wilmington","High Point","Greenville","Asheville","Concord","Gastonia","Jacksonville","Chapel Hill","Rocky Mount","Burlington","Wilson","Huntersville","Kannapolis"], market_tier: 2, population_density: "medium", service_business_index: 80 },
+  MI: { cities: ["Detroit","Grand Rapids","Warren","Sterling Heights","Lansing","Ann Arbor","Flint","Dearborn","Livonia","Westland","Troy","Farmington Hills","Kalamazoo","Wyoming","Southfield","Rochester Hills","Taylor","Pontiac","St Clair Shores","Royal Oak"], market_tier: 2, population_density: "medium", service_business_index: 76 },
+  VA: { cities: ["Virginia Beach","Norfolk","Chesapeake","Richmond","Newport News","Alexandria","Hampton","Roanoke","Portsmouth","Suffolk","Lynchburg","Harrisonburg","Charlottesville","Danville","Manassas","Fredericksburg"], market_tier: 2, population_density: "medium", service_business_index: 78 },
+  WA: { cities: ["Seattle","Spokane","Tacoma","Vancouver","Bellevue","Kent","Everett","Renton","Spokane Valley","Kirkland","Bellingham","Kennewick","Yakima","Redmond","Federal Way","Marysville","South Hill","Shoreline"], market_tier: 2, population_density: "medium", service_business_index: 75 },
+  AZ: { cities: ["Phoenix","Tucson","Mesa","Chandler","Scottsdale","Glendale","Gilbert","Tempe","Peoria","Surprise","Yuma","Avondale","Goodyear","Flagstaff","Buckeye","Casa Grande","Lake Havasu City"], market_tier: 2, population_density: "medium", service_business_index: 77 },
+  MD: { cities: ["Baltimore","Frederick","Rockville","Gaithersburg","Bowie","Hagerstown","Annapolis","College Park","Salisbury","Laurel","Greenbelt","Cumberland","Germantown","Silver Spring","Waldorf","Dundalk"], market_tier: 2, population_density: "medium", service_business_index: 79 },
+  CT: { cities: ["Bridgeport","New Haven","Stamford","Hartford","Waterbury","Norwalk","Danbury","New Britain","West Hartford","Greenwich","Hamden","Bristol","Meriden","Manchester","West Haven"], market_tier: 2, population_density: "medium", service_business_index: 76 },
+  MA: { cities: ["Boston","Worcester","Springfield","Lowell","Cambridge","New Bedford","Brockton","Quincy","Lynn","Fall River","Newton","Lawrence","Somerville","Framingham","Haverhill","Waltham","Malden","Brookline"], market_tier: 2, population_density: "high", service_business_index: 78 },
+  TN: { cities: ["Memphis","Nashville","Knoxville","Chattanooga","Clarksville","Murfreesboro","Franklin","Jackson","Johnson City","Bartlett","Hendersonville","Kingsport","Collierville","Smyrna","Cleveland"], market_tier: 3, population_density: "medium", service_business_index: 75 },
+  CO: { cities: ["Denver","Colorado Springs","Aurora","Fort Collins","Lakewood","Thornton","Arvada","Westminster","Pueblo","Centennial","Boulder","Highlands Ranch","Greeley","Longmont","Loveland"], market_tier: 3, population_density: "medium", service_business_index: 73 },
+  SC: { cities: ["Columbia","Charleston","North Charleston","Mount Pleasant","Rock Hill","Greenville","Summerville","Goose Creek","Hilton Head","Sumter","Florence","Spartanburg","Myrtle Beach","Aiken","Anderson"], market_tier: 3, population_density: "medium", service_business_index: 74 },
+  AL: { cities: ["Birmingham","Montgomery","Huntsville","Mobile","Tuscaloosa","Hoover","Dothan","Auburn","Decatur","Madison","Florence","Gadsden","Vestavia Hills","Prattville"], market_tier: 3, population_density: "medium", service_business_index: 72 },
+  LA: { cities: ["New Orleans","Baton Rouge","Shreveport","Metairie","Lafayette","Lake Charles","Kenner","Bossier City","Monroe","Alexandria","Prairieville","Central"], market_tier: 3, population_density: "medium", service_business_index: 70 },
+  KY: { cities: ["Louisville","Lexington","Bowling Green","Owensboro","Covington","Richmond","Georgetown","Florence","Elizabethtown","Henderson","Nicholasville","Jeffersontown"], market_tier: 3, population_density: "low", service_business_index: 68 },
+  MO: { cities: ["Kansas City","St Louis","Springfield","Columbia","Independence","Lee Summit","O Fallon","St Joseph","St Charles","Blue Springs","Joplin","Florissant"], market_tier: 3, population_density: "low", service_business_index: 70 },
+  IN: { cities: ["Indianapolis","Fort Wayne","Evansville","South Bend","Carmel","Fishers","Bloomington","Hammond","Gary","Lafayette","Muncie","Terre Haute","Noblesville","Greenwood"], market_tier: 3, population_density: "low", service_business_index: 70 },
+  WI: { cities: ["Milwaukee","Madison","Green Bay","Kenosha","Racine","Appleton","Waukesha","Oshkosh","Eau Claire","Janesville","West Allis","La Crosse"], market_tier: 3, population_density: "low", service_business_index: 68 },
+  MN: { cities: ["Minneapolis","St Paul","Rochester","Duluth","Bloomington","Brooklyn Park","Plymouth","Maple Grove","Woodbury","St Cloud","Eagan","Eden Prairie"], market_tier: 3, population_density: "low", service_business_index: 68 },
+  NV: { cities: ["Las Vegas","Henderson","Reno","North Las Vegas","Sparks","Carson City","Summerlin","Spring Valley","Enterprise","Sunrise Manor"], market_tier: 3, population_density: "medium", service_business_index: 72 },
+  OR: { cities: ["Portland","Salem","Eugene","Gresham","Hillsboro","Beaverton","Bend","Medford","Springfield","Corvallis","Albany","Tigard"], market_tier: 3, population_density: "low", service_business_index: 68 },
+  OK: { cities: ["Oklahoma City","Tulsa","Norman","Broken Arrow","Lawton","Edmond","Moore","Midwest City","Enid","Stillwater","Muskogee","Bartlesville"], market_tier: 3, population_density: "low", service_business_index: 70 },
+  AR: { cities: ["Little Rock","Fort Smith","Fayetteville","Springdale","Jonesboro","North Little Rock","Conway","Rogers","Pine Bluff","Bentonville"], market_tier: 3, population_density: "low", service_business_index: 68 },
+  MS: { cities: ["Jackson","Gulfport","Southaven","Hattiesburg","Biloxi","Meridian","Tupelo","Greenville","Olive Branch"], market_tier: 3, population_density: "low", service_business_index: 65 },
+  KS: { cities: ["Wichita","Overland Park","Kansas City","Olathe","Topeka","Lawrence","Shawnee","Manhattan","Salina"], market_tier: 3, population_density: "low", service_business_index: 65 },
+  UT: { cities: ["Salt Lake City","West Valley City","Provo","West Jordan","Sandy","Orem","Ogden","St George","Layton","South Jordan","Lehi"], market_tier: 3, population_density: "low", service_business_index: 67 },
+  NM: { cities: ["Albuquerque","Las Cruces","Rio Rancho","Santa Fe","Roswell","Farmington","Clovis","Hobbs","Alamogordo"], market_tier: 3, population_density: "low", service_business_index: 63 },
+  NE: { cities: ["Omaha","Lincoln","Bellevue","Grand Island","Kearney","Fremont","Norfolk","Hastings","North Platte"], market_tier: 3, population_density: "low", service_business_index: 62 },
+  WV: { cities: ["Charleston","Huntington","Morgantown","Parkersburg","Wheeling","Weirton","Fairmont","Martinsburg","Beckley"], market_tier: 3, population_density: "low", service_business_index: 60 },
+  HI: { cities: ["Honolulu","Hilo","Kailua","Pearl City","Waipahu","Kaneohe","Mililani","Kahului","Kihei"], market_tier: 3, population_density: "medium", service_business_index: 70 },
+  ID: { cities: ["Boise","Meridian","Nampa","Idaho Falls","Pocatello","Caldwell","Coeur d Alene","Twin Falls"], market_tier: 3, population_density: "low", service_business_index: 62 },
+  ME: { cities: ["Portland","Lewiston","Bangor","South Portland","Auburn","Biddeford","Sanford","Augusta","Saco"], market_tier: 3, population_density: "low", service_business_index: 60 },
+  NH: { cities: ["Manchester","Nashua","Concord","Derry","Dover","Rochester","Salem","Merrimack","Londonderry"], market_tier: 3, population_density: "low", service_business_index: 62 },
+  RI: { cities: ["Providence","Warwick","Cranston","Pawtucket","East Providence","Woonsocket","Newport","Central Falls"], market_tier: 3, population_density: "high", service_business_index: 68 },
+  DE: { cities: ["Wilmington","Dover","Newark","Middletown","Bear","Glasgow","Brookside","Pike Creek"], market_tier: 3, population_density: "medium", service_business_index: 65 },
+  MT: { cities: ["Billings","Missoula","Great Falls","Bozeman","Butte","Helena","Kalispell","Havre"], market_tier: 3, population_density: "very low", service_business_index: 55 },
+  SD: { cities: ["Sioux Falls","Rapid City","Aberdeen","Brookings","Watertown","Mitchell"], market_tier: 3, population_density: "very low", service_business_index: 55 },
+  ND: { cities: ["Fargo","Bismarck","Grand Forks","Minot","West Fargo","Mandan"], market_tier: 3, population_density: "very low", service_business_index: 52 },
+  AK: { cities: ["Anchorage","Fairbanks","Juneau","Sitka","Ketchikan","Wasilla"], market_tier: 3, population_density: "very low", service_business_index: 58 },
+  WY: { cities: ["Cheyenne","Casper","Laramie","Gillette","Rock Springs","Sheridan"], market_tier: 3, population_density: "very low", service_business_index: 50 },
+  VT: { cities: ["Burlington","South Burlington","Rutland","Barre","Montpelier"], market_tier: 3, population_density: "very low", service_business_index: 52 },
+  IA: { cities: ["Des Moines","Cedar Rapids","Davenport","Sioux City","Iowa City","Waterloo","Council Bluffs","Ankeny","Dubuque"], market_tier: 3, population_density: "low", service_business_index: 60 },
 };
 
 serve(async (req) => {
@@ -106,11 +159,8 @@ serve(async (req) => {
     let runCost = aiDecisionCost;
 
     await supabase.from("brandaro_scout_spend_log").insert({
-      run_id: runId,
-      action: "ai_decision",
-      cost: aiDecisionCost,
-      cumulative_today: dailySpend + aiDecisionCost,
-      cumulative_month: monthlySpend + aiDecisionCost,
+      run_id: runId, action: "ai_decision", cost: aiDecisionCost,
+      cumulative_today: dailySpend + aiDecisionCost, cumulative_month: monthlySpend + aiDecisionCost,
     });
 
     // 7. Get memory
@@ -128,37 +178,78 @@ serve(async (req) => {
       industryCounts[ind] = (industryCounts[ind] || 0) + 1;
     });
 
-    // 9. Ask AI what to search
-    const systemPrompt = `You are an autonomous lead discovery agent for Brandaro Digital. We sell websites to small businesses with no online presence.
+    // 8b. Get market intelligence for smarter decisions
+    const { data: marketIntel } = await supabase
+      .from("brandaro_market_intelligence")
+      .select("state, industry, total_imported, avg_import_rate, market_score")
+      .order("market_score", { ascending: false })
+      .limit(200);
 
-Pick the BEST city+industry combinations to search Google Places for businesses without websites.
+    const topMarkets = (marketIntel || [])
+      .filter((m: any) => m.market_score >= 50)
+      .slice(0, 20)
+      .map((m: any) => `${m.industry} in ${m.state}: score ${m.market_score}, ${m.total_imported} imported`)
+      .join("\n");
 
-TARGET: Service businesses most likely to have NO website:
-- house cleaning, carpet cleaning, window cleaning, pressure washing
-- moving company, junk removal, hauling service
-- painting contractor, handyman, landscaping, tree service
-- auto detailing, mobile mechanic
-- locksmith, appliance repair
-- roofing, flooring, HVAC (smaller companies only)
+    // 9. Ask AI what to search — enhanced with market intelligence
+    const targetStates = (config.target_states as string[]) || Object.keys(STATE_CITIES);
+    const stateInfo = targetStates
+      .filter((s: string) => STATE_CITIES[s])
+      .map((s: string) => {
+        const info = STATE_CITIES[s];
+        return `${s} (Tier ${info.market_tier}, ${info.cities.length} cities, SBI: ${info.service_business_index})`;
+      })
+      .join(", ");
 
-AVOID: chains, franchises, large established companies
+    const systemPrompt = `You are an elite autonomous market intelligence agent for Brandaro Digital — a company that sells websites to small service businesses.
 
-PRIORITIZE:
-- Industries where we have fewer leads
-- New cities not yet searched
-- Smaller suburbs often have more no-website businesses
+YOUR MISSION: Find the highest-converting opportunities across the entire US market.
 
-Return ONLY a valid JSON array. No text before or after. Exactly ${searchesThisRun} items.
-[{"industry":"...","city":"...","state":"...","reason":"..."}]`;
+MARKET INTELLIGENCE YOU HAVE:
+
+HIGHEST CONVERTING INDUSTRIES (ranked by close rate):
+1. locksmith (14%) — emergency based, zero online presence
+2. mobile mechanic (14%) — new service, no websites at all
+3. gutter cleaning (13%) — almost none online
+4. pressure washing (13%) — extremely low adoption
+5. junk removal (13%) — flyer dependent
+6. house cleaning (12%) — word of mouth only
+7. handyman (12%) — no professional presence
+8. carpet cleaning (11%) — local only
+9. window cleaning (12%) — zero adoption
+10. moving company (10%) — old school
+
+STATE MARKET TIERS:
+TIER 1 (highest density): NY, NJ, FL, TX, CA
+TIER 2 (strong markets): GA, PA, IL, OH, NC, MI, VA, WA, AZ, MD, CT, MA
+TIER 3 (emerging): TN, CO, SC, AL, MO, IN, WI, NV, OR, OK, AR, LA, KY, MN and all others
+
+WEBSITE ADOPTION RATES (lower = better opportunity):
+locksmith: 15%, gutter cleaning: 13%, pressure washing: 14%, mobile mechanic: 12%, junk removal: 15%, house cleaning: 18%, window cleaning: 16%, carpet cleaning: 20%, handyman: 20%, drywall contractor: 18%, fence contractor: 20%, tree service: 19%, painting contractor: 22%, auto detailing: 22%, pool service: 24%, appliance repair: 21%, moving company: 25%, concrete contractor: 25%, pest control: 28%, landscaping: 28%, roofing contractor: 30%, flooring: 32%, hvac: 35%, electrician: 36%, plumber: 38%
+
+DECISION RULES:
+1. NEVER repeat a searched combination
+2. Prioritize Tier 1 states first
+3. Prioritize industries with lowest website adoption
+4. Mix high-population cities with underserved suburbs
+5. If a state has zero searches — start with its largest city
+6. If an industry has few leads in our pipeline — prioritize it
+7. Suburbs often outperform big cities because less competition
+
+Return ONLY a valid JSON array. No text before or after. No markdown. Exactly ${searchesThisRun} items.
+[{"industry":"exact industry name","city":"city name","state":"2-letter state code","reason":"why this will convert"}]`;
 
     const userPrompt = `ALREADY SEARCHED (skip these):
 ${(memory || []).slice(0, 200).map((m: any) => `${m.industry}|${m.city}|${m.state}(${m.leads_imported})`).join("\n") || "None yet"}
 
 LEAD COUNTS BY INDUSTRY:
-${Object.entries(industryCounts).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([i, c]) => `${i}: ${c}`).join("\n") || "No leads yet"}
+${Object.entries(industryCounts).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([i, c]) => `${i}: ${c}`).join("\n") || "No leads yet"}
 
+TOP PERFORMING MARKETS (from intelligence):
+${topMarkets || "No data yet"}
+
+TARGET STATES: ${stateInfo}
 TARGET INDUSTRIES: ${((config.target_industries as string[]) || []).join(", ")}
-TARGET STATES: ${((config.target_states as string[]) || []).join(", ")}
 BUDGET LEFT TODAY: $${(dailyLimit - dailySpend).toFixed(2)}
 
 Give me ${searchesThisRun} searches now.`;
@@ -186,13 +277,10 @@ Give me ${searchesThisRun} searches now.`;
     } catch (aiErr: any) {
       console.error("[SCOUT] AI failed, using fallback:", aiErr.message);
       const fb = [
-        { city: "Brooklyn", state: "NY" },
-        { city: "Newark", state: "NJ" },
-        { city: "Miami", state: "FL" },
-        { city: "Houston", state: "TX" },
-        { city: "Atlanta", state: "GA" },
+        { city: "Brooklyn", state: "NY" }, { city: "Newark", state: "NJ" },
+        { city: "Miami", state: "FL" }, { city: "Houston", state: "TX" }, { city: "Atlanta", state: "GA" },
       ];
-      const fbInd = ["cleaning service", "moving company", "painting contractor", "landscaping", "plumber"];
+      const fbInd = ["locksmith", "mobile mechanic", "gutter cleaning", "pressure washing", "junk removal"];
       searches = fb.slice(0, searchesThisRun).map((c, i) => ({ ...c, industry: fbInd[i % fbInd.length], reason: "fallback" }));
     }
 
@@ -230,14 +318,10 @@ Give me ${searchesThisRun} searches now.`;
           .from("brandaro_discovery_jobs")
           .insert({
             search_query: `${search.industry} in ${search.city}`,
-            city: search.city,
-            state: search.state,
-            industry: search.industry,
-            radius_meters: 40000,
-            status: "queued",
+            city: search.city, state: search.state, industry: search.industry,
+            radius_meters: 40000, status: "queued",
           })
-          .select()
-          .single();
+          .select().single();
 
         if (jobErr) throw jobErr;
 
@@ -250,14 +334,12 @@ Give me ${searchesThisRun} searches now.`;
         // Poll for completion
         let imported = 0;
         let found = 0;
-        let jobDone = false;
         for (let a = 0; a < 60; a++) {
           await new Promise((r) => setTimeout(r, 3000));
           const { data: jd } = await supabase.from("brandaro_discovery_jobs").select("*").eq("id", job!.id).single();
           if (jd?.status === "completed" || jd?.status === "failed") {
             imported = jd?.imported_count || 0;
             found = jd?.total_found || 0;
-            jobDone = true;
             break;
           }
         }
@@ -268,24 +350,31 @@ Give me ${searchesThisRun} searches now.`;
         runCost += searchCost;
 
         await supabase.from("brandaro_scout_spend_log").insert({
-          run_id: runId,
-          action: `search_${search.city}_${search.industry}`.substring(0, 100),
-          cost: searchCost,
-          cumulative_today: currentDailySpend,
-          cumulative_month: currentMonthlySpend,
+          run_id: runId, action: `search_${search.city}_${search.industry}`.substring(0, 100),
+          cost: searchCost, cumulative_today: currentDailySpend, cumulative_month: currentMonthlySpend,
         });
 
         await supabase.from("brandaro_scout_memory").insert({
-          industry: search.industry.toLowerCase(),
-          city: search.city,
-          state: search.state,
-          leads_found: found,
-          leads_imported: imported,
+          industry: search.industry.toLowerCase(), city: search.city, state: search.state,
+          leads_found: found, leads_imported: imported,
           success_rate: found > 0 ? Math.round((imported / found) * 100) : 0,
           worth_revisiting: imported >= 3,
           revisit_after: imported >= 3 ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
           notes: search.reason,
         });
+
+        // Update market intelligence
+        await supabase.from("brandaro_market_intelligence").upsert({
+          state: search.state,
+          industry: search.industry.toLowerCase(),
+          total_searches: 1,
+          total_found: found,
+          total_imported: imported,
+          avg_import_rate: found > 0 ? Math.round((imported / found) * 100) : 0,
+          discovery_score: Math.min(100, imported * 10),
+          market_score: Math.min(100, imported * 8 + (found > 0 ? 20 : 0)),
+          last_updated: new Date().toISOString(),
+        }, { onConflict: "state, industry" });
 
         totalImported += imported;
         searchesCompleted++;
@@ -300,51 +389,36 @@ Give me ${searchesThisRun} searches now.`;
 
     // 11. Final updates
     const budgetStopped = decisions.some((d) => d.status === "skipped_budget");
-    await supabase
-      .from("brandaro_scout_runs")
-      .update({
-        completed_at: new Date().toISOString(),
-        searches_attempted: searches.length,
-        searches_completed: searchesCompleted,
-        total_imported: totalImported,
-        estimated_cost: runCost,
-        decisions,
-        status: budgetStopped ? "stopped_budget" : "completed",
-        stop_reason: budgetStopped ? "Budget limit reached mid-run" : null,
-      })
-      .eq("id", runId);
+    await supabase.from("brandaro_scout_runs").update({
+      completed_at: new Date().toISOString(), searches_attempted: searches.length,
+      searches_completed: searchesCompleted, total_imported: totalImported,
+      estimated_cost: runCost, decisions,
+      status: budgetStopped ? "stopped_budget" : "completed",
+      stop_reason: budgetStopped ? "Budget limit reached mid-run" : null,
+    }).eq("id", runId);
 
-    await supabase
-      .from("brandaro_scout_config")
-      .update({
-        last_run_at: new Date().toISOString(),
-        total_searches: (config.total_searches || 0) + searchesCompleted,
-        total_leads_imported: (config.total_leads_imported || 0) + totalImported,
-        daily_spend_today: currentDailySpend,
-        monthly_spend_this_month: currentMonthlySpend,
-        total_spent_all_time: (config.total_spent_all_time || 0) + runCost,
-      })
-      .eq("id", config.id);
+    await supabase.from("brandaro_scout_config").update({
+      last_run_at: new Date().toISOString(),
+      total_searches: (config.total_searches || 0) + searchesCompleted,
+      total_leads_imported: (config.total_leads_imported || 0) + totalImported,
+      daily_spend_today: currentDailySpend,
+      monthly_spend_this_month: currentMonthlySpend,
+      total_spent_all_time: (config.total_spent_all_time || 0) + runCost,
+    }).eq("id", config.id);
 
     return new Response(
       JSON.stringify({
-        success: true,
-        run_id: runId,
-        searches_completed: searchesCompleted,
-        total_imported: totalImported,
-        run_cost: `$${runCost.toFixed(4)}`,
-        daily_spent: `$${currentDailySpend.toFixed(4)}`,
-        daily_limit: `$${dailyLimit}`,
-        monthly_spent: `$${currentMonthlySpend.toFixed(4)}`,
-        monthly_limit: `$${monthlyLimit}`,
+        success: true, run_id: runId, searches_completed: searchesCompleted,
+        total_imported: totalImported, run_cost: `$${runCost.toFixed(4)}`,
+        daily_spent: `$${currentDailySpend.toFixed(4)}`, daily_limit: `$${dailyLimit}`,
+        monthly_spent: `$${currentMonthlySpend.toFixed(4)}`, monthly_limit: `$${monthlyLimit}`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e: any) {
     console.error("[SCOUT] Fatal:", e.message);
     return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
