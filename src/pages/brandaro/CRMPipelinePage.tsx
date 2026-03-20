@@ -223,11 +223,21 @@ function LeadProfileDialog({
 
 // ── Main Page ──
 export default function CRMPipelinePage() {
+  const queryClient = useQueryClient();
   const [cityFilter, setCityFilter] = useState("");
   const [industryFilter, setIndustryFilter] = useState("");
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [demoLead, setDemoLead] = useState<PipelineLead | null>(null);
   const [stageFilter, setStageFilter] = useState<string[] | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  // Force refresh all queries on mount
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["brandaro-pipeline"] });
+    queryClient.invalidateQueries({ queryKey: ["brandaro-hot-leads"] });
+    queryClient.invalidateQueries({ queryKey: ["brandaro-followup-leads"] });
+    queryClient.invalidateQueries({ queryKey: ["brandaro-stuck-leads"] });
+  }, [queryClient]);
 
   const { columns, stats, cities, industries, isLoading, moveLead, updateNotes } =
     useBrandaroPipeline({
