@@ -247,6 +247,13 @@ export default function CRMPipelinePage() {
 
   const { autoMove } = usePipelineInsights();
 
+  const handleMove = (id: string, stage: string) => {
+    moveLead.mutate({ leadId: id, stage });
+    if (selectedLead?.id === id) {
+      setSelectedLead({ ...selectedLead, pipeline_stage: stage });
+    }
+  };
+
   const syncPipeline = async () => {
     setSyncing(true);
     try {
