@@ -156,6 +156,26 @@ serve(async (req: Request) => {
 
     console.log(`✅ Campaign launched: ${insertedCount} targets inserted`);
 
+    // Trigger the send worker to actually dispatch SMS
+    console.log(`📤 Triggering messaging-send-worker for campaign ${campaign_id}`);
+    try {
+      const workerResponse = await fetch(
+        `${supabaseUrl}/functions/v1/messaging-send-worker`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${supabaseKey}`,
+          },
+          body: JSON.stringify({ campaign_id, batch_size: Math.min(insertedCount, 200) }),
+        }
+      );
+      const workerResult = await workerResponse.json();
+      console.log(`📤 Send worker result:`, workerResult);
+    } catch (workerError: any) {
+      console.error(`⚠️ Send worker trigger failed (targets still queued):`, workerError.message);
+    }
+
     return new Response(
       JSON.stringify({ success: true, campaign_id, targets: insertedCount }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }

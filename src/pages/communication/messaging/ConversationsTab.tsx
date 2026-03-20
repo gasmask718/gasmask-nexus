@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useBusiness } from "@/contexts/BusinessContext";
 import { Bot, User, MessageSquare, AlertTriangle, CheckCircle, Phone, Search, Filter, FileText, Mail, PhoneCall, RefreshCw } from "lucide-react";
@@ -26,6 +26,7 @@ interface UnifiedMessage {
 }
 
 export default function ConversationsTab() {
+  const queryClient = useQueryClient();
   const { currentBusiness } = useBusiness();
   const [selectedThreadKey, setSelectedThreadKey] = useState<string | null>(null);
   const [searchPhone, setSearchPhone] = useState("");
@@ -242,6 +243,37 @@ export default function ConversationsTab() {
     },
     enabled: !!selectedThreadKey && !!selectedThread,
   });
+
+  // Realtime: auto-refresh when new messages arrive
+  useEffect(() => {
+    const channel = supabase
+      .channel('conversations-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messaging_messages',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unified-conversations'] });
+        if (selectedThreadKey) {
+          queryClient.invalidateQueries({ queryKey: ['unified-transcript'] });
+        }
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'communication_logs',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unified-conversations'] });
+        if (selectedThreadKey) {
+          queryClient.invalidateQueries({ queryKey: ['unified-transcript'] });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, selectedThreadKey]);
 
   const getStatusBadge = (conv: any) => {
     if (conv.source === "twilio_log") return <Badge className="gap-1 bg-green-500/20 text-green-700 border-green-500/30"><Phone className="h-3 w-3" /> Twilio</Badge>;
