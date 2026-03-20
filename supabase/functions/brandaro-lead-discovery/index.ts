@@ -208,7 +208,7 @@ serve(async (req) => {
           ? await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types)
           : { priority_score: 5 };
 
-        await supabase.from('brandaro_qualified_leads').insert({
+        const { data: insertedLead } = await supabase.from('brandaro_qualified_leads').insert({
           business_name: p.name,
           phone_number: phone,
           address: p.formatted_address || address,
@@ -232,15 +232,17 @@ serve(async (req) => {
           call_attempts: 0,
           ai_paused: false,
           converted: false,
-        });
+        }).select('id').single();
 
         // Wire into pipeline automator
-        try {
-          await supabase.functions.invoke("brandaro-pipeline-automator", {
-            body: { action: "record_event", lead_id: place.place_id, event_type: "lead_imported" },
-          });
-        } catch {
-          // Non-blocking — lead is already saved
+        if (insertedLead?.id) {
+          try {
+            await supabase.functions.invoke("brandaro-pipeline-automator", {
+              body: { action: "record_event", lead_id: insertedLead.id, event_type: "lead_imported" },
+            });
+          } catch {
+            // Non-blocking — lead is already saved
+          }
         }
 
         imported++;
