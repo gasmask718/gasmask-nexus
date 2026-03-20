@@ -255,7 +255,7 @@ serve(async (req: Request) => {
         phone_number: normalizedFrom,
         from_number: fromNumber || null,
         to_number: toNumber || null,
-        status: "received",
+        status: "delivered",
         provider: "twilio",
         ai_generated: false,
         metadata: { source: "sms-inbound-webhook", messageSid },
