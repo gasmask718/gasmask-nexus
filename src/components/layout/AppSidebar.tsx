@@ -411,18 +411,21 @@ export default function AppSidebar() {
                 { path: '/grabba/brand/hotmama', label: 'HotMama Dashboard', emoji: '📊' },
                 { path: '/hotmama/stores', label: 'HotMama Stores', emoji: '🏪' },
                 { path: '/hotmama/inventory', label: 'HotMama Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-rose-400 hover:bg-rose-500/10")}
 
               {renderSection('scalati-os', 'Hot Scalati OS', '🟠', [
                 { path: '/grabba/brand/scalati', label: 'Scalati Dashboard', emoji: '📊' },
                 { path: '/scalati/stores', label: 'Scalati Stores', emoji: '🏪' },
                 { path: '/scalati/inventory', label: 'Scalati Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-orange-400 hover:bg-orange-500/10")}
 
               {renderSection('grabba-rus-os', 'Grabba R Us OS', '🟪', [
                 { path: '/grabba/brand/grabba', label: 'Grabba Dashboard', emoji: '📊' },
                 { path: '/grabba/stores', label: 'Grabba Stores', emoji: '🏪' },
                 { path: '/grabba/brand-inventory', label: 'Grabba Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
               ], "text-purple-400 hover:bg-purple-500/10")}
             </div>
           )}
