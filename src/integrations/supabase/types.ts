@@ -34983,6 +34983,201 @@ export type Database = {
           },
         ]
       }
+      gasmask_route_runs: {
+        Row: {
+          actual_end_at: string | null
+          actual_start_at: string | null
+          completed_stops: number | null
+          created_at: string | null
+          driver_id: string | null
+          driver_name: string | null
+          estimated_duration_minutes: number | null
+          id: string
+          optimized_order: Json | null
+          route_notes: string | null
+          run_name: string | null
+          scheduled_date: string
+          status: string | null
+          total_stops: number | null
+        }
+        Insert: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          completed_stops?: number | null
+          created_at?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          optimized_order?: Json | null
+          route_notes?: string | null
+          run_name?: string | null
+          scheduled_date: string
+          status?: string | null
+          total_stops?: number | null
+        }
+        Update: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          completed_stops?: number | null
+          created_at?: string | null
+          driver_id?: string | null
+          driver_name?: string | null
+          estimated_duration_minutes?: number | null
+          id?: string
+          optimized_order?: Json | null
+          route_notes?: string | null
+          run_name?: string | null
+          scheduled_date?: string
+          status?: string | null
+          total_stops?: number | null
+        }
+        Relationships: []
+      }
+      gasmask_trigger_rules: {
+        Row: {
+          conditions: Json | null
+          created_at: string | null
+          floor_source: string
+          id: string
+          is_active: boolean | null
+          priority_score: number | null
+          rule_name: string
+          trigger_type: string
+          urgency: string | null
+          visit_duration_minutes: number | null
+        }
+        Insert: {
+          conditions?: Json | null
+          created_at?: string | null
+          floor_source: string
+          id?: string
+          is_active?: boolean | null
+          priority_score?: number | null
+          rule_name: string
+          trigger_type: string
+          urgency?: string | null
+          visit_duration_minutes?: number | null
+        }
+        Update: {
+          conditions?: Json | null
+          created_at?: string | null
+          floor_source?: string
+          id?: string
+          is_active?: boolean | null
+          priority_score?: number | null
+          rule_name?: string
+          trigger_type?: string
+          urgency?: string | null
+          visit_duration_minutes?: number | null
+        }
+        Relationships: []
+      }
+      gasmask_visit_triggers: {
+        Row: {
+          ai_confidence: number | null
+          ai_recommendation: string | null
+          assigned_driver_id: string | null
+          assigned_driver_name: string | null
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string | null
+          earliest_visit_at: string | null
+          floor_source: string
+          id: string
+          latest_visit_at: string | null
+          priority_score: number | null
+          route_id: string | null
+          route_position: number | null
+          scheduled_for: string | null
+          source_record_id: string | null
+          source_record_type: string | null
+          status: string | null
+          store_address: string | null
+          store_city: string | null
+          store_id: string | null
+          store_lat: number | null
+          store_lng: number | null
+          store_name: string
+          store_phone: string | null
+          store_state: string | null
+          trigger_notes: string | null
+          trigger_source: string
+          trigger_type: string
+          updated_at: string | null
+          urgency: string | null
+          visit_duration_minutes: number | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_recommendation?: string | null
+          assigned_driver_id?: string | null
+          assigned_driver_name?: string | null
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          earliest_visit_at?: string | null
+          floor_source: string
+          id?: string
+          latest_visit_at?: string | null
+          priority_score?: number | null
+          route_id?: string | null
+          route_position?: number | null
+          scheduled_for?: string | null
+          source_record_id?: string | null
+          source_record_type?: string | null
+          status?: string | null
+          store_address?: string | null
+          store_city?: string | null
+          store_id?: string | null
+          store_lat?: number | null
+          store_lng?: number | null
+          store_name: string
+          store_phone?: string | null
+          store_state?: string | null
+          trigger_notes?: string | null
+          trigger_source: string
+          trigger_type: string
+          updated_at?: string | null
+          urgency?: string | null
+          visit_duration_minutes?: number | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_recommendation?: string | null
+          assigned_driver_id?: string | null
+          assigned_driver_name?: string | null
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          earliest_visit_at?: string | null
+          floor_source?: string
+          id?: string
+          latest_visit_at?: string | null
+          priority_score?: number | null
+          route_id?: string | null
+          route_position?: number | null
+          scheduled_for?: string | null
+          source_record_id?: string | null
+          source_record_type?: string | null
+          status?: string | null
+          store_address?: string | null
+          store_city?: string | null
+          store_id?: string | null
+          store_lat?: number | null
+          store_lng?: number | null
+          store_name?: string
+          store_phone?: string | null
+          store_state?: string | null
+          trigger_notes?: string | null
+          trigger_source?: string
+          trigger_type?: string
+          updated_at?: string | null
+          urgency?: string | null
+          visit_duration_minutes?: number | null
+        }
+        Relationships: []
+      }
       geo_identities: {
         Row: {
           borough: string | null
