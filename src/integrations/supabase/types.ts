@@ -13709,6 +13709,69 @@ export type Database = {
           },
         ]
       }
+      brandaro_industry_intelligence: {
+        Row: {
+          avg_business_age_years: number | null
+          avg_close_rate: number | null
+          avg_response_rate: number | null
+          avg_revenue_per_sale: number | null
+          best_day_of_week: string | null
+          best_outreach_channel: string | null
+          best_time_of_day: string | null
+          common_objections: Json | null
+          decision_maker: string | null
+          id: string
+          industry: string
+          last_updated: string | null
+          notes: string | null
+          pain_points: Json | null
+          priority_score: number | null
+          trend: string | null
+          website_adoption_rate: number | null
+          winning_hooks: Json | null
+        }
+        Insert: {
+          avg_business_age_years?: number | null
+          avg_close_rate?: number | null
+          avg_response_rate?: number | null
+          avg_revenue_per_sale?: number | null
+          best_day_of_week?: string | null
+          best_outreach_channel?: string | null
+          best_time_of_day?: string | null
+          common_objections?: Json | null
+          decision_maker?: string | null
+          id?: string
+          industry: string
+          last_updated?: string | null
+          notes?: string | null
+          pain_points?: Json | null
+          priority_score?: number | null
+          trend?: string | null
+          website_adoption_rate?: number | null
+          winning_hooks?: Json | null
+        }
+        Update: {
+          avg_business_age_years?: number | null
+          avg_close_rate?: number | null
+          avg_response_rate?: number | null
+          avg_revenue_per_sale?: number | null
+          best_day_of_week?: string | null
+          best_outreach_channel?: string | null
+          best_time_of_day?: string | null
+          common_objections?: Json | null
+          decision_maker?: string | null
+          id?: string
+          industry?: string
+          last_updated?: string | null
+          notes?: string | null
+          pain_points?: Json | null
+          priority_score?: number | null
+          trend?: string | null
+          website_adoption_rate?: number | null
+          winning_hooks?: Json | null
+        }
+        Relationships: []
+      }
       brandaro_industry_performance: {
         Row: {
           avg_ltv: number | null
@@ -14316,6 +14379,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      brandaro_market_intelligence: {
+        Row: {
+          avg_business_size: string | null
+          avg_import_rate: number | null
+          best_time_to_contact: string | null
+          competition_level: string | null
+          conversion_rate: number | null
+          conversion_score: number | null
+          discovery_score: number | null
+          id: string
+          industry: string
+          last_updated: string | null
+          leads_closed: number | null
+          leads_contacted: number | null
+          leads_interested: number | null
+          leads_responded: number | null
+          market_score: number | null
+          revenue_generated: number | null
+          state: string
+          total_found: number | null
+          total_imported: number | null
+          total_searches: number | null
+          trend: string | null
+          typical_objection: string | null
+          website_adoption_rate: number | null
+          winning_pitch: string | null
+        }
+        Insert: {
+          avg_business_size?: string | null
+          avg_import_rate?: number | null
+          best_time_to_contact?: string | null
+          competition_level?: string | null
+          conversion_rate?: number | null
+          conversion_score?: number | null
+          discovery_score?: number | null
+          id?: string
+          industry: string
+          last_updated?: string | null
+          leads_closed?: number | null
+          leads_contacted?: number | null
+          leads_interested?: number | null
+          leads_responded?: number | null
+          market_score?: number | null
+          revenue_generated?: number | null
+          state: string
+          total_found?: number | null
+          total_imported?: number | null
+          total_searches?: number | null
+          trend?: string | null
+          typical_objection?: string | null
+          website_adoption_rate?: number | null
+          winning_pitch?: string | null
+        }
+        Update: {
+          avg_business_size?: string | null
+          avg_import_rate?: number | null
+          best_time_to_contact?: string | null
+          competition_level?: string | null
+          conversion_rate?: number | null
+          conversion_score?: number | null
+          discovery_score?: number | null
+          id?: string
+          industry?: string
+          last_updated?: string | null
+          leads_closed?: number | null
+          leads_contacted?: number | null
+          leads_interested?: number | null
+          leads_responded?: number | null
+          market_score?: number | null
+          revenue_generated?: number | null
+          state?: string
+          total_found?: number | null
+          total_imported?: number | null
+          total_searches?: number | null
+          trend?: string | null
+          typical_objection?: string | null
+          website_adoption_rate?: number | null
+          winning_pitch?: string | null
+        }
+        Relationships: []
       }
       brandaro_market_share: {
         Row: {
@@ -16596,6 +16740,7 @@ export type Database = {
       }
       brandaro_scout_config: {
         Row: {
+          auto_discover_new_markets: boolean | null
           budget_alert_threshold: number | null
           budget_paused_until: string | null
           cost_per_search: number | null
@@ -16608,10 +16753,12 @@ export type Database = {
           is_active: boolean | null
           last_run_at: string | null
           min_hours_between_runs: number | null
+          min_industry_priority: number | null
           mode: string | null
           monthly_reset_date: string | null
           monthly_spend_limit: number | null
           monthly_spend_this_month: number | null
+          prioritize_high_conversion: boolean | null
           searches_per_run: number | null
           spend_reset_date: string | null
           target_industries: Json | null
@@ -16619,8 +16766,10 @@ export type Database = {
           total_leads_imported: number | null
           total_searches: number | null
           total_spent_all_time: number | null
+          use_market_intelligence: boolean | null
         }
         Insert: {
+          auto_discover_new_markets?: boolean | null
           budget_alert_threshold?: number | null
           budget_paused_until?: string | null
           cost_per_search?: number | null
@@ -16633,10 +16782,12 @@ export type Database = {
           is_active?: boolean | null
           last_run_at?: string | null
           min_hours_between_runs?: number | null
+          min_industry_priority?: number | null
           mode?: string | null
           monthly_reset_date?: string | null
           monthly_spend_limit?: number | null
           monthly_spend_this_month?: number | null
+          prioritize_high_conversion?: boolean | null
           searches_per_run?: number | null
           spend_reset_date?: string | null
           target_industries?: Json | null
@@ -16644,8 +16795,10 @@ export type Database = {
           total_leads_imported?: number | null
           total_searches?: number | null
           total_spent_all_time?: number | null
+          use_market_intelligence?: boolean | null
         }
         Update: {
+          auto_discover_new_markets?: boolean | null
           budget_alert_threshold?: number | null
           budget_paused_until?: string | null
           cost_per_search?: number | null
@@ -16658,10 +16811,12 @@ export type Database = {
           is_active?: boolean | null
           last_run_at?: string | null
           min_hours_between_runs?: number | null
+          min_industry_priority?: number | null
           mode?: string | null
           monthly_reset_date?: string | null
           monthly_spend_limit?: number | null
           monthly_spend_this_month?: number | null
+          prioritize_high_conversion?: boolean | null
           searches_per_run?: number | null
           spend_reset_date?: string | null
           target_industries?: Json | null
@@ -16669,6 +16824,7 @@ export type Database = {
           total_leads_imported?: number | null
           total_searches?: number | null
           total_spent_all_time?: number | null
+          use_market_intelligence?: boolean | null
         }
         Relationships: []
       }
