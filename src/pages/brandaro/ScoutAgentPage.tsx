@@ -279,12 +279,43 @@ export default function ScoutAgentPage() {
   const selectedStates = (config?.target_states as string[]) || [];
   const selectedIndustries = (config?.target_industries as string[]) || [];
 
+  // Auto-fix on page load
+  useEffect(() => {
+    const autoVerify = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-fix-imports`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({}),
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.total_fixed > 0) {
+            toast({ title: `Fixed ${data.total_fixed} leads`, description: "Pipeline data corrected" });
+          }
+        }
+      } catch {
+        // Silent fail on auto-fix
+      }
+    };
+    autoVerify();
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Bot className="h-6 w-6 text-primary" /> Autonomous Scout Agent</h1>
         <p className="text-sm text-muted-foreground">AI-powered lead discovery with market intelligence across all 50 states</p>
       </div>
+
+      {/* Live Monitor */}
+      <ScoutLiveMonitor />
 
       {/* ── Status + Budget ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
