@@ -1,75 +1,78 @@
 /**
- * InviteAmbassadorCard — Replaces ReferralLinkCard
- * Governed invite creation: single-use tokens, no raw URLs
+ * InviteAmbassadorCard — Ambassador submits recruit REQUESTS
+ * Admins review and send the actual invite.
  */
 import { useState } from 'react';
-import { Copy, Check, UserPlus, Clock, AlertTriangle, Send } from 'lucide-react';
+import { UserPlus, Clock, AlertTriangle, Send, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { useMyInvites, useCreateInvite, useInvitesEnabled } from '@/hooks/useAmbassadorInvites';
+import { useMyRequests, useSubmitRequest } from '@/hooks/useAmbassadorRequests';
 import { formatDistanceToNow } from 'date-fns';
 
 export function InviteAmbassadorCard() {
   const [showDialog, setShowDialog] = useState(false);
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [territory, setTerritory] = useState('');
+  const [justification, setJustification] = useState('');
 
-  const { data: invitesEnabled } = useInvitesEnabled();
-  const { data: myInvites = [], isLoading } = useMyInvites();
-  const createInvite = useCreateInvite();
+  const { data: myRequests = [], isLoading } = useMyRequests();
+  const submitRequest = useSubmitRequest();
 
-  const pendingCount = myInvites.filter(i => i.status === 'pending').length;
-  const acceptedCount = myInvites.filter(i => i.status === 'accepted').length;
+  const pendingCount = myRequests.filter(r => r.status === 'pending').length;
+  const approvedCount = myRequests.filter(r => r.status === 'approved').length;
+  const rejectedCount = myRequests.filter(r => r.status === 'rejected').length;
 
-  const handleCreate = async () => {
-    const result = await createInvite.mutateAsync({ email: email || undefined, phone: phone || undefined });
-    if (result?.token) {
-      const link = `${window.location.origin}/invite/ambassador/${result.token}`;
-      setGeneratedLink(link);
+  const handleSubmit = async () => {
+    if (!fullName.trim()) {
+      toast.error('Full name is required');
+      return;
     }
-  };
-
-  const handleCopy = async () => {
-    if (!generatedLink) return;
-    try {
-      await navigator.clipboard.writeText(generatedLink);
-      setCopied(true);
-      toast.success('Invite link copied!');
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error('Failed to copy');
+    if (!email.trim()) {
+      toast.error('Email is required');
+      return;
     }
+    if (!justification.trim()) {
+      toast.error('Please explain why this person should be recruited');
+      return;
+    }
+
+    await submitRequest.mutateAsync({
+      full_name: fullName.trim(),
+      email: email.trim(),
+      territory: territory.trim() || undefined,
+      justification: justification.trim(),
+    });
+
+    handleCloseDialog();
   };
 
   const handleCloseDialog = () => {
     setShowDialog(false);
+    setFullName('');
     setEmail('');
-    setPhone('');
-    setGeneratedLink(null);
-    setCopied(false);
+    setTerritory('');
+    setJustification('');
+  };
+
+  const statusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge variant="default" className="text-xs shrink-0 gap-1"><CheckCircle2 className="h-3 w-3" />Approved</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive" className="text-xs shrink-0 gap-1"><XCircle className="h-3 w-3" />Rejected</Badge>;
+      default:
+        return <Badge variant="secondary" className="text-xs shrink-0 gap-1"><Clock className="h-3 w-3" />Pending</Badge>;
+    }
   };
 
   if (isLoading) return null;
-
-  if (!invitesEnabled) {
-    return (
-      <Card className="border-muted">
-        <CardContent className="pt-6">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <AlertTriangle className="h-4 w-4" />
-            <span>Ambassador invites are currently disabled</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <>
@@ -82,7 +85,7 @@ export function InviteAmbassadorCard() {
                 Recruit Ambassadors
               </CardTitle>
               <CardDescription className="text-xs">
-                Create governed invites to grow your team
+                Submit a recruit request — admin will send the invite
               </CardDescription>
             </div>
             <div className="flex gap-1">
@@ -91,9 +94,9 @@ export function InviteAmbassadorCard() {
                   {pendingCount} pending
                 </Badge>
               )}
-              {acceptedCount > 0 && (
+              {approvedCount > 0 && (
                 <Badge variant="default" className="shrink-0">
-                  {acceptedCount} joined
+                  {approvedCount} approved
                 </Badge>
               )}
             </div>
@@ -102,93 +105,100 @@ export function InviteAmbassadorCard() {
         <CardContent className="space-y-3">
           <Button className="w-full" onClick={() => setShowDialog(true)}>
             <Send className="h-4 w-4 mr-2" />
-            Create Invite
+            Request Invite for Recruit
           </Button>
 
-          {/* Recent invites */}
-          {myInvites.slice(0, 3).map(invite => (
-            <div key={invite.id} className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border">
-              <div className="flex items-center gap-2 min-w-0">
-                <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                <span className="truncate">{invite.email || invite.phone || 'No contact'}</span>
+          {/* Recent requests */}
+          {myRequests.slice(0, 5).map(req => (
+            <div key={req.id} className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded border">
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="font-medium truncate">{req.full_name}</span>
+                <span className="text-muted-foreground truncate">{req.email}</span>
+                {req.review_notes && req.status !== 'pending' && (
+                  <span className="text-muted-foreground/70 italic truncate">
+                    Note: {req.review_notes}
+                  </span>
+                )}
               </div>
-              <Badge
-                variant={invite.status === 'accepted' ? 'default' : invite.status === 'revoked' ? 'destructive' : 'secondary'}
-                className="text-xs shrink-0"
-              >
-                {invite.status}
-              </Badge>
+              <div className="flex flex-col items-end gap-1 shrink-0 ml-2">
+                {statusBadge(req.status)}
+                <span className="text-[10px] text-muted-foreground">
+                  {formatDistanceToNow(new Date(req.created_at), { addSuffix: true })}
+                </span>
+              </div>
             </div>
           ))}
 
+          {myRequests.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              No recruit requests yet. Found someone? Submit a request above.
+            </p>
+          )}
+
           <p className="text-xs text-muted-foreground text-center">
-            Invites are monitored. Single-use, 48h expiry.
+            Requests are reviewed by admin before invites are sent.
           </p>
         </CardContent>
       </Card>
 
-      {/* Create Invite Dialog */}
+      {/* Submit Request Dialog */}
       <Dialog open={showDialog} onOpenChange={handleCloseDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Create Ambassador Invite</DialogTitle>
+            <DialogTitle>Request Ambassador Invite</DialogTitle>
             <DialogDescription>
-              Generate a single-use invite link. The invitee will be onboarded as an ambassador under your team.
+              Tell us about the person you want to recruit. Admin will review and send the invite if approved.
             </DialogDescription>
           </DialogHeader>
 
-          {!generatedLink ? (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Email (optional)</Label>
-                <Input
-                  placeholder="ambassador@example.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  type="email"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone (optional)</Label>
-                <Input
-                  placeholder="+1234567890"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  type="tel"
-                />
-              </div>
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
-                <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0" />
-                  Invites are monitored. Abuse will result in revocation.
-                </p>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={createInvite.isPending}>
-                  {createInvite.isPending ? 'Creating...' : 'Generate Invite'}
-                </Button>
-              </DialogFooter>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Full Name *</Label>
+              <Input
+                placeholder="John Smith"
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+              />
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Invite Link (single-use, expires in 48h)</Label>
-                <div className="flex gap-2">
-                  <Input value={generatedLink} readOnly className="text-xs bg-muted/30" />
-                  <Button variant="outline" size="icon" onClick={handleCopy}>
-                    {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Share this link with the person you want to invite. It can only be used once.
+            <div className="space-y-2">
+              <Label>Email *</Label>
+              <Input
+                placeholder="recruit@example.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                type="email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Territory / Area</Label>
+              <Input
+                placeholder="e.g. Brooklyn, NY"
+                value={territory}
+                onChange={e => setTerritory(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Why should we recruit this person? *</Label>
+              <Textarea
+                placeholder="Explain how you know them, their experience, why they'd be a good ambassador..."
+                value={justification}
+                onChange={e => setJustification(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
+              <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Your request will be reviewed by admin. You'll see the status update here.
               </p>
-              <DialogFooter>
-                <Button onClick={handleCloseDialog}>Done</Button>
-              </DialogFooter>
             </div>
-          )}
+            <DialogFooter>
+              <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+              <Button onClick={handleSubmit} disabled={submitRequest.isPending}>
+                {submitRequest.isPending ? 'Submitting...' : 'Submit Request'}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </>
