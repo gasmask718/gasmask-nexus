@@ -129,16 +129,17 @@ serve(async (req: Request) => {
     }
 
     if (errors.length > 0) {
-      console.error("❌ Credential validation failed:", errors);
+      console.info("ℹ️ Browser calling not configured:", errors);
       return new Response(
         JSON.stringify({
+          configured: false,
           code: "VOICE_CONFIG_INVALID",
-          error: "Twilio Voice credentials invalid",
+          error: "Browser calling not configured",
           details: errors,
           health,
-          hint: "Update Lovable Cloud secrets: ACCOUNT_SID must start with AC (34 chars), API_SID with SK, TWIML_APP_SID with AP",
+          hint: "Browser calling requires TWILIO_API_SID (SK*), TWILIO_API_SECRET, and TWILIO_TWIML_APP_SID (AP*). AI calling via ElevenLabs works without this.",
         }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
