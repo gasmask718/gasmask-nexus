@@ -289,8 +289,6 @@ const DYNASTY_NAVIGATION = {
       name: '🤖 Floor 9 — AI Operations',
       items: [
         { path: '/gasmask/agent-center', label: 'AI Agent Center', icon: Brain },
-        { path: '/gasmask/route-engine', label: 'Route Engine', icon: Truck },
-        { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/floor9', label: 'AI Operations Hub', icon: Brain },
         { path: '/grabba/floor9/playbooks', label: 'AI Playbooks', icon: FileText },
         { path: '/grabba/floor9/tasks', label: 'AI Tasks', icon: ClipboardList },
