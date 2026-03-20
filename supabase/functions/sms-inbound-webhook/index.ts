@@ -211,7 +211,6 @@ serve(async (req: Request) => {
         .from("brandaro_qualified_leads")
         .update({
           pipeline_stage: finalStage,
-          lead_status: finalStage,
           updated_at: new Date().toISOString(),
         })
         .eq("id", lead.id);
