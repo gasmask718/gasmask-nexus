@@ -272,13 +272,6 @@ export default function ScoutAgentPage() {
     toast({ title: "All 25 industries selected" });
   }, [config, queryClient, toast]);
 
-  if (configLoading) {
-    return <div className="space-y-6"><Skeleton className="h-8 w-64" /><Skeleton className="h-40 w-full" /><Skeleton className="h-40 w-full" /></div>;
-  }
-
-  const selectedStates = (config?.target_states as string[]) || [];
-  const selectedIndustries = (config?.target_industries as string[]) || [];
-
   // Auto-fix on page load
   useEffect(() => {
     const autoVerify = async () => {
@@ -305,7 +298,14 @@ export default function ScoutAgentPage() {
       }
     };
     autoVerify();
-  }, []);
+  }, [toast]);
+
+  if (configLoading) {
+    return <div className="space-y-6"><Skeleton className="h-8 w-64" /><Skeleton className="h-40 w-full" /><Skeleton className="h-40 w-full" /></div>;
+  }
+
+  const selectedStates = (config?.target_states as string[]) || [];
+  const selectedIndustries = (config?.target_industries as string[]) || [];
 
   return (
     <div className="space-y-6">
