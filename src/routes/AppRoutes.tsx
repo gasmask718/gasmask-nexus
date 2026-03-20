@@ -151,6 +151,7 @@ const VAPerformancePage = lazy(() => import('@/pages/brandaro/VAPerformancePage'
 const LeadDiscoveryPage = lazy(() => import('@/pages/brandaro/LeadDiscoveryPage'));
 const LeadQualificationPage = lazy(() => import('@/pages/brandaro/LeadQualificationPage'));
 const DemoEnginePage = lazy(() => import('@/pages/brandaro/DemoEnginePage'));
+const ScoutAgentPage = lazy(() => import('@/pages/brandaro/ScoutAgentPage'));
 const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
 const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
