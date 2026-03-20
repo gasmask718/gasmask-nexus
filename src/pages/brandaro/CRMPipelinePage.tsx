@@ -309,6 +309,7 @@ export default function CRMPipelinePage() {
             {autoMove.isPending ? "Running…" : "Auto-Move Leads"}
           </Button>
         </div>
+      </div>
 
       {/* Hot Leads Intelligence Panels */}
       <HotLeadsPanels
