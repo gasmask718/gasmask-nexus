@@ -2722,7 +2722,7 @@ export default function AppRoutes() {
           {/* ── Pipeline ── */}
           <Route path="leads" element={<LeadDatabasePage />} />
           <Route path="crm-pipeline" element={<CRMPipelinePage />} />
-          <Route path="inbox" element={<InboxPage />} />
+          <Route path="inbox" element={<BrandaroInboxPage />} />
           <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
           <Route path="scout-agent" element={<ScoutAgentPage />} />
           <Route path="lead-qualification" element={<LeadQualificationPage />} />
