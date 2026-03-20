@@ -147,11 +147,15 @@ export function BrandaroLeadCard({
     }
   };
 
+  const hasReply = !!(lead as any).last_reply_at;
+  const replyText = (lead as any).last_reply_text;
+  const repliedRecently = hasReply && new Date((lead as any).last_reply_at) > new Date(Date.now() - 86400000);
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className={`rounded-[10px] border-[0.5px] border-border bg-card hover:shadow-md transition-shadow cursor-pointer w-full flex flex-col ${selected ? "ring-2 ring-primary" : ""}`}
+          className={`rounded-[10px] border-[0.5px] border-border bg-card hover:shadow-md transition-shadow cursor-pointer w-full flex flex-col ${selected ? "ring-2 ring-primary" : ""} ${repliedRecently ? "ring-2 ring-green-500/50 ring-offset-1" : ""}`}
         >
           {/* Card body */}
           <div className="p-3 flex-1">
