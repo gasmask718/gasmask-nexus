@@ -98,6 +98,7 @@ export function BrandaroLeadCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1">
               {aiPaused && <Pause className="h-3 w-3 text-amber-500 shrink-0" />}
+              {(lead as any).discovery_job_id && <Bot className="h-3 w-3 text-blue-500 shrink-0" title="Scout discovered" />}
               <p className="font-semibold text-sm leading-tight truncate">
                 {lead.business_name || "Unknown"}
               </p>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Kanban, Phone, MapPin, Star, Filter, MessageSquare, X,
-  StickyNote, TrendingUp, Users, DollarSign, Target, Zap,
+  StickyNote, TrendingUp, Users, DollarSign, Target, Zap, RefreshCw,
 } from "lucide-react";
 import {
   useBrandaroPipeline,
@@ -16,6 +16,7 @@ import {
   PipelineLead,
 } from "@/hooks/useBrandaroPipeline";
 import { usePipelineInsights } from "@/hooks/usePipelineInsights";
+import { useQueryClient } from "@tanstack/react-query";
 import { BrandaroLeadCard } from "@/components/brandaro/BrandaroLeadCard";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
 import { HotLeadsPanels } from "@/components/brandaro/HotLeadsPanels";
