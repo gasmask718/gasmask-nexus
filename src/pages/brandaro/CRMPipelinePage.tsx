@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -239,6 +240,35 @@ export default function CRMPipelinePage() {
     queryClient.invalidateQueries({ queryKey: ["brandaro-stuck-leads"] });
   }, [queryClient]);
 
+  // Realtime subscription for new leads
+  useEffect(() => {
+    const channel = supabase
+      .channel('pipeline-leads-changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'brandaro_qualified_leads',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['brandaro-pipeline'] });
+        queryClient.invalidateQueries({ queryKey: ['brandaro-hot-leads'] });
+        queryClient.invalidateQueries({ queryKey: ['brandaro-total-count'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  // Total count (no filters)
+  const { data: totalCount } = useQuery({
+    queryKey: ['brandaro-total-count'],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('brandaro_qualified_leads')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const { columns, stats, cities, industries, isLoading, moveLead, updateNotes } =
     useBrandaroPipeline({
       city: cityFilter || undefined,
@@ -326,7 +356,7 @@ export default function CRMPipelinePage() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" /> Total Leads
           </div>
-          <p className="text-2xl font-bold">{stats.total}</p>
+          <p className="text-2xl font-bold">{totalCount ?? stats.total}</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">

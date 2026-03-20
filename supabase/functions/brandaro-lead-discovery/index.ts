@@ -208,7 +208,15 @@ serve(async (req) => {
           ? await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types)
           : { priority_score: 5 };
 
-        const { data: insertedLead } = await supabase.from('brandaro_qualified_leads').insert({
+        console.log('[DISCOVERY] Attempting insert:', {
+          business_name: p.name,
+          phone: phone,
+          city: cityName,
+          industry: industry,
+          job_id: job_id,
+        });
+
+        const { data: insertedLead, error: insertErr } = await supabase.from('brandaro_qualified_leads').insert({
           business_name: p.name,
           phone_number: phone,
           address: p.formatted_address || address,
@@ -232,7 +240,20 @@ serve(async (req) => {
           call_attempts: 0,
           ai_paused: false,
           converted: false,
-        }).select('id').single();
+        }).select('id, business_name').single();
+
+        if (insertErr) {
+          console.error('[DISCOVERY] INSERT FAILED:', {
+            error: insertErr.message,
+            code: insertErr.code,
+            details: insertErr.details,
+            hint: insertErr.hint,
+            business: p.name,
+          });
+          continue;
+        }
+
+        console.log('[DISCOVERY] INSERT SUCCESS:', insertedLead?.business_name, insertedLead?.id);
 
         // Wire into pipeline automator
         if (insertedLead?.id) {
