@@ -26,6 +26,7 @@ interface UnifiedMessage {
 }
 
 export default function ConversationsTab() {
+  const queryClient = useQueryClient();
   const { currentBusiness } = useBusiness();
   const [selectedThreadKey, setSelectedThreadKey] = useState<string | null>(null);
   const [searchPhone, setSearchPhone] = useState("");
