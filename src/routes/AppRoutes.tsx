@@ -1,610 +1,791 @@
 /**
  * AppRoutes - Clean nested route structure for Dynasty OS
  * Uses React Router nested routes with Layout wrapper
+ * Performance: ALL page components are lazy-loaded
  */
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { RoleRouteGuard } from '@/components/security/RoleRouteGuard';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
-
-// Multi-Surface Layouts
-import PublicLayout from '@/layouts/PublicLayout';
-import OpsLayout from '@/layouts/OpsLayout';
-import LandingPage from '@/pages/public/LandingPage';
-import AboutPage from '@/pages/public/AboutPage';
-import ContactPage from '@/pages/public/ContactPage';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Public pages
-import Auth from '@/pages/Auth';
-import Shop from '@/pages/Shop';
-import Cart from '@/pages/Cart';
-import Checkout from '@/pages/Checkout';
-import NotFound from '@/pages/NotFound';
-import TWLLanding from '@/pages/TWLLanding';
-import PortalLogin from '@/pages/portal/PortalLogin';
-import PortalRegister from '@/pages/portal/PortalRegister';
-import DriverLogin from '@/pages/portal/DriverLogin';
-import BikerLogin from '@/pages/portal/BikerLogin';
-import InviteSignup from '@/pages/auth/InviteSignup';
-import UserInvitations from '@/pages/security/UserInvitations';
-import InviteLanding from '@/pages/portal/InviteLanding';
-import InstallPwa from '@/pages/InstallPwa';
+// Layouts — kept static (used as wrappers, always needed)
+import PublicLayout from '@/layouts/PublicLayout';
+import OpsLayout from '@/layouts/OpsLayout';
+import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 
-// Protected page imports
-import Dashboard from '@/pages/Dashboard';
-import Stores from '@/pages/Stores';
-import StoreDetail from '@/pages/StoreDetail';
-import RoutesPage from '@/pages/Routes';
-import RouteDetail from '@/pages/RouteDetail';
-import MapPage from '@/pages/Map';
-import BatchImport from '@/pages/BatchImport';
-import Driver from '@/pages/Driver';
-import Wholesale from '@/pages/Wholesale';
-import WholesaleMarketplace from '@/pages/WholesaleMarketplace';
-import Team from '@/pages/Team';
-import Products from '@/pages/Products';
-import Analytics from '@/pages/Analytics';
-import Influencers from '@/pages/Influencers';
-import Missions from '@/pages/Missions';
-import InfluencerCampaigns from '@/pages/InfluencerCampaigns';
-import ExecutiveReports from '@/pages/ExecutiveReports';
-import Territories from '@/pages/Territories';
-import TerritoryOverview from '@/pages/territory/TerritoryOverview';
-import TerritoryNeighborhoods from '@/pages/territory/TerritoryNeighborhoods';
-import TerritoryTasks from '@/pages/territory/TerritoryTasks';
-import TerritoryCandidates from '@/pages/territory/TerritoryCandidates';
-import ScoutConsole from '@/pages/territory/ScoutConsole';
-import CallConsole from '@/pages/territory/CallConsole';
-import VisitConsole from '@/pages/territory/VisitConsole';
-import PromotionsPending from '@/pages/territory/PromotionsPending';
-import PromotionsHistory from '@/pages/territory/PromotionsHistory';
-import TerritoryIngestion from '@/pages/territory/TerritoryIngestion';
-import TerritoryGapIntelligence from '@/pages/territory/TerritoryGapIntelligence';
-import TerritoryPlanning from '@/pages/territory/TerritoryPlanning';
-import CommitmentHistory from '@/pages/territory/CommitmentHistory';
-import AIPermissionsOverview from '@/pages/territory/AIPermissionsOverview';
-import AIPermissionsNeighborhoods from '@/pages/territory/AIPermissionsNeighborhoods';
-import AIPermissionsActions from '@/pages/territory/AIPermissionsActions';
-import AIViolationsPage from '@/pages/territory/AIViolationsPage';
-import AIReviewQueuePage from '@/pages/territory/AIReviewQueuePage';
-import TerritoryPlaybooksPage from '@/pages/territory/TerritoryPlaybooksPage';
-import RevenueBrain from '@/pages/RevenueBrain';
-import OpportunityRadar from '@/pages/OpportunityRadar';
-import MasterOpportunities from '@/pages/MasterOpportunities';
-import MissionsHQ from '@/pages/MissionsHQ';
-import Communications from '@/pages/Communications';
-import Templates from '@/pages/Templates';
-import Reminders from '@/pages/Reminders';
-import InfluencerDetail from '@/pages/InfluencerDetail';
-import InfluencerAnalyticsCenter from '@/pages/InfluencerAnalyticsCenter';
-import WholesalerDetail from '@/pages/grabba/WholesalerProfile';
-import WorkerHome from '@/pages/WorkerHome';
-import AutomationSettings from '@/pages/AutomationSettings';
-import Training from '@/pages/Training';
-import Ambassadors from '@/pages/Ambassadors';
-import { AmbassadorDashboard, AmbassadorStoreProfile, AmbassadorStoresList, AmbassadorWholesalersList, AmbassadorCommissions, AmbassadorRoutes, AmbassadorOrders, AmbassadorCommunications, AmbassadorLeads, AmbassadorDisputes, AmbassadorDisputeDetail, AmbassadorPurchases, AmbassadorSellThrough, AmbassadorProfitDashboard, AmbassadorInvites, AmbassadorRecruitmentLeads } from '@/pages/ambassador';
-import AmbassadorRequestAmbassador from '@/pages/ambassador/AmbassadorRequestAmbassador';
-import AmbassadorRequests from '@/pages/security/AmbassadorRequests';
-import AmbassadorInviteAccept from '@/pages/invite/AmbassadorInviteAccept';
-import PublicProposalPage from '@/pages/brandaro/PublicProposalPage';
-import ClientDemoViewPage from '@/pages/brandaro/ClientDemoViewPage';
-import CEODashboardPage from '@/pages/brandaro/CEODashboardPage';
-import RetentionDashboardPage from '@/pages/brandaro/RetentionDashboardPage';
-import VACommandCenterPage from '@/pages/brandaro/VACommandCenterPage';
-import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
-import CRMPipelinePage from '@/pages/brandaro/CRMPipelinePage';
-import CallingOpsPage from '@/pages/brandaro/CallingOpsPage';
-import RevenueAnalyticsPage from '@/pages/brandaro/RevenueAnalyticsPage';
-import ClientReportingPage from '@/pages/brandaro/ClientReportingPage';
-import AdsEnginePage from '@/pages/brandaro/AdsEnginePage';
-import GoogleDominationPage from '@/pages/brandaro/GoogleDominationPage';
-import OptimizationEnginePage from '@/pages/brandaro/OptimizationEnginePage';
-import CompetitorTakeoverPage from '@/pages/brandaro/CompetitorTakeoverPage';
-import CloserAIPage from '@/pages/brandaro/CloserAIPage';
-import VADashboardPage from '@/pages/brandaro/VADashboardPage';
-import VAManagerPage from '@/pages/brandaro/VAManagerPage';
-import BrandaroHubLayout from '@/pages/brandaro/BrandaroHubLayout';
-import BrandaroWarRoom from '@/pages/brandaro/BrandaroWarRoom';
-import FollowUpEnginePage from '@/pages/brandaro/FollowUpEnginePage';
-import ProposalBuilderPage from '@/pages/brandaro/ProposalBuilderPage';
-import BuildPipelinePage from '@/pages/brandaro/BuildPipelinePage';
-import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
-import CampaignManagerPage from '@/pages/brandaro/CampaignManagerPage';
-import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
-import VAWorkspacePage from '@/pages/brandaro/VAWorkspacePage';
-import VAPerformancePage from '@/pages/brandaro/VAPerformancePage';
-import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
-import LeadQualificationPage from '@/pages/brandaro/LeadQualificationPage';
-import DemoEnginePage from '@/pages/brandaro/DemoEnginePage';
-import ProductionPipelinePage from '@/pages/brandaro/ProductionPipelinePage';
-import ClientPortalPage from '@/pages/brandaro/ClientPortalPage';
-import AmbassadorInviteGovernance from '@/pages/admin/AmbassadorInviteGovernance';
-import { AmbassadorProfilePage, WholesalerProfilePage, StoreProfilePage, InfluencerProfilePage } from '@/pages/profile';
-import { AmbassadorCommandDashboard, AllAmbassadorsTable, AmbassadorProfilePage as Floor8AmbassadorProfile, AmbassadorPayoutsPage as Floor8PayoutsPage, AmbassadorRegionsPage, InfluencersPage as Floor8InfluencersPage } from '@/pages/floor8';
-import { AdminDisputesQueue, AdminDisputeDetail } from '@/pages/admin/disputes';
-import { AdminOverridesPage, AdminOverrideDetailPage } from '@/pages/admin/overrides';
-import { AdminPayoutsPage, AdminPayoutDetailPage } from '@/pages/admin/payouts';
-import { AdminMarketplacePayoutsPage } from '@/pages/admin/marketplace-payouts';
-import { MarketplaceControlTowerPage } from '@/pages/admin/marketplace-control';
-import { FinancialReportsPage, AmbassadorReportsPage, StoreReportsPage, TaxReportsPage, PayoutReportsPage } from '@/pages/admin/reports';
-import DeletedRecords from '@/pages/admin/DeletedRecords';
-import QACommandCenter from '@/pages/admin/qa/QACommandCenter';
-import AmbassadorApplications from '@/pages/admin/AmbassadorApplications';
-import SmsSystemTests from '@/pages/admin/SmsSystemTests';
-import AmbassadorApplication from '@/pages/apply/AmbassadorApplication';
-import { AmbassadorEarningsPage } from '@/pages/ambassador/reports';
-import { AmbassadorPayoutsPage, AmbassadorPayoutStatementPage, AmbassadorPayoutSettingsPage } from '@/pages/ambassador/payouts';
-import Expansion from '@/pages/Expansion';
-import Rewards from '@/pages/Rewards';
-import LiveMap from '@/pages/LiveMap';
-import WalletPage from '@/pages/Wallet';
-import Subscriptions from '@/pages/Subscriptions';
-import DeliveryCapacity from '@/pages/DeliveryCapacity';
-import { DeliveryCapacityCommand } from '@/pages/delivery';
-import CommunicationAutomation from '@/pages/CommunicationAutomation';
-import CommunicationsAI from '@/pages/CommunicationsAI';
-import { SecurityConsole } from '@/components/security/SecurityConsole';
-import { RolesPermissionsPage } from '@/components/security/RolesPermissionsPage';
-import UserManagementPage from '@/components/security/UserManagementPage';
-import MessagesPage from '@/pages/Messages';
-import CommunicationInsights from '@/pages/CommunicationInsights';
-import RouteOptimizer from '@/pages/RouteOptimizer';
-import RouteOpsCenter from '@/pages/RouteOpsCenter';
-import { RouteOpsCenterEnhanced, OpsCommandCenter, RouteOptimizerPage } from '@/pages/delivery';
-import MyRoute from '@/pages/MyRoute';
-import SidebarVisualTest from '@/pages/SidebarVisualTest';
-import SidebarDebug from '@/pages/debug/SidebarDebug';
-import Leaderboard from '@/pages/Leaderboard';
-import Payroll from '@/pages/Payroll';
-import MetaAI from '@/pages/MetaAI';
-import ExpansionRegions from '@/pages/ExpansionRegions';
-import ExpansionHeatmap from '@/pages/ExpansionHeatmap';
-import AmbassadorRegions from '@/pages/AmbassadorRegions';
-import Sales from '@/pages/Sales';
-import SalesProspects from '@/pages/SalesProspects';
-import SalesProspectNew from '@/pages/SalesProspectNew';
-import SalesProspectDetail from '@/pages/SalesProspectDetail';
-import SalesReport from '@/pages/SalesReport';
-import StorePerformance from '@/pages/StorePerformance';
-import SellThroughAnalytics from '@/pages/SellThroughAnalytics';
-import BrandCRMPage from '@/pages/floor1/BrandCRMPage';
-import StoreOrder from '@/pages/StoreOrder';
-import WholesaleFulfillment from '@/pages/WholesaleFulfillment';
-import Billing from '@/pages/Billing';
-import EconomicAnalytics from '@/pages/EconomicAnalytics';
-import AmbassadorPayouts from '@/pages/AmbassadorPayouts';
-import BikerPayouts from '@/pages/BikerPayouts';
-import CRM from '@/pages/CRM';
-import CRMContacts from '@/pages/CRMContacts';
-import CRMContactDetail from '@/pages/CRMContactDetail';
-import CRMCustomers from '@/pages/CRMCustomers';
-import ContactProfile from '@/pages/crm/ContactProfile';
-import GlobalCRM from '@/pages/crm/GlobalCRM';
-import GlobalCRMDashboard from '@/pages/crm/GlobalCRMDashboard';
-import BusinessCRMDashboard from '@/pages/crm/BusinessCRMDashboard';
-import CRMRouter from '@/pages/crm/CRMRouter';
-import DynamicCRMPage from '@/pages/crm/DynamicCRMPage';
-import { TopTierPartnerDashboard, TopTierPartnerCategoryPage, TopTierPartnerProfile, TopTierPartnersByState, TopTierAddPartner, TopTierRecentBookings, TopTierCustomerRequests, TopTierRequestDetail, TopTierPartnerEdit, TopTierDealDetail, TopTierCampaignDetail, TopTierInteractionDetail, TopTierContactDetail, TopTierAssetDetail, TopTierNoteDetail, TopTierAnalyticsDeals, TopTierAnalyticsRevenue, TopTierAnalyticsCommissions, TopTierAllContacts, TopTierInteractionsHub, TopTierCustomers, TopTierCustomerProfile, TopTierNewCustomer, TopTierEditCustomer, TopTierVIPCustomers, TopTierReturningCustomers, TopTierNewCustomers, TopTierCustomerBookings, TopTierCustomerValue, TopTierAllPartners, TopTierNewDeal, TopTierDeals, TopTierKPIManagement } from '@/pages/crm/toptier';
-import AddBusinessPage from '@/pages/crm/AddBusinessPage';
-import CRMDataPage from '@/pages/crm/CRMDataPage';
-import CRMExportPage from '@/pages/crm/CRMExportPage';
-import CRMImportPage from '@/pages/crm/CRMImportPage';
-import CRMBackupPage from '@/pages/crm/CRMBackupPage';
-import EntityListPage from '@/pages/crm/EntityListPage';
-import EntityProfilePage from '@/pages/crm/EntityProfilePage';
-import EntityCreatePage from '@/pages/crm/EntityCreatePage';
-import CRMSettingsPage from '@/pages/crm/CRMSettingsPage';
-import CRMUserAccessPage from '@/pages/crm/CRMUserAccessPage';
-import AcceptCRMInvite from '@/pages/crm/AcceptCRMInvite';
-import CRMBrandPage from '@/pages/crm/BrandCRM';
-import CRMBrandStoreProfile from '@/pages/crm/BrandStoreProfile';
-import CRMCustomerNew from '@/pages/CRMCustomerNew';
-import CRMCustomerDetail from '@/pages/CRMCustomerDetail';
-import CRMCustomerImport from '@/pages/CRMCustomerImport';
-import CRMData from '@/pages/CRMData';
-import CRMDataExport from '@/pages/CRMDataExport';
-import CRMDataImport from '@/pages/CRMDataImport';
-import CRMBulkUpload from '@/pages/CRMBulkUpload';
-import CRMBackupSettings from '@/pages/CRMBackupSettings';
-import CRMFollowUps from '@/pages/CRMFollowUps';
-import Companies from '@/pages/Companies';
-import CompanyProfile from '@/pages/CompanyProfile';
-import UnpaidAccounts from '@/pages/UnpaidAccounts';
-import DriverDebtCollection from '@/pages/DriverDebtCollection';
-import BrandDashboard from '@/pages/BrandDashboard';
-import { OwnerDashboard, OwnerAIAdvisorPage, OwnerClusterDashboard, OwnerAutopilotConsole, OwnerAICommandConsole, OwnerRiskRadar, OwnerDailyBriefing, OwnerHoldingsOverview, OwnerClusterDetailPage, OwnerAutomationDetailPage, OwnerRiskDetailPage, OwnerBusinessDetailPage, OwnerPropertyDetailPage, OwnerFinancialHoldingDetailPage, OwnerAlertDetailPage, OwnerAutoTradingDetailPage, OwnerCryptoDetailPage, OwnerSportsDetailPage, OwnerVoiceAI, OwnerReports, OwnerVARouting, OwnerAlertCenter, OwnerExecutiveReports, OwnerBroadcastCenter, OwnerAccountingOS } from '@/pages/owner';
-import OwnerMissionControl from '@/pages/owner/OwnerMissionControl';
+// Suspense fallback spinner
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════
+// LAZY IMPORTS — Every page is code-split
+// ═══════════════════════════════════════════════════════════════════════
+
+// Public pages
+const LandingPage = lazy(() => import('@/pages/public/LandingPage'));
+const AboutPage = lazy(() => import('@/pages/public/AboutPage'));
+const ContactPage = lazy(() => import('@/pages/public/ContactPage'));
+const Auth = lazy(() => import('@/pages/Auth'));
+const Shop = lazy(() => import('@/pages/Shop'));
+const Cart = lazy(() => import('@/pages/Cart'));
+const Checkout = lazy(() => import('@/pages/Checkout'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+const TWLLanding = lazy(() => import('@/pages/TWLLanding'));
+const PortalLogin = lazy(() => import('@/pages/portal/PortalLogin'));
+const PortalRegister = lazy(() => import('@/pages/portal/PortalRegister'));
+const DriverLogin = lazy(() => import('@/pages/portal/DriverLogin'));
+const BikerLogin = lazy(() => import('@/pages/portal/BikerLogin'));
+const InviteSignup = lazy(() => import('@/pages/auth/InviteSignup'));
+const UserInvitations = lazy(() => import('@/pages/security/UserInvitations'));
+const InviteLanding = lazy(() => import('@/pages/portal/InviteLanding'));
+const InstallPwa = lazy(() => import('@/pages/InstallPwa'));
+
+// Protected pages
+const Dashboard = lazy(() => import('@/pages/Dashboard'));
+const Stores = lazy(() => import('@/pages/Stores'));
+const StoreDetail = lazy(() => import('@/pages/StoreDetail'));
+const RoutesPage = lazy(() => import('@/pages/Routes'));
+const RouteDetail = lazy(() => import('@/pages/RouteDetail'));
+const MapPage = lazy(() => import('@/pages/Map'));
+const BatchImport = lazy(() => import('@/pages/BatchImport'));
+const Driver = lazy(() => import('@/pages/Driver'));
+const Wholesale = lazy(() => import('@/pages/Wholesale'));
+const WholesaleMarketplace = lazy(() => import('@/pages/WholesaleMarketplace'));
+const Team = lazy(() => import('@/pages/Team'));
+const Products = lazy(() => import('@/pages/Products'));
+const Analytics = lazy(() => import('@/pages/Analytics'));
+const Influencers = lazy(() => import('@/pages/Influencers'));
+const Missions = lazy(() => import('@/pages/Missions'));
+const InfluencerCampaigns = lazy(() => import('@/pages/InfluencerCampaigns'));
+const ExecutiveReports = lazy(() => import('@/pages/ExecutiveReports'));
+const Territories = lazy(() => import('@/pages/Territories'));
+const TerritoryOverview = lazy(() => import('@/pages/territory/TerritoryOverview'));
+const TerritoryNeighborhoods = lazy(() => import('@/pages/territory/TerritoryNeighborhoods'));
+const TerritoryTasks = lazy(() => import('@/pages/territory/TerritoryTasks'));
+const TerritoryCandidates = lazy(() => import('@/pages/territory/TerritoryCandidates'));
+const ScoutConsole = lazy(() => import('@/pages/territory/ScoutConsole'));
+const CallConsole = lazy(() => import('@/pages/territory/CallConsole'));
+const VisitConsole = lazy(() => import('@/pages/territory/VisitConsole'));
+const PromotionsPending = lazy(() => import('@/pages/territory/PromotionsPending'));
+const PromotionsHistory = lazy(() => import('@/pages/territory/PromotionsHistory'));
+const TerritoryIngestion = lazy(() => import('@/pages/territory/TerritoryIngestion'));
+const TerritoryGapIntelligence = lazy(() => import('@/pages/territory/TerritoryGapIntelligence'));
+const TerritoryPlanning = lazy(() => import('@/pages/territory/TerritoryPlanning'));
+const CommitmentHistory = lazy(() => import('@/pages/territory/CommitmentHistory'));
+const AIPermissionsOverview = lazy(() => import('@/pages/territory/AIPermissionsOverview'));
+const AIPermissionsNeighborhoods = lazy(() => import('@/pages/territory/AIPermissionsNeighborhoods'));
+const AIPermissionsActions = lazy(() => import('@/pages/territory/AIPermissionsActions'));
+const AIViolationsPage = lazy(() => import('@/pages/territory/AIViolationsPage'));
+const AIReviewQueuePage = lazy(() => import('@/pages/territory/AIReviewQueuePage'));
+const TerritoryPlaybooksPage = lazy(() => import('@/pages/territory/TerritoryPlaybooksPage'));
+const RevenueBrain = lazy(() => import('@/pages/RevenueBrain'));
+const OpportunityRadar = lazy(() => import('@/pages/OpportunityRadar'));
+const MasterOpportunities = lazy(() => import('@/pages/MasterOpportunities'));
+const MissionsHQ = lazy(() => import('@/pages/MissionsHQ'));
+const Communications = lazy(() => import('@/pages/Communications'));
+const Templates = lazy(() => import('@/pages/Templates'));
+const Reminders = lazy(() => import('@/pages/Reminders'));
+const InfluencerDetail = lazy(() => import('@/pages/InfluencerDetail'));
+const InfluencerAnalyticsCenter = lazy(() => import('@/pages/InfluencerAnalyticsCenter'));
+const WholesalerDetail = lazy(() => import('@/pages/grabba/WholesalerProfile'));
+const WorkerHome = lazy(() => import('@/pages/WorkerHome'));
+const AutomationSettings = lazy(() => import('@/pages/AutomationSettings'));
+const Training = lazy(() => import('@/pages/Training'));
+const Ambassadors = lazy(() => import('@/pages/Ambassadors'));
+
+// Ambassador pages (barrel import → individual lazy)
+const AmbassadorDashboard = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorDashboard })));
+const AmbassadorStoreProfile = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoreProfile })));
+const AmbassadorStoresList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorStoresList })));
+const AmbassadorWholesalersList = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorWholesalersList })));
+const AmbassadorCommissions = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorCommissions })));
+const AmbassadorRoutes = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorRoutes })));
+const AmbassadorOrders = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorOrders })));
+const AmbassadorCommunications = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorCommunications })));
+const AmbassadorLeads = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorLeads })));
+const AmbassadorDisputes = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorDisputes })));
+const AmbassadorDisputeDetail = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorDisputeDetail })));
+const AmbassadorPurchases = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorPurchases })));
+const AmbassadorSellThrough = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorSellThrough })));
+const AmbassadorProfitDashboard = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorProfitDashboard })));
+const AmbassadorInvites = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorInvites })));
+const AmbassadorRecruitmentLeads = lazy(() => import('@/pages/ambassador').then(m => ({ default: m.AmbassadorRecruitmentLeads })));
+const AmbassadorRequestAmbassador = lazy(() => import('@/pages/ambassador/AmbassadorRequestAmbassador'));
+const AmbassadorRequests = lazy(() => import('@/pages/security/AmbassadorRequests'));
+const AmbassadorInviteAccept = lazy(() => import('@/pages/invite/AmbassadorInviteAccept'));
+
+// Brandaro pages
+const PublicProposalPage = lazy(() => import('@/pages/brandaro/PublicProposalPage'));
+const ClientDemoViewPage = lazy(() => import('@/pages/brandaro/ClientDemoViewPage'));
+const CEODashboardPage = lazy(() => import('@/pages/brandaro/CEODashboardPage'));
+const RetentionDashboardPage = lazy(() => import('@/pages/brandaro/RetentionDashboardPage'));
+const VACommandCenterPage = lazy(() => import('@/pages/brandaro/VACommandCenterPage'));
+const LeadDatabasePage = lazy(() => import('@/pages/brandaro/LeadDatabasePage'));
+const CRMPipelinePage = lazy(() => import('@/pages/brandaro/CRMPipelinePage'));
+const CallingOpsPage = lazy(() => import('@/pages/brandaro/CallingOpsPage'));
+const RevenueAnalyticsPage = lazy(() => import('@/pages/brandaro/RevenueAnalyticsPage'));
+const ClientReportingPage = lazy(() => import('@/pages/brandaro/ClientReportingPage'));
+const AdsEnginePage = lazy(() => import('@/pages/brandaro/AdsEnginePage'));
+const GoogleDominationPage = lazy(() => import('@/pages/brandaro/GoogleDominationPage'));
+const OptimizationEnginePage = lazy(() => import('@/pages/brandaro/OptimizationEnginePage'));
+const CompetitorTakeoverPage = lazy(() => import('@/pages/brandaro/CompetitorTakeoverPage'));
+const CloserAIPage = lazy(() => import('@/pages/brandaro/CloserAIPage'));
+const VADashboardPage = lazy(() => import('@/pages/brandaro/VADashboardPage'));
+const VAManagerPage = lazy(() => import('@/pages/brandaro/VAManagerPage'));
+const BrandaroHubLayout = lazy(() => import('@/pages/brandaro/BrandaroHubLayout'));
+const BrandaroWarRoom = lazy(() => import('@/pages/brandaro/BrandaroWarRoom'));
+const FollowUpEnginePage = lazy(() => import('@/pages/brandaro/FollowUpEnginePage'));
+const ProposalBuilderPage = lazy(() => import('@/pages/brandaro/ProposalBuilderPage'));
+const BuildPipelinePage = lazy(() => import('@/pages/brandaro/BuildPipelinePage'));
+const ResultEnginePage = lazy(() => import('@/pages/brandaro/ResultEnginePage'));
+const CampaignManagerPage = lazy(() => import('@/pages/brandaro/CampaignManagerPage'));
+const ReviewQueuePage = lazy(() => import('@/pages/brandaro/ReviewQueuePage'));
+const VAWorkspacePage = lazy(() => import('@/pages/brandaro/VAWorkspacePage'));
+const VAPerformancePage = lazy(() => import('@/pages/brandaro/VAPerformancePage'));
+const LeadDiscoveryPage = lazy(() => import('@/pages/brandaro/LeadDiscoveryPage'));
+const LeadQualificationPage = lazy(() => import('@/pages/brandaro/LeadQualificationPage'));
+const DemoEnginePage = lazy(() => import('@/pages/brandaro/DemoEnginePage'));
+const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
+const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
+const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
+
+// Profile pages
+const AmbassadorProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.AmbassadorProfilePage })));
+const WholesalerProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.WholesalerProfilePage })));
+const StoreProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.StoreProfilePage })));
+const InfluencerProfilePage = lazy(() => import('@/pages/profile').then(m => ({ default: m.InfluencerProfilePage })));
+
+// Floor 8
+const AmbassadorCommandDashboard = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorCommandDashboard })));
+const AllAmbassadorsTable = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AllAmbassadorsTable })));
+const Floor8AmbassadorProfile = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorProfilePage })));
+const Floor8PayoutsPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorPayoutsPage })));
+const AmbassadorRegionsPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.AmbassadorRegionsPage })));
+const Floor8InfluencersPage = lazy(() => import('@/pages/floor8').then(m => ({ default: m.InfluencersPage })));
+
+// Admin
+const AdminDisputesQueue = lazy(() => import('@/pages/admin/disputes').then(m => ({ default: m.AdminDisputesQueue })));
+const AdminDisputeDetail = lazy(() => import('@/pages/admin/disputes').then(m => ({ default: m.AdminDisputeDetail })));
+const AdminOverridesPage = lazy(() => import('@/pages/admin/overrides').then(m => ({ default: m.AdminOverridesPage })));
+const AdminOverrideDetailPage = lazy(() => import('@/pages/admin/overrides').then(m => ({ default: m.AdminOverrideDetailPage })));
+const AdminPayoutsPage = lazy(() => import('@/pages/admin/payouts').then(m => ({ default: m.AdminPayoutsPage })));
+const AdminPayoutDetailPage = lazy(() => import('@/pages/admin/payouts').then(m => ({ default: m.AdminPayoutDetailPage })));
+const AdminMarketplacePayoutsPage = lazy(() => import('@/pages/admin/marketplace-payouts').then(m => ({ default: m.AdminMarketplacePayoutsPage })));
+const MarketplaceControlTowerPage = lazy(() => import('@/pages/admin/marketplace-control').then(m => ({ default: m.MarketplaceControlTowerPage })));
+const FinancialReportsPage = lazy(() => import('@/pages/admin/reports').then(m => ({ default: m.FinancialReportsPage })));
+const AmbassadorReportsPage = lazy(() => import('@/pages/admin/reports').then(m => ({ default: m.AmbassadorReportsPage })));
+const StoreReportsPage = lazy(() => import('@/pages/admin/reports').then(m => ({ default: m.StoreReportsPage })));
+const TaxReportsPage = lazy(() => import('@/pages/admin/reports').then(m => ({ default: m.TaxReportsPage })));
+const PayoutReportsPage = lazy(() => import('@/pages/admin/reports').then(m => ({ default: m.PayoutReportsPage })));
+const DeletedRecords = lazy(() => import('@/pages/admin/DeletedRecords'));
+const QACommandCenter = lazy(() => import('@/pages/admin/qa/QACommandCenter'));
+const AmbassadorApplications = lazy(() => import('@/pages/admin/AmbassadorApplications'));
+const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
+const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
+const AmbassadorEarningsPage = lazy(() => import('@/pages/ambassador/reports').then(m => ({ default: m.AmbassadorEarningsPage })));
+const AmbassadorPayoutsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutsPage })));
+const AmbassadorPayoutStatementPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutStatementPage })));
+const AmbassadorPayoutSettingsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutSettingsPage })));
+
+// Misc protected pages
+const Expansion = lazy(() => import('@/pages/Expansion'));
+const Rewards = lazy(() => import('@/pages/Rewards'));
+const LiveMap = lazy(() => import('@/pages/LiveMap'));
+const WalletPage = lazy(() => import('@/pages/Wallet'));
+const Subscriptions = lazy(() => import('@/pages/Subscriptions'));
+const DeliveryCapacity = lazy(() => import('@/pages/DeliveryCapacity'));
+const DeliveryCapacityCommand = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryCapacityCommand })));
+const CommunicationAutomation = lazy(() => import('@/pages/CommunicationAutomation'));
+const CommunicationsAI = lazy(() => import('@/pages/CommunicationsAI'));
+const SecurityConsole = lazy(() => import('@/components/security/SecurityConsole').then(m => ({ default: m.SecurityConsole })));
+const RolesPermissionsPage = lazy(() => import('@/components/security/RolesPermissionsPage').then(m => ({ default: m.RolesPermissionsPage })));
+const UserManagementPage = lazy(() => import('@/components/security/UserManagementPage'));
+const MessagesPage = lazy(() => import('@/pages/Messages'));
+const CommunicationInsights = lazy(() => import('@/pages/CommunicationInsights'));
+const RouteOptimizer = lazy(() => import('@/pages/RouteOptimizer'));
+const RouteOpsCenter = lazy(() => import('@/pages/RouteOpsCenter'));
+const RouteOpsCenterEnhanced = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOpsCenterEnhanced })));
+const OpsCommandCenter = lazy(() => import('@/pages/delivery').then(m => ({ default: m.OpsCommandCenter })));
+const RouteOptimizerPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOptimizerPage })));
+const MyRoute = lazy(() => import('@/pages/MyRoute'));
+const SidebarVisualTest = lazy(() => import('@/pages/SidebarVisualTest'));
+const SidebarDebug = lazy(() => import('@/pages/debug/SidebarDebug'));
+const Leaderboard = lazy(() => import('@/pages/Leaderboard'));
+const Payroll = lazy(() => import('@/pages/Payroll'));
+const MetaAI = lazy(() => import('@/pages/MetaAI'));
+const ExpansionRegions = lazy(() => import('@/pages/ExpansionRegions'));
+const ExpansionHeatmap = lazy(() => import('@/pages/ExpansionHeatmap'));
+const AmbassadorRegions = lazy(() => import('@/pages/AmbassadorRegions'));
+const Sales = lazy(() => import('@/pages/Sales'));
+const SalesProspects = lazy(() => import('@/pages/SalesProspects'));
+const SalesProspectNew = lazy(() => import('@/pages/SalesProspectNew'));
+const SalesProspectDetail = lazy(() => import('@/pages/SalesProspectDetail'));
+const SalesReport = lazy(() => import('@/pages/SalesReport'));
+const StorePerformance = lazy(() => import('@/pages/StorePerformance'));
+const SellThroughAnalytics = lazy(() => import('@/pages/SellThroughAnalytics'));
+const BrandCRMPage = lazy(() => import('@/pages/floor1/BrandCRMPage'));
+const StoreOrder = lazy(() => import('@/pages/StoreOrder'));
+const WholesaleFulfillment = lazy(() => import('@/pages/WholesaleFulfillment'));
+const Billing = lazy(() => import('@/pages/Billing'));
+const EconomicAnalytics = lazy(() => import('@/pages/EconomicAnalytics'));
+const AmbassadorPayouts = lazy(() => import('@/pages/AmbassadorPayouts'));
+const BikerPayouts = lazy(() => import('@/pages/BikerPayouts'));
+const CRM = lazy(() => import('@/pages/CRM'));
+const CRMContacts = lazy(() => import('@/pages/CRMContacts'));
+const CRMContactDetail = lazy(() => import('@/pages/CRMContactDetail'));
+const CRMCustomers = lazy(() => import('@/pages/CRMCustomers'));
+const ContactProfile = lazy(() => import('@/pages/crm/ContactProfile'));
+const GlobalCRM = lazy(() => import('@/pages/crm/GlobalCRM'));
+const GlobalCRMDashboard = lazy(() => import('@/pages/crm/GlobalCRMDashboard'));
+const BusinessCRMDashboard = lazy(() => import('@/pages/crm/BusinessCRMDashboard'));
+const CRMRouter = lazy(() => import('@/pages/crm/CRMRouter'));
+const DynamicCRMPage = lazy(() => import('@/pages/crm/DynamicCRMPage'));
+
+// TopTier CRM
+const TopTierPartnerDashboard = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnerDashboard })));
+const TopTierPartnerCategoryPage = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnerCategoryPage })));
+const TopTierPartnerProfile = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnerProfile })));
+const TopTierPartnersByState = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnersByState })));
+const TopTierAddPartner = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAddPartner })));
+const TopTierRecentBookings = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierRecentBookings })));
+const TopTierCustomerRequests = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomerRequests })));
+const TopTierRequestDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierRequestDetail })));
+const TopTierPartnerEdit = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnerEdit })));
+const TopTierDealDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierDealDetail })));
+const TopTierCampaignDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCampaignDetail })));
+const TopTierInteractionDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierInteractionDetail })));
+const TopTierContactDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierContactDetail })));
+const TopTierAssetDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAssetDetail })));
+const TopTierNoteDetail = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierNoteDetail })));
+const TopTierAnalyticsDeals = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAnalyticsDeals })));
+const TopTierAnalyticsRevenue = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAnalyticsRevenue })));
+const TopTierAnalyticsCommissions = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAnalyticsCommissions })));
+const TopTierAllContacts = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAllContacts })));
+const TopTierInteractionsHub = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierInteractionsHub })));
+const TopTierCustomers = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomers })));
+const TopTierCustomerProfile = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomerProfile })));
+const TopTierNewCustomer = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierNewCustomer })));
+const TopTierEditCustomer = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierEditCustomer })));
+const TopTierVIPCustomers = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierVIPCustomers })));
+const TopTierReturningCustomers = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierReturningCustomers })));
+const TopTierNewCustomers = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierNewCustomers })));
+const TopTierCustomerBookings = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomerBookings })));
+const TopTierCustomerValue = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierCustomerValue })));
+const TopTierAllPartners = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierAllPartners })));
+const TopTierNewDeal = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierNewDeal })));
+const TopTierDeals = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierDeals })));
+const TopTierKPIManagement = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierKPIManagement })));
+
+const AddBusinessPage = lazy(() => import('@/pages/crm/AddBusinessPage'));
+const CRMDataPage = lazy(() => import('@/pages/crm/CRMDataPage'));
+const CRMExportPage = lazy(() => import('@/pages/crm/CRMExportPage'));
+const CRMImportPage = lazy(() => import('@/pages/crm/CRMImportPage'));
+const CRMBackupPage = lazy(() => import('@/pages/crm/CRMBackupPage'));
+const EntityListPage = lazy(() => import('@/pages/crm/EntityListPage'));
+const EntityProfilePage = lazy(() => import('@/pages/crm/EntityProfilePage'));
+const EntityCreatePage = lazy(() => import('@/pages/crm/EntityCreatePage'));
+const CRMSettingsPage = lazy(() => import('@/pages/crm/CRMSettingsPage'));
+const CRMUserAccessPage = lazy(() => import('@/pages/crm/CRMUserAccessPage'));
+const AcceptCRMInvite = lazy(() => import('@/pages/crm/AcceptCRMInvite'));
+const CRMBrandPage = lazy(() => import('@/pages/crm/BrandCRM'));
+const CRMBrandStoreProfile = lazy(() => import('@/pages/crm/BrandStoreProfile'));
+const CRMCustomerNew = lazy(() => import('@/pages/CRMCustomerNew'));
+const CRMCustomerDetail = lazy(() => import('@/pages/CRMCustomerDetail'));
+const CRMCustomerImport = lazy(() => import('@/pages/CRMCustomerImport'));
+const CRMData = lazy(() => import('@/pages/CRMData'));
+const CRMDataExport = lazy(() => import('@/pages/CRMDataExport'));
+const CRMDataImport = lazy(() => import('@/pages/CRMDataImport'));
+const CRMBulkUpload = lazy(() => import('@/pages/CRMBulkUpload'));
+const CRMBackupSettings = lazy(() => import('@/pages/CRMBackupSettings'));
+const CRMFollowUps = lazy(() => import('@/pages/CRMFollowUps'));
+const Companies = lazy(() => import('@/pages/Companies'));
+const CompanyProfile = lazy(() => import('@/pages/CompanyProfile'));
+const UnpaidAccounts = lazy(() => import('@/pages/UnpaidAccounts'));
+const DriverDebtCollection = lazy(() => import('@/pages/DriverDebtCollection'));
+const BrandDashboard = lazy(() => import('@/pages/BrandDashboard'));
+
+// Owner pages
+const OwnerDashboard = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerDashboard })));
+const OwnerAIAdvisorPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAIAdvisorPage })));
+const OwnerClusterDashboard = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerClusterDashboard })));
+const OwnerAutopilotConsole = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAutopilotConsole })));
+const OwnerAICommandConsole = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAICommandConsole })));
+const OwnerRiskRadar = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerRiskRadar })));
+const OwnerDailyBriefing = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerDailyBriefing })));
+const OwnerHoldingsOverview = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerHoldingsOverview })));
+const OwnerClusterDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerClusterDetailPage })));
+const OwnerAutomationDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAutomationDetailPage })));
+const OwnerRiskDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerRiskDetailPage })));
+const OwnerBusinessDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerBusinessDetailPage })));
+const OwnerPropertyDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerPropertyDetailPage })));
+const OwnerFinancialHoldingDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerFinancialHoldingDetailPage })));
+const OwnerAlertDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAlertDetailPage })));
+const OwnerAutoTradingDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAutoTradingDetailPage })));
+const OwnerCryptoDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerCryptoDetailPage })));
+const OwnerSportsDetailPage = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerSportsDetailPage })));
+const OwnerVoiceAI = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerVoiceAI })));
+const OwnerReports = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerReports })));
+const OwnerVARouting = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerVARouting })));
+const OwnerAlertCenter = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAlertCenter })));
+const OwnerExecutiveReports = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerExecutiveReports })));
+const OwnerBroadcastCenter = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerBroadcastCenter })));
+const OwnerAccountingOS = lazy(() => import('@/pages/owner').then(m => ({ default: m.OwnerAccountingOS })));
+const OwnerMissionControl = lazy(() => import('@/pages/owner/OwnerMissionControl'));
 
 // Call Center
-import CallCenterDashboard from '@/pages/callcenter/CallCenterDashboard';
-import PhoneNumbers from '@/pages/callcenter/PhoneNumbers';
-import CallLogs from '@/pages/callcenter/CallLogs';
-import AIAgents from '@/pages/callcenter/AIAgents';
-import LiveMonitoring from '@/pages/callcenter/LiveMonitoring';
-import CallCenterSettings from '@/pages/callcenter/CallCenterSettings';
-import CallCenterDialer from '@/pages/callcenter/CallCenterDialer';
-import CallCenterAnalytics from '@/pages/callcenter/CallCenterAnalytics';
-import Messages from '@/pages/callcenter/Messages';
-import Emails from '@/pages/callcenter/Emails';
+const CallCenterDashboard = lazy(() => import('@/pages/callcenter/CallCenterDashboard'));
+const PhoneNumbers = lazy(() => import('@/pages/callcenter/PhoneNumbers'));
+const CallLogs = lazy(() => import('@/pages/callcenter/CallLogs'));
+const AIAgents = lazy(() => import('@/pages/callcenter/AIAgents'));
+const LiveMonitoring = lazy(() => import('@/pages/callcenter/LiveMonitoring'));
+const CallCenterSettings = lazy(() => import('@/pages/callcenter/CallCenterSettings'));
+const CallCenterDialer = lazy(() => import('@/pages/callcenter/CallCenterDialer'));
+const CallCenterAnalytics = lazy(() => import('@/pages/callcenter/CallCenterAnalytics'));
+const Messages = lazy(() => import('@/pages/callcenter/Messages'));
+const Emails = lazy(() => import('@/pages/callcenter/Emails'));
 
-// Communication Center - Modular V2-V8 Pages
-import CommunicationHubLayout from '@/pages/communication/CommunicationHubLayout';
-import InboxPage from '@/pages/communication/inbox/InboxPage';
-import DialerPage from '@/pages/communication/dialer/DialerPage';
-import LiveCallsPage from '@/pages/communication/live/LiveCallsPage';
-import EscalationsPage from '@/pages/communication/escalations/EscalationsPage';
-import EngagementPage from '@/pages/communication/engagement/EngagementPage';
-import RoutingPage from '@/pages/communication/routing/RoutingPage';
-import OutreachPage from '@/pages/communication/outreach/OutreachPage';
-import CampaignsPage from '@/pages/communication/campaigns/CampaignsPage';
-import PersonasPage from '@/pages/communication/personas/PersonasPage';
-import CallFlowsPage from '@/pages/communication/callflows/CallFlowsPage';
-import HeatmapPage from '@/pages/communication/heatmap/HeatmapPage';
-import CallReasonsPage from '@/pages/communication/callreasons/CallReasonsPage';
-import PredictionsPage from '@/pages/communication/predictions/PredictionsPage';
-import AgentsPage from '@/pages/communication/agents/AgentsPage';
-import LanguagePage from '@/pages/communication/language/LanguagePage';
-import VoiceMatrixPage from '@/pages/communication/voicematrix/VoiceMatrixPage';
-import CommSettingsPage from '@/pages/communication/settings/SettingsPage';
-import PhoneNumbersSettingsPage from '@/pages/communication/settings/PhoneNumbersPage';
-import BusinessPhoneNumbersPage from '@/pages/communication/BusinessPhoneNumbers';
-import { UserCallSettingsPage, BusinessHoursPage, AfterHoursRoutingPage, CallSystemDiagnosticsPage } from '@/pages/communication/call-settings';
-import { VoicemailInboxPage, MissedCallsDashboardPage, CallIntelligencePage, UnresolvedCallsQueuePage } from '@/pages/communication/call-intelligence';
-import AICallAgentDashboardPage from '@/pages/communication/call-intelligence/AICallAgentDashboardPage';
-import ManualCallPage from '@/pages/communication/manual/ManualCallPage';
-import ManualTextPage from '@/pages/communication/manual/ManualTextPage';
-import AIAutoDialerPage from '@/pages/communication/ai/AIAutoDialerPage';
-import BulkDialerPage from '@/pages/communication/dialer/BulkDialerPage';
-import LiveCallPanel from '@/pages/communication/dialer/LiveCallPanel';
-import DialerSettingsPage from '@/pages/communication/dialer/DialerSettingsPage';
-import RepPerformancePage from '@/pages/communication/dialer/RepPerformancePage';
-import CampaignIntelligencePage from '@/pages/communication/dialer/CampaignIntelligencePage';
-import DialerCostDashboard from '@/pages/communication/dialer/DialerCostDashboard';
-import DialerHealthPage from '@/pages/communication/dialer/DialerHealthPage';
-import DialerOptimizationDashboard from '@/pages/communication/dialer/DialerOptimizationDashboard';
-import DialerRevenueIntelligence from '@/pages/communication/dialer/DialerRevenueIntelligence';
-import DialerPredictiveTargeting from '@/pages/communication/dialer/DialerPredictiveTargeting';
-import DialerIntegrityPage from '@/pages/communication/dialer/DialerIntegrityPage';
-import AutoDialerPage from '@/pages/communication/dialer/AutoDialerPage';
-import AIAutoTextPage from '@/pages/communication/ai/AIAutoTextPage';
-import { MessagingHubPage } from '@/pages/communication/messaging';
-import OutboundEnginePage from '@/pages/communication/ai/OutboundEnginePage';
-import AutonomousDirectorPage from '@/pages/communication/ai/AutonomousDirectorPage';
-import VoiceLibraryPage from '@/pages/communication/voice/VoiceLibraryPage';
-import DealsSalesPage from '@/pages/communication/deals/DealsSalesPage';
-import FollowUpManagerPage from '@/pages/communication/followups/FollowUpManagerPage';
-import FieldSubmissionsPage from '@/pages/communication/FieldSubmissionsPage';
-import UnifiedInboxV3Page from '@/pages/communication/inbox/UnifiedInboxV3Page';
-import PlaybooksManagement from '@/pages/communication/PlaybooksManagement';
-import ShadowModePage from '@/pages/communication/ShadowModePage';
-import OutboundGrowthPage from '@/pages/communication/OutboundGrowthPage';
-import { ExecutiveControlRoomPage } from '@/pages/executive';
-import ComplianceCenter from '@/pages/compliance/ComplianceCenter';
-import ColdCallBlastPage from '@/pages/communication/cold-calls/ColdCallBlastPage';
-// Legacy Communication imports (kept for other routes)
-import CommunicationOverview from '@/pages/communication/CommunicationOverview';
-import CommunicationCampaigns from '@/pages/communication/CommunicationCampaigns';
-import CommunicationCampaignNew from '@/pages/communication/CommunicationCampaignNew';
-import CommunicationCampaignDetail from '@/pages/communication/CommunicationCampaignDetail';
-import CommunicationCalls from '@/pages/communication/CommunicationCalls';
-import CommunicationSMS from '@/pages/communication/CommunicationSMS';
-import CommunicationSMSDashboard from '@/pages/communication/CommunicationSMSDashboard';
-import CommunicationEmail from '@/pages/communication/CommunicationEmail';
-import CommunicationAIAgents from '@/pages/communication/CommunicationAIAgents';
-import CommunicationNumbers from '@/pages/communication/CommunicationNumbers';
-import CommunicationLogs from '@/pages/communication/CommunicationLogs';
-import CommunicationAnalytics from '@/pages/communication/CommunicationAnalytics';
-import CommunicationSettings from '@/pages/communication/CommunicationSettings';
-import CommunicationsCenterOverview from '@/pages/CommunicationsCenterOverview';
-import CommunicationsCenterLogs from '@/pages/CommunicationsCenterLogs';
-import CallCenter from '@/pages/CallCenter';
-import TextCenter from '@/pages/TextCenter';
-import EmailCenter from '@/pages/EmailCenter';
+// Communication Center
+const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
+const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
+const DialerPage = lazy(() => import('@/pages/communication/dialer/DialerPage'));
+const LiveCallsPage = lazy(() => import('@/pages/communication/live/LiveCallsPage'));
+const EscalationsPage = lazy(() => import('@/pages/communication/escalations/EscalationsPage'));
+const EngagementPage = lazy(() => import('@/pages/communication/engagement/EngagementPage'));
+const RoutingPage = lazy(() => import('@/pages/communication/routing/RoutingPage'));
+const OutreachPage = lazy(() => import('@/pages/communication/outreach/OutreachPage'));
+const CampaignsPage = lazy(() => import('@/pages/communication/campaigns/CampaignsPage'));
+const PersonasPage = lazy(() => import('@/pages/communication/personas/PersonasPage'));
+const CallFlowsPage = lazy(() => import('@/pages/communication/callflows/CallFlowsPage'));
+const HeatmapPage = lazy(() => import('@/pages/communication/heatmap/HeatmapPage'));
+const CallReasonsPage = lazy(() => import('@/pages/communication/callreasons/CallReasonsPage'));
+const PredictionsPage = lazy(() => import('@/pages/communication/predictions/PredictionsPage'));
+const AgentsPage = lazy(() => import('@/pages/communication/agents/AgentsPage'));
+const LanguagePage = lazy(() => import('@/pages/communication/language/LanguagePage'));
+const VoiceMatrixPage = lazy(() => import('@/pages/communication/voicematrix/VoiceMatrixPage'));
+const CommSettingsPage = lazy(() => import('@/pages/communication/settings/SettingsPage'));
+const PhoneNumbersSettingsPage = lazy(() => import('@/pages/communication/settings/PhoneNumbersPage'));
+const BusinessPhoneNumbersPage = lazy(() => import('@/pages/communication/BusinessPhoneNumbers'));
+const UserCallSettingsPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.UserCallSettingsPage })));
+const BusinessHoursPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.BusinessHoursPage })));
+const AfterHoursRoutingPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.AfterHoursRoutingPage })));
+const CallSystemDiagnosticsPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.CallSystemDiagnosticsPage })));
+const VoicemailInboxPage = lazy(() => import('@/pages/communication/call-intelligence').then(m => ({ default: m.VoicemailInboxPage })));
+const MissedCallsDashboardPage = lazy(() => import('@/pages/communication/call-intelligence').then(m => ({ default: m.MissedCallsDashboardPage })));
+const CallIntelligencePage = lazy(() => import('@/pages/communication/call-intelligence').then(m => ({ default: m.CallIntelligencePage })));
+const UnresolvedCallsQueuePage = lazy(() => import('@/pages/communication/call-intelligence').then(m => ({ default: m.UnresolvedCallsQueuePage })));
+const AICallAgentDashboardPage = lazy(() => import('@/pages/communication/call-intelligence/AICallAgentDashboardPage'));
+const ManualCallPage = lazy(() => import('@/pages/communication/manual/ManualCallPage'));
+const ManualTextPage = lazy(() => import('@/pages/communication/manual/ManualTextPage'));
+const AIAutoDialerPage = lazy(() => import('@/pages/communication/ai/AIAutoDialerPage'));
+const BulkDialerPage = lazy(() => import('@/pages/communication/dialer/BulkDialerPage'));
+const LiveCallPanel = lazy(() => import('@/pages/communication/dialer/LiveCallPanel'));
+const DialerSettingsPage = lazy(() => import('@/pages/communication/dialer/DialerSettingsPage'));
+const RepPerformancePage = lazy(() => import('@/pages/communication/dialer/RepPerformancePage'));
+const CampaignIntelligencePage = lazy(() => import('@/pages/communication/dialer/CampaignIntelligencePage'));
+const DialerCostDashboard = lazy(() => import('@/pages/communication/dialer/DialerCostDashboard'));
+const DialerHealthPage = lazy(() => import('@/pages/communication/dialer/DialerHealthPage'));
+const DialerOptimizationDashboard = lazy(() => import('@/pages/communication/dialer/DialerOptimizationDashboard'));
+const DialerRevenueIntelligence = lazy(() => import('@/pages/communication/dialer/DialerRevenueIntelligence'));
+const DialerPredictiveTargeting = lazy(() => import('@/pages/communication/dialer/DialerPredictiveTargeting'));
+const DialerIntegrityPage = lazy(() => import('@/pages/communication/dialer/DialerIntegrityPage'));
+const AutoDialerPage = lazy(() => import('@/pages/communication/dialer/AutoDialerPage'));
+const AIAutoTextPage = lazy(() => import('@/pages/communication/ai/AIAutoTextPage'));
+const MessagingHubPage = lazy(() => import('@/pages/communication/messaging').then(m => ({ default: m.MessagingHubPage })));
+const OutboundEnginePage = lazy(() => import('@/pages/communication/ai/OutboundEnginePage'));
+const AutonomousDirectorPage = lazy(() => import('@/pages/communication/ai/AutonomousDirectorPage'));
+const VoiceLibraryPage = lazy(() => import('@/pages/communication/voice/VoiceLibraryPage'));
+const DealsSalesPage = lazy(() => import('@/pages/communication/deals/DealsSalesPage'));
+const FollowUpManagerPage = lazy(() => import('@/pages/communication/followups/FollowUpManagerPage'));
+const FieldSubmissionsPage = lazy(() => import('@/pages/communication/FieldSubmissionsPage'));
+const UnifiedInboxV3Page = lazy(() => import('@/pages/communication/inbox/UnifiedInboxV3Page'));
+const PlaybooksManagement = lazy(() => import('@/pages/communication/PlaybooksManagement'));
+const ShadowModePage = lazy(() => import('@/pages/communication/ShadowModePage'));
+const OutboundGrowthPage = lazy(() => import('@/pages/communication/OutboundGrowthPage'));
+const ExecutiveControlRoomPage = lazy(() => import('@/pages/executive').then(m => ({ default: m.ExecutiveControlRoomPage })));
+const ComplianceCenter = lazy(() => import('@/pages/compliance/ComplianceCenter'));
+const ColdCallBlastPage = lazy(() => import('@/pages/communication/cold-calls/ColdCallBlastPage'));
+const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
+const CommunicationCampaigns = lazy(() => import('@/pages/communication/CommunicationCampaigns'));
+const CommunicationCampaignNew = lazy(() => import('@/pages/communication/CommunicationCampaignNew'));
+const CommunicationCampaignDetail = lazy(() => import('@/pages/communication/CommunicationCampaignDetail'));
+const CommunicationCalls = lazy(() => import('@/pages/communication/CommunicationCalls'));
+const CommunicationSMS = lazy(() => import('@/pages/communication/CommunicationSMS'));
+const CommunicationSMSDashboard = lazy(() => import('@/pages/communication/CommunicationSMSDashboard'));
+const CommunicationEmail = lazy(() => import('@/pages/communication/CommunicationEmail'));
+const CommunicationAIAgents = lazy(() => import('@/pages/communication/CommunicationAIAgents'));
+const CommunicationNumbers = lazy(() => import('@/pages/communication/CommunicationNumbers'));
+const CommunicationLogs = lazy(() => import('@/pages/communication/CommunicationLogs'));
+const CommunicationAnalytics = lazy(() => import('@/pages/communication/CommunicationAnalytics'));
+const CommunicationSettings = lazy(() => import('@/pages/communication/CommunicationSettings'));
+const CommunicationsCenterOverview = lazy(() => import('@/pages/CommunicationsCenterOverview'));
+const CommunicationsCenterLogs = lazy(() => import('@/pages/CommunicationsCenterLogs'));
+const CallCenter = lazy(() => import('@/pages/CallCenter'));
+const TextCenter = lazy(() => import('@/pages/TextCenter'));
+const EmailCenter = lazy(() => import('@/pages/EmailCenter'));
 
-// Communication Systems - New Unified Module
-import CommSystemsDialerPage from '@/pages/comm-systems/dialer/DialerPage';
-import CommSystemsCallLogsPage from '@/pages/comm-systems/call-logs/CallLogsPage';
-import CommSystemsAIAgentsPage from '@/pages/comm-systems/ai-agents/AIAgentsPage';
-import CommSystemsAnalyticsPage from '@/pages/comm-systems/analytics/CallAnalyticsPage';
-import CommSystemsMessagesPage from '@/pages/comm-systems/messages/MessagesPage';
-import CommSystemsEmailsPage from '@/pages/comm-systems/emails/EmailsPage';
-import CommSystemsCommAIPage from '@/pages/comm-systems/hub/CommAIPage';
-import CommSystemsAutomationPage from '@/pages/comm-systems/hub/CommAutomationPage';
-import CommSystemsInsightsPage from '@/pages/comm-systems/hub/CommInsightsPage';
-import CommunicationHubPage from '@/pages/comm-systems/hub/CommunicationHubPage';
+// Comm Systems
+const CommSystemsDialerPage = lazy(() => import('@/pages/comm-systems/dialer/DialerPage'));
+const CommSystemsCallLogsPage = lazy(() => import('@/pages/comm-systems/call-logs/CallLogsPage'));
+const CommSystemsAIAgentsPage = lazy(() => import('@/pages/comm-systems/ai-agents/AIAgentsPage'));
+const CommSystemsAnalyticsPage = lazy(() => import('@/pages/comm-systems/analytics/CallAnalyticsPage'));
+const CommSystemsMessagesPage = lazy(() => import('@/pages/comm-systems/messages/MessagesPage'));
+const CommSystemsEmailsPage = lazy(() => import('@/pages/comm-systems/emails/EmailsPage'));
+const CommSystemsCommAIPage = lazy(() => import('@/pages/comm-systems/hub/CommAIPage'));
+const CommSystemsAutomationPage = lazy(() => import('@/pages/comm-systems/hub/CommAutomationPage'));
+const CommSystemsInsightsPage = lazy(() => import('@/pages/comm-systems/hub/CommInsightsPage'));
+const CommunicationHubPage = lazy(() => import('@/pages/comm-systems/hub/CommunicationHubPage'));
 
-import BillingCenter from '@/pages/BillingCenter';
-import BillingInvoices from '@/pages/BillingInvoices';
-import BillingInvoiceNew from '@/pages/BillingInvoiceNew';
-import BillingInvoiceDetail from '@/pages/BillingInvoiceDetail';
-import { Floor5Dashboard } from '@/pages/floor5';
+const BillingCenter = lazy(() => import('@/pages/BillingCenter'));
+const BillingInvoices = lazy(() => import('@/pages/BillingInvoices'));
+const BillingInvoiceNew = lazy(() => import('@/pages/BillingInvoiceNew'));
+const BillingInvoiceDetail = lazy(() => import('@/pages/BillingInvoiceDetail'));
+const Floor5Dashboard = lazy(() => import('@/pages/floor5').then(m => ({ default: m.Floor5Dashboard })));
 
 // Portal
-import RoleRouter from '@/components/portal/RoleRouter';
-import PortalDashboard from '@/pages/portal/PortalDashboard';
-import PortalInvoices from '@/pages/portal/PortalInvoices';
-import PortalHome from '@/pages/portal/PortalHome';
-import PortalOnboarding from '@/pages/portal/PortalOnboarding';
-import DriverPortal from '@/pages/portal/DriverPortal';
-import BikerPortal from '@/pages/portal/BikerPortal';
-import AmbassadorPortal from '@/pages/portal/AmbassadorPortal';
-import PortalInvoiceDetail from '@/pages/portal/PortalInvoiceDetail';
-import PortalWholesale from '@/pages/portal/PortalWholesale';
-import PortalInfluencer from '@/pages/portal/PortalInfluencer';
-import OpsInboxPage from '@/pages/portal/OpsInboxPage';
-import OpsInboxThreadPage from '@/pages/portal/OpsInboxThreadPage';
-import OpsTaskListPage from '@/pages/portal/OpsTaskListPage';
-import { WholesalerDashboard, WholesalerProducts, WholesalerProductForm, WholesalerOrders, WholesalerFinance, WholesalerSettings, WholesalerMessages, WholesalerFulfillmentPage, WholesalerTransactionHistory, WholesalerInventoryWorkflow } from '@/pages/portal/wholesaler';
-import { StoreDashboard, StoreProducts, StoreCart, StoreCheckout, StoreOrders, StoreOrderDetail, StoreInvoices, StoreSettings, StoreMessages } from '@/pages/portal/store';
-import StoreTeam from '@/pages/portal/store/StoreTeam';
-import WholesalerTeam from '@/pages/portal/wholesaler/WholesalerTeam';
-import JoinOrg from '@/pages/portal/JoinOrg';
-import ProductionPortal from '@/pages/portal/ProductionPortal';
-import VAPortal from '@/pages/portal/VAPortal';
-import CustomerPortal from '@/pages/portal/CustomerPortal';
-import NationalWholesale from '@/pages/portal/NationalWholesale';
-import MarketplaceAdmin from '@/pages/portal/MarketplaceAdmin';
+const RoleRouter = lazy(() => import('@/components/portal/RoleRouter'));
+const PortalDashboard = lazy(() => import('@/pages/portal/PortalDashboard'));
+const PortalInvoices = lazy(() => import('@/pages/portal/PortalInvoices'));
+const PortalHome = lazy(() => import('@/pages/portal/PortalHome'));
+const PortalOnboarding = lazy(() => import('@/pages/portal/PortalOnboarding'));
+const DriverPortal = lazy(() => import('@/pages/portal/DriverPortal'));
+const BikerPortal = lazy(() => import('@/pages/portal/BikerPortal'));
+const AmbassadorPortal = lazy(() => import('@/pages/portal/AmbassadorPortal'));
+const PortalInvoiceDetail = lazy(() => import('@/pages/portal/PortalInvoiceDetail'));
+const PortalWholesale = lazy(() => import('@/pages/portal/PortalWholesale'));
+const PortalInfluencer = lazy(() => import('@/pages/portal/PortalInfluencer'));
+const OpsInboxPage = lazy(() => import('@/pages/portal/OpsInboxPage'));
+const OpsInboxThreadPage = lazy(() => import('@/pages/portal/OpsInboxThreadPage'));
+const OpsTaskListPage = lazy(() => import('@/pages/portal/OpsTaskListPage'));
+const WholesalerDashboard = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerDashboard })));
+const WholesalerProducts = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerProducts })));
+const WholesalerProductForm = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerProductForm })));
+const WholesalerOrders = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerOrders })));
+const WholesalerFinance = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerFinance })));
+const WholesalerSettings = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerSettings })));
+const WholesalerMessages = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerMessages })));
+const WholesalerFulfillmentPage = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerFulfillmentPage })));
+const WholesalerTransactionHistory = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerTransactionHistory })));
+const WholesalerInventoryWorkflow = lazy(() => import('@/pages/portal/wholesaler').then(m => ({ default: m.WholesalerInventoryWorkflow })));
+const StoreDashboard = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreDashboard })));
+const StoreProducts = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreProducts })));
+const StoreCart = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreCart })));
+const StoreCheckout = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreCheckout })));
+const StoreOrders = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreOrders })));
+const StoreOrderDetail = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreOrderDetail })));
+const StoreInvoices = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreInvoices })));
+const StoreSettings = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreSettings })));
+const StoreMessages = lazy(() => import('@/pages/portal/store').then(m => ({ default: m.StoreMessages })));
+const StoreTeam = lazy(() => import('@/pages/portal/store/StoreTeam'));
+const WholesalerTeam = lazy(() => import('@/pages/portal/wholesaler/WholesalerTeam'));
+const JoinOrg = lazy(() => import('@/pages/portal/JoinOrg'));
+const ProductionPortal = lazy(() => import('@/pages/portal/ProductionPortal'));
+const VAPortal = lazy(() => import('@/pages/portal/VAPortal'));
+const CustomerPortal = lazy(() => import('@/pages/portal/CustomerPortal'));
+const NationalWholesale = lazy(() => import('@/pages/portal/NationalWholesale'));
+const MarketplaceAdmin = lazy(() => import('@/pages/portal/MarketplaceAdmin'));
 
-// New Role Portals (Enterprise-grade)
-import {
-  DriverPortalPage,
-  BikerPortalPage,
-  AmbassadorPortalPage,
-  StorePortalPage,
-  WholesalerPortalPage,
-  ProductionPortalPage,
-  VAPortalPage,
-  CustomerPortalPage,
-  NationalWholesalePortalPage,
-  MarketplaceAdminPortalPage,
-} from '@/pages/portals';
-import OfficesManagementPage from '@/pages/portals/production/OfficesManagementPage';
-import StaffManagementPage from '@/pages/portals/production/StaffManagementPage';
-import ConversionIntelligencePage from '@/pages/portals/ConversionIntelligencePage';
-import SupplierYieldPage from '@/pages/portals/SupplierYieldPage';
-import SalesVelocityPage from '@/pages/portals/SalesVelocityPage';
-import ProductionWarRoom from '@/pages/portals/production/ProductionWarRoom';
-import WorkerTaskTimerPage from '@/pages/portals/production/WorkerTaskTimerPage';
-import CostHistoryPage from '@/pages/production/CostHistoryPage';
-import SupervisorComparisonPage from '@/pages/production/SupervisorComparisonPage';
+// New Role Portals
+const DriverPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.DriverPortalPage })));
+const BikerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.BikerPortalPage })));
+const AmbassadorPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.AmbassadorPortalPage })));
+const StorePortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.StorePortalPage })));
+const WholesalerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.WholesalerPortalPage })));
+const ProductionPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.ProductionPortalPage })));
+const VAPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.VAPortalPage })));
+const CustomerPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.CustomerPortalPage })));
+const NationalWholesalePortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.NationalWholesalePortalPage })));
+const MarketplaceAdminPortalPage = lazy(() => import('@/pages/portals').then(m => ({ default: m.MarketplaceAdminPortalPage })));
+const OfficesManagementPage = lazy(() => import('@/pages/portals/production/OfficesManagementPage'));
+const StaffManagementPage = lazy(() => import('@/pages/portals/production/StaffManagementPage'));
+const ConversionIntelligencePage = lazy(() => import('@/pages/portals/ConversionIntelligencePage'));
+const SupplierYieldPage = lazy(() => import('@/pages/portals/SupplierYieldPage'));
+const SalesVelocityPage = lazy(() => import('@/pages/portals/SalesVelocityPage'));
+const ProductionWarRoom = lazy(() => import('@/pages/portals/production/ProductionWarRoom'));
+const WorkerTaskTimerPage = lazy(() => import('@/pages/portals/production/WorkerTaskTimerPage'));
+const CostHistoryPage = lazy(() => import('@/pages/production/CostHistoryPage'));
+const SupervisorComparisonPage = lazy(() => import('@/pages/production/SupervisorComparisonPage'));
 
 // HR
-import HR from '@/pages/HR';
-import HRApplicants from '@/pages/HRApplicants';
-import HRApplicantDetail from '@/pages/HRApplicantDetail';
-import HREmployees from '@/pages/HREmployees';
-import HREmployeeDetail from '@/pages/HREmployeeDetail';
-import HRInterviews from '@/pages/HRInterviews';
-import HRDocuments from '@/pages/HRDocuments';
-import HROnboarding from '@/pages/HROnboarding';
-import HRPayroll from '@/pages/HRPayroll';
-import MyHR from '@/pages/MyHR';
+const HR = lazy(() => import('@/pages/HR'));
+const HRApplicants = lazy(() => import('@/pages/HRApplicants'));
+const HRApplicantDetail = lazy(() => import('@/pages/HRApplicantDetail'));
+const HREmployees = lazy(() => import('@/pages/HREmployees'));
+const HREmployeeDetail = lazy(() => import('@/pages/HREmployeeDetail'));
+const HRInterviews = lazy(() => import('@/pages/HRInterviews'));
+const HRDocuments = lazy(() => import('@/pages/HRDocuments'));
+const HROnboarding = lazy(() => import('@/pages/HROnboarding'));
+const HRPayroll = lazy(() => import('@/pages/HRPayroll'));
+const MyHR = lazy(() => import('@/pages/MyHR'));
 
 // Real Estate
-import RealEstate from '@/pages/RealEstate';
-import RealEstateLeads from '@/pages/RealEstateLeads';
-import RealEstatePipeline from '@/pages/RealEstatePipeline';
-import RealEstateInvestors from '@/pages/RealEstateInvestors';
-import RealEstateClosings from '@/pages/RealEstateClosings';
-import RealEstateExpansion from '@/pages/RealEstateExpansion';
-import RealEstateSubscriptions from '@/pages/RealEstateSubscriptions';
-import RealEstatePartners from '@/pages/RealEstatePartners';
-import RealEstatePL from '@/pages/RealEstatePL';
-import RealEstateLayout from '@/pages/realestate/RealEstateLayout';
-import LoanProducts from '@/pages/LoanProducts';
-import LenderDirectory from '@/pages/LenderDirectory';
-import LoanCalculators from '@/pages/LoanCalculators';
-import FundingRequests from '@/pages/FundingRequests';
-import VAPerformance from '@/pages/VAPerformance';
-import VARanking from '@/pages/VARanking';
-import VATaskCenter from '@/pages/VATaskCenter';
-import DealSheetsGenerator from '@/pages/DealSheetsGenerator';
-import InvestorBlastSystem from '@/pages/InvestorBlastSystem';
-import OfferAnalyzer from '@/pages/OfferAnalyzer';
-import AssignmentFeeOptimizer from '@/pages/AssignmentFeeOptimizer';
+const RealEstate = lazy(() => import('@/pages/RealEstate'));
+const RealEstateLeads = lazy(() => import('@/pages/RealEstateLeads'));
+const RealEstatePipeline = lazy(() => import('@/pages/RealEstatePipeline'));
+const RealEstateInvestors = lazy(() => import('@/pages/RealEstateInvestors'));
+const RealEstateClosings = lazy(() => import('@/pages/RealEstateClosings'));
+const RealEstateExpansion = lazy(() => import('@/pages/RealEstateExpansion'));
+const RealEstateSubscriptions = lazy(() => import('@/pages/RealEstateSubscriptions'));
+const RealEstatePartners = lazy(() => import('@/pages/RealEstatePartners'));
+const RealEstatePL = lazy(() => import('@/pages/RealEstatePL'));
+const RealEstateLayout = lazy(() => import('@/pages/realestate/RealEstateLayout'));
+const LoanProducts = lazy(() => import('@/pages/LoanProducts'));
+const LenderDirectory = lazy(() => import('@/pages/LenderDirectory'));
+const LoanCalculators = lazy(() => import('@/pages/LoanCalculators'));
+const FundingRequests = lazy(() => import('@/pages/FundingRequests'));
+const VAPerformance = lazy(() => import('@/pages/VAPerformance'));
+const VARanking = lazy(() => import('@/pages/VARanking'));
+const VATaskCenter = lazy(() => import('@/pages/VATaskCenter'));
+const DealSheetsGenerator = lazy(() => import('@/pages/DealSheetsGenerator'));
+const InvestorBlastSystem = lazy(() => import('@/pages/InvestorBlastSystem'));
+const OfferAnalyzer = lazy(() => import('@/pages/OfferAnalyzer'));
+const AssignmentFeeOptimizer = lazy(() => import('@/pages/AssignmentFeeOptimizer'));
 
 // Holdings
-import HoldingsOverview from '@/pages/HoldingsOverview';
-import HoldingsAssets from '@/pages/HoldingsAssets';
-import HoldingsAirbnb from '@/pages/HoldingsAirbnb';
-import HoldingsTenants from '@/pages/HoldingsTenants';
-import HoldingsLoans from '@/pages/HoldingsLoans';
-import HoldingsExpenses from '@/pages/HoldingsExpenses';
-import HoldingsStrategy from '@/pages/HoldingsStrategy';
+const HoldingsOverview = lazy(() => import('@/pages/HoldingsOverview'));
+const HoldingsAssets = lazy(() => import('@/pages/HoldingsAssets'));
+const HoldingsAirbnb = lazy(() => import('@/pages/HoldingsAirbnb'));
+const HoldingsTenants = lazy(() => import('@/pages/HoldingsTenants'));
+const HoldingsLoans = lazy(() => import('@/pages/HoldingsLoans'));
+const HoldingsExpenses = lazy(() => import('@/pages/HoldingsExpenses'));
+const HoldingsStrategy = lazy(() => import('@/pages/HoldingsStrategy'));
 
 // POD
-import PODOverview from '@/pages/pod/index';
-import PODDesigns from '@/pages/pod/designs';
-import PODGenerate from '@/pages/pod/generator';
-import PODMockups from '@/pages/pod/mockups';
-import PODUpload from '@/pages/pod/uploads';
-import PODVideos from '@/pages/pod/videos';
-import PODScheduler from '@/pages/pod/scheduler';
-import PODAnalytics from '@/pages/pod/analytics';
-import PODScaling from '@/pages/pod/winners';
-import PODVAControl from '@/pages/pod/va';
-import PODSettings from '@/pages/pod/settings';
-import PodLayout from '@/pages/pod/PodLayout';
+const PODOverview = lazy(() => import('@/pages/pod/index'));
+const PODDesigns = lazy(() => import('@/pages/pod/designs'));
+const PODGenerate = lazy(() => import('@/pages/pod/generator'));
+const PODMockups = lazy(() => import('@/pages/pod/mockups'));
+const PODUpload = lazy(() => import('@/pages/pod/uploads'));
+const PODVideos = lazy(() => import('@/pages/pod/videos'));
+const PODScheduler = lazy(() => import('@/pages/pod/scheduler'));
+const PODAnalytics = lazy(() => import('@/pages/pod/analytics'));
+const PODScaling = lazy(() => import('@/pages/pod/winners'));
+const PODVAControl = lazy(() => import('@/pages/pod/va'));
+const PODSettings = lazy(() => import('@/pages/pod/settings'));
+const PodLayout = lazy(() => import('@/pages/pod/PodLayout'));
 
 // OS Modules
-import { ProcurementDashboard, SuppliersPage as ProcurementSuppliersPage, SupplierDetailPage as ProcurementSupplierDetailPage, PurchaseOrdersPage as ProcurementPurchaseOrdersPage, NewPurchaseOrderPage as ProcurementNewPurchaseOrderPage, PurchaseOrderDetailPage as ProcurementPurchaseOrderDetailPage } from '@/pages/os/procurement';
-import { WarehouseDashboard } from '@/pages/os/warehouse';
-import { InventoryDashboard, ProductsPage, ProductDetailPage, ProductInventoryPage, WarehousesPage, WarehouseDetailPage, SuppliersPage as InventorySuppliersPage, SupplierDetailPage as InventorySupplierDetailPage, PurchaseOrdersPage as InventoryPurchaseOrdersPage, NewPurchaseOrderPage as InventoryNewPurchaseOrderPage, PurchaseOrderDetailPage, StockLevelsPage, MovementsPage, ProcurementPage, InsightsPage, NeighborhoodIntelligencePage } from '@/pages/os/inventory';
-import ProductConversions from '@/pages/os/ProductConversions';
-import LegacyInvoiceRepair from '@/pages/admin/LegacyInvoiceRepair';
-import MarketplaceConnectionPage from '@/pages/admin/dev/MarketplaceConnectionPage';
-import OSLayout from '@/pages/os/OSLayout';
-import StoreInventoryPage from '@/pages/os/inventory/StoreInventoryPage';
-import InventoryAuditLogPage from '@/pages/os/inventory/InventoryAuditLogPage';
-import TubeIntelligencePage from '@/pages/TubeIntelligencePage';
-import { LiveTubesDetailPage, BoxesSoldDetailPage, LowStockDetailPage } from '@/pages/os/inventory/dashboard';
-import TopTierDashboard from '@/pages/os/toptier/TopTierDashboard';
-import {
-  UnforgettableDashboard,
-  UnforgettableStaff,
-  UnforgettableStaffProfile,
-  UnforgettableStaffNew,
-  UnforgettableStaffEdit,
-  UnforgettableStaffCategories,
-  UnforgettableStaffVenues,
-  UnforgettableStaffNotes,
-  UnforgettableStaffCall,
-  UnforgettableStaffEmail,
-  UnforgettableStaffPerformance,
-  UnforgettableScheduling,
-  UnforgettableSchedulingToday,
-  UnforgettableSchedulingUpcoming,
-  UnforgettableSchedulingGaps,
-  UnforgettablePayroll,
-  UnforgettablePayrollDetail,
-  UnforgettableDocuments,
-  UnforgettableDocumentDetail,
-  UnforgettableAvailability,
-  UnforgettablePerformance,
-  UnforgettableCommunications,
-  UnforgettableAICalling,
-  UnforgettableAICallDetail,
-  UnforgettableOnboarding,
-  UnforgettableCustomerService,
-  UnforgettableMedia,
-  UnforgettableMediaDetail,
-} from '@/pages/os/unforgettable';
-import {
-  UnforgettableEventHalls,
-  UnforgettableEventHallDetail,
-  UnforgettableRentals,
-  UnforgettableInfluencers,
-  UnforgettableMediaVault,
-  UnforgettablePartySuppliers,
-  UnforgettableGifts,
-} from '@/pages/crm/unforgettable';
-import ICleanDashboard from '@/pages/os/iclean/ICleanDashboard';
-import PlayboxxxDashboard from '@/pages/os/playboxxx/PlayboxxxDashboard';
-import SpecialNeedsDashboard from '@/pages/os/specialneeds/SpecialNeedsDashboard';
-import FundingDashboard from '@/pages/os/funding/FundingDashboard';
-import GrantsDashboard from '@/pages/os/grants/GrantsDashboard';
-import WealthEngineDashboard from '@/pages/os/wealth/WealthEngineDashboard';
-import BettingDashboard from '@/pages/os/betting/BettingDashboard';
-import LineIntake from '@/pages/os/betting/LineIntake';
-import SimulationPage from '@/pages/os/betting/SimulationPage';
-import ParlayLab from '@/pages/os/betting/ParlayLab';
-import HedgeCenter from '@/pages/os/betting/HedgeCenter';
-import OwnerInternal from '@/pages/os/betting/OwnerInternal';
-import NBADailyBoard from '@/pages/os/betting/NBADailyBoard';
-import StatsInspector from '@/pages/os/betting/StatsInspector';
-import BettingSettings from '@/pages/os/betting/BettingSettings';
-import BettingWorkflow from '@/pages/os/betting/BettingWorkflow';
-import PlatformsDashboard from '@/pages/os/betting/PlatformsDashboard';
-import LineShopping from '@/pages/os/betting/LineShopping';
-import PickEntryWizard from '@/pages/os/betting/PickEntryWizard';
-import EntriesList from '@/pages/os/betting/EntriesList';
-import BettingResultsPage from '@/pages/os/betting/ResultsPage';
-import BikerDashboard from '@/pages/os/biker/BikerDashboard';
-import ModuleDiagnosticsPage from '@/pages/ModuleDiagnosticsPage';
+const ProcurementDashboard = lazy(() => import('@/pages/os/procurement').then(m => ({ default: m.ProcurementDashboard })));
+const ProcurementSuppliersPage = lazy(() => import('@/pages/os/procurement').then(m => ({ default: m.SuppliersPage })));
+const ProcurementSupplierDetailPage = lazy(() => import('@/pages/os/procurement').then(m => ({ default: m.SupplierDetailPage })));
+const ProcurementPurchaseOrdersPage = lazy(() => import('@/pages/os/procurement').then(m => ({ default: m.PurchaseOrdersPage })));
+const ProcurementNewPurchaseOrderPage = lazy(() => import('@/pages/os/procurement').then(m => ({ default: m.NewPurchaseOrderPage })));
+const ProcurementPurchaseOrderDetailPage = lazy(() => import('@/pages/os/procurement').then(m => ({ default: m.PurchaseOrderDetailPage })));
+const WarehouseDashboard = lazy(() => import('@/pages/os/warehouse').then(m => ({ default: m.WarehouseDashboard })));
+
+// Inventory
+const InventoryDashboard = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.InventoryDashboard })));
+const ProductsPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.ProductsPage })));
+const ProductDetailPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.ProductDetailPage })));
+const ProductInventoryPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.ProductInventoryPage })));
+const WarehousesPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.WarehousesPage })));
+const WarehouseDetailPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.WarehouseDetailPage })));
+const InventorySuppliersPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.SuppliersPage })));
+const InventorySupplierDetailPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.SupplierDetailPage })));
+const InventoryPurchaseOrdersPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.PurchaseOrdersPage })));
+const InventoryNewPurchaseOrderPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.NewPurchaseOrderPage })));
+const PurchaseOrderDetailPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.PurchaseOrderDetailPage })));
+const StockLevelsPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.StockLevelsPage })));
+const MovementsPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.MovementsPage })));
+const ProcurementPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.ProcurementPage })));
+const InsightsPage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.InsightsPage })));
+const NeighborhoodIntelligencePage = lazy(() => import('@/pages/os/inventory').then(m => ({ default: m.NeighborhoodIntelligencePage })));
+const ProductConversions = lazy(() => import('@/pages/os/ProductConversions'));
+const LegacyInvoiceRepair = lazy(() => import('@/pages/admin/LegacyInvoiceRepair'));
+const MarketplaceConnectionPage = lazy(() => import('@/pages/admin/dev/MarketplaceConnectionPage'));
+const OSLayout = lazy(() => import('@/pages/os/OSLayout'));
+const StoreInventoryPage = lazy(() => import('@/pages/os/inventory/StoreInventoryPage'));
+const InventoryAuditLogPage = lazy(() => import('@/pages/os/inventory/InventoryAuditLogPage'));
+const TubeIntelligencePage = lazy(() => import('@/pages/TubeIntelligencePage'));
+const LiveTubesDetailPage = lazy(() => import('@/pages/os/inventory/dashboard').then(m => ({ default: m.LiveTubesDetailPage })));
+const BoxesSoldDetailPage = lazy(() => import('@/pages/os/inventory/dashboard').then(m => ({ default: m.BoxesSoldDetailPage })));
+const LowStockDetailPage = lazy(() => import('@/pages/os/inventory/dashboard').then(m => ({ default: m.LowStockDetailPage })));
+const TopTierDashboard = lazy(() => import('@/pages/os/toptier/TopTierDashboard'));
+
+// Unforgettable
+const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
+const UnforgettableStaff = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaff })));
+const UnforgettableStaffProfile = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffProfile })));
+const UnforgettableStaffNew = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffNew })));
+const UnforgettableStaffEdit = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffEdit })));
+const UnforgettableStaffCategories = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffCategories })));
+const UnforgettableStaffVenues = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffVenues })));
+const UnforgettableStaffNotes = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffNotes })));
+const UnforgettableStaffCall = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffCall })));
+const UnforgettableStaffEmail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffEmail })));
+const UnforgettableStaffPerformance = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableStaffPerformance })));
+const UnforgettableScheduling = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableScheduling })));
+const UnforgettableSchedulingToday = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableSchedulingToday })));
+const UnforgettableSchedulingUpcoming = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableSchedulingUpcoming })));
+const UnforgettableSchedulingGaps = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableSchedulingGaps })));
+const UnforgettablePayroll = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettablePayroll })));
+const UnforgettablePayrollDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettablePayrollDetail })));
+const UnforgettableDocuments = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDocuments })));
+const UnforgettableDocumentDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDocumentDetail })));
+const UnforgettableAvailability = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableAvailability })));
+const UnforgettablePerformance = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettablePerformance })));
+const UnforgettableCommunications = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableCommunications })));
+const UnforgettableAICalling = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableAICalling })));
+const UnforgettableAICallDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableAICallDetail })));
+const UnforgettableOnboarding = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableOnboarding })));
+const UnforgettableCustomerService = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableCustomerService })));
+const UnforgettableMedia = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMedia })));
+const UnforgettableMediaDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMediaDetail })));
+
+// Unforgettable CRM
+const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
+const UnforgettableEventHallDetail = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHallDetail })));
+const UnforgettableRentals = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableRentals })));
+const UnforgettableInfluencers = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableInfluencers })));
+const UnforgettableMediaVault = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableMediaVault })));
+const UnforgettablePartySuppliers = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettablePartySuppliers })));
+const UnforgettableGifts = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableGifts })));
+
+// Other OS modules
+const ICleanDashboard = lazy(() => import('@/pages/os/iclean/ICleanDashboard'));
+const PlayboxxxDashboard = lazy(() => import('@/pages/os/playboxxx/PlayboxxxDashboard'));
+const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/SpecialNeedsDashboard'));
+const FundingDashboard = lazy(() => import('@/pages/os/funding/FundingDashboard'));
+const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
+const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
+const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
+const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
+const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
+const ParlayLab = lazy(() => import('@/pages/os/betting/ParlayLab'));
+const HedgeCenter = lazy(() => import('@/pages/os/betting/HedgeCenter'));
+const OwnerInternal = lazy(() => import('@/pages/os/betting/OwnerInternal'));
+const NBADailyBoard = lazy(() => import('@/pages/os/betting/NBADailyBoard'));
+const StatsInspector = lazy(() => import('@/pages/os/betting/StatsInspector'));
+const BettingSettings = lazy(() => import('@/pages/os/betting/BettingSettings'));
+const BettingWorkflow = lazy(() => import('@/pages/os/betting/BettingWorkflow'));
+const PlatformsDashboard = lazy(() => import('@/pages/os/betting/PlatformsDashboard'));
+const LineShopping = lazy(() => import('@/pages/os/betting/LineShopping'));
+const PickEntryWizard = lazy(() => import('@/pages/os/betting/PickEntryWizard'));
+const EntriesList = lazy(() => import('@/pages/os/betting/EntriesList'));
+const BettingResultsPage = lazy(() => import('@/pages/os/betting/ResultsPage'));
+const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
+const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 
 // Delivery & Logistics
-import { 
-  DeliveryDashboard, 
-  DeliveriesBoard, 
-  DriversManagement, 
-  BikersManagement, 
-  BikerProfile,
-  DriverProfile,
-  BikerTasks, 
-  LocationsManagement, 
-  WorkerPayouts, 
-  DebtCollection, 
-  DriverHome,
-  DriverOS,
-  DeliveryMyRoute,
-  HeatmapPage as DeliveryHeatmapPage,
-  IssueDetailPage as DeliveryIssueDetailPage,
-  RouteSuggestionsPage as DeliveryRouteSuggestionsPage,
-  DriverRoutesCompleted,
-  DriverStopsCompleted,
-  DriverIssuesReported,
-  RouteManagerPage,
-  AllRoutesPage,
-  MultiBrandDeliveryPage,
-  LiveMapPage,
-  LiveMapCommandCenter,
-  RouteOpsCenter as DeliveryRouteOpsCenter,
-  MyRouteToday,
-  AutonomyConsole,
-  DeliveryDispatchPage
-} from '@/pages/delivery';
-import DeliveryStoreProfile from '@/pages/delivery/StoreProfile';
-import DeliveryRouteDetailPage from '@/pages/delivery/DeliveryRouteDetail';
+const DeliveryDashboard = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryDashboard })));
+const DeliveriesBoard = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveriesBoard })));
+const DriversManagement = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriversManagement })));
+const BikersManagement = lazy(() => import('@/pages/delivery').then(m => ({ default: m.BikersManagement })));
+const BikerProfile = lazy(() => import('@/pages/delivery').then(m => ({ default: m.BikerProfile })));
+const DriverProfile = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriverProfile })));
+const BikerTasks = lazy(() => import('@/pages/delivery').then(m => ({ default: m.BikerTasks })));
+const LocationsManagement = lazy(() => import('@/pages/delivery').then(m => ({ default: m.LocationsManagement })));
+const WorkerPayouts = lazy(() => import('@/pages/delivery').then(m => ({ default: m.WorkerPayouts })));
+const DebtCollection = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DebtCollection })));
+const DriverHome = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriverHome })));
+const DriverOS = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriverOS })));
+const DeliveryMyRoute = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryMyRoute })));
+const DeliveryHeatmapPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.HeatmapPage })));
+const DeliveryIssueDetailPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.IssueDetailPage })));
+const DeliveryRouteSuggestionsPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteSuggestionsPage })));
+const DriverRoutesCompleted = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriverRoutesCompleted })));
+const DriverStopsCompleted = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriverStopsCompleted })));
+const DriverIssuesReported = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DriverIssuesReported })));
+const RouteManagerPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteManagerPage })));
+const AllRoutesPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.AllRoutesPage })));
+const MultiBrandDeliveryPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.MultiBrandDeliveryPage })));
+const LiveMapPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.LiveMapPage })));
+const LiveMapCommandCenter = lazy(() => import('@/pages/delivery').then(m => ({ default: m.LiveMapCommandCenter })));
+const DeliveryRouteOpsCenter = lazy(() => import('@/pages/delivery').then(m => ({ default: m.RouteOpsCenter })));
+const MyRouteToday = lazy(() => import('@/pages/delivery').then(m => ({ default: m.MyRouteToday })));
+const AutonomyConsole = lazy(() => import('@/pages/delivery').then(m => ({ default: m.AutonomyConsole })));
+const DeliveryDispatchPage = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryDispatchPage })));
+const DeliveryStoreProfile = lazy(() => import('@/pages/delivery/StoreProfile'));
+const DeliveryRouteDetailPage = lazy(() => import('@/pages/delivery/DeliveryRouteDetail'));
 
 // Grabba
-import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
-import GrabbaClusterDashboard from '@/pages/grabba/GrabbaClusterDashboard';
-import UnifiedUploadCenter from '@/pages/grabba/UnifiedUploadCenter';
-import MultiBrandDelivery from '@/pages/grabba/MultiBrandDelivery';
-import StoreMasterProfile from '@/pages/grabba/StoreMasterProfile';
-import BrandCRM from '@/pages/grabba/BrandCRM';
-import BrandSelector from '@/pages/grabba/BrandSelector';
-import BrandCommunications from '@/pages/grabba/BrandCommunications';
-import AIInsights from '@/pages/grabba/AIInsights';
-import GrabbaCRM from '@/pages/grabba/GrabbaCRM';
-import GrabbaCommunication from '@/pages/grabba/GrabbaCommunication';
-import GrabbaInventory from '@/pages/grabba/GrabbaInventory';
-import GrabbaProduction from '@/pages/grabba/GrabbaProduction';
-import GrabbaDeliveries from '@/pages/grabba/GrabbaDeliveries';
-import GrabbaAssignments from '@/pages/grabba/GrabbaAssignments';
-import GrabbaAmbassadors from '@/pages/grabba/GrabbaAmbassadors';
-import AmbassadorProfile from '@/pages/grabba/AmbassadorProfile';
-import GrabbaWholesalePlatform from '@/pages/grabba/GrabbaWholesalePlatform';
-import GrabbaFinance from '@/pages/grabba/GrabbaFinance';
-import GrabbaCommandPenthouse from '@/pages/grabba/GrabbaCommandPenthouse';
-import GrabbaTextCenter from '@/pages/grabba/GrabbaTextCenter';
-import GrabbaEmailCenter from '@/pages/grabba/GrabbaEmailCenter';
-import GrabbaCallCenter from '@/pages/grabba/GrabbaCallCenter';
-import GrabbaCommunicationLogs from '@/pages/grabba/GrabbaCommunicationLogs';
-import GrabbaAutopilotConsole from '@/pages/grabba/GrabbaAutopilotConsole';
-import GrabbaAutopilotDashboard from '@/pages/grabba/GrabbaAutopilotDashboard';
-import GrabbaCommandConsole from '@/pages/grabba/GrabbaCommandConsole';
-import GrabbaAICommandConsole from '@/pages/grabba/GrabbaAICommandConsole';
-import ResultsPage from '@/pages/grabba/ResultsPage';
-import ActionQueuePage from '@/pages/grabba/ActionQueuePage';
-import GrabbaRoutesPage from '@/pages/grabba/RoutesPage';
-import DrillDownPage from '@/pages/grabba/drilldown/DrillDownPage';
-import AiCommandConsole from '@/pages/grabba/AiCommandConsole';
-import AiPlaybooks from '@/pages/grabba/AiPlaybooks';
-import AiRoutines from '@/pages/grabba/AiRoutines';
-import RiskRadar from '@/pages/grabba/RiskRadar';
-import FollowUpSettings from '@/pages/grabba/FollowUpSettings';
-import DailyBriefing from '@/pages/grabba/DailyBriefing';
-import AIOperationsDashboard from '@/pages/grabba/ai-operations/AIOperationsDashboard';
-import AITasks from '@/pages/grabba/ai-operations/AITasks';
-import AIPredictions from '@/pages/grabba/ai-operations/AIPredictions';
-import AIAlerts from '@/pages/grabba/ai-operations/AIAlerts';
-import { Floor9Hub, Floor9Playbooks, Floor9ActionQueue, Floor9InstinctLog, Floor9Results } from '@/pages/floor9';
-import Floor9Router from '@/routes/Floor9Router';
-import { CommandExport, Floor1Export, Floor2Export, Floor3Export, Floor4Export, Floor5Export, Floor6Export, Floor7Export, Floor8Export, Floor9Export } from '@/pages/floor-exports';
-import FinancialDashboard from '@/pages/grabba/FinancialDashboard';
-import PersonalFinance from '@/pages/grabba/PersonalFinance';
-import PayrollManager from '@/pages/grabba/PayrollManager';
-import AdvisorPenthouse from '@/pages/grabba/AdvisorPenthouse';
-import AuditEnginePage from '@/pages/penthouse/AuditEnginePage';
-import FloorBlueprint from '@/pages/penthouse/FloorBlueprint';
-import InstinctLog from '@/pages/grabba/InstinctLog';
-import GrabbaNeighborhoodPerformance from '@/pages/grabba/GrabbaNeighborhoodPerformance';
-import GrabbaClusterCommunications from '@/pages/grabba/GrabbaClusterCommunications';
-import GrabbaClusterAnalytics from '@/pages/grabba/GrabbaClusterAnalytics';
-import MemoryBackfill from '@/pages/grabba/MemoryBackfill';
-import ChangeControlCenter from '@/pages/grabba/ChangeControlCenter';
-import ChangeControlAudit from '@/pages/grabba/ChangeControlAudit';
+const GrabbaClusterDashboard = lazy(() => import('@/pages/grabba/GrabbaClusterDashboard'));
+const UnifiedUploadCenter = lazy(() => import('@/pages/grabba/UnifiedUploadCenter'));
+const MultiBrandDelivery = lazy(() => import('@/pages/grabba/MultiBrandDelivery'));
+const StoreMasterProfile = lazy(() => import('@/pages/grabba/StoreMasterProfile'));
+const BrandCRM = lazy(() => import('@/pages/grabba/BrandCRM'));
+const BrandSelector = lazy(() => import('@/pages/grabba/BrandSelector'));
+const BrandCommunications = lazy(() => import('@/pages/grabba/BrandCommunications'));
+const AIInsights = lazy(() => import('@/pages/grabba/AIInsights'));
+const GrabbaCRM = lazy(() => import('@/pages/grabba/GrabbaCRM'));
+const GrabbaCommunication = lazy(() => import('@/pages/grabba/GrabbaCommunication'));
+const GrabbaInventory = lazy(() => import('@/pages/grabba/GrabbaInventory'));
+const GrabbaProduction = lazy(() => import('@/pages/grabba/GrabbaProduction'));
+const GrabbaDeliveries = lazy(() => import('@/pages/grabba/GrabbaDeliveries'));
+const GrabbaAssignments = lazy(() => import('@/pages/grabba/GrabbaAssignments'));
+const GrabbaAmbassadors = lazy(() => import('@/pages/grabba/GrabbaAmbassadors'));
+const AmbassadorProfile = lazy(() => import('@/pages/grabba/AmbassadorProfile'));
+const GrabbaWholesalePlatform = lazy(() => import('@/pages/grabba/GrabbaWholesalePlatform'));
+const GrabbaFinance = lazy(() => import('@/pages/grabba/GrabbaFinance'));
+const GrabbaCommandPenthouse = lazy(() => import('@/pages/grabba/GrabbaCommandPenthouse'));
+const GrabbaTextCenter = lazy(() => import('@/pages/grabba/GrabbaTextCenter'));
+const GrabbaEmailCenter = lazy(() => import('@/pages/grabba/GrabbaEmailCenter'));
+const GrabbaCallCenter = lazy(() => import('@/pages/grabba/GrabbaCallCenter'));
+const GrabbaCommunicationLogs = lazy(() => import('@/pages/grabba/GrabbaCommunicationLogs'));
+const GrabbaAutopilotConsole = lazy(() => import('@/pages/grabba/GrabbaAutopilotConsole'));
+const GrabbaAutopilotDashboard = lazy(() => import('@/pages/grabba/GrabbaAutopilotDashboard'));
+const GrabbaCommandConsole = lazy(() => import('@/pages/grabba/GrabbaCommandConsole'));
+const GrabbaAICommandConsole = lazy(() => import('@/pages/grabba/GrabbaAICommandConsole'));
+const ResultsPage = lazy(() => import('@/pages/grabba/ResultsPage'));
+const ActionQueuePage = lazy(() => import('@/pages/grabba/ActionQueuePage'));
+const GrabbaRoutesPage = lazy(() => import('@/pages/grabba/RoutesPage'));
+const DrillDownPage = lazy(() => import('@/pages/grabba/drilldown/DrillDownPage'));
+const AiCommandConsole = lazy(() => import('@/pages/grabba/AiCommandConsole'));
+const AiPlaybooks = lazy(() => import('@/pages/grabba/AiPlaybooks'));
+const AiRoutines = lazy(() => import('@/pages/grabba/AiRoutines'));
+const RiskRadar = lazy(() => import('@/pages/grabba/RiskRadar'));
+const FollowUpSettings = lazy(() => import('@/pages/grabba/FollowUpSettings'));
+const DailyBriefing = lazy(() => import('@/pages/grabba/DailyBriefing'));
+const AIOperationsDashboard = lazy(() => import('@/pages/grabba/ai-operations/AIOperationsDashboard'));
+const AITasks = lazy(() => import('@/pages/grabba/ai-operations/AITasks'));
+const AIPredictions = lazy(() => import('@/pages/grabba/ai-operations/AIPredictions'));
+const AIAlerts = lazy(() => import('@/pages/grabba/ai-operations/AIAlerts'));
+const Floor9Hub = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9Hub })));
+const Floor9Playbooks = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9Playbooks })));
+const Floor9ActionQueue = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9ActionQueue })));
+const Floor9InstinctLog = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9InstinctLog })));
+const Floor9Results = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9Results })));
+const Floor9Router = lazy(() => import('@/routes/Floor9Router'));
+const CommandExport = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.CommandExport })));
+const Floor1Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor1Export })));
+const Floor2Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor2Export })));
+const Floor3Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor3Export })));
+const Floor4Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor4Export })));
+const Floor5Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor5Export })));
+const Floor6Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor6Export })));
+const Floor7Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor7Export })));
+const Floor8Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor8Export })));
+const Floor9Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor9Export })));
+const FinancialDashboard = lazy(() => import('@/pages/grabba/FinancialDashboard'));
+const PersonalFinance = lazy(() => import('@/pages/grabba/PersonalFinance'));
+const PayrollManager = lazy(() => import('@/pages/grabba/PayrollManager'));
+const AdvisorPenthouse = lazy(() => import('@/pages/grabba/AdvisorPenthouse'));
+const AuditEnginePage = lazy(() => import('@/pages/penthouse/AuditEnginePage'));
+const FloorBlueprint = lazy(() => import('@/pages/penthouse/FloorBlueprint'));
+const InstinctLog = lazy(() => import('@/pages/grabba/InstinctLog'));
+const GrabbaNeighborhoodPerformance = lazy(() => import('@/pages/grabba/GrabbaNeighborhoodPerformance'));
+const GrabbaClusterCommunications = lazy(() => import('@/pages/grabba/GrabbaClusterCommunications'));
+const GrabbaClusterAnalytics = lazy(() => import('@/pages/grabba/GrabbaClusterAnalytics'));
+const MemoryBackfill = lazy(() => import('@/pages/grabba/MemoryBackfill'));
+const ChangeControlCenter = lazy(() => import('@/pages/grabba/ChangeControlCenter'));
+const ChangeControlAudit = lazy(() => import('@/pages/grabba/ChangeControlAudit'));
 
 // AI
-import AIWorkforce from '@/pages/ai/Workforce';
+const AIWorkforce = lazy(() => import('@/pages/ai/Workforce'));
 
 // System
-import DynastyAutomations from '@/pages/DynastyAutomations';
-import AICEOControlRoom from '@/pages/AICEOControlRoom';
-import BrandPlaceholder from '@/pages/BrandPlaceholder';
+const DynastyAutomations = lazy(() => import('@/pages/DynastyAutomations'));
+const AICEOControlRoom = lazy(() => import('@/pages/AICEOControlRoom'));
+const BrandPlaceholder = lazy(() => import('@/pages/BrandPlaceholder'));
+
+// Governance
+const GovernanceCommandCenter = lazy(() => import('@/pages/admin/GovernanceCommandCenter'));
+const Floor9Observation = lazy(() => import('@/pages/floor9/Floor9Observation'));
 
 /**
  * ProtectedLayout - Wraps all protected routes with auth and layout
@@ -648,6 +829,7 @@ function LandingRedirect() {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PUBLIC ROUTES (No authentication required)                                   */}
@@ -2582,5 +2764,6 @@ export default function AppRoutes() {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }
