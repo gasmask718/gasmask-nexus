@@ -289,16 +289,26 @@ export default function CRMPipelinePage() {
           <Kanban className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Sales Pipeline</h1>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => autoMove.mutate()}
-          disabled={autoMove.isPending}
-        >
-          <Zap className="h-4 w-4 mr-1" />
-          {autoMove.isPending ? "Running…" : "Auto-Move Leads"}
-        </Button>
-      </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={syncPipeline}
+            disabled={syncing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "⚡ Sync Pipeline"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => autoMove.mutate()}
+            disabled={autoMove.isPending}
+          >
+            <Zap className="h-4 w-4 mr-1" />
+            {autoMove.isPending ? "Running…" : "Auto-Move Leads"}
+          </Button>
+        </div>
 
       {/* Hot Leads Intelligence Panels */}
       <HotLeadsPanels
