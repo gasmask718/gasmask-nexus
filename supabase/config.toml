@@ -387,3 +387,6 @@ verify_jwt = false
 
 [functions.gasmask-route-agent]
 verify_jwt = false
+
+[functions.dynasty-agent-runner]
+verify_jwt = false

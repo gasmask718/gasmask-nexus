@@ -414,6 +414,7 @@ const ComplianceCenter = lazy(() => import('@/pages/compliance/ComplianceCenter'
 const ColdCallBlastPage = lazy(() => import('@/pages/communication/cold-calls/ColdCallBlastPage'));
 const RouteEnginePage = lazy(() => import('@/pages/gasmask/RouteEnginePage'));
 const GasmaskDriverRoutePage = lazy(() => import('@/pages/gasmask/DriverRoutePage'));
+const AgentCenterPage = lazy(() => import('@/pages/gasmask/AgentCenterPage'));
 const CommunicationOverview = lazy(() => import('@/pages/communication/CommunicationOverview'));
 const CommunicationCampaigns = lazy(() => import('@/pages/communication/CommunicationCampaigns'));
 const CommunicationCampaignNew = lazy(() => import('@/pages/communication/CommunicationCampaignNew'));
@@ -965,6 +966,8 @@ export default function AppRoutes() {
         <Route path="/gasmask/settings" element={<BrandPlaceholder />} />
         <Route path="/gasmask/route-engine" element={<RouteEnginePage />} />
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
+        <Route path="/gasmask/agent-center" element={<AgentCenterPage />} />
+        <Route path="/dynasty/agents" element={<AgentCenterPage />} />
 
         {/* HotMama Routes */}
         <Route path="/hotmama/*" element={<BrandPlaceholder />} />

@@ -32688,6 +32688,214 @@ export type Database = {
           },
         ]
       }
+      dynasty_agent_actions: {
+        Row: {
+          action_data: Json | null
+          action_target: string | null
+          action_type: string
+          agent_name: string
+          approved_at: string | null
+          confidence: number | null
+          created_at: string | null
+          id: string
+          outcome: string | null
+          requires_human_approval: boolean | null
+          run_id: string | null
+        }
+        Insert: {
+          action_data?: Json | null
+          action_target?: string | null
+          action_type: string
+          agent_name: string
+          approved_at?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          outcome?: string | null
+          requires_human_approval?: boolean | null
+          run_id?: string | null
+        }
+        Update: {
+          action_data?: Json | null
+          action_target?: string | null
+          action_type?: string
+          agent_name?: string
+          approved_at?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          outcome?: string | null
+          requires_human_approval?: boolean | null
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_agent_actions_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_agent_insights: {
+        Row: {
+          action_required: boolean | null
+          action_taken: boolean | null
+          agent_name: string
+          body: string
+          brand: string | null
+          created_at: string | null
+          dismissed: boolean | null
+          id: string
+          insight_type: string
+          priority: string | null
+          related_record_id: string | null
+          related_store: string | null
+          title: string
+        }
+        Insert: {
+          action_required?: boolean | null
+          action_taken?: boolean | null
+          agent_name: string
+          body: string
+          brand?: string | null
+          created_at?: string | null
+          dismissed?: boolean | null
+          id?: string
+          insight_type: string
+          priority?: string | null
+          related_record_id?: string | null
+          related_store?: string | null
+          title: string
+        }
+        Update: {
+          action_required?: boolean | null
+          action_taken?: boolean | null
+          agent_name?: string
+          body?: string
+          brand?: string | null
+          created_at?: string | null
+          dismissed?: boolean | null
+          id?: string
+          insight_type?: string
+          priority?: string | null
+          related_record_id?: string | null
+          related_store?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      dynasty_agent_runs: {
+        Row: {
+          actions_taken: number | null
+          agent_id: string | null
+          agent_name: string
+          completed_at: string | null
+          cost_estimate: number | null
+          error_message: string | null
+          full_output: Json | null
+          id: string
+          insights_generated: number | null
+          started_at: string | null
+          status: string | null
+          summary: string | null
+          triggers_fired: number | null
+        }
+        Insert: {
+          actions_taken?: number | null
+          agent_id?: string | null
+          agent_name: string
+          completed_at?: string | null
+          cost_estimate?: number | null
+          error_message?: string | null
+          full_output?: Json | null
+          id?: string
+          insights_generated?: number | null
+          started_at?: string | null
+          status?: string | null
+          summary?: string | null
+          triggers_fired?: number | null
+        }
+        Update: {
+          actions_taken?: number | null
+          agent_id?: string | null
+          agent_name?: string
+          completed_at?: string | null
+          cost_estimate?: number | null
+          error_message?: string | null
+          full_output?: Json | null
+          id?: string
+          insights_generated?: number | null
+          started_at?: string | null
+          status?: string | null
+          summary?: string | null
+          triggers_fired?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dynasty_agent_runs_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "dynasty_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dynasty_agents: {
+        Row: {
+          agent_name: string
+          agent_type: string
+          avg_confidence: number | null
+          brands: string[] | null
+          config: Json | null
+          created_at: string | null
+          floor_source: string | null
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          next_run_at: string | null
+          run_schedule: string | null
+          tier: number
+          total_actions_taken: number | null
+          total_runs: number | null
+        }
+        Insert: {
+          agent_name: string
+          agent_type: string
+          avg_confidence?: number | null
+          brands?: string[] | null
+          config?: Json | null
+          created_at?: string | null
+          floor_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          run_schedule?: string | null
+          tier: number
+          total_actions_taken?: number | null
+          total_runs?: number | null
+        }
+        Update: {
+          agent_name?: string
+          agent_type?: string
+          avg_confidence?: number | null
+          brands?: string[] | null
+          config?: Json | null
+          created_at?: string | null
+          floor_source?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          next_run_at?: string | null
+          run_schedule?: string | null
+          tier?: number
+          total_actions_taken?: number | null
+          total_runs?: number | null
+        }
+        Relationships: []
+      }
       dynasty_checkpoints: {
         Row: {
           created_at: string
