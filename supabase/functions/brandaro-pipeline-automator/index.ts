@@ -51,6 +51,31 @@ serve(async (req) => {
         case "dnc":
           newStage = "lost";
           break;
+        case "lead_imported":
+          newStage = "new";
+          // Queue initial SMS via sms-writer for newly imported leads
+          try {
+            const { data: importedLead } = await sb
+              .from("brandaro_qualified_leads")
+              .select("business_name, city, industry, call_attempts")
+              .eq("id", lead_id)
+              .single();
+            if (importedLead) {
+              await sb.functions.invoke("sms-writer", {
+                body: {
+                  lead_id,
+                  business_name: importedLead.business_name,
+                  city: importedLead.city,
+                  industry: importedLead.industry,
+                  call_attempts: importedLead.call_attempts || 0,
+                },
+              });
+              console.log(`📱 SMS queued for newly imported lead ${lead_id}`);
+            }
+          } catch (smsErr) {
+            console.error(`SMS queue failed for lead ${lead_id}:`, smsErr);
+          }
+          break;
       }
 
       // If message_content provided, run keyword intent detection

@@ -137,6 +137,27 @@ export default function BrandaroWarRoom() {
     },
   });
 
+  // Scout Agent stats
+  const { data: scoutStats } = useQuery({
+    queryKey: ["brandaro-scout-stats"],
+    queryFn: async () => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [
+        { count: total },
+        { count: today },
+        { count: inPipeline },
+        { data: config },
+      ] = await Promise.all([
+        supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).not("discovery_job_id", "is", null),
+        supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).gte("created_at", yesterday).not("discovery_job_id", "is", null),
+        supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).eq("pipeline_stage", "new").not("discovery_job_id", "is", null),
+        supabase.from("brandaro_scout_config" as any).select("*").limit(1).single(),
+      ]);
+      return { total, today, inPipeline, config: config as any };
+    },
+    refetchInterval: 60000,
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -158,6 +179,31 @@ export default function BrandaroWarRoom() {
         <KPICard label="Pending Tasks" value={pendingTasks} icon={ListTodo} color="text-amber-500" to="/brandaro/follow-ups" />
         <KPICard label="AI Personas" value={activePersonalities} icon={Theater} color="text-purple-500" to="/brandaro/personalities" />
       </div>
+
+      {/* Scout Agent Card */}
+      <Card className="border-primary/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-semibold flex items-center gap-1.5">
+              <Bot className="h-4 w-4 text-primary" /> Scout Agent
+            </h3>
+            <Badge variant={scoutStats?.config?.is_active ? "default" : "secondary"} className="text-[10px]">
+              {scoutStats?.config?.is_active ? "Active" : "Paused"}
+            </Badge>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div><span className="text-muted-foreground">Total discovered:</span> <span className="font-medium">{scoutStats?.total || 0}</span></div>
+            <div><span className="text-muted-foreground">Today:</span> <span className="font-medium text-green-600">{scoutStats?.today || 0}</span></div>
+            <div><span className="text-muted-foreground">Awaiting outreach:</span> <span className="font-medium">{scoutStats?.inPipeline || 0}</span></div>
+            <div><span className="text-muted-foreground">Cost today:</span> <span className="font-medium">${(scoutStats?.config?.daily_spend_today || 0).toFixed(2)}</span></div>
+          </div>
+          <Link to="/brandaro/scout-agent">
+            <Button variant="outline" size="sm" className="w-full mt-3 h-7 text-xs gap-1">
+              <Bot className="h-3 w-3" /> Go to Scout
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

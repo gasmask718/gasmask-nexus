@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScoutLiveMonitor } from "@/components/brandaro/ScoutLiveMonitor";
+import { ScoutVerificationPanel } from "@/components/brandaro/ScoutVerificationPanel";
 
 // Industries organized by conversion tier
 const INDUSTRY_TIERS = {
@@ -270,6 +272,34 @@ export default function ScoutAgentPage() {
     toast({ title: "All 25 industries selected" });
   }, [config, queryClient, toast]);
 
+  // Auto-fix on page load
+  useEffect(() => {
+    const autoVerify = async () => {
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-fix-imports`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            },
+            body: JSON.stringify({}),
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.total_fixed > 0) {
+            toast({ title: `Fixed ${data.total_fixed} leads`, description: "Pipeline data corrected" });
+          }
+        }
+      } catch {
+        // Silent fail on auto-fix
+      }
+    };
+    autoVerify();
+  }, [toast]);
+
   if (configLoading) {
     return <div className="space-y-6"><Skeleton className="h-8 w-64" /><Skeleton className="h-40 w-full" /><Skeleton className="h-40 w-full" /></div>;
   }
@@ -283,6 +313,9 @@ export default function ScoutAgentPage() {
         <h1 className="text-2xl font-bold flex items-center gap-2"><Bot className="h-6 w-6 text-primary" /> Autonomous Scout Agent</h1>
         <p className="text-sm text-muted-foreground">AI-powered lead discovery with market intelligence across all 50 states</p>
       </div>
+
+      {/* Live Monitor */}
+      <ScoutLiveMonitor />
 
       {/* ── Status + Budget ── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -347,6 +380,9 @@ export default function ScoutAgentPage() {
         <Card><CardContent className="py-3 text-center"><p className="text-2xl font-bold">${(config?.total_spent_all_time || 0).toFixed(2)}</p><p className="text-[10px] text-muted-foreground">Total Spent</p></CardContent></Card>
         <Card><CardContent className="py-3 text-center"><p className="text-2xl font-bold">${costPerLead}</p><p className="text-[10px] text-muted-foreground">Cost Per Lead</p></CardContent></Card>
       </div>
+
+      {/* Verification Panel */}
+      <ScoutVerificationPanel />
 
       {/* ── Tabs: Config / Runs / Memory / Intelligence ── */}
       <Tabs defaultValue="config">

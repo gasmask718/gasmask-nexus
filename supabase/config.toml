@@ -381,3 +381,6 @@ verify_jwt = false
 
 [functions.brandaro-scout-agent]
 verify_jwt = false
+
+[functions.brandaro-fix-imports]
+verify_jwt = false
