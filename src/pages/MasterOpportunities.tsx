@@ -45,8 +45,18 @@ import {
   ThumbsDown,
   Sticker,
   Repeat,
+  MessageSquare,
+  Phone,
+  Brain,
+  Truck,
+  TrendingUp,
+  ArrowLeftRight,
+  Zap,
+  Loader2,
 } from 'lucide-react';
-import { format, isToday, isThisWeek } from 'date-fns';
+import { format, isToday, isThisWeek, formatDistanceToNow } from 'date-fns';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useGlobalTubeIntelligence, useTubeIntelSummary, TUBE_BRANDS } from '@/hooks/useTubeIntelligence';
 import { useStickerSummary } from '@/hooks/useBrandStickers';
 import { useStoreOpportunities, useOpportunitiesSummary, useCompleteOpportunity, useReopenOpportunity } from '@/hooks/useStoreOpportunities';
@@ -54,6 +64,7 @@ import { ExportButton } from '@/components/crud/ExportButton';
 import { DataTablePagination } from '@/components/crud/DataTablePagination';
 import { toast } from 'sonner';
 
+type MainTab = 'signals' | 'opportunities' | 'messaging' | 'dialer' | 'visits' | 'ready-close' | 'ai-opps';
 type SignalTab = 'all' | 'needs_order' | 'bring_samples' | 'starter_kit' | 'switch_tubes' | 'interested' | 'not_interested';
 type TimeFilter = 'all' | 'today' | 'this_week';
 type OpportunityFilter = 'all' | 'pending' | 'completed';
@@ -80,78 +91,448 @@ interface StoreIntelRow {
   borough: string | null;
 }
 
+// ── Opportunity card used across all new tabs ──
+interface OpportunityItem {
+  id: string;
+  name: string;
+  brand?: string;
+  city?: string;
+  state?: string;
+  phone?: string;
+  urgency?: 'critical' | 'high' | 'normal';
+  signal?: string;
+  message?: string;
+  context?: string;
+  timeAgo?: string;
+  source?: string;
+  primaryAction?: string;
+  primaryActionLabel?: string;
+  raw?: any;
+}
+
+const URGENCY_STYLES: Record<string, string> = {
+  critical: 'bg-destructive/10 text-destructive border-destructive/30',
+  high: 'bg-amber-500/10 text-amber-500 border-amber-500/30',
+  normal: 'bg-muted text-muted-foreground border-border',
+};
+
+function OpportunityCard({
+  opp,
+  onAction,
+}: {
+  opp: OpportunityItem;
+  onAction: (type: string, opp: OpportunityItem) => void;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-3 transition-all hover:shadow-sm ${
+        opp.urgency === 'critical'
+          ? 'border-l-2 border-l-destructive border-border'
+          : opp.urgency === 'high'
+          ? 'border-l-2 border-l-amber-500 border-border'
+          : 'border-border bg-card'
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <span className="font-semibold text-sm truncate">{opp.name}</span>
+            {opp.brand && (
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full border border-border bg-muted text-muted-foreground flex-shrink-0">
+                {opp.brand}
+              </span>
+            )}
+            {opp.urgency && (
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full border flex-shrink-0 ${URGENCY_STYLES[opp.urgency] || URGENCY_STYLES.normal}`}>
+                {opp.urgency}
+              </span>
+            )}
+          </div>
+
+          {/* Location */}
+          <div className="text-xs text-muted-foreground mb-2">
+            {[opp.city, opp.state].filter(Boolean).join(', ')}
+            {opp.context && <span className="ml-2">· {opp.context}</span>}
+          </div>
+
+          {/* Signal */}
+          {opp.signal && (
+            <div className="text-[11px] bg-muted/50 rounded px-2 py-1 mb-2 italic text-muted-foreground">
+              💡 {opp.signal}
+            </div>
+          )}
+
+          {/* Message preview */}
+          {opp.message && (
+            <div className="text-[11px] bg-primary/5 border border-primary/20 rounded px-2 py-1 mb-2">
+              <span className="text-primary font-medium">Reply: </span>
+              &ldquo;{opp.message.substring(0, 120)}{opp.message.length > 120 ? '…' : ''}&rdquo;
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <span className="text-[10px] text-muted-foreground">
+              {opp.timeAgo}
+              {opp.source && (
+                <span className="ml-1.5 px-1 py-0.5 rounded bg-muted text-[9px]">{opp.source}</span>
+              )}
+            </span>
+
+            <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
+              {opp.primaryAction && (
+                <Button size="sm" className="h-7 text-[10px] px-2" onClick={() => onAction(opp.primaryAction!, opp)}>
+                  {opp.primaryActionLabel}
+                </Button>
+              )}
+              {opp.phone && (
+                <>
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => onAction('sms', opp)}>
+                    <MessageSquare className="h-3 w-3" />
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => onAction('call', opp)}>
+                    <Phone className="h-3 w-3" />
+                  </Button>
+                </>
+              )}
+              <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" onClick={() => onAction('route', opp)}>
+                <Truck className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Reusable list for opportunity items ──
+function OpportunityList({
+  items,
+  onAction,
+  emptyIcon: EmptyIcon,
+  emptyText,
+}: {
+  items: OpportunityItem[];
+  onAction: (type: string, opp: OpportunityItem) => void;
+  emptyIcon?: any;
+  emptyText?: string;
+}) {
+  if (!items.length) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        {EmptyIcon && <EmptyIcon className="h-12 w-12 mx-auto mb-3 opacity-40" />}
+        <p className="text-sm">{emptyText || 'No items found'}</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {items.map((opp) => (
+        <OpportunityCard key={opp.id} opp={opp} onAction={onAction} />
+      ))}
+    </div>
+  );
+}
+
 export default function MasterOpportunities() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
-  
-  // Main section tabs
-  const [mainTab, setMainTab] = useState<'signals' | 'opportunities'>('signals');
-  
-  // Derive active signal from URL (single source of truth)
+
+  // ── State ──
+  const [mainTab, setMainTab] = useState<MainTab>('signals');
   const activeSignalTab: SignalTab = (searchParams.get('signal') as SignalTab) || 'all';
-  
-  // Signals filters
   const [searchQuery, setSearchQuery] = useState('');
   const [brandFilter, setBrandFilter] = useState<string>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
-  
-  // Opportunities filters
   const [oppSearchQuery, setOppSearchQuery] = useState('');
   const [oppStatusFilter, setOppStatusFilter] = useState<OpportunityFilter>('pending');
   const [oppCurrentPage, setOppCurrentPage] = useState(1);
   const [oppPageSize, setOppPageSize] = useState(25);
+  const [scanning, setScanning] = useState(false);
 
-  // Fetch signal summary counts
+  // ── Existing hooks ──
   const { data: signalSummary, isLoading: signalSummaryLoading } = useTubeIntelSummary();
-
-  // Fetch sticker summary
   const { data: stickerSummary, isLoading: stickerSummaryLoading } = useStickerSummary();
-
-  // Fetch opportunities summary
   const { data: oppSummary, isLoading: oppSummaryLoading } = useOpportunitiesSummary();
 
-  // Build filter based on active signal tab (derived from URL) - SINGLE SOURCE OF TRUTH
   const signalFilters = useMemo(() => {
     switch (activeSignalTab) {
-      case 'needs_order':
-        return { needsOrder: true };
-      case 'bring_samples':
-        return { bringSamples: true };
-      case 'starter_kit':
-        return { bringStarterKit: true };
-      case 'switch_tubes':
-        return { needsSwitch: true };
-      case 'interested':
-        return { interested: true };
-      case 'not_interested':
-        return { notInterested: true };
-      default:
-        return {};
+      case 'needs_order': return { needsOrder: true };
+      case 'bring_samples': return { bringSamples: true };
+      case 'starter_kit': return { bringStarterKit: true };
+      case 'switch_tubes': return { needsSwitch: true };
+      case 'interested': return { interested: true };
+      case 'not_interested': return { notInterested: true };
+      default: return {};
     }
   }, [activeSignalTab]);
-
-  // Debug log for filter changes
-  useEffect(() => {
-    console.log('[Store Intelligence] Active signal filter:', activeSignalTab, 'Query filters:', signalFilters);
-  }, [activeSignalTab, signalFilters]);
 
   const { data: rawSignalData, isLoading: signalsLoading, refetch: refetchSignals } = useGlobalTubeIntelligence(signalFilters);
   const { data: rawOpportunities, isLoading: opportunitiesLoading, refetch: refetchOpportunities } = useStoreOpportunities();
   const completeOpportunity = useCompleteOpportunity();
   const reopenOpportunity = useReopenOpportunity();
 
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeSignalTab]);
+  // ── NEW data sources ──
+  const { data: messagingReplies } = useQuery({
+    queryKey: ['opp-messaging-replies'],
+    queryFn: async () => {
+      const { data: convData } = await (supabase as any)
+        .from('brandaro_conversations')
+        .select('*, brandaro_qualified_leads(id, business_name, phone_number, pipeline_stage, city, industry)')
+        .eq('direction', 'inbound')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return convData || [];
+    },
+    refetchInterval: 30000,
+  });
 
-  // Transform signal data
+  const { data: dialerResults } = useQuery({
+    queryKey: ['opp-dialer-results'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('brandaro_intent_log')
+        .select('*, brandaro_qualified_leads(id, business_name, phone_number, city, industry, pipeline_stage)')
+        .in('intent', ['interested', 'positive', 'booking', 'question'])
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: visitTriggers } = useQuery({
+    queryKey: ['opp-visit-triggers'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('gasmask_visit_triggers')
+        .select('*')
+        .in('trigger_type', ['first_visit', 'prospecting', 'merchandising', 'audit', 'compliance'])
+        .eq('status', 'pending')
+        .order('priority_score', { ascending: false })
+        .limit(100);
+      return data || [];
+    },
+  });
+
+  const { data: readyToClose } = useQuery({
+    queryKey: ['opp-ready-close'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('brandaro_qualified_leads')
+        .select('*')
+        .in('pipeline_stage', ['booked', 'interested'])
+        .gte('priority_score', 7)
+        .order('priority_score', { ascending: false })
+        .limit(30);
+      return data || [];
+    },
+  });
+
+  const { data: agentOpps } = useQuery({
+    queryKey: ['opp-agent-insights'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('dynasty_agent_insights')
+        .select('*')
+        .eq('insight_type', 'opportunity')
+        .eq('dismissed', false)
+        .order('created_at', { ascending: false })
+        .limit(30);
+      return data || [];
+    },
+    refetchInterval: 60000,
+  });
+
+  // ── Realtime ──
+  useEffect(() => {
+    const channels = [
+      supabase
+        .channel('opp-conversations-rt')
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'brandaro_conversations',
+          filter: 'direction=eq.inbound',
+        }, () => {
+          queryClient.invalidateQueries({ queryKey: ['opp-messaging-replies'] });
+          toast.info('New inbound message!', { duration: 5000 });
+        })
+        .subscribe(),
+      supabase
+        .channel('opp-intent-rt')
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'brandaro_intent_log',
+        }, (payload: any) => {
+          if (['interested', 'positive', 'booking'].includes(payload.new?.intent)) {
+            queryClient.invalidateQueries({ queryKey: ['opp-dialer-results'] });
+            toast.success('🎯 Interested lead detected!', { duration: 8000 });
+          }
+        })
+        .subscribe(),
+    ];
+    return () => { channels.forEach((ch) => supabase.removeChannel(ch)); };
+  }, [queryClient]);
+
+  // ── Transform new data into OpportunityItem ──
+  const messagingItems: OpportunityItem[] = useMemo(() =>
+    (messagingReplies || []).map((conv: any) => ({
+      id: conv.id,
+      name: conv.brandaro_qualified_leads?.business_name || conv.from_number || 'Unknown',
+      city: conv.brandaro_qualified_leads?.city,
+      phone: conv.brandaro_qualified_leads?.phone_number || conv.from_number,
+      urgency: 'high' as const,
+      signal: 'Inbound message — needs response',
+      message: conv.message_body || conv.message_text,
+      source: 'Messaging Hub',
+      primaryAction: 'reply',
+      primaryActionLabel: '💬 Reply',
+      timeAgo: conv.created_at ? formatDistanceToNow(new Date(conv.created_at), { addSuffix: true }) : '',
+      raw: conv,
+    })), [messagingReplies]);
+
+  const dialerItems: OpportunityItem[] = useMemo(() =>
+    (dialerResults || []).map((entry: any) => ({
+      id: entry.id,
+      name: entry.brandaro_qualified_leads?.business_name || 'Unknown',
+      city: entry.brandaro_qualified_leads?.city,
+      phone: entry.brandaro_qualified_leads?.phone_number,
+      urgency: (entry.intent === 'booking' ? 'critical' : entry.intent === 'interested' ? 'high' : 'normal') as OpportunityItem['urgency'],
+      signal: `${entry.intent} — score: ${entry.intent_score}/10 — "${entry.reason || ''}"`,
+      message: entry.message_text,
+      source: 'AI Dialer',
+      primaryAction: entry.intent === 'booking' ? 'book' : 'sms',
+      primaryActionLabel: entry.intent === 'booking' ? '📅 Book Call' : '📱 Follow Up',
+      timeAgo: entry.created_at ? formatDistanceToNow(new Date(entry.created_at), { addSuffix: true }) : '',
+      raw: entry,
+    })), [dialerResults]);
+
+  const visitItems: OpportunityItem[] = useMemo(() =>
+    (visitTriggers || []).map((t: any) => ({
+      id: t.id,
+      name: t.store_name,
+      city: t.store_city,
+      state: t.store_state,
+      urgency: (t.urgency === 'critical' ? 'critical' : t.urgency === 'high' ? 'high' : 'normal') as OpportunityItem['urgency'],
+      signal: t.trigger_notes || `${t.trigger_type?.replace(/_/g, ' ')} visit needed`,
+      source: t.floor_source?.replace(/_/g, ' '),
+      primaryAction: 'route',
+      primaryActionLabel: '🚚 Schedule Visit',
+      timeAgo: t.created_at ? formatDistanceToNow(new Date(t.created_at), { addSuffix: true }) : '',
+      raw: t,
+    })), [visitTriggers]);
+
+  const closeItems: OpportunityItem[] = useMemo(() =>
+    (readyToClose || []).map((lead: any) => ({
+      id: lead.id,
+      name: lead.business_name,
+      city: lead.city,
+      phone: lead.phone_number,
+      urgency: (lead.priority_score >= 9 ? 'critical' : 'high') as OpportunityItem['urgency'],
+      signal: `Stage: ${lead.pipeline_stage} · P${lead.priority_score} · ${lead.industry || ''}`,
+      source: 'Brandaro CRM',
+      primaryAction: 'call',
+      primaryActionLabel: '📞 Close Call',
+      raw: lead,
+    })), [readyToClose]);
+
+  const aiOppItems: OpportunityItem[] = useMemo(() =>
+    (agentOpps || []).map((insight: any) => ({
+      id: insight.id,
+      name: insight.related_store || insight.brand || 'Multiple stores',
+      brand: insight.brand,
+      urgency: (insight.priority === 'critical' ? 'critical' : insight.priority === 'high' ? 'high' : 'normal') as OpportunityItem['urgency'],
+      signal: insight.body,
+      source: insight.agent_name,
+      primaryAction: 'view',
+      primaryActionLabel: '👁 View',
+      timeAgo: insight.created_at ? formatDistanceToNow(new Date(insight.created_at), { addSuffix: true }) : '',
+      raw: insight,
+    })), [agentOpps]);
+
+  // ── Action handler ──
+  const handleAction = useCallback(async (actionType: string, opp: OpportunityItem) => {
+    switch (actionType) {
+      case 'sms':
+        if (!opp.phone) { toast.error('No phone number'); return; }
+        try {
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              to_number: opp.phone,
+              message_body: `Hi ${opp.name}, we wanted to reach out regarding your account. Please give us a call when you get a chance!`,
+              idempotency_key: `opp-${opp.id}-${Date.now()}`,
+            },
+          });
+          toast.success('SMS sent');
+        } catch (err: any) { toast.error(err.message); }
+        break;
+      case 'call':
+        if (opp.phone) window.open(`tel:${opp.phone}`);
+        break;
+      case 'reply':
+        navigate('/gasmask/inbox');
+        break;
+      case 'book':
+        if (!opp.phone) { toast.error('No phone number'); return; }
+        try {
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              to_number: opp.phone,
+              message_body: `Hi ${opp.name}! When is a good time for a quick call? Book here: https://calendly.com/brandarodigital-sales/website-strategy-call`,
+              idempotency_key: `book-${opp.id}-${Date.now()}`,
+            },
+          });
+          toast.success('Booking link sent');
+        } catch (err: any) { toast.error(err.message); }
+        break;
+      case 'route':
+        try {
+          await supabase.functions.invoke('gasmask-route-agent', {
+            body: {
+              action: 'create_trigger',
+              store_name: opp.name,
+              store_city: opp.city,
+              store_state: opp.state,
+              store_phone: opp.phone,
+              trigger_source: `All Opportunities — ${mainTab}`,
+              trigger_type: 'follow_up',
+              floor_source: 'floor1_crm',
+              urgency: opp.urgency || 'normal',
+              priority_score: 6,
+              trigger_notes: opp.signal,
+            },
+          });
+          toast.success('Visit trigger created');
+        } catch (err: any) { toast.error(err.message); }
+        break;
+      case 'view':
+        toast.info(opp.signal || 'No details');
+        break;
+    }
+  }, [navigate, mainTab]);
+
+  // ── AI Scan ──
+  const runAIAnalysis = async () => {
+    setScanning(true);
+    toast.info('Running AI scan…');
+    try {
+      await supabase.functions.invoke('dynasty-agent-runner', { body: { agent_name: 'Account Health Agent' } });
+      await supabase.functions.invoke('dynasty-agent-runner', { body: { agent_name: 'Revenue Intelligence Agent' } });
+      queryClient.invalidateQueries({ queryKey: ['opp-agent-insights'] });
+      toast.success('AI scan complete');
+    } catch (err: any) { toast.error(err.message); }
+    finally { setScanning(false); }
+  };
+
+  // ── Existing signal logic ──
+  useEffect(() => { setCurrentPage(1); }, [activeSignalTab]);
+
   const signalRows: StoreIntelRow[] = useMemo(() => {
     if (!rawSignalData) return [];
-    
     return rawSignalData.map((item: any) => ({
       id: item.id,
       store_id: item.store_id,
@@ -175,101 +556,50 @@ export default function MasterOpportunities() {
     }));
   }, [rawSignalData]);
 
-  // Apply client-side filters to signals
   const filteredSignalRows = useMemo(() => {
-    return signalRows.filter(row => {
+    return signalRows.filter((row) => {
       if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        const matchesSearch = 
-          row.store_name.toLowerCase().includes(query) ||
-          row.brand_name.toLowerCase().includes(query) ||
-          (row.city?.toLowerCase().includes(query) ?? false) ||
-          (row.borough?.toLowerCase().includes(query) ?? false);
-        if (!matchesSearch) return false;
+        const q = searchQuery.toLowerCase();
+        if (!row.store_name.toLowerCase().includes(q) && !row.brand_name.toLowerCase().includes(q) && !(row.city?.toLowerCase().includes(q) ?? false) && !(row.borough?.toLowerCase().includes(q) ?? false)) return false;
       }
-
-      if (brandFilter !== 'all' && row.brand_id !== brandFilter) {
-        return false;
-      }
-
-      if (roleFilter !== 'all' && row.last_updated_by_role !== roleFilter) {
-        return false;
-      }
-
+      if (brandFilter !== 'all' && row.brand_id !== brandFilter) return false;
+      if (roleFilter !== 'all' && row.last_updated_by_role !== roleFilter) return false;
       if (timeFilter !== 'all') {
-        const updateDate = new Date(row.last_updated_at);
-        if (timeFilter === 'today' && !isToday(updateDate)) {
-          return false;
-        }
-        if (timeFilter === 'this_week' && !isThisWeek(updateDate)) {
-          return false;
-        }
+        const d = new Date(row.last_updated_at);
+        if (timeFilter === 'today' && !isToday(d)) return false;
+        if (timeFilter === 'this_week' && !isThisWeek(d)) return false;
       }
-
       return true;
     });
   }, [signalRows, searchQuery, brandFilter, roleFilter, timeFilter]);
 
-  // Apply client-side filters to opportunities
   const filteredOpportunities = useMemo(() => {
     if (!rawOpportunities) return [];
-    
-    return rawOpportunities.filter(opp => {
+    return rawOpportunities.filter((opp) => {
       if (oppSearchQuery) {
-        const query = oppSearchQuery.toLowerCase();
-        const matchesSearch = 
-          opp.opportunity_text.toLowerCase().includes(query) ||
-          (opp.store?.store_name?.toLowerCase().includes(query) ?? false);
-        if (!matchesSearch) return false;
+        const q = oppSearchQuery.toLowerCase();
+        if (!opp.opportunity_text.toLowerCase().includes(q) && !(opp.store?.store_name?.toLowerCase().includes(q) ?? false)) return false;
       }
-
-      if (oppStatusFilter === 'pending' && opp.is_completed) {
-        return false;
-      }
-      if (oppStatusFilter === 'completed' && !opp.is_completed) {
-        return false;
-      }
-
+      if (oppStatusFilter === 'pending' && opp.is_completed) return false;
+      if (oppStatusFilter === 'completed' && !opp.is_completed) return false;
       return true;
     });
   }, [rawOpportunities, oppSearchQuery, oppStatusFilter]);
 
-  // Pagination for signals
   const signalTotalPages = Math.ceil(filteredSignalRows.length / pageSize);
-  const paginatedSignalRows = filteredSignalRows.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  // Pagination for opportunities
+  const paginatedSignalRows = filteredSignalRows.slice((currentPage - 1) * pageSize, currentPage * pageSize);
   const oppTotalPages = Math.ceil(filteredOpportunities.length / oppPageSize);
-  const paginatedOpportunities = filteredOpportunities.slice(
-    (oppCurrentPage - 1) * oppPageSize,
-    oppCurrentPage * oppPageSize
-  );
+  const paginatedOpportunities = filteredOpportunities.slice((oppCurrentPage - 1) * oppPageSize, oppCurrentPage * oppPageSize);
 
-  const handleFilterChange = () => {
-    setCurrentPage(1);
-  };
+  const handleFilterChange = () => setCurrentPage(1);
+  const handleOppFilterChange = () => setOppCurrentPage(1);
+  const handleViewStore = (storeId: string) => navigate(`/stores/${storeId}`);
 
-  const handleOppFilterChange = () => {
-    setOppCurrentPage(1);
-  };
-
-  const handleViewStore = (storeId: string) => {
-    navigate(`/stores/${storeId}`);
-  };
-
-  // Signal tab click handler - updates URL which triggers refetch
   const handleSignalTabClick = useCallback((tab: SignalTab) => {
-    if (tab === 'all') {
-      setSearchParams({});
-    } else {
-      setSearchParams({ signal: tab });
-    }
+    if (tab === 'all') setSearchParams({});
+    else setSearchParams({ signal: tab });
   }, [setSearchParams]);
 
-  // Clear filter handler
   const handleClearFilter = useCallback(() => {
     setSearchParams({});
     setSearchQuery('');
@@ -279,132 +609,57 @@ export default function MasterOpportunities() {
   }, [setSearchParams]);
 
   const handleCompleteOpportunity = async (id: string) => {
-    try {
-      await completeOpportunity.mutateAsync({ id });
-      toast.success('Opportunity marked as completed');
-    } catch (error) {
-      toast.error('Failed to complete opportunity');
-    }
+    try { await completeOpportunity.mutateAsync({ id }); toast.success('Opportunity completed'); }
+    catch { toast.error('Failed'); }
   };
-
   const handleReopenOpportunity = async (id: string) => {
-    try {
-      await reopenOpportunity.mutateAsync(id);
-      toast.success('Opportunity reopened');
-    } catch (error) {
-      toast.error('Failed to reopen opportunity');
-    }
+    try { await reopenOpportunity.mutateAsync(id); toast.success('Reopened'); }
+    catch { toast.error('Failed'); }
   };
 
-  // Get signal badges for a row
   const getSignalBadges = (row: StoreIntelRow) => {
     const badges: JSX.Element[] = [];
-    
-    if (row.needs_order) {
-      badges.push(
-        <Badge key="needs_order" variant="default" className="bg-yellow-500 text-yellow-950 text-xs">
-          <ShoppingCart className="h-3 w-3 mr-1" />
-          Needs Order
-        </Badge>
-      );
-    }
-    if (row.bring_samples) {
-      badges.push(
-        <Badge key="bring_samples" variant="default" className="bg-blue-500 text-white text-xs">
-          <Package className="h-3 w-3 mr-1" />
-          Bring Samples
-        </Badge>
-      );
-    }
-    if (row.bring_starter_kit) {
-      badges.push(
-        <Badge key="starter_kit" variant="default" className="bg-purple-500 text-white text-xs">
-          <Gift className="h-3 w-3 mr-1" />
-          Starter Kit
-        </Badge>
-      );
-    }
-    if (row.needs_switch) {
-      const switchQty = row.switch_quantity;
-      badges.push(
-        <Badge key="switch_tubes" variant="default" className="bg-red-600 text-white text-xs">
-          <Repeat className="h-3 w-3 mr-1" />
-          Switch{switchQty ? ` (${switchQty})` : ' Required'}
-        </Badge>
-      );
-    }
-    // Updated: Show interest status badges
-    if (row.owner_interested === true) {
-      badges.push(
-        <Badge key="interested" variant="default" className="bg-green-500 text-white text-xs">
-          <Check className="h-3 w-3 mr-1" />
-          Interested
-        </Badge>
-      );
-    }
-    if (row.owner_interested === false) {
-      badges.push(
-        <Badge key="not_interested" variant="destructive" className="text-xs">
-          <UserX className="h-3 w-3 mr-1" />
-          Not Interested
-        </Badge>
-      );
-    }
-    if (row.owner_interested === null) {
-      badges.push(
-        <Badge key="not_asked" variant="outline" className="border-gray-400 text-gray-600 text-xs">
-          <HelpCircle className="h-3 w-3 mr-1" />
-          Not Asked
-        </Badge>
-      );
-    }
-    
+    if (row.needs_order) badges.push(<Badge key="no" variant="default" className="bg-yellow-500 text-yellow-950 text-xs"><ShoppingCart className="h-3 w-3 mr-1" />Needs Order</Badge>);
+    if (row.bring_samples) badges.push(<Badge key="bs" variant="default" className="bg-blue-500 text-white text-xs"><Package className="h-3 w-3 mr-1" />Bring Samples</Badge>);
+    if (row.bring_starter_kit) badges.push(<Badge key="sk" variant="default" className="bg-purple-500 text-white text-xs"><Gift className="h-3 w-3 mr-1" />Starter Kit</Badge>);
+    if (row.needs_switch) badges.push(<Badge key="sw" variant="default" className="bg-red-600 text-white text-xs"><Repeat className="h-3 w-3 mr-1" />Switch{row.switch_quantity ? ` (${row.switch_quantity})` : ' Required'}</Badge>);
+    if (row.owner_interested === true) badges.push(<Badge key="int" variant="default" className="bg-green-500 text-white text-xs"><Check className="h-3 w-3 mr-1" />Interested</Badge>);
+    if (row.owner_interested === false) badges.push(<Badge key="ni" variant="destructive" className="text-xs"><UserX className="h-3 w-3 mr-1" />Not Interested</Badge>);
+    if (row.owner_interested === null) badges.push(<Badge key="na" variant="outline" className="border-gray-400 text-gray-600 text-xs"><HelpCircle className="h-3 w-3 mr-1" />Not Asked</Badge>);
     return badges;
   };
 
   const getRoleBadge = (role: string | null) => {
     if (!role) return null;
-    
-    const roleColors: Record<string, string> = {
-      admin: 'bg-red-100 text-red-800',
-      va: 'bg-orange-100 text-orange-800',
-      ambassador: 'bg-green-100 text-green-800',
-      biker: 'bg-blue-100 text-blue-800',
-      driver: 'bg-gray-100 text-gray-800',
-    };
-    
-    return (
-      <Badge variant="secondary" className={`text-xs ${roleColors[role] || ''}`}>
-        <User className="h-3 w-3 mr-1" />
-        {role.charAt(0).toUpperCase() + role.slice(1)}
-      </Badge>
-    );
+    const roleColors: Record<string, string> = { admin: 'bg-red-100 text-red-800', va: 'bg-orange-100 text-orange-800', ambassador: 'bg-green-100 text-green-800', biker: 'bg-blue-100 text-blue-800', driver: 'bg-gray-100 text-gray-800' };
+    return <Badge variant="secondary" className={`text-xs ${roleColors[role] || ''}`}><User className="h-3 w-3 mr-1" />{role.charAt(0).toUpperCase() + role.slice(1)}</Badge>;
   };
 
-  // Export data format
   const signalExportColumns = [
-    { key: 'store_name', label: 'Store Name' },
-    { key: 'brand_name', label: 'Brand' },
-    { key: 'last_order_date', label: 'Last Order' },
-    { key: 'needs_order', label: 'Needs Order' },
-    { key: 'bring_samples', label: 'Bring Samples' },
-    { key: 'bring_starter_kit', label: 'Starter Kit' },
-    { key: 'needs_switch', label: 'Switch Tubes' },
-    { key: 'product_introduced', label: 'Introduced' },
-    { key: 'owner_interested', label: 'Interested' },
-    { key: 'last_updated_by_role', label: 'Reported By' },
+    { key: 'store_name', label: 'Store Name' }, { key: 'brand_name', label: 'Brand' },
+    { key: 'last_order_date', label: 'Last Order' }, { key: 'needs_order', label: 'Needs Order' },
+    { key: 'bring_samples', label: 'Bring Samples' }, { key: 'bring_starter_kit', label: 'Starter Kit' },
+    { key: 'needs_switch', label: 'Switch Tubes' }, { key: 'product_introduced', label: 'Introduced' },
+    { key: 'owner_interested', label: 'Interested' }, { key: 'last_updated_by_role', label: 'Reported By' },
     { key: 'last_updated_at', label: 'Last Updated' },
   ];
-
   const oppExportColumns = [
-    { key: 'store.store_name', label: 'Store Name' },
-    { key: 'opportunity_text', label: 'Opportunity' },
-    { key: 'source', label: 'Source' },
-    { key: 'is_completed', label: 'Completed' },
-    { key: 'created_at', label: 'Created At' },
+    { key: 'store.store_name', label: 'Store Name' }, { key: 'opportunity_text', label: 'Opportunity' },
+    { key: 'source', label: 'Source' }, { key: 'is_completed', label: 'Completed' }, { key: 'created_at', label: 'Created At' },
   ];
 
   const isLoading = signalsLoading || signalSummaryLoading || stickerSummaryLoading || opportunitiesLoading || oppSummaryLoading;
+
+  // ── Opportunity score cards (top-level KPIs) ──
+  const oppCards = [
+    { icon: ShoppingCart, label: 'Needs Order', count: signalSummary?.needsOrder || 0, color: 'text-yellow-500', bg: 'bg-yellow-500/10', tab: 'signals' as MainTab, desc: 'Field signals' },
+    { icon: MessageSquare, label: 'Messaging', count: messagingReplies?.length || 0, color: 'text-blue-500', bg: 'bg-blue-500/10', tab: 'messaging' as MainTab, desc: 'Inbound replies', pulse: (messagingReplies?.length || 0) > 0 },
+    { icon: Phone, label: 'Dialer Results', count: dialerResults?.length || 0, color: 'text-green-500', bg: 'bg-green-500/10', tab: 'dialer' as MainTab, desc: 'AI called, interested' },
+    { icon: Package, label: 'Visit Triggers', count: visitTriggers?.length || 0, color: 'text-purple-500', bg: 'bg-purple-500/10', tab: 'visits' as MainTab, desc: 'Pending field visits' },
+    { icon: TrendingUp, label: 'Ready to Close', count: readyToClose?.length || 0, color: 'text-emerald-500', bg: 'bg-emerald-500/10', tab: 'ready-close' as MainTab, desc: 'Booked/interested P7+' },
+    { icon: Brain, label: 'AI Opps', count: agentOpps?.length || 0, color: 'text-violet-500', bg: 'bg-violet-500/10', tab: 'ai-opps' as MainTab, desc: 'Agent detected' },
+    { icon: Lightbulb, label: 'Opportunities', count: oppSummary?.pending || 0, color: 'text-amber-500', bg: 'bg-amber-500/10', tab: 'opportunities' as MainTab, desc: 'Human-created' },
+  ];
 
   if (isLoading) {
     return (
@@ -416,170 +671,100 @@ export default function MasterOpportunities() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <Target className="h-8 w-8 text-primary" />
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Target className="h-6 w-6 text-primary" />
             All Opportunities
           </h1>
-          <p className="text-muted-foreground mt-2">
-            Store Intelligence & Human-Created Action Candidates
+          <p className="text-xs text-muted-foreground mt-1">
+            Store intelligence · Messaging signals · AI dialer results · All brands
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
+            <Truck className="h-3.5 w-3.5" />Route Engine
+          </Button>
+          <Button size="sm" className="gap-1.5 text-xs" onClick={runAIAnalysis} disabled={scanning}>
+            {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
+            AI Scan
+          </Button>
         </div>
       </div>
 
-      {/* Main Section Tabs */}
-      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as 'signals' | 'opportunities')}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="signals" className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4" />
-            Store Intelligence
-          </TabsTrigger>
-          <TabsTrigger value="opportunities" className="flex items-center gap-2">
-            <Lightbulb className="h-4 w-4" />
-            Opportunities ({oppSummary?.pending || 0})
-          </TabsTrigger>
+      {/* ── Score Cards ── */}
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {oppCards.map((card) => (
+          <button
+            key={card.tab}
+            onClick={() => setMainTab(card.tab)}
+            className={`flex-shrink-0 p-3 rounded-xl border transition-all text-left min-w-[120px] ${
+              mainTab === card.tab
+                ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                : 'border-border bg-card hover:bg-muted/50'
+            }`}
+          >
+            <div className={`p-2 rounded-lg ${card.bg} w-fit mb-2 relative`}>
+              <card.icon className={`h-4 w-4 ${card.color}`} />
+              {card.pulse && <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-blue-500 animate-pulse" />}
+            </div>
+            <div className={`text-2xl font-bold ${card.color}`}>{card.count}</div>
+            <div className="text-xs font-medium mt-0.5">{card.label}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">{card.desc}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Main Tabs ── */}
+      <Tabs value={mainTab} onValueChange={(v) => setMainTab(v as MainTab)}>
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="signals" className="text-xs gap-1"><Sparkles className="h-3.5 w-3.5" />Store Intel</TabsTrigger>
+          <TabsTrigger value="opportunities" className="text-xs gap-1"><Lightbulb className="h-3.5 w-3.5" />Opportunities</TabsTrigger>
+          <TabsTrigger value="messaging" className="text-xs gap-1"><MessageSquare className="h-3.5 w-3.5" />Messaging{messagingReplies?.length ? <Badge className="h-4 text-[9px] px-1 bg-blue-500 text-white border-0 ml-1">{messagingReplies.length}</Badge> : null}</TabsTrigger>
+          <TabsTrigger value="dialer" className="text-xs gap-1"><Phone className="h-3.5 w-3.5" />Dialer</TabsTrigger>
+          <TabsTrigger value="visits" className="text-xs gap-1"><Truck className="h-3.5 w-3.5" />Visits</TabsTrigger>
+          <TabsTrigger value="ready-close" className="text-xs gap-1"><TrendingUp className="h-3.5 w-3.5" />Close</TabsTrigger>
+          <TabsTrigger value="ai-opps" className="text-xs gap-1"><Brain className="h-3.5 w-3.5" />AI</TabsTrigger>
         </TabsList>
 
-        {/* SECTION 1: STORE INTELLIGENCE (SIGNALS) */}
+        {/* ── SIGNALS TAB (preserved) ── */}
         <TabsContent value="signals" className="space-y-6">
-          {/* Governance Banner */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
             <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-amber-800">
-                Signals Board — Observational Only. No actions are auto-created.
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                Observational signals from field teams — for route planning and visit preparation
-              </p>
+              <p className="text-sm font-medium text-amber-800">Signals Board — Observational Only</p>
+              <p className="text-xs text-amber-700 mt-0.5">Field team observations for route planning and visit preparation</p>
             </div>
           </div>
 
           {/* Signal Summary Cards */}
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-7">
-            <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'needs_order' ? 'ring-2 ring-yellow-500 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('needs_order')}
-            >
-              <CardContent className="pt-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Needs Order</p>
-                    <p className="text-2xl font-bold text-yellow-600">{signalSummary?.needsOrder || 0}</p>
+            {([
+              { tab: 'needs_order' as SignalTab, label: 'Needs Order', count: signalSummary?.needsOrder || 0, color: 'text-yellow-600', ringColor: 'ring-yellow-500', Icon: ShoppingCart },
+              { tab: 'bring_samples' as SignalTab, label: 'Bring Samples', count: signalSummary?.bringSamples || 0, color: 'text-blue-600', ringColor: 'ring-blue-500', Icon: Package },
+              { tab: 'starter_kit' as SignalTab, label: 'Starter Kit', count: signalSummary?.bringStarterKit || 0, color: 'text-purple-600', ringColor: 'ring-purple-500', Icon: Gift },
+              { tab: 'switch_tubes' as SignalTab, label: 'Switch Tubes', count: signalSummary?.needsSwitch || 0, color: 'text-red-600', ringColor: 'ring-red-600', Icon: Repeat, extra: (signalSummary?.totalSwitchQuantity ?? 0) > 0 ? `${signalSummary?.totalSwitchQuantity?.toLocaleString()} Tubes` : undefined },
+              { tab: 'interested' as SignalTab, label: 'Interested', count: signalSummary?.interested || 0, color: 'text-green-600', ringColor: 'ring-green-500', Icon: ThumbsUp },
+              { tab: 'not_interested' as SignalTab, label: 'Not Interested', count: signalSummary?.notInterested || 0, color: 'text-red-600', ringColor: 'ring-red-500', Icon: ThumbsDown },
+            ]).map((item) => (
+              <Card
+                key={item.tab}
+                className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === item.tab ? `ring-2 ${item.ringColor} shadow-md` : 'hover:bg-muted/50'}`}
+                onClick={() => handleSignalTabClick(item.tab)}
+              >
+                <CardContent className="pt-6 pb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">{item.label}</p>
+                      <p className={`text-2xl font-bold ${item.color}`}>{item.count}</p>
+                      {item.extra && <p className="text-xs text-red-500 mt-0.5">{item.extra}</p>}
+                    </div>
+                    <item.Icon className={`h-8 w-8 ${item.color} opacity-50`} />
                   </div>
-                  <ShoppingCart className="h-8 w-8 text-yellow-500 opacity-50" />
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'bring_samples' ? 'ring-2 ring-blue-500 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('bring_samples')}
-            >
-              <CardContent className="pt-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bring Samples</p>
-                    <p className="text-2xl font-bold text-blue-600">{signalSummary?.bringSamples || 0}</p>
-                  </div>
-                  <Package className="h-8 w-8 text-blue-500 opacity-50" />
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'starter_kit' ? 'ring-2 ring-purple-500 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('starter_kit')}
-            >
-              <CardContent className="pt-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Starter Kit</p>
-                    <p className="text-2xl font-bold text-purple-600">{signalSummary?.bringStarterKit || 0}</p>
-                  </div>
-                  <Gift className="h-8 w-8 text-purple-500 opacity-50" />
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Switch Tubes KPI */}
-            <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'switch_tubes' ? 'ring-2 ring-red-600 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('switch_tubes')}
-            >
-              <CardContent className="pt-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Switch Tubes</p>
-                    <p className="text-2xl font-bold text-red-600">{signalSummary?.needsSwitch || 0}</p>
-                    {(signalSummary?.totalSwitchQuantity ?? 0) > 0 && (
-                      <p className="text-xs text-red-500 mt-0.5">
-                        {signalSummary?.totalSwitchQuantity?.toLocaleString()} Tubes Pending
-                      </p>
-                    )}
-                  </div>
-                  <Repeat className="h-8 w-8 text-red-500 opacity-50" />
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'interested' ? 'ring-2 ring-green-500 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('interested')}
-            >
-              <CardContent className="pt-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Interested</p>
-                    <p className="text-2xl font-bold text-green-600">{signalSummary?.interested || 0}</p>
-                  </div>
-                  <ThumbsUp className="h-8 w-8 text-green-500 opacity-50" />
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`cursor-pointer transition-all hover:shadow-md ${activeSignalTab === 'not_interested' ? 'ring-2 ring-red-500 shadow-md' : 'hover:bg-muted/50'}`}
-              onClick={() => handleSignalTabClick('not_interested')}
-            >
-              <CardContent className="pt-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Not Interested</p>
-                    <p className="text-2xl font-bold text-red-600">{signalSummary?.notInterested || 0}</p>
-                  </div>
-                  <ThumbsDown className="h-8 w-8 text-red-500 opacity-50" />
-                </div>
-                <Button variant="ghost" size="sm" className="w-full mt-2 text-xs">
-                  <Eye className="h-3 w-3 mr-1" />
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Sticker Completion Card */}
+                </CardContent>
+              </Card>
+            ))}
             <Card className="hover:bg-muted/50 transition-all">
               <CardContent className="pt-6 pb-4">
                 <div className="flex items-center justify-between">
@@ -589,66 +774,41 @@ export default function MasterOpportunities() {
                   </div>
                   <Sticker className="h-8 w-8 text-emerald-500 opacity-50" />
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  {stickerSummary?.installedStickers || 0} / {stickerSummary?.totalStickers || 0} Installed
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">{stickerSummary?.installedStickers || 0} / {stickerSummary?.totalStickers || 0} Installed</p>
               </CardContent>
             </Card>
           </div>
 
-          {/* Active Filter Indicator */}
+          {/* Active Filter */}
           {activeSignalTab !== 'all' && (
             <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border border-border">
               <span className="text-sm text-muted-foreground">Filtering by:</span>
               <Badge variant="secondary" className="flex items-center gap-1">
-                {activeSignalTab === 'needs_order' && <><ShoppingCart className="h-3 w-3" /> Needs Order</>}
-                {activeSignalTab === 'bring_samples' && <><Package className="h-3 w-3" /> Bring Samples</>}
-                {activeSignalTab === 'starter_kit' && <><Gift className="h-3 w-3" /> Starter Kit</>}
-                {activeSignalTab === 'switch_tubes' && <><Repeat className="h-3 w-3" /> Switch Tubes</>}
-                {activeSignalTab === 'interested' && <><ThumbsUp className="h-3 w-3" /> Interested</>}
-                {activeSignalTab === 'not_interested' && <><ThumbsDown className="h-3 w-3" /> Not Interested</>}
+                {activeSignalTab.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
               </Badge>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleClearFilter}
-                className="ml-auto text-xs"
-              >
-                <X className="h-3 w-3 mr-1" />
-                Clear Filter
+              <Button variant="ghost" size="sm" onClick={handleClearFilter} className="ml-auto text-xs">
+                <X className="h-3 w-3 mr-1" />Clear
               </Button>
             </div>
           )}
 
-          {/* Signals Filters */}
+          {/* Filters */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search stores, brands, or locations..."
-                    value={searchQuery}
-                    onChange={(e) => { setSearchQuery(e.target.value); handleFilterChange(); }}
-                    className="pl-10"
-                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search stores, brands, or locations…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); handleFilterChange(); }} className="pl-10" />
                 </div>
                 <Select value={brandFilter} onValueChange={(v) => { setBrandFilter(v); handleFilterChange(); }}>
-                  <SelectTrigger className="w-full lg:w-[180px]">
-                    <SelectValue placeholder="All Brands" />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-full lg:w-[180px]"><SelectValue placeholder="All Brands" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Brands</SelectItem>
-                    {TUBE_BRANDS.map(brand => (
-                      <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                    ))}
+                    {TUBE_BRANDS.map((brand) => <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                
                 <Select value={roleFilter} onValueChange={(v) => { setRoleFilter(v); handleFilterChange(); }}>
-                  <SelectTrigger className="w-full lg:w-[180px]">
-                    <SelectValue placeholder="All Roles" />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-full lg:w-[180px]"><SelectValue placeholder="All Roles" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
                     <SelectItem value="ambassador">Ambassador</SelectItem>
@@ -658,109 +818,41 @@ export default function MasterOpportunities() {
                     <SelectItem value="va">VA</SelectItem>
                   </SelectContent>
                 </Select>
-                
                 <Select value={timeFilter} onValueChange={(v) => { setTimeFilter(v as TimeFilter); handleFilterChange(); }}>
-                  <SelectTrigger className="w-full lg:w-[180px]">
-                    <SelectValue placeholder="All Time" />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-full lg:w-[180px]"><SelectValue placeholder="All Time" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Time</SelectItem>
                     <SelectItem value="today">Updated Today</SelectItem>
                     <SelectItem value="this_week">This Week</SelectItem>
                   </SelectContent>
                 </Select>
-                
                 <div className="flex gap-2">
-                  {activeSignalTab !== 'all' && (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => handleSignalTabClick('all')}
-                    >
-                      Clear Filter
-                    </Button>
-                  )}
-                  <Button variant="outline" size="icon" onClick={() => refetchSignals()}>
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                  <ExportButton 
-                    data={filteredSignalRows as any} 
-                    filename="store-signals" 
-                    columns={signalExportColumns}
-                  />
+                  {activeSignalTab !== 'all' && <Button variant="outline" onClick={() => handleSignalTabClick('all')}>Clear</Button>}
+                  <Button variant="outline" size="icon" onClick={() => refetchSignals()}><RefreshCw className="h-4 w-4" /></Button>
+                  <ExportButton data={filteredSignalRows as any} filename="store-signals" columns={signalExportColumns} />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Signals Data Table */}
+          {/* Signal Table */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Store className="h-5 w-5 text-primary" />
-                  Signals ({filteredSignalRows.length})
-                </CardTitle>
-                <CardDescription>
-                  {activeSignalTab === 'all' ? 'All signals' : activeSignalTab.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2"><Store className="h-5 w-5 text-primary" />Signals ({filteredSignalRows.length})</CardTitle>
+                <CardDescription>{activeSignalTab === 'all' ? 'All signals' : activeSignalTab.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}</CardDescription>
               </div>
             </CardHeader>
             <CardContent>
-              {signalsLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-                  <p className="text-sm text-muted-foreground mt-4">Loading signals...</p>
-                </div>
-              ) : filteredSignalRows.length === 0 ? (
+              {filteredSignalRows.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Target className="h-16 w-16 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">No signals found</p>
-                  <p className="text-sm mt-1">
-                    {searchQuery || brandFilter !== 'all' || roleFilter !== 'all' || timeFilter !== 'all'
-                      ? 'Try adjusting your filters'
-                      : activeSignalTab !== 'all'
-                        ? `No stores match the "${activeSignalTab.replace(/_/g, ' ')}" signal filter. Try clearing the filter.`
-                        : 'Signals will appear when field teams report store observations'}
-                  </p>
-                  {/* Debug: Filter mismatch warning */}
-                  {activeSignalTab !== 'all' && signalSummary && (
-                    (() => {
-                      const expectedCount = 
-                        activeSignalTab === 'needs_order' ? signalSummary.needsOrder :
-                        activeSignalTab === 'bring_samples' ? signalSummary.bringSamples :
-                        activeSignalTab === 'starter_kit' ? signalSummary.bringStarterKit :
-                        activeSignalTab === 'switch_tubes' ? signalSummary.needsSwitch :
-                        activeSignalTab === 'interested' ? signalSummary.interested :
-                        activeSignalTab === 'not_interested' ? signalSummary.notInterested : 0;
-                      
-                      if (expectedCount > 0) {
-                        console.warn('[Store Intelligence] Filter mismatch detected:', {
-                          signal: activeSignalTab,
-                          expectedCount,
-                          actualRows: filteredSignalRows.length,
-                          rawDataLength: rawSignalData?.length ?? 0,
-                          signalFilters
-                        });
-                        return (
-                          <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-amber-700 text-xs">
-                            ⚠️ KPI shows {expectedCount} signals but table is empty. Check console for details.
-                          </div>
-                        );
-                      }
-                      return null;
-                    })()
-                  )}
+                  <p className="text-sm mt-1">{searchQuery || brandFilter !== 'all' ? 'Try adjusting your filters' : 'Signals appear when field teams report store observations'}</p>
                 </div>
               ) : (
                 <>
-                  <DataTablePagination
-                    currentPage={currentPage}
-                    totalPages={signalTotalPages}
-                    pageSize={pageSize}
-                    totalItems={filteredSignalRows.length}
-                    onPageChange={setCurrentPage}
-                    onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }}
-                  />
+                  <DataTablePagination currentPage={currentPage} totalPages={signalTotalPages} pageSize={pageSize} totalItems={filteredSignalRows.length} onPageChange={setCurrentPage} onPageSizeChange={(size) => { setPageSize(size); setCurrentPage(1); }} />
                   <div className="rounded-md border">
                     <Table>
                       <TableHeader>
@@ -771,293 +863,113 @@ export default function MasterOpportunities() {
                           <TableHead>Signals</TableHead>
                           <TableHead>Reported By</TableHead>
                           <TableHead>Last Updated</TableHead>
-                          <TableHead className="w-[50px]"></TableHead>
+                          <TableHead className="w-[50px]" />
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {paginatedSignalRows.map((row) => (
                           <TableRow key={row.id} className="hover:bg-muted/50">
                             <TableCell>
-                              <button 
-                                onClick={() => handleViewStore(row.store_id)}
-                                className="font-medium text-left hover:text-primary transition-colors"
-                              >
-                                {row.store_name}
-                              </button>
-                              {(row.city || row.borough) && (
-                                <p className="text-xs text-muted-foreground">
-                                  {[row.borough, row.city].filter(Boolean).join(', ')}
-                                </p>
-                              )}
+                              <button onClick={() => handleViewStore(row.store_id)} className="font-medium text-left hover:text-primary transition-colors">{row.store_name}</button>
+                              {(row.city || row.borough) && <p className="text-xs text-muted-foreground">{[row.borough, row.city].filter(Boolean).join(', ')}</p>}
                             </TableCell>
-                            <TableCell>
-                              <span className="font-medium">{row.brand_name}</span>
-                            </TableCell>
-                            <TableCell>
-                              {row.last_order_date ? (
-                                <span className="text-sm">
-                                  {format(new Date(row.last_order_date), 'MMM d, yyyy')}
-                                </span>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">Never</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex flex-wrap gap-1">
-                                {getSignalBadges(row)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {getRoleBadge(row.last_updated_by_role)}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {format(new Date(row.last_updated_at), 'MMM d, h:mm a')}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleViewStore(row.store_id)}
-                                className="h-8 w-8"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                            <TableCell><span className="font-medium">{row.brand_name}</span></TableCell>
+                            <TableCell>{row.last_order_date ? <span className="text-sm">{format(new Date(row.last_order_date), 'MMM d, yyyy')}</span> : <span className="text-sm text-muted-foreground">Never</span>}</TableCell>
+                            <TableCell><div className="flex flex-wrap gap-1">{getSignalBadges(row)}</div></TableCell>
+                            <TableCell>{getRoleBadge(row.last_updated_by_role)}</TableCell>
+                            <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3 w-3" />{format(new Date(row.last_updated_at), 'MMM d, h:mm a')}</div></TableCell>
+                            <TableCell><Button variant="ghost" size="icon" onClick={() => handleViewStore(row.store_id)} className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button></TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
                     </Table>
                   </div>
-                  
                 </>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* SECTION 2: OPPORTUNITIES (HUMAN-CREATED) */}
+        {/* ── OPPORTUNITIES TAB (preserved) ── */}
         <TabsContent value="opportunities" className="space-y-6">
-          {/* Opportunities Banner */}
           <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
             <Lightbulb className="h-5 w-5 text-green-600 flex-shrink-0" />
             <div>
-              <p className="text-sm font-medium text-green-800">
-                Opportunities — Human-Created Action Candidates
-              </p>
-              <p className="text-xs text-green-700 mt-0.5">
-                Manually created items requiring human review and follow-up
-              </p>
+              <p className="text-sm font-medium text-green-800">Opportunities — Human-Created Action Candidates</p>
+              <p className="text-xs text-green-700 mt-0.5">Manually created items requiring human review and follow-up</p>
             </div>
           </div>
 
-          {/* Opportunity Summary Cards */}
           <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Opportunities</p>
-                    <p className="text-2xl font-bold">{oppSummary?.total || 0}</p>
-                  </div>
-                  <Lightbulb className="h-8 w-8 text-primary opacity-50" />
-                </div>
-              </CardContent>
+            <Card><CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Total</p><p className="text-2xl font-bold">{oppSummary?.total || 0}</p></div><Lightbulb className="h-8 w-8 text-primary opacity-50" /></div></CardContent></Card>
+            <Card className={`cursor-pointer transition-all ${oppStatusFilter === 'pending' ? 'ring-2 ring-amber-500' : 'hover:bg-muted/50'}`} onClick={() => { setOppStatusFilter('pending'); handleOppFilterChange(); }}>
+              <CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Pending</p><p className="text-2xl font-bold text-amber-600">{oppSummary?.pending || 0}</p></div><Circle className="h-8 w-8 text-amber-500 opacity-50" /></div></CardContent>
             </Card>
-            
-            <Card 
-              className={`cursor-pointer transition-all ${oppStatusFilter === 'pending' ? 'ring-2 ring-amber-500' : 'hover:bg-muted/50'}`}
-              onClick={() => { setOppStatusFilter('pending'); handleOppFilterChange(); }}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Pending</p>
-                    <p className="text-2xl font-bold text-amber-600">{oppSummary?.pending || 0}</p>
-                  </div>
-                  <Circle className="h-8 w-8 text-amber-500 opacity-50" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card 
-              className={`cursor-pointer transition-all ${oppStatusFilter === 'completed' ? 'ring-2 ring-green-500' : 'hover:bg-muted/50'}`}
-              onClick={() => { setOppStatusFilter('completed'); handleOppFilterChange(); }}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold text-green-600">{oppSummary?.completed || 0}</p>
-                  </div>
-                  <CheckCircle2 className="h-8 w-8 text-green-500 opacity-50" />
-                </div>
-              </CardContent>
+            <Card className={`cursor-pointer transition-all ${oppStatusFilter === 'completed' ? 'ring-2 ring-green-500' : 'hover:bg-muted/50'}`} onClick={() => { setOppStatusFilter('completed'); handleOppFilterChange(); }}>
+              <CardContent className="pt-6"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Completed</p><p className="text-2xl font-bold text-green-600">{oppSummary?.completed || 0}</p></div><CheckCircle2 className="h-8 w-8 text-green-500 opacity-50" /></div></CardContent>
             </Card>
           </div>
 
-          {/* Opportunities Filters */}
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search opportunities or stores..."
-                    value={oppSearchQuery}
-                    onChange={(e) => { setOppSearchQuery(e.target.value); handleOppFilterChange(); }}
-                    className="pl-10"
-                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Search opportunities…" value={oppSearchQuery} onChange={(e) => { setOppSearchQuery(e.target.value); handleOppFilterChange(); }} className="pl-10" />
                 </div>
-                
                 <Select value={oppStatusFilter} onValueChange={(v) => { setOppStatusFilter(v as OpportunityFilter); handleOppFilterChange(); }}>
-                  <SelectTrigger className="w-full lg:w-[180px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-full lg:w-[180px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                   </SelectContent>
                 </Select>
-                
                 <div className="flex gap-2">
-                  <Button variant="outline" size="icon" onClick={() => refetchOpportunities()}>
-                    <RefreshCw className="h-4 w-4" />
-                  </Button>
-                  <ExportButton 
-                    data={filteredOpportunities as any} 
-                    filename="store-opportunities" 
-                    columns={oppExportColumns}
-                  />
+                  <Button variant="outline" size="icon" onClick={() => refetchOpportunities()}><RefreshCw className="h-4 w-4" /></Button>
+                  <ExportButton data={filteredOpportunities as any} filename="store-opportunities" columns={oppExportColumns} />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Opportunities Data Table */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5 text-primary" />
-                  Opportunities ({filteredOpportunities.length})
-                </CardTitle>
-                <CardDescription>
-                  {oppStatusFilter === 'all' ? 'All opportunities' : oppStatusFilter.charAt(0).toUpperCase() + oppStatusFilter.slice(1)}
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2"><Lightbulb className="h-5 w-5 text-primary" />Opportunities ({filteredOpportunities.length})</CardTitle>
+                <CardDescription>{oppStatusFilter === 'all' ? 'All' : oppStatusFilter.charAt(0).toUpperCase() + oppStatusFilter.slice(1)}</CardDescription>
               </div>
             </CardHeader>
             <CardContent>
               {filteredOpportunities.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Lightbulb className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">No opportunities found</p>
-                  <p className="text-sm mt-1">
-                    {oppSearchQuery || oppStatusFilter !== 'all'
-                      ? 'Try adjusting your filters'
-                      : 'Opportunities are created manually from store profiles'}
-                  </p>
-                </div>
+                <div className="text-center py-12 text-muted-foreground"><Lightbulb className="h-16 w-16 mx-auto mb-4 opacity-50" /><p className="text-lg font-medium">No opportunities found</p></div>
               ) : (
                 <>
-                  <DataTablePagination
-                    currentPage={oppCurrentPage}
-                    totalPages={oppTotalPages}
-                    pageSize={oppPageSize}
-                    totalItems={filteredOpportunities.length}
-                    onPageChange={setOppCurrentPage}
-                    onPageSizeChange={(size) => { setOppPageSize(size); setOppCurrentPage(1); }}
-                  />
+                  <DataTablePagination currentPage={oppCurrentPage} totalPages={oppTotalPages} pageSize={oppPageSize} totalItems={filteredOpportunities.length} onPageChange={setOppCurrentPage} onPageSizeChange={(size) => { setOppPageSize(size); setOppCurrentPage(1); }} />
                   <div className="rounded-md border">
                     <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Store</TableHead>
-                          <TableHead>Opportunity</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead className="w-[100px]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
+                      <TableHeader><TableRow><TableHead>Store</TableHead><TableHead>Opportunity</TableHead><TableHead>Source</TableHead><TableHead>Status</TableHead><TableHead>Created</TableHead><TableHead className="w-[100px]">Actions</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {paginatedOpportunities.map((opp) => (
                           <TableRow key={opp.id} className="hover:bg-muted/50">
                             <TableCell>
-                              <button 
-                                onClick={() => handleViewStore(opp.store_id)}
-                                className="font-medium text-left hover:text-primary transition-colors"
-                              >
-                                {opp.store?.store_name || 'Unknown Store'}
-                              </button>
-                              {opp.store?.city && (
-                                <p className="text-xs text-muted-foreground">{opp.store.city}</p>
-                              )}
+                              <button onClick={() => handleViewStore(opp.store_id)} className="font-medium text-left hover:text-primary transition-colors">{opp.store?.store_name || 'Unknown'}</button>
+                              {opp.store?.city && <p className="text-xs text-muted-foreground">{opp.store.city}</p>}
                             </TableCell>
+                            <TableCell><span className="text-sm">{opp.opportunity_text}</span></TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs capitalize">{opp.source}</Badge></TableCell>
                             <TableCell>
-                              <span className="text-sm">{opp.opportunity_text}</span>
+                              {opp.is_completed
+                                ? <Badge variant="default" className="bg-green-500 text-white text-xs"><CheckCircle2 className="h-3 w-3 mr-1" />Completed</Badge>
+                                : <Badge variant="secondary" className="text-xs"><Circle className="h-3 w-3 mr-1" />Pending</Badge>}
                             </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {opp.source}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {opp.is_completed ? (
-                                <Badge variant="default" className="bg-green-500 text-white text-xs">
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />
-                                  Completed
-                                </Badge>
-                              ) : (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Circle className="h-3 w-3 mr-1" />
-                                  Pending
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <Clock className="h-3 w-3" />
-                                {format(new Date(opp.created_at), 'MMM d, yyyy')}
-                              </div>
-                            </TableCell>
+                            <TableCell><div className="flex items-center gap-1 text-sm text-muted-foreground"><Clock className="h-3 w-3" />{format(new Date(opp.created_at), 'MMM d, yyyy')}</div></TableCell>
                             <TableCell>
                               <div className="flex gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleViewStore(opp.store_id)}
-                                  className="h-8 w-8"
-                                  title="View Store"
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                                {opp.is_completed ? (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleReopenOpportunity(opp.id)}
-                                    className="h-8 w-8"
-                                    title="Reopen"
-                                    disabled={reopenOpportunity.isPending}
-                                  >
-                                    <RefreshCw className="h-4 w-4" />
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleCompleteOpportunity(opp.id)}
-                                    className="h-8 w-8 text-green-600 hover:text-green-700"
-                                    title="Mark Complete"
-                                    disabled={completeOpportunity.isPending}
-                                  >
-                                    <CheckCircle2 className="h-4 w-4" />
-                                  </Button>
-                                )}
+                                <Button variant="ghost" size="icon" onClick={() => handleViewStore(opp.store_id)} className="h-8 w-8"><ExternalLink className="h-4 w-4" /></Button>
+                                {opp.is_completed
+                                  ? <Button variant="ghost" size="icon" onClick={() => handleReopenOpportunity(opp.id)} className="h-8 w-8" disabled={reopenOpportunity.isPending}><RefreshCw className="h-4 w-4" /></Button>
+                                  : <Button variant="ghost" size="icon" onClick={() => handleCompleteOpportunity(opp.id)} className="h-8 w-8 text-green-600" disabled={completeOpportunity.isPending}><CheckCircle2 className="h-4 w-4" /></Button>}
                               </div>
                             </TableCell>
                           </TableRow>
@@ -1065,11 +977,74 @@ export default function MasterOpportunities() {
                       </TableBody>
                     </Table>
                   </div>
-                  
                 </>
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ── MESSAGING TAB ── */}
+        <TabsContent value="messaging" className="space-y-4">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-blue-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-blue-400">Inbound Messaging Replies</p>
+              <p className="text-xs text-blue-300/70 mt-0.5">Leads and stores that replied to SMS/WhatsApp outreach</p>
+            </div>
+          </div>
+          <OpportunityList items={messagingItems} onAction={handleAction} emptyIcon={MessageSquare} emptyText="No inbound messages yet" />
+        </TabsContent>
+
+        {/* ── DIALER TAB ── */}
+        <TabsContent value="dialer" className="space-y-4">
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
+            <Phone className="h-5 w-5 text-green-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-green-400">AI Dialer — Interested Results</p>
+              <p className="text-xs text-green-300/70 mt-0.5">Leads that showed interest during AI-powered calls</p>
+            </div>
+          </div>
+          <OpportunityList items={dialerItems} onAction={handleAction} emptyIcon={Phone} emptyText="No interested dialer results yet" />
+        </TabsContent>
+
+        {/* ── VISITS TAB ── */}
+        <TabsContent value="visits" className="space-y-4">
+          <div className="bg-purple-500/10 border border-purple-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
+            <Truck className="h-5 w-5 text-purple-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-purple-400">Pending Visit Triggers</p>
+              <p className="text-xs text-purple-300/70 mt-0.5">First visits, prospecting, merchandising, audit, and compliance triggers</p>
+            </div>
+          </div>
+          <OpportunityList items={visitItems} onAction={handleAction} emptyIcon={Truck} emptyText="No pending visit triggers" />
+        </TabsContent>
+
+        {/* ── READY TO CLOSE TAB ── */}
+        <TabsContent value="ready-close" className="space-y-4">
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
+            <TrendingUp className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-emerald-400">Ready to Close</p>
+              <p className="text-xs text-emerald-300/70 mt-0.5">High-priority leads in booked or interested stage (P7+)</p>
+            </div>
+          </div>
+          <OpportunityList items={closeItems} onAction={handleAction} emptyIcon={TrendingUp} emptyText="No leads ready to close" />
+        </TabsContent>
+
+        {/* ── AI OPPORTUNITIES TAB ── */}
+        <TabsContent value="ai-opps" className="space-y-4">
+          <div className="bg-violet-500/10 border border-violet-500/30 rounded-lg px-4 py-3 flex items-center gap-3">
+            <Brain className="h-5 w-5 text-violet-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-violet-400">AI Agent Opportunities</p>
+              <p className="text-xs text-violet-300/70 mt-0.5">Opportunities detected by AI agents across all brands</p>
+            </div>
+            <Button size="sm" variant="outline" className="ml-auto text-xs gap-1" onClick={runAIAnalysis} disabled={scanning}>
+              {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+              Rescan
+            </Button>
+          </div>
+          <OpportunityList items={aiOppItems} onAction={handleAction} emptyIcon={Brain} emptyText="No AI-detected opportunities — run an AI Scan" />
         </TabsContent>
       </Tabs>
     </div>
