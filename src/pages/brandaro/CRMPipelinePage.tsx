@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import {
   Kanban, Phone, MapPin, Star, Filter, MessageSquare, X,
   StickyNote, TrendingUp, Users, DollarSign, Target, Zap, RefreshCw,
-  Search, Rocket, Inbox,
+  Search, Rocket, Inbox, ChevronDown,
 } from "lucide-react";
 import {
   useBrandaroPipeline,
