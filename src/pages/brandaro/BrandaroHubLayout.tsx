@@ -6,7 +6,7 @@ import {
   Flame, Target, DollarSign, Rocket, Zap, Search,
   PhoneCall, ClipboardList, Bell, Activity, Shield,
   Presentation, Factory, Lightbulb, Crosshair, Tag,
-  Map, HeartPulse, Star, ChevronLeft, ChevronRight,
+  Map, HeartPulse, Star, ChevronLeft, ChevronRight, Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
