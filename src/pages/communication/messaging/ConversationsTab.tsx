@@ -244,6 +244,37 @@ export default function ConversationsTab() {
     enabled: !!selectedThreadKey && !!selectedThread,
   });
 
+  // Realtime: auto-refresh when new messages arrive
+  useEffect(() => {
+    const channel = supabase
+      .channel('conversations-realtime')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messaging_messages',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unified-conversations'] });
+        if (selectedThreadKey) {
+          queryClient.invalidateQueries({ queryKey: ['unified-transcript'] });
+        }
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'communication_logs',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unified-conversations'] });
+        if (selectedThreadKey) {
+          queryClient.invalidateQueries({ queryKey: ['unified-transcript'] });
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, selectedThreadKey]);
+
   const getStatusBadge = (conv: any) => {
     if (conv.source === "twilio_log") return <Badge className="gap-1 bg-green-500/20 text-green-700 border-green-500/30"><Phone className="h-3 w-3" /> Twilio</Badge>;
     if (conv.source === "invoice") return <Badge className="gap-1 bg-amber-500/20 text-amber-700 border-amber-500/30"><FileText className="h-3 w-3" /> Receipt</Badge>;
