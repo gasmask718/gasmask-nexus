@@ -137,6 +137,27 @@ export default function BrandaroWarRoom() {
     },
   });
 
+  // Scout Agent stats
+  const { data: scoutStats } = useQuery({
+    queryKey: ["brandaro-scout-stats"],
+    queryFn: async () => {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const [
+        { count: total },
+        { count: today },
+        { count: inPipeline },
+        { data: config },
+      ] = await Promise.all([
+        supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).not("discovery_job_id", "is", null),
+        supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).gte("created_at", yesterday).not("discovery_job_id", "is", null),
+        supabase.from("brandaro_qualified_leads").select("*", { count: "exact", head: true }).eq("pipeline_stage", "new").not("discovery_job_id", "is", null),
+        supabase.from("brandaro_scout_config" as any).select("*").limit(1).single(),
+      ]);
+      return { total, today, inPipeline, config: config as any };
+    },
+    refetchInterval: 60000,
+  });
+
   return (
     <div className="space-y-6">
       {/* Header */}
