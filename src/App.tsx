@@ -21,7 +21,16 @@ import './modules';
 // Import the new clean routes
 import AppRoutes from './routes/AppRoutes';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,      // 5 minutes
+      gcTime: 10 * 60 * 1000,         // 10 minutes
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
