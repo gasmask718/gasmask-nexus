@@ -16645,6 +16645,51 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_search_queue: {
+        Row: {
+          city: string
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          industry: string
+          job_id: string | null
+          queued_at: string | null
+          radius_meters: number | null
+          started_at: string | null
+          state: string
+          status: string | null
+          total_imported: number | null
+        }
+        Insert: {
+          city: string
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          industry: string
+          job_id?: string | null
+          queued_at?: string | null
+          radius_meters?: number | null
+          started_at?: string | null
+          state: string
+          status?: string | null
+          total_imported?: number | null
+        }
+        Update: {
+          city?: string
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          industry?: string
+          job_id?: string | null
+          queued_at?: string | null
+          radius_meters?: number | null
+          started_at?: string | null
+          state?: string
+          status?: string | null
+          total_imported?: number | null
+        }
+        Relationships: []
+      }
       brandaro_seo_clusters: {
         Row: {
           city: string | null
