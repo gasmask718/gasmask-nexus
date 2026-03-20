@@ -356,7 +356,7 @@ export default function CRMPipelinePage() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" /> Total Leads
           </div>
-          <p className="text-2xl font-bold">{stats.total}</p>
+          <p className="text-2xl font-bold">{totalCount ?? stats.total}</p>
         </Card>
         <Card className="p-3">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
