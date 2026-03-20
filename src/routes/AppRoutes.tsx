@@ -2722,6 +2722,7 @@ export default function AppRoutes() {
           <Route path="leads" element={<LeadDatabasePage />} />
           <Route path="crm-pipeline" element={<CRMPipelinePage />} />
           <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
+          <Route path="scout-agent" element={<ScoutAgentPage />} />
           <Route path="lead-qualification" element={<LeadQualificationPage />} />
           <Route path="follow-ups" element={<FollowUpEnginePage />} />
           <Route path="proposals" element={<ProposalBuilderPage />} />
