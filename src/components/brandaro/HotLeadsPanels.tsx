@@ -21,7 +21,7 @@ function useHotLeads() {
         .gte("priority_score", 5)
         .in("pipeline_stage", ["new", "contacted", "responded", "interested", "booked"])
         .order("priority_score", { ascending: false })
-        .limit(3);
+        .limit(10);
       return (data || []) as PanelLead[];
     },
     refetchInterval: 60000,
