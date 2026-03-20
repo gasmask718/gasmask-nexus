@@ -829,6 +829,7 @@ function LandingRedirect() {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoader />}>
     <Routes>
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PUBLIC ROUTES (No authentication required)                                   */}
