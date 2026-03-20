@@ -240,6 +240,35 @@ export default function CRMPipelinePage() {
     queryClient.invalidateQueries({ queryKey: ["brandaro-stuck-leads"] });
   }, [queryClient]);
 
+  // Realtime subscription for new leads
+  useEffect(() => {
+    const channel = supabase
+      .channel('pipeline-leads-changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'brandaro_qualified_leads',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['brandaro-pipeline'] });
+        queryClient.invalidateQueries({ queryKey: ['brandaro-hot-leads'] });
+        queryClient.invalidateQueries({ queryKey: ['brandaro-total-count'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [queryClient]);
+
+  // Total count (no filters)
+  const { data: totalCount } = useQuery({
+    queryKey: ['brandaro-total-count'],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('brandaro_qualified_leads')
+        .select('*', { count: 'exact', head: true });
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   const { columns, stats, cities, industries, isLoading, moveLead, updateNotes } =
     useBrandaroPipeline({
       city: cityFilter || undefined,
