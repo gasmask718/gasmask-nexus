@@ -79,7 +79,7 @@ export function AIApprovalDrawer() {
     try {
       const body = editing[msg.id] ?? msg.message_body;
       const { error } = await supabase.functions.invoke("send-sms", {
-        body: { phone_number: msg.phone_number, message: body },
+        body: { to_number: msg.phone_number, message_body: body, idempotency_key: `approve-${msg.id}-${Date.now()}` },
       });
       if (error) throw error;
 

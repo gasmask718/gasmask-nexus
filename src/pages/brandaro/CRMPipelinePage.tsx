@@ -138,8 +138,9 @@ function LeadProfileDialog({
                   try {
                     await supabase.functions.invoke("send-sms", {
                       body: {
-                        phone_number: lead.phone_number,
-                        message: `Hi ${lead.business_name || "there"}, here's the link to book your free funding consultation: https://calendly.com/brandarodigital-sales/funding-consultation`,
+                        to_number: lead.phone_number,
+                        message_body: `Hi ${lead.business_name || "there"}, here's the link to book your free funding consultation: https://calendly.com/brandarodigital-sales/funding-consultation`,
+                        idempotency_key: `fund-${lead.id}-${Date.now()}`,
                       },
                     });
                     toast.success("Funding link sent");
