@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Kanban, Phone, MapPin, Star, Filter, MessageSquare, X,
-  StickyNote, TrendingUp, Users, DollarSign, Target, Zap,
+  StickyNote, TrendingUp, Users, DollarSign, Target, Zap, RefreshCw,
 } from "lucide-react";
 import {
   useBrandaroPipeline,
@@ -16,6 +16,7 @@ import {
   PipelineLead,
 } from "@/hooks/useBrandaroPipeline";
 import { usePipelineInsights } from "@/hooks/usePipelineInsights";
+import { useQueryClient } from "@tanstack/react-query";
 import { BrandaroLeadCard } from "@/components/brandaro/BrandaroLeadCard";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
 import { HotLeadsPanels } from "@/components/brandaro/HotLeadsPanels";
@@ -222,11 +223,21 @@ function LeadProfileDialog({
 
 // ── Main Page ──
 export default function CRMPipelinePage() {
+  const queryClient = useQueryClient();
   const [cityFilter, setCityFilter] = useState("");
   const [industryFilter, setIndustryFilter] = useState("");
   const [selectedLead, setSelectedLead] = useState<PipelineLead | null>(null);
   const [demoLead, setDemoLead] = useState<PipelineLead | null>(null);
   const [stageFilter, setStageFilter] = useState<string[] | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  // Force refresh all queries on mount
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["brandaro-pipeline"] });
+    queryClient.invalidateQueries({ queryKey: ["brandaro-hot-leads"] });
+    queryClient.invalidateQueries({ queryKey: ["brandaro-followup-leads"] });
+    queryClient.invalidateQueries({ queryKey: ["brandaro-stuck-leads"] });
+  }, [queryClient]);
 
   const { columns, stats, cities, industries, isLoading, moveLead, updateNotes } =
     useBrandaroPipeline({
@@ -243,6 +254,29 @@ export default function CRMPipelinePage() {
     }
   };
 
+  const syncPipeline = async () => {
+    setSyncing(true);
+    try {
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-fix-imports`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
+      await queryClient.invalidateQueries();
+      toast.success("Pipeline synced — all leads refreshed");
+    } catch (err: any) {
+      toast.error(err?.message || "Sync failed");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const filteredColumns = stageFilter
     ? columns.filter((c) => stageFilter.includes(c.key))
     : columns;
@@ -255,15 +289,26 @@ export default function CRMPipelinePage() {
           <Kanban className="h-6 w-6 text-primary" />
           <h1 className="text-2xl font-bold">Sales Pipeline</h1>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => autoMove.mutate()}
-          disabled={autoMove.isPending}
-        >
-          <Zap className="h-4 w-4 mr-1" />
-          {autoMove.isPending ? "Running…" : "Auto-Move Leads"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={syncPipeline}
+            disabled={syncing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
+            {syncing ? "Syncing…" : "⚡ Sync Pipeline"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => autoMove.mutate()}
+            disabled={autoMove.isPending}
+          >
+            <Zap className="h-4 w-4 mr-1" />
+            {autoMove.isPending ? "Running…" : "Auto-Move Leads"}
+          </Button>
+        </div>
       </div>
 
       {/* Hot Leads Intelligence Panels */}

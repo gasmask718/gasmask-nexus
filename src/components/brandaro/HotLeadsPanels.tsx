@@ -18,10 +18,10 @@ function useHotLeads() {
       const { data } = await (supabase as any)
         .from("brandaro_qualified_leads")
         .select("id, business_name, city, priority_score, pipeline_stage")
-        .gte("priority_score", 7)
-        .in("pipeline_stage", ["interested", "booked"])
+        .gte("priority_score", 5)
+        .in("pipeline_stage", ["new", "contacted", "responded", "interested", "booked"])
         .order("priority_score", { ascending: false })
-        .limit(3);
+        .limit(10);
       return (data || []) as PanelLead[];
     },
     refetchInterval: 60000,
