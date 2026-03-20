@@ -16594,6 +16594,132 @@ export type Database = {
           },
         ]
       }
+      brandaro_scout_config: {
+        Row: {
+          created_at: string | null
+          current_focus_industry: string | null
+          current_focus_state: string | null
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          min_hours_between_runs: number | null
+          mode: string | null
+          searches_per_run: number | null
+          target_industries: Json | null
+          target_states: Json | null
+          total_leads_imported: number | null
+          total_searches: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_focus_industry?: string | null
+          current_focus_state?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          min_hours_between_runs?: number | null
+          mode?: string | null
+          searches_per_run?: number | null
+          target_industries?: Json | null
+          target_states?: Json | null
+          total_leads_imported?: number | null
+          total_searches?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_focus_industry?: string | null
+          current_focus_state?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          min_hours_between_runs?: number | null
+          mode?: string | null
+          searches_per_run?: number | null
+          target_industries?: Json | null
+          target_states?: Json | null
+          total_leads_imported?: number | null
+          total_searches?: number | null
+        }
+        Relationships: []
+      }
+      brandaro_scout_memory: {
+        Row: {
+          city: string
+          id: string
+          industry: string
+          leads_found: number | null
+          leads_imported: number | null
+          notes: string | null
+          revisit_after: string | null
+          searched_at: string | null
+          state: string
+          success_rate: number | null
+          worth_revisiting: boolean | null
+        }
+        Insert: {
+          city: string
+          id?: string
+          industry: string
+          leads_found?: number | null
+          leads_imported?: number | null
+          notes?: string | null
+          revisit_after?: string | null
+          searched_at?: string | null
+          state: string
+          success_rate?: number | null
+          worth_revisiting?: boolean | null
+        }
+        Update: {
+          city?: string
+          id?: string
+          industry?: string
+          leads_found?: number | null
+          leads_imported?: number | null
+          notes?: string | null
+          revisit_after?: string | null
+          searched_at?: string | null
+          state?: string
+          success_rate?: number | null
+          worth_revisiting?: boolean | null
+        }
+        Relationships: []
+      }
+      brandaro_scout_runs: {
+        Row: {
+          completed_at: string | null
+          decisions: Json | null
+          error_message: string | null
+          id: string
+          searches_attempted: number | null
+          searches_completed: number | null
+          started_at: string | null
+          status: string | null
+          total_imported: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          decisions?: Json | null
+          error_message?: string | null
+          id?: string
+          searches_attempted?: number | null
+          searches_completed?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_imported?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          decisions?: Json | null
+          error_message?: string | null
+          id?: string
+          searches_attempted?: number | null
+          searches_completed?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_imported?: number | null
+        }
+        Relationships: []
+      }
       brandaro_script_performance: {
         Row: {
           conversion_count: number
