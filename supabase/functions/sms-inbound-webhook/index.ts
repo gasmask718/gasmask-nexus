@@ -86,7 +86,7 @@ serve(async (req: Request) => {
           business_name: `Unknown (${normalizedFrom})`,
           phone_number: normalizedFrom,
           pipeline_stage: "responded",
-          lead_status: "responded",
+          lead_status: "interested",
           priority_score: 7,
           engagement_score: 20,
           call_attempts: 0,
