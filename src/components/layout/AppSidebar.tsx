@@ -374,6 +374,9 @@ export default function AppSidebar() {
 
             {/* Floor 9 - AI Operations */}
             {renderSection('floor-9', 'Floor 9: AI Operations', '🤖', [
+              { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
+              { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🚚' },
+              { path: '/gasmask/driver-route', label: 'Driver View', emoji: '📍' },
               { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
               { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
               { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
