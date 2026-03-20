@@ -380,6 +380,13 @@ export default function RouteEnginePage() {
 
   return (
     <div className="space-y-4 p-4 md:p-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <button onClick={() => navigate('/grabba/multi-brand-delivery')} className="hover:text-foreground transition-colors">← Delivery &amp; Logistics</button>
+        <span>/</span>
+        <span className="text-foreground font-medium">Route Engine</span>
+      </div>
+
       {/* ── SECTION 1: Command Header ── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         <div>
