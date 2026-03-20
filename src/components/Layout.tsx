@@ -222,6 +222,8 @@ const DYNASTY_NAVIGATION = {
         { path: '/grabba/deliveries', label: 'Deliveries Dashboard', icon: Truck },
         { path: '/grabba/assignments', label: 'Order Assignments', icon: ClipboardList },
         { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', icon: Layers },
+        { path: '/gasmask/route-engine', label: 'Route Engine', icon: Route },
+        { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/routes', label: 'Route Manager', icon: Route },
         { path: '/routes', label: 'All Routes', icon: Map },
         { path: '/route-optimizer', label: 'Route Optimizer', icon: Zap },
