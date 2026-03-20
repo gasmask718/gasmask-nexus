@@ -20,7 +20,7 @@ import {
   PipelineLead,
 } from "@/hooks/useBrandaroPipeline";
 import { usePipelineInsights } from "@/hooks/usePipelineInsights";
-import { useQueryClient } from "@tanstack/react-query";
+
 import { BrandaroLeadCard } from "@/components/brandaro/BrandaroLeadCard";
 import { BuildDemoModal } from "@/components/brandaro/BuildDemoModal";
 import { HotLeadsPanels } from "@/components/brandaro/HotLeadsPanels";
