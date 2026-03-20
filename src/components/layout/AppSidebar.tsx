@@ -403,6 +403,8 @@ export default function AppSidebar() {
                 { path: '/grabba/brand/gasmask', label: 'GasMask Dashboard', emoji: '📊' },
                 { path: '/gasmask/stores', label: 'GasMask Stores', emoji: '🏪' },
                 { path: '/gasmask/inventory', label: 'GasMask Inventory', emoji: '📦' },
+                { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
+                { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🚚' },
               ], "text-red-400 hover:bg-red-500/10")}
 
               {renderSection('hotmama-os', 'HotMama OS', '🟣', [
