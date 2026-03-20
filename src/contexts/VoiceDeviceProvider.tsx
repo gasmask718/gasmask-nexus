@@ -12,7 +12,7 @@ export interface VoiceHealth {
   TWILIO_TWIML_APP_SID?: boolean;
 }
 
-export type DeviceLifecycleState = "idle" | "token_fetching" | "creating" | "registering" | "registered" | "error";
+export type DeviceLifecycleState = "idle" | "token_fetching" | "creating" | "registering" | "registered" | "error" | "not_configured";
 
 export type MicPermission = "granted" | "denied" | "prompt" | "checking";
 
@@ -30,6 +30,7 @@ export interface VoiceDeviceContextValue {
   deviceState: DeviceLifecycleState;
   registeredAt: string | null;
   micPermission: MicPermission;
+  browserCallingConfigured: boolean;
   makeCall: (to: string, params?: Record<string, string>) => Promise<Call | null>;
   hangUp: () => void;
   toggleMute: () => void;
@@ -52,6 +53,9 @@ export function useVoiceDevice(): VoiceDeviceContextValue {
 }
 
 // ── Provider (single Device authority) ──
+// Browser calling is LAZY — Device only initializes when makeCall() is invoked.
+// This prevents AccessTokenInvalid (20101), UnknownError (31000), and
+// TransportError (31009) from firing on every page load.
 
 export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
@@ -65,10 +69,12 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
   const [deviceState, setDeviceState] = useState<DeviceLifecycleState>("idle");
   const [registeredAt, setRegisteredAt] = useState<string | null>(null);
   const [micPermission, setMicPermission] = useState<MicPermission>("checking");
+  const [browserCallingConfigured, setBrowserCallingConfigured] = useState(false);
 
   const deviceRef = useRef<Device | null>(null);
   const initializingRef = useRef(false);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const configCheckedRef = useRef(false);
 
   // ── Microphone permission ──
   const checkMicPermission = useCallback(async () => {
@@ -77,7 +83,6 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       setMicPermission(result.state as MicPermission);
       result.onchange = () => setMicPermission(result.state as MicPermission);
     } catch {
-      // Permissions API not supported, try getUserMedia
       setMicPermission("prompt");
     }
   }, []);
@@ -99,9 +104,8 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       setDeviceState("token_fetching");
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
-        console.error("❌ No auth session for voice token");
-        setDeviceError("Not authenticated");
-        setDeviceState("error");
+        console.warn("[VoiceDevice] No auth session, skipping token fetch");
+        setDeviceState("idle");
         return null;
       }
 
@@ -110,31 +114,42 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       if (invokeError || !data) {
-        console.error("❌ Voice token error:", invokeError);
         const errData = data || {};
-        if (errData.details) console.error("🔑 Credential issues:", errData.details);
-        if (errData.hint) console.warn("💡", errData.hint);
         if (errData.health) setVoiceHealth(errData.health);
-        setDeviceError(
-          errData.code === "VOICE_CONFIG_INVALID"
-            ? "Voice credentials misconfigured"
-            : errData.error || invokeError?.message || "Token fetch failed"
-        );
+
+        // If not configured, silently set state — don't show errors
+        if (errData.configured === false || errData.code === "VOICE_CONFIG_INVALID") {
+          console.info("[VoiceDevice] Browser calling not configured — this is fine, AI calling is primary");
+          setBrowserCallingConfigured(false);
+          setDeviceState("not_configured");
+          return null;
+        }
+
+        console.warn("[VoiceDevice] Token error:", invokeError?.message || errData.error);
+        setDeviceError(errData.error || invokeError?.message || "Token fetch failed");
         setDeviceState("error");
+        return null;
+      }
+
+      // Handle explicit "not configured" response
+      if (data.configured === false) {
+        console.info("[VoiceDevice] Browser calling not configured");
+        setBrowserCallingConfigured(false);
+        setDeviceState("not_configured");
         return null;
       }
 
       const { token, health, expires_at } = data;
 
       if (!token || token.length < 200 || token.split(".").length !== 3) {
-        console.error("❌ Token pre-flight failed: invalid JWT format");
-        setDeviceError("Invalid token format received");
-        setDeviceState("error");
+        console.warn("[VoiceDevice] Invalid token format received");
+        setDeviceState("not_configured");
         return null;
       }
 
       if (health) setVoiceHealth(health);
       if (expires_at) setTokenExpiresAt(expires_at);
+      setBrowserCallingConfigured(true);
       setDeviceError(null);
 
       // Schedule auto-refresh 10 min before expiry
@@ -144,7 +159,6 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
         : 50 * 60 * 1000;
       if (ttlMs > 0) {
         refreshTimerRef.current = setTimeout(async () => {
-          console.log("🔄 Auto-refreshing voice token...");
           const newToken = await fetchToken();
           if (newToken && deviceRef.current) {
             deviceRef.current.updateToken(newToken);
@@ -154,9 +168,8 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
 
       return token;
     } catch (err) {
-      console.error("❌ Failed to fetch voice token:", err);
-      setDeviceError("Network error fetching token");
-      setDeviceState("error");
+      console.warn("[VoiceDevice] Network error fetching token:", err);
+      setDeviceState("idle");
       return null;
     }
   }, []);
@@ -191,10 +204,11 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     call.on("reconnected", () => setCallStatus("in-progress"));
   }, []);
 
-  // ── Device init (runs once) ──
+  // ── Device init (LAZY — only called from makeCall) ──
 
   const initDevice = useCallback(async () => {
     if (initializingRef.current) return;
+    if (deviceRef.current && deviceState === "registered") return;
     initializingRef.current = true;
 
     try {
@@ -207,7 +221,6 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       // If device already exists, just refresh token
       if (deviceRef.current) {
         deviceRef.current.updateToken(token);
-        console.log("🔄 Twilio Device token refreshed");
         initializingRef.current = false;
         return;
       }
@@ -219,7 +232,6 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       device.on("registered", () => {
-        console.log("✅ Twilio Device registered");
         setIsReady(true);
         setDeviceError(null);
         setDeviceState("registered");
@@ -227,21 +239,22 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       device.on("unregistered", () => {
-        console.log("⚠️ Twilio Device unregistered");
         setIsReady(false);
         setDeviceState("idle");
       });
 
       device.on("error", (err) => {
-        console.error("❌ Twilio Device error:", err);
+        console.warn("[VoiceDevice] Device error:", err.message);
         setDeviceError(err.message);
         setDeviceState("error");
         setIsReady(false);
-        toast.error(`Voice error: ${err.message}`);
+        // Only show toast if user was actively trying to call
+        if (activeCall || isConnecting) {
+          toast.error(`Voice error: ${err.message}`);
+        }
       });
 
       device.on("tokenWillExpire", async () => {
-        console.log("🔄 Token expiring, refreshing...");
         const newToken = await fetchToken();
         if (newToken && deviceRef.current) {
           deviceRef.current.updateToken(newToken);
@@ -249,7 +262,6 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       });
 
       device.on("incoming", (call: Call) => {
-        console.log("📞 Incoming call from:", call.parameters.From);
         call.accept();
         setupCallHandlers(call);
       });
@@ -257,29 +269,27 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       setDeviceState("registering");
       await device.register();
       deviceRef.current = device;
-
-      // Debug access + duplicate assertion
-      if ((window as any).__VOICE_DEVICE_CREATED) {
-        console.warn("⚠️ Duplicate Voice Device detected — only one should exist");
-      }
-      (window as any).__VOICE_DEVICE_CREATED = true;
-      (window as any).voiceDevice = device;
     } catch (err) {
-      console.error("❌ Device init error:", err);
+      console.warn("[VoiceDevice] Device init error:", err);
       setDeviceError(err instanceof Error ? err.message : String(err));
       setDeviceState("error");
     } finally {
       initializingRef.current = false;
     }
-  }, [fetchToken, setupCallHandlers]);
+  }, [fetchToken, setupCallHandlers, deviceState, activeCall, isConnecting]);
 
   // ── Actions ──
 
   const makeCall = useCallback(async (to: string, params?: Record<string, string>): Promise<Call | null> => {
+    // Lazy init — only create Device when user actually tries to call
     if (!deviceRef.current) {
       await initDevice();
       if (!deviceRef.current) {
-        toast.error("Voice calling not ready. Please try again.");
+        if (deviceState === "not_configured") {
+          toast.error("Browser calling is not configured. Use AI Call or Manual Call instead.");
+        } else {
+          toast.error("Voice calling not ready. Please try again.");
+        }
         return null;
       }
     }
@@ -291,13 +301,13 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
       return call;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error("❌ Connect error:", msg);
+      console.error("[VoiceDevice] Connect error:", msg);
       toast.error(`Failed to connect call: ${msg}`);
       setIsConnecting(false);
       setCallStatus("failed");
       return null;
     }
-  }, [initDevice, setupCallHandlers]);
+  }, [initDevice, setupCallHandlers, deviceState]);
 
   const hangUp = useCallback(() => {
     if (activeCall) {
@@ -341,27 +351,26 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     }
   }, [fetchToken]);
 
-  // ── Init on mount, cleanup on unmount ──
-
+  // ── On mount: only check mic permission, do NOT init Device ──
   useEffect(() => {
     checkMicPermission();
-    initDevice();
     return () => {
       if (deviceRef.current) {
         deviceRef.current.destroy();
         deviceRef.current = null;
       }
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
-      (window as any).voiceDevice = null;
     };
-  }, [initDevice]);
+  }, [checkMicPermission]);
 
   const canMakeCalls = deviceState === "registered" && micPermission === "granted";
-  const disabledReason = deviceState !== "registered"
-    ? "Voice device not registered"
-    : micPermission !== "granted"
-      ? "Microphone permission required"
-      : null;
+  const disabledReason = deviceState === "not_configured"
+    ? "Browser calling not configured — use AI Call or Manual Call"
+    : deviceState !== "registered"
+      ? "Voice device not registered"
+      : micPermission !== "granted"
+        ? "Microphone permission required"
+        : null;
 
   const value: VoiceDeviceContextValue = {
     isReady,
@@ -377,6 +386,7 @@ export function VoiceDeviceProvider({ children }: { children: ReactNode }) {
     deviceState,
     registeredAt,
     micPermission,
+    browserCallingConfigured,
     makeCall,
     hangUp,
     toggleMute,
