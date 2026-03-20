@@ -128,8 +128,22 @@ export default function ScoutAgentPage() {
     setIsRunning(true);
     toast({ title: "🤖 Scout Agent running...", description: "AI is deciding what to search..." });
     try {
-      const { data, error } = await supabase.functions.invoke("brandaro-scout-agent", { body: { manual: true } });
-      if (error) throw error;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/brandaro-scout-agent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ manual: true }),
+        }
+      );
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edge function error ${response.status}: ${errorText}`);
+      }
+      const data = await response.json();
       if (data?.status === "budget_limit" || data?.status === "monthly_limit") {
         toast({ title: "💰 Budget limit reached", description: data.message, variant: "destructive" });
       } else {
