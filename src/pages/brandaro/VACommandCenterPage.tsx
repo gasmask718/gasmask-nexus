@@ -272,15 +272,25 @@ export default function VACommandCenterPage() {
     }
   };
 
+  const safePipeline = Array.isArray(pipeline) ? pipeline : [];
+  const safeFollowups = Array.isArray(followups) ? followups : [];
+  const safeInbound = Array.isArray(inboundMessages) ? inboundMessages : [];
+  const safeHotLeads = Array.isArray(hotLeads) ? hotLeads : [];
+  const safeDemoRequests = Array.isArray(demoRequests) ? demoRequests : [];
+  const safeFlaggedDemos = Array.isArray(flaggedDemos) ? flaggedDemos : [];
+  const safeRecentCalls = Array.isArray(recentCalls) ? recentCalls : [];
+  const safeVaTasks = Array.isArray(vaTasks) ? vaTasks : [];
+  const safeObjectionLibrary = Array.isArray(objectionLibrary) ? objectionLibrary : [];
+
   const stageCounts = {
-    demo_sent: pipeline.filter((p: any) => p.stage === "demo_sent").length,
-    demo_viewed: pipeline.filter((p: any) => p.stage === "demo_viewed").length,
-    interested: pipeline.filter((p: any) => p.stage === "interested").length,
-    negotiating: pipeline.filter((p: any) => p.stage === "negotiating").length,
-    closed: pipeline.filter((p: any) => p.stage === "closed").length,
+    demo_sent: safePipeline.filter((p: any) => p.stage === "demo_sent").length,
+    demo_viewed: safePipeline.filter((p: any) => p.stage === "demo_viewed").length,
+    interested: safePipeline.filter((p: any) => p.stage === "interested").length,
+    negotiating: safePipeline.filter((p: any) => p.stage === "negotiating").length,
+    closed: safePipeline.filter((p: any) => p.stage === "closed").length,
   };
 
-  const unresolvedInbound = inboundMessages.filter((m: any) => m.requires_va);
+  const unresolvedInbound = safeInbound.filter((m: any) => m.requires_va);
 
   return (
     <div className="p-4 space-y-4">
