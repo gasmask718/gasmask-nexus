@@ -30,6 +30,7 @@ const hubNav = [
   ]},
   { section: "Pipeline", items: [
     { title: "CRM Pipeline", path: "/brandaro/crm-pipeline", icon: Target },
+    { title: "📬 Inbox", path: "/brandaro/inbox", icon: Megaphone },
     { title: "Leads", path: "/brandaro/leads", icon: ListTodo },
     { title: "Discovery", path: "/brandaro/lead-discovery", icon: Search },
     { title: "Scout Agent", path: "/brandaro/scout-agent", icon: Bot },

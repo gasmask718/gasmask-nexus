@@ -12295,33 +12295,48 @@ export type Database = {
           channel: string | null
           created_at: string | null
           direction: string
+          from_number: string | null
           id: string
           lead_id: string
+          message_body: string | null
           message_text: string
           objection_type: string | null
           response_effectiveness: string | null
+          status: string | null
+          to_number: string | null
+          twilio_message_sid: string | null
         }
         Insert: {
           ai_response?: string | null
           channel?: string | null
           created_at?: string | null
           direction?: string
+          from_number?: string | null
           id?: string
           lead_id: string
+          message_body?: string | null
           message_text: string
           objection_type?: string | null
           response_effectiveness?: string | null
+          status?: string | null
+          to_number?: string | null
+          twilio_message_sid?: string | null
         }
         Update: {
           ai_response?: string | null
           channel?: string | null
           created_at?: string | null
           direction?: string
+          from_number?: string | null
           id?: string
           lead_id?: string
+          message_body?: string | null
           message_text?: string
           objection_type?: string | null
           response_effectiveness?: string | null
+          status?: string | null
+          to_number?: string | null
+          twilio_message_sid?: string | null
         }
         Relationships: [
           {
@@ -13807,6 +13822,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      brandaro_intent_log: {
+        Row: {
+          created_at: string | null
+          id: string
+          intent: string | null
+          intent_score: number | null
+          lead_id: string | null
+          message_text: string | null
+          reason: string | null
+          suggested_stage: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          intent?: string | null
+          intent_score?: number | null
+          lead_id?: string | null
+          message_text?: string | null
+          reason?: string | null
+          suggested_stage?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          intent?: string | null
+          intent_score?: number | null
+          lead_id?: string | null
+          message_text?: string | null
+          reason?: string | null
+          suggested_stage?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_intent_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_internal_ads: {
         Row: {
@@ -16010,6 +16066,8 @@ export type Database = {
           last_call_at: string | null
           last_called_at: string | null
           last_name: string | null
+          last_reply_at: string | null
+          last_reply_text: string | null
           lead_status: string | null
           name_for_emails: string | null
           next_callback_at: string | null
@@ -16027,6 +16085,7 @@ export type Database = {
           revenue_amount: number | null
           review_count: number | null
           service_interest: string | null
+          sms_count: number | null
           source_file: string | null
           state: string | null
           street: string | null
@@ -16069,6 +16128,8 @@ export type Database = {
           last_call_at?: string | null
           last_called_at?: string | null
           last_name?: string | null
+          last_reply_at?: string | null
+          last_reply_text?: string | null
           lead_status?: string | null
           name_for_emails?: string | null
           next_callback_at?: string | null
@@ -16086,6 +16147,7 @@ export type Database = {
           revenue_amount?: number | null
           review_count?: number | null
           service_interest?: string | null
+          sms_count?: number | null
           source_file?: string | null
           state?: string | null
           street?: string | null
@@ -16128,6 +16190,8 @@ export type Database = {
           last_call_at?: string | null
           last_called_at?: string | null
           last_name?: string | null
+          last_reply_at?: string | null
+          last_reply_text?: string | null
           lead_status?: string | null
           name_for_emails?: string | null
           next_callback_at?: string | null
@@ -16145,6 +16209,7 @@ export type Database = {
           revenue_amount?: number | null
           review_count?: number | null
           service_interest?: string | null
+          sms_count?: number | null
           source_file?: string | null
           state?: string | null
           street?: string | null

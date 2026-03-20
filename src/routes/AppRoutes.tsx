@@ -128,6 +128,7 @@ const RetentionDashboardPage = lazy(() => import('@/pages/brandaro/RetentionDash
 const VACommandCenterPage = lazy(() => import('@/pages/brandaro/VACommandCenterPage'));
 const LeadDatabasePage = lazy(() => import('@/pages/brandaro/LeadDatabasePage'));
 const CRMPipelinePage = lazy(() => import('@/pages/brandaro/CRMPipelinePage'));
+const BrandaroInboxPage = lazy(() => import('@/pages/brandaro/InboxPage'));
 const CallingOpsPage = lazy(() => import('@/pages/brandaro/CallingOpsPage'));
 const RevenueAnalyticsPage = lazy(() => import('@/pages/brandaro/RevenueAnalyticsPage'));
 const ClientReportingPage = lazy(() => import('@/pages/brandaro/ClientReportingPage'));
@@ -2721,6 +2722,7 @@ export default function AppRoutes() {
           {/* ── Pipeline ── */}
           <Route path="leads" element={<LeadDatabasePage />} />
           <Route path="crm-pipeline" element={<CRMPipelinePage />} />
+          <Route path="inbox" element={<BrandaroInboxPage />} />
           <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
           <Route path="scout-agent" element={<ScoutAgentPage />} />
           <Route path="lead-qualification" element={<LeadQualificationPage />} />

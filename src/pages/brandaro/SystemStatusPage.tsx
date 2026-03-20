@@ -152,6 +152,76 @@ export default function SystemStatusPage() {
         </CardContent>
       </Card>
 
+      {/* Webhook Configuration */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            📡 Twilio Inbound Webhook
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-muted rounded-lg p-4 space-y-2">
+            <p className="text-sm font-medium">Webhook URL:</p>
+            <code className="text-xs bg-background px-2 py-1 rounded block break-all">
+              {import.meta.env.VITE_SUPABASE_URL}/functions/v1/sms-inbound-webhook
+            </code>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sms-inbound-webhook`
+                );
+                window.alert("Webhook URL copied!");
+              }}
+            >
+              Copy URL
+            </Button>
+          </div>
+          <div className="text-sm text-muted-foreground space-y-1">
+            <p className="font-medium text-foreground">Configure in Twilio:</p>
+            <ol className="list-decimal list-inside space-y-1">
+              <li>Go to <strong>twilio.com/console</strong></li>
+              <li>Phone Numbers → Active Numbers</li>
+              <li>Click your number</li>
+              <li>Messaging → "A message comes in" → Webhook</li>
+              <li>Set URL to the URL above</li>
+              <li>Method: <strong>HTTP POST</strong></li>
+              <li>Save</li>
+            </ol>
+          </div>
+          <div className="flex gap-2 items-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={async () => {
+                try {
+                  const { data, error } = await supabase.functions.invoke("brandaro-test-inbound", {
+                    body: {
+                      test_number: "+15555555555",
+                      test_message: "Yes I am interested! (test message)",
+                    },
+                  });
+                  if (error) throw error;
+                  if (data?.success) {
+                    window.alert("✅ Test webhook successful! Check brandaro_conversations table.");
+                  } else {
+                    window.alert(`⚠️ Test returned status ${data?.status}`);
+                  }
+                } catch (err: any) {
+                  window.alert(`❌ Test failed: ${err.message}`);
+                }
+              }}
+            >
+              🧪 Test Webhook
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Sends a simulated inbound SMS to verify the pipeline
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Booking Links */}
       <Card>
         <CardHeader className="pb-3">

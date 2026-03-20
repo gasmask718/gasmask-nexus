@@ -147,11 +147,15 @@ export function BrandaroLeadCard({
     }
   };
 
+  const hasReply = !!(lead as any).last_reply_at;
+  const replyText = (lead as any).last_reply_text;
+  const repliedRecently = hasReply && new Date((lead as any).last_reply_at) > new Date(Date.now() - 86400000);
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
-          className={`rounded-[10px] border-[0.5px] border-border bg-card hover:shadow-md transition-shadow cursor-pointer w-full flex flex-col ${selected ? "ring-2 ring-primary" : ""}`}
+          className={`rounded-[10px] border-[0.5px] border-border bg-card hover:shadow-md transition-shadow cursor-pointer w-full flex flex-col ${selected ? "ring-2 ring-primary" : ""} ${repliedRecently ? "ring-2 ring-green-500/50 ring-offset-1" : ""}`}
         >
           {/* Card body */}
           <div className="p-3 flex-1">
@@ -202,7 +206,7 @@ export function BrandaroLeadCard({
                 <span className="w-6 text-right">{lead.engagement_score || 0}</span>
               </div>
               {/* Calls + SMS + indicators */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{lead.call_attempts || 0}</span>
                 <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{smsCount}</span>
                 {demoUrl && <span className="text-green-600 flex items-center gap-1"><Globe className="h-3 w-3" />Demo</span>}
@@ -213,6 +217,11 @@ export function BrandaroLeadCard({
                 )}
                 {rating != null && rating > 0 && (
                   <span className="flex items-center gap-0.5 text-amber-500"><Star className="h-3 w-3" />{rating}★</span>
+                )}
+                {hasReply && (
+                  <span className="flex items-center gap-1 text-green-500 font-medium">
+                    <MessageSquare className="h-3 w-3 fill-green-500" />Replied
+                  </span>
                 )}
               </div>
             </div>
