@@ -88,113 +88,137 @@ function LeadProfileDialog({
           updatedAt={lead.updated_at}
           onStageChange={handleStageChange}
         />
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Details</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {lead.phone_number && (
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-primary" />
-                  <a href={`tel:${lead.phone_number}`} className="hover:underline">{lead.phone_number}</a>
-                </div>
-              )}
-              {lead.city && (
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  {lead.city}{(lead as any).state ? `, ${(lead as any).state}` : ""}
-                </div>
-              )}
-              {lead.industry && <p><strong>Industry:</strong> {lead.industry}</p>}
-              {lead.rating != null && (
-                <p className="flex items-center gap-1">
-                  <Star className="h-4 w-4 text-amber-400" />
-                  {lead.rating} ({lead.review_count} reviews)
-                </p>
-              )}
-              <p><strong>Priority:</strong> {lead.priority_score}pt ({lead.priority_tier})</p>
-              <p><strong>Engagement:</strong> {lead.engagement_score}</p>
-              <p><strong>Call attempts:</strong> {lead.call_attempts}</p>
-              {lead.last_call_at && (
-                <p><strong>Last call:</strong> {new Date(lead.last_call_at).toLocaleString()}</p>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">📅 Booking Actions</CardTitle></CardHeader>
-            <CardContent className="space-y-2">
-              <Button size="sm" className="w-full justify-start" onClick={async () => {
-                if (!lead.phone_number) { toast.error("No phone number"); return; }
-                try {
-                  await supabase.functions.invoke("send-sms", {
-                    body: {
-                      to_number: lead.phone_number,
-                      message_body: `Hi ${lead.business_name || "there"}, here's my booking link to schedule your website review call: https://calendly.com/brandarodigital-sales/website-strategy-call`,
-                      idempotency_key: `book-profile-${lead.id}-${Date.now()}`,
-                    },
-                  });
-                  toast.success("Booking link sent");
-                } catch { toast.error("Failed to send"); }
-              }}>📅 Send Booking Link</Button>
-              {(lead.pipeline_stage === "interested" || ((lead as any).service_interest || "").includes("funding")) && (
-                <Button size="sm" variant="outline" className="w-full justify-start" onClick={async () => {
-                  if (!lead.phone_number) { toast.error("No phone number"); return; }
-                  try {
-                    await supabase.functions.invoke("send-sms", {
-                      body: {
-                        to_number: lead.phone_number,
-                        message_body: `Hi ${lead.business_name || "there"}, here's the link to book your free funding consultation: https://calendly.com/brandarodigital-sales/funding-consultation`,
-                        idempotency_key: `fund-${lead.id}-${Date.now()}`,
-                      },
-                    });
-                    toast.success("Funding link sent");
-                  } catch { toast.error("Failed to send"); }
-                }}>💰 Send Funding Call Link</Button>
-              )}
-            </CardContent>
-          </Card>
-          <div className="space-y-3">
-            <AITakeoverToggle
-              leadId={lead.id}
-              businessName={lead.business_name || "Lead"}
-              phoneNumber={lead.phone_number}
-              aiPaused={aiPaused}
-              onToggle={setLocalAiPaused}
-            />
+        <Tabs defaultValue="details">
+          <TabsList className="w-full">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="conversation">💬 Conversation</TabsTrigger>
+            <TabsTrigger value="notes">Notes</TabsTrigger>
+            <TabsTrigger value="intent">🧠 Intent</TabsTrigger>
+          </TabsList>
+          <TabsContent value="details">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">Details</CardTitle></CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  {lead.phone_number && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" />
+                      <a href={`tel:${lead.phone_number}`} className="hover:underline">{lead.phone_number}</a>
+                    </div>
+                  )}
+                  {lead.city && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      {lead.city}{(lead as any).state ? `, ${(lead as any).state}` : ""}
+                    </div>
+                  )}
+                  {lead.industry && <p><strong>Industry:</strong> {lead.industry}</p>}
+                  {lead.rating != null && (
+                    <p className="flex items-center gap-1">
+                      <Star className="h-4 w-4 text-amber-400" />
+                      {lead.rating} ({lead.review_count} reviews)
+                    </p>
+                  )}
+                  <p><strong>Priority:</strong> {lead.priority_score}pt ({lead.priority_tier})</p>
+                  <p><strong>Engagement:</strong> {lead.engagement_score}</p>
+                  <p><strong>Call attempts:</strong> {lead.call_attempts}</p>
+                  {lead.last_call_at && (
+                    <p><strong>Last call:</strong> {new Date(lead.last_call_at).toLocaleString()}</p>
+                  )}
+                  {(lead as any).last_reply_at && (
+                    <p className="text-green-600"><strong>Last reply:</strong> {new Date((lead as any).last_reply_at).toLocaleString()}</p>
+                  )}
+                  {(lead as any).last_reply_text && (
+                    <p className="text-sm italic text-muted-foreground">"{(lead as any).last_reply_text}"</p>
+                  )}
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">📅 Booking Actions</CardTitle></CardHeader>
+                <CardContent className="space-y-2">
+                  <Button size="sm" className="w-full justify-start" onClick={async () => {
+                    if (!lead.phone_number) { toast.error("No phone number"); return; }
+                    try {
+                      await supabase.functions.invoke("send-sms", {
+                        body: {
+                          to_number: lead.phone_number,
+                          message_body: `Hi ${lead.business_name || "there"}, here's my booking link to schedule your website review call: https://calendly.com/brandarodigital-sales/website-strategy-call`,
+                          idempotency_key: `book-profile-${lead.id}-${Date.now()}`,
+                        },
+                      });
+                      toast.success("Booking link sent");
+                    } catch { toast.error("Failed to send"); }
+                  }}>📅 Send Booking Link</Button>
+                  {(lead.pipeline_stage === "interested" || ((lead as any).service_interest || "").includes("funding")) && (
+                    <Button size="sm" variant="outline" className="w-full justify-start" onClick={async () => {
+                      if (!lead.phone_number) { toast.error("No phone number"); return; }
+                      try {
+                        await supabase.functions.invoke("send-sms", {
+                          body: {
+                            to_number: lead.phone_number,
+                            message_body: `Hi ${lead.business_name || "there"}, here's the link to book your free funding consultation: https://calendly.com/brandarodigital-sales/funding-consultation`,
+                            idempotency_key: `fund-${lead.id}-${Date.now()}`,
+                          },
+                        });
+                        toast.success("Funding link sent");
+                      } catch { toast.error("Failed to send"); }
+                    }}>💰 Send Funding Call Link</Button>
+                  )}
+                </CardContent>
+              </Card>
+              <div className="space-y-3">
+                <AITakeoverToggle
+                  leadId={lead.id}
+                  businessName={lead.business_name || "Lead"}
+                  phoneNumber={lead.phone_number}
+                  aiPaused={aiPaused}
+                  onToggle={setLocalAiPaused}
+                />
+                <Card>
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">Pipeline Stage</CardTitle></CardHeader>
+                  <CardContent className="space-y-2">
+                    {PIPELINE_STAGES.map((s) => (
+                      <Button key={s.key} variant={lead.pipeline_stage === s.key ? "default" : "outline"} size="sm" className="w-full justify-start" onClick={() => onMove(lead.id, s.key)}>
+                        <span className={`w-2 h-2 rounded-full ${s.color} mr-2`} />{s.label}
+                      </Button>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="conversation">
+            <ConversationThread leadId={lead.id} />
+          </TabsContent>
+          <TabsContent value="notes">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Pipeline Stage</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {PIPELINE_STAGES.map((s) => (
-                  <Button key={s.key} variant={lead.pipeline_stage === s.key ? "default" : "outline"} size="sm" className="w-full justify-start" onClick={() => onMove(lead.id, s.key)}>
-                    <span className={`w-2 h-2 rounded-full ${s.color} mr-2`} />{s.label}
-                  </Button>
-                ))}
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <StickyNote className="h-4 w-4" /> Notes
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {editingNotes ? (
+                  <div className="space-y-2">
+                    <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes..." rows={4} />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => { onSaveNotes(lead.id, notes); setEditingNotes(false); }}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingNotes(false)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground min-h-[60px] cursor-pointer hover:bg-muted/50 rounded p-2"
+                    onClick={() => { setNotes(lead.call_notes || ""); setEditingNotes(true); }}>
+                    {lead.call_notes || "Click to add notes..."}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-        </div>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <StickyNote className="h-4 w-4" /> Notes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {editingNotes ? (
-              <div className="space-y-2">
-                <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Add notes..." rows={4} />
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => { onSaveNotes(lead.id, notes); setEditingNotes(false); }}>Save</Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditingNotes(false)}>Cancel</Button>
-                </div>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground min-h-[60px] cursor-pointer hover:bg-muted/50 rounded p-2"
-                onClick={() => { setNotes(lead.call_notes || ""); setEditingNotes(true); }}>
-                {lead.call_notes || "Click to add notes..."}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          </TabsContent>
+          <TabsContent value="intent">
+            <IntentLog leadId={lead.id} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
