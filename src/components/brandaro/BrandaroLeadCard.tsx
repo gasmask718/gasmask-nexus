@@ -104,8 +104,9 @@ export function BrandaroLeadCard({
     try {
       await supabase.functions.invoke("send-sms", {
         body: {
-          phone_number: lead.phone_number,
-          message: `Hi ${lead.business_name || "there"}, book a quick 15-min call here: https://calendly.com/brandarodigital-sales/website-strategy-call`,
+          to_number: lead.phone_number,
+          message_body: `Hi ${lead.business_name || "there"}, book a quick 15-min call here: https://calendly.com/brandarodigital-sales/website-strategy-call`,
+          idempotency_key: `book-${lead.id}-${Date.now()}`,
         },
       });
       toast.success("Booking link sent");
