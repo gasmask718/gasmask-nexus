@@ -149,12 +149,13 @@ export function BrandaroLeadCard({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <Card
-          className={`min-h-[200px] rounded-[10px] border-[0.5px] border-border hover:shadow-md transition-all overflow-hidden ${selected ? "ring-2 ring-primary" : ""}`}
+        <div
+          className={`rounded-[10px] border-[0.5px] border-border bg-card hover:shadow-md transition-shadow cursor-pointer w-full flex flex-col ${selected ? "ring-2 ring-primary" : ""}`}
         >
-          <CardContent className="p-3 space-y-2">
-            {/* Top: Checkbox + Name + Stage */}
-            <div className="flex items-start gap-2">
+          {/* Card body */}
+          <div className="p-3 flex-1">
+            {/* Top row: checkbox + name + stage badge */}
+            <div className="flex items-start gap-2 mb-2">
               {onSelect && (
                 <Checkbox
                   checked={selected}
@@ -163,152 +164,101 @@ export function BrandaroLeadCard({
                   onClick={(e) => e.stopPropagation()}
                 />
               )}
-              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => onOpen(lead)}>
-                <div className="flex items-start justify-between gap-1">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {aiPaused && <Pause className="h-3 w-3 text-amber-500 shrink-0" />}
-                      {discoveryJobId && <Bot className="h-3 w-3 text-blue-500 shrink-0" />}
-                      <p className="font-semibold text-sm leading-tight line-clamp-2">
-                        {lead.business_name || "Unknown"}
-                      </p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground">
-                      {[lead.city, (lead as any).state].filter(Boolean).join(", ")}
-                    </p>
-                    {lead.industry && (
-                      <p className="text-[11px] text-muted-foreground">{lead.industry}</p>
-                    )}
-                  </div>
-                  <Badge className={`text-[10px] shrink-0 border-0 ${STAGE_COLORS[lead.pipeline_stage] || "bg-muted text-muted-foreground"}`}>
-                    {lead.pipeline_stage}
-                  </Badge>
+              <div className="flex-1 min-w-0" onClick={() => onOpen(lead)}>
+                <div className="flex items-center gap-1 mb-0.5">
+                  {aiPaused && <Pause className="h-3 w-3 text-amber-500 shrink-0" />}
+                  {discoveryJobId && <span className="text-xs">🤖</span>}
                 </div>
+                <p className="text-sm font-medium leading-tight break-words">
+                  {lead.business_name || "Unknown"}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {[lead.city, (lead as any).state].filter(Boolean).join(", ")}
+                </p>
+                {lead.industry && (
+                  <p className="text-[11px] text-muted-foreground truncate">{lead.industry}</p>
+                )}
               </div>
+              <Badge className={`text-[10px] shrink-0 border-0 ${STAGE_COLORS[lead.pipeline_stage] || "bg-muted text-muted-foreground"}`}>
+                {lead.pipeline_stage}
+              </Badge>
             </div>
 
-            {/* Middle: Data Rows */}
-            <div className="space-y-1.5 text-xs">
-              {/* Row 1: Priority */}
-              <div className="flex items-center gap-1 text-muted-foreground">
+            {/* Data rows */}
+            <div className="space-y-1 mb-2">
+              {/* Priority */}
+              <div className="flex items-center gap-1 text-xs">
                 {priorityIcon}
-                <span>Priority: {lead.priority_score}/10</span>
+                <span className="text-muted-foreground">P:</span>
+                <span className="font-medium">{lead.priority_score}/10</span>
               </div>
-
-              {/* Row 2: Engagement */}
-              <div className="space-y-0.5">
-                <span className="text-muted-foreground text-[11px]">Engagement: {lead.engagement_score}</span>
-                <Progress value={lead.engagement_score} className="h-1.5" />
+              {/* Engagement bar */}
+              <div className="flex items-center gap-2 text-xs">
+                <span className="text-muted-foreground w-14 shrink-0">Engage:</span>
+                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min(100, lead.engagement_score || 0)}%` }} />
+                </div>
+                <span className="w-6 text-right">{lead.engagement_score || 0}</span>
               </div>
-
-              {/* Row 3: Contact attempts */}
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> Calls: {lead.call_attempts}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageSquare className="h-3 w-3" /> SMS: {smsCount}
-                </span>
-              </div>
-
-              {/* Row 4: Status indicators */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {demoUrl && (
-                  <span className="flex items-center gap-0.5 text-green-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                    <Link2 className="h-3 w-3" /> Demo
-                  </span>
-                )}
+              {/* Calls + SMS + indicators */}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{lead.call_attempts || 0}</span>
+                <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{smsCount}</span>
+                {demoUrl && <span className="text-green-600 flex items-center gap-1"><Globe className="h-3 w-3" />Demo</span>}
                 {lead.phone_number ? (
-                  <span className="flex items-center gap-0.5 text-green-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" /> Phone
-                  </span>
+                  <span className="text-green-600">✓</span>
                 ) : (
-                  <span className="flex items-center gap-0.5 text-red-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" /> No phone
-                  </span>
+                  <span className="text-red-400 text-[10px]">No phone</span>
                 )}
                 {rating != null && rating > 0 && (
-                  <span className="flex items-center gap-0.5 text-amber-500">
-                    <Star className="h-3 w-3" /> {rating}★ ({lead.review_count})
-                  </span>
+                  <span className="flex items-center gap-0.5 text-amber-500"><Star className="h-3 w-3" />{rating}★</span>
                 )}
               </div>
             </div>
 
-            {/* Stage move */}
+            {/* Next stage button */}
             {nextStage && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[10px] text-muted-foreground w-full justify-center"
+              <button
                 onClick={(e) => { e.stopPropagation(); onMove(lead.id, nextStage.key); }}
+                className="text-[10px] text-primary hover:underline mb-1 block"
               >
-                → {nextStage.label} <ChevronRight className="h-3 w-3 ml-0.5" />
-              </Button>
+                → Move to {nextStage.label}
+              </button>
             )}
-          </CardContent>
+          </div>
 
-          {/* Bottom: 6-Button Action Bar (2 rows of 3) */}
+          {/* Action buttons - bottom */}
           <div className="border-t border-border/50" onClick={(e) => e.stopPropagation()}>
-            <div className="grid grid-cols-3">
-              <Button
-                variant="ghost"
-                className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
-                onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)}
-                disabled={!lead.phone_number || aiCallLoading}
-              >
-                {aiCallLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Phone className="h-3.5 w-3.5" />}
-                Call
-              </Button>
-              <Button
-                variant="ghost"
-                className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
-                onClick={handleSms}
-                disabled={smsLoading || !lead.phone_number}
-              >
-                {smsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
-                SMS
-              </Button>
-              <Button
-                variant="ghost"
-                className={`h-8 rounded-none text-[10px] flex flex-col gap-0 px-1 ${demoUrl ? "text-green-600" : "text-purple-600"}`}
-                onClick={() => onBuildDemo?.(lead)}
-              >
-                <Globe className="h-3.5 w-3.5" />
-                Demo
-              </Button>
+            <div className="grid grid-cols-3 divide-x divide-border/30">
+              <button onClick={() => lead.phone_number && window.open(`tel:${lead.phone_number}`)} disabled={!lead.phone_number}
+                className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted disabled:opacity-40 transition-colors">
+                <Phone className="h-3 w-3" />Call
+              </button>
+              <button onClick={handleSms} disabled={smsLoading || !lead.phone_number}
+                className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted transition-colors disabled:opacity-40">
+                {smsLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <MessageSquare className="h-3 w-3" />}SMS
+              </button>
+              <button onClick={() => onBuildDemo?.(lead)}
+                className={`flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted transition-colors ${demoUrl ? "text-green-600" : "text-purple-600"}`}>
+                <Globe className="h-3 w-3" />Demo
+              </button>
             </div>
-            <div className="grid grid-cols-3 border-t border-border/30">
-              <Button
-                variant="ghost"
-                className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
-                onClick={handleBook}
-                disabled={bookLoading || !lead.phone_number}
-              >
-                {bookLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calendar className="h-3.5 w-3.5" />}
-                Book
-              </Button>
-              <Button
-                variant="ghost"
-                className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
-                onClick={handlePitch}
-                disabled={pitchLoading}
-              >
-                {pitchLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <DollarSign className="h-3.5 w-3.5" />}
-                Pitch
-              </Button>
-              <Button
-                variant="ghost"
-                className="h-8 rounded-none text-[10px] flex flex-col gap-0 px-1"
-                onClick={() => onOpen(lead)}
-              >
-                <User className="h-3.5 w-3.5" />
-                Profile
-              </Button>
+            <div className="grid grid-cols-3 divide-x divide-border/30 border-t border-border/30">
+              <button onClick={handleBook} disabled={bookLoading || !lead.phone_number}
+                className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted disabled:opacity-40 transition-colors">
+                {bookLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Calendar className="h-3 w-3" />}Book
+              </button>
+              <button onClick={handlePitch} disabled={pitchLoading}
+                className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted transition-colors disabled:opacity-40">
+                {pitchLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <DollarSign className="h-3 w-3" />}Pitch
+              </button>
+              <button onClick={() => onOpen(lead)}
+                className="flex items-center justify-center gap-1 py-1.5 text-[10px] hover:bg-muted transition-colors">
+                <User className="h-3 w-3" />Profile
+              </button>
             </div>
           </div>
-        </Card>
+        </div>
       </ContextMenuTrigger>
 
       {/* Right-click context menu */}

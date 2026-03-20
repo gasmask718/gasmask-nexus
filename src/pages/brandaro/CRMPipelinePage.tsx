@@ -7,12 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuery } from "@tanstack/react-query";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Kanban, Phone, MapPin, Star, Filter, MessageSquare, X,
   StickyNote, TrendingUp, Users, DollarSign, Target, Zap, RefreshCw,
-  Search, Rocket, Inbox,
+  Search, Rocket, Inbox, ChevronDown,
 } from "lucide-react";
 import {
   useBrandaroPipeline,
@@ -311,181 +310,196 @@ export default function CRMPipelinePage() {
 
   const hasFilters = !!(searchQuery || cityFilter || industryFilter || stageFilter || priorityFilter !== "any" || hasPhoneOnly || noDemoOnly);
 
+  const [showPanels, setShowPanels] = useState(false);
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Kanban className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-semibold">Sales Pipeline</h1>
-        </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={syncPipeline} disabled={syncing}>
-            <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Syncing…" : "⚡ Sync"}
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => autoMove.mutate()} disabled={autoMove.isPending}>
-            <Zap className="h-4 w-4 mr-1" />
-            {autoMove.isPending ? "Running…" : "Auto-Move"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Intelligence Panels */}
-      <HotLeadsPanels onFilterStage={(stages) => setStageFilter((prev) => prev && prev.join() === stages.join() ? null : stages)} />
-
-      {/* KPI Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="h-4 w-4" /> Total Leads</div>
-          <p className="text-2xl font-semibold">{totalCount ?? stats.total}</p>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><Target className="h-4 w-4" /> Interested</div>
-          <p className="text-2xl font-semibold text-emerald-500">{(stats.byStage["interested"] || 0) + (stats.byStage["booked"] || 0)}</p>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><DollarSign className="h-4 w-4" /> Closed</div>
-          <p className="text-2xl font-semibold text-green-600">{stats.byStage["closed"] || 0}</p>
-        </Card>
-        <Card className="p-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground"><TrendingUp className="h-4 w-4" /> Close Rate</div>
-          <p className="text-2xl font-semibold">{stats.conversionRate}%</p>
-        </Card>
-      </div>
-
-      {/* Execution Command Bar */}
-      {selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20 flex-wrap">
-          <span className="text-sm font-medium">{selectedIds.size} selected</span>
-          <Button size="sm" variant="outline" onClick={async () => {
-            toast.info(`Queueing SMS for ${selectedIds.size} leads…`);
-            for (const id of selectedIds) {
-              const l = columns.flatMap((c) => c.leads).find((x: PipelineLead) => x.id === id);
-              if (l?.phone_number) {
-                await supabase.functions.invoke("sms-writer", { body: { lead_id: l.id, business_name: l.business_name, city: l.city, industry: l.industry } });
-              }
-            }
-            toast.success("SMS batch queued");
-          }}>
-            <MessageSquare className="h-3.5 w-3.5 mr-1" /> SMS All
-          </Button>
-          <Button size="sm" variant="outline" onClick={async () => {
-            toast.info(`Initiating AI calls for ${selectedIds.size} leads…`);
-            for (const id of selectedIds) {
-              await supabase.functions.invoke("brandaro-ai-caller", { body: { lead_id: id } });
-            }
-            toast.success("AI calls initiated");
-          }}>
-            <Phone className="h-3.5 w-3.5 mr-1" /> AI Call All
-          </Button>
-          <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
-            <X className="h-3.5 w-3.5 mr-1" /> Clear
-          </Button>
-          <div className="ml-auto flex gap-4 text-xs text-muted-foreground">
-            <span>{readyToContact} ready to contact</span>
-            <span>{awaitingReply} awaiting reply</span>
-            <span>{hotNow} hot now</span>
+    <div className="flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 64px)' }}>
+      {/* Fixed header section */}
+      <div className="flex-shrink-0 px-4 pt-3 pb-2 space-y-2">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Kanban className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-semibold">Sales Pipeline</h1>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={syncPipeline} disabled={syncing}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Syncing…" : "⚡ Sync"}
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => autoMove.mutate()} disabled={autoMove.isPending}>
+              <Zap className="h-3.5 w-3.5 mr-1" />
+              {autoMove.isPending ? "Running…" : "Auto-Move"}
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Quick Filter Bar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Search by name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-8 w-48 pl-7 text-xs"
-          />
-        </div>
-        <Select value={industryFilter || "all"} onValueChange={(v) => setIndustryFilter(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-40 h-8 text-xs"><SelectValue placeholder="All Industries" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Industries</SelectItem>
-            {(industries as string[]).map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={cityFilter || "all"} onValueChange={(v) => setCityFilter(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="All Cities" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Cities</SelectItem>
-            {(cities as string[]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-          <SelectTrigger className="w-32 h-8 text-xs"><SelectValue placeholder="Priority" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="any">Priority: Any</SelectItem>
-            <SelectItem value="high">High (7+)</SelectItem>
-            <SelectItem value="medium">Medium (4-6)</SelectItem>
-            <SelectItem value="low">Low (&lt;4)</SelectItem>
-          </SelectContent>
-        </Select>
-        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-          <Checkbox checked={hasPhoneOnly} onCheckedChange={(v) => setHasPhoneOnly(!!v)} className="h-3.5 w-3.5" />
-          Has Phone
-        </label>
-        <label className="flex items-center gap-1.5 text-xs cursor-pointer">
-          <Checkbox checked={noDemoOnly} onCheckedChange={(v) => setNoDemoOnly(!!v)} className="h-3.5 w-3.5" />
-          No Demo
-        </label>
-        {hasFilters && (
-          <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => {
-            setSearchQuery(""); setCityFilter(""); setIndustryFilter(""); setStageFilter(null);
-            setPriorityFilter("any"); setHasPhoneOnly(false); setNoDemoOnly(false);
-          }}>
-            <X className="h-3 w-3 mr-1" /> Clear
-          </Button>
+        {/* Collapsible Intelligence Panels */}
+        <button
+          onClick={() => setShowPanels(!showPanels)}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <ChevronDown className={`h-3 w-3 transition-transform ${showPanels ? 'rotate-180' : ''}`} />
+          {showPanels ? 'Hide' : 'Show'} Intelligence Panels
+        </button>
+        {showPanels && (
+          <HotLeadsPanels onFilterStage={(stages) => setStageFilter((prev) => prev && prev.join() === stages.join() ? null : stages)} />
         )}
-      </div>
 
-      {/* Mobile Stage Tabs */}
-      <div className="flex gap-1 overflow-x-auto md:hidden pb-1">
-        {PIPELINE_STAGES.map((s) => (
-          <Button key={s.key} size="sm" variant={mobileStage === s.key ? "default" : "outline"}
-            className="text-xs shrink-0" onClick={() => setMobileStage(s.key)}>
-            {s.label}
-          </Button>
-        ))}
-      </div>
-
-      {/* Kanban Board */}
-      {isLoading ? (
-        <div className="flex justify-center py-20">
-          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        {/* KPI Bar - compact */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <Card className="p-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Users className="h-3.5 w-3.5" /> Total</div>
+            <p className="text-xl font-semibold">{totalCount ?? stats.total}</p>
+          </Card>
+          <Card className="p-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Target className="h-3.5 w-3.5" /> Interested</div>
+            <p className="text-xl font-semibold text-emerald-500">{(stats.byStage["interested"] || 0) + (stats.byStage["booked"] || 0)}</p>
+          </Card>
+          <Card className="p-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><DollarSign className="h-3.5 w-3.5" /> Closed</div>
+            <p className="text-xl font-semibold text-green-600">{stats.byStage["closed"] || 0}</p>
+          </Card>
+          <Card className="p-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><TrendingUp className="h-3.5 w-3.5" /> Close Rate</div>
+            <p className="text-xl font-semibold">{stats.conversionRate}%</p>
+          </Card>
         </div>
-      ) : isEmpty && !hasFilters ? (
-        /* Empty Pipeline State */
-        <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-          <Rocket className="h-16 w-16 text-muted-foreground/40" />
-          <h2 className="text-xl font-semibold">Your pipeline is empty</h2>
-          <p className="text-muted-foreground max-w-md">Import leads or run the Scout Agent to find businesses without websites</p>
-          <div className="flex gap-3">
-            <Button onClick={() => navigate("/brandaro/leads")}>Import Leads</Button>
-            <Button variant="outline" onClick={() => navigate("/brandaro/scout-agent")}>Run Scout Agent</Button>
+
+        {/* Execution Command Bar */}
+        {selectedIds.size > 0 && (
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-primary/5 border border-primary/20 flex-wrap">
+            <span className="text-xs font-medium">{selectedIds.size} selected</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async () => {
+              toast.info(`Queueing SMS for ${selectedIds.size} leads…`);
+              for (const id of selectedIds) {
+                const l = columns.flatMap((c) => c.leads).find((x: PipelineLead) => x.id === id);
+                if (l?.phone_number) {
+                  await supabase.functions.invoke("sms-writer", { body: { lead_id: l.id, business_name: l.business_name, city: l.city, industry: l.industry } });
+                }
+              }
+              toast.success("SMS batch queued");
+            }}>
+              <MessageSquare className="h-3 w-3 mr-1" /> SMS All
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={async () => {
+              toast.info(`Initiating AI calls for ${selectedIds.size} leads…`);
+              for (const id of selectedIds) {
+                await supabase.functions.invoke("brandaro-ai-caller", { body: { lead_id: id } });
+              }
+              toast.success("AI calls initiated");
+            }}>
+              <Phone className="h-3 w-3 mr-1" /> AI Call All
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-3 w-3 mr-1" /> Clear
+            </Button>
+            <div className="ml-auto flex gap-4 text-[11px] text-muted-foreground">
+              <span>{readyToContact} ready</span>
+              <span>{awaitingReply} awaiting</span>
+              <span>{hotNow} hot</span>
+            </div>
           </div>
+        )}
+
+        {/* Quick Filter Bar */}
+        <div className="flex items-center gap-2 overflow-x-auto flex-nowrap pb-1">
+          <div className="relative shrink-0">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search by name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-7 w-44 pl-7 text-xs"
+            />
+          </div>
+          <Select value={industryFilter || "all"} onValueChange={(v) => setIndustryFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-36 h-7 text-xs shrink-0"><SelectValue placeholder="All Industries" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Industries</SelectItem>
+              {(industries as string[]).map((i) => <SelectItem key={i} value={i}>{i}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={cityFilter || "all"} onValueChange={(v) => setCityFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-32 h-7 text-xs shrink-0"><SelectValue placeholder="All Cities" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Cities</SelectItem>
+              {(cities as string[]).map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+            <SelectTrigger className="w-28 h-7 text-xs shrink-0"><SelectValue placeholder="Priority" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="any">Priority: Any</SelectItem>
+              <SelectItem value="high">High (7+)</SelectItem>
+              <SelectItem value="medium">Medium (4-6)</SelectItem>
+              <SelectItem value="low">Low (&lt;4)</SelectItem>
+            </SelectContent>
+          </Select>
+          <label className="flex items-center gap-1 text-xs cursor-pointer shrink-0">
+            <Checkbox checked={hasPhoneOnly} onCheckedChange={(v) => setHasPhoneOnly(!!v)} className="h-3.5 w-3.5" />
+            Phone
+          </label>
+          <label className="flex items-center gap-1 text-xs cursor-pointer shrink-0">
+            <Checkbox checked={noDemoOnly} onCheckedChange={(v) => setNoDemoOnly(!!v)} className="h-3.5 w-3.5" />
+            No Demo
+          </label>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs shrink-0" onClick={() => {
+              setSearchQuery(""); setCityFilter(""); setIndustryFilter(""); setStageFilter(null);
+              setPriorityFilter("any"); setHasPhoneOnly(false); setNoDemoOnly(false);
+            }}>
+              <X className="h-3 w-3 mr-1" /> Clear
+            </Button>
+          )}
         </div>
-      ) : (
-        <>
-          {/* Desktop Kanban */}
-          <div className="hidden md:flex gap-3 overflow-x-auto pb-4" style={{ minHeight: 500 }}>
-            {filteredColumns.map((col) => (
-              <div key={col.key} className="flex-shrink-0" style={{ minWidth: 280 }}>
-                <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 rounded-md ${COLUMN_HEADER_COLORS[col.key] || ""}`}>
-                  <span className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
-                  <span className="text-sm font-medium">{col.label}</span>
-                  <Badge variant="secondary" className="text-xs ml-auto">{col.leads.length}</Badge>
-                  <Checkbox
-                    className="h-3.5 w-3.5 ml-1"
-                    checked={col.leads.length > 0 && col.leads.every((l: PipelineLead) => selectedIds.has(l.id))}
-                    onCheckedChange={() => handleSelectAll(col.key)}
-                  />
-                </div>
-                <ScrollArea className="h-[calc(100vh-42rem)]">
-                  <div className="space-y-2 pr-2">
+
+        {/* Mobile Stage Tabs */}
+        <div className="flex gap-1 overflow-x-auto md:hidden pb-1">
+          {PIPELINE_STAGES.map((s) => (
+            <Button key={s.key} size="sm" variant={mobileStage === s.key ? "default" : "outline"}
+              className="text-xs shrink-0 h-7" onClick={() => setMobileStage(s.key)}>
+              {s.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Scrollable Kanban section — fills remaining height */}
+      <div className="flex-1 overflow-hidden px-4 pb-4 min-h-0">
+        {isLoading ? (
+          <div className="flex justify-center py-20">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : isEmpty && !hasFilters ? (
+          <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+            <Rocket className="h-16 w-16 text-muted-foreground/40" />
+            <h2 className="text-xl font-semibold">Your pipeline is empty</h2>
+            <p className="text-muted-foreground max-w-md">Import leads or run the Scout Agent to find businesses without websites</p>
+            <div className="flex gap-3">
+              <Button onClick={() => navigate("/brandaro/leads")}>Import Leads</Button>
+              <Button variant="outline" onClick={() => navigate("/brandaro/scout-agent")}>Run Scout Agent</Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Desktop Kanban */}
+            <div className="hidden md:flex gap-3 h-full overflow-x-auto overflow-y-hidden pb-2">
+              {filteredColumns.map((col) => (
+                <div key={col.key} className="flex flex-col flex-shrink-0" style={{ width: 280 }}>
+                  {/* Column header */}
+                  <div className={`flex items-center gap-2 mb-2 px-2 py-1.5 rounded-md flex-shrink-0 ${COLUMN_HEADER_COLORS[col.key] || ""}`}>
+                    <span className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
+                    <span className="text-sm font-medium">{col.label}</span>
+                    <Badge variant="secondary" className="text-xs ml-auto">{col.leads.length}</Badge>
+                    <Checkbox
+                      className="h-3.5 w-3.5 ml-1"
+                      checked={col.leads.length > 0 && col.leads.every((l: PipelineLead) => selectedIds.has(l.id))}
+                      onCheckedChange={() => handleSelectAll(col.key)}
+                    />
+                  </div>
+                  {/* Column body — scrolls vertically */}
+                  <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 space-y-2 pr-1">
                     {col.leads.length === 0 ? (
                       <div className="flex flex-col items-center py-10 text-muted-foreground">
                         <Inbox className="h-8 w-8 mb-2 opacity-40" />
@@ -505,45 +519,45 @@ export default function CRMPipelinePage() {
                       ))
                     )}
                   </div>
-                </ScrollArea>
-              </div>
-            ))}
-          </div>
-
-          {/* Mobile Single Column */}
-          <div className="md:hidden space-y-2">
-            {filteredColumns
-              .filter((col) => col.key === mobileStage)
-              .map((col) => (
-                <div key={col.key}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
-                    <span className="text-sm font-medium">{col.label}</span>
-                    <Badge variant="secondary" className="text-xs">{col.leads.length}</Badge>
-                  </div>
-                  {col.leads.length === 0 ? (
-                    <div className="flex flex-col items-center py-10 text-muted-foreground">
-                      <Inbox className="h-8 w-8 mb-2 opacity-40" />
-                      <p className="text-xs">No leads in this stage</p>
-                    </div>
-                  ) : (
-                    col.leads.map((lead: PipelineLead) => (
-                      <BrandaroLeadCard
-                        key={lead.id}
-                        lead={lead}
-                        onOpen={setSelectedLead}
-                        onMove={handleMove}
-                        onBuildDemo={setDemoLead}
-                        selected={selectedIds.has(lead.id)}
-                        onSelect={handleSelect}
-                      />
-                    ))
-                  )}
                 </div>
               ))}
-          </div>
-        </>
-      )}
+            </div>
+
+            {/* Mobile Single Column */}
+            <div className="md:hidden space-y-2 overflow-y-auto h-full">
+              {filteredColumns
+                .filter((col) => col.key === mobileStage)
+                .map((col) => (
+                  <div key={col.key}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${col.color}`} />
+                      <span className="text-sm font-medium">{col.label}</span>
+                      <Badge variant="secondary" className="text-xs">{col.leads.length}</Badge>
+                    </div>
+                    {col.leads.length === 0 ? (
+                      <div className="flex flex-col items-center py-10 text-muted-foreground">
+                        <Inbox className="h-8 w-8 mb-2 opacity-40" />
+                        <p className="text-xs">No leads in this stage</p>
+                      </div>
+                    ) : (
+                      col.leads.map((lead: PipelineLead) => (
+                        <BrandaroLeadCard
+                          key={lead.id}
+                          lead={lead}
+                          onOpen={setSelectedLead}
+                          onMove={handleMove}
+                          onBuildDemo={setDemoLead}
+                          selected={selectedIds.has(lead.id)}
+                          onSelect={handleSelect}
+                        />
+                      ))
+                    )}
+                  </div>
+                ))}
+            </div>
+          </>
+        )}
+      </div>
 
       <LeadProfileDialog
         lead={selectedLead}
