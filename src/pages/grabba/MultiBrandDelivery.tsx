@@ -801,19 +801,20 @@ export default function MultiBrandDelivery() {
             <CardContent className="px-4 pb-4">
               <div className="space-y-2">
                 {(() => {
-                  const typeCounts = allTriggers.reduce((acc: Record<string, number>, t: any) => {
+                  const typeCounts: Record<string, number> = allTriggers.reduce((acc: Record<string, number>, t: any) => {
                     const type = t.trigger_type || 'other';
                     acc[type] = (acc[type] || 0) + 1;
                     return acc;
-                  }, {});
-                  const maxCount = Math.max(...Object.values(typeCounts), 1);
-                  return Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
+                  }, {} as Record<string, number>);
+                  const vals = Object.values(typeCounts) as number[];
+                  const maxCount = vals.length > 0 ? Math.max(...vals) : 1;
+                  return Object.entries(typeCounts).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([type, count]) => (
                     <div key={type} className="flex items-center gap-3 text-xs">
                       <span className="w-24 text-muted-foreground truncate">{type.replace(/_/g, ' ')}</span>
                       <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary/60 rounded-full" style={{ width: `${(count / maxCount) * 100}%` }} />
+                        <div className="h-full bg-primary/60 rounded-full" style={{ width: `${((count as number) / maxCount) * 100}%` }} />
                       </div>
-                      <span className="w-8 text-right font-medium">{count}</span>
+                      <span className="w-8 text-right font-medium">{count as number}</span>
                     </div>
                   ));
                 })()}
