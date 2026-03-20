@@ -128,6 +128,7 @@ const RetentionDashboardPage = lazy(() => import('@/pages/brandaro/RetentionDash
 const VACommandCenterPage = lazy(() => import('@/pages/brandaro/VACommandCenterPage'));
 const LeadDatabasePage = lazy(() => import('@/pages/brandaro/LeadDatabasePage'));
 const CRMPipelinePage = lazy(() => import('@/pages/brandaro/CRMPipelinePage'));
+const InboxPage = lazy(() => import('@/pages/brandaro/InboxPage'));
 const CallingOpsPage = lazy(() => import('@/pages/brandaro/CallingOpsPage'));
 const RevenueAnalyticsPage = lazy(() => import('@/pages/brandaro/RevenueAnalyticsPage'));
 const ClientReportingPage = lazy(() => import('@/pages/brandaro/ClientReportingPage'));
