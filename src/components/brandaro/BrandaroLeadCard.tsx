@@ -206,7 +206,7 @@ export function BrandaroLeadCard({
                 <span className="w-6 text-right">{lead.engagement_score || 0}</span>
               </div>
               {/* Calls + SMS + indicators */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{lead.call_attempts || 0}</span>
                 <span className="flex items-center gap-1"><MessageSquare className="h-3 w-3" />{smsCount}</span>
                 {demoUrl && <span className="text-green-600 flex items-center gap-1"><Globe className="h-3 w-3" />Demo</span>}
@@ -217,6 +217,11 @@ export function BrandaroLeadCard({
                 )}
                 {rating != null && rating > 0 && (
                   <span className="flex items-center gap-0.5 text-amber-500"><Star className="h-3 w-3" />{rating}★</span>
+                )}
+                {hasReply && (
+                  <span className="flex items-center gap-1 text-green-500 font-medium">
+                    <MessageSquare className="h-3 w-3 fill-green-500" />Replied
+                  </span>
                 )}
               </div>
             </div>
