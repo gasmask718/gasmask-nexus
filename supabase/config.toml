@@ -384,3 +384,6 @@ verify_jwt = false
 
 [functions.brandaro-fix-imports]
 verify_jwt = false
+
+[functions.gasmask-route-agent]
+verify_jwt = false
