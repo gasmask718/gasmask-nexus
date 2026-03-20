@@ -247,15 +247,38 @@ export default function CRMPipelinePage() {
     queryClient.invalidateQueries({ queryKey: ["brandaro-hot-leads"] });
   }, [queryClient]);
 
-  // Realtime
+  // Realtime - pipeline changes + inbound replies
   useEffect(() => {
     const channel = supabase.channel("pipeline-leads-changes")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "brandaro_qualified_leads" }, () => {
         queryClient.invalidateQueries({ queryKey: ["brandaro-pipeline"] });
         queryClient.invalidateQueries({ queryKey: ["brandaro-total-count"] });
       })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "brandaro_qualified_leads" }, () => {
+        queryClient.invalidateQueries({ queryKey: ["brandaro-pipeline"] });
+      })
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    const replyChannel = supabase.channel("new-replies-global")
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "brandaro_conversations",
+        filter: "direction=eq.inbound",
+      }, (payload: any) => {
+        toast.success("New reply received!", {
+          description: (payload.new?.message_body || payload.new?.message_text || "").substring(0, 50),
+          duration: 10000,
+        });
+        queryClient.invalidateQueries({ queryKey: ["brandaro-pipeline"] });
+        queryClient.invalidateQueries({ queryKey: ["brandaro-inbox"] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(replyChannel);
+    };
   }, [queryClient]);
 
   // Total count
