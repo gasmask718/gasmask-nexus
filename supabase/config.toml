@@ -378,3 +378,6 @@ verify_jwt = false
 
 [functions.brandaro-ai-caller]
 verify_jwt = false
+
+[functions.brandaro-scout-agent]
+verify_jwt = false

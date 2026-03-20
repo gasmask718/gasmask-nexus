@@ -6,7 +6,7 @@ import {
   Flame, Target, DollarSign, Rocket, Zap, Search,
   PhoneCall, ClipboardList, Bell, Activity, Shield,
   Presentation, Factory, Lightbulb, Crosshair, Tag,
-  Map, HeartPulse, Star, ChevronLeft, ChevronRight,
+  Map, HeartPulse, Star, ChevronLeft, ChevronRight, Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ const hubNav = [
     { title: "CRM Pipeline", path: "/brandaro/crm-pipeline", icon: Target },
     { title: "Leads", path: "/brandaro/leads", icon: ListTodo },
     { title: "Discovery", path: "/brandaro/lead-discovery", icon: Search },
+    { title: "Scout Agent", path: "/brandaro/scout-agent", icon: Bot },
     { title: "Qualification", path: "/brandaro/lead-qualification", icon: Shield },
     { title: "Follow-Ups", path: "/brandaro/follow-ups", icon: ListTodo },
     { title: "Proposals", path: "/brandaro/proposals", icon: FileText },

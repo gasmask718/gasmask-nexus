@@ -151,6 +151,7 @@ const VAPerformancePage = lazy(() => import('@/pages/brandaro/VAPerformancePage'
 const LeadDiscoveryPage = lazy(() => import('@/pages/brandaro/LeadDiscoveryPage'));
 const LeadQualificationPage = lazy(() => import('@/pages/brandaro/LeadQualificationPage'));
 const DemoEnginePage = lazy(() => import('@/pages/brandaro/DemoEnginePage'));
+const ScoutAgentPage = lazy(() => import('@/pages/brandaro/ScoutAgentPage'));
 const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
 const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
@@ -2721,6 +2722,7 @@ export default function AppRoutes() {
           <Route path="leads" element={<LeadDatabasePage />} />
           <Route path="crm-pipeline" element={<CRMPipelinePage />} />
           <Route path="lead-discovery" element={<LeadDiscoveryPage />} />
+          <Route path="scout-agent" element={<ScoutAgentPage />} />
           <Route path="lead-qualification" element={<LeadQualificationPage />} />
           <Route path="follow-ups" element={<FollowUpEnginePage />} />
           <Route path="proposals" element={<ProposalBuilderPage />} />
