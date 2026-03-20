@@ -16596,49 +16596,79 @@ export type Database = {
       }
       brandaro_scout_config: {
         Row: {
+          budget_alert_threshold: number | null
+          budget_paused_until: string | null
+          cost_per_search: number | null
           created_at: string | null
           current_focus_industry: string | null
           current_focus_state: string | null
+          daily_spend_limit: number | null
+          daily_spend_today: number | null
           id: string
           is_active: boolean | null
           last_run_at: string | null
           min_hours_between_runs: number | null
           mode: string | null
+          monthly_reset_date: string | null
+          monthly_spend_limit: number | null
+          monthly_spend_this_month: number | null
           searches_per_run: number | null
+          spend_reset_date: string | null
           target_industries: Json | null
           target_states: Json | null
           total_leads_imported: number | null
           total_searches: number | null
+          total_spent_all_time: number | null
         }
         Insert: {
+          budget_alert_threshold?: number | null
+          budget_paused_until?: string | null
+          cost_per_search?: number | null
           created_at?: string | null
           current_focus_industry?: string | null
           current_focus_state?: string | null
+          daily_spend_limit?: number | null
+          daily_spend_today?: number | null
           id?: string
           is_active?: boolean | null
           last_run_at?: string | null
           min_hours_between_runs?: number | null
           mode?: string | null
+          monthly_reset_date?: string | null
+          monthly_spend_limit?: number | null
+          monthly_spend_this_month?: number | null
           searches_per_run?: number | null
+          spend_reset_date?: string | null
           target_industries?: Json | null
           target_states?: Json | null
           total_leads_imported?: number | null
           total_searches?: number | null
+          total_spent_all_time?: number | null
         }
         Update: {
+          budget_alert_threshold?: number | null
+          budget_paused_until?: string | null
+          cost_per_search?: number | null
           created_at?: string | null
           current_focus_industry?: string | null
           current_focus_state?: string | null
+          daily_spend_limit?: number | null
+          daily_spend_today?: number | null
           id?: string
           is_active?: boolean | null
           last_run_at?: string | null
           min_hours_between_runs?: number | null
           mode?: string | null
+          monthly_reset_date?: string | null
+          monthly_spend_limit?: number | null
+          monthly_spend_this_month?: number | null
           searches_per_run?: number | null
+          spend_reset_date?: string | null
           target_industries?: Json | null
           target_states?: Json | null
           total_leads_imported?: number | null
           total_searches?: number | null
+          total_spent_all_time?: number | null
         }
         Relationships: []
       }
@@ -16689,36 +16719,80 @@ export type Database = {
           completed_at: string | null
           decisions: Json | null
           error_message: string | null
+          estimated_cost: number | null
           id: string
           searches_attempted: number | null
           searches_completed: number | null
           started_at: string | null
           status: string | null
+          stop_reason: string | null
           total_imported: number | null
         }
         Insert: {
           completed_at?: string | null
           decisions?: Json | null
           error_message?: string | null
+          estimated_cost?: number | null
           id?: string
           searches_attempted?: number | null
           searches_completed?: number | null
           started_at?: string | null
           status?: string | null
+          stop_reason?: string | null
           total_imported?: number | null
         }
         Update: {
           completed_at?: string | null
           decisions?: Json | null
           error_message?: string | null
+          estimated_cost?: number | null
           id?: string
           searches_attempted?: number | null
           searches_completed?: number | null
           started_at?: string | null
           status?: string | null
+          stop_reason?: string | null
           total_imported?: number | null
         }
         Relationships: []
+      }
+      brandaro_scout_spend_log: {
+        Row: {
+          action: string
+          cost: number
+          created_at: string | null
+          cumulative_month: number | null
+          cumulative_today: number | null
+          id: string
+          run_id: string | null
+        }
+        Insert: {
+          action: string
+          cost: number
+          created_at?: string | null
+          cumulative_month?: number | null
+          cumulative_today?: number | null
+          id?: string
+          run_id?: string | null
+        }
+        Update: {
+          action?: string
+          cost?: number
+          created_at?: string | null
+          cumulative_month?: number | null
+          cumulative_today?: number | null
+          id?: string
+          run_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_scout_spend_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_scout_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_script_performance: {
         Row: {

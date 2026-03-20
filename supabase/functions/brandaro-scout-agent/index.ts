@@ -7,119 +7,168 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Cost estimates per operation
+const COSTS = {
+  ai_decision_per_call: 0.008,
+  ai_scoring_per_lead: 0.001,
+  google_places_per_search: 0.004,
+  get total_per_search() {
+    return this.google_places_per_search + this.ai_scoring_per_lead * 8;
+  },
+};
+
 serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-  );
-
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
   try {
-    // 1. Check if agent is active
-    const { data: config } = await supabase
-      .from("brandaro_scout_config")
-      .select("*")
-      .limit(1)
-      .single();
+    // 1. Load config
+    const { data: config } = await supabase.from("brandaro_scout_config").select("*").limit(1).single();
+    if (!config) throw new Error("No scout config found");
 
-    if (!config?.is_active) {
+    // 2. Reset daily/monthly spend counters if needed
+    const today = new Date().toISOString().split("T")[0];
+    const thisMonth = new Date().toISOString().substring(0, 7);
+
+    let dailySpend = config.daily_spend_today || 0;
+    let monthlySpend = config.monthly_spend_this_month || 0;
+
+    if (config.spend_reset_date !== today) {
+      dailySpend = 0;
+      await supabase.from("brandaro_scout_config").update({ daily_spend_today: 0, spend_reset_date: today }).eq("id", config.id);
+    }
+
+    const configMonth = config.monthly_reset_date?.substring(0, 7);
+    if (configMonth !== thisMonth) {
+      monthlySpend = 0;
+      await supabase.from("brandaro_scout_config").update({ monthly_spend_this_month: 0, monthly_reset_date: today }).eq("id", config.id);
+    }
+
+    // 3. BUDGET GATE
+    const dailyLimit = config.daily_spend_limit || 2.0;
+    const monthlyLimit = config.monthly_spend_limit || 20.0;
+
+    if (dailySpend >= dailyLimit) {
       return new Response(
-        JSON.stringify({ status: "inactive", message: "Scout agent is paused" }),
+        JSON.stringify({ status: "budget_limit", message: "Daily spend limit reached", daily_spent: dailySpend, daily_limit: dailyLimit }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check minimum time between runs (skip check if manual trigger)
-    const body = await req.json().catch(() => ({}));
+    if (monthlySpend >= monthlyLimit) {
+      return new Response(
+        JSON.stringify({ status: "monthly_limit", message: "Monthly spend limit reached", monthly_spent: monthlySpend, monthly_limit: monthlyLimit }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 4. Check active & timing
+    if (!config.is_active) {
+      return new Response(JSON.stringify({ status: "inactive", message: "Scout agent is paused" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.clone().json().catch(() => ({}));
     const isManual = body?.manual === true;
 
     if (!isManual && config.last_run_at) {
-      const hoursSinceLastRun =
-        (Date.now() - new Date(config.last_run_at).getTime()) / (1000 * 60 * 60);
-      if (hoursSinceLastRun < config.min_hours_between_runs) {
+      const hoursSince = (Date.now() - new Date(config.last_run_at).getTime()) / (1000 * 60 * 60);
+      if (hoursSince < config.min_hours_between_runs) {
         return new Response(
-          JSON.stringify({
-            status: "too_soon",
-            next_run_in: Math.round(config.min_hours_between_runs - hoursSinceLastRun) + " hours",
-          }),
+          JSON.stringify({ status: "too_soon", next_run_in_hours: Math.round(config.min_hours_between_runs - hoursSince) }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
     }
 
-    // 2. Create run log
-    const { data: run } = await supabase
-      .from("brandaro_scout_runs")
-      .insert({ status: "running" })
-      .select()
-      .single();
+    // 5. Calculate affordable searches
+    const remainingBudget = Math.min(dailyLimit - dailySpend, monthlyLimit - monthlySpend);
+    const aiDecisionCost = COSTS.ai_decision_per_call;
+    const budgetAfterDecision = remainingBudget - aiDecisionCost;
+    const maxAffordable = Math.floor(budgetAfterDecision / COSTS.total_per_search);
+    const searchesThisRun = Math.min(config.searches_per_run || 10, maxAffordable, 20);
 
+    if (searchesThisRun <= 0) {
+      return new Response(
+        JSON.stringify({ status: "insufficient_budget", remaining_budget: remainingBudget }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[SCOUT] Budget OK. Running ${searchesThisRun} searches.`);
+
+    // 6. Create run log
+    const { data: run } = await supabase.from("brandaro_scout_runs").insert({ status: "running" }).select().single();
     const runId = run!.id;
+    let runCost = aiDecisionCost;
 
-    // 3. Get memory — what has been searched
+    await supabase.from("brandaro_scout_spend_log").insert({
+      run_id: runId,
+      action: "ai_decision",
+      cost: aiDecisionCost,
+      cumulative_today: dailySpend + aiDecisionCost,
+      cumulative_month: monthlySpend + aiDecisionCost,
+    });
+
+    // 7. Get memory
     const { data: memory } = await supabase
       .from("brandaro_scout_memory")
-      .select("industry, city, state, leads_imported, success_rate, searched_at")
+      .select("industry, city, state, leads_imported, success_rate")
       .order("searched_at", { ascending: false })
       .limit(500);
 
-    // 4. Get current lead counts by industry
-    const { data: leadStats } = await supabase
-      .from("brandaro_qualified_leads")
-      .select("industry");
-
+    // 8. Get lead stats
+    const { data: leadStats } = await supabase.from("brandaro_qualified_leads").select("industry");
     const industryCounts: Record<string, number> = {};
     (leadStats || []).forEach((l: any) => {
       const ind = (l.industry || "unknown").toLowerCase();
       industryCounts[ind] = (industryCounts[ind] || 0) + 1;
     });
 
-    // 5. Ask AI what to search next
-    const systemPrompt = `You are an autonomous lead discovery agent for Brandaro Digital, a company that sells websites to small businesses with no online presence.
+    // 9. Ask AI what to search
+    const systemPrompt = `You are an autonomous lead discovery agent for Brandaro Digital. We sell websites to small businesses with no online presence.
 
-Your job is to decide which industries and cities to search next to find the most no-website small businesses.
+Pick the BEST city+industry combinations to search Google Places for businesses without websites.
 
-STRATEGY:
-- Focus on service businesses: cleaning, moving, painting, landscaping, handyman, auto detailing, carpet cleaning, junk removal, pressure washing, HVAC, roofing, plumbing, electrical, flooring, pool service, window cleaning, tree service, appliance repair, locksmith
-- These businesses are least likely to have websites
-- Prioritize cities in the target states
-- Avoid chains and franchises
-- Mix large cities with smaller suburbs
-- If a search returned 0 leads, try a different industry in that city
-- If a search returned 5+ leads, try more industries in that same city
+TARGET: Service businesses most likely to have NO website:
+- house cleaning, carpet cleaning, window cleaning, pressure washing
+- moving company, junk removal, hauling service
+- painting contractor, handyman, landscaping, tree service
+- auto detailing, mobile mechanic
+- locksmith, appliance repair
+- roofing, flooring, HVAC (smaller companies only)
 
-Return ONLY a valid JSON array of exactly ${config.searches_per_run} search decisions. No explanation. No preamble. Just the JSON array.
+AVOID: chains, franchises, large established companies
 
-Format:
-[{"industry":"cleaning service","city":"Brooklyn","state":"NY","reason":"one sentence why"}]`;
+PRIORITIZE:
+- Industries where we have fewer leads
+- New cities not yet searched
+- Smaller suburbs often have more no-website businesses
 
-    const userPrompt = `Current date: ${new Date().toISOString()}
+Return ONLY a valid JSON array. No text before or after. Exactly ${searchesThisRun} items.
+[{"industry":"...","city":"...","state":"...","reason":"..."}]`;
 
-ALREADY SEARCHED (do not repeat these):
-${(memory || []).map((m: any) => `${m.industry} in ${m.city}, ${m.state} (${m.leads_imported} leads imported)`).join("\n") || "Nothing searched yet"}
+    const userPrompt = `ALREADY SEARCHED (skip these):
+${(memory || []).slice(0, 200).map((m: any) => `${m.industry}|${m.city}|${m.state}(${m.leads_imported})`).join("\n") || "None yet"}
 
-CURRENT LEAD INVENTORY by industry:
-${Object.entries(industryCounts).sort((a, b) => b[1] - a[1]).map(([ind, count]) => `${ind}: ${count} leads`).join("\n") || "No leads yet"}
+LEAD COUNTS BY INDUSTRY:
+${Object.entries(industryCounts).sort((a, b) => b[1] - a[1]).slice(0, 15).map(([i, c]) => `${i}: ${c}`).join("\n") || "No leads yet"}
 
 TARGET INDUSTRIES: ${((config.target_industries as string[]) || []).join(", ")}
 TARGET STATES: ${((config.target_states as string[]) || []).join(", ")}
-AGENT MODE: ${config.mode}
+BUDGET LEFT TODAY: $${(dailyLimit - dailySpend).toFixed(2)}
 
-Based on this data, decide the next ${config.searches_per_run} searches to run. Prioritize industries with few leads. Never repeat a city+industry combination from the searched list.`;
+Give me ${searchesThisRun} searches now.`;
 
     let searches: Array<{ industry: string; city: string; state: string; reason: string }> = [];
 
     try {
       const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
           messages: [
@@ -129,43 +178,39 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
         }),
       });
 
-      if (!aiRes.ok) throw new Error(`AI gateway error: ${aiRes.status}`);
-
+      if (!aiRes.ok) throw new Error(`AI gateway: ${aiRes.status}`);
       const aiData = await aiRes.json();
       const raw = aiData.choices?.[0]?.message?.content || "[]";
-      // Extract JSON from possible markdown fences
       const jsonMatch = raw.match(/\[[\s\S]*\]/);
       searches = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
     } catch (aiErr: any) {
-      console.error("[SCOUT] AI decision failed, using fallback:", aiErr.message);
-      // Fallback searches
-      const fallbackCities = [
+      console.error("[SCOUT] AI failed, using fallback:", aiErr.message);
+      const fb = [
         { city: "Brooklyn", state: "NY" },
-        { city: "Bronx", state: "NY" },
         { city: "Newark", state: "NJ" },
         { city: "Miami", state: "FL" },
         { city: "Houston", state: "TX" },
+        { city: "Atlanta", state: "GA" },
       ];
-      const fallbackIndustries = ["cleaning service", "moving company", "painting contractor", "landscaping", "plumber"];
-      searches = fallbackCities.slice(0, config.searches_per_run).map((c, i) => ({
-        ...c,
-        industry: fallbackIndustries[i % fallbackIndustries.length],
-        reason: "fallback",
-      }));
+      const fbInd = ["cleaning service", "moving company", "painting contractor", "landscaping", "plumber"];
+      searches = fb.slice(0, searchesThisRun).map((c, i) => ({ ...c, industry: fbInd[i % fbInd.length], reason: "fallback" }));
     }
 
-    console.log(`[SCOUT] Decided ${searches.length} searches`);
-
-    // 6. Execute each search
+    // 10. Execute searches with per-search budget check
     let totalImported = 0;
     let searchesCompleted = 0;
     const decisions: any[] = [];
+    let currentDailySpend = dailySpend + aiDecisionCost;
+    let currentMonthlySpend = monthlySpend + aiDecisionCost;
 
     for (const search of searches) {
-      try {
-        console.log(`[SCOUT] Searching: ${search.industry} in ${search.city}, ${search.state}`);
+      if (currentDailySpend >= dailyLimit || currentMonthlySpend >= monthlyLimit) {
+        decisions.push({ ...search, status: "skipped_budget" });
+        continue;
+      }
 
-        // Check memory to avoid duplicates
+      try {
+        // Duplicate check
         const { data: existing } = await supabase
           .from("brandaro_scout_memory")
           .select("id")
@@ -175,12 +220,12 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
           .limit(1);
 
         if (existing && existing.length > 0) {
-          console.log(`[SCOUT] Skipping ${search.industry} in ${search.city} — already searched`);
-          decisions.push({ ...search, status: "skipped", reason: "already searched" });
+          decisions.push({ ...search, status: "skipped_duplicate" });
           continue;
         }
 
-        // Create discovery job
+        console.log(`[SCOUT] Running: ${search.industry} in ${search.city}, ${search.state}`);
+
         const { data: job, error: jobErr } = await supabase
           .from("brandaro_discovery_jobs")
           .insert({
@@ -196,32 +241,19 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
 
         if (jobErr) throw jobErr;
 
-        // Run discovery
         const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
-          body: {
-            job_id: job!.id,
-            city: search.city,
-            state: search.state,
-            industry: search.industry,
-            radius_meters: 40000,
-          },
+          body: { job_id: job!.id, city: search.city, state: search.state, industry: search.industry, radius_meters: 40000 },
         });
 
         if (fnErr) throw fnErr;
 
-        // Poll for completion (max 3 min)
+        // Poll for completion
         let imported = 0;
         let found = 0;
         let jobDone = false;
-
-        for (let attempt = 0; attempt < 60; attempt++) {
+        for (let a = 0; a < 60; a++) {
           await new Promise((r) => setTimeout(r, 3000));
-          const { data: jd } = await supabase
-            .from("brandaro_discovery_jobs")
-            .select("*")
-            .eq("id", job!.id)
-            .single();
-
+          const { data: jd } = await supabase.from("brandaro_discovery_jobs").select("*").eq("id", job!.id).single();
           if (jd?.status === "completed" || jd?.status === "failed") {
             imported = jd?.imported_count || 0;
             found = jd?.total_found || 0;
@@ -230,12 +262,19 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
           }
         }
 
-        if (!jobDone) {
-          imported = 0;
-          found = 0;
-        }
+        const searchCost = COSTS.google_places_per_search + imported * COSTS.ai_scoring_per_lead;
+        currentDailySpend += searchCost;
+        currentMonthlySpend += searchCost;
+        runCost += searchCost;
 
-        // Save to memory
+        await supabase.from("brandaro_scout_spend_log").insert({
+          run_id: runId,
+          action: `search_${search.city}_${search.industry}`.substring(0, 100),
+          cost: searchCost,
+          cumulative_today: currentDailySpend,
+          cumulative_month: currentMonthlySpend,
+        });
+
         await supabase.from("brandaro_scout_memory").insert({
           industry: search.industry.toLowerCase(),
           city: search.city,
@@ -243,27 +282,24 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
           leads_found: found,
           leads_imported: imported,
           success_rate: found > 0 ? Math.round((imported / found) * 100) : 0,
-          worth_revisiting: imported >= 5,
-          revisit_after:
-            imported >= 5 ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
+          worth_revisiting: imported >= 3,
+          revisit_after: imported >= 3 ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null,
           notes: search.reason,
         });
 
         totalImported += imported;
         searchesCompleted++;
-        decisions.push({ ...search, imported, found, status: "completed" });
+        decisions.push({ ...search, imported, found, cost: searchCost, status: "completed" });
 
-        console.log(`[SCOUT] ${search.city} ${search.industry}: ${imported} imported`);
-
-        // Delay between searches
         await new Promise((r) => setTimeout(r, 1500));
-      } catch (searchErr: any) {
-        console.error(`[SCOUT] Search failed:`, searchErr.message);
-        decisions.push({ ...search, status: "failed", error: searchErr.message });
+      } catch (err: any) {
+        console.error(`[SCOUT] Search failed:`, err.message);
+        decisions.push({ ...search, status: "failed", error: err.message });
       }
     }
 
-    // 7. Update run log
+    // 11. Final updates
+    const budgetStopped = decisions.some((d) => d.status === "skipped_budget");
     await supabase
       .from("brandaro_scout_runs")
       .update({
@@ -271,22 +307,24 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
         searches_attempted: searches.length,
         searches_completed: searchesCompleted,
         total_imported: totalImported,
+        estimated_cost: runCost,
         decisions,
-        status: "completed",
+        status: budgetStopped ? "stopped_budget" : "completed",
+        stop_reason: budgetStopped ? "Budget limit reached mid-run" : null,
       })
       .eq("id", runId);
 
-    // 8. Update config stats
     await supabase
       .from("brandaro_scout_config")
       .update({
         last_run_at: new Date().toISOString(),
         total_searches: (config.total_searches || 0) + searchesCompleted,
         total_leads_imported: (config.total_leads_imported || 0) + totalImported,
+        daily_spend_today: currentDailySpend,
+        monthly_spend_this_month: currentMonthlySpend,
+        total_spent_all_time: (config.total_spent_all_time || 0) + runCost,
       })
       .eq("id", config.id);
-
-    console.log(`[SCOUT] Run complete. ${totalImported} leads imported across ${searchesCompleted} searches`);
 
     return new Response(
       JSON.stringify({
@@ -294,12 +332,16 @@ Based on this data, decide the next ${config.searches_per_run} searches to run. 
         run_id: runId,
         searches_completed: searchesCompleted,
         total_imported: totalImported,
-        decisions,
+        run_cost: `$${runCost.toFixed(4)}`,
+        daily_spent: `$${currentDailySpend.toFixed(4)}`,
+        daily_limit: `$${dailyLimit}`,
+        monthly_spent: `$${currentMonthlySpend.toFixed(4)}`,
+        monthly_limit: `$${monthlyLimit}`,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e: any) {
-    console.error("[SCOUT] Fatal error:", e);
+    console.error("[SCOUT] Fatal:", e.message);
     return new Response(JSON.stringify({ error: e.message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
