@@ -222,6 +222,8 @@ const DYNASTY_NAVIGATION = {
         { path: '/grabba/deliveries', label: 'Deliveries Dashboard', icon: Truck },
         { path: '/grabba/assignments', label: 'Order Assignments', icon: ClipboardList },
         { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', icon: Layers },
+        { path: '/gasmask/route-engine', label: 'Route Engine', icon: Route },
+        { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/routes', label: 'Route Manager', icon: Route },
         { path: '/routes', label: 'All Routes', icon: Map },
         { path: '/route-optimizer', label: 'Route Optimizer', icon: Zap },
@@ -287,8 +289,6 @@ const DYNASTY_NAVIGATION = {
       name: '🤖 Floor 9 — AI Operations',
       items: [
         { path: '/gasmask/agent-center', label: 'AI Agent Center', icon: Brain },
-        { path: '/gasmask/route-engine', label: 'Route Engine', icon: Truck },
-        { path: '/gasmask/driver-route', label: 'Driver View', icon: MapPin },
         { path: '/grabba/floor9', label: 'AI Operations Hub', icon: Brain },
         { path: '/grabba/floor9/playbooks', label: 'AI Playbooks', icon: FileText },
         { path: '/grabba/floor9/tasks', label: 'AI Tasks', icon: ClipboardList },
@@ -374,6 +374,8 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/delivery/drivers', label: '🚗 Drivers OS', icon: Car },
       { path: '/delivery/bikers', label: '🚴 Bikers OS', icon: Bike },
+      { path: '/gasmask/route-engine', label: '🗺 Route Engine', icon: Route },
+      { path: '/gasmask/driver-route', label: '🚗 Driver View', icon: MapPin },
       { path: '/delivery/payouts', label: 'Payouts', icon: DollarSign },
       { path: '/delivery/my-route', label: 'My Route', icon: Route },
       { path: '/driver-debt-collection', label: 'Driver Debt Collection', icon: AlertTriangle },

@@ -34,7 +34,9 @@ import {
   CheckCircle2,
   XCircle,
   Info,
-  History
+  History,
+  Route,
+  Navigation
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -555,8 +557,47 @@ export default function MultiBrandDeliveryPage() {
       : '0',
   };
 
+  // Pending visit triggers for Route Engine integration
+  const { data: triggerCount } = useQuery({
+    queryKey: ['pending-delivery-triggers'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('gasmask_visit_triggers' as any)
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending', 'scheduled']);
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: criticalTriggers } = useQuery({
+    queryKey: ['critical-triggers-preview'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('gasmask_visit_triggers' as any)
+        .select('id, store_name, trigger_type, urgency, store_city, store_state')
+        .eq('status', 'pending')
+        .eq('urgency', 'critical')
+        .order('priority_score', { ascending: false })
+        .limit(3);
+      return data || [];
+    },
+  });
+
   return (
     <div className="p-6 space-y-6">
+      {/* Critical Visits Alert Banner */}
+      {(criticalTriggers as any[])?.length > 0 && (
+        <div className="flex items-center justify-between rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2.5">
+          <div className="flex items-center gap-2 text-sm">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <span className="font-medium text-destructive">{(criticalTriggers as any[]).length} critical visits needed:</span>
+            <span className="text-muted-foreground">{(criticalTriggers as any[]).map((t: any) => t.store_name).join(', ')}</span>
+          </div>
+          <Button size="sm" variant="destructive" onClick={() => navigate('/gasmask/route-engine')}>View All</Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -572,6 +613,14 @@ export default function MultiBrandDeliveryPage() {
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {/* Route Engine Quick Access */}
+          <Button variant="outline" onClick={() => navigate('/gasmask/route-engine')} className="gap-2">
+            <Route className="h-4 w-4" />
+            Route Engine
+            {(triggerCount as number) > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">{triggerCount as number}</Badge>
+            )}
+          </Button>
           {/* Acknowledgment Status + Action */}
           <div className="flex items-center gap-2">
             <HistoryTimelineIndicator 
