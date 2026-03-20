@@ -374,6 +374,8 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/delivery/drivers', label: '🚗 Drivers OS', icon: Car },
       { path: '/delivery/bikers', label: '🚴 Bikers OS', icon: Bike },
+      { path: '/gasmask/route-engine', label: '🗺 Route Engine', icon: Route },
+      { path: '/gasmask/driver-route', label: '🚗 Driver View', icon: MapPin },
       { path: '/delivery/payouts', label: 'Payouts', icon: DollarSign },
       { path: '/delivery/my-route', label: 'My Route', icon: Route },
       { path: '/driver-debt-collection', label: 'Driver Debt Collection', icon: AlertTriangle },

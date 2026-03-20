@@ -632,6 +632,8 @@ export default function AppSidebar() {
               {renderSection('delivery-os', 'Delivery & Routing OS', '🚚', [
                 { path: '/grabba/deliveries', label: 'Deliveries', emoji: '📬' },
                 { path: '/routes', label: 'Route Plans', emoji: '🗺️' },
+                { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🗺' },
+                { path: '/gasmask/driver-route', label: 'Driver View', emoji: '🚗' },
                 { path: '/route-optimizer', label: 'Route Optimizer', emoji: '⚡' },
                 { path: '/operations/live-map', label: 'Live Map', emoji: '📍' },
                 { path: '/grabba/multi-brand-delivery', label: 'Multi-Brand Delivery', emoji: '🚛' },
