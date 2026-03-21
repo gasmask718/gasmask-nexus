@@ -29,7 +29,19 @@ export default function AppSidebar() {
   
   // Determine which floor section contains the active route
   const getActiveSection = (pathname: string): string | null => {
-    if (pathname.startsWith('/grabba/floor9') || pathname.startsWith('/gasmask/agent-center')) return 'floor-9';
+    if (
+      pathname.startsWith('/grabba/floor9') ||
+      pathname.startsWith('/gasmask/agent-center') ||
+      pathname.startsWith('/gasmask/ai-operations') ||
+      pathname.startsWith('/gasmask/ai-playbooks') ||
+      pathname.startsWith('/gasmask/ai-tasks') ||
+      pathname.startsWith('/gasmask/ai-predictions') ||
+      pathname.startsWith('/gasmask/ai-alerts') ||
+      pathname.startsWith('/gasmask/instinct-log') ||
+      pathname.startsWith('/gasmask/action-queue') ||
+      pathname.startsWith('/gasmask/results') ||
+      pathname.startsWith('/gasmask/note-cleaner')
+    ) return 'floor-9';
     if (pathname.startsWith('/grabba/command-penthouse') || pathname === '/') return 'penthouse';
     if (pathname.startsWith('/communication')) return 'floor-2';
     if (pathname.startsWith('/stores') || pathname.startsWith('/grabba/crm') || pathname.startsWith('/brand-crm') || pathname.startsWith('/companies') || pathname.startsWith('/crm') || pathname.startsWith('/sell-through') || pathname.startsWith('/sales') || pathname.startsWith('/store-performance')) return 'floor-1';
@@ -48,7 +60,7 @@ export default function AppSidebar() {
 
   // Only open penthouse + the section containing the active route
   const [openSections, setOpenSections] = useState<string[]>(() => {
-    const defaults = ['penthouse'];
+    const defaults = ['penthouse', 'floor-9'];
     if (activeSection && !defaults.includes(activeSection)) defaults.push(activeSection);
     return defaults;
   });
@@ -106,7 +118,7 @@ export default function AppSidebar() {
     id: string, 
     title: string, 
     emoji: string, 
-    items: { path: string; label: string; emoji?: string }[],
+    items: { path: string; label: string; emoji?: string; testId?: string }[],
     titleClass?: string
   ) => {
     const isOpen = openSections.includes(id);
@@ -133,6 +145,7 @@ export default function AppSidebar() {
               <Link
                 key={item.path}
                 to={item.path}
+                data-testid={item.testId}
                 className={cn(
                   "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
                   isPathActive(item.path)
@@ -411,7 +424,7 @@ export default function AppSidebar() {
               { path: '/grabba/floor9/instinct-log', label: 'Instinct Log', emoji: '📜' },
               { path: '/grabba/floor9/action-queue', label: 'Action Queue', emoji: '📥' },
               { path: '/grabba/floor9/results', label: 'Results', emoji: '📊' },
-              { path: '/grabba/floor9/note-cleaner', label: 'Note Cleaner', emoji: '🧹' },
+              { path: '/grabba/floor9/note-cleaner', label: 'Note Cleaner', emoji: '🧹', testId: 'note-cleaner-sidebar-item' },
             ])}
           </div>
 
