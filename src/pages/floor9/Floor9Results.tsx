@@ -19,6 +19,12 @@ import {
   AlertTriangle,
   Undo2,
   BarChart3,
+  Trophy,
+  MapPin,
+  Loader2,
+  Navigation,
+  Newspaper,
+  ExternalLink,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
