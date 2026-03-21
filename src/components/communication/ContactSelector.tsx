@@ -300,6 +300,15 @@ export default function ContactSelector({
         <Users className="h-4 w-4 text-primary" /> Target Audience
       </Label>
 
+      {/* Store count summary */}
+      {allContacts.length > 0 && (
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+          <span>Total: <strong className="text-foreground">{allContacts.length.toLocaleString()}</strong></span>
+          <span>With phone: <strong className="text-foreground">{allContacts.filter(c => c.phone).length.toLocaleString()}</strong></span>
+          <span>No phone: <strong className="text-destructive">{allContacts.filter(c => !c.phone).length.toLocaleString()}</strong></span>
+        </div>
+      )}
+
       {/* Entity type badges */}
       <div className="flex flex-wrap gap-1.5">
         {ENTITY_TYPES.map((et) => (
