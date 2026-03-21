@@ -398,6 +398,34 @@ export default function RouteEnginePage() {
           <Button size="sm" onClick={runAnalysis} disabled={analyzing} className="gap-1.5">
             {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}AI Analyze
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              setGeneratingChecklists(true);
+              try {
+                const pendingIds = (triggers as any[])
+                  .filter((t: any) => t.status === 'pending' || t.status === 'scheduled')
+                  .map((t: any) => t.id);
+                if (!pendingIds.length) { toast.info('No pending triggers to generate checklists for'); return; }
+                const { error } = await supabase.functions.invoke('generate-visit-checklist', {
+                  body: { generate_batch: true, batch_trigger_ids: pendingIds, assigned_role: 'driver' },
+                });
+                if (error) throw error;
+                toast.success('AI checklists generated', {
+                  description: `${pendingIds.length} stops now have detailed AI instructions`,
+                });
+                queryClient.invalidateQueries({ queryKey: ['driver-checklists'] });
+                queryClient.invalidateQueries({ queryKey: ['gasmask-visit-triggers'] });
+              } catch (err: any) { toast.error(err.message); }
+              finally { setGeneratingChecklists(false); }
+            }}
+            disabled={generatingChecklists}
+            className="gap-1.5"
+          >
+            {generatingChecklists ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardList className="h-3.5 w-3.5" />}
+            Generate Checklists
+          </Button>
           <Button size="sm" variant="outline" onClick={() => { setShowRouteBuilder(true); setRouteBuilderStep(1); }} disabled={!selectedTriggers.length} className="gap-1.5">
             <MapPin className="h-3.5 w-3.5" />Build Route{selectedTriggers.length > 0 && ` (${selectedTriggers.length})`}
           </Button>
