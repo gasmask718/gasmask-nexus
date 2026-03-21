@@ -249,6 +249,7 @@ const GlobalCRMDashboard = lazy(() => import('@/pages/crm/GlobalCRMDashboard'));
 const BusinessCRMDashboard = lazy(() => import('@/pages/crm/BusinessCRMDashboard'));
 const CRMRouter = lazy(() => import('@/pages/crm/CRMRouter'));
 const DynamicCRMPage = lazy(() => import('@/pages/crm/DynamicCRMPage'));
+const ContactManagementPage = lazy(() => import('@/pages/crm/ContactManagementPage'));
 
 // TopTier CRM
 const TopTierPartnerDashboard = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnerDashboard })));
@@ -1174,6 +1175,7 @@ export default function AppRoutes() {
         <Route path="/crm/accept-invite" element={<AcceptCRMInvite />} />
         <Route path="/crm/global" element={<GlobalCRMDashboard />} />
         <Route path="/crm/legacy" element={<GlobalCRM />} />
+        <Route path="/crm/contact-management" element={<ContactManagementPage />} />
         
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
         {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}
