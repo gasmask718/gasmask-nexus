@@ -21,6 +21,7 @@ import { useStoreStatusHistory, useAddStoreStatusEvent } from "@/hooks/useStoreS
 import { format } from "date-fns";
 import { StoreFollowUpSection } from "@/components/communication/followups/StoreFollowUpSection";
 import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
+import { CleanNoteButton } from "@/components/notes/CleanNoteButton";
 
 export default function BrandStoreProfile() {
   const { brandId, storeId } = useParams<{ brandId: string; storeId: string }>();
