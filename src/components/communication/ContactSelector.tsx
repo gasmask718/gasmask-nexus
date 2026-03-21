@@ -33,6 +33,7 @@ const ENTITY_TYPES = [
   { key: "ambassador", label: "Ambassadors" },
   { key: "wholesaler", label: "Wholesalers" },
   { key: "customer", label: "Customers" },
+  { key: "active_purchaser", label: "Active Purchasers" },
 ] as const;
 
 type EntityType = (typeof ENTITY_TYPES)[number]["key"];
