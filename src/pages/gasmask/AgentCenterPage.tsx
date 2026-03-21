@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { CommandBrain } from '@/components/floor9/CommandBrain';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -151,6 +152,9 @@ export default function AgentCenterPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {/* Command Brain — AI Command Bar */}
+      <CommandBrain />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
