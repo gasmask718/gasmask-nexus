@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { RouteAssignmentDialog } from "@/components/delivery/RouteAssignmentDialog";
 import { DispatchIntakePanel } from "@/components/delivery/DispatchIntakePanel";
@@ -23,7 +23,7 @@ import {
   Truck, 
   Merge, 
   Split, 
-  Send,  // kept for future use
+  Send,
   Filter,
   Building2,
   TrendingUp,
@@ -36,7 +36,14 @@ import {
   Info,
   History,
   Route,
-  Navigation
+  Navigation,
+  ShoppingCart,
+  Gift,
+  ThumbsUp,
+  ClipboardList,
+  ArrowLeftRight,
+  RefreshCw,
+  X
 } from "lucide-react";
 import { toast } from "sonner";
 import { 

@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Truck, Brain, Plus, MapPin, Clock, AlertTriangle, CheckCircle2,
   RefreshCw, Loader2, Search, X, Phone, Navigation, BarChart3,
-  List, LayoutGrid, ExternalLink, ChevronRight
+  List, LayoutGrid, ExternalLink, ChevronRight, ClipboardList
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
