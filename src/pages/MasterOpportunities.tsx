@@ -379,22 +379,22 @@ export default function MasterOpportunities() {
     return () => { channels.forEach((ch) => supabase.removeChannel(ch)); };
   }, [queryClient]);
 
-  // ── Transform new data into OpportunityItem ──
+  // ── Transform GasMask store messages into OpportunityItem ──
   const messagingItems: OpportunityItem[] = useMemo(() =>
-    (messagingReplies || []).map((conv: any) => ({
-      id: conv.id,
-      name: conv.brandaro_qualified_leads?.business_name || conv.from_number || 'Unknown',
-      city: conv.brandaro_qualified_leads?.city,
-      phone: conv.brandaro_qualified_leads?.phone_number || conv.from_number,
+    (gasmaskMessages || []).map((msg: any) => ({
+      id: msg.id,
+      name: msg.metadata?.store_name || msg.from_number || msg.phone_number || 'Unknown Store',
+      city: msg.metadata?.city,
+      phone: msg.phone_number || msg.from_number,
       urgency: 'high' as const,
-      signal: 'Inbound message — needs response',
-      message: conv.message_body || conv.message_text,
-      source: 'Messaging Hub',
-      primaryAction: 'reply',
-      primaryActionLabel: '💬 Reply',
-      timeAgo: conv.created_at ? formatDistanceToNow(new Date(conv.created_at), { addSuffix: true }) : '',
-      raw: conv,
-    })), [messagingReplies]);
+      signal: 'GasMask store replied — needs response',
+      message: msg.content,
+      source: 'GasMask Store SMS',
+      primaryAction: 'sms',
+      primaryActionLabel: '📱 Reply',
+      timeAgo: msg.created_at ? formatDistanceToNow(new Date(msg.created_at), { addSuffix: true }) : '',
+      raw: msg,
+    })), [gasmaskMessages]);
 
   const dialerItems: OpportunityItem[] = useMemo(() =>
     (dialerResults || []).map((entry: any) => ({
