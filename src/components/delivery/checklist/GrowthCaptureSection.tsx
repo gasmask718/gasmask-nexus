@@ -3,18 +3,21 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Store, Plus, Trash2 } from 'lucide-react';
+import { Store, Plus, Trash2, Phone, MapPin } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { ChecklistSection } from './ChecklistSection';
 import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
+import { toast } from 'sonner';
 
 interface NewStoreCapture {
   name: string;
+  telephone: string;
   address: string;
-  contact: string;
 }
 
 interface GrowthCaptureSectionProps {
   storeId: string;
+  personType?: string;
   isTaskCompleted: (taskKey: string) => boolean;
   onToggleTask: (taskKey: string, completed: boolean) => void;
   progress: { done: number; total: number };
@@ -24,6 +27,7 @@ interface GrowthCaptureSectionProps {
 
 export function GrowthCaptureSection({
   storeId,
+  personType = 'drivers',
   isTaskCompleted,
   onToggleTask,
   progress,
@@ -37,9 +41,10 @@ export function GrowthCaptureSection({
   const [sellsFlowers, setSellsFlowers] = useState<string>(
     growthData.sellsFlowers || 'unknown'
   );
+  const [saving, setSaving] = useState(false);
 
   const addNewStore = () => {
-    const updated = [...newStores, { name: '', address: '', contact: '' }];
+    const updated = [...newStores, { name: '', telephone: '', address: '' }];
     setNewStores(updated);
     onGrowthUpdate({ ...growthData, newStores: updated });
   };
@@ -60,6 +65,40 @@ export function GrowthCaptureSection({
   const handleFlowersChange = (value: string) => {
     setSellsFlowers(value);
     onGrowthUpdate({ ...growthData, sellsFlowers: value });
+  };
+
+  const saveStoresToDb = async () => {
+    const validStores = newStores.filter(s => s.name.trim());
+    if (!validStores.length) {
+      toast.info('No stores to save');
+      return;
+    }
+    setSaving(true);
+    try {
+      for (const store of validStores) {
+        await (supabase as any)
+          .from('checklist_additional_stores')
+          .insert({
+            store_id: storeId,
+            person_type: personType,
+            store_name: store.name,
+            telephone: store.telephone,
+            address: store.address,
+          });
+      }
+      toast.success(`${validStores.length} store(s) saved`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   };
 
   return (
@@ -95,54 +134,79 @@ export function GrowthCaptureSection({
           </RadioGroup>
         </div>
 
-        {/* New Store Leads */}
+        {/* Additional Store Leads */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              New Store Leads
+              Additional Stores
             </Label>
             <Button variant="outline" size="sm" onClick={addNewStore} className="h-7 gap-1">
-              <Plus className="h-3 w-3" /> Add
+              <Plus className="h-3 w-3" /> Add Store
             </Button>
           </div>
           
           {newStores.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">No new stores captured yet</p>
+            <p className="text-xs text-muted-foreground italic">No additional stores captured yet</p>
           ) : (
             <div className="space-y-3">
               {newStores.map((store, index) => (
-                <div key={index} className="p-3 rounded-lg border space-y-2">
+                <div key={index} className="p-3 rounded-lg border border-border space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">Store #{index + 1}</span>
+                    <span className="text-xs font-medium text-foreground">Store #{index + 1}</span>
                     <Button 
                       variant="ghost" 
                       size="sm" 
                       onClick={() => removeNewStore(index)}
-                      className="h-6 w-6 p-0"
+                      className="h-6 w-6 p-0 text-destructive"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  <Input
-                    placeholder="Store name"
-                    value={store.name}
-                    onChange={(e) => updateNewStore(index, 'name', e.target.value)}
-                    className="h-7 text-sm"
-                  />
-                  <Input
-                    placeholder="Address"
-                    value={store.address}
-                    onChange={(e) => updateNewStore(index, 'address', e.target.value)}
-                    className="h-7 text-sm"
-                  />
-                  <Input
-                    placeholder="Contact (optional)"
-                    value={store.contact}
-                    onChange={(e) => updateNewStore(index, 'contact', e.target.value)}
-                    className="h-7 text-sm"
-                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground">Store Name</Label>
+                      <Input
+                        placeholder="Store name"
+                        value={store.name}
+                        onChange={(e) => updateNewStore(index, 'name', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <Phone className="h-2.5 w-2.5" /> Telephone
+                      </Label>
+                      <Input
+                        type="tel"
+                        placeholder="(000) 000-0000"
+                        value={store.telephone}
+                        onChange={(e) => updateNewStore(index, 'telephone', formatPhone(e.target.value))}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-2.5 w-2.5" /> Address
+                      </Label>
+                      <Input
+                        placeholder="Street, City, State, ZIP"
+                        value={store.address}
+                        onChange={(e) => updateNewStore(index, 'address', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                  </div>
                 </div>
               ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={saveStoresToDb}
+                disabled={saving}
+              >
+                {saving ? 'Saving...' : 'Save All Stores'}
+              </Button>
             </div>
           )}
         </div>
