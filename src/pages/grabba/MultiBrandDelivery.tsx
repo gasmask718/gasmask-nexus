@@ -409,13 +409,23 @@ export default function MultiBrandDelivery() {
             ))}
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="outline" onClick={() => navigate('/gasmask/route-engine')} className="gap-1.5 text-xs">
             <Route className="h-3.5 w-3.5" />
             Route Engine
             {pendingTriggerCount > 0 && (
-              <Badge className="h-4 text-[9px] px-1 bg-red-500 text-white border-0">{pendingTriggerCount}</Badge>
+              <Badge className="h-4 text-[9px] px-1 bg-destructive text-destructive-foreground border-0">{pendingTriggerCount}</Badge>
             )}
+          </Button>
+          <Button size="sm" variant="outline" onClick={async () => {
+            try {
+              const { data } = await supabase.functions.invoke('gasmask-opportunity-sync');
+              toast.success(`${data?.total_triggers_created || 0} new visit triggers added`);
+              queryClient.invalidateQueries({ queryKey: ['delivery-triggers-all'] });
+            } catch (err: any) { toast.error(err.message); }
+          }} className="gap-1.5 text-xs">
+            <Navigation className="h-3.5 w-3.5" />
+            Pull Opportunities
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate('/gasmask/driver-route')} className="gap-1.5 text-xs">
             <MapPin className="h-3.5 w-3.5" />

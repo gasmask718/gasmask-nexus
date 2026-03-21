@@ -724,9 +724,13 @@ export default function MasterOpportunities() {
             Store intelligence · Messaging signals · AI dialer results · All brands
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
             <Truck className="h-3.5 w-3.5" />Route Engine
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runSync} disabled={syncing}>
+            {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Sync to Route Engine
           </Button>
           <Button size="sm" className="gap-1.5 text-xs" onClick={runAIAnalysis} disabled={scanning}>
             {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
