@@ -463,4 +463,73 @@ const Floor9Hub = () => {
   );
 };
 
+function InstinctFeedPanel() {
+  const { items, loading } = useInstinctFeed(30);
+
+  const actionColors: Record<string, string> = {
+    task_created: 'text-blue-500',
+    alert_escalated: 'text-red-500',
+    command_brain: 'text-purple-500',
+    call_completed: 'text-green-500',
+    call_interest_detected: 'text-emerald-500',
+    lead_conversion: 'text-amber-500',
+    note_composed: 'text-amber-500',
+    follow_up_visit: 'text-orange-500',
+    interest_follow_up: 'text-teal-500',
+    weekly_briefing_generated: 'text-indigo-500',
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-primary" />
+          Live AI Activity
+          <Badge variant="outline" className="ml-2 animate-pulse">LIVE</Badge>
+        </CardTitle>
+        <CardDescription>Real-time feed of AI actions across Dynasty OS</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-12" />
+            ))}
+          </div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No AI activity yet. Run an agent to see the feed.</p>
+          </div>
+        ) : (
+          <ScrollArea className="h-[300px]">
+            <div className="space-y-2">
+              {items.map((item) => (
+                <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                  <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
+                    actionColors[item.action_type] ? 'bg-current ' + actionColors[item.action_type] : 'bg-muted-foreground'
+                  }`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-medium capitalize ${actionColors[item.action_type] || 'text-muted-foreground'}`}>
+                        {item.action_type?.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate mt-0.5">
+                      {item.reasoning || 'No details available'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default Floor9Hub;
