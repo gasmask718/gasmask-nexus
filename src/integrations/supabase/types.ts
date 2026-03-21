@@ -24559,6 +24559,8 @@ export type Database = {
           created_at: string | null
           id: string
           interest: string | null
+          inventory_checked: boolean | null
+          inventory_checked_at: string | null
           last_order_date: string | null
           last_order_qty: number | null
           needs_order: boolean | null
@@ -24577,6 +24579,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           interest?: string | null
+          inventory_checked?: boolean | null
+          inventory_checked_at?: string | null
           last_order_date?: string | null
           last_order_qty?: number | null
           needs_order?: boolean | null
@@ -24595,6 +24599,8 @@ export type Database = {
           created_at?: string | null
           id?: string
           interest?: string | null
+          inventory_checked?: boolean | null
+          inventory_checked_at?: string | null
           last_order_date?: string | null
           last_order_qty?: number | null
           needs_order?: boolean | null
