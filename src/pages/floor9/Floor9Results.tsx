@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   TrendingUp,
   Clock,
@@ -19,6 +22,12 @@ import {
   AlertTriangle,
   Undo2,
   BarChart3,
+  Trophy,
+  MapPin,
+  Loader2,
+  Navigation,
+  Newspaper,
+  ExternalLink,
 } from 'lucide-react';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,6 +49,10 @@ import {
   ResultsAnalytics,
   FeedbackAnalyticsPanel,
 } from '@/components/floor9';
+import { usePerformanceLeaderboard } from '@/hooks/usePerformanceLeaderboard';
+import { useLatestBriefing, useAllBriefings, useGenerateBriefing } from '@/hooks/useWeeklyBriefing';
+import { useRouteOptimizer, buildGoogleMapsUrl } from '@/hooks/useRouteOptimizer';
+import { supabase } from '@/integrations/supabase/client';
 
 const Floor9Results = () => {
   // Filters state with sensible defaults
@@ -265,7 +278,19 @@ const Floor9Results = () => {
             </TabsTrigger>
             <TabsTrigger value="learning" className="flex items-center gap-2">
               <Brain className="h-4 w-4" />
-              Learning Feedback
+              Learning
+            </TabsTrigger>
+            <TabsTrigger value="team" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              Team
+            </TabsTrigger>
+            <TabsTrigger value="briefing" className="flex items-center gap-2">
+              <Newspaper className="h-4 w-4" />
+              Briefing
+            </TabsTrigger>
+            <TabsTrigger value="routes" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Routes
             </TabsTrigger>
           </TabsList>
 
@@ -338,6 +363,18 @@ const Floor9Results = () => {
               </Card>
             </div>
           </TabsContent>
+
+          <TabsContent value="team" className="mt-4">
+            <TeamPerformanceTab />
+          </TabsContent>
+
+          <TabsContent value="briefing" className="mt-4">
+            <WeeklyBriefingTab />
+          </TabsContent>
+
+          <TabsContent value="routes" className="mt-4">
+            <RouteOptimizerTab />
+          </TabsContent>
         </Tabs>
 
         {/* AI Value Proposition */}
@@ -393,5 +430,237 @@ const Floor9Results = () => {
     </GrabbaLayout>
   );
 };
+
+// ─── Team Performance Tab ───
+function TeamPerformanceTab() {
+  const [range, setRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const { data: leaderboard, isLoading } = usePerformanceLeaderboard(range);
+
+  const rankIcons = ['🥇', '🥈', '🥉'];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-primary" />
+          Performance by Person Type
+        </h3>
+        <Select value={range} onValueChange={(v: any) => setRange(v)}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="7d">Last 7 days</SelectItem>
+            <SelectItem value="30d">Last 30 days</SelectItem>
+            <SelectItem value="90d">Last 90 days</SelectItem>
+            <SelectItem value="all">All time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {leaderboard?.map((rep, index) => (
+            <Card key={rep.person_type} className={index === 0 ? 'border-primary/30' : ''}>
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{rankIcons[index] || '🎯'}</span>
+                    <div>
+                      <h4 className="text-lg font-bold capitalize">{rep.person_type}</h4>
+                      <p className="text-sm text-muted-foreground">Score: {rep.total_score}</p>
+                    </div>
+                  </div>
+                  {index === 0 && (
+                    <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/30">
+                      <Trophy className="h-3 w-3 mr-1" /> Top Performer
+                    </Badge>
+                  )}
+                </div>
+                <div className="grid grid-cols-5 gap-4">
+                  {[
+                    { label: 'Stores', value: rep.stores_visited },
+                    { label: 'Tubes', value: rep.tube_counts_recorded },
+                    { label: 'Interested', value: rep.interested_signals },
+                    { label: 'Tasks', value: rep.tasks_completed },
+                    { label: 'Notes', value: rep.notes_written },
+                  ].map(m => (
+                    <div key={m.label} className="text-center p-2 rounded-lg bg-muted/50">
+                      <p className="text-xl font-bold">{m.value}</p>
+                      <p className="text-xs text-muted-foreground">{m.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Weekly Briefing Tab ───
+function WeeklyBriefingTab() {
+  const { data: latestBriefing } = useLatestBriefing();
+  const { data: allBriefings } = useAllBriefings();
+  const generateBriefing = useGenerateBriefing();
+  const [selectedBriefingText, setSelectedBriefingText] = useState<string | null>(null);
+
+  const displayBriefing = selectedBriefingText || latestBriefing?.briefing_text;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Newspaper className="h-5 w-5 text-primary" />
+            Dynasty Weekly Intelligence Briefing
+          </h3>
+          {latestBriefing && (
+            <p className="text-sm text-muted-foreground">
+              Last generated: {new Date(latestBriefing.created_at).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+        <Button
+          onClick={() => generateBriefing.mutate()}
+          disabled={generateBriefing.isPending}
+        >
+          {generateBriefing.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Newspaper className="h-4 w-4 mr-2" />}
+          {generateBriefing.isPending ? 'Generating...' : 'Generate Now'}
+        </Button>
+      </div>
+
+      {displayBriefing ? (
+        <Card>
+          <CardContent className="pt-6">
+            <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+              {displayBriefing}
+            </pre>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <Newspaper className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h4 className="font-medium">No briefing generated yet.</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              Click "Generate Now" to create your first weekly intelligence briefing.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {allBriefings && allBriefings.length > 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm">Previous Briefings</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {allBriefings.slice(1, 10).map((b: any) => (
+                <Button
+                  key={b.id}
+                  variant="ghost"
+                  className="w-full justify-start text-sm"
+                  onClick={async () => {
+                    const { data } = await (supabase.from('weekly_briefings') as any).select('briefing_text').eq('id', b.id).single();
+                    if (data) setSelectedBriefingText(data.briefing_text);
+                  }}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Week of {b.week_start} — {new Date(b.created_at).toLocaleDateString()}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ─── Route Optimizer Tab ───
+function RouteOptimizerTab() {
+  const [personType, setPersonType] = useState<'drivers' | 'bikers' | 'ambassadors'>('drivers');
+  const { data: route, isLoading } = useRouteOptimizer(personType);
+
+  const mapsUrl = route?.length ? buildGoogleMapsUrl(route) : '';
+
+  const getHealthBadge = (score: number) => {
+    if (score >= 80) return <Badge className="bg-green-500/20 text-green-600">Healthy</Badge>;
+    if (score >= 60) return <Badge className="bg-amber-500/20 text-amber-600">Attention</Badge>;
+    if (score >= 40) return <Badge className="bg-orange-500/20 text-orange-600">At Risk</Badge>;
+    return <Badge variant="destructive">Critical</Badge>;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <Navigation className="h-5 w-5 text-primary" />
+          Route Optimizer
+        </h3>
+        <Select value={personType} onValueChange={(v: any) => setPersonType(v)}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="drivers">Drivers</SelectItem>
+            <SelectItem value="bikers">Bikers</SelectItem>
+            <SelectItem value="ambassadors">Ambassadors</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
+        Stores ranked by urgency — lowest health scores first
+      </p>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16" />)}
+        </div>
+      ) : !route?.length ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
+            No stores need urgent visits right now.
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="space-y-2">
+            {route.slice(0, 10).map((store, i) => (
+              <Card key={store.id}>
+                <CardContent className="py-3 flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{store.store_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{store.full_address}</p>
+                  </div>
+                  {getHealthBadge(store.health_score)}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          {mapsUrl && (
+            <Button className="w-full" onClick={() => window.open(mapsUrl, '_blank')}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open Route in Google Maps
+            </Button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
 
 export default Floor9Results;

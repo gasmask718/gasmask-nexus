@@ -47393,6 +47393,116 @@ export type Database = {
           },
         ]
       }
+      outreach_calls: {
+        Row: {
+          call_date: string | null
+          call_score: number | null
+          callback_date: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          elevenlabs_call_id: string | null
+          id: string
+          interest_signals: string[] | null
+          language_detected: string | null
+          lead_id: string | null
+          notes: string | null
+          objections_detected: string[] | null
+          outcome: string | null
+          transcript: string | null
+        }
+        Insert: {
+          call_date?: string | null
+          call_score?: number | null
+          callback_date?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          elevenlabs_call_id?: string | null
+          id?: string
+          interest_signals?: string[] | null
+          language_detected?: string | null
+          lead_id?: string | null
+          notes?: string | null
+          objections_detected?: string[] | null
+          outcome?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          call_date?: string | null
+          call_score?: number | null
+          callback_date?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          elevenlabs_call_id?: string | null
+          id?: string
+          interest_signals?: string[] | null
+          language_detected?: string | null
+          lead_id?: string | null
+          notes?: string | null
+          objections_detected?: string[] | null
+          outcome?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outreach_leads: {
+        Row: {
+          city: string | null
+          contact_name: string | null
+          created_at: string | null
+          full_address: string | null
+          id: string
+          language_detected: string | null
+          lead_score: number | null
+          phone: string | null
+          state_code: string | null
+          status: string | null
+          store_name: string
+          store_type: string | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          full_address?: string | null
+          id?: string
+          language_detected?: string | null
+          lead_score?: number | null
+          phone?: string | null
+          state_code?: string | null
+          status?: string | null
+          store_name: string
+          store_type?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          full_address?: string | null
+          id?: string
+          language_detected?: string | null
+          lead_score?: number | null
+          phone?: string | null
+          state_code?: string | null
+          status?: string | null
+          store_name?: string
+          store_type?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       outreach_plan_items: {
         Row: {
           channel: string
@@ -47536,6 +47646,111 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      outreach_scripts: {
+        Row: {
+          arabic_variant_closing: string | null
+          arabic_variant_opening: string | null
+          calls_used: number | null
+          closing: string | null
+          conversion_rate: number | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          objection_responses: Json | null
+          opening: string | null
+          pitch: string | null
+          version: string
+        }
+        Insert: {
+          arabic_variant_closing?: string | null
+          arabic_variant_opening?: string | null
+          calls_used?: number | null
+          closing?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          objection_responses?: Json | null
+          opening?: string | null
+          pitch?: string | null
+          version: string
+        }
+        Update: {
+          arabic_variant_closing?: string | null
+          arabic_variant_opening?: string | null
+          calls_used?: number | null
+          closing?: string | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          objection_responses?: Json | null
+          opening?: string | null
+          pitch?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
+      outreach_sms: {
+        Row: {
+          call_id: string | null
+          delivered: boolean | null
+          id: string
+          language: string | null
+          lead_id: string | null
+          message: string
+          message_type: string | null
+          phone: string
+          replied: boolean | null
+          reply_text: string | null
+          sent_at: string | null
+          twilio_sid: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          delivered?: boolean | null
+          id?: string
+          language?: string | null
+          lead_id?: string | null
+          message: string
+          message_type?: string | null
+          phone: string
+          replied?: boolean | null
+          reply_text?: string | null
+          sent_at?: string | null
+          twilio_sid?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          delivered?: boolean | null
+          id?: string
+          language?: string | null
+          lead_id?: string | null
+          message?: string
+          message_type?: string | null
+          phone?: string
+          replied?: boolean | null
+          reply_text?: string | null
+          sent_at?: string | null
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outreach_sms_call_id_fkey"
+            columns: ["call_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_calls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outreach_sms_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_leads"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -67640,6 +67855,33 @@ export type Database = {
           state?: string
           zip_code?: string
           zoning?: string | null
+        }
+        Relationships: []
+      }
+      weekly_briefings: {
+        Row: {
+          briefing_text: string
+          created_at: string | null
+          id: string
+          metrics_snapshot: Json | null
+          week_end: string | null
+          week_start: string | null
+        }
+        Insert: {
+          briefing_text: string
+          created_at?: string | null
+          id?: string
+          metrics_snapshot?: Json | null
+          week_end?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          briefing_text?: string
+          created_at?: string | null
+          id?: string
+          metrics_snapshot?: Json | null
+          week_end?: string | null
+          week_start?: string | null
         }
         Relationships: []
       }
