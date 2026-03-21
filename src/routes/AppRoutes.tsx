@@ -1692,7 +1692,7 @@ export default function AppRoutes() {
           {/* ═══ FLOOR 2: AUTOMATION ENGINE ═══ */}
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
           <Route path="campaigns" element={<CampaignsPage />} />
-          <Route path="ai-auto-text" element={<AIAutoTextPage />} />
+          <Route path="ai-auto-text" element={<Navigate to="/communication/messaging-hub" replace />} />
           <Route path="messaging-hub" element={<MessagingHubPage />} />
           <Route path="personas" element={<PersonasPage />} />
           <Route path="call-flows" element={<CallFlowsPage />} />

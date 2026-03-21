@@ -27189,6 +27189,57 @@ export type Database = {
           },
         ]
       }
+      communication_playbooks: {
+        Row: {
+          actions: Json | null
+          conditions: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          last_run_result: string | null
+          last_triggered_at: string | null
+          name: string
+          require_approval: boolean | null
+          run_count: number | null
+          status: string | null
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json | null
+          conditions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_run_result?: string | null
+          last_triggered_at?: string | null
+          name: string
+          require_approval?: boolean | null
+          run_count?: number | null
+          status?: string | null
+          trigger_config?: Json | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json | null
+          conditions?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          last_run_result?: string | null
+          last_triggered_at?: string | null
+          name?: string
+          require_approval?: boolean | null
+          run_count?: number | null
+          status?: string | null
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       communication_sent_log: {
         Row: {
           approved_at: string
@@ -49451,6 +49502,65 @@ export type Database = {
             columns: ["route_id"]
             isOneToOne: false
             referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playbook_executions: {
+        Row: {
+          actions_executed: Json | null
+          actions_failed: Json | null
+          completed_at: string | null
+          conditions_failed: Json | null
+          conditions_passed: boolean | null
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          playbook_id: string | null
+          started_at: string | null
+          status: string | null
+          store_id: string | null
+          trigger_data: Json | null
+          triggered_by: string | null
+        }
+        Insert: {
+          actions_executed?: Json | null
+          actions_failed?: Json | null
+          completed_at?: string | null
+          conditions_failed?: Json | null
+          conditions_passed?: boolean | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          playbook_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          trigger_data?: Json | null
+          triggered_by?: string | null
+        }
+        Update: {
+          actions_executed?: Json | null
+          actions_failed?: Json | null
+          completed_at?: string | null
+          conditions_failed?: Json | null
+          conditions_passed?: boolean | null
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          playbook_id?: string | null
+          started_at?: string | null
+          status?: string | null
+          store_id?: string | null
+          trigger_data?: Json | null
+          triggered_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_executions_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "communication_playbooks"
             referencedColumns: ["id"]
           },
         ]
