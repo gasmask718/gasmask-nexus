@@ -24195,33 +24195,54 @@ export type Database = {
       checklist_additional_stores: {
         Row: {
           address: string | null
+          city: string | null
           created_at: string | null
+          full_address: string | null
           id: string
+          lat: number | null
+          lng: number | null
           person_type: string
+          state: string | null
           store_id: string | null
           store_name: string | null
+          street: string | null
           telephone: string | null
           updated_at: string | null
+          zip: string | null
         }
         Insert: {
           address?: string | null
+          city?: string | null
           created_at?: string | null
+          full_address?: string | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           person_type: string
+          state?: string | null
           store_id?: string | null
           store_name?: string | null
+          street?: string | null
           telephone?: string | null
           updated_at?: string | null
+          zip?: string | null
         }
         Update: {
           address?: string | null
+          city?: string | null
           created_at?: string | null
+          full_address?: string | null
           id?: string
+          lat?: number | null
+          lng?: number | null
           person_type?: string
+          state?: string | null
           store_id?: string | null
           store_name?: string | null
+          street?: string | null
           telephone?: string | null
           updated_at?: string | null
+          zip?: string | null
         }
         Relationships: [
           {
@@ -59109,6 +59130,8 @@ export type Database = {
           notes: string | null
           phone: string | null
           preferred_sms_provider: string | null
+          relationship_type: string | null
+          relationship_type_custom: string | null
           responsive_by_call: boolean | null
           responsive_by_text: boolean | null
           responsiveness_status: string | null
@@ -59146,6 +59169,8 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
+          relationship_type?: string | null
+          relationship_type_custom?: string | null
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
           responsiveness_status?: string | null
@@ -59183,6 +59208,8 @@ export type Database = {
           notes?: string | null
           phone?: string | null
           preferred_sms_provider?: string | null
+          relationship_type?: string | null
+          relationship_type_custom?: string | null
           responsive_by_call?: boolean | null
           responsive_by_text?: boolean | null
           responsiveness_status?: string | null
