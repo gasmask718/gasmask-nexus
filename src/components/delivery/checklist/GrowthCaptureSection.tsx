@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 
 interface NewStoreCapture {
+  contactPersonName: string;
   name: string;
   telephone: string;
   address: string;
