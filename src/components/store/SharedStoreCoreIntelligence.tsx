@@ -23,6 +23,7 @@ import { UnifiedTubeIntelligenceCard } from '@/components/store/UnifiedTubeIntel
 import { SellThroughIntelCard } from '@/components/store/SellThroughIntelCard';
 import { BrandStickersCard } from '@/components/store/BrandStickersCard';
 import { StoreVisitInventoryCard } from '@/components/store/StoreVisitInventoryCard';
+import { ProductCatalogCard } from '@/components/store/ProductCatalogCard';
 import { SellsFlowersToggle } from '@/components/store/SellsFlowersToggle';
 import { RecentStoreInteractions } from '@/components/crm/RecentStoreInteractions';
 import { StoreFieldActivityPanel } from '@/components/store/StoreFieldActivityPanel';
