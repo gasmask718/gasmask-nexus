@@ -23734,6 +23734,42 @@ export type Database = {
           },
         ]
       }
+      canva_templates: {
+        Row: {
+          asset_type: string
+          brand: string | null
+          canva_template_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          placeholder_fields: Json | null
+          template_name: string
+        }
+        Insert: {
+          asset_type: string
+          brand?: string | null
+          canva_template_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          placeholder_fields?: Json | null
+          template_name: string
+        }
+        Update: {
+          asset_type?: string
+          brand?: string | null
+          canva_template_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          placeholder_fields?: Json | null
+          template_name?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           cart_id: string | null
@@ -36094,6 +36130,79 @@ export type Database = {
           visit_duration_minutes?: number | null
         }
         Relationships: []
+      }
+      generated_assets: {
+        Row: {
+          asset_type: string
+          brand: string | null
+          canva_design_id: string | null
+          canva_edit_url: string | null
+          canva_export_url: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          metadata: Json | null
+          product_name: string | null
+          status: string | null
+          store_id: string | null
+          thumbnail_url: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          asset_type: string
+          brand?: string | null
+          canva_design_id?: string | null
+          canva_edit_url?: string | null
+          canva_export_url?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          product_name?: string | null
+          status?: string | null
+          store_id?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          asset_type?: string
+          brand?: string | null
+          canva_design_id?: string | null
+          canva_edit_url?: string | null
+          canva_export_url?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          metadata?: Json | null
+          product_name?: string | null
+          status?: string | null
+          store_id?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_assets_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "outreach_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_assets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "generated_assets_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
       }
       geo_identities: {
         Row: {

@@ -156,6 +156,8 @@ const DemoEnginePage = lazy(() => import('@/pages/brandaro/DemoEnginePage'));
 const ScoutAgentPage = lazy(() => import('@/pages/brandaro/ScoutAgentPage'));
 const ProductionPipelinePage = lazy(() => import('@/pages/brandaro/ProductionPipelinePage'));
 const ClientPortalPage = lazy(() => import('@/pages/brandaro/ClientPortalPage'));
+const CanvaAssetsPage = lazy(() => import('@/pages/brandaro/CanvaAssetsPage'));
+const CanvaTemplatesPage = lazy(() => import('@/pages/brandaro/CanvaTemplatesPage'));
 const AmbassadorInviteGovernance = lazy(() => import('@/pages/admin/AmbassadorInviteGovernance'));
 
 // Profile pages
@@ -2776,6 +2778,8 @@ export default function AppRoutes() {
           <Route path="campaigns" element={<CampaignManagerPage />} />
           <Route path="reviews" element={<ReviewQueuePage />} />
           <Route path="phone-numbers" element={<BrandaroPhoneNumbersPage />} />
+          <Route path="canva-assets" element={<CanvaAssetsPage />} />
+          <Route path="canva-templates" element={<CanvaTemplatesPage />} />
         </Route>
       </Route>
 

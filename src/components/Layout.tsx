@@ -440,6 +440,8 @@ const DYNASTY_NAVIGATION = {
       { path: '/brandaro/proposals', label: 'Proposal Builder', icon: FileText },
       { path: '/brandaro/campaigns', label: 'Campaign Manager', icon: Target },
       { path: '/brandaro/clients', label: 'Client Portal', icon: Users },
+      { path: '/brandaro/canva-assets', label: 'Design Assets', icon: Palette },
+      { path: '/brandaro/canva-templates', label: 'Canva Templates', icon: Settings },
     ],
   },
   globalDashboard: {
