@@ -1,0 +1,1 @@
+ALTER TABLE checklist_additional_stores ADD COLUMN IF NOT EXISTS contact_person_name text;

@@ -24196,6 +24196,7 @@ export type Database = {
         Row: {
           address: string | null
           city: string | null
+          contact_person_name: string | null
           created_at: string | null
           full_address: string | null
           id: string
@@ -24213,6 +24214,7 @@ export type Database = {
         Insert: {
           address?: string | null
           city?: string | null
+          contact_person_name?: string | null
           created_at?: string | null
           full_address?: string | null
           id?: string
@@ -24230,6 +24232,7 @@ export type Database = {
         Update: {
           address?: string | null
           city?: string | null
+          contact_person_name?: string | null
           created_at?: string | null
           full_address?: string | null
           id?: string
