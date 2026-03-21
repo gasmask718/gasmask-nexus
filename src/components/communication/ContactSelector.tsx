@@ -33,6 +33,7 @@ const ENTITY_TYPES = [
   { key: "ambassador", label: "Ambassadors" },
   { key: "wholesaler", label: "Wholesalers" },
   { key: "customer", label: "Customers" },
+  { key: "active_purchaser", label: "Active Purchasers" },
 ] as const;
 
 type EntityType = (typeof ENTITY_TYPES)[number]["key"];
@@ -81,16 +82,25 @@ export default function ContactSelector({
 
       if (types.includes("store")) {
         fetchers.push(
-          (supabase as any)
-            .from("store_master")
-            .select("id, store_name, phone")
-            .not("phone", "is", null)
-            .limit(5000)
-            .then(({ data }: any) => {
-              (data || []).forEach((r: any) =>
+          (async () => {
+            // Paginate to fetch ALL stores, not just 1000
+            let page = 0;
+            const PAGE = 1000;
+            while (true) {
+              const { data } = await (supabase as any)
+                .from("store_master")
+                .select("id, store_name, phone, phone_type, sms_capable")
+                .not("phone", "is", null)
+                .order("store_name", { ascending: true })
+                .range(page * PAGE, (page + 1) * PAGE - 1);
+              if (!data?.length) break;
+              data.forEach((r: any) =>
                 rows.push({ key: `store:${r.id}`, type: "store", id: r.id, name: r.store_name || "", phone: r.phone || "" })
               );
-            })
+              if (data.length < PAGE) break;
+              page++;
+            }
+          })()
         );
       }
       if (types.includes("prospect")) {
@@ -177,6 +187,46 @@ export default function ContactSelector({
                 rows.push({ key: `customer:${r.id}`, type: "customer", id: r.id, name: r.name || "", phone: r.phone || "" })
               );
             })
+        );
+      }
+      if (types.includes("active_purchaser")) {
+        fetchers.push(
+          (async () => {
+            // Fetch stores that have placed orders via checklist_delivery_orders
+            const { data: orderData } = await (supabase as any)
+              .from("checklist_delivery_orders")
+              .select("store_id, created_at, total, status")
+              .in("status", ["sent", "paid", "delivered", "completed"])
+              .order("created_at", { ascending: false });
+
+            if (orderData?.length) {
+              const purchaserIds = [...new Set((orderData as any[]).map((o: any) => o.store_id).filter(Boolean))];
+              const countMap: Record<string, number> = {};
+              for (const o of orderData as any[]) {
+                if (o.store_id) countMap[o.store_id] = (countMap[o.store_id] || 0) + 1;
+              }
+
+              // Fetch store details in batches
+              const batchSize = 100;
+              for (let i = 0; i < purchaserIds.length; i += batchSize) {
+                const batch = purchaserIds.slice(i, i + batchSize);
+                const { data: stores } = await (supabase as any)
+                  .from("store_master")
+                  .select("id, store_name, phone, phone_type, sms_capable")
+                  .in("id", batch)
+                  .not("phone", "is", null);
+                (stores || []).forEach((s: any) =>
+                  rows.push({
+                    key: `active_purchaser:${s.id}`,
+                    type: "active_purchaser" as EntityType,
+                    id: s.id,
+                    name: `${s.store_name} (${countMap[s.id] || 0} orders)`,
+                    phone: s.phone || "",
+                  })
+                );
+              }
+            }
+          })()
         );
       }
 

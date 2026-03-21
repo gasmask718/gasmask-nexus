@@ -47462,6 +47462,9 @@ export type Database = {
           language_detected: string | null
           lead_score: number | null
           phone: string | null
+          phone_type: string | null
+          phone_verified_at: string | null
+          sms_capable: boolean | null
           state_code: string | null
           status: string | null
           store_name: string
@@ -47478,6 +47481,9 @@ export type Database = {
           language_detected?: string | null
           lead_score?: number | null
           phone?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
+          sms_capable?: boolean | null
           state_code?: string | null
           status?: string | null
           store_name: string
@@ -47494,6 +47500,9 @@ export type Database = {
           language_detected?: string | null
           lead_score?: number | null
           phone?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
+          sms_capable?: boolean | null
           state_code?: string | null
           status?: string | null
           store_name?: string
@@ -59828,8 +59837,11 @@ export type Database = {
           personality_notes: string | null
           personality_profile_id: string | null
           phone: string | null
+          phone_type: string | null
+          phone_verified_at: string | null
           preferred_channel: string | null
           risk_score: string | null
+          sms_capable: boolean | null
           sourced_at: string | null
           sourced_by_ambassador_id: string | null
           state: string
@@ -59904,8 +59916,11 @@ export type Database = {
           personality_notes?: string | null
           personality_profile_id?: string | null
           phone?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
           preferred_channel?: string | null
           risk_score?: string | null
+          sms_capable?: boolean | null
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
           state: string
@@ -59980,8 +59995,11 @@ export type Database = {
           personality_notes?: string | null
           personality_profile_id?: string | null
           phone?: string | null
+          phone_type?: string | null
+          phone_verified_at?: string | null
           preferred_channel?: string | null
           risk_score?: string | null
+          sms_capable?: boolean | null
           sourced_at?: string | null
           sourced_by_ambassador_id?: string | null
           state?: string
