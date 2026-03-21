@@ -351,17 +351,17 @@ export default function MasterOpportunities() {
     refetchInterval: 60000,
   });
 
-  // ── Realtime ──
+  // ── Realtime for GasMask store messages ──
   useEffect(() => {
     const channels = [
       supabase
-        .channel('opp-conversations-rt')
+        .channel('opp-gasmask-msgs-rt')
         .on('postgres_changes', {
-          event: 'INSERT', schema: 'public', table: 'brandaro_conversations',
+          event: 'INSERT', schema: 'public', table: 'communication_messages',
           filter: 'direction=eq.inbound',
         }, () => {
-          queryClient.invalidateQueries({ queryKey: ['opp-messaging-replies'] });
-          toast.info('New inbound message!', { duration: 5000 });
+          queryClient.invalidateQueries({ queryKey: ['gasmask-store-messages'] });
+          toast.info('New GasMask store reply!', { duration: 5000 });
         })
         .subscribe(),
       supabase
