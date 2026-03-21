@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
-import { Search, Users, Phone } from "lucide-react";
+import { PhoneTypeBadge } from "@/components/communication/PhoneTypeBadge";
+import { Search, Users, Phone, AlertTriangle } from "lucide-react";
 
 export interface SelectedContact {
   type: string;
@@ -83,14 +84,13 @@ export default function ContactSelector({
       if (types.includes("store")) {
         fetchers.push(
           (async () => {
-            // Paginate to fetch ALL stores, not just 1000
+            // Paginate to fetch ALL stores — including those without phones
             let page = 0;
             const PAGE = 1000;
             while (true) {
               const { data } = await (supabase as any)
                 .from("store_master")
                 .select("id, store_name, phone, phone_type, sms_capable")
-                .not("phone", "is", null)
                 .order("store_name", { ascending: true })
                 .range(page * PAGE, (page + 1) * PAGE - 1);
               if (!data?.length) break;
@@ -192,35 +192,40 @@ export default function ContactSelector({
       if (types.includes("active_purchaser")) {
         fetchers.push(
           (async () => {
-            // Fetch stores that have placed orders via checklist_delivery_orders
-            const { data: orderData } = await (supabase as any)
-              .from("checklist_delivery_orders")
+            // Fetch stores that have finalized invoices
+            const { data: invoiceData } = await (supabase as any)
+              .from("invoices")
               .select("store_id, created_at, total, status")
-              .in("status", ["sent", "paid", "delivered", "completed"])
+              .eq("status", "finalized")
+              .not("store_id", "is", null)
               .order("created_at", { ascending: false });
 
-            if (orderData?.length) {
-              const purchaserIds = [...new Set((orderData as any[]).map((o: any) => o.store_id).filter(Boolean))];
+            if (invoiceData?.length) {
               const countMap: Record<string, number> = {};
-              for (const o of orderData as any[]) {
-                if (o.store_id) countMap[o.store_id] = (countMap[o.store_id] || 0) + 1;
+              const lastPurchaseMap: Record<string, string> = {};
+              const totalSpendMap: Record<string, number> = {};
+
+              for (const inv of invoiceData as any[]) {
+                if (!inv.store_id) continue;
+                countMap[inv.store_id] = (countMap[inv.store_id] || 0) + 1;
+                totalSpendMap[inv.store_id] = (totalSpendMap[inv.store_id] || 0) + (inv.total || 0);
+                if (!lastPurchaseMap[inv.store_id]) lastPurchaseMap[inv.store_id] = inv.created_at;
               }
 
-              // Fetch store details in batches
-              const batchSize = 100;
+              const purchaserIds = Object.keys(countMap);
+              const batchSize = 200;
               for (let i = 0; i < purchaserIds.length; i += batchSize) {
                 const batch = purchaserIds.slice(i, i + batchSize);
                 const { data: stores } = await (supabase as any)
                   .from("store_master")
                   .select("id, store_name, phone, phone_type, sms_capable")
-                  .in("id", batch)
-                  .not("phone", "is", null);
+                  .in("id", batch);
                 (stores || []).forEach((s: any) =>
                   rows.push({
                     key: `active_purchaser:${s.id}`,
                     type: "active_purchaser" as EntityType,
                     id: s.id,
-                    name: `${s.store_name} (${countMap[s.id] || 0} orders)`,
+                    name: `${s.store_name} (${countMap[s.id] || 0} invoices · $${Math.round(totalSpendMap[s.id] || 0)})`,
                     phone: s.phone || "",
                   })
                 );
@@ -295,6 +300,15 @@ export default function ContactSelector({
         <Users className="h-4 w-4 text-primary" /> Target Audience
       </Label>
 
+      {/* Store count summary */}
+      {allContacts.length > 0 && (
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+          <span>Total: <strong className="text-foreground">{allContacts.length.toLocaleString()}</strong></span>
+          <span>With phone: <strong className="text-foreground">{allContacts.filter(c => c.phone).length.toLocaleString()}</strong></span>
+          <span>No phone: <strong className="text-destructive">{allContacts.filter(c => !c.phone).length.toLocaleString()}</strong></span>
+        </div>
+      )}
+
       {/* Entity type badges */}
       <div className="flex flex-wrap gap-1.5">
         {ENTITY_TYPES.map((et) => (
@@ -353,21 +367,33 @@ export default function ContactSelector({
                 <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No contacts found.</TableCell>
               </TableRow>
             ) : (
-              pageData.map((c) => (
-                <TableRow key={c.key}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedContacts.has(c.key)}
-                      onCheckedChange={() => toggleContact(c)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-sm">{c.name || "Unknown"}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-[10px] capitalize">{c.type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{c.phone}</TableCell>
-                </TableRow>
-              ))
+              pageData.map((c) => {
+                const missingPhone = !c.phone;
+                return (
+                  <TableRow key={c.key} className={missingPhone ? 'opacity-50' : ''}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedContacts.has(c.key)}
+                        onCheckedChange={() => toggleContact(c)}
+                        disabled={missingPhone}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium text-sm">{c.name || "Unknown"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-[10px] capitalize">{c.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {missingPhone ? (
+                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive gap-0.5">
+                          <AlertTriangle className="h-2.5 w-2.5" /> No phone
+                        </Badge>
+                      ) : (
+                        c.phone
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
