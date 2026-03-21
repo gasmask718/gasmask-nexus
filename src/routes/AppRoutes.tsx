@@ -2778,6 +2778,8 @@ export default function AppRoutes() {
           <Route path="campaigns" element={<CampaignManagerPage />} />
           <Route path="reviews" element={<ReviewQueuePage />} />
           <Route path="phone-numbers" element={<BrandaroPhoneNumbersPage />} />
+          <Route path="canva-assets" element={<CanvaAssetsPage />} />
+          <Route path="canva-templates" element={<CanvaTemplatesPage />} />
         </Route>
       </Route>
 
