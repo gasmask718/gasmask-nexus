@@ -7,13 +7,12 @@ import { CheckCircle2, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useDeliveryChecklist } from '@/hooks/useDeliveryChecklist';
 import { useGeneratePostVisitIntelligence } from '@/hooks/useVisitSummary';
 import { useFieldOutcomeCapture } from '@/hooks/useFieldOutcomeCapture';
-import { InventoryCheckSection } from './checklist/InventoryCheckSection';
+import { InventoryTubeIntelligenceSection } from './checklist/InventoryTubeIntelligenceSection';
 import { OrderDeliverySection } from './checklist/OrderDeliverySection';
 import { LastOrderContextSection } from './checklist/LastOrderContextSection';
 import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
 import { StickerVisibilitySection } from './checklist/StickerVisibilitySection';
-import { TubeIntelligenceSection } from './checklist/TubeIntelligenceSection';
 import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
 import { FieldOutcomeCaptureModal, type FieldOutcome } from './FieldOutcomeCaptureModal';
 
