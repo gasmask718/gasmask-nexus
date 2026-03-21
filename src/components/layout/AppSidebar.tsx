@@ -374,18 +374,16 @@ export default function AppSidebar() {
 
             {/* Floor 9 - AI Operations */}
             {renderSection('floor-9', 'Floor 9: AI Operations', '🤖', [
-              { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🧠' },
-              { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🚚' },
-              { path: '/gasmask/driver-route', label: 'Driver View', emoji: '📍' },
-              { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
-              { path: '/gasmask/note-cleaner', label: 'Note Cleaner', emoji: '🧹' },
-              { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
-              { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
-              { path: '/grabba/ai-playbooks', label: 'AI Playbooks', emoji: '📋' },
-              { path: '/grabba/ai-routines', label: 'AI Routines', emoji: '🔄' },
-              { path: '/grabba/risk-radar', label: 'Risk Radar', emoji: '🛡️' },
-              { path: '/grabba/autopilot', label: 'Autopilot Console', emoji: '✈️' },
-              { path: '/grabba/command-console', label: 'Command Console', emoji: '🎮' },
+              { path: '/grabba/floor9', label: 'AI Operations Hub', emoji: '🧠' },
+              { path: '/gasmask/agent-center', label: 'AI Agent Center', emoji: '🤖' },
+              { path: '/grabba/floor9/playbooks', label: 'AI Playbooks', emoji: '📋' },
+              { path: '/grabba/floor9/tasks', label: 'AI Tasks', emoji: '✅' },
+              { path: '/grabba/floor9/predictions', label: 'AI Predictions', emoji: '🔮' },
+              { path: '/grabba/floor9/alerts', label: 'AI Alerts', emoji: '🔔' },
+              { path: '/grabba/floor9/instinct-log', label: 'Instinct Log', emoji: '📜' },
+              { path: '/grabba/floor9/action-queue', label: 'Action Queue', emoji: '📥' },
+              { path: '/grabba/floor9/results', label: 'Results', emoji: '📊' },
+              { path: '/grabba/floor9/note-cleaner', label: 'Note Cleaner', emoji: '🧹' },
             ])}
           </div>
 
