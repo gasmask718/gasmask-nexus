@@ -43576,6 +43576,122 @@ export type Database = {
         }
         Relationships: []
       }
+      message_send_queue: {
+        Row: {
+          audience_type: string | null
+          campaign_name: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by: string | null
+          delivered_count: number | null
+          failed_count: number | null
+          id: string
+          message_body: string
+          replied_count: number | null
+          sent_count: number | null
+          started_at: string | null
+          status: string | null
+          total_recipients: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          audience_type?: string | null
+          campaign_name?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          id?: string
+          message_body: string
+          replied_count?: number | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          audience_type?: string | null
+          campaign_name?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          delivered_count?: number | null
+          failed_count?: number | null
+          id?: string
+          message_body?: string
+          replied_count?: number | null
+          sent_count?: number | null
+          started_at?: string | null
+          status?: string | null
+          total_recipients?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      message_send_queue_items: {
+        Row: {
+          contact_name: string | null
+          created_at: string | null
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          language: string | null
+          message_body: string
+          phone: string
+          queue_id: string | null
+          replied_at: string | null
+          reply_text: string | null
+          sent_at: string | null
+          status: string | null
+          store_name: string | null
+          twilio_sid: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string | null
+          message_body: string
+          phone: string
+          queue_id?: string | null
+          replied_at?: string | null
+          reply_text?: string | null
+          sent_at?: string | null
+          status?: string | null
+          store_name?: string | null
+          twilio_sid?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          language?: string | null
+          message_body?: string
+          phone?: string
+          queue_id?: string | null
+          replied_at?: string | null
+          reply_text?: string | null
+          sent_at?: string | null
+          status?: string | null
+          store_name?: string | null
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_send_queue_items_queue_id_fkey"
+            columns: ["queue_id"]
+            isOneToOne: false
+            referencedRelation: "message_send_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_threads: {
         Row: {
           created_at: string
