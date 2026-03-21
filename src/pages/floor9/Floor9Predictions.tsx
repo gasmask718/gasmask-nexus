@@ -52,7 +52,7 @@ export default function Floor9Predictions() {
           </p>
         </div>
         <Button
-          onClick={() => calculateHealth.mutate()}
+          onClick={() => calculateHealth.mutate(undefined)}
           disabled={calculateHealth.isPending}
           className="gap-2"
         >
