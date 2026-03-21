@@ -152,6 +152,9 @@ export default function AgentCenterPage() {
 
   return (
     <div className="space-y-6 p-4 md:p-6">
+      {/* Command Brain — AI Command Bar */}
+      <CommandBrain />
+
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
