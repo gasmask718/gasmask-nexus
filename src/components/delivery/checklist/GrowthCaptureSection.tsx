@@ -34,7 +34,7 @@ interface GrowthCaptureSectionProps {
 }
 
 const emptyStore = (): NewStoreCapture => ({
-  name: '', telephone: '', address: '', street: '', city: '', state: '', zip: '', full_address: '', addressConfirmed: false,
+  contactPersonName: '', name: '', telephone: '', address: '', street: '', city: '', state: '', zip: '', full_address: '', addressConfirmed: false,
 });
 
 export function GrowthCaptureSection({
