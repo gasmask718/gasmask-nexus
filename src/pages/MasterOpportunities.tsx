@@ -654,7 +654,7 @@ export default function MasterOpportunities() {
   // ── Opportunity score cards (top-level KPIs) ──
   const oppCards = [
     { icon: ShoppingCart, label: 'Needs Order', count: signalSummary?.needsOrder || 0, color: 'text-yellow-500', bg: 'bg-yellow-500/10', tab: 'signals' as MainTab, desc: 'Field signals' },
-    { icon: MessageSquare, label: 'Messaging', count: messagingReplies?.length || 0, color: 'text-blue-500', bg: 'bg-blue-500/10', tab: 'messaging' as MainTab, desc: 'Inbound replies', pulse: (messagingReplies?.length || 0) > 0 },
+    { icon: MessageSquare, label: 'Store Replies', count: gasmaskMessages?.length || 0, color: 'text-blue-500', bg: 'bg-blue-500/10', tab: 'messaging' as MainTab, desc: 'GasMask store SMS', pulse: (gasmaskMessages?.length || 0) > 0 },
     { icon: Phone, label: 'Dialer Results', count: dialerResults?.length || 0, color: 'text-green-500', bg: 'bg-green-500/10', tab: 'dialer' as MainTab, desc: 'AI called, interested' },
     { icon: Package, label: 'Visit Triggers', count: visitTriggers?.length || 0, color: 'text-purple-500', bg: 'bg-purple-500/10', tab: 'visits' as MainTab, desc: 'Pending field visits' },
     { icon: TrendingUp, label: 'Ready to Close', count: readyToClose?.length || 0, color: 'text-emerald-500', bg: 'bg-emerald-500/10', tab: 'ready-close' as MainTab, desc: 'Booked/interested P7+' },
