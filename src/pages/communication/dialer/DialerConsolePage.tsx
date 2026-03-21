@@ -1,5 +1,6 @@
-// Dynasty OS — DialerConsolePage — cache-bust rebuild 2026-03-21T11:47
+// Dynasty OS — DialerConsolePage — rebuilt 2026-03-21T12:01
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { CallSmsPanel } from '@/components/communication/CallSmsPanel';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
