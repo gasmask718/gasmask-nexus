@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Store, Plus, Trash2, Phone, MapPin, Check } from 'lucide-react';
+import { Store, Plus, Trash2, Phone, MapPin, Check, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ChecklistSection } from './ChecklistSection';
 import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
