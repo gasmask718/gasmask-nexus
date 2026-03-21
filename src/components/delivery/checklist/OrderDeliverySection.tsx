@@ -92,7 +92,7 @@ export function OrderDeliverySection({
                   </div>
                 </div>
                 <Badge variant="outline" className="text-xs">
-                  ${order.total_amount.toFixed(2)}
+                  ${(order.total_amount ?? 0).toFixed(2)}
                 </Badge>
               </div>
             );
