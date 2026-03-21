@@ -121,6 +121,12 @@ export default function AutoDialerPage() {
           <TabsTrigger value="live" className="gap-1.5 text-xs">
             <Radio className="h-3.5 w-3.5" /> Live Calls
           </TabsTrigger>
+          <TabsTrigger value="recordings" className="gap-1.5 text-xs">
+            <Disc className="h-3.5 w-3.5" /> Recordings
+          </TabsTrigger>
+          <TabsTrigger value="missed" className="gap-1.5 text-xs">
+            <PhoneOff className="h-3.5 w-3.5" /> Missed
+          </TabsTrigger>
           <TabsTrigger value="voice-status" className="gap-1.5 text-xs">
             <Mic className="h-3.5 w-3.5" /> Voice Status
           </TabsTrigger>
@@ -143,6 +149,12 @@ export default function AutoDialerPage() {
         </TabsContent>
         <TabsContent value="live" className="mt-4">
           <DialerLiveCallsTab />
+        </TabsContent>
+        <TabsContent value="recordings" className="mt-4">
+          <CallRecordingsTab />
+        </TabsContent>
+        <TabsContent value="missed" className="mt-4">
+          <MissedCallsTab />
         </TabsContent>
         <TabsContent value="voice-status" className="mt-4">
           <div className="max-w-2xl">
