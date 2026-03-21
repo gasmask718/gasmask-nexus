@@ -13,8 +13,11 @@ import { useBusiness } from "@/contexts/BusinessContext";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Send, Zap, Calendar, Loader2, Shield, AlertTriangle } from "lucide-react";
+import { Send, Zap, Calendar, Loader2, Shield, AlertTriangle, CheckCircle2, XCircle, AlertCircle } from "lucide-react";
 import ContactSelector, { SelectedContact } from "@/components/communication/ContactSelector";
+import { AIMessageComposer } from "@/components/communication/AIMessageComposer";
+import { SendQueueMonitor } from "@/components/communication/SendQueueMonitor";
+import { useBulkMessageSend } from "@/hooks/useBulkMessageSend";
 
 const TEMPLATES = [
   { name: "Inventory Check", category: "Operations", msg: "Hi this is GasMask —\nQuick inventory check:\nHow many tubes do you currently have left?\n(few / 1/4 / 1/2 / 3/4 / full)" },
