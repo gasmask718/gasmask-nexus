@@ -44955,6 +44955,64 @@ export type Database = {
         }
         Relationships: []
       }
+      note_cleaning_log: {
+        Row: {
+          approved_at: string | null
+          cleaned_by: string | null
+          cleaned_note: string | null
+          created_at: string | null
+          id: string
+          note_id: string | null
+          original_note: string | null
+          status: string | null
+          store_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          cleaned_by?: string | null
+          cleaned_note?: string | null
+          created_at?: string | null
+          id?: string
+          note_id?: string | null
+          original_note?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          cleaned_by?: string | null
+          cleaned_note?: string | null
+          created_at?: string | null
+          id?: string
+          note_id?: string | null
+          original_note?: string | null
+          status?: string | null
+          store_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_cleaning_log_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "store_notes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_cleaning_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "store_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_cleaning_log_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "v_store_commission_performance"
+            referencedColumns: ["store_id"]
+          },
+        ]
+      }
       notification_events: {
         Row: {
           channel: string
@@ -59777,29 +59835,44 @@ export type Database = {
       store_notes: {
         Row: {
           brand_scope: string | null
+          cleaned_at: string | null
+          cleaning_status: string | null
           created_at: string
           created_by: string | null
           id: string
+          is_legacy: boolean | null
+          needs_cleaning: boolean | null
           note_date: string | null
           note_text: string
+          original_note: string | null
           store_id: string | null
         }
         Insert: {
           brand_scope?: string | null
+          cleaned_at?: string | null
+          cleaning_status?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          is_legacy?: boolean | null
+          needs_cleaning?: boolean | null
           note_date?: string | null
           note_text: string
+          original_note?: string | null
           store_id?: string | null
         }
         Update: {
           brand_scope?: string | null
+          cleaned_at?: string | null
+          cleaning_status?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          is_legacy?: boolean | null
+          needs_cleaning?: boolean | null
           note_date?: string | null
           note_text?: string
+          original_note?: string | null
           store_id?: string | null
         }
         Relationships: [
