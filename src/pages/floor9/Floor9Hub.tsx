@@ -21,10 +21,13 @@ import {
   TrendingUp,
   Eye,
   Ban,
+  Zap,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { GrabbaLayout } from '@/components/grabba/GrabbaLayout';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useInstinctFeed } from '@/hooks/useInstinctFeed';
+import { formatDistanceToNow } from 'date-fns';
 import {
   useWorkforceStats,
   useAIHealthMetrics,
