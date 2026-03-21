@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Send, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 interface Message {
   id: string;
@@ -21,7 +22,7 @@ export function ConversationThread({ leadId }: { leadId: string }) {
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data: messages, refetch } = useQuery({
+  const { data: messages } = useQuery({
     queryKey: ["conversations", leadId],
     queryFn: async () => {
       const { data } = await (supabase as any)
@@ -31,13 +32,14 @@ export function ConversationThread({ leadId }: { leadId: string }) {
         .order("created_at", { ascending: true });
       return (data || []) as Message[];
     },
-    refetchInterval: 5000,
   });
 
-  // Realtime subscription
+  // Realtime subscription — instantly add new messages
   useEffect(() => {
+    if (!leadId) return;
+
     const channel = supabase
-      .channel(`conv-${leadId}`)
+      .channel(`conv-${leadId}-live`)
       .on(
         "postgres_changes",
         {
@@ -46,14 +48,20 @@ export function ConversationThread({ leadId }: { leadId: string }) {
           table: "brandaro_conversations",
           filter: `lead_id=eq.${leadId}`,
         },
-        () => refetch()
+        (payload) => {
+          // Optimistically add new message to cache
+          queryClient.setQueryData(
+            ["conversations", leadId],
+            (old: Message[] | undefined) => [...(old || []), payload.new as Message]
+          );
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [leadId, refetch]);
+  }, [leadId, queryClient]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -78,7 +86,9 @@ export function ConversationThread({ leadId }: { leadId: string }) {
               >
                 <p>{text}</p>
                 <p className={`text-[10px] mt-1 ${isInbound ? "text-muted-foreground" : "text-primary-foreground/70"}`}>
-                  {new Date(msg.created_at).toLocaleTimeString()}
+                  {msg.created_at
+                    ? formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })
+                    : ""}
                   {isInbound && " · Received"}
                 </p>
               </div>
@@ -139,6 +149,7 @@ function QuickReplyInput({ leadId }: { leadId: string }) {
       });
 
       setText("");
+      // Realtime will pick it up, but also invalidate for safety
       queryClient.invalidateQueries({ queryKey: ["conversations", leadId] });
       toast.success("Message sent");
     } catch (err: any) {

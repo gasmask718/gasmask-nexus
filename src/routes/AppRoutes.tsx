@@ -2771,6 +2771,7 @@ export default function AppRoutes() {
           <Route path="reporting" element={<ClientReportingPage />} />
           <Route path="campaigns" element={<CampaignManagerPage />} />
           <Route path="reviews" element={<ReviewQueuePage />} />
+          <Route path="phone-numbers" element={<BrandaroPhoneNumbersPage />} />
         </Route>
       </Route>
 

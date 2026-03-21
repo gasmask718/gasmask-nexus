@@ -45,6 +45,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/optimization', label: 'Optimization Engine', icon: Cpu },
   { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
   { path: '/os/brandaro/system-status', label: 'System Status', icon: Activity },
+  { path: '/brandaro/phone-numbers', label: 'Phone Numbers', icon: Smartphone },
 ];
 
 export const BrandaroModule: DynastyModule = {
