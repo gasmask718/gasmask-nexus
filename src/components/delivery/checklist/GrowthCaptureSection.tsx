@@ -3,7 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Store, Plus, Trash2, Phone, MapPin, Check } from 'lucide-react';
+import { Store, Plus, Trash2, Phone, MapPin, Check, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { ChecklistSection } from './ChecklistSection';
 import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/ui/address-autocomplete';
 
 interface NewStoreCapture {
+  contactPersonName: string;
   name: string;
   telephone: string;
   address: string;
@@ -33,7 +34,7 @@ interface GrowthCaptureSectionProps {
 }
 
 const emptyStore = (): NewStoreCapture => ({
-  name: '', telephone: '', address: '', street: '', city: '', state: '', zip: '', full_address: '', addressConfirmed: false,
+  contactPersonName: '', name: '', telephone: '', address: '', street: '', city: '', state: '', zip: '', full_address: '', addressConfirmed: false,
 });
 
 export function GrowthCaptureSection({
@@ -115,6 +116,7 @@ export function GrowthCaptureSection({
           .insert({
             store_id: storeId,
             person_type: personType,
+            contact_person_name: store.contactPersonName,
             store_name: store.name,
             telephone: store.telephone,
             address: store.full_address || store.address,
@@ -202,8 +204,19 @@ export function GrowthCaptureSection({
                     </Button>
                   </div>
 
-                  {/* Row 1: Name + Telephone */}
+                  {/* Row 1: Contact Person + Store Name */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <User className="h-2.5 w-2.5" /> Contact Person
+                      </Label>
+                      <Input
+                        placeholder="Person's name"
+                        value={store.contactPersonName}
+                        onChange={(e) => updateNewStore(index, 'contactPersonName', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground">Store Name</Label>
                       <Input
@@ -213,6 +226,10 @@ export function GrowthCaptureSection({
                         className="h-8 text-sm"
                       />
                     </div>
+                  </div>
+
+                  {/* Row 2: Telephone + Address */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Phone className="h-2.5 w-2.5" /> Telephone
@@ -227,7 +244,7 @@ export function GrowthCaptureSection({
                     </div>
                   </div>
 
-                  {/* Row 2: Address autocomplete */}
+                  {/* Row 3: Address autocomplete */}
                   {store.addressConfirmed ? (
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-xs text-green-600">
