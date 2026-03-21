@@ -129,6 +129,7 @@ const VACommandCenterPage = lazy(() => import('@/pages/brandaro/VACommandCenterP
 const LeadDatabasePage = lazy(() => import('@/pages/brandaro/LeadDatabasePage'));
 const CRMPipelinePage = lazy(() => import('@/pages/brandaro/CRMPipelinePage'));
 const BrandaroInboxPage = lazy(() => import('@/pages/brandaro/InboxPage'));
+const BrandaroPhoneNumbersPage = lazy(() => import('@/pages/brandaro/PhoneNumbersPage'));
 const CallingOpsPage = lazy(() => import('@/pages/brandaro/CallingOpsPage'));
 const RevenueAnalyticsPage = lazy(() => import('@/pages/brandaro/RevenueAnalyticsPage'));
 const ClientReportingPage = lazy(() => import('@/pages/brandaro/ClientReportingPage'));
