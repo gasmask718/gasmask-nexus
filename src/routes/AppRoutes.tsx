@@ -971,6 +971,7 @@ export default function AppRoutes() {
         <Route path="/gasmask/driver-route" element={<GasmaskDriverRoutePage />} />
         <Route path="/gasmask/agent-center" element={<AgentCenterPage />} />
         <Route path="/dynasty/agents" element={<AgentCenterPage />} />
+        <Route path="/gasmask/note-cleaner" element={<NoteCleanerPage />} />
 
         {/* HotMama Routes */}
         <Route path="/hotmama/*" element={<BrandPlaceholder />} />
