@@ -8,6 +8,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { ChecklistSection } from './ChecklistSection';
 import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const RELATIONSHIP_TYPES = [
+  'Owner', 'Co-Owner', 'Manager', 'Assistant Manager', 'Worker / Employee',
+  'Son', 'Daughter', 'Brother', 'Sister', 'Partner', 'Wholesaler', 'Driver', 'Other',
+] as const;
+
+function getRelationshipBadgeClasses(type: string | null | undefined): string {
+  if (!type) return 'bg-muted text-muted-foreground';
+  if (['Owner', 'Co-Owner'].includes(type)) return 'bg-green-500/15 text-green-700 border-green-500/30';
+  if (['Manager', 'Assistant Manager'].includes(type)) return 'bg-blue-500/15 text-blue-700 border-blue-500/30';
+  if (['Worker / Employee'].includes(type)) return 'bg-muted text-muted-foreground';
+  if (['Son', 'Daughter', 'Brother', 'Sister'].includes(type)) return 'bg-amber-500/15 text-amber-700 border-amber-500/30';
+  if (['Partner', 'Wholesaler', 'Driver'].includes(type)) return 'bg-purple-500/15 text-purple-700 border-purple-500/30';
+  return 'bg-muted text-muted-foreground';
+}
 
 interface ContactInfo {
   id?: string;
@@ -17,6 +33,8 @@ interface ContactInfo {
   responsiveByCall: boolean;
   responsiveByText: boolean;
   isNew?: boolean;
+  relationship_type?: string | null;
+  relationship_type_custom?: string | null;
 }
 
 interface ContactUpdateSectionProps {
@@ -49,13 +67,15 @@ export function ContactUpdateSection({
         .eq('store_id', storeId);
 
       if (data) {
-        setContacts(data.map(c => ({
+        setContacts(data.map((c: any) => ({
           id: c.id,
           name: c.name || '',
           role: c.role || '',
           phone: c.phone || '',
           responsiveByCall: c.responsive_by_call || false,
           responsiveByText: c.responsive_by_text || false,
+          relationship_type: c.relationship_type || null,
+          relationship_type_custom: c.relationship_type_custom || null,
         })));
       }
       setLoading(false);
@@ -76,9 +96,51 @@ export function ContactUpdateSection({
     onContactUpdate({ ...contactData, contacts, spokeWith });
   };
 
+  const handleRelationshipChange = async (index: number, value: string) => {
+    const updated = [...contacts];
+    updated[index] = {
+      ...updated[index],
+      relationship_type: value,
+      relationship_type_custom: value === 'Other' ? updated[index].relationship_type_custom : null,
+    };
+    setContacts(updated);
+    onContactUpdate({ ...contactData, contacts: updated, spokeWith });
+
+    // Save immediately if existing contact
+    const contact = updated[index];
+    if (contact.id) {
+      await (supabase as any)
+        .from('store_contacts')
+        .update({
+          relationship_type: value,
+          relationship_type_custom: value === 'Other' ? contact.relationship_type_custom : null,
+        })
+        .eq('id', contact.id);
+    }
+  };
+
+  const handleCustomRelationshipChange = async (index: number, value: string) => {
+    const updated = [...contacts];
+    updated[index] = { ...updated[index], relationship_type_custom: value };
+    setContacts(updated);
+
+    const contact = updated[index];
+    if (contact.id) {
+      await (supabase as any)
+        .from('store_contacts')
+        .update({ relationship_type_custom: value })
+        .eq('id', contact.id);
+    }
+  };
+
   const handleSpokeWithChange = (value: string) => {
     setSpokeWith(value);
     onContactUpdate({ ...contactData, contacts, spokeWith: value });
+  };
+
+  const getDisplayLabel = (contact: ContactInfo) => {
+    if (contact.relationship_type === 'Other') return contact.relationship_type_custom || 'Other';
+    return contact.relationship_type || contact.role || 'Unknown';
   };
 
   return (
@@ -125,6 +187,7 @@ export function ContactUpdateSection({
             <div className="space-y-2">
               {contacts.map((contact, index) => (
                 <div key={contact.id || index} className="p-3 rounded-lg border space-y-2">
+                  {/* Name + Relationship badge */}
                   <div className="flex items-center gap-2">
                     <User className="h-3 w-3 text-muted-foreground" />
                     {contact.isNew ? (
@@ -137,7 +200,34 @@ export function ContactUpdateSection({
                     ) : (
                       <span className="text-sm font-medium flex-1">{contact.name}</span>
                     )}
-                    <Badge variant="outline" className="text-xs">{contact.role || 'Unknown'}</Badge>
+                    <Badge variant="outline" className={cn('text-xs', getRelationshipBadgeClasses(contact.relationship_type))}>
+                      {getDisplayLabel(contact)}
+                    </Badge>
+                  </div>
+
+                  {/* Relationship Type Dropdown */}
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={contact.relationship_type || ''}
+                      onValueChange={(val) => handleRelationshipChange(index, val)}
+                    >
+                      <SelectTrigger className="h-7 text-xs flex-1">
+                        <SelectValue placeholder="Relationship type..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RELATIONSHIP_TYPES.map(t => (
+                          <SelectItem key={t} value={t} className="text-xs">{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {contact.relationship_type === 'Other' && (
+                      <Input
+                        placeholder="Specify..."
+                        value={contact.relationship_type_custom || ''}
+                        onChange={(e) => handleCustomRelationshipChange(index, e.target.value)}
+                        className="h-7 text-xs flex-1"
+                      />
+                    )}
                   </div>
                   
                   <div className="flex items-center gap-2">
