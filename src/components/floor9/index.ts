@@ -16,3 +16,7 @@ export * from './TaskProgressBar';
 export * from './TaskActivityFeed';
 export * from './DeleteTaskModal';
 export * from './TaskCompletionReport';
+// AI Intelligence Components
+export * from './CommandBrain';
+export * from './SmartNoteComposer';
+export * from './StoreHealthBadge';
