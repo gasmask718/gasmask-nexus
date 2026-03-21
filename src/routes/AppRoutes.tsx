@@ -408,7 +408,7 @@ const DealsSalesPage = lazy(() => import('@/pages/communication/deals/DealsSales
 const FollowUpManagerPage = lazy(() => import('@/pages/communication/followups/FollowUpManagerPage'));
 const FieldSubmissionsPage = lazy(() => import('@/pages/communication/FieldSubmissionsPage'));
 const UnifiedInboxV3Page = lazy(() => import('@/pages/communication/inbox/UnifiedInboxV3Page'));
-const PlaybooksManagement = lazy(() => import('@/pages/communication/PlaybooksManagement'));
+const PlaybooksManagement = lazy(() => import('@/pages/communication/playbooks/CommunicationPlaybooksPage'));
 const ShadowModePage = lazy(() => import('@/pages/communication/ShadowModePage'));
 const OutboundGrowthPage = lazy(() => import('@/pages/communication/OutboundGrowthPage'));
 const ExecutiveControlRoomPage = lazy(() => import('@/pages/executive').then(m => ({ default: m.ExecutiveControlRoomPage })));
@@ -1692,7 +1692,7 @@ export default function AppRoutes() {
           {/* ═══ FLOOR 2: AUTOMATION ENGINE ═══ */}
           <Route path="outbound-growth" element={<OutboundGrowthPage />} />
           <Route path="campaigns" element={<CampaignsPage />} />
-          <Route path="ai-auto-text" element={<AIAutoTextPage />} />
+          <Route path="ai-auto-text" element={<Navigate to="/communication/messaging-hub" replace />} />
           <Route path="messaging-hub" element={<MessagingHubPage />} />
           <Route path="personas" element={<PersonasPage />} />
           <Route path="call-flows" element={<CallFlowsPage />} />
