@@ -255,6 +255,7 @@ export default function MasterOpportunities() {
   const [oppCurrentPage, setOppCurrentPage] = useState(1);
   const [oppPageSize, setOppPageSize] = useState(25);
   const [scanning, setScanning] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // ── Existing hooks ──
   const { data: signalSummary, isLoading: signalSummaryLoading } = useTubeIntelSummary();
