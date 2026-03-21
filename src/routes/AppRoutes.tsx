@@ -1425,6 +1425,7 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
+        <Route path="/os/sports-betting/ai-os" element={<SportsBettingOS />} />
         <Route path="/os/sports-betting/nba" element={<NBADailyBoard />} />
         <Route path="/os/sports-betting/line-intake" element={<LineIntake />} />
         <Route path="/os/sports-betting/simulation" element={<SimulationPage />} />
