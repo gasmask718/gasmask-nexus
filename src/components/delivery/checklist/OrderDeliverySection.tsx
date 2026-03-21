@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Camera, Package, User, Plus, Trash2, FileText } from 'lucide-react';
+import { Package, User, Plus, Trash2, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ChecklistSection } from './ChecklistSection';
@@ -12,6 +12,7 @@ import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
 import { getBrandIdentity, normalizeBrandId } from '@/config/brands';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 interface OrderDeliverySectionProps {
   storeId: string;
@@ -31,13 +32,29 @@ interface PendingOrder {
   created_at: string;
 }
 
+interface TubeProduct {
+  id: string;
+  brand_name: string;
+  brand_id: string;
+  current_tubes_left: number | null;
+  last_order_date: string | null;
+  needs_order: boolean;
+}
+
 interface LineItem {
-  productId: string;
   productName: string;
   brand: string;
-  sku: string;
-  qty: number;
-  unitPrice: number;
+  currentTubes: number;
+  lastOrderDate: string | null;
+  qtyToDeliver: number;
+  notes: string;
+}
+
+function formatLastOrder(date: string | null): string {
+  if (!date) return 'Never ordered';
+  const d = new Date(date);
+  const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+  return `${format(d, 'MMM d')} · ${days}d ago`;
 }
 
 export function OrderDeliverySection({
@@ -61,40 +78,23 @@ export function OrderDeliverySection({
   const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().split('T')[0]);
   const [paymentTerms, setPaymentTerms] = useState('Net 30');
   const [lineItems, setLineItems] = useState<LineItem[]>([
-    { productId: '', productName: '', brand: '', sku: '', qty: 1, unitPrice: 0 },
+    { productName: '', brand: '', currentTubes: 0, lastOrderDate: null, qtyToDeliver: 1, notes: '' },
   ]);
 
-  // Fetch products dynamically
-  const { data: products = [] } = useQuery({
-    queryKey: ['checklist-products'],
+  // Fetch products from store_tube_inventory_status (correct source)
+  const { data: tubeProducts = [] } = useQuery({
+    queryKey: ['delivery-tube-products', storeId],
     queryFn: async () => {
       const { data } = await supabase
-        .from('products')
-        .select('id, name, brand_id, sku, store_price')
-        .eq('is_active', true)
-        .eq('is_deleted', false)
-        .order('brand_id')
-        .order('name');
-      return data || [];
+        .from('store_tube_inventory_status')
+        .select('id, brand_name, brand_id, current_tubes_left, last_order_date, needs_order')
+        .eq('store_id', storeId)
+        .eq('is_simulation', false)
+        .order('brand_name');
+      return (data || []) as TubeProduct[];
     },
+    enabled: !!storeId,
   });
-
-  // Fetch brands for display
-  const { data: brands = [] } = useQuery({
-    queryKey: ['checklist-brands'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('brands')
-        .select('id, name');
-      return data || [];
-    },
-  });
-
-  const brandMap = useMemo(() => {
-    const m: Record<string, string> = {};
-    brands.forEach((b: any) => { m[b.id] = b.name; });
-    return m;
-  }, [brands]);
 
   useEffect(() => {
     async function fetchPendingOrders() {
@@ -117,35 +117,39 @@ export function OrderDeliverySection({
   };
 
   const addLineItem = () => {
-    setLineItems([...lineItems, { productId: '', productName: '', brand: '', sku: '', qty: 1, unitPrice: 0 }]);
+    setLineItems([...lineItems, { productName: '', brand: '', currentTubes: 0, lastOrderDate: null, qtyToDeliver: 1, notes: '' }]);
   };
 
   const removeLineItem = (idx: number) => {
     setLineItems(lineItems.filter((_, i) => i !== idx));
   };
 
-  const updateLineProduct = (idx: number, productId: string) => {
-    const product = products.find((p: any) => p.id === productId);
+  const updateLineProduct = (idx: number, productName: string) => {
+    const product = tubeProducts.find(p => p.brand_name === productName);
     if (!product) return;
     const updated = [...lineItems];
     updated[idx] = {
-      productId: product.id,
-      productName: product.name,
-      brand: brandMap[product.brand_id] || product.brand_id || '',
-      sku: product.sku || '',
-      qty: updated[idx].qty,
-      unitPrice: product.store_price || 0,
+      productName: product.brand_name,
+      brand: product.brand_id,
+      currentTubes: product.current_tubes_left || 0,
+      lastOrderDate: product.last_order_date,
+      qtyToDeliver: updated[idx].qtyToDeliver,
+      notes: updated[idx].notes,
     };
     setLineItems(updated);
   };
 
-  const updateLineField = (idx: number, field: 'qty' | 'unitPrice', value: number) => {
+  const updateLineField = (idx: number, field: 'qtyToDeliver', value: number) => {
     const updated = [...lineItems];
     updated[idx] = { ...updated[idx], [field]: value };
     setLineItems(updated);
   };
 
-  const subtotal = lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0);
+  const updateLineNotes = (idx: number, value: string) => {
+    const updated = [...lineItems];
+    updated[idx] = { ...updated[idx], notes: value };
+    setLineItems(updated);
+  };
 
   const generateInvoiceNumber = () => {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
@@ -154,7 +158,7 @@ export function OrderDeliverySection({
   };
 
   const saveOrder = async (status: 'draft' | 'sent') => {
-    const validLines = lineItems.filter(li => li.productId && li.qty > 0);
+    const validLines = lineItems.filter(li => li.productName && li.qtyToDeliver > 0);
     if (!validLines.length) {
       toast.error('Add at least one line item');
       return;
@@ -172,23 +176,23 @@ export function OrderDeliverySection({
           delivery_date: deliveryDate,
           payment_terms: paymentTerms,
           status,
-          subtotal,
-          total: subtotal,
+          subtotal: 0,
+          total: 0,
         })
         .select('id')
         .single();
 
       if (orderErr) throw orderErr;
 
+      // Save line items
       const lines = validLines.map(li => ({
         order_id: order.id,
-        product_id: li.productId,
         product_name: li.productName,
         brand: li.brand,
-        sku: li.sku,
-        qty: li.qty,
-        unit_price: li.unitPrice,
-        line_total: li.qty * li.unitPrice,
+        sku: '',
+        qty: li.qtyToDeliver,
+        unit_price: 0,
+        line_total: 0,
       }));
 
       const { error: lineErr } = await (supabase as any)
@@ -196,12 +200,30 @@ export function OrderDeliverySection({
         .insert(lines);
       if (lineErr) throw lineErr;
 
+      // If status = 'sent', sync tube counts back to store_tube_inventory_status
+      if (status === 'sent') {
+        for (const li of validLines) {
+          const product = tubeProducts.find(p => p.brand_name === li.productName);
+          if (product) {
+            const newCount = (product.current_tubes_left || 0) + li.qtyToDeliver;
+            await supabase
+              .from('store_tube_inventory_status')
+              .update({
+                current_tubes_left: newCount,
+                last_order_date: new Date().toISOString().split('T')[0],
+                last_updated_at: new Date().toISOString(),
+              })
+              .eq('id', product.id);
+          }
+        }
+      }
+
       toast.success(status === 'sent'
-        ? `Invoice ${invoiceNumber} generated`
+        ? `Order ${invoiceNumber} generated & tube counts updated`
         : `Draft ${invoiceNumber} saved`
       );
       setShowInvoiceForm(false);
-      setLineItems([{ productId: '', productName: '', brand: '', sku: '', qty: 1, unitPrice: 0 }]);
+      setLineItems([{ productName: '', brand: '', currentTubes: 0, lastOrderDate: null, qtyToDeliver: 1, notes: '' }]);
       setStoreName('');
     } catch (err: any) {
       toast.error(err.message || 'Failed to save order');
@@ -270,13 +292,13 @@ export function OrderDeliverySection({
             onClick={() => setShowInvoiceForm(!showInvoiceForm)}
           >
             <FileText className="h-3 w-3" />
-            {showInvoiceForm ? 'Hide Invoice Form' : 'Create Delivery Invoice'}
+            {showInvoiceForm ? 'Hide Delivery Form' : 'Create Delivery Order'}
           </Button>
 
-          {/* Inline Invoice Form */}
+          {/* Inline Delivery Form */}
           {showInvoiceForm && (
             <div className="p-3 rounded-lg border border-border space-y-3">
-              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">New Delivery Invoice</h4>
+              <h4 className="text-xs font-semibold text-foreground uppercase tracking-wider">New Delivery Order</h4>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <div>
@@ -318,73 +340,64 @@ export function OrderDeliverySection({
               <div className="space-y-2">
                 <Label className="text-[10px] text-muted-foreground uppercase">Line Items</Label>
                 {lineItems.map((li, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-1.5 items-end">
-                    <div className="col-span-4">
-                      {idx === 0 && <Label className="text-[9px] text-muted-foreground">Product</Label>}
-                      <Select value={li.productId} onValueChange={(v) => updateLineProduct(idx, v)}>
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((p: any) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  <div key={idx} className="rounded-lg border border-border/50 p-2 space-y-1.5">
+                    <div className="grid grid-cols-12 gap-1.5 items-end">
+                      <div className="col-span-5">
+                        {idx === 0 && <Label className="text-[9px] text-muted-foreground">Product</Label>}
+                        <Select value={li.productName} onValueChange={(v) => updateLineProduct(idx, v)}>
+                          <SelectTrigger className="h-8 text-xs">
+                            <SelectValue placeholder="Select product..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {tubeProducts.map((p) => (
+                              <SelectItem key={p.id} value={p.brand_name}>
+                                {p.brand_name}
+                                {p.needs_order && ' ⚠️'}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="col-span-2">
+                        {idx === 0 && <Label className="text-[9px] text-muted-foreground">Current</Label>}
+                        <Input value={li.currentTubes} readOnly className="h-8 text-xs bg-muted/50 text-center" />
+                      </div>
+                      <div className="col-span-2">
+                        {idx === 0 && <Label className="text-[9px] text-muted-foreground">Qty</Label>}
+                        <Input
+                          type="number"
+                          min={0}
+                          value={li.qtyToDeliver}
+                          onChange={(e) => updateLineField(idx, 'qtyToDeliver', parseInt(e.target.value) || 0)}
+                          className="h-8 text-xs text-center"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        {idx === 0 && <Label className="text-[9px] text-muted-foreground">Last Order</Label>}
+                        <div className="h-8 flex items-center text-[10px] text-muted-foreground truncate">
+                          {formatLastOrder(li.lastOrderDate)}
+                        </div>
+                      </div>
+                      <div className="col-span-1">
+                        {idx === 0 && <Label className="text-[9px] invisible">X</Label>}
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => removeLineItem(idx)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="col-span-2">
-                      {idx === 0 && <Label className="text-[9px] text-muted-foreground">Brand</Label>}
-                      <Input value={li.brand} readOnly className="h-8 text-xs bg-muted/50" />
-                    </div>
-                    <div className="col-span-1">
-                      {idx === 0 && <Label className="text-[9px] text-muted-foreground">Qty</Label>}
+                    {li.productName && (
                       <Input
-                        type="number"
-                        min={1}
-                        value={li.qty}
-                        onChange={(e) => updateLineField(idx, 'qty', parseInt(e.target.value) || 1)}
-                        className="h-8 text-xs text-center"
+                        value={li.notes}
+                        onChange={(e) => updateLineNotes(idx, e.target.value)}
+                        className="h-7 text-xs"
+                        placeholder="Notes for this item..."
                       />
-                    </div>
-                    <div className="col-span-2">
-                      {idx === 0 && <Label className="text-[9px] text-muted-foreground">Price</Label>}
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={li.unitPrice}
-                        onChange={(e) => updateLineField(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      {idx === 0 && <Label className="text-[9px] text-muted-foreground">Total</Label>}
-                      <Input
-                        value={`$${(li.qty * li.unitPrice).toFixed(2)}`}
-                        readOnly
-                        className="h-8 text-xs bg-muted/50 font-medium"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      {idx === 0 && <Label className="text-[9px] invisible">X</Label>}
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => removeLineItem(idx)}>
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
+                    )}
                   </div>
                 ))}
                 <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={addLineItem}>
                   <Plus className="h-3 w-3" /> Add Line Item
                 </Button>
-              </div>
-
-              {/* Totals */}
-              <div className="flex justify-end pt-2 border-t border-border">
-                <div className="text-right">
-                  <p className="text-xs text-muted-foreground">Subtotal</p>
-                  <p className="text-sm font-bold text-foreground">${subtotal.toFixed(2)}</p>
-                </div>
               </div>
 
               {/* Actions */}
@@ -404,7 +417,7 @@ export function OrderDeliverySection({
                   onClick={() => saveOrder('sent')}
                   disabled={saving}
                 >
-                  Generate Order
+                  Generate & Deliver
                 </Button>
               </div>
             </div>

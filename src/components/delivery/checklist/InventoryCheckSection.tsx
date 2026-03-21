@@ -10,6 +10,8 @@ import { ChecklistSection } from './ChecklistSection';
 import { getTasksByCategory } from '@/hooks/useDeliveryChecklist';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { VALID_TUBE_BRANDS } from '@/components/store/UnifiedTubeIntelligenceCard';
 
 interface InventoryCheckSectionProps {
   storeId: string;
@@ -19,6 +21,15 @@ interface InventoryCheckSectionProps {
   progress: { done: number; total: number };
   inventoryData: Record<string, any>;
   onInventoryUpdate: (data: Record<string, any>) => void;
+}
+
+interface TubeProduct {
+  id: string;
+  brand_name: string;
+  brand_id: string;
+  current_tubes_left: number | null;
+  last_order_date: string | null;
+  needs_order: boolean;
 }
 
 export function InventoryCheckSection({
@@ -41,32 +52,31 @@ export function InventoryCheckSection({
   const [savingPhotos, setSavingPhotos] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch products dynamically
-  const { data: products = [] } = useQuery({
-    queryKey: ['checklist-inventory-products'],
+  // Fetch products from store_tube_inventory_status (same source as Store Profile)
+  const { data: tubeProducts = [] } = useQuery({
+    queryKey: ['checklist-inventory-tube-products', storeId],
     queryFn: async () => {
       const { data } = await supabase
-        .from('products')
-        .select('id, name, brand_id, sku, store_price, hero_score, is_active')
-        .eq('is_active', true)
-        .eq('is_deleted', false)
-        .order('brand_id')
-        .order('name');
-      return data || [];
+        .from('store_tube_inventory_status')
+        .select('id, brand_name, brand_id, current_tubes_left, last_order_date, needs_order')
+        .eq('store_id', storeId)
+        .eq('is_simulation', false)
+        .order('brand_name');
+      return (data || []) as TubeProduct[];
     },
+    enabled: !!storeId,
   });
 
-  // Fetch brands
-  const { data: brands = [] } = useQuery({
-    queryKey: ['checklist-inv-brands'],
-    queryFn: async () => {
-      const { data } = await supabase.from('brands').select('id, name, color');
-      return data || [];
-    },
+  // Use VALID_TUBE_BRANDS as fallback ordering, match by brand_id
+  const orderedProducts = VALID_TUBE_BRANDS.map(vb => {
+    const match = tubeProducts.find(tp => tp.brand_id === vb.id);
+    return match || { id: vb.id, brand_name: vb.name, brand_id: vb.id, current_tubes_left: null, last_order_date: null, needs_order: false };
   });
 
-  const brandMap: Record<string, { name: string; color: string }> = {};
-  brands.forEach((b: any) => { brandMap[b.id] = { name: b.name, color: b.color || '#888' }; });
+  const isNewProduct = (brandId: string) => {
+    const brand = VALID_TUBE_BRANDS.find(b => b.id === brandId);
+    return brand && 'isNew' in brand && brand.isNew;
+  };
 
   const handleCountChange = (productId: string, value: number) => {
     setCounts(prev => ({ ...prev, [productId]: value }));
@@ -76,19 +86,26 @@ export function InventoryCheckSection({
     setNotes(prev => ({ ...prev, [productId]: value }));
   };
 
+  const formatLastOrder = (date: string | null): string => {
+    if (!date) return 'Never ordered';
+    const d = new Date(date);
+    const days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    return `${format(d, 'MMM d')} · ${days}d ago`;
+  };
+
   const saveTubeCounts = async () => {
     setSavingCounts(true);
     try {
       const visitDate = new Date().toISOString().split('T')[0];
-      const entries = products
-        .filter((p: any) => counts[p.id] !== undefined && counts[p.id] > 0)
-        .map((p: any) => ({
+      const entries = orderedProducts
+        .filter(p => counts[p.id] !== undefined && counts[p.id] > 0)
+        .map(p => ({
           store_id: storeId,
           person_type: personType,
           product_id: p.id,
-          product_name: p.name,
-          brand: brandMap[p.brand_id]?.name || p.brand_id || '',
-          sku: p.sku || '',
+          product_name: p.brand_name,
+          brand: p.brand_id,
+          sku: '',
           count: counts[p.id] || 0,
           notes: notes[p.id] || null,
           visit_date: visitDate,
@@ -179,53 +196,58 @@ export function InventoryCheckSection({
       accentColor="text-amber-500"
     >
       <div className="space-y-4">
-        {/* Tube Counts — Per Product */}
+        {/* Tube Counts — Per Product from store_tube_inventory_status */}
         <div className="space-y-2">
           <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Tube Counts per Product
           </Label>
           <div className="space-y-2">
-            {products.map((product: any) => {
-              const isNew = (product.hero_score ?? 0) >= 80;
-              const brandInfo = brandMap[product.brand_id];
+            {orderedProducts.map((product) => {
+              const isNew = isNewProduct(product.brand_id);
               return (
                 <div
                   key={product.id}
                   className={cn(
-                    'flex items-center gap-2 p-2 rounded-lg border',
+                    'p-2 rounded-lg border space-y-1',
                     isNew ? 'border-blue-500/50 bg-blue-500/5' : 'border-border'
                   )}
                 >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium truncate">{product.name}</span>
-                      {isNew && (
-                        <Badge className="bg-blue-500 text-[9px] px-1.5 py-0">New</Badge>
-                      )}
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium truncate">{product.brand_name}</span>
+                        {isNew && (
+                          <Badge className="bg-blue-500 text-[9px] px-1.5 py-0">New</Badge>
+                        )}
+                        {product.needs_order && (
+                          <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Needs Order</Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-muted-foreground">
+                          Current: {product.current_tubes_left ?? 0} tubes
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">·</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {formatLastOrder(product.last_order_date)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {brandInfo && (
-                        <Badge variant="outline" className="text-[9px] px-1.5 py-0">
-                          {brandInfo.name}
-                        </Badge>
-                      )}
-                      <span className="text-[10px] text-muted-foreground">{product.sku}</span>
-                    </div>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={counts[product.id] ?? ''}
+                      onChange={(e) => handleCountChange(product.id, parseInt(e.target.value) || 0)}
+                      className="w-16 h-7 text-xs text-center"
+                      placeholder="0"
+                    />
+                    <Input
+                      value={notes[product.id] ?? ''}
+                      onChange={(e) => handleNoteChange(product.id, e.target.value)}
+                      className="w-24 h-7 text-xs"
+                      placeholder="Notes"
+                    />
                   </div>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={counts[product.id] ?? ''}
-                    onChange={(e) => handleCountChange(product.id, parseInt(e.target.value) || 0)}
-                    className="w-16 h-7 text-xs text-center"
-                    placeholder="0"
-                  />
-                  <Input
-                    value={notes[product.id] ?? ''}
-                    onChange={(e) => handleNoteChange(product.id, e.target.value)}
-                    className="w-24 h-7 text-xs"
-                    placeholder="Notes"
-                  />
                 </div>
               );
             })}
