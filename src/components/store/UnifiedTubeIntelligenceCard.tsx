@@ -48,6 +48,7 @@ export const VALID_TUBE_BRANDS = [
   { id: 'grabba', name: TUBE_BRAND_COLORS.grabba.name, color: TUBE_BRAND_COLORS.grabba.hex },
   { id: 'hotscolatti-light', name: 'Hot Scolatti Light', color: TUBE_BRAND_COLORS['hotscolatti-light'].hex },
   { id: 'hotscolatti-dark', name: 'Hot Scolatti Dark', color: TUBE_BRAND_COLORS['hotscolatti-dark'].hex },
+  { id: 'hotscalatibros', name: 'HotScalati Bros', color: TUBE_BRAND_COLORS.hotscalatibros.hex, isNew: true },
 ] as const;
 
 interface TubeInventoryRecord {
@@ -121,6 +122,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       grabba: 'grabba_r_us',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
+      hotscalatibros: 'hotscolatti',
     };
     const canonicalId = mappings[brandId] || brandId;
     const rel = relationships.find(r => r.brand_id === canonicalId);
@@ -135,6 +137,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       grabba: 'grabba_r_us',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
+      hotscalatibros: 'hotscolatti',
     };
     const canonicalId = mappings[brandId] || brandId;
     return relationships.find(r => r.brand_id === canonicalId);
@@ -507,13 +510,17 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                 const brandIsActive = getBrandIsActive(brand.id);
                 const canToggleActive = role === 'admin' || role === 'ambassador' || role === 'biker';
 
+                const isNewProduct = 'isNew' in brand && brand.isNew;
+                
                 return (
                   <div
                     key={brand.id}
                     className={cn(
                       'p-3 rounded-lg border transition-colors',
-                      brandIsActive ? colorClasses.bg : 'bg-muted/30',
-                      brandIsActive ? colorClasses.border : 'border-border/20',
+                      isNewProduct ? 'border-blue-500/50 bg-blue-500/5' : '',
+                      !isNewProduct && brandIsActive ? colorClasses.bg : '',
+                      !isNewProduct && brandIsActive ? colorClasses.border : '',
+                      !isNewProduct && !brandIsActive ? 'bg-muted/30 border-border/20' : '',
                       !brandIsActive && 'opacity-65'
                     )}
                   >
@@ -527,6 +534,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                         <span className="font-medium" style={{ color: brandIsActive ? brand.color : undefined }}>
                           {brand.name}
                         </span>
+                        {isNewProduct && (
+                          <Badge className="bg-blue-500 text-[9px] px-1.5 py-0">New</Badge>
+                        )}
                         {!brandIsActive && (
                           <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
                             Inactive

@@ -44,6 +44,11 @@ export const TUBE_BRAND_COLORS: Record<string, { hex: string; tailwind: string; 
     tailwind: 'text-amber-900',
     name: 'Hot Scolatti Dark',
   },
+  hotscalatibros: {
+    hex: '#3B82F6',
+    tailwind: 'text-blue-500',
+    name: 'HotScalati Bros',
+  },
   fronto: {
     hex: '#22C55E',
     tailwind: 'text-green-500',
