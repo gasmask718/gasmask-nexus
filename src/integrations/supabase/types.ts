@@ -57500,6 +57500,363 @@ export type Database = {
           },
         ]
       }
+      sbo_games: {
+        Row: {
+          away_score: number | null
+          away_team: string
+          created_at: string | null
+          external_id: string | null
+          game_date: string
+          home_score: number | null
+          home_team: string
+          id: string
+          sport: string | null
+          status: string | null
+          updated_at: string | null
+          winner: string | null
+        }
+        Insert: {
+          away_score?: number | null
+          away_team: string
+          created_at?: string | null
+          external_id?: string | null
+          game_date: string
+          home_score?: number | null
+          home_team: string
+          id?: string
+          sport?: string | null
+          status?: string | null
+          updated_at?: string | null
+          winner?: string | null
+        }
+        Update: {
+          away_score?: number | null
+          away_team?: string
+          created_at?: string | null
+          external_id?: string | null
+          game_date?: string
+          home_score?: number | null
+          home_team?: string
+          id?: string
+          sport?: string | null
+          status?: string | null
+          updated_at?: string | null
+          winner?: string | null
+        }
+        Relationships: []
+      }
+      sbo_odds: {
+        Row: {
+          away_odds: number | null
+          away_spread: number | null
+          created_at: string | null
+          fetched_at: string | null
+          game_id: string | null
+          home_odds: number | null
+          home_spread: number | null
+          id: string
+          market_type: string
+          over_odds: number | null
+          sportsbook: string
+          total_line: number | null
+          under_odds: number | null
+        }
+        Insert: {
+          away_odds?: number | null
+          away_spread?: number | null
+          created_at?: string | null
+          fetched_at?: string | null
+          game_id?: string | null
+          home_odds?: number | null
+          home_spread?: number | null
+          id?: string
+          market_type: string
+          over_odds?: number | null
+          sportsbook: string
+          total_line?: number | null
+          under_odds?: number | null
+        }
+        Update: {
+          away_odds?: number | null
+          away_spread?: number | null
+          created_at?: string | null
+          fetched_at?: string | null
+          game_id?: string | null
+          home_odds?: number | null
+          home_spread?: number | null
+          id?: string
+          market_type?: string
+          over_odds?: number | null
+          sportsbook?: string
+          total_line?: number | null
+          under_odds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_odds_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_parlays: {
+        Row: {
+          actual_payout: number | null
+          combined_confidence: number | null
+          created_at: string | null
+          expected_value: number | null
+          id: string
+          legs: Json
+          name: string | null
+          notes: string | null
+          status: string | null
+          suggested_stake: number | null
+          total_legs: number
+          updated_at: string | null
+        }
+        Insert: {
+          actual_payout?: number | null
+          combined_confidence?: number | null
+          created_at?: string | null
+          expected_value?: number | null
+          id?: string
+          legs?: Json
+          name?: string | null
+          notes?: string | null
+          status?: string | null
+          suggested_stake?: number | null
+          total_legs: number
+          updated_at?: string | null
+        }
+        Update: {
+          actual_payout?: number | null
+          combined_confidence?: number | null
+          created_at?: string | null
+          expected_value?: number | null
+          id?: string
+          legs?: Json
+          name?: string | null
+          notes?: string | null
+          status?: string | null
+          suggested_stake?: number | null
+          total_legs?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sbo_player_props: {
+        Row: {
+          created_at: string | null
+          entered_by: string | null
+          game_id: string | null
+          id: string
+          line: number
+          over_odds: number | null
+          player_name: string
+          prop_type: string
+          source: string | null
+          team: string
+          under_odds: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entered_by?: string | null
+          game_id?: string | null
+          id?: string
+          line: number
+          over_odds?: number | null
+          player_name: string
+          prop_type: string
+          source?: string | null
+          team: string
+          under_odds?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entered_by?: string | null
+          game_id?: string | null
+          id?: string
+          line?: number
+          over_odds?: number | null
+          player_name?: string
+          prop_type?: string
+          source?: string | null
+          team?: string
+          under_odds?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_player_props_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_predictions: {
+        Row: {
+          actual_outcome: string | null
+          confidence_tier: string | null
+          context_brain_reasoning: string | null
+          context_brain_score: number | null
+          created_at: string | null
+          final_confidence: number | null
+          game_id: string | null
+          id: string
+          market_brain_reasoning: string | null
+          market_brain_score: number | null
+          predicted_outcome: string
+          prediction_type: string
+          prop_id: string | null
+          stats_brain_reasoning: string | null
+          stats_brain_score: number | null
+          updated_at: string | null
+          was_correct: boolean | null
+        }
+        Insert: {
+          actual_outcome?: string | null
+          confidence_tier?: string | null
+          context_brain_reasoning?: string | null
+          context_brain_score?: number | null
+          created_at?: string | null
+          final_confidence?: number | null
+          game_id?: string | null
+          id?: string
+          market_brain_reasoning?: string | null
+          market_brain_score?: number | null
+          predicted_outcome: string
+          prediction_type: string
+          prop_id?: string | null
+          stats_brain_reasoning?: string | null
+          stats_brain_score?: number | null
+          updated_at?: string | null
+          was_correct?: boolean | null
+        }
+        Update: {
+          actual_outcome?: string | null
+          confidence_tier?: string | null
+          context_brain_reasoning?: string | null
+          context_brain_score?: number | null
+          created_at?: string | null
+          final_confidence?: number | null
+          game_id?: string | null
+          id?: string
+          market_brain_reasoning?: string | null
+          market_brain_score?: number | null
+          predicted_outcome?: string
+          prediction_type?: string
+          prop_id?: string | null
+          stats_brain_reasoning?: string | null
+          stats_brain_score?: number | null
+          updated_at?: string | null
+          was_correct?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_predictions_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_predictions_prop_id_fkey"
+            columns: ["prop_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_player_props"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_simulations: {
+        Row: {
+          created_at: string | null
+          expected_value: number
+          id: string
+          kelly_stake: number | null
+          legs_detail: Json | null
+          parlay_id: string | null
+          potential_payout: number
+          simulated_losses: number | null
+          simulated_wins: number | null
+          simulation_count: number | null
+          stake: number
+          win_probability: number
+        }
+        Insert: {
+          created_at?: string | null
+          expected_value: number
+          id?: string
+          kelly_stake?: number | null
+          legs_detail?: Json | null
+          parlay_id?: string | null
+          potential_payout: number
+          simulated_losses?: number | null
+          simulated_wins?: number | null
+          simulation_count?: number | null
+          stake: number
+          win_probability: number
+        }
+        Update: {
+          created_at?: string | null
+          expected_value?: number
+          id?: string
+          kelly_stake?: number | null
+          legs_detail?: Json | null
+          parlay_id?: string | null
+          potential_payout?: number
+          simulated_losses?: number | null
+          simulated_wins?: number | null
+          simulation_count?: number | null
+          stake?: number
+          win_probability?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_simulations_parlay_id_fkey"
+            columns: ["parlay_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_parlays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_va_sessions: {
+        Row: {
+          created_at: string | null
+          entered_by: string | null
+          games_covered: number | null
+          id: string
+          notes: string | null
+          props_entered: number | null
+          session_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          entered_by?: string | null
+          games_covered?: number | null
+          id?: string
+          notes?: string | null
+          props_entered?: number | null
+          session_date?: string
+        }
+        Update: {
+          created_at?: string | null
+          entered_by?: string | null
+          games_covered?: number | null
+          id?: string
+          notes?: string | null
+          props_entered?: number | null
+          session_date?: string
+        }
+        Relationships: []
+      }
       scheduled_tasks: {
         Row: {
           created_at: string
