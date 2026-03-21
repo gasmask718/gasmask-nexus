@@ -554,6 +554,22 @@ export default function MasterOpportunities() {
     finally { setScanning(false); }
   };
 
+  // ── Sync to Route Engine ──
+  const runSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gasmask-opportunity-sync');
+      if (error) throw error;
+      toast.success('Synced to Route Engine', {
+        description: `${data?.total_triggers_created || 0} new triggers · ${data?.skipped_duplicates || 0} duplicates skipped`,
+        duration: 6000,
+      });
+      queryClient.invalidateQueries({ queryKey: ['opp-visit-triggers'] });
+      queryClient.invalidateQueries({ queryKey: ['gasmask-triggers-all'] });
+    } catch (err: any) { toast.error(err.message); }
+    finally { setSyncing(false); }
+  };
+
   // ── Existing signal logic ──
   useEffect(() => { setCurrentPage(1); }, [activeSignalTab]);
 
