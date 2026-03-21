@@ -27905,6 +27905,140 @@ export type Database = {
           },
         ]
       }
+      contact_profiles: {
+        Row: {
+          account_type: string | null
+          address: string | null
+          agent_notes: string | null
+          all_brands: string[] | null
+          assigned_agent: string | null
+          best_contact_method: string | null
+          best_contact_time: string | null
+          boro: string | null
+          business_name: string
+          city: string | null
+          created_at: string | null
+          do_not_contact: boolean | null
+          email: string | null
+          followup_cadence_days: number | null
+          id: string
+          is_active: boolean | null
+          is_vip: boolean | null
+          last_agent_action_at: string | null
+          last_contact_at: string | null
+          last_contact_type: string | null
+          last_order_at: string | null
+          last_visit_at: string | null
+          lifetime_value: number | null
+          next_followup_at: string | null
+          opted_out: boolean | null
+          owner_name: string | null
+          personality_notes: string | null
+          phone_primary: string | null
+          phone_secondary: string | null
+          preferences: string | null
+          primary_brand: string | null
+          relationship_score: number | null
+          relationship_tier: string | null
+          state: string | null
+          store_id: string | null
+          store_master_id: string | null
+          total_orders: number | null
+          total_revenue: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_type?: string | null
+          address?: string | null
+          agent_notes?: string | null
+          all_brands?: string[] | null
+          assigned_agent?: string | null
+          best_contact_method?: string | null
+          best_contact_time?: string | null
+          boro?: string | null
+          business_name: string
+          city?: string | null
+          created_at?: string | null
+          do_not_contact?: boolean | null
+          email?: string | null
+          followup_cadence_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_vip?: boolean | null
+          last_agent_action_at?: string | null
+          last_contact_at?: string | null
+          last_contact_type?: string | null
+          last_order_at?: string | null
+          last_visit_at?: string | null
+          lifetime_value?: number | null
+          next_followup_at?: string | null
+          opted_out?: boolean | null
+          owner_name?: string | null
+          personality_notes?: string | null
+          phone_primary?: string | null
+          phone_secondary?: string | null
+          preferences?: string | null
+          primary_brand?: string | null
+          relationship_score?: number | null
+          relationship_tier?: string | null
+          state?: string | null
+          store_id?: string | null
+          store_master_id?: string | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_type?: string | null
+          address?: string | null
+          agent_notes?: string | null
+          all_brands?: string[] | null
+          assigned_agent?: string | null
+          best_contact_method?: string | null
+          best_contact_time?: string | null
+          boro?: string | null
+          business_name?: string
+          city?: string | null
+          created_at?: string | null
+          do_not_contact?: boolean | null
+          email?: string | null
+          followup_cadence_days?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_vip?: boolean | null
+          last_agent_action_at?: string | null
+          last_contact_at?: string | null
+          last_contact_type?: string | null
+          last_order_at?: string | null
+          last_visit_at?: string | null
+          lifetime_value?: number | null
+          next_followup_at?: string | null
+          opted_out?: boolean | null
+          owner_name?: string | null
+          personality_notes?: string | null
+          phone_primary?: string | null
+          phone_secondary?: string | null
+          preferences?: string | null
+          primary_brand?: string | null
+          relationship_score?: number | null
+          relationship_tier?: string | null
+          state?: string | null
+          store_id?: string | null
+          store_master_id?: string | null
+          total_orders?: number | null
+          total_revenue?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_profiles_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contacts: {
         Row: {
           company: string | null
@@ -54701,6 +54835,62 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relationship_tasks: {
+        Row: {
+          ai_reasoning: string | null
+          ai_suggested_message: string | null
+          assigned_to: string | null
+          completed_at: string | null
+          contact_id: string | null
+          created_at: string | null
+          description: string | null
+          due_at: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          task_type: string
+          title: string
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          ai_suggested_message?: string | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string
+          title: string
+        }
+        Update: {
+          ai_reasoning?: string | null
+          ai_suggested_message?: string | null
+          assigned_to?: string | null
+          completed_at?: string | null
+          contact_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          task_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relationship_tasks_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contact_profiles"
             referencedColumns: ["id"]
           },
         ]
