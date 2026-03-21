@@ -3,12 +3,9 @@
  * 
  * This router ensures no Floor 9 subpage can ever 404.
  * Bad links self-heal by redirecting to the hub.
- * 
- * Part of Phase 9.1 — AI Trust Hardening & Safety
- * Updated for Phase G-H — Governance Command Center
  */
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 
 // Floor 9 Page imports
 import { 
@@ -28,13 +25,11 @@ import GovernanceCommandCenter from '@/pages/admin/GovernanceCommandCenter';
 // Phase 4.5 Observation Mode
 import Floor9Observation from '@/pages/floor9/Floor9Observation';
 
+// Note Cleaner Agent
+const NoteCleanerPage = lazy(() => import('@/pages/gasmask/NoteCleanerPage'));
+
 /**
  * Floor9Router - Centralized routing for Floor 9 AI Operations
- * 
- * Guarantees:
- * - No Floor 9 subpage can ever 404
- * - Bad links self-heal to /grabba/floor9
- * - Sidebar mistakes don't crash the system
  */
 export function Floor9Router() {
   useEffect(() => {
@@ -54,6 +49,13 @@ export function Floor9Router() {
       <Route path="predictions" element={<Floor9Predictions />} />
       <Route path="alerts" element={<Floor9Alerts />} />
       <Route path="tasks" element={<Floor9Tasks />} />
+      
+      {/* Note Cleaner Agent */}
+      <Route path="note-cleaner" element={
+        <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading Note Cleaner...</div>}>
+          <NoteCleanerPage />
+        </Suspense>
+      } />
       
       {/* Phase H: Governance Command Center */}
       <Route path="governance" element={<GovernanceCommandCenter />} />
