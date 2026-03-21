@@ -72,6 +72,19 @@ export default function AppSidebar() {
     }
   }, [activeSection]);
 
+  useEffect(() => {
+    if (collapsed || activeSection !== 'floor-9') return;
+
+    const timer = window.setTimeout(() => {
+      const noteCleanerItem = document.querySelector('[data-testid="note-cleaner-sidebar-item"]');
+      if (noteCleanerItem) {
+        noteCleanerItem.scrollIntoView({ block: 'center' });
+      }
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [collapsed, activeSection, openSections]);
+
   const userRole = profileData?.profile?.primary_role || 'admin';
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
 
