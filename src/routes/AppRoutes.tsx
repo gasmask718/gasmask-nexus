@@ -678,6 +678,7 @@ const LineShopping = lazy(() => import('@/pages/os/betting/LineShopping'));
 const PickEntryWizard = lazy(() => import('@/pages/os/betting/PickEntryWizard'));
 const EntriesList = lazy(() => import('@/pages/os/betting/EntriesList'));
 const BettingResultsPage = lazy(() => import('@/pages/os/betting/ResultsPage'));
+const SportsBettingOS = lazy(() => import('@/pages/sports-betting/SportsBettingOS'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 
