@@ -49,6 +49,10 @@ import {
   ResultsAnalytics,
   FeedbackAnalyticsPanel,
 } from '@/components/floor9';
+import { usePerformanceLeaderboard } from '@/hooks/usePerformanceLeaderboard';
+import { useLatestBriefing, useAllBriefings, useGenerateBriefing } from '@/hooks/useWeeklyBriefing';
+import { useRouteOptimizer, buildGoogleMapsUrl } from '@/hooks/useRouteOptimizer';
+import { supabase } from '@/integrations/supabase/client';
 
 const Floor9Results = () => {
   // Filters state with sensible defaults
