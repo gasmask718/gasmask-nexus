@@ -177,14 +177,7 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
       />
 
       {/* 6. Stickers & Visibility */}
-      <StickerCheckSection
-        storeId={storeId}
-        isTaskCompleted={isTaskCompleted}
-        onToggleTask={handleToggleTask}
-        progress={getCategoryProgress('stickers')}
-        stickerData={checklist?.sticker_status || {}}
-        onStickerUpdate={(data) => updateSectionData.mutate({ section: 'sticker_status', data })}
-      />
+      <StickerVisibilitySection storeId={storeId} />
 
       {/* Complete Checklist Button */}
       {!isCompleted && (
