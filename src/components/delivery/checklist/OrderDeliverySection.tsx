@@ -48,10 +48,10 @@ export function OrderDeliverySection({
     async function fetchStoreName() {
       const { data } = await supabase
         .from('store_master')
-        .select('name')
+        .select('store_name')
         .eq('id', storeId)
         .single();
-      if (data?.name) setStoreName(data.name);
+      if (data?.store_name) setStoreName(data.store_name);
     }
     if (storeId) fetchStoreName();
   }, [storeId]);
