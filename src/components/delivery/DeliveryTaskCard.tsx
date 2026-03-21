@@ -12,7 +12,7 @@ import { OrderDeliverySection } from './checklist/OrderDeliverySection';
 import { LastOrderContextSection } from './checklist/LastOrderContextSection';
 import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
-import { StickerCheckSection } from './checklist/StickerCheckSection';
+import { StickerVisibilitySection } from './checklist/StickerVisibilitySection';
 import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
 import { FieldOutcomeCaptureModal, type FieldOutcome } from './FieldOutcomeCaptureModal';
 
@@ -177,14 +177,7 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
       />
 
       {/* 6. Stickers & Visibility */}
-      <StickerCheckSection
-        storeId={storeId}
-        isTaskCompleted={isTaskCompleted}
-        onToggleTask={handleToggleTask}
-        progress={getCategoryProgress('stickers')}
-        stickerData={checklist?.sticker_status || {}}
-        onStickerUpdate={(data) => updateSectionData.mutate({ section: 'sticker_status', data })}
-      />
+      <StickerVisibilitySection storeId={storeId} />
 
       {/* Complete Checklist Button */}
       {!isCompleted && (

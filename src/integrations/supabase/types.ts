@@ -24236,6 +24236,62 @@ export type Database = {
           },
         ]
       }
+      checklist_sticker_visibility: {
+        Row: {
+          brand: string
+          brand_notes: string | null
+          created_at: string | null
+          id: string
+          installed: boolean | null
+          mark_seen: boolean | null
+          notes: string | null
+          person_type: string
+          requested: boolean | null
+          seen_at: string | null
+          sticker_type: string
+          store_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          brand: string
+          brand_notes?: string | null
+          created_at?: string | null
+          id?: string
+          installed?: boolean | null
+          mark_seen?: boolean | null
+          notes?: string | null
+          person_type: string
+          requested?: boolean | null
+          seen_at?: string | null
+          sticker_type: string
+          store_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string
+          brand_notes?: string | null
+          created_at?: string | null
+          id?: string
+          installed?: boolean | null
+          mark_seen?: boolean | null
+          notes?: string | null
+          person_type?: string
+          requested?: boolean | null
+          seen_at?: string | null
+          sticker_type?: string
+          store_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_sticker_visibility_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closing_partners: {
         Row: {
           address: string | null
