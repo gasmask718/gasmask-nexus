@@ -1,21 +1,23 @@
-// Dynasty OS — AutoDialerPage — cache-bust rebuild 2026-03-21T11:47
+// Dynasty OS — AutoDialerPage — cache-bust rebuild 2026-03-21T14:30
 import { useState } from 'react';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic } from 'lucide-react';
+import { Phone, Headphones, Store, Target, Users, History, Settings, AlertTriangle, Radio, Mic, Disc, PhoneOff } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useBusiness } from '@/contexts/BusinessContext';
 import { VoiceGoLiveReport } from '@/components/communication/VoiceGoLiveReport';
 
-// Tab content components (inline to avoid more file sprawl)
+// Tab content components
 import DialerStoresTab from './tabs/DialerStoresTab';
 import DialerProspectsTab from './tabs/DialerProspectsTab';
 import DialerConsoleTab from './tabs/DialerConsoleTab';
 import DialerHistoryTab from './tabs/DialerHistoryTab';
 import DialerCampaignsTab from './tabs/DialerCampaignsTab';
 import DialerLiveCallsTab from './tabs/DialerLiveCallsTab';
+import CallRecordingsTab from '@/components/dialer/CallRecordingsTab';
+import MissedCallsTab from '@/components/dialer/MissedCallsTab';
 
 export default function AutoDialerPage() {
   const { currentBusiness } = useBusiness();
