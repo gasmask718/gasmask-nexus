@@ -472,10 +472,35 @@ export default function MasterOpportunities() {
         } catch (err: any) { toast.error(err.message); }
         break;
       case 'call':
-        if (opp.phone) window.open(`tel:${opp.phone}`);
+        if (!opp.phone) { toast.error('No phone number'); return; }
+        // Determine if GasMask store or Brandaro lead
+        if (opp.source?.includes('GasMask') || opp.source?.includes('Store') ||
+            opp.source?.includes('CRM') || opp.source?.includes('tube_intel') ||
+            opp.source?.includes('floor') || opp.source?.includes('Auto Sync') ||
+            opp.source?.includes('Account Health')) {
+          // GasMask store AI call
+          try {
+            const { data } = await supabase.functions.invoke('gasmask-ai-caller', {
+              body: {
+                store_name: opp.name,
+                store_phone: opp.phone,
+                city: opp.city,
+                call_purpose: opp.raw?.needs_order ? 'needs_order'
+                  : opp.raw?.bring_samples ? 'bring_samples'
+                  : opp.raw?.bring_starter_kit ? 'starter_kit'
+                  : opp.raw?.needs_switch ? 'switch_tubes'
+                  : 'follow_up',
+              },
+            });
+            toast.success(`GasMask AI call initiated to ${opp.name}`);
+          } catch (err: any) { toast.error(err.message); }
+        } else {
+          // Brandaro website lead — open tel: link
+          window.open(`tel:${opp.phone}`);
+        }
         break;
       case 'reply':
-        navigate('/gasmask/inbox');
+        navigate('/communication/messaging-hub');
         break;
       case 'book':
         if (!opp.phone) { toast.error('No phone number'); return; }
