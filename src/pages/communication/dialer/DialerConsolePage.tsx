@@ -1,6 +1,11 @@
-// Dynasty OS — DialerConsolePage — rebuilt 2026-03-21T12:01
+// Dynasty OS — DialerConsolePage — Call Center Mode — 2026-03-21
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { CallSmsPanel } from '@/components/communication/CallSmsPanel';
+import { CallCenterStatsBar } from '@/components/dialer/CallCenterStatsBar';
+import { AgentCards } from '@/components/dialer/AgentCards';
+import { MultiCallGrid } from '@/components/dialer/MultiCallGrid';
+import { CallQueuePanel } from '@/components/dialer/CallQueuePanel';
+import { useCallCenterSession } from '@/hooks/useCallCenterSession';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +22,7 @@ import {
   Phone, Play, Pause, Square, PhoneCall, PhoneOff, Voicemail,
   BarChart3, RefreshCw, AlertTriangle, Clock, User, DollarSign,
   Radio, Shield, CheckCircle2, XCircle, Headphones, MapPin,
-  FileText, Ban, CalendarClock, Send, ShoppingCart, Zap
+  FileText, Ban, CalendarClock, Send, ShoppingCart, Zap, MessageSquare
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { VoiceProviderSelector } from '@/components/communication/VoiceProviderSelector';
@@ -51,13 +56,19 @@ const agentStatusConfig: Record<AgentStatus, { label: string; color: string; ico
 export default function DialerConsolePage() {
   const { currentBusiness } = useBusiness();
   const queryClient = useQueryClient();
+  const bizId = currentBusiness?.id;
+
+  // Call Center Session
+  const callCenter = useCallCenterSession();
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+
+  // Legacy dialer state
   const [dialerState, setDialerState] = useState<DialerState>('idle');
   const [selectedCampaign, setSelectedCampaign] = useState<string>('all');
   const [myAgentStatus, setMyAgentStatus] = useState<AgentStatus>('offline');
   const [dispositionModal, setDispositionModal] = useState<{ sessionId: string; contactName: string; storeId?: string } | null>(null);
   const [screenPopSession, setScreenPopSession] = useState<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const [voiceProvider, setVoiceProvider] = useState('auto');
 
   const [dispForm, setDispForm] = useState({
@@ -71,25 +82,7 @@ export default function DialerConsolePage() {
     custom_followup_at: '',
   });
 
-  const bizId = currentBusiness?.id;
-
   // ── Data Queries ──
-  const { data: queue = [] } = useQuery({
-    queryKey: ['console-queue', bizId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('outbound_call_queue')
-        .select('*')
-        .eq('business_id', bizId)
-        .in('status', ['queued', 'dialing', 'answered', 'bridged'])
-        .order('priority_score', { ascending: false })
-        .limit(25);
-      return data || [];
-    },
-    enabled: !!bizId,
-    refetchInterval: 3000,
-  });
-
   const { data: campaigns = [] } = useQuery({
     queryKey: ['console-campaigns', bizId],
     queryFn: async () => {
@@ -101,54 +94,6 @@ export default function DialerConsolePage() {
       return data || [];
     },
     enabled: !!bizId,
-  });
-
-  // ── Territory Prospects with phone numbers ──
-  const { data: prospectContacts = [] } = useQuery({
-    queryKey: ['console-prospect-contacts', bizId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('territory_addresses')
-        .select('id, store_name, full_address, city, state, phone, discovery_status, address_type')
-        .not('phone', 'is', null)
-        .neq('phone', '')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      return data || [];
-    },
-    enabled: !!bizId,
-    refetchInterval: 15000,
-  });
-
-  // ── Stores missing phone numbers ──
-  const { data: storesNoPhone = [] } = useQuery({
-    queryKey: ['console-stores-no-phone', bizId],
-    queryFn: async () => {
-      const result = await (supabase as any)
-        .from('store_master')
-        .select('id, store_name, city, state, phone')
-        .eq('business_id', bizId!)
-        .is('phone', null)
-        .order('store_name')
-        .limit(20);
-      return (result.data || []) as Array<{ id: string; store_name: string; city: string | null; state: string | null; phone: string | null }>;
-    },
-    enabled: !!bizId,
-  });
-
-  const { data: activeSessions = [] } = useQuery({
-    queryKey: ['console-live-sessions', bizId],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('live_call_sessions')
-        .select('*')
-        .eq('business_id', bizId)
-        .is('ended_at', null)
-        .order('connected_at', { ascending: false });
-      return data || [];
-    },
-    enabled: !!bizId,
-    refetchInterval: 2000,
   });
 
   const { data: agents = [] } = useQuery({
@@ -188,25 +133,25 @@ export default function DialerConsolePage() {
     enabled: !!bizId,
   });
 
-  // ── Screen-pop context for active session ──
-  const { data: storeContext } = useQuery({
-    queryKey: ['screen-pop-store', screenPopSession?.store_id],
+  const { data: activeSessions = [] } = useQuery({
+    queryKey: ['console-live-sessions', bizId],
     queryFn: async () => {
-      if (!screenPopSession?.store_id) return null;
       const { data } = await supabase
-        .from('store_master')
-        .select('id, store_name, owner_name, phone, address, city, state, do_not_call, notes')
-        .eq('id', screenPopSession.store_id)
-        .single();
-      return data;
+        .from('live_call_sessions')
+        .select('*')
+        .eq('business_id', bizId)
+        .is('ended_at', null)
+        .order('connected_at', { ascending: false });
+      return data || [];
     },
-    enabled: !!screenPopSession?.store_id,
+    enabled: !!bizId,
+    refetchInterval: 2000,
   });
 
   const telephonyMode = (dialerSettings as any)?.telephony_mode || 'simulation';
   const isLiveMode = telephonyMode === 'live' && (dialerSettings as any)?.twilio_enabled;
 
-  // ── Realtime: screen-pop on new bridged session ──
+  // ── Realtime ──
   useEffect(() => {
     if (!bizId) return;
     const channel = supabase
@@ -214,9 +159,7 @@ export default function DialerConsolePage() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_call_sessions' }, (payload) => {
         if (payload.new && (payload.new as any).business_id === bizId) {
           setScreenPopSession(payload.new);
-          toast.success(`📞 Live call: ${(payload.new as any).contact_name || 'Unknown'}`, {
-            duration: 10000,
-          });
+          toast.success(`📞 Live call: ${(payload.new as any).contact_name || 'Unknown'}`, { duration: 10000 });
         }
         queryClient.invalidateQueries({ queryKey: ['console-live-sessions'] });
       })
@@ -260,14 +203,12 @@ export default function DialerConsolePage() {
   const updateMyStatus = async (newStatus: AgentStatus) => {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user?.id || !bizId) return;
-
     const { data: existing } = await supabase
       .from('dialer_agent_availability')
       .select('id')
       .eq('user_id', userData.user.id)
       .eq('business_id', bizId)
       .maybeSingle();
-
     if (existing) {
       await supabase.from('dialer_agent_availability').update({
         status: newStatus,
@@ -321,8 +262,6 @@ export default function DialerConsolePage() {
       setScreenPopSession(null);
       resetForm();
       queryClient.invalidateQueries({ queryKey: ['console-live-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['console-agents'] });
-      queryClient.invalidateQueries({ queryKey: ['console-queue'] });
     },
     onError: (err: any) => toast.error(`Disposition failed: ${err.message}`),
   });
@@ -333,27 +272,8 @@ export default function DialerConsolePage() {
   });
 
   const selectedDisp = dispositionCodes.find(d => d.id === dispForm.disposition_code_id);
-
-  // ── Stats ──
   const availableAgents = agents.filter(a => a.status === 'available');
-  const queuedCount = queue.filter(q => q.status === 'queued').length;
-  const dialingCount = queue.filter(q => q.status === 'dialing').length;
-  const bridgedCount = activeSessions.length;
-
-  const formatDuration = (connectedAt: string) => {
-    const diff = Math.floor((Date.now() - new Date(connectedAt).getTime()) / 1000);
-    return `${Math.floor(diff / 60).toString().padStart(2, '0')}:${(diff % 60).toString().padStart(2, '0')}`;
-  };
-
-  const statusBadge = (status: string) => {
-    const configs: Record<string, string> = {
-      queued: 'bg-muted text-muted-foreground',
-      dialing: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
-      answered: 'bg-green-500/10 text-green-600 border-green-500/30',
-      bridged: 'bg-blue-500/10 text-blue-600 border-blue-500/30',
-    };
-    return configs[status] || 'bg-muted text-muted-foreground';
-  };
+  const selectedSession = callCenter.sessions.find(s => s.session_id === selectedSessionId);
 
   return (
     <div className="w-full min-h-full space-y-4">
@@ -361,7 +281,7 @@ export default function DialerConsolePage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold flex items-center gap-2">
-            <Headphones className="h-5 w-5" /> Dialer Console
+            <Headphones className="h-5 w-5" /> Call Center
           </h2>
           <Badge variant="outline" className={isLiveMode ? 'border-red-500/50 text-red-600 bg-red-500/5' : 'border-amber-500/50 text-amber-600 bg-amber-500/5'}>
             <Radio className={`h-3 w-3 mr-1 ${isLiveMode ? 'animate-pulse' : ''}`} />
@@ -370,7 +290,6 @@ export default function DialerConsolePage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Campaign Select */}
           <Select value={selectedCampaign} onValueChange={setSelectedCampaign}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="All campaigns" />
@@ -383,14 +302,8 @@ export default function DialerConsolePage() {
             </SelectContent>
           </Select>
 
-          {/* Voice Engine */}
-          <VoiceProviderSelector
-            provider={voiceProvider}
-            onProviderChange={setVoiceProvider}
-            compact
-          />
+          <VoiceProviderSelector provider={voiceProvider} onProviderChange={setVoiceProvider} compact />
 
-          {/* Agent Status */}
           <Select value={myAgentStatus} onValueChange={(v) => updateMyStatus(v as AgentStatus)}>
             <SelectTrigger className="w-[130px]">
               <SelectValue />
@@ -407,11 +320,9 @@ export default function DialerConsolePage() {
             </SelectContent>
           </Select>
 
-          {/* Dialer Controls */}
           {dialerState === 'idle' && (
             <Button onClick={() => {
               if (availableAgents.length === 0) { toast.error('No agents ready'); return; }
-              if (queuedCount === 0) { toast.error('Queue empty'); return; }
               setDialerState('running');
               toast.success('Dialer started');
             }} className="gap-2 bg-green-600 hover:bg-green-700">
@@ -441,194 +352,96 @@ export default function DialerConsolePage() {
         </div>
       </div>
 
-      {/* ── Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold">{queuedCount}</p>
-          <p className="text-xs text-muted-foreground">Queued</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-yellow-600">{dialingCount}</p>
-          <p className="text-xs text-muted-foreground">Dialing</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-green-600">{bridgedCount}</p>
-          <p className="text-xs text-muted-foreground">Live</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold text-blue-600">{availableAgents.length}</p>
-          <p className="text-xs text-muted-foreground">Agents Ready</p>
-        </CardContent></Card>
-        <Card><CardContent className="p-3 text-center">
-          <p className="text-2xl font-bold">{agents.length}</p>
-          <p className="text-xs text-muted-foreground">Total Agents</p>
-        </CardContent></Card>
-      </div>
+      {/* ── Stats Bar ── */}
+      <CallCenterStatsBar
+        activeCalls={callCenter.activeSessions.length + activeSessions.length}
+        maxCapacity={callCenter.getTotalMaxConcurrent()}
+        queueCount={callCenter.queueLength}
+        callsToday={callCenter.totalCallsToday}
+        answered={callCenter.totalAnswered}
+        interested={callCenter.totalInterested}
+      />
 
-      {/* ── Prospect Quick Nav & Missing Phones ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Prospects with phone numbers */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-primary" /> Prospect Contacts
-              <Badge variant="secondary" className="ml-auto text-xs">{prospectContacts.length}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[200px]">
-              <div className="space-y-1 p-3">
-                {prospectContacts.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">No prospects with phone numbers found</p>
-                ) : prospectContacts.map((p: any) => (
-                  <div key={p.id} className="flex items-center justify-between p-2 border rounded-lg text-sm hover:bg-muted/50 transition-colors">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{p.store_name || 'Unknown'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{p.city}{p.state ? `, ${p.state}` : ''}</p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-xs font-mono text-muted-foreground">{p.phone}</span>
-                      <Badge variant="outline" className="text-xs capitalize">{(p.discovery_status || 'new').replace('_', ' ')}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+      {/* ── Agent Cards ── */}
+      <AgentCards
+        agents={callCenter.agents}
+        onUpdateMaxConcurrent={(agentId, value) => {
+          callCenter.setAgents(prev => prev.map(a =>
+            a.id === agentId ? { ...a, max_concurrent: Math.max(1, Math.min(20, value)) } : a
+          ));
+        }}
+      />
 
-        {/* Stores missing phone numbers */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" /> Stores Missing Phone
-              <Badge variant="destructive" className="ml-auto text-xs">{storesNoPhone.length}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[200px]">
-              <div className="space-y-1 p-3">
-                {storesNoPhone.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-6">All stores have registered numbers ✓</p>
-                ) : storesNoPhone.map((s: any) => (
-                  <div key={s.id} className="flex items-center justify-between p-2 border border-amber-500/20 rounded-lg text-sm bg-amber-500/5">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{s.store_name || 'Unknown Store'}</p>
-                      <p className="text-xs text-muted-foreground truncate">{s.city}{s.state ? `, ${s.state}` : ''}</p>
-                    </div>
-                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-500/30 shrink-0">
-                      No phone
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
-
+      {/* ── 3-Column Layout: Queue | Multi-Call Grid | SMS Thread ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-        {/* LEFT: Queue */}
+        {/* LEFT: Call Queue */}
         <div className="lg:col-span-3">
-          <Card className="h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Phone className="h-4 w-4" /> Call Queue
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-1 p-3">
-                  {queue.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">Queue empty</p>
-                  ) : queue.map(item => (
-                    <div key={item.id} className="flex items-center justify-between p-2 border rounded-lg text-sm">
-                      <div className="min-w-0">
-                        <p className="font-medium truncate">{(item as any).contact_name || 'Unknown'}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{item.phone_number}</p>
-                      </div>
-                      <Badge variant="outline" className={`text-xs shrink-0 ${statusBadge(item.status)}`}>
-                        {item.status}
-                      </Badge>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+          <CallQueuePanel
+            bizId={bizId}
+            isRunning={callCenter.isRunning}
+            onStartSession={callCenter.startCallCenterSession}
+            onStopSession={callCenter.stopSession}
+          />
         </div>
 
-        {/* CENTER: Live Call */}
+        {/* CENTER: Multi-Call Grid + Legacy Live Calls */}
         <div className="lg:col-span-5">
           <Card className="h-full">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
-                <Headphones className="h-4 w-4" /> Live Call
+                <PhoneCall className="h-4 w-4" /> Active Calls
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {activeSessions.length === 0 ? (
-                <div className="text-center py-16">
-                  <PhoneOff className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold">No Active Calls</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {dialerState === 'running' ? 'Waiting for human connect...' : 'Start the dialer to begin'}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
+              <MultiCallGrid
+                activeSessions={callCenter.activeSessions}
+                completedSessions={callCenter.completedSessions}
+                selectedSessionId={selectedSessionId}
+                onSelectSession={setSelectedSessionId}
+                queueLength={callCenter.queueLength}
+                isRunning={callCenter.isRunning}
+              />
+
+              {/* Legacy live call sessions from DB */}
+              {activeSessions.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Live Sessions (Server)</p>
                   {activeSessions.map(session => (
-                    <div key={session.id} className="border-2 border-green-500/50 rounded-xl p-4 bg-green-500/5">
-                      <div className="flex items-center justify-between mb-3">
+                    <div key={session.id} className="border-2 border-green-500/50 rounded-xl p-3 bg-green-500/5">
+                      <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
-                          <span className="font-bold text-lg">{session.contact_name || 'Unknown'}</span>
+                          <span className="font-bold">{session.contact_name || 'Unknown'}</span>
                         </div>
                         <Badge className="bg-green-500/10 text-green-600 border-green-500/30">
                           <Clock className="h-3 w-3 mr-1" />
-                          {formatDuration(session.connected_at)}
+                          {(() => {
+                            const diff = Math.floor((Date.now() - new Date(session.connected_at).getTime()) / 1000);
+                            return `${Math.floor(diff / 60).toString().padStart(2, '0')}:${(diff % 60).toString().padStart(2, '0')}`;
+                          })()}
                         </Badge>
                       </div>
-
                       {(session as any).phone_number && (
-                        <p className="text-sm text-muted-foreground font-mono mb-3">{(session as any).phone_number}</p>
+                        <p className="text-xs text-muted-foreground font-mono mb-2">{(session as any).phone_number}</p>
                       )}
-
-                      <div className="flex gap-2 mt-3">
-                        <Button
-                          className="flex-1 gap-2"
-                          onClick={() => {
-                            resetForm();
-                            setDispositionModal({
-                              sessionId: session.id,
-                              contactName: session.contact_name || 'Unknown',
-                              storeId: session.store_id,
-                            });
-                          }}
-                        >
-                          <FileText className="h-4 w-4" /> Dispose
+                      <div className="flex gap-2">
+                        <Button className="flex-1 gap-2 text-xs" size="sm" onClick={() => {
+                          resetForm();
+                          setDispositionModal({
+                            sessionId: session.id,
+                            contactName: session.contact_name || 'Unknown',
+                            storeId: session.store_id,
+                          });
+                        }}>
+                          <FileText className="h-3 w-3" /> Dispose
                         </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          onClick={async () => {
-                            // Mark DNC
-                            if (session.store_id) {
-                              await supabase.from('store_master').update({ do_not_call: true }).eq('id', session.store_id);
-                              await supabase.from('contact_compliance').upsert({
-                                business_id: bizId,
-                                entity_type: 'store',
-                                entity_id: session.store_id,
-                                phone_e164: (session as any).phone_number || '',
-                                dnc: true,
-                                dnc_source: 'manual',
-                                dnc_reason: 'Agent marked DNC during call',
-                              }, { onConflict: 'business_id,entity_type,entity_id,phone_e164' });
-                              toast.success('⛔ Marked DO NOT CALL');
-                            }
-                          }}
-                        >
-                          <Ban className="h-4 w-4" />
+                        <Button variant="destructive" size="icon" className="h-8 w-8" onClick={async () => {
+                          if (session.store_id) {
+                            await supabase.from('store_master').update({ do_not_call: true }).eq('id', session.store_id);
+                            toast.success('⛔ Marked DO NOT CALL');
+                          }
+                        }}>
+                          <Ban className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>
@@ -639,78 +452,31 @@ export default function DialerConsolePage() {
           </Card>
         </div>
 
-        {/* RIGHT: Context / Screen-Pop */}
+        {/* RIGHT: SMS Thread for Selected Call */}
         <div className="lg:col-span-4">
-          <Card className="h-full">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <User className="h-4 w-4" /> Contact Context
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {storeContext ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-bold text-lg">{storeContext.store_name}</h3>
-                    <p className="text-sm text-muted-foreground">{storeContext.owner_name}</p>
-                  </div>
-                  <Separator />
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="font-mono">{storeContext.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span>{storeContext.address}{storeContext.city ? `, ${storeContext.city}` : ''}{storeContext.state ? ` ${storeContext.state}` : ''}</span>
-                    </div>
-                    {storeContext.do_not_call && (
-                      <Badge variant="destructive" className="text-xs">⛔ DO NOT CALL</Badge>
-                    )}
-                  </div>
-                  <Separator />
-                  {storeContext.notes && (
-                    <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1">Notes</p>
-                      <p className="text-sm">{storeContext.notes}</p>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="gap-2 justify-start">
-                      <CalendarClock className="h-3.5 w-3.5" /> Set Callback
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2 justify-start">
-                      <Send className="h-3.5 w-3.5" /> Send SMS Follow-up
-                    </Button>
-                    <Button variant="outline" size="sm" className="gap-2 justify-start">
-                      <ShoppingCart className="h-3.5 w-3.5" /> Create Order Draft
-                    </Button>
-                  </div>
-                </div>
-              ) : screenPopSession ? (
-                <div className="text-center py-8">
-                  <User className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm font-medium">{screenPopSession.contact_name || 'Unknown Contact'}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Loading context...</p>
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <User className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">Context will appear when a call connects</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* SMS Thread Panel — visible when call is active */}
-          {activeSessions.length > 0 && activeSessions[0] && (activeSessions[0] as any).phone_number && (
-            <div className="mt-4">
-              <CallSmsPanel
-                phone={(activeSessions[0] as any).phone_number}
-                contactName={activeSessions[0].contact_name || 'Unknown'}
-                callId={activeSessions[0].id}
-              />
-            </div>
+          {selectedSession && selectedSession.phone ? (
+            <CallSmsPanel
+              phone={selectedSession.phone}
+              contactName={selectedSession.store_name}
+              leadId={selectedSession.lead_id}
+              callId={selectedSession.session_id}
+            />
+          ) : activeSessions.length > 0 && (activeSessions[0] as any).phone_number ? (
+            <CallSmsPanel
+              phone={(activeSessions[0] as any).phone_number}
+              contactName={activeSessions[0].contact_name || 'Unknown'}
+              callId={activeSessions[0].id}
+            />
+          ) : (
+            <Card className="h-full flex items-center justify-center">
+              <CardContent className="text-center py-16">
+                <MessageSquare className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+                <p className="text-sm font-medium">SMS Thread</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Click an active call to view the SMS conversation
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
