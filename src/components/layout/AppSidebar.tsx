@@ -27,10 +27,38 @@ export default function AppSidebar() {
   const { signOut, user } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   
-  // All sections open by default
-  const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse', 'security-governance', 'territory-floor-0', 'exports', 'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9', 'territory-control'
-  ]);
+  // Determine which floor section contains the active route
+  const getActiveSection = (pathname: string): string | null => {
+    if (pathname.startsWith('/grabba/floor9') || pathname.startsWith('/gasmask/agent-center')) return 'floor-9';
+    if (pathname.startsWith('/grabba/command-penthouse') || pathname === '/') return 'penthouse';
+    if (pathname.startsWith('/communication')) return 'floor-2';
+    if (pathname.startsWith('/stores') || pathname.startsWith('/grabba/crm') || pathname.startsWith('/brand-crm') || pathname.startsWith('/companies') || pathname.startsWith('/crm') || pathname.startsWith('/sell-through') || pathname.startsWith('/sales') || pathname.startsWith('/store-performance')) return 'floor-1';
+    if (pathname.startsWith('/grabba/inventory') || pathname.startsWith('/inventory') || pathname.startsWith('/products') || pathname.startsWith('/os/product-conversions')) return 'floor-3';
+    if (pathname.startsWith('/grabba/deliveries') || pathname.startsWith('/grabba/assignments') || pathname.startsWith('/driver') || pathname.startsWith('/biker') || pathname.startsWith('/routes') || pathname.startsWith('/route-optimizer') || pathname.startsWith('/operations/live-map') || pathname.startsWith('/delivery')) return 'floor-4';
+    if (pathname.startsWith('/floor5') || pathname.startsWith('/billing') || pathname.startsWith('/unpaid') || pathname.startsWith('/wholesale/fulfillment') || pathname.startsWith('/payroll') || pathname.startsWith('/grabba/payroll') || pathname.startsWith('/grabba/finance') || pathname.startsWith('/grabba/personal-finance')) return 'floor-5';
+    if (pathname.startsWith('/grabba/production') || pathname.startsWith('/production')) return 'floor-6';
+    if (pathname.startsWith('/grabba/wholesale') || pathname.startsWith('/wholesale') || pathname.startsWith('/grabba/upload-center') || pathname.startsWith('/portal/national-wholesale')) return 'floor-7';
+    if (pathname.startsWith('/grabba/ambassadors') || pathname.startsWith('/ambassador')) return 'floor-8';
+    if (pathname.startsWith('/security')) return 'security-governance';
+    if (pathname.startsWith('/territory') || pathname.startsWith('/grabba/territory')) return 'territory-floor-0';
+    return null;
+  };
+
+  const activeSection = getActiveSection(location.pathname);
+
+  // Only open penthouse + the section containing the active route
+  const [openSections, setOpenSections] = useState<string[]>(() => {
+    const defaults = ['penthouse'];
+    if (activeSection && !defaults.includes(activeSection)) defaults.push(activeSection);
+    return defaults;
+  });
+
+  // When route changes, ensure the active section is open
+  useEffect(() => {
+    if (activeSection && !openSections.includes(activeSection)) {
+      setOpenSections(prev => [...prev, activeSection]);
+    }
+  }, [activeSection]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
