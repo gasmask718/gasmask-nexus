@@ -93,6 +93,7 @@ export function SharedStoreCoreIntelligence({
       <SellThroughIntelCard storeId={storeId} />
       <BrandStickersCard storeId={storeId} role={role} />
       <StoreVisitInventoryCard storeId={storeId} />
+      <ProductCatalogCard storeId={storeId} />
 
       {/* ══════════════ Store Attributes ══════════════ */}
       <SellsFlowersToggle
