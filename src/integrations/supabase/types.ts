@@ -15738,6 +15738,75 @@ export type Database = {
           },
         ]
       }
+      brandaro_phone_numbers: {
+        Row: {
+          assigned_campaign: string | null
+          brand: string | null
+          calls_made: number | null
+          capabilities: Json | null
+          created_at: string | null
+          date_purchased: string | null
+          description: string | null
+          friendly_name: string
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          last_used_at: string | null
+          messages_received: number | null
+          messages_sent: number | null
+          monthly_cost: number | null
+          notes: string | null
+          phone_number: string
+          purpose: string | null
+          twilio_sid: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_campaign?: string | null
+          brand?: string | null
+          calls_made?: number | null
+          capabilities?: Json | null
+          created_at?: string | null
+          date_purchased?: string | null
+          description?: string | null
+          friendly_name: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          messages_received?: number | null
+          messages_sent?: number | null
+          monthly_cost?: number | null
+          notes?: string | null
+          phone_number: string
+          purpose?: string | null
+          twilio_sid?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_campaign?: string | null
+          brand?: string | null
+          calls_made?: number | null
+          capabilities?: Json | null
+          created_at?: string | null
+          date_purchased?: string | null
+          description?: string | null
+          friendly_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          last_used_at?: string | null
+          messages_received?: number | null
+          messages_sent?: number | null
+          monthly_cost?: number | null
+          notes?: string | null
+          phone_number?: string
+          purpose?: string | null
+          twilio_sid?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_positioning_tests: {
         Row: {
           conversion_rate: number | null
@@ -74575,6 +74644,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_received: { Args: { num: string }; Returns: number }
+      increment_sent: { Args: { num: string }; Returns: number }
       ingest_portal_actions: { Args: { _actions: Json }; Returns: Json }
       ingest_territory_addresses: { Args: { p_addresses: Json }; Returns: Json }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
