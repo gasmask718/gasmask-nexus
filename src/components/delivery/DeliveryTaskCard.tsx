@@ -133,15 +133,8 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
         </CardContent>
       </Card>
 
-      {/* 1. Inventory Verification */}
-      <InventoryCheckSection
-        storeId={storeId}
-        isTaskCompleted={isTaskCompleted}
-        onToggleTask={handleToggleTask}
-        progress={getCategoryProgress('inventory')}
-        inventoryData={checklist?.inventory_updates || {}}
-        onInventoryUpdate={(data) => updateSectionData.mutate({ section: 'inventory_updates', data })}
-      />
+      {/* 1. Inventory Check & Tube Intelligence (combined) */}
+      <InventoryTubeIntelligenceSection storeId={storeId} />
 
       {/* 2. Orders to Deliver */}
       <OrderDeliverySection
