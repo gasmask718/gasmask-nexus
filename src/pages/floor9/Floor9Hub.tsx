@@ -416,6 +416,9 @@ const Floor9Hub = () => {
           </div>
         </div>
 
+        {/* Real-Time Instinct Feed */}
+        <InstinctFeedPanel />
+
         {/* Navigation Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Link to="/grabba/floor9/playbooks">
