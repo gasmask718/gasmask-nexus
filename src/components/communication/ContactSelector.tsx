@@ -358,21 +358,33 @@ export default function ContactSelector({
                 <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">No contacts found.</TableCell>
               </TableRow>
             ) : (
-              pageData.map((c) => (
-                <TableRow key={c.key}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedContacts.has(c.key)}
-                      onCheckedChange={() => toggleContact(c)}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium text-sm">{c.name || "Unknown"}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-[10px] capitalize">{c.type}</Badge>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">{c.phone}</TableCell>
-                </TableRow>
-              ))
+              pageData.map((c) => {
+                const missingPhone = !c.phone;
+                return (
+                  <TableRow key={c.key} className={missingPhone ? 'opacity-50' : ''}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedContacts.has(c.key)}
+                        onCheckedChange={() => toggleContact(c)}
+                        disabled={missingPhone}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium text-sm">{c.name || "Unknown"}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="text-[10px] capitalize">{c.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-xs">
+                      {missingPhone ? (
+                        <Badge variant="outline" className="text-[10px] border-destructive/30 text-destructive gap-0.5">
+                          <AlertTriangle className="h-2.5 w-2.5" /> No phone
+                        </Badge>
+                      ) : (
+                        c.phone
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
