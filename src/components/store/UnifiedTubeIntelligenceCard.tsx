@@ -122,6 +122,7 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
       grabba: 'grabba_r_us',
       'hotscolatti-light': 'hotscolatti',
       'hotscolatti-dark': 'hotscolatti',
+      hotscalatibros: 'hotscolatti',
     };
     const canonicalId = mappings[brandId] || brandId;
     const rel = relationships.find(r => r.brand_id === canonicalId);
