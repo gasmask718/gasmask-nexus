@@ -284,10 +284,12 @@ function InvoiceSummaryCard({ summary }: { summary: ReturnType<typeof useMultiBr
 
 export default function MultiBrandDeliveryPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [brandFilter, setBrandFilter] = useState<string>("all");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("deliveries");
+  const [activeSignalTab, setActiveSignalTab] = useState<string | null>(null);
 
   // Fetch pending delivery items
   const { data: deliveryItems = [], isLoading } = useQuery({
