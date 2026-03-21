@@ -155,6 +155,13 @@ export default function ManualBulkTab() {
             onCustomNumbersChange={setCustomNumbers}
           />
 
+          {/* AI Message Composer */}
+          <AIMessageComposer
+            audience={Array.from(selectedContacts.values())}
+            audienceType="contacts"
+            onMessageGenerated={(msg) => setMessageContent(msg)}
+          />
+
           <div className="space-y-2">
             <Label>Message Content</Label>
             <Textarea
