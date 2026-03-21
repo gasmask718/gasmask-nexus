@@ -297,6 +297,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/grabba/floor9/instinct-log', label: 'Instinct Log', icon: Activity },
         { path: '/grabba/floor9/action-queue', label: 'Action Queue', icon: List },
         { path: '/grabba/floor9/results', label: 'Results', icon: BarChart3 },
+        { path: '/grabba/floor9/note-cleaner', label: 'Note Cleaner', icon: Sparkles, testId: 'note-cleaner-sidebar-item' },
       ],
     },
   ],
@@ -495,6 +496,7 @@ const Layout = ({ children }: LayoutProps) => {
   ]);
   
   const currentPath = location.pathname;
+  const isFloor9Route = currentPath.startsWith('/grabba/floor9') || currentPath.startsWith('/gasmask/agent-center') || currentPath.startsWith('/gasmask/note-cleaner');
 
   const isPathActive = (path: string) => {
     if (path === '/') return currentPath === '/';
@@ -506,6 +508,19 @@ const Layout = ({ children }: LayoutProps) => {
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     );
   };
+
+  useEffect(() => {
+    if (!isFloor9Route) return;
+
+    const timer = window.setTimeout(() => {
+      const noteCleanerItem = document.querySelector('[data-testid="note-cleaner-sidebar-item"]');
+      if (noteCleanerItem) {
+        noteCleanerItem.scrollIntoView({ block: 'center' });
+      }
+    }, 50);
+
+    return () => window.clearTimeout(timer);
+  }, [isFloor9Route, openSections]);
 
   useEffect(() => {
     if (isAdmin()) {
@@ -552,7 +567,7 @@ const Layout = ({ children }: LayoutProps) => {
     );
   }
 
-  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any }>) => {
+  const renderSection = (id: string, name: string, items: Array<{ path: string; label: string; icon: any; testId?: string }>) => {
     const isOpen = openSections.includes(id);
     
     return (
@@ -571,6 +586,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link
                 key={item.path}
                 to={item.path}
+                data-testid={item.testId}
                 className={cn(
                   "flex items-center gap-2 px-2 py-1 text-xs rounded-md transition-colors",
                   isPathActive(item.path)
