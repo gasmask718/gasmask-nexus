@@ -180,6 +180,9 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
       {/* 6. Stickers & Visibility */}
       <StickerVisibilitySection storeId={storeId} />
 
+      {/* 7. Tube Intelligence */}
+      <TubeIntelligenceSection storeId={storeId} />
+
       {/* Complete Checklist Button */}
       {!isCompleted && (
         <Card className={allRequiredDone ? 'border-green-500/30 bg-green-500/5' : 'border-amber-500/30 bg-amber-500/5'}>
