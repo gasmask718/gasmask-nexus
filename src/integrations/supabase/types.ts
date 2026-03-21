@@ -24192,6 +24192,50 @@ export type Database = {
           },
         ]
       }
+      checklist_completions: {
+        Row: {
+          checklist_id: string | null
+          completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          item_index: number | null
+          item_text: string | null
+          item_type: string
+          notes: string | null
+        }
+        Insert: {
+          checklist_id?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          item_index?: number | null
+          item_text?: string | null
+          item_type: string
+          notes?: string | null
+        }
+        Update: {
+          checklist_id?: string | null
+          completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          item_index?: number | null
+          item_text?: string | null
+          item_type?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_completions_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "visit_action_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closing_partners: {
         Row: {
           address: string | null
@@ -66101,6 +66145,113 @@ export type Database = {
             columns: ["vertical_id"]
             isOneToOne: false
             referencedRelation: "brand_verticals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      visit_action_checklists: {
+        Row: {
+          ai_generated: boolean | null
+          ai_model: string | null
+          assigned_role: string | null
+          assigned_to: string | null
+          best_approach: string | null
+          completed_at: string | null
+          completion_notes: string | null
+          created_at: string | null
+          follow_up_needed: boolean | null
+          follow_up_notes: string | null
+          id: string
+          items_completed: Json | null
+          outcome: string | null
+          owner_name: string | null
+          owner_personality: string | null
+          photos_required: Json | null
+          photos_taken: Json | null
+          previous_issues: string | null
+          priority_actions: Json | null
+          products_to_bring: Json | null
+          started_at: string | null
+          status: string | null
+          store_context: string | null
+          store_id: string | null
+          store_name: string
+          talking_points: Json | null
+          things_to_check: Json | null
+          trigger_id: string | null
+          updated_at: string | null
+          visit_objective: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          ai_model?: string | null
+          assigned_role?: string | null
+          assigned_to?: string | null
+          best_approach?: string | null
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          follow_up_needed?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          items_completed?: Json | null
+          outcome?: string | null
+          owner_name?: string | null
+          owner_personality?: string | null
+          photos_required?: Json | null
+          photos_taken?: Json | null
+          previous_issues?: string | null
+          priority_actions?: Json | null
+          products_to_bring?: Json | null
+          started_at?: string | null
+          status?: string | null
+          store_context?: string | null
+          store_id?: string | null
+          store_name: string
+          talking_points?: Json | null
+          things_to_check?: Json | null
+          trigger_id?: string | null
+          updated_at?: string | null
+          visit_objective: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          ai_model?: string | null
+          assigned_role?: string | null
+          assigned_to?: string | null
+          best_approach?: string | null
+          completed_at?: string | null
+          completion_notes?: string | null
+          created_at?: string | null
+          follow_up_needed?: boolean | null
+          follow_up_notes?: string | null
+          id?: string
+          items_completed?: Json | null
+          outcome?: string | null
+          owner_name?: string | null
+          owner_personality?: string | null
+          photos_required?: Json | null
+          photos_taken?: Json | null
+          previous_issues?: string | null
+          priority_actions?: Json | null
+          products_to_bring?: Json | null
+          started_at?: string | null
+          status?: string | null
+          store_context?: string | null
+          store_id?: string | null
+          store_name?: string
+          talking_points?: Json | null
+          things_to_check?: Json | null
+          trigger_id?: string | null
+          updated_at?: string | null
+          visit_objective?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "visit_action_checklists_trigger_id_fkey"
+            columns: ["trigger_id"]
+            isOneToOne: false
+            referencedRelation: "gasmask_visit_triggers"
             referencedColumns: ["id"]
           },
         ]
