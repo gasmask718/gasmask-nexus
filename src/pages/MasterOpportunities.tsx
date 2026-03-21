@@ -255,6 +255,7 @@ export default function MasterOpportunities() {
   const [oppCurrentPage, setOppCurrentPage] = useState(1);
   const [oppPageSize, setOppPageSize] = useState(25);
   const [scanning, setScanning] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   // ── Existing hooks ──
   const { data: signalSummary, isLoading: signalSummaryLoading } = useTubeIntelSummary();
@@ -278,17 +279,17 @@ export default function MasterOpportunities() {
   const completeOpportunity = useCompleteOpportunity();
   const reopenOpportunity = useReopenOpportunity();
 
-  // ── NEW data sources ──
-  const { data: messagingReplies } = useQuery({
-    queryKey: ['opp-messaging-replies'],
+  // ── GasMask store messaging (SEPARATE from Brandaro) ──
+  const { data: gasmaskMessages } = useQuery({
+    queryKey: ['gasmask-store-messages'],
     queryFn: async () => {
-      const { data: convData } = await (supabase as any)
-        .from('brandaro_conversations')
-        .select('*, brandaro_qualified_leads(id, business_name, phone_number, pipeline_stage, city, industry)')
+      const { data } = await supabase
+        .from('communication_messages')
+        .select('*')
         .eq('direction', 'inbound')
         .order('created_at', { ascending: false })
         .limit(50);
-      return convData || [];
+      return data || [];
     },
     refetchInterval: 30000,
   });
@@ -350,17 +351,17 @@ export default function MasterOpportunities() {
     refetchInterval: 60000,
   });
 
-  // ── Realtime ──
+  // ── Realtime for GasMask store messages ──
   useEffect(() => {
     const channels = [
       supabase
-        .channel('opp-conversations-rt')
+        .channel('opp-gasmask-msgs-rt')
         .on('postgres_changes', {
-          event: 'INSERT', schema: 'public', table: 'brandaro_conversations',
+          event: 'INSERT', schema: 'public', table: 'communication_messages',
           filter: 'direction=eq.inbound',
         }, () => {
-          queryClient.invalidateQueries({ queryKey: ['opp-messaging-replies'] });
-          toast.info('New inbound message!', { duration: 5000 });
+          queryClient.invalidateQueries({ queryKey: ['gasmask-store-messages'] });
+          toast.info('New GasMask store reply!', { duration: 5000 });
         })
         .subscribe(),
       supabase
@@ -378,22 +379,22 @@ export default function MasterOpportunities() {
     return () => { channels.forEach((ch) => supabase.removeChannel(ch)); };
   }, [queryClient]);
 
-  // ── Transform new data into OpportunityItem ──
+  // ── Transform GasMask store messages into OpportunityItem ──
   const messagingItems: OpportunityItem[] = useMemo(() =>
-    (messagingReplies || []).map((conv: any) => ({
-      id: conv.id,
-      name: conv.brandaro_qualified_leads?.business_name || conv.from_number || 'Unknown',
-      city: conv.brandaro_qualified_leads?.city,
-      phone: conv.brandaro_qualified_leads?.phone_number || conv.from_number,
+    (gasmaskMessages || []).map((msg: any) => ({
+      id: msg.id,
+      name: msg.metadata?.store_name || msg.from_number || msg.phone_number || 'Unknown Store',
+      city: msg.metadata?.city,
+      phone: msg.phone_number || msg.from_number,
       urgency: 'high' as const,
-      signal: 'Inbound message — needs response',
-      message: conv.message_body || conv.message_text,
-      source: 'Messaging Hub',
-      primaryAction: 'reply',
-      primaryActionLabel: '💬 Reply',
-      timeAgo: conv.created_at ? formatDistanceToNow(new Date(conv.created_at), { addSuffix: true }) : '',
-      raw: conv,
-    })), [messagingReplies]);
+      signal: 'GasMask store replied — needs response',
+      message: msg.content,
+      source: 'GasMask Store SMS',
+      primaryAction: 'sms',
+      primaryActionLabel: '📱 Reply',
+      timeAgo: msg.created_at ? formatDistanceToNow(new Date(msg.created_at), { addSuffix: true }) : '',
+      raw: msg,
+    })), [gasmaskMessages]);
 
   const dialerItems: OpportunityItem[] = useMemo(() =>
     (dialerResults || []).map((entry: any) => ({
@@ -471,10 +472,35 @@ export default function MasterOpportunities() {
         } catch (err: any) { toast.error(err.message); }
         break;
       case 'call':
-        if (opp.phone) window.open(`tel:${opp.phone}`);
+        if (!opp.phone) { toast.error('No phone number'); return; }
+        // Determine if GasMask store or Brandaro lead
+        if (opp.source?.includes('GasMask') || opp.source?.includes('Store') ||
+            opp.source?.includes('CRM') || opp.source?.includes('tube_intel') ||
+            opp.source?.includes('floor') || opp.source?.includes('Auto Sync') ||
+            opp.source?.includes('Account Health')) {
+          // GasMask store AI call
+          try {
+            const { data } = await supabase.functions.invoke('gasmask-ai-caller', {
+              body: {
+                store_name: opp.name,
+                store_phone: opp.phone,
+                city: opp.city,
+                call_purpose: opp.raw?.needs_order ? 'needs_order'
+                  : opp.raw?.bring_samples ? 'bring_samples'
+                  : opp.raw?.bring_starter_kit ? 'starter_kit'
+                  : opp.raw?.needs_switch ? 'switch_tubes'
+                  : 'follow_up',
+              },
+            });
+            toast.success(`GasMask AI call initiated to ${opp.name}`);
+          } catch (err: any) { toast.error(err.message); }
+        } else {
+          // Brandaro website lead — open tel: link
+          window.open(`tel:${opp.phone}`);
+        }
         break;
       case 'reply':
-        navigate('/gasmask/inbox');
+        navigate('/communication/messaging-hub');
         break;
       case 'book':
         if (!opp.phone) { toast.error('No phone number'); return; }
@@ -526,6 +552,22 @@ export default function MasterOpportunities() {
       toast.success('AI scan complete');
     } catch (err: any) { toast.error(err.message); }
     finally { setScanning(false); }
+  };
+
+  // ── Sync to Route Engine ──
+  const runSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('gasmask-opportunity-sync');
+      if (error) throw error;
+      toast.success('Synced to Route Engine', {
+        description: `${data?.total_triggers_created || 0} new triggers · ${data?.skipped_duplicates || 0} duplicates skipped`,
+        duration: 6000,
+      });
+      queryClient.invalidateQueries({ queryKey: ['opp-visit-triggers'] });
+      queryClient.invalidateQueries({ queryKey: ['gasmask-triggers-all'] });
+    } catch (err: any) { toast.error(err.message); }
+    finally { setSyncing(false); }
   };
 
   // ── Existing signal logic ──
@@ -653,7 +695,7 @@ export default function MasterOpportunities() {
   // ── Opportunity score cards (top-level KPIs) ──
   const oppCards = [
     { icon: ShoppingCart, label: 'Needs Order', count: signalSummary?.needsOrder || 0, color: 'text-yellow-500', bg: 'bg-yellow-500/10', tab: 'signals' as MainTab, desc: 'Field signals' },
-    { icon: MessageSquare, label: 'Messaging', count: messagingReplies?.length || 0, color: 'text-blue-500', bg: 'bg-blue-500/10', tab: 'messaging' as MainTab, desc: 'Inbound replies', pulse: (messagingReplies?.length || 0) > 0 },
+    { icon: MessageSquare, label: 'Store Replies', count: gasmaskMessages?.length || 0, color: 'text-blue-500', bg: 'bg-blue-500/10', tab: 'messaging' as MainTab, desc: 'GasMask store SMS', pulse: (gasmaskMessages?.length || 0) > 0 },
     { icon: Phone, label: 'Dialer Results', count: dialerResults?.length || 0, color: 'text-green-500', bg: 'bg-green-500/10', tab: 'dialer' as MainTab, desc: 'AI called, interested' },
     { icon: Package, label: 'Visit Triggers', count: visitTriggers?.length || 0, color: 'text-purple-500', bg: 'bg-purple-500/10', tab: 'visits' as MainTab, desc: 'Pending field visits' },
     { icon: TrendingUp, label: 'Ready to Close', count: readyToClose?.length || 0, color: 'text-emerald-500', bg: 'bg-emerald-500/10', tab: 'ready-close' as MainTab, desc: 'Booked/interested P7+' },
@@ -682,9 +724,13 @@ export default function MasterOpportunities() {
             Store intelligence · Messaging signals · AI dialer results · All brands
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => navigate('/gasmask/route-engine')}>
             <Truck className="h-3.5 w-3.5" />Route Engine
+          </Button>
+          <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runSync} disabled={syncing}>
+            {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            Sync to Route Engine
           </Button>
           <Button size="sm" className="gap-1.5 text-xs" onClick={runAIAnalysis} disabled={scanning}>
             {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Brain className="h-3.5 w-3.5" />}
@@ -721,7 +767,7 @@ export default function MasterOpportunities() {
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="signals" className="text-xs gap-1"><Sparkles className="h-3.5 w-3.5" />Store Intel</TabsTrigger>
           <TabsTrigger value="opportunities" className="text-xs gap-1"><Lightbulb className="h-3.5 w-3.5" />Opportunities</TabsTrigger>
-          <TabsTrigger value="messaging" className="text-xs gap-1"><MessageSquare className="h-3.5 w-3.5" />Messaging{messagingReplies?.length ? <Badge className="h-4 text-[9px] px-1 bg-blue-500 text-white border-0 ml-1">{messagingReplies.length}</Badge> : null}</TabsTrigger>
+          <TabsTrigger value="messaging" className="text-xs gap-1"><MessageSquare className="h-3.5 w-3.5" />Store Replies{gasmaskMessages?.length ? <Badge className="h-4 text-[9px] px-1 bg-blue-500 text-white border-0 ml-1">{gasmaskMessages.length}</Badge> : null}</TabsTrigger>
           <TabsTrigger value="dialer" className="text-xs gap-1"><Phone className="h-3.5 w-3.5" />Dialer</TabsTrigger>
           <TabsTrigger value="visits" className="text-xs gap-1"><Truck className="h-3.5 w-3.5" />Visits</TabsTrigger>
           <TabsTrigger value="ready-close" className="text-xs gap-1"><TrendingUp className="h-3.5 w-3.5" />Close</TabsTrigger>

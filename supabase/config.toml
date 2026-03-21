@@ -390,3 +390,12 @@ verify_jwt = false
 
 [functions.dynasty-agent-runner]
 verify_jwt = false
+
+[functions.gasmask-opportunity-sync]
+verify_jwt = false
+
+[functions.gasmask-ai-caller]
+verify_jwt = false
+
+[functions.gasmask-sms-inbound]
+verify_jwt = false

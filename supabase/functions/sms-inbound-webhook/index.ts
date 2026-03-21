@@ -63,8 +63,30 @@ serve(async (req: Request) => {
     const trimmedBody = messageBody.trim();
     const upperBody = trimmedBody.toUpperCase();
 
-    // ── Find lead by phone number (try multiple formats) ──
+    // ── Check if sender is a GasMask store first ──
     const fromLast10 = normalizedFrom.replace(/\D/g, "").slice(-10);
+    const { data: gasmaskStore } = await supabase
+      .from("stores")
+      .select("id, name")
+      .ilike("phone", `%${fromLast10}`)
+      .limit(1)
+      .maybeSingle();
+
+    if (gasmaskStore) {
+      // Route to GasMask handler — this is a store owner, not a Brandaro lead
+      console.log(`📨 [INBOUND] GasMask store detected: ${gasmaskStore.name}, routing to gasmask-sms-inbound`);
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      await fetch(`${supabaseUrl}/functions/v1/gasmask-sms-inbound`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` },
+        body: JSON.stringify(body),
+      });
+      return new Response('<?xml version="1.0"?><Response/>', {
+        headers: { "Content-Type": "text/xml" },
+      });
+    }
+
+    // ── Find Brandaro lead by phone number (try multiple formats) ──
     const { data: leads } = await supabase
       .from("brandaro_qualified_leads")
       .select("*")
@@ -73,7 +95,7 @@ serve(async (req: Request) => {
       )
       .limit(5);
 
-    console.log(`📨 [INBOUND] Leads found: ${leads?.length || 0}`);
+    console.log(`📨 [INBOUND] Brandaro leads found: ${leads?.length || 0}`);
 
     let lead = leads?.[0] || null;
 
