@@ -7,13 +7,12 @@ import { CheckCircle2, ClipboardList, AlertTriangle } from 'lucide-react';
 import { useDeliveryChecklist } from '@/hooks/useDeliveryChecklist';
 import { useGeneratePostVisitIntelligence } from '@/hooks/useVisitSummary';
 import { useFieldOutcomeCapture } from '@/hooks/useFieldOutcomeCapture';
-import { InventoryCheckSection } from './checklist/InventoryCheckSection';
+import { InventoryTubeIntelligenceSection } from './checklist/InventoryTubeIntelligenceSection';
 import { OrderDeliverySection } from './checklist/OrderDeliverySection';
 import { LastOrderContextSection } from './checklist/LastOrderContextSection';
 import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
 import { StickerVisibilitySection } from './checklist/StickerVisibilitySection';
-import { TubeIntelligenceSection } from './checklist/TubeIntelligenceSection';
 import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
 import { FieldOutcomeCaptureModal, type FieldOutcome } from './FieldOutcomeCaptureModal';
 
@@ -134,15 +133,8 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
         </CardContent>
       </Card>
 
-      {/* 1. Inventory Verification */}
-      <InventoryCheckSection
-        storeId={storeId}
-        isTaskCompleted={isTaskCompleted}
-        onToggleTask={handleToggleTask}
-        progress={getCategoryProgress('inventory')}
-        inventoryData={checklist?.inventory_updates || {}}
-        onInventoryUpdate={(data) => updateSectionData.mutate({ section: 'inventory_updates', data })}
-      />
+      {/* 1. Inventory Check & Tube Intelligence (combined) */}
+      <InventoryTubeIntelligenceSection storeId={storeId} />
 
       {/* 2. Orders to Deliver */}
       <OrderDeliverySection
@@ -180,8 +172,6 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
       {/* 6. Stickers & Visibility */}
       <StickerVisibilitySection storeId={storeId} />
 
-      {/* 7. Tube Intelligence */}
-      <TubeIntelligenceSection storeId={storeId} />
 
       {/* Complete Checklist Button */}
       {!isCompleted && (
