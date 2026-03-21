@@ -534,6 +534,9 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                         <span className="font-medium" style={{ color: brandIsActive ? brand.color : undefined }}>
                           {brand.name}
                         </span>
+                        {isNewProduct && (
+                          <Badge className="bg-blue-500 text-[9px] px-1.5 py-0">New</Badge>
+                        )}
                         {!brandIsActive && (
                           <Badge variant="outline" className="text-xs text-muted-foreground border-muted-foreground/30">
                             Inactive
