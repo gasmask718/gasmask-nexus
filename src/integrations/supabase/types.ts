@@ -24552,6 +24552,71 @@ export type Database = {
           },
         ]
       }
+      checklist_tube_intelligence: {
+        Row: {
+          bring_samples: boolean | null
+          bring_starter_kit: boolean | null
+          created_at: string | null
+          id: string
+          interest: string | null
+          last_order_date: string | null
+          last_order_qty: number | null
+          needs_order: boolean | null
+          person_type: string
+          product_name: string
+          status: string | null
+          store_id: string | null
+          switch_tubes: boolean | null
+          tube_count: number | null
+          updated_at: string | null
+          visit_date: string | null
+        }
+        Insert: {
+          bring_samples?: boolean | null
+          bring_starter_kit?: boolean | null
+          created_at?: string | null
+          id?: string
+          interest?: string | null
+          last_order_date?: string | null
+          last_order_qty?: number | null
+          needs_order?: boolean | null
+          person_type: string
+          product_name: string
+          status?: string | null
+          store_id?: string | null
+          switch_tubes?: boolean | null
+          tube_count?: number | null
+          updated_at?: string | null
+          visit_date?: string | null
+        }
+        Update: {
+          bring_samples?: boolean | null
+          bring_starter_kit?: boolean | null
+          created_at?: string | null
+          id?: string
+          interest?: string | null
+          last_order_date?: string | null
+          last_order_qty?: number | null
+          needs_order?: boolean | null
+          person_type?: string
+          product_name?: string
+          status?: string | null
+          store_id?: string | null
+          switch_tubes?: boolean | null
+          tube_count?: number | null
+          updated_at?: string | null
+          visit_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_tube_intelligence_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       closing_partners: {
         Row: {
           address: string | null

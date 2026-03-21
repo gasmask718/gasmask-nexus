@@ -13,6 +13,7 @@ import { LastOrderContextSection } from './checklist/LastOrderContextSection';
 import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
 import { StickerVisibilitySection } from './checklist/StickerVisibilitySection';
+import { TubeIntelligenceSection } from './checklist/TubeIntelligenceSection';
 import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
 import { FieldOutcomeCaptureModal, type FieldOutcome } from './FieldOutcomeCaptureModal';
 
@@ -178,6 +179,9 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
 
       {/* 6. Stickers & Visibility */}
       <StickerVisibilitySection storeId={storeId} />
+
+      {/* 7. Tube Intelligence */}
+      <TubeIntelligenceSection storeId={storeId} />
 
       {/* Complete Checklist Button */}
       {!isCompleted && (
