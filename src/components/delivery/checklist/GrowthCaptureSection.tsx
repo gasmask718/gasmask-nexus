@@ -204,8 +204,19 @@ export function GrowthCaptureSection({
                     </Button>
                   </div>
 
-                  {/* Row 1: Name + Telephone */}
+                  {/* Row 1: Contact Person + Store Name */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                        <User className="h-2.5 w-2.5" /> Contact Person
+                      </Label>
+                      <Input
+                        placeholder="Person's name"
+                        value={store.contactPersonName}
+                        onChange={(e) => updateNewStore(index, 'contactPersonName', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
                     <div>
                       <Label className="text-[10px] text-muted-foreground">Store Name</Label>
                       <Input
@@ -215,6 +226,10 @@ export function GrowthCaptureSection({
                         className="h-8 text-sm"
                       />
                     </div>
+                  </div>
+
+                  {/* Row 2: Telephone + Address */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div>
                       <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
                         <Phone className="h-2.5 w-2.5" /> Telephone
@@ -227,7 +242,6 @@ export function GrowthCaptureSection({
                         className="h-8 text-sm"
                       />
                     </div>
-                  </div>
 
                   {/* Row 2: Address autocomplete */}
                   {store.addressConfirmed ? (
