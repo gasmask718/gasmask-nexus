@@ -363,6 +363,18 @@ const Floor9Results = () => {
               </Card>
             </div>
           </TabsContent>
+
+          <TabsContent value="team" className="mt-4">
+            <TeamPerformanceTab />
+          </TabsContent>
+
+          <TabsContent value="briefing" className="mt-4">
+            <WeeklyBriefingTab />
+          </TabsContent>
+
+          <TabsContent value="routes" className="mt-4">
+            <RouteOptimizerTab />
+          </TabsContent>
         </Tabs>
 
         {/* AI Value Proposition */}
