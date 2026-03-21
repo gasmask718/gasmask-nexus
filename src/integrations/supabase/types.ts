@@ -24192,6 +24192,47 @@ export type Database = {
           },
         ]
       }
+      checklist_additional_stores: {
+        Row: {
+          address: string | null
+          created_at: string | null
+          id: string
+          person_type: string
+          store_id: string | null
+          store_name: string | null
+          telephone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          person_type: string
+          store_id?: string | null
+          store_name?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string | null
+          id?: string
+          person_type?: string
+          store_id?: string | null
+          store_name?: string | null
+          telephone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_additional_stores_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_completions: {
         Row: {
           checklist_id: string | null
@@ -24232,6 +24273,158 @@ export type Database = {
             columns: ["checklist_id"]
             isOneToOne: false
             referencedRelation: "visit_action_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_delivery_order_lines: {
+        Row: {
+          brand: string
+          created_at: string | null
+          id: string
+          line_total: number
+          order_id: string | null
+          product_id: string | null
+          product_name: string
+          qty: number
+          sku: string
+          unit_price: number
+        }
+        Insert: {
+          brand: string
+          created_at?: string | null
+          id?: string
+          line_total?: number
+          order_id?: string | null
+          product_id?: string | null
+          product_name: string
+          qty?: number
+          sku: string
+          unit_price: number
+        }
+        Update: {
+          brand?: string
+          created_at?: string | null
+          id?: string
+          line_total?: number
+          order_id?: string | null
+          product_id?: string | null
+          product_name?: string
+          qty?: number
+          sku?: string
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_delivery_order_lines_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_delivery_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_delivery_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_delivery_order_lines_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+        ]
+      }
+      checklist_delivery_orders: {
+        Row: {
+          created_at: string | null
+          delivering_to_store: string | null
+          delivery_date: string | null
+          id: string
+          invoice_number: string | null
+          payment_terms: string | null
+          person_type: string
+          status: string | null
+          store_id: string | null
+          subtotal: number | null
+          total: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivering_to_store?: string | null
+          delivery_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          payment_terms?: string | null
+          person_type: string
+          status?: string | null
+          store_id?: string | null
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivering_to_store?: string | null
+          delivery_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          payment_terms?: string | null
+          person_type?: string
+          status?: string | null
+          store_id?: string | null
+          subtotal?: number | null
+          total?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_delivery_orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_inventory_photos: {
+        Row: {
+          created_at: string | null
+          file_name: string | null
+          file_path: string
+          id: string
+          person_type: string
+          store_id: string | null
+          visit_date: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_name?: string | null
+          file_path: string
+          id?: string
+          person_type: string
+          store_id?: string | null
+          visit_date?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          person_type?: string
+          store_id?: string | null
+          visit_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_inventory_photos_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -24285,6 +24478,73 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "checklist_sticker_visibility_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_tube_counts: {
+        Row: {
+          brand: string
+          count: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          person_type: string
+          product_id: string | null
+          product_name: string
+          sku: string
+          store_id: string | null
+          updated_at: string | null
+          visit_date: string | null
+        }
+        Insert: {
+          brand: string
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          person_type: string
+          product_id?: string | null
+          product_name: string
+          sku: string
+          store_id?: string | null
+          updated_at?: string | null
+          visit_date?: string | null
+        }
+        Update: {
+          brand?: string
+          count?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          person_type?: string
+          product_id?: string | null
+          product_name?: string
+          sku?: string
+          store_id?: string | null
+          updated_at?: string | null
+          visit_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_tube_counts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_tube_counts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_product_profit_summary"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "checklist_tube_counts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
             referencedRelation: "stores"
