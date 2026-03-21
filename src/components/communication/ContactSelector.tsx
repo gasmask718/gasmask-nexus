@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DataTablePagination } from "@/components/crud/DataTablePagination";
-import { Search, Users, Phone } from "lucide-react";
+import { PhoneTypeBadge } from "@/components/communication/PhoneTypeBadge";
+import { Search, Users, Phone, AlertTriangle } from "lucide-react";
 
 export interface SelectedContact {
   type: string;
