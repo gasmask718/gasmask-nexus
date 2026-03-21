@@ -82,16 +82,25 @@ export default function ContactSelector({
 
       if (types.includes("store")) {
         fetchers.push(
-          (supabase as any)
-            .from("store_master")
-            .select("id, store_name, phone")
-            .not("phone", "is", null)
-            .limit(5000)
-            .then(({ data }: any) => {
-              (data || []).forEach((r: any) =>
+          (async () => {
+            // Paginate to fetch ALL stores, not just 1000
+            let page = 0;
+            const PAGE = 1000;
+            while (true) {
+              const { data } = await (supabase as any)
+                .from("store_master")
+                .select("id, store_name, phone, phone_type, sms_capable")
+                .not("phone", "is", null)
+                .order("store_name", { ascending: true })
+                .range(page * PAGE, (page + 1) * PAGE - 1);
+              if (!data?.length) break;
+              data.forEach((r: any) =>
                 rows.push({ key: `store:${r.id}`, type: "store", id: r.id, name: r.store_name || "", phone: r.phone || "" })
               );
-            })
+              if (data.length < PAGE) break;
+              page++;
+            }
+          })()
         );
       }
       if (types.includes("prospect")) {
