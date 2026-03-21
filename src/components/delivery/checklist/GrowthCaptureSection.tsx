@@ -116,6 +116,7 @@ export function GrowthCaptureSection({
           .insert({
             store_id: storeId,
             person_type: personType,
+            contact_person_name: store.contactPersonName,
             store_name: store.name,
             telephone: store.telephone,
             address: store.full_address || store.address,
