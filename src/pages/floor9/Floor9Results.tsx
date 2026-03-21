@@ -278,7 +278,19 @@ const Floor9Results = () => {
             </TabsTrigger>
             <TabsTrigger value="learning" className="flex items-center gap-2">
               <Brain className="h-4 w-4" />
-              Learning Feedback
+              Learning
+            </TabsTrigger>
+            <TabsTrigger value="team" className="flex items-center gap-2">
+              <Trophy className="h-4 w-4" />
+              Team
+            </TabsTrigger>
+            <TabsTrigger value="briefing" className="flex items-center gap-2">
+              <Newspaper className="h-4 w-4" />
+              Briefing
+            </TabsTrigger>
+            <TabsTrigger value="routes" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Routes
             </TabsTrigger>
           </TabsList>
 
