@@ -83,14 +83,13 @@ export default function ContactSelector({
       if (types.includes("store")) {
         fetchers.push(
           (async () => {
-            // Paginate to fetch ALL stores, not just 1000
+            // Paginate to fetch ALL stores — including those without phones
             let page = 0;
             const PAGE = 1000;
             while (true) {
               const { data } = await (supabase as any)
                 .from("store_master")
                 .select("id, store_name, phone, phone_type, sms_capable")
-                .not("phone", "is", null)
                 .order("store_name", { ascending: true })
                 .range(page * PAGE, (page + 1) * PAGE - 1);
               if (!data?.length) break;
