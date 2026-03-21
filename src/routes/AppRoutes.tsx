@@ -1175,6 +1175,7 @@ export default function AppRoutes() {
         <Route path="/crm/accept-invite" element={<AcceptCRMInvite />} />
         <Route path="/crm/global" element={<GlobalCRMDashboard />} />
         <Route path="/crm/legacy" element={<GlobalCRM />} />
+        <Route path="/crm/contact-management" element={<ContactManagementPage />} />
         
         {/* Business-scoped CRM routes - CANONICAL PATTERN: /crm/:businessSlug/* */}
         {/* CRMRouter handles legacy vs new CRM routing: Grabba → Legacy, Others → Blueprint */}
