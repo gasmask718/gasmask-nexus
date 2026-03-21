@@ -701,6 +701,17 @@ export default function DialerConsolePage() {
               )}
             </CardContent>
           </Card>
+
+          {/* SMS Thread Panel — visible when call is active */}
+          {activeSessions.length > 0 && activeSessions[0] && (activeSessions[0] as any).phone_number && (
+            <div className="mt-4">
+              <CallSmsPanel
+                phone={(activeSessions[0] as any).phone_number}
+                contactName={activeSessions[0].contact_name || 'Unknown'}
+                callId={activeSessions[0].id}
+              />
+            </div>
+          )}
         </div>
       </div>
 
