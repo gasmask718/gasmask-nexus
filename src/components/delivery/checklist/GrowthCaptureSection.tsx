@@ -242,8 +242,9 @@ export function GrowthCaptureSection({
                         className="h-8 text-sm"
                       />
                     </div>
+                  </div>
 
-                  {/* Row 2: Address autocomplete */}
+                  {/* Row 3: Address autocomplete */}
                   {store.addressConfirmed ? (
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 text-xs text-green-600">
