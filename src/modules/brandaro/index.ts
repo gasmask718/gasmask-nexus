@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity, Smartphone } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -45,6 +45,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/optimization', label: 'Optimization Engine', icon: Cpu },
   { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
   { path: '/os/brandaro/system-status', label: 'System Status', icon: Activity },
+  { path: '/brandaro/phone-numbers', label: 'Phone Numbers', icon: Smartphone },
 ];
 
 export const BrandaroModule: DynastyModule = {
