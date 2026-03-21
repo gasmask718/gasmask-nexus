@@ -21,6 +21,7 @@ import { useStoreStatusHistory, useAddStoreStatusEvent } from "@/hooks/useStoreS
 import { format } from "date-fns";
 import { StoreFollowUpSection } from "@/components/communication/followups/StoreFollowUpSection";
 import { SellThroughIntelCard } from "@/components/store/SellThroughIntelCard";
+import { CleanNoteButton } from "@/components/notes/CleanNoteButton";
 
 export default function BrandStoreProfile() {
   const { brandId, storeId } = useParams<{ brandId: string; storeId: string }>();
@@ -299,14 +300,22 @@ export default function BrandStoreProfile() {
                     <div key={note.id} className="bg-muted/50 rounded-lg p-3">
                       <div className="flex justify-between items-start">
                         <p className="text-sm">{note.note_text}</p>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                          onClick={() => deleteNote.mutate({ noteId: note.id, storeId: storeId! })}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <CleanNoteButton
+                            noteId={note.id}
+                            storeId={storeId!}
+                            noteText={note.note_text}
+                            size="icon"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                            onClick={() => deleteNote.mutate({ noteId: note.id, storeId: storeId! })}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-xs text-muted-foreground mt-2">
                         {format(new Date(note.created_at), "MMM d, yyyy 'at' h:mm a")}

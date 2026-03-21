@@ -378,6 +378,7 @@ export default function AppSidebar() {
               { path: '/gasmask/route-engine', label: 'Route Engine', emoji: '🚚' },
               { path: '/gasmask/driver-route', label: 'Driver View', emoji: '📍' },
               { path: '/grabba/ai', label: 'AI Copilot', emoji: '🤖' },
+              { path: '/gasmask/note-cleaner', label: 'Note Cleaner', emoji: '🧹' },
               { path: '/ai/workforce', label: 'AI Workforce', emoji: '👾' },
               { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
               { path: '/grabba/ai-playbooks', label: 'AI Playbooks', emoji: '📋' },
