@@ -12,7 +12,7 @@ import { OrderDeliverySection } from './checklist/OrderDeliverySection';
 import { LastOrderContextSection } from './checklist/LastOrderContextSection';
 import { GrowthCaptureSection } from './checklist/GrowthCaptureSection';
 import { ContactUpdateSection } from './checklist/ContactUpdateSection';
-import { StickerCheckSection } from './checklist/StickerCheckSection';
+import { StickerVisibilitySection } from './checklist/StickerVisibilitySection';
 import { DeliveryMemorySnapshot } from './DeliveryMemorySnapshot';
 import { FieldOutcomeCaptureModal, type FieldOutcome } from './FieldOutcomeCaptureModal';
 
