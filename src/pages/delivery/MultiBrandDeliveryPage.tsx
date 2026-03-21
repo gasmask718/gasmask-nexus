@@ -593,6 +593,102 @@ export default function MultiBrandDeliveryPage() {
     },
   });
 
+  // Store Intel signals from tube_intel
+  const { data: tubeIntelSignals = [] } = useQuery({
+    queryKey: ['delivery-tube-intel'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('tube_intel')
+        .select(`
+          id, store_id, needs_order,
+          bring_samples, bring_starter_kit,
+          needs_switch, switch_quantity,
+          owner_interested, last_updated_at,
+          stores (
+            id, name, address_city,
+            address_state, phone, address_street
+          )
+        `)
+        .or(
+          'needs_order.eq.true,' +
+          'bring_samples.eq.true,' +
+          'bring_starter_kit.eq.true,' +
+          'needs_switch.eq.true,' +
+          'owner_interested.eq.true'
+        )
+        .order('last_updated_at', { ascending: false })
+        .limit(300);
+      return data || [];
+    },
+    refetchInterval: 60000,
+  });
+
+  // Human-written opportunities
+  const { data: storeOpportunities = [] } = useQuery({
+    queryKey: ['delivery-store-opportunities'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('store_opportunities')
+        .select(`
+          id, store_id, opportunity_text,
+          source, created_at,
+          stores (
+            id, name, address_city,
+            address_state, phone
+          )
+        `)
+        .eq('is_completed', false)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return data || [];
+    },
+    refetchInterval: 60000,
+  });
+
+  const getSignalStores = (tab: string): any[] => {
+    switch (tab) {
+      case 'needs_order':
+        return (tubeIntelSignals as any[]).filter((s: any) => s.needs_order).map((s: any) => ({
+          name: (s.stores as any)?.name || 'Unknown', city: (s.stores as any)?.address_city,
+          state: (s.stores as any)?.address_state, phone: (s.stores as any)?.phone,
+          address: (s.stores as any)?.address_street, notes: 'Needs restock order',
+        }));
+      case 'bring_samples':
+        return (tubeIntelSignals as any[]).filter((s: any) => s.bring_samples).map((s: any) => ({
+          name: (s.stores as any)?.name || 'Unknown', city: (s.stores as any)?.address_city,
+          state: (s.stores as any)?.address_state, phone: (s.stores as any)?.phone,
+          address: (s.stores as any)?.address_street, notes: 'Bring product samples',
+        }));
+      case 'starter_kit':
+        return (tubeIntelSignals as any[]).filter((s: any) => s.bring_starter_kit).map((s: any) => ({
+          name: (s.stores as any)?.name || 'Unknown', city: (s.stores as any)?.address_city,
+          state: (s.stores as any)?.address_state, phone: (s.stores as any)?.phone,
+          address: (s.stores as any)?.address_street, notes: 'Starter kit delivery',
+        }));
+      case 'interested':
+        return (tubeIntelSignals as any[]).filter((s: any) => s.owner_interested === true).map((s: any) => ({
+          name: (s.stores as any)?.name || 'Unknown', city: (s.stores as any)?.address_city,
+          state: (s.stores as any)?.address_state, phone: (s.stores as any)?.phone,
+          address: (s.stores as any)?.address_street, notes: 'Owner expressed interest',
+        }));
+      case 'switch_tubes':
+        return (tubeIntelSignals as any[]).filter((s: any) => s.needs_switch).map((s: any) => ({
+          name: (s.stores as any)?.name || 'Unknown', city: (s.stores as any)?.address_city,
+          state: (s.stores as any)?.address_state, phone: (s.stores as any)?.phone,
+          address: (s.stores as any)?.address_street,
+          notes: s.switch_quantity ? `Switch ${s.switch_quantity} tubes` : 'Tube switch needed',
+        }));
+      case 'opportunities':
+        return (storeOpportunities as any[]).map((o: any) => ({
+          name: (o.stores as any)?.name || 'Unknown', city: (o.stores as any)?.address_city,
+          state: (o.stores as any)?.address_state, phone: (o.stores as any)?.phone,
+          notes: o.opportunity_text,
+        }));
+      default:
+        return [];
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Critical Visits Alert Banner */}
@@ -606,6 +702,175 @@ export default function MultiBrandDeliveryPage() {
           <Button size="sm" variant="destructive" onClick={() => navigate('/gasmask/route-engine')}>View All</Button>
         </div>
       )}
+
+      {/* ═══ STORE INTELLIGENCE SIGNAL CARDS ═══ */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-500" />
+            Store Intelligence — Field Signals
+          </h2>
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-xs gap-1.5"
+            onClick={async () => {
+              try {
+                const { data } = await supabase.functions.invoke('gasmask-opportunity-sync');
+                toast.success('Synced', {
+                  description: `${data?.total_triggers_created || 0} new triggers · ${data?.skipped_duplicates || 0} duplicates skipped`,
+                });
+                queryClient.invalidateQueries({ queryKey: ['pending-delivery-triggers'] });
+                queryClient.invalidateQueries({ queryKey: ['delivery-tube-intel'] });
+              } catch (err: any) {
+                toast.error(err.message);
+              }
+            }}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Sync Signals → Route Engine
+          </Button>
+        </div>
+
+        {/* Signal cards — horizontal scroll */}
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {[
+            { key: 'needs_order', label: 'Need Order', icon: ShoppingCart, color: 'amber', count: (tubeIntelSignals as any[]).filter((s: any) => s.needs_order).length, desc: 'Stores flagged for restock' },
+            { key: 'bring_samples', label: 'Bring Samples', icon: Package, color: 'purple', count: (tubeIntelSignals as any[]).filter((s: any) => s.bring_samples).length, desc: 'New product samples needed' },
+            { key: 'starter_kit', label: 'Starter Kits', icon: Gift, color: 'teal', count: (tubeIntelSignals as any[]).filter((s: any) => s.bring_starter_kit).length, desc: 'Ready for starter kit delivery' },
+            { key: 'interested', label: 'Interested', icon: ThumbsUp, color: 'green', count: (tubeIntelSignals as any[]).filter((s: any) => s.owner_interested === true).length, desc: 'Owner showed interest' },
+            { key: 'opportunities', label: 'Opportunities', icon: ClipboardList, color: 'orange', count: (storeOpportunities as any[]).length, desc: 'Written by field reps' },
+            { key: 'switch_tubes', label: 'Switch Tubes', icon: ArrowLeftRight, color: 'red', count: (tubeIntelSignals as any[]).filter((s: any) => s.needs_switch).length, desc: 'Tube swap needed' },
+          ].map(signal => {
+            const Icon = signal.icon;
+            return (
+              <button
+                key={signal.key}
+                onClick={() => setActiveSignalTab(activeSignalTab === signal.key ? null : signal.key)}
+                className={`flex-shrink-0 min-w-[150px] p-3 rounded-xl border text-left transition-all hover:shadow-md
+                  ${activeSignalTab === signal.key
+                    ? `border-${signal.color}-500 ring-1 ring-${signal.color}-500 bg-${signal.color}-500/10`
+                    : `border-${signal.color}-500/30 bg-${signal.color}-500/5`
+                  }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <Icon className={`h-4 w-4 text-${signal.color}-500`} />
+                  <span className={`text-xs font-medium text-${signal.color}-500`}>{signal.label}</span>
+                </div>
+                <p className={`text-2xl font-bold text-${signal.color}-500`}>{signal.count}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{signal.desc}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Signal detail panel */}
+        {activeSignalTab && (
+          <div className="mt-3 rounded-xl border border-border bg-card">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="text-sm font-semibold capitalize">
+                {activeSignalTab.replace(/_/g, ' ')} — Stores ({getSignalStores(activeSignalTab).length})
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs gap-1.5"
+                  onClick={async () => {
+                    const signalStores = getSignalStores(activeSignalTab);
+                    let created = 0;
+                    for (const store of signalStores) {
+                      if (!store.name || store.name === 'Unknown') continue;
+                      await supabase.functions.invoke('gasmask-route-agent', {
+                        body: {
+                          action: 'create_trigger',
+                          store_name: store.name,
+                          store_city: store.city,
+                          store_state: store.state,
+                          store_phone: store.phone,
+                          store_address: store.address,
+                          trigger_source: `Multi-Brand Delivery — ${activeSignalTab}`,
+                          trigger_type:
+                            activeSignalTab === 'needs_order' ? 'restock' :
+                            activeSignalTab === 'bring_samples' ? 'first_visit' :
+                            activeSignalTab === 'starter_kit' ? 'first_visit' :
+                            activeSignalTab === 'switch_tubes' ? 'merchandising' :
+                            'follow_up',
+                          floor_source: 'floor4_delivery',
+                          urgency: activeSignalTab === 'needs_order' || activeSignalTab === 'switch_tubes' ? 'high' : 'normal',
+                          priority_score: activeSignalTab === 'needs_order' ? 8 : activeSignalTab === 'switch_tubes' ? 7 : 5,
+                          trigger_notes: store.notes || `Signal: ${activeSignalTab}`,
+                        },
+                      });
+                      created++;
+                    }
+                    toast.success(`${created} visit triggers added to Route Engine`);
+                    queryClient.invalidateQueries({ queryKey: ['pending-delivery-triggers'] });
+                  }}
+                >
+                  <Truck className="h-3.5 w-3.5" />
+                  Add All to Route Engine
+                </Button>
+                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setActiveSignalTab(null)}>
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="divide-y divide-border max-h-72 overflow-y-auto">
+              {getSignalStores(activeSignalTab).length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                  No stores in this category
+                </div>
+              ) : (
+                getSignalStores(activeSignalTab).map((store: any, idx: number) => (
+                  <div key={idx} className="flex items-center justify-between px-4 py-3 hover:bg-muted/30">
+                    <div>
+                      <p className="text-sm font-medium">{store.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {[store.city, store.state].filter(Boolean).join(', ')}
+                        {store.notes && <span className="ml-2 text-amber-500">· {store.notes}</span>}
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      {store.phone && (
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" asChild>
+                          <a href={`tel:${store.phone}`}>📞</a>
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        onClick={async () => {
+                          if (!store.name || store.name === 'Unknown') { toast.error('No store name'); return; }
+                          await supabase.functions.invoke('gasmask-route-agent', {
+                            body: {
+                              action: 'create_trigger',
+                              store_name: store.name, store_city: store.city, store_state: store.state,
+                              store_phone: store.phone, store_address: store.address,
+                              trigger_source: `Multi-Brand Delivery — ${activeSignalTab}`,
+                              trigger_type: activeSignalTab === 'needs_order' ? 'restock' : activeSignalTab === 'bring_samples' ? 'first_visit' : activeSignalTab === 'switch_tubes' ? 'merchandising' : 'follow_up',
+                              floor_source: 'floor4_delivery',
+                              urgency: activeSignalTab === 'needs_order' ? 'high' : 'normal',
+                              priority_score: activeSignalTab === 'needs_order' ? 8 : 5,
+                              trigger_notes: store.notes || `Signal: ${activeSignalTab}`,
+                            },
+                          });
+                          toast.success(`Visit trigger created for ${store.name}`);
+                        }}
+                      >
+                        + Route
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      {/* ═══ END STORE INTELLIGENCE ═══ */}
 
       {/* Header */}
       <div className="flex items-center justify-between">

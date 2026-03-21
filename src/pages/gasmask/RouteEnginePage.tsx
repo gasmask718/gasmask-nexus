@@ -64,6 +64,7 @@ export default function RouteEnginePage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [analyzing, setAnalyzing] = useState(false);
+  const [generatingChecklists, setGeneratingChecklists] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showRouteBuilder, setShowRouteBuilder] = useState(false);
