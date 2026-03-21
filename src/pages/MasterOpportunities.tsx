@@ -722,7 +722,7 @@ export default function MasterOpportunities() {
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="signals" className="text-xs gap-1"><Sparkles className="h-3.5 w-3.5" />Store Intel</TabsTrigger>
           <TabsTrigger value="opportunities" className="text-xs gap-1"><Lightbulb className="h-3.5 w-3.5" />Opportunities</TabsTrigger>
-          <TabsTrigger value="messaging" className="text-xs gap-1"><MessageSquare className="h-3.5 w-3.5" />Messaging{messagingReplies?.length ? <Badge className="h-4 text-[9px] px-1 bg-blue-500 text-white border-0 ml-1">{messagingReplies.length}</Badge> : null}</TabsTrigger>
+          <TabsTrigger value="messaging" className="text-xs gap-1"><MessageSquare className="h-3.5 w-3.5" />Store Replies{gasmaskMessages?.length ? <Badge className="h-4 text-[9px] px-1 bg-blue-500 text-white border-0 ml-1">{gasmaskMessages.length}</Badge> : null}</TabsTrigger>
           <TabsTrigger value="dialer" className="text-xs gap-1"><Phone className="h-3.5 w-3.5" />Dialer</TabsTrigger>
           <TabsTrigger value="visits" className="text-xs gap-1"><Truck className="h-3.5 w-3.5" />Visits</TabsTrigger>
           <TabsTrigger value="ready-close" className="text-xs gap-1"><TrendingUp className="h-3.5 w-3.5" />Close</TabsTrigger>
