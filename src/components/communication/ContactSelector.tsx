@@ -191,35 +191,40 @@ export default function ContactSelector({
       if (types.includes("active_purchaser")) {
         fetchers.push(
           (async () => {
-            // Fetch stores that have placed orders via checklist_delivery_orders
-            const { data: orderData } = await (supabase as any)
-              .from("checklist_delivery_orders")
+            // Fetch stores that have finalized invoices
+            const { data: invoiceData } = await (supabase as any)
+              .from("invoices")
               .select("store_id, created_at, total, status")
-              .in("status", ["sent", "paid", "delivered", "completed"])
+              .eq("status", "finalized")
+              .not("store_id", "is", null)
               .order("created_at", { ascending: false });
 
-            if (orderData?.length) {
-              const purchaserIds = [...new Set((orderData as any[]).map((o: any) => o.store_id).filter(Boolean))];
+            if (invoiceData?.length) {
               const countMap: Record<string, number> = {};
-              for (const o of orderData as any[]) {
-                if (o.store_id) countMap[o.store_id] = (countMap[o.store_id] || 0) + 1;
+              const lastPurchaseMap: Record<string, string> = {};
+              const totalSpendMap: Record<string, number> = {};
+
+              for (const inv of invoiceData as any[]) {
+                if (!inv.store_id) continue;
+                countMap[inv.store_id] = (countMap[inv.store_id] || 0) + 1;
+                totalSpendMap[inv.store_id] = (totalSpendMap[inv.store_id] || 0) + (inv.total || 0);
+                if (!lastPurchaseMap[inv.store_id]) lastPurchaseMap[inv.store_id] = inv.created_at;
               }
 
-              // Fetch store details in batches
-              const batchSize = 100;
+              const purchaserIds = Object.keys(countMap);
+              const batchSize = 200;
               for (let i = 0; i < purchaserIds.length; i += batchSize) {
                 const batch = purchaserIds.slice(i, i + batchSize);
                 const { data: stores } = await (supabase as any)
                   .from("store_master")
                   .select("id, store_name, phone, phone_type, sms_capable")
-                  .in("id", batch)
-                  .not("phone", "is", null);
+                  .in("id", batch);
                 (stores || []).forEach((s: any) =>
                   rows.push({
                     key: `active_purchaser:${s.id}`,
                     type: "active_purchaser" as EntityType,
                     id: s.id,
-                    name: `${s.store_name} (${countMap[s.id] || 0} orders)`,
+                    name: `${s.store_name} (${countMap[s.id] || 0} invoices · $${Math.round(totalSpendMap[s.id] || 0)})`,
                     phone: s.phone || "",
                   })
                 );
