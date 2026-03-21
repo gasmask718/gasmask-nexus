@@ -279,17 +279,17 @@ export default function MasterOpportunities() {
   const completeOpportunity = useCompleteOpportunity();
   const reopenOpportunity = useReopenOpportunity();
 
-  // ── NEW data sources ──
-  const { data: messagingReplies } = useQuery({
-    queryKey: ['opp-messaging-replies'],
+  // ── GasMask store messaging (SEPARATE from Brandaro) ──
+  const { data: gasmaskMessages } = useQuery({
+    queryKey: ['gasmask-store-messages'],
     queryFn: async () => {
-      const { data: convData } = await (supabase as any)
-        .from('brandaro_conversations')
-        .select('*, brandaro_qualified_leads(id, business_name, phone_number, pipeline_stage, city, industry)')
+      const { data } = await supabase
+        .from('communication_messages')
+        .select('*')
         .eq('direction', 'inbound')
         .order('created_at', { ascending: false })
         .limit(50);
-      return convData || [];
+      return data || [];
     },
     refetchInterval: 30000,
   });
