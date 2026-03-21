@@ -172,8 +172,6 @@ export function DeliveryTaskCard({ storeId, storeName, onComplete }: DeliveryTas
       {/* 6. Stickers & Visibility */}
       <StickerVisibilitySection storeId={storeId} />
 
-      {/* 7. Tube Intelligence */}
-      <TubeIntelligenceSection storeId={storeId} />
 
       {/* Complete Checklist Button */}
       {!isCompleted && (
