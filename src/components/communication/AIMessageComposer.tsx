@@ -30,7 +30,7 @@ const QUICK_PROMPTS = [
 ];
 
 interface AIMessageComposerProps {
-  audience: Array<{ language_detected?: string }>;
+  audience: Array<Record<string, any>>;
   audienceType: string;
   onMessageGenerated: (message: string) => void;
 }
