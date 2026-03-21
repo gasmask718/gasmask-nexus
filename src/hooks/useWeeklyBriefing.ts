@@ -6,8 +6,7 @@ export function useLatestBriefing() {
   return useQuery({
     queryKey: ['latest-briefing'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('weekly_briefings')
+      const { data } = await (supabase.from('weekly_briefings') as any)
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1)
@@ -21,8 +20,7 @@ export function useAllBriefings() {
   return useQuery({
     queryKey: ['all-briefings'],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('weekly_briefings')
+      const { data } = await (supabase.from('weekly_briefings') as any)
         .select('id, week_start, week_end, created_at')
         .order('created_at', { ascending: false });
       return data || [];
