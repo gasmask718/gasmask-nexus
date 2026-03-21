@@ -510,13 +510,17 @@ export function UnifiedTubeIntelligenceCard({ storeId, role = 'admin' }: Unified
                 const brandIsActive = getBrandIsActive(brand.id);
                 const canToggleActive = role === 'admin' || role === 'ambassador' || role === 'biker';
 
+                const isNewProduct = 'isNew' in brand && brand.isNew;
+                
                 return (
                   <div
                     key={brand.id}
                     className={cn(
                       'p-3 rounded-lg border transition-colors',
-                      brandIsActive ? colorClasses.bg : 'bg-muted/30',
-                      brandIsActive ? colorClasses.border : 'border-border/20',
+                      isNewProduct ? 'border-blue-500/50 bg-blue-500/5' : '',
+                      !isNewProduct && brandIsActive ? colorClasses.bg : '',
+                      !isNewProduct && brandIsActive ? colorClasses.border : '',
+                      !isNewProduct && !brandIsActive ? 'bg-muted/30 border-border/20' : '',
                       !brandIsActive && 'opacity-65'
                     )}
                   >
