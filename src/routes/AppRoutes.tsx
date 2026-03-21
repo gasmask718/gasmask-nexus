@@ -249,6 +249,7 @@ const GlobalCRMDashboard = lazy(() => import('@/pages/crm/GlobalCRMDashboard'));
 const BusinessCRMDashboard = lazy(() => import('@/pages/crm/BusinessCRMDashboard'));
 const CRMRouter = lazy(() => import('@/pages/crm/CRMRouter'));
 const DynamicCRMPage = lazy(() => import('@/pages/crm/DynamicCRMPage'));
+const ContactManagementPage = lazy(() => import('@/pages/crm/ContactManagementPage'));
 
 // TopTier CRM
 const TopTierPartnerDashboard = lazy(() => import('@/pages/crm/toptier').then(m => ({ default: m.TopTierPartnerDashboard })));
