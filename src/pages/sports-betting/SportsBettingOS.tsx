@@ -2525,7 +2525,10 @@ function MyBetsTab() {
                   </CardContent>
                 </Card>
               );
-            })
+            })}
+                </div>
+              ));
+            })()
           )}
         </div>
       )}
