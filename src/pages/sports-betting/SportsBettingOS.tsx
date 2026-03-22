@@ -2636,6 +2636,20 @@ export default function SportsBettingOS() {
     refetchInterval: 60000,
   });
 
+  const { data: lastRun } = useQuery({
+    queryKey: ['last-engine-run'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_run_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: 60000,
+  });
+
   const runAllEngines = async () => {
     setRunningAll(true);
     const startTime = Date.now();
