@@ -2693,6 +2693,28 @@ export default function SportsBettingOS() {
 
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-4">
+      {/* Bettor Profile Edge Score */}
+      {bettorProfile && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{bettorProfile.overall_edge_score || 0}</p>
+                <p className="text-[9px] text-muted-foreground">EDGE SCORE</p>
+              </div>
+              <Badge variant={bettorProfile.sharp_rating === 'Elite' ? 'default' : 'secondary'} className="text-xs">
+                {bettorProfile.sharp_rating === 'Elite' ? '🏆' : bettorProfile.sharp_rating === 'Sharp' ? '🎯' : bettorProfile.sharp_rating === 'Semi-Sharp' ? '📈' : '🎲'} {bettorProfile.sharp_rating || 'Recreational'}
+              </Badge>
+            </div>
+            <div className="flex gap-4 text-xs">
+              {bettorProfile.avg_clv !== null && <div className="text-center"><p className="font-mono font-bold">{bettorProfile.avg_clv > 0 ? '+' : ''}{bettorProfile.avg_clv?.toFixed(1)}%</p><p className="text-[9px] text-muted-foreground">Avg CLV</p></div>}
+              {bettorProfile.roi_all_time !== null && <div className="text-center"><p className="font-mono font-bold">{bettorProfile.roi_all_time?.toFixed(1)}%</p><p className="text-[9px] text-muted-foreground">Accuracy</p></div>}
+              {bettorProfile.total_units_wagered && <div className="text-center"><p className="font-mono font-bold">{bettorProfile.total_units_wagered}</p><p className="text-[9px] text-muted-foreground">Picks</p></div>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <Trophy className="h-6 w-6 text-orange-500" />
