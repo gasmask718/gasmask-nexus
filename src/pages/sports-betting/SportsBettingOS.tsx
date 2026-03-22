@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,79 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
 import { SyncDashboard } from '@/components/sbo/SyncDashboard';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE PICK BUTTON — Reusable across all tabs
+// ═══════════════════════════════════════════════════════════════
+
+function SavePickButton({
+  pickType,
+  label,
+  detail,
+  odds,
+  aiAnalysis,
+  confidence,
+  sourceTable,
+  sourceId,
+}: {
+  pickType: 'game' | 'prop' | 'parlay';
+  label: string;
+  detail?: string;
+  odds?: string;
+  aiAnalysis?: string;
+  confidence?: number;
+  sourceTable: string;
+  sourceId: string;
+}) {
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any).from('sbo_saved_picks').insert({
+        pick_type: pickType,
+        label,
+        detail: detail || '',
+        odds: odds || '',
+        ai_analysis: aiAnalysis || '',
+        confidence: confidence || 0,
+        source_table: sourceTable,
+        source_id: sourceId,
+        result: 'pending',
+      });
+      if (error) throw error;
+      setSaved(true);
+      toast.success('Pick saved');
+      queryClient.invalidateQueries({ queryKey: ['saved-picks'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save pick');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (saved) {
+    return (
+      <Button variant="ghost" size="sm" className="text-xs text-green-600 pointer-events-none" disabled>
+        <Check className="h-3 w-3 mr-1" /> Saved ✓
+      </Button>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" className="text-xs" onClick={handleSave} disabled={saving}>
+      {saving
+        ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        : <Bookmark className="h-3 w-3 mr-1" />
+      }
+      Save Pick
+    </Button>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TONIGHT'S GAMES TAB
