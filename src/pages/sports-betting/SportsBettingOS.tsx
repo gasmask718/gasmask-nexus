@@ -2167,6 +2167,7 @@ export default function SportsBettingOS() {
             }
           </Button>
         </div>
+      </div>
 
       <Tabs defaultValue="games" className="w-full">
         <TabsList className="grid w-full grid-cols-10">
