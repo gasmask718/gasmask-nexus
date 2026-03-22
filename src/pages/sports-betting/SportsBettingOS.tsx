@@ -154,7 +154,7 @@ function TonightGamesTab() {
       setFetchingIntel(false);
 
       // Re-fetch games to get fresh list
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const { data: freshGames } = await supabase
         .from('sbo_games')
         .select(`*, sbo_odds(*), sbo_predictions(*)`)
