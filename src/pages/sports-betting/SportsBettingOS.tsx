@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,79 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
 import { SyncDashboard } from '@/components/sbo/SyncDashboard';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark } from 'lucide-react';
 import { toast } from 'sonner';
+
+// ═══════════════════════════════════════════════════════════════
+// SAVE PICK BUTTON — Reusable across all tabs
+// ═══════════════════════════════════════════════════════════════
+
+function SavePickButton({
+  pickType,
+  label,
+  detail,
+  odds,
+  aiAnalysis,
+  confidence,
+  sourceTable,
+  sourceId,
+}: {
+  pickType: 'game' | 'prop' | 'parlay';
+  label: string;
+  detail?: string;
+  odds?: string;
+  aiAnalysis?: string;
+  confidence?: number;
+  sourceTable: string;
+  sourceId: string;
+}) {
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any).from('sbo_saved_picks').insert({
+        pick_type: pickType,
+        label,
+        detail: detail || '',
+        odds: odds || '',
+        ai_analysis: aiAnalysis || '',
+        confidence: confidence || 0,
+        source_table: sourceTable,
+        source_id: sourceId,
+        result: 'pending',
+      });
+      if (error) throw error;
+      setSaved(true);
+      toast.success('Pick saved');
+      queryClient.invalidateQueries({ queryKey: ['saved-picks'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save pick');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (saved) {
+    return (
+      <Button variant="ghost" size="sm" className="text-xs text-green-600 pointer-events-none" disabled>
+        <Check className="h-3 w-3 mr-1" /> Saved ✓
+      </Button>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" className="text-xs" onClick={handleSave} disabled={saving}>
+      {saving
+        ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+        : <Bookmark className="h-3 w-3 mr-1" />
+      }
+      Save Pick
+    </Button>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════
 // TONIGHT'S GAMES TAB
@@ -236,9 +307,21 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         ) : (
           <>
             <PredictionResult prediction={localPrediction} />
-            <Button variant="ghost" size="sm" className="mt-2 w-full text-xs" onClick={() => setLocalPrediction(null)}>
-              Run Different Prediction
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <SavePickButton
+                pickType="game"
+                label={`${localPrediction.predicted_outcome === 'home' ? game.home_team : game.away_team} ML`}
+                detail={`${game.away_team} @ ${game.home_team}`}
+                odds={dkOdds ? String(localPrediction.predicted_outcome === 'home' ? dkOdds.home_odds : dkOdds.away_odds) : ''}
+                aiAnalysis={localPrediction.stats_brain_reasoning || localPrediction.market_brain_reasoning || ''}
+                confidence={localPrediction.final_confidence}
+                sourceTable="sbo_predictions"
+                sourceId={localPrediction.id || game.id}
+              />
+              <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={() => setLocalPrediction(null)}>
+                Run Different Prediction
+              </Button>
+            </div>
           </>
         )}
       </CardContent>
@@ -393,18 +476,30 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                 ) : (
                   <>
                     <PredictionResult prediction={existingPred} />
-                    {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="mt-2 w-full text-xs"
-                        onClick={() => onAddToParlay(existingPred,
-                          existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds
-                        )}
-                      >
-                        + Add to Parlay
-                      </Button>
-                    )}
+                    <div className="flex gap-2 mt-2">
+                      <SavePickButton
+                        pickType="prop"
+                        label={`${prop.player_name} ${existingPred.predicted_outcome?.toUpperCase()} ${prop.line} ${prop.prop_type}`}
+                        detail={`${game?.away_team} @ ${game?.home_team}`}
+                        odds={String(existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds)}
+                        aiAnalysis={existingPred.stats_brain_reasoning || existingPred.context_brain_reasoning || ''}
+                        confidence={existingPred.final_confidence}
+                        sourceTable="sbo_predictions"
+                        sourceId={existingPred.id}
+                      />
+                      {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1 text-xs"
+                          onClick={() => onAddToParlay(existingPred,
+                            existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds
+                          )}
+                        >
+                          + Add to Parlay
+                        </Button>
+                      )}
+                    </div>
                   </>
                 )}
               </CardContent>
@@ -1717,7 +1812,7 @@ function ModelIntelligenceTab() {
 // ═══════════════════════════════════════════════════════════════
 
 function MyBetsTab() {
-  const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll'>('today');
+  const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll' | 'saved'>('today');
   const [sendingBriefing, setSendingBriefing] = useState(false);
   const [selectedStake, setSelectedStake] = useState(10);
 
@@ -1774,6 +1869,32 @@ function MyBetsTab() {
       return data;
     },
   });
+
+  const { data: savedPicks, refetch: refetchSaved } = useQuery({
+    queryKey: ['saved-picks'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_saved_picks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  const updatePickResult = async (pickId: string, result: string) => {
+    const { error } = await (supabase as any)
+      .from('sbo_saved_picks')
+      .update({ result })
+      .eq('id', pickId);
+    if (error) {
+      toast.error('Failed to update result');
+    } else {
+      toast.success(`Result updated to ${result}`);
+      refetchSaved();
+    }
+  };
 
   const sendBriefingNow = async () => {
     setSendingBriefing(true);
@@ -1842,7 +1963,7 @@ function MyBetsTab() {
 
       {/* View tabs */}
       <div className="flex gap-1">
-        {(['today', 'history', 'bankroll'] as const).map(view => (
+        {(['today', 'history', 'bankroll', 'saved'] as const).map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view)}
@@ -1852,7 +1973,7 @@ function MyBetsTab() {
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
-            {view === 'today' ? "📅 Today's Bets" : view === 'history' ? '📋 History' : '💰 Bankroll'}
+            {view === 'today' ? "📅 Today's Bets" : view === 'history' ? '📋 History' : view === 'saved' ? '⭐ Saved Picks' : '💰 Bankroll'}
           </button>
         ))}
       </div>
@@ -1999,6 +2120,65 @@ function MyBetsTab() {
                 </Card>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Saved picks view */}
+      {activeView === 'saved' && (
+        <div className="space-y-2">
+          {!savedPicks?.length ? (
+            <div className="text-center py-8 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground font-medium">No saved picks yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Use the Save Pick button on any prediction to save it here.</p>
+            </div>
+          ) : (
+            savedPicks.map((pick: any) => {
+              const resultColors: Record<string, string> = {
+                pending: 'text-muted-foreground',
+                won: 'text-green-500',
+                lost: 'text-red-500',
+                push: 'text-amber-500',
+              };
+              const resultEmoji: Record<string, string> = {
+                pending: '⏳', won: '🟢', lost: '🔴', push: '🟡',
+              };
+              return (
+                <Card key={pick.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {resultEmoji[pick.result] || '⏳'} {pick.label}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{pick.detail}</p>
+                        {pick.ai_analysis && (
+                          <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{pick.ai_analysis}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[9px] h-4">{pick.pick_type}</Badge>
+                          {pick.confidence > 0 && (
+                            <span className="text-[10px] text-muted-foreground">{pick.confidence}% conf</span>
+                          )}
+                          {pick.odds && <span className="text-[10px] font-mono text-muted-foreground">{pick.odds}</span>}
+                        </div>
+                      </div>
+                      <Select value={pick.result || 'pending'} onValueChange={(v) => updatePickResult(pick.id, v)}>
+                        <SelectTrigger className={`h-7 w-24 text-xs ${resultColors[pick.result] || ''}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending" className="text-xs">⏳ Pending</SelectItem>
+                          <SelectItem value="won" className="text-xs">🟢 Won</SelectItem>
+                          <SelectItem value="lost" className="text-xs">🔴 Lost</SelectItem>
+                          <SelectItem value="push" className="text-xs">🟡 Push</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       )}
