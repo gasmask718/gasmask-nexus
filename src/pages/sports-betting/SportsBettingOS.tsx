@@ -307,9 +307,21 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         ) : (
           <>
             <PredictionResult prediction={localPrediction} />
-            <Button variant="ghost" size="sm" className="mt-2 w-full text-xs" onClick={() => setLocalPrediction(null)}>
-              Run Different Prediction
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <SavePickButton
+                pickType="game"
+                label={`${localPrediction.predicted_outcome === 'home' ? game.home_team : game.away_team} ML`}
+                detail={`${game.away_team} @ ${game.home_team}`}
+                odds={dkOdds ? String(localPrediction.predicted_outcome === 'home' ? dkOdds.home_odds : dkOdds.away_odds) : ''}
+                aiAnalysis={localPrediction.stats_brain_reasoning || localPrediction.market_brain_reasoning || ''}
+                confidence={localPrediction.final_confidence}
+                sourceTable="sbo_predictions"
+                sourceId={localPrediction.id || game.id}
+              />
+              <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={() => setLocalPrediction(null)}>
+                Run Different Prediction
+              </Button>
+            </div>
           </>
         )}
       </CardContent>
