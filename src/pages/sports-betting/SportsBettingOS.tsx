@@ -3105,7 +3105,7 @@ export default function SportsBettingOS() {
         .from('sbo_predictions')
         .select('prop_id')
         .in('prop_id', propIds.length ? propIds : ['none'])
-        .gte('created_at', `${today}T00:00:00`);
+        .gte('created_at', raStart);
 
       const analyzedPropIds = new Set((existingPropPreds || []).map((p: any) => p.prop_id));
       const propsToAnalyze = (unanalyzedProps || []).filter((p: any) => !analyzedPropIds.has(p.id));
