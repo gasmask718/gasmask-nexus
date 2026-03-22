@@ -48,11 +48,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const ALL_AVAILABLE = [...MORNING_STEPS, ...PREGAME_STEPS, ...POSTGAME_STEPS];
     const stepsToRun = steps === 'morning' ? MORNING_STEPS
       : steps === 'pregame' ? PREGAME_STEPS
-      : steps === 'full' ? FULL_STEPS
-      : Array.isArray(steps) ? FULL_STEPS.filter(s => steps.includes(s.fn))
-      : FULL_STEPS;
+      : steps === 'postgame' ? POSTGAME_STEPS
+      : steps === 'full' ? [...MORNING_STEPS, ...PREGAME_STEPS]
+      : Array.isArray(steps) ? ALL_AVAILABLE.filter(s => steps.includes(s.fn))
+      : [...MORNING_STEPS, ...PREGAME_STEPS];
 
     const { data: runRecord } = await supabase
       .from('sbo_day_engine_runs')

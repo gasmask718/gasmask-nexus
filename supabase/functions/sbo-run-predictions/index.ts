@@ -32,7 +32,6 @@ Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences refer
 
   let statsContext = '';
 
-  // Fetch real player context from our database
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -155,13 +154,79 @@ async function runContextBrain(ctx: any) {
   } catch { return { score: 50, reasoning: 'Context analysis inconclusive' }; }
 }
 
+// ─── BRAIN 4: POLYMARKET BRAIN ────────────────────────────────────────────
+async function runPolymarketBrain(
+  ctx: any,
+  supabase: any
+): Promise<{ score: number; reasoning: string; has_data: boolean }> {
+  const { data: markets } = await supabase
+    .from('sbo_polymarket')
+    .select('*')
+    .eq('game_id', ctx.game_id || null)
+    .eq('status', 'open')
+    .order('volume_usd', { ascending: false })
+    .limit(3);
+
+  if (!markets?.length || !ctx.game_id) {
+    return { score: 50, reasoning: 'No Polymarket data available for this game', has_data: false };
+  }
+
+  const bestMarket = markets[0];
+  const volumeUSD = bestMarket.volume_usd || 0;
+
+  if (volumeUSD < 1000) {
+    return { score: 50, reasoning: `Polymarket has low volume ($${volumeUSD.toFixed(0)}) — insufficient signal`, has_data: false };
+  }
+
+  let marketPrice = 0.5;
+  let interpretation = '';
+
+  if (ctx.prediction_type === 'moneyline') {
+    if (ctx.predicted_outcome === 'home' && bestMarket.home_team_price) {
+      marketPrice = bestMarket.home_team_price;
+      interpretation = `Polymarket gives ${ctx.home_team} a ${(marketPrice * 100).toFixed(1)}% win probability`;
+    } else if (ctx.predicted_outcome === 'away' && bestMarket.away_team_price) {
+      marketPrice = bestMarket.away_team_price;
+      interpretation = `Polymarket gives ${ctx.away_team} a ${(marketPrice * 100).toFixed(1)}% win probability`;
+    } else if (bestMarket.outcome_yes_price) {
+      marketPrice = bestMarket.outcome_yes_price;
+      interpretation = `Polymarket YES price: ${(marketPrice * 100).toFixed(1)}%`;
+    }
+  }
+
+  const volumeWeight = Math.min(Math.log10(Math.max(volumeUSD, 1000)) / 5, 1.0);
+  const rawScore = marketPrice * 100;
+  const weightedScore = Math.round(50 + (rawScore - 50) * volumeWeight);
+  const finalScore = Math.min(100, Math.max(0, weightedScore));
+
+  await supabase.from('sbo_polymarket_signals').insert({
+    market_id: bestMarket.market_id,
+    signal_strength: finalScore,
+    price_used: marketPrice,
+    volume_used: volumeUSD,
+    interpretation,
+  }).then(() => {}).catch(() => {});
+
+  return {
+    score: finalScore,
+    reasoning: `${interpretation}. Volume: $${(volumeUSD / 1000).toFixed(0)}k real money. ${
+      volumeUSD > 50000
+        ? 'High volume = strong signal.'
+        : volumeUSD > 10000
+        ? 'Moderate volume = reliable signal.'
+        : 'Lower volume — signal weighted accordingly.'
+    }`,
+    has_data: true,
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     const { game_id, prop_id, prediction_type, predicted_outcome } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    let ctx: any = { prediction_type, predicted_outcome };
+    let ctx: any = { prediction_type, predicted_outcome, game_id };
 
     if (game_id) {
       const { data: game } = await supabase.from('sbo_games').select('*').eq('id', game_id).single();
@@ -171,16 +236,31 @@ serve(async (req) => {
 
     if (prop_id) {
       const { data: prop } = await supabase.from('sbo_player_props').select('*, sbo_games(*)').eq('id', prop_id).single();
-      ctx = { ...ctx, ...prop, home_team: (prop as any).sbo_games?.home_team, away_team: (prop as any).sbo_games?.away_team, game_date: (prop as any).sbo_games?.game_date };
+      ctx = { ...ctx, ...prop, home_team: (prop as any).sbo_games?.home_team, away_team: (prop as any).sbo_games?.away_team, game_date: (prop as any).sbo_games?.game_date, game_id: (prop as any).game_id };
     }
 
-    const [stats, market, context] = await Promise.all([
+    // Run all 4 brains in parallel
+    const [stats, market, context, polyResult] = await Promise.all([
       runStatsBrain(ctx),
       runMarketBrain(ctx),
       runContextBrain(ctx),
+      runPolymarketBrain(ctx, supabase),
     ]);
 
-    const finalScore = Math.round(stats.score * 0.40 + market.score * 0.35 + context.score * 0.25);
+    // Dynamic weights based on Polymarket data availability
+    const finalScore = polyResult.has_data
+      ? Math.round(
+          stats.score * 0.35 +
+          market.score * 0.30 +
+          context.score * 0.20 +
+          polyResult.score * 0.15
+        )
+      : Math.round(
+          stats.score * 0.40 +
+          market.score * 0.35 +
+          context.score * 0.25
+        );
+
     const tier = finalScore >= 85 ? 'elite' : finalScore >= 70 ? 'strong' : finalScore >= 55 ? 'moderate' : 'weak';
 
     const { data: prediction } = await supabase.from('sbo_predictions').insert({
@@ -194,23 +274,19 @@ serve(async (req) => {
       market_brain_reasoning: market.reasoning,
       context_brain_score: context.score,
       context_brain_reasoning: context.reasoning,
+      polymarket_brain_score: polyResult.has_data ? polyResult.score : null,
+      polymarket_brain_reasoning: polyResult.reasoning,
+      brain_count: polyResult.has_data ? 4 : 3,
       final_confidence: finalScore,
       confidence_tier: tier,
     }).select().single();
-
-    await supabase.from('ai_instinct_log').insert({
-      action_type: 'sbo_prediction_generated',
-      reasoning: `${prediction_type} — ${predicted_outcome} — ${finalScore}% confidence (${tier})`,
-      input_data: { game_id, prop_id, prediction_type },
-      decision_path: { stats: stats.score, market: market.score, context: context.score, final: finalScore, tier },
-    });
 
     return new Response(JSON.stringify({
       success: true,
       prediction_id: prediction?.id,
       final_confidence: finalScore,
       confidence_tier: tier,
-      brains: { stats, market, context },
+      brains: { stats, market, context, polymarket: polyResult },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
