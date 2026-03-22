@@ -2458,7 +2458,21 @@ function MyBetsTab() {
               <p className="text-xs text-muted-foreground mt-1">Use the Save Pick button on any prediction to save it here.</p>
             </div>
           ) : (
-            savedPicks.map((pick: any) => {
+            (() => {
+              const grouped = savedPicks.reduce((groups: Record<string, any[]>, pick: any) => {
+                const date = new Date(pick.created_at).toLocaleDateString('en-US', {
+                  weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+                });
+                if (!groups[date]) groups[date] = [];
+                groups[date].push(pick);
+                return groups;
+              }, {});
+              return Object.entries(grouped).map(([date, picks]: [string, any[]]) => (
+                <div key={date}>
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide py-2 border-b border-border mb-2 mt-4 first:mt-0">
+                    📅 {date} · {picks.length} pick{picks.length !== 1 ? 's' : ''}
+                  </div>
+                  {picks.map((pick: any) => {
               const resultColors: Record<string, string> = {
                 pending: 'text-muted-foreground',
                 won: 'text-green-500',
