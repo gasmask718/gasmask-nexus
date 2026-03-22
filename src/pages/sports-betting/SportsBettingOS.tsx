@@ -268,6 +268,36 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
     game.sbo_predictions?.[0] || null
   );
 
+  // Fetch game intelligence
+  const { data: intel } = useQuery({
+    queryKey: ['game-intel', game.game_id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_game_intelligence')
+        .select('*')
+        .eq('game_id', game.game_id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60000,
+  });
+
+  // Fetch sharp money indicators
+  const { data: lineMove } = useQuery({
+    queryKey: ['line-move', game.game_id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_line_movement')
+        .select('*')
+        .eq('game_id', game.game_id)
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60000,
+  });
+
   const dkOdds = game.sbo_odds?.find((o: any) =>
     o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
   );
@@ -291,14 +321,36 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
   return (
     <Card>
       <CardContent className="p-4">
+        {/* Sharp money / line movement badges */}
+        <div className="flex flex-wrap gap-1 mb-2">
+          {lineMove?.steam_move && (
+            <Badge className="text-[9px] bg-destructive/20 text-destructive border-destructive/30">🔥 STEAM MOVE</Badge>
+          )}
+          {lineMove?.reverse_line_move && (
+            <Badge className="text-[9px] bg-amber-500/20 text-amber-600 border-amber-500/30">⚡ REVERSE LINE</Badge>
+          )}
+          {lineMove?.sharp_indicator && (
+            <Badge className="text-[9px] bg-blue-500/20 text-blue-500 border-blue-500/30">🎯 SHARP ACTION</Badge>
+          )}
+          {intel?.back_to_back_home && (
+            <Badge variant="outline" className="text-[9px] text-amber-500">⚠️ {game.home_team} B2B</Badge>
+          )}
+          {intel?.back_to_back_away && (
+            <Badge variant="outline" className="text-[9px] text-amber-500">⚠️ {game.away_team} B2B</Badge>
+          )}
+        </div>
+
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
             <p className="font-bold text-foreground">{game.away_team}</p>
             <p className="text-[10px] text-muted-foreground">Away</p>
             {dkOdds && (
-              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.away_odds > 0 ? 'text-green-500' : 'text-foreground'}`}>
+              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.away_odds > 0 ? 'text-emerald-500' : 'text-foreground'}`}>
                 {dkOdds.away_odds > 0 ? '+' : ''}{dkOdds.away_odds}
               </p>
+            )}
+            {intel?.away_record_away && (
+              <p className="text-[9px] text-muted-foreground">{intel.away_record_away} away</p>
             )}
           </div>
 
@@ -307,18 +359,35 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
               {new Date(game.game_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">@</p>
+            {intel?.pace_home && intel?.pace_away && (
+              <p className="text-[9px] text-muted-foreground mt-1">
+                Pace: {((intel.pace_home + intel.pace_away) / 2).toFixed(0)}
+              </p>
+            )}
           </div>
 
           <div className="text-center flex-1">
             <p className="font-bold text-foreground">{game.home_team}</p>
             <p className="text-[10px] text-muted-foreground">Home</p>
             {dkOdds && (
-              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.home_odds > 0 ? 'text-green-500' : 'text-foreground'}`}>
+              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.home_odds > 0 ? 'text-emerald-500' : 'text-foreground'}`}>
                 {dkOdds.home_odds > 0 ? '+' : ''}{dkOdds.home_odds}
               </p>
             )}
+            {intel?.home_record_home && (
+              <p className="text-[9px] text-muted-foreground">{intel.home_record_home} home</p>
+            )}
           </div>
         </div>
+
+        {/* Intelligence bar */}
+        {intel && (
+          <div className="mt-2 p-2 rounded bg-muted/30 text-[9px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+            {intel.offensive_rating_home && <span>🏀 {game.home_team}: {intel.offensive_rating_home?.toFixed(1)} ORtg / {intel.defensive_rating_home?.toFixed(1)} DRtg</span>}
+            {intel.offensive_rating_away && <span>🏀 {game.away_team}: {intel.offensive_rating_away?.toFixed(1)} ORtg / {intel.defensive_rating_away?.toFixed(1)} DRtg</span>}
+            {intel.rest_days_home !== null && <span>💤 Rest: {game.home_team} {intel.rest_days_home}d / {game.away_team} {intel.rest_days_away}d</span>}
+          </div>
+        )}
 
         {!localPrediction ? (
           <div className="flex gap-2 mt-4">
@@ -334,6 +403,16 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         ) : (
           <>
             <PredictionResult prediction={localPrediction} />
+            {/* Kelly stake recommendation */}
+            {localPrediction.recommended_units > 0 && (
+              <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                <span className="text-emerald-500 font-medium">📊 Kelly Rec:</span>
+                <span className="ml-1">{localPrediction.recommended_units?.toFixed(2)} units</span>
+                {localPrediction.recommended_stake > 0 && (
+                  <span className="ml-1 text-muted-foreground">(${localPrediction.recommended_stake?.toFixed(2)})</span>
+                )}
+              </div>
+            )}
             <div className="flex gap-2 mt-2">
               <SavePickButton
                 pickType="game"
