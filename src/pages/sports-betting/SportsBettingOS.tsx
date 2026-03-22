@@ -1588,6 +1588,10 @@ export default function SportsBettingOS() {
           <AccuracyTab />
         </TabsContent>
 
+        <TabsContent value="model" className="mt-4">
+          <ModelIntelligenceTab />
+        </TabsContent>
+
         <TabsContent value="entry" className="mt-4">
           <VAPropEntryTab />
         </TabsContent>
