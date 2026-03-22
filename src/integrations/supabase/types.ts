@@ -66297,10 +66297,12 @@ export type Database = {
           neighborhood_id: string | null
           notes: string | null
           phone: string | null
+          place_id: string | null
           state: string
           store_name: string | null
           updated_at: string
           verified_sells_grabba: boolean | null
+          website: string | null
           zip: string | null
         }
         Insert: {
@@ -66317,10 +66319,12 @@ export type Database = {
           neighborhood_id?: string | null
           notes?: string | null
           phone?: string | null
+          place_id?: string | null
           state: string
           store_name?: string | null
           updated_at?: string
           verified_sells_grabba?: boolean | null
+          website?: string | null
           zip?: string | null
         }
         Update: {
@@ -66337,10 +66341,12 @@ export type Database = {
           neighborhood_id?: string | null
           notes?: string | null
           phone?: string | null
+          place_id?: string | null
           state?: string
           store_name?: string | null
           updated_at?: string
           verified_sells_grabba?: boolean | null
+          website?: string | null
           zip?: string | null
         }
         Relationships: [
