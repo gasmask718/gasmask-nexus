@@ -2327,6 +2327,7 @@ function MyBetsTab() {
 
 export default function SportsBettingOS() {
   const [runningAll, setRunningAll] = useState(false);
+  const [verifyingResults, setVerifyingResults] = useState(false);
   const [runAllPhase, setRunAllPhase] = useState('');
 
   const { data: strongCount, refetch: refetchStrong } = useQuery({
