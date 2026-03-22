@@ -2543,8 +2543,11 @@ export default function SportsBettingOS() {
         </div>
       </div>
 
+      {/* Today's Guarantee Widget */}
+      <TodaysGuaranteeWidget />
+
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -2559,6 +2562,7 @@ export default function SportsBettingOS() {
             )}
           </TabsTrigger>
           <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
+          <TabsTrigger value="hedge" className="text-xs">🔒 Hedge</TabsTrigger>
           <TabsTrigger value="sim" className="text-xs">⚡ Sim</TabsTrigger>
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
           <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
@@ -2581,6 +2585,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="parlay" className="mt-4">
           <ParlayBuilderTab />
+        </TabsContent>
+
+        <TabsContent value="hedge" className="mt-4">
+          <HedgeCenter />
         </TabsContent>
 
         <TabsContent value="sim" className="mt-4">
