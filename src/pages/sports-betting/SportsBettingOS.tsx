@@ -410,7 +410,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 
           <div className="text-center px-4">
             <Badge variant="outline" className="text-[10px]">
-              {new Date(game.game_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(game.game_date).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">@</p>
             {intel?.pace_home && intel?.pace_away && (
