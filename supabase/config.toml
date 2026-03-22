@@ -408,3 +408,6 @@ verify_jwt = false
 
 [functions.sbo-get-player-context]
 verify_jwt = false
+
+[functions.sbo-sync-prizepicks]
+verify_jwt = false
