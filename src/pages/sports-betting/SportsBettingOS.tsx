@@ -119,7 +119,7 @@ function SavePickButton({
 
 function YesterdayGameCard({ game }: { game: any }) {
   const prediction = game.sbo_predictions?.[0];
-  const verification = game.sbo_results_verification?.[0];
+  const verification = prediction?.sbo_results_verification?.[0] ?? game.sbo_results_verification?.[0];
   const homeScore = game.home_score ?? game.score_home;
   const awayScore = game.away_score ?? game.score_away;
   const hasResult = homeScore !== null && awayScore !== null;
