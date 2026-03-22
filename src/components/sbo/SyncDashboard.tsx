@@ -175,6 +175,8 @@ export function SyncDashboard() {
   const [running, setRunning] = useState(false);
   const [runningStep, setRunningStep] = useState<string | null>(null);
   const [liveProgress, setLiveProgress] = useState<any[]>([]);
+  const [debugResult, setDebugResult] = useState<any>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: syncLogs } = useQuery({
@@ -354,6 +356,42 @@ export function SyncDashboard() {
           <span className="text-[9px] text-muted-foreground">Grade last night</span>
         </Button>
       </div>
+
+      {/* DEBUG API BUTTON */}
+      <Card className="border-dashed border-muted-foreground/30">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold">🔬 SportsDataIO Debug</p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-[10px] h-7"
+              disabled={debugLoading}
+              onClick={async () => {
+                setDebugLoading(true);
+                setDebugResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke('sbo-debug-sports-api');
+                  if (error) throw error;
+                  setDebugResult(data);
+                } catch (e: any) {
+                  setDebugResult({ error: e.message });
+                } finally {
+                  setDebugLoading(false);
+                }
+              }}
+            >
+              {debugLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+              {debugLoading ? 'Testing...' : '🧪 Debug API'}
+            </Button>
+          </div>
+          {debugResult && (
+            <pre className="text-[9px] bg-muted/50 rounded p-2 overflow-auto max-h-80 whitespace-pre-wrap font-mono">
+              {JSON.stringify(debugResult, null, 2)}
+            </pre>
+          )}
+        </CardContent>
+      </Card>
 
       {/* SCHEDULE STATUS */}
       <ScheduleStatus />
