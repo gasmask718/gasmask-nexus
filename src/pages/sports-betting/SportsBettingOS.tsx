@@ -1247,6 +1247,10 @@ function AccuracyHistoryWidget() {
 // ═══════════════════════════════════════════════════════════════
 
 function AccuracyTab() {
+  const [verifying, setVerifying] = useState(false);
+  const [verifyProgress, setVerifyProgress] = useState('');
+  const queryClient = useQueryClient();
+
   const { data: predictions, refetch: refetchGraded } = useQuery({
     queryKey: ['all-predictions-accuracy'],
     queryFn: async () => {
@@ -1277,6 +1281,18 @@ function AccuracyTab() {
     },
   });
 
+  const { data: verifications } = useQuery({
+    queryKey: ['recent-verifications'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_results_verification')
+        .select('*, sbo_predictions(predicted_outcome, prediction_type, final_confidence, sbo_games(home_team, away_team))')
+        .order('verified_at', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
   const total = predictions?.length || 0;
   const correct = predictions?.filter(p => p.was_correct).length || 0;
   const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : '0';
@@ -1294,6 +1310,26 @@ function AccuracyTab() {
     };
   });
 
+  // Accuracy by confidence band
+  const byConfidenceBand = [
+    { label: '55-65%', min: 55, max: 65 },
+    { label: '65-75%', min: 65, max: 75 },
+    { label: '75-90%', min: 75, max: 90 },
+    { label: '90%+', min: 90, max: 100 },
+  ].map(band => {
+    const inBand = predictions?.filter(p => {
+      const conf = p.final_confidence || 0;
+      return conf >= band.min && conf < (band.max === 100 ? 101 : band.max);
+    }) || [];
+    const wins = inBand.filter(p => p.was_correct).length;
+    return {
+      ...band,
+      total: inBand.length,
+      wins,
+      accuracy: inBand.length > 0 ? ((wins / inBand.length) * 100).toFixed(1) : 'N/A',
+    };
+  });
+
   const markResult = async (predId: string, wasCorrect: boolean) => {
     await supabase
       .from('sbo_predictions')
@@ -1304,8 +1340,44 @@ function AccuracyTab() {
     refetchPending();
   };
 
+  const runVerification = async () => {
+    setVerifying(true);
+    setVerifyProgress('Verifying completed games...');
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-verify-results', {
+        body: {},
+      });
+      if (error) throw error;
+      toast.success(
+        `${data.verified} predictions verified — ${data.accuracy}% accuracy today`
+      );
+      refetchGraded();
+      refetchPending();
+      queryClient.invalidateQueries({ queryKey: ['recent-verifications'] });
+    } catch (e: any) {
+      toast.error(e.message || 'Verification failed');
+    } finally {
+      setVerifying(false);
+      setVerifyProgress('');
+    }
+  };
+
   return (
     <div className="space-y-4">
+      {/* Header with Verify button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">📊 Prediction Accuracy</h2>
+          <p className="text-xs text-muted-foreground">Auto-verify against final scores</p>
+        </div>
+        <Button onClick={runVerification} disabled={verifying} size="sm">
+          {verifying
+            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {verifyProgress}</>
+            : <><Check className="h-3 w-3 mr-1" /> Verify Results</>
+          }
+        </Button>
+      </div>
+
       {/* Accuracy history chart */}
       <AccuracyHistoryWidget />
 
@@ -1353,6 +1425,69 @@ function AccuracyTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Accuracy by confidence band */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <p className="text-sm font-semibold text-foreground">Accuracy by Confidence Band</p>
+          <div className="space-y-2">
+            {byConfidenceBand.map(b => (
+              <div key={b.label} className="flex items-center gap-3">
+                <span className="text-[10px] text-muted-foreground w-14">{b.label}</span>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      b.accuracy !== 'N/A' && parseFloat(b.accuracy) >= 60 ? 'bg-green-500' :
+                      b.accuracy !== 'N/A' && parseFloat(b.accuracy) >= 50 ? 'bg-amber-500' : 'bg-red-400'
+                    }`}
+                    style={{ width: b.accuracy === 'N/A' ? '0%' : `${b.accuracy}%` }}
+                  />
+                </div>
+                <span className="text-xs font-bold w-12 text-right">{b.accuracy}%</span>
+                <span className="text-[10px] text-muted-foreground w-10 text-right">
+                  {b.wins}/{b.total}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent verifications */}
+      {(verifications?.length || 0) > 0 && (
+        <Card>
+          <CardContent className="p-4 space-y-2">
+            <p className="text-sm font-semibold text-foreground">Recent Verifications</p>
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {verifications?.map((v: any) => {
+                const game = v.sbo_predictions?.sbo_games;
+                const verdictBadge = v.verdict === 'correct'
+                  ? { label: '✅ Correct', color: 'bg-green-500/10 text-green-600' }
+                  : v.verdict === 'push'
+                  ? { label: '➖ Push', color: 'bg-amber-500/10 text-amber-600' }
+                  : { label: '❌ Incorrect', color: 'bg-red-500/10 text-red-600' };
+
+                return (
+                  <div key={v.id} className="flex items-center justify-between p-2 rounded bg-muted/20 text-xs">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-foreground truncate">
+                        {game ? `${game.away_team} @ ${game.home_team}` : 'Game'}
+                      </span>
+                      <span className="text-muted-foreground ml-2">
+                        {v.final_score_away}-{v.final_score_home}
+                      </span>
+                    </div>
+                    <span className="text-muted-foreground mx-2">{v.our_confidence}%</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${verdictBadge.color}`}>
+                      {verdictBadge.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Pending predictions — mark results */}
       {(pending?.length || 0) > 0 && (
@@ -2127,6 +2262,33 @@ function MyBetsTab() {
       {/* Saved picks view */}
       {activeView === 'saved' && (
         <div className="space-y-2">
+          {/* Running P&L total */}
+          {savedPicks && savedPicks.length > 0 && (() => {
+            const wonPicks = savedPicks.filter((p: any) => p.result === 'won');
+            const lostPicks = savedPicks.filter((p: any) => p.result === 'lost');
+            const totalStaked = savedPicks.reduce((s: number, p: any) => s + (p.stake || 0), 0);
+            const totalWon = wonPicks.reduce((s: number, p: any) => s + (p.potential_payout || p.stake || 0), 0);
+            const totalLost = lostPicks.reduce((s: number, p: any) => s + (p.stake || 0), 0);
+            const netPL = totalWon - totalLost;
+            return (
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {[
+                  { label: 'Picks', value: String(savedPicks.length), color: 'text-foreground' },
+                  { label: 'Won', value: String(wonPicks.length), color: 'text-green-500' },
+                  { label: 'Lost', value: String(lostPicks.length), color: 'text-red-500' },
+                  { label: 'Net P&L', value: `${netPL >= 0 ? '+' : ''}$${netPL.toFixed(2)}`, color: netPL >= 0 ? 'text-green-500' : 'text-red-500' },
+                ].map(s => (
+                  <Card key={s.label}>
+                    <CardContent className="p-2 text-center">
+                      <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
+                      <p className="text-[9px] text-muted-foreground">{s.label}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()}
+
           {!savedPicks?.length ? (
             <div className="text-center py-8 border border-dashed rounded-lg border-border">
               <p className="text-muted-foreground font-medium">No saved picks yet.</p>
@@ -2141,15 +2303,20 @@ function MyBetsTab() {
                 push: 'text-amber-500',
               };
               const resultEmoji: Record<string, string> = {
-                pending: '⏳', won: '🟢', lost: '🔴', push: '🟡',
+                pending: '🕐', won: '✅', lost: '❌', push: '➖',
               };
+              const plDisplay = pick.result === 'won'
+                ? `+$${(pick.potential_payout || pick.stake || 0).toFixed(2)}`
+                : pick.result === 'lost'
+                ? `-$${(pick.stake || 0).toFixed(2)}`
+                : pick.result === 'push' ? '$0' : '';
               return (
                 <Card key={pick.id}>
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">
-                          {resultEmoji[pick.result] || '⏳'} {pick.label}
+                          {resultEmoji[pick.result] || '🕐'} {pick.label}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">{pick.detail}</p>
                         {pick.ai_analysis && (
@@ -2161,6 +2328,9 @@ function MyBetsTab() {
                             <span className="text-[10px] text-muted-foreground">{pick.confidence}% conf</span>
                           )}
                           {pick.odds && <span className="text-[10px] font-mono text-muted-foreground">{pick.odds}</span>}
+                          {plDisplay && (
+                            <span className={`text-[10px] font-bold ${resultColors[pick.result] || ''}`}>{plDisplay}</span>
+                          )}
                         </div>
                       </div>
                       <Select value={pick.result || 'pending'} onValueChange={(v) => updatePickResult(pick.id, v)}>
@@ -2168,10 +2338,10 @@ function MyBetsTab() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending" className="text-xs">⏳ Pending</SelectItem>
-                          <SelectItem value="won" className="text-xs">🟢 Won</SelectItem>
-                          <SelectItem value="lost" className="text-xs">🔴 Lost</SelectItem>
-                          <SelectItem value="push" className="text-xs">🟡 Push</SelectItem>
+                          <SelectItem value="pending" className="text-xs">🕐 Pending</SelectItem>
+                          <SelectItem value="won" className="text-xs">✅ Won</SelectItem>
+                          <SelectItem value="lost" className="text-xs">❌ Lost</SelectItem>
+                          <SelectItem value="push" className="text-xs">➖ Push</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -2192,6 +2362,7 @@ function MyBetsTab() {
 
 export default function SportsBettingOS() {
   const [runningAll, setRunningAll] = useState(false);
+  const [verifyingResults, setVerifyingResults] = useState(false);
   const [runAllPhase, setRunAllPhase] = useState('');
 
   const { data: strongCount, refetch: refetchStrong } = useQuery({
@@ -2340,6 +2511,28 @@ export default function SportsBettingOS() {
               {strongCount} strong picks
             </Badge>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={verifyingResults}
+            onClick={async () => {
+              setVerifyingResults(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                if (error) throw error;
+                toast.success(`${data.verified} verified — ${data.accuracy}% accuracy`);
+              } catch (e: any) {
+                toast.error(e.message || 'Verification failed');
+              } finally {
+                setVerifyingResults(false);
+              }
+            }}
+          >
+            {verifyingResults
+              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
+              : <><Check className="h-3 w-3 mr-1" /> Verify Results</>
+            }
+          </Button>
           <Button onClick={runAllEngines} disabled={runningAll} size="sm">
             {runningAll
               ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>

@@ -58531,6 +58531,7 @@ export type Database = {
       }
       sbo_player_props: {
         Row: {
+          actual_value: number | null
           created_at: string | null
           entered_by: string | null
           game_id: string | null
@@ -58543,8 +58544,12 @@ export type Database = {
           team: string
           under_odds: number | null
           updated_at: string | null
+          verdict: string | null
+          verified: boolean | null
+          verified_at: string | null
         }
         Insert: {
+          actual_value?: number | null
           created_at?: string | null
           entered_by?: string | null
           game_id?: string | null
@@ -58557,8 +58562,12 @@ export type Database = {
           team: string
           under_odds?: number | null
           updated_at?: string | null
+          verdict?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
         }
         Update: {
+          actual_value?: number | null
           created_at?: string | null
           entered_by?: string | null
           game_id?: string | null
@@ -58571,6 +58580,9 @@ export type Database = {
           team?: string
           under_odds?: number | null
           updated_at?: string | null
+          verdict?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
         }
         Relationships: [
           {
@@ -58900,6 +58912,8 @@ export type Database = {
           context_brain_score: number | null
           created_at: string | null
           final_confidence: number | null
+          final_score_away: number | null
+          final_score_home: number | null
           game_id: string | null
           id: string
           market_brain_reasoning: string | null
@@ -58912,6 +58926,9 @@ export type Database = {
           stats_brain_reasoning: string | null
           stats_brain_score: number | null
           updated_at: string | null
+          verdict: string | null
+          verified: boolean | null
+          verified_at: string | null
           was_correct: boolean | null
           weights_used: Json | null
         }
@@ -58923,6 +58940,8 @@ export type Database = {
           context_brain_score?: number | null
           created_at?: string | null
           final_confidence?: number | null
+          final_score_away?: number | null
+          final_score_home?: number | null
           game_id?: string | null
           id?: string
           market_brain_reasoning?: string | null
@@ -58935,6 +58954,9 @@ export type Database = {
           stats_brain_reasoning?: string | null
           stats_brain_score?: number | null
           updated_at?: string | null
+          verdict?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
           was_correct?: boolean | null
           weights_used?: Json | null
         }
@@ -58946,6 +58968,8 @@ export type Database = {
           context_brain_score?: number | null
           created_at?: string | null
           final_confidence?: number | null
+          final_score_away?: number | null
+          final_score_home?: number | null
           game_id?: string | null
           id?: string
           market_brain_reasoning?: string | null
@@ -58958,6 +58982,9 @@ export type Database = {
           stats_brain_reasoning?: string | null
           stats_brain_score?: number | null
           updated_at?: string | null
+          verdict?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
           was_correct?: boolean | null
           weights_used?: Json | null
         }
@@ -58974,6 +59001,65 @@ export type Database = {
             columns: ["prop_id"]
             isOneToOne: false
             referencedRelation: "sbo_player_props"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_results_verification: {
+        Row: {
+          actual_result: string | null
+          created_at: string | null
+          final_score_away: number | null
+          final_score_home: number | null
+          game_id: string | null
+          id: string
+          our_confidence: number | null
+          our_pick: string | null
+          pick_type: string | null
+          prediction_id: string | null
+          profit_loss: number | null
+          stake: number | null
+          verdict: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          actual_result?: string | null
+          created_at?: string | null
+          final_score_away?: number | null
+          final_score_home?: number | null
+          game_id?: string | null
+          id?: string
+          our_confidence?: number | null
+          our_pick?: string | null
+          pick_type?: string | null
+          prediction_id?: string | null
+          profit_loss?: number | null
+          stake?: number | null
+          verdict?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          actual_result?: string | null
+          created_at?: string | null
+          final_score_away?: number | null
+          final_score_home?: number | null
+          game_id?: string | null
+          id?: string
+          our_confidence?: number | null
+          our_pick?: string | null
+          pick_type?: string | null
+          prediction_id?: string | null
+          profit_loss?: number | null
+          stake?: number | null
+          verdict?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_results_verification_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_predictions"
             referencedColumns: ["id"]
           },
         ]
