@@ -289,15 +289,12 @@ function TonightGamesTab() {
 
   const loadYesterdayGames = async () => {
     setLoading(true);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayET = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-
+    const { start, end } = getYesterdayETBounds();
     const { data } = await supabase
       .from('sbo_games')
       .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
-      .gte('game_date', `${yesterdayET}T00:00:00`)
-      .lte('game_date', `${yesterdayET}T23:59:59`)
+      .gte('game_date', start)
+      .lte('game_date', end)
       .order('game_date');
     setYesterdayGames((data as any[]) || []);
     setLoading(false);
