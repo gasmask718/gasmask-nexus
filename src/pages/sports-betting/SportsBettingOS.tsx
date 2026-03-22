@@ -127,6 +127,8 @@ function TonightGamesTab() {
     setLoading(false);
   };
 
+  const [fetchingIntel, setFetchingIntel] = useState(false);
+
   const predictAllGames = async () => {
     setPredictingAll(true);
     let predicted = 0;
@@ -138,6 +140,14 @@ function TonightGamesTab() {
         if (error) throw error;
         await loadGames();
       }
+
+      // Fetch intelligence
+      setPredictProgress('Gathering game intelligence (injuries, pace, B2B)...');
+      setFetchingIntel(true);
+      try {
+        await supabase.functions.invoke('sbo-fetch-intelligence');
+      } catch { /* continue without intel */ }
+      setFetchingIntel(false);
 
       // Re-fetch games to get fresh list
       const today = new Date().toISOString().split('T')[0];
@@ -167,7 +177,7 @@ function TonightGamesTab() {
         );
         const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
 
-        const { error } = await supabase.functions.invoke('sbo-run-predictions', {
+        const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
           body: {
             game_id: game.id,
             prediction_type: 'moneyline',
@@ -175,16 +185,32 @@ function TonightGamesTab() {
           },
         });
         if (error) console.error(`Prediction failed for ${game.home_team}:`, error);
-        else predicted++;
+        else {
+          // Auto-calculate Kelly stake
+          if (data?.final_confidence && dkOdds) {
+            const odds = pickHome ? dkOdds.home_odds : dkOdds.away_odds;
+            const dec = odds > 0 ? 1 + odds / 100 : 1 + 100 / Math.abs(odds);
+            const conf = data.final_confidence / 100;
+            const kelly = ((conf * (dec - 1)) - (1 - conf)) / (dec - 1);
+            const quarterKelly = Math.max(0, kelly * 0.25);
+            await supabase.from('sbo_predictions').update({
+              kelly_stake: Math.round(kelly * 10000) / 10000,
+              recommended_units: Math.round(quarterKelly * 100) / 100,
+              recommended_stake: Math.round(quarterKelly * 500 * 100) / 100, // $500 default bankroll
+            }).eq('id', data.id);
+          }
+          predicted++;
+        }
       }
 
-      toast.success(`Tonight's predictions saved — ${predicted} games analyzed`);
+      toast.success(`Tonight's predictions saved — ${predicted} games analyzed with intelligence`);
       await loadGames();
     } catch (e: any) {
       toast.error(e.message || 'Prediction run failed');
     } finally {
       setPredictingAll(false);
       setPredictProgress('');
+      setFetchingIntel(false);
     }
   };
 
