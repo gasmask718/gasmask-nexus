@@ -2570,6 +2570,15 @@ export default function SportsBettingOS() {
     refetchInterval: 30000,
   });
 
+  const { data: bettorProfile } = useQuery({
+    queryKey: ['bettor-profile'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_bettor_profile').select('*').limit(1).maybeSingle();
+      return data;
+    },
+    refetchInterval: 60000,
+  });
+
   const runAllEngines = async () => {
     setRunningAll(true);
     const startTime = Date.now();
@@ -2577,8 +2586,12 @@ export default function SportsBettingOS() {
     let propsCount = 0;
 
     try {
+      // Phase 0: Fetch intelligence
+      setRunAllPhase('Phase 0/4: Gathering game intelligence...');
+      try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
+
       // Phase 1: Fetch games + predict all
-      setRunAllPhase('Phase 1/3: Fetching tonight\'s games...');
+      setRunAllPhase('Phase 1/4: Fetching tonight\'s games...');
       const { data: oddsData } = await supabase.functions.invoke('sbo-fetch-odds');
       gamesCount = oddsData?.games_processed || 0;
 
