@@ -702,11 +702,11 @@ function ParlayBuilderTab() {
     try {
       const { error } = await supabase.from('sbo_parlays').insert({
         name: parlayName || `${selectedLegs.length}-Leg Parlay`,
-        legs: selectedLegs,
-        stake_amount: stake,
-        total_odds: parlayMultiplier,
-        potential_payout: potentialPayout,
-        combined_probability: combinedProb,
+        legs: selectedLegs as any,
+        total_legs: selectedLegs.length,
+        suggested_stake: stake,
+        combined_confidence: combinedProb,
+        expected_value: potentialPayout - stake,
         status: 'pending',
       });
       if (error) throw error;
