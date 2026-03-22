@@ -78,6 +78,22 @@ serve(async (req) => {
       });
     }
 
+    // Check if intelligence already fetched for today's games
+    const gameIds = games.map((g: any) => g.game_id).filter(Boolean);
+    const { count: intelCount } = await supabase
+      .from('sbo_game_intelligence')
+      .select('*', { count: 'exact', head: true })
+      .in('game_id', gameIds);
+
+    if (intelCount && intelCount >= games.length) {
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Intelligence already fetched for all games today',
+        games_analyzed: intelCount,
+        source: 'cache',
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const BASE = 'https://api.sportsdata.io/v3/nba';
     const SEASON = '2025';
     let intelCount = 0;

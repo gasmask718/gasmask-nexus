@@ -269,6 +269,51 @@ serve(async (req) => {
     const { game_id, prop_id, prediction_type, predicted_outcome } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    const today = new Date().toISOString().split('T')[0];
+
+    // Never re-predict a game that already has a prediction today
+    if (game_id && prediction_type === 'moneyline') {
+      const { data: existingPred } = await supabase
+        .from('sbo_predictions')
+        .select('id, final_confidence, confidence_tier, data_quality')
+        .eq('game_id', game_id)
+        .eq('prediction_type', 'moneyline')
+        .gte('created_at', `${today}T00:00:00`)
+        .maybeSingle();
+
+      if (existingPred) {
+        return new Response(JSON.stringify({
+          success: true,
+          prediction_id: existingPred.id,
+          final_confidence: existingPred.final_confidence,
+          confidence_tier: existingPred.confidence_tier,
+          data_quality: existingPred.data_quality,
+          source: 'cache',
+          message: 'Prediction already exists for this game today',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
+    // Skip props that already have analysis
+    if (prop_id) {
+      const { data: existingPropPred } = await supabase
+        .from('sbo_predictions')
+        .select('id, final_confidence, confidence_tier, data_quality')
+        .eq('prop_id', prop_id)
+        .gte('created_at', `${today}T00:00:00`)
+        .maybeSingle();
+
+      if (existingPropPred) {
+        return new Response(JSON.stringify({
+          success: true,
+          prediction_id: existingPropPred.id,
+          final_confidence: existingPropPred.final_confidence,
+          source: 'cache',
+          message: 'Prop already analyzed today',
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    }
+
     let ctx: any = { prediction_type, predicted_outcome, game_id };
 
     if (game_id) {
