@@ -3134,7 +3134,7 @@ export default function SportsBettingOS() {
         const { data: existingParlay } = await supabase
           .from('sbo_parlays')
           .select('id')
-          .gte('created_at', `${today}T00:00:00`)
+          .gte('created_at', raStart)
           .maybeSingle();
 
         if (!existingParlay) {
