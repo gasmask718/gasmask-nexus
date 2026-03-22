@@ -15,6 +15,8 @@ const API_COSTS: Record<string, { provider: string; cost_cents: number; note: st
   'sbo-compare-odds': { provider: 'internal', cost_cents: 0, note: 'Internal comparison' },
   'sbo-track-results': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-analyze-model': { provider: 'internal', cost_cents: 0, note: 'Internal model analysis' },
+  'sbo-generate-daily-briefing': { provider: 'internal', cost_cents: 0, note: 'Generates SMS briefing' },
+  'sbo-send-daily-sms': { provider: 'twilio', cost_cents: 1, note: '~$0.01 per SMS' },
 };
 
 const MORNING_STEPS = [
