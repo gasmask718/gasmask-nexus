@@ -352,6 +352,8 @@ function VAPropEntryTab() {
         </AlertDescription>
       </Alert>
 
+      <AutoPopulatedPropsNotice date={new Date().toISOString().split('T')[0]} />
+
       <div className="space-y-1.5">
         <Label className="text-xs">Select Game</Label>
         <Select value={gameId} onValueChange={setGameId}>
