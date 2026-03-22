@@ -3116,72 +3116,109 @@ export default function SportsBettingOS() {
       // Small wait for DB writes
       await new Promise(resolve => setTimeout(resolve, 800));
 
-      // PHASE 3 — Run predictions (skips games already predicted today)
-      setRunAllPhase('Phase 3/6: Running AI predictions...');
-      const { start: raStart, end: raEnd } = getTodayETBounds();
+      // PHASE 3 — predict ALL games, skip none that already have predictions today
+      setRunAllPhase('Phase 3/6: Running AI predictions on all games...');
+      const today = new Date().toLocaleDateString('en-CA', {
+        timeZone: 'America/New_York'
+      });
+      const raStart = `${today}T00:00:00-04:00`;
+      const raEnd = `${today}T23:59:59-04:00`;
 
-      const { data: allGames } = await supabase
+      // Get ALL today's games
+      const { data: allTodayGames } = await supabase
         .from('sbo_games')
         .select('*, sbo_odds(*)')
         .gte('game_date', raStart)
         .lte('game_date', raEnd);
 
-      // Check which games already have predictions today
-      const { data: existingPreds } = await supabase
+      console.log('Total games to process:', allTodayGames?.length);
+
+      // Check which ones already have predictions
+      const { data: existingToday } = await supabase
         .from('sbo_predictions')
         .select('game_id')
         .eq('prediction_type', 'moneyline')
-        .gte('created_at', raStart);
+        .gte('created_at', `${today}T00:00:00-04:00`);
 
-      const predictedGameIds = new Set((existingPreds || []).map((p: any) => p.game_id));
-      const unpredictedGames = (allGames || []).filter((g: any) => !predictedGameIds.has(g.id));
+      const predictedIds = new Set((existingToday || []).map((p: any) => p.game_id));
+      const needsPrediction = (allTodayGames || []).filter((g: any) => !predictedIds.has(g.id));
 
-      if (unpredictedGames.length === 0) {
-        toast.info('All games already predicted today — loading existing results');
+      console.log('Already predicted:', predictedIds.size, 'Need prediction:', needsPrediction.length);
+
+      if (needsPrediction.length === 0) {
+        toast.info(`All ${allTodayGames?.length || 0} games already predicted today`);
       } else {
-        for (let i = 0; i < unpredictedGames.length; i++) {
-          setRunAllPhase(`Phase 3/6: Predicting game ${i + 1}/${unpredictedGames.length}...`);
-          const g = unpredictedGames[i];
-          const dkOdds = g.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline');
-          const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+        for (let i = 0; i < needsPrediction.length; i++) {
+          const g = needsPrediction[i];
+          setRunAllPhase(`Phase 3/6: Predicting game ${i + 1}/${needsPrediction.length}: ${g.away_team} @ ${g.home_team}`);
 
-          await supabase.functions.invoke('sbo-run-predictions', {
-            body: { game_id: g.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
-          }).catch(() => {});
+          const dkOdds = g.sbo_odds?.find((o: any) =>
+            o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
+          );
+          // If no DraftKings odds try any book
+          const anyOdds = dkOdds || g.sbo_odds?.[0];
+          const pickHome = anyOdds
+            ? Math.abs(anyOdds.home_odds) < Math.abs(anyOdds.away_odds)
+            : true;
+
+          const { error } = await supabase.functions.invoke('sbo-run-predictions', {
+            body: {
+              game_id: g.id,
+              prediction_type: 'moneyline',
+              predicted_outcome: pickHome ? 'home' : 'away',
+            },
+          });
+
+          if (error) {
+            console.error(`Prediction failed for ${g.home_team}:`, error);
+          }
+
           predictionsCount++;
-          await new Promise(resolve => setTimeout(resolve, 400));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
+        toast.success(`${predictionsCount} predictions complete`);
       }
 
-      // PHASE 4 — Run props (skips props already analyzed today)
-      setRunAllPhase('Phase 4/6: Analyzing player props...');
-      const { data: unanalyzedProps } = await supabase
+      // PHASE 4 — props — get ALL props with no analysis today
+      setRunAllPhase('Phase 4/6: Analyzing all player props...');
+
+      const { data: allProps } = await supabase
         .from('sbo_player_props')
-        .select('id')
-        .gte('created_at', raStart);
+        .select('id, player_name')
+        .gte('created_at', `${today}T00:00:00-04:00`);
 
       // Check which props already have predictions
-      const propIds = (unanalyzedProps || []).map((p: any) => p.id);
+      const propIds = (allProps || []).map((p: any) => p.id);
+
       const { data: existingPropPreds } = await supabase
         .from('sbo_predictions')
         .select('prop_id')
         .in('prop_id', propIds.length ? propIds : ['none'])
-        .gte('created_at', raStart);
+        .gte('created_at', `${today}T00:00:00-04:00`);
 
       const analyzedPropIds = new Set((existingPropPreds || []).map((p: any) => p.prop_id));
-      const propsToAnalyze = (unanalyzedProps || []).filter((p: any) => !analyzedPropIds.has(p.id));
+      const propsNeedingAnalysis = (allProps || []).filter((p: any) => !analyzedPropIds.has(p.id));
 
-      if (!propsToAnalyze.length) {
+      console.log('Props to analyze:', propsNeedingAnalysis.length);
+
+      if (propsNeedingAnalysis.length === 0) {
         toast.info('All props already analyzed today');
       } else {
-        for (let i = 0; i < propsToAnalyze.length; i++) {
-          setRunAllPhase(`Phase 4/6: Analyzing prop ${i + 1}/${propsToAnalyze.length}...`);
+        for (let i = 0; i < propsNeedingAnalysis.length; i++) {
+          setRunAllPhase(`Phase 4/6: Analyzing prop ${i + 1}/${propsNeedingAnalysis.length}: ${propsNeedingAnalysis[i].player_name}`);
+
           await supabase.functions.invoke('sbo-run-predictions', {
-            body: { prop_id: propsToAnalyze[i].id, prediction_type: 'player_prop', predicted_outcome: 'over' },
-          }).catch(() => {});
+            body: {
+              prop_id: propsNeedingAnalysis[i].id,
+              prediction_type: 'player_prop',
+              predicted_outcome: 'over',
+            },
+          });
+
           propsCount++;
-          await new Promise(resolve => setTimeout(resolve, 400));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
+        toast.success(`${propsCount} props analyzed`);
       }
 
       // Cache player images
