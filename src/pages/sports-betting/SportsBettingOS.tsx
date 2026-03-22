@@ -117,7 +117,7 @@ function TonightGamesTab() {
 
   const loadGames = async () => {
     setLoading(true);
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const { data } = await supabase
       .from('sbo_games')
       .select(`*, sbo_odds(*), sbo_predictions(*)`)
@@ -154,7 +154,7 @@ function TonightGamesTab() {
       setFetchingIntel(false);
 
       // Re-fetch games to get fresh list
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const { data: freshGames } = await supabase
         .from('sbo_games')
         .select(`*, sbo_odds(*), sbo_predictions(*)`)
@@ -251,6 +251,34 @@ function TonightGamesTab() {
               : <><Brain className="h-3 w-3 mr-1" /> 🏀 Tonight's Games</>
             }
           </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            disabled={predictingAll || fetchingOdds}
+            onClick={async () => {
+              if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
+              setPredictingAll(true);
+              setPredictProgress('Clearing cached data...');
+              const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+              try {
+                await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
+                await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
+                await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                localStorage.removeItem('sbo_games_loaded_today');
+                localStorage.removeItem('sbo_predictions_ran_today');
+                localStorage.removeItem('sbo_last_run_date');
+                toast.success('Cache cleared — running fresh engine...');
+                await predictAllGames();
+              } catch (e: any) {
+                toast.error('Force refresh failed: ' + e.message);
+                setPredictingAll(false);
+                setPredictProgress('');
+              }
+            }}
+          >
+            🔄 Force Refresh
+          </Button>
         </div>
       </div>
 
@@ -341,7 +369,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         {/* Game date & pull timestamp */}
         <div className="flex justify-between items-center mb-2 text-[11px] text-muted-foreground">
           <span>
-            🏀 {new Date(game.game_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Tip {new Date(game.game_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+            🏀 {new Date(game.game_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })} · Tip {new Date(game.game_date).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
           </span>
           <span>
             Pulled: {new Date(game.created_at || game.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
@@ -382,7 +410,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 
           <div className="text-center px-4">
             <Badge variant="outline" className="text-[10px]">
-              {new Date(game.game_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(game.game_date).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' })}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">@</p>
             {intel?.pace_home && intel?.pace_away && (
@@ -457,8 +485,30 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
                 sourceTable="sbo_predictions"
                 sourceId={localPrediction.id || game.id}
               />
-              <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={() => setLocalPrediction(null)}>
-                Run Different Prediction
+              <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={async () => {
+                // Rerun: delete old prediction and intelligence, re-fetch and re-predict
+                setRunning(true);
+                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+                try {
+                  await supabase.from('sbo_predictions').delete().eq('game_id', game.id).gte('created_at', `${today}T00:00:00`);
+                  await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.game_id);
+                  try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch {}
+                  await new Promise(resolve => setTimeout(resolve, 800));
+                  const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+                  const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
+                    body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+                  });
+                  if (error) throw error;
+                  setLocalPrediction(data);
+                  toast.success(`Rerun: ${data.final_confidence}% · ${data.data_quality === 'full' ? '📊 Full Stats' : data.data_quality === 'partial' ? '⚠️ Partial' : '🔴 Odds Only'}`);
+                } catch (e: any) {
+                  toast.error('Rerun failed: ' + e.message);
+                  setLocalPrediction(null);
+                } finally {
+                  setRunning(false);
+                }
+              }}>
+                {localPrediction?.data_quality === 'odds_only' ? '⚡ Rerun With Real Stats' : '🔄 Run Different Prediction'}
               </Button>
             </div>
           </>
@@ -2709,7 +2759,7 @@ export default function SportsBettingOS() {
 
       // PHASE 3 — Run predictions (skips games already predicted today)
       setRunAllPhase('Phase 3/6: Running AI predictions...');
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
       const { data: allGames } = await supabase
         .from('sbo_games')
@@ -2918,6 +2968,34 @@ export default function SportsBettingOS() {
               ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
               : <>🚀 Run All Engines</>
             }
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/30 hover:bg-destructive/10"
+            disabled={runningAll}
+            onClick={async () => {
+              if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
+              const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+              setRunningAll(true);
+              setRunAllPhase('Clearing cached data...');
+              try {
+                await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
+                await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
+                await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                localStorage.removeItem('sbo_games_loaded_today');
+                localStorage.removeItem('sbo_predictions_ran_today');
+                localStorage.removeItem('sbo_last_run_date');
+                toast.success('Cache cleared — running fresh...');
+                await runAllEngines();
+              } catch (e: any) {
+                toast.error('Force refresh failed: ' + e.message);
+                setRunningAll(false);
+                setRunAllPhase('');
+              }
+            }}
+          >
+            🔄 Force Refresh
           </Button>
         </div>
       </div>

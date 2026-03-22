@@ -65,7 +65,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const { data: games } = await supabase
       .from('sbo_games')
       .select('*')
@@ -96,7 +96,7 @@ serve(async (req) => {
 
     const BASE = 'https://api.sportsdata.io/v3/nba';
     const SEASON = '2025';
-    let intelCount = 0;
+    let processedCount = 0;
 
     // Fetch team season stats — primary source for ORtg/DRtg
     let teamStats: any[] = [];
@@ -131,7 +131,7 @@ serve(async (req) => {
     } catch { /* continue */ }
 
     // Fetch yesterday's games for B2B detection
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     let yesterdayGames: any[] = [];
     try {
       const ydRes = await fetch(`${BASE}/scores/json/GamesByDate/${yesterday}?key=${SPORTSDATAIO_KEY}`);
@@ -255,16 +255,16 @@ serve(async (req) => {
       } else {
         await supabase.from('sbo_game_intelligence').insert(intel);
       }
-      intelCount++;
+      processedCount++;
     }
 
     return new Response(JSON.stringify({
       success: true,
-      games_analyzed: intelCount,
+      games_analyzed: processedCount,
       team_stats_updated: teamStats.length,
       standings_loaded: standings.length,
       injuries_loaded: injuries.length,
-      message: `Intelligence gathered for ${intelCount} games`,
+      message: `Intelligence gathered for ${processedCount} games`,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Intelligence fetch error:', e);
