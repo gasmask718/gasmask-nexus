@@ -45255,6 +45255,48 @@ export type Database = {
         }
         Relationships: []
       }
+      note_cleaner_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current_record: string | null
+          error: string | null
+          failed_records: number | null
+          id: string
+          processed_records: number | null
+          results: Json | null
+          started_at: string | null
+          status: string
+          total_records: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_record?: string | null
+          error?: string | null
+          failed_records?: number | null
+          id?: string
+          processed_records?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          total_records?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current_record?: string | null
+          error?: string | null
+          failed_records?: number | null
+          id?: string
+          processed_records?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          total_records?: number | null
+        }
+        Relationships: []
+      }
       note_cleaning_log: {
         Row: {
           approved_at: string | null
