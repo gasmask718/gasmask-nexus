@@ -33,23 +33,33 @@ for (const [abbr, name] of Object.entries(TEAM_ABBREV_MAP)) {
   NAME_TO_ABBREV.set(parts[parts.length - 1], abbr);
 }
 
-function findTeamStats(teamName: string, statsMap: Map<string, any>): any | null {
-  // Try direct abbreviation
-  const abbr = NAME_TO_ABBREV.get(teamName);
-  if (abbr && statsMap.has(abbr)) return statsMap.get(abbr);
+function findTeamStats(teamFullName: string, statsMap: Map<string, any>): any | null {
+  if (!teamFullName) return null;
 
-  // Try last word of team name (e.g. "Celtics" from "Boston Celtics")
-  const lastWord = teamName.split(' ').pop() || '';
-  const abbrFromLast = NAME_TO_ABBREV.get(lastWord);
-  if (abbrFromLast && statsMap.has(abbrFromLast)) return statsMap.get(abbrFromLast);
+  const name = teamFullName.toLowerCase().trim();
 
-  // Try fuzzy match on all keys
-  for (const [key, val] of statsMap) {
-    const fullName = TEAM_ABBREV_MAP[key] || '';
-    if (fullName === teamName || fullName.includes(teamName) || teamName.includes(key)) {
-      return val;
+  // Try every entry in the map
+  for (const [abbr, stats] of statsMap) {
+    const fullName = (TEAM_ABBREV_MAP[abbr] || '').toLowerCase();
+
+    // Exact full name match
+    if (fullName === name) return stats;
+
+    // Last word match (Celtics, Lakers, Warriors etc)
+    const lastWord = name.split(' ').pop() || '';
+    if (fullName.endsWith(lastWord) && lastWord.length > 3) return stats;
+
+    // Abbreviation in team name
+    if (name.includes(abbr.toLowerCase())) return stats;
+
+    // Any word in full name matches any word in our name
+    const ourWords = name.split(' ').filter(w => w.length > 3);
+    const theirWords = fullName.split(' ').filter(w => w.length > 3);
+    for (const word of ourWords) {
+      if (theirWords.includes(word)) return stats;
     }
   }
+
   return null;
 }
 
@@ -79,7 +89,7 @@ serve(async (req) => {
     }
 
     // Check if intelligence already fetched for today's games
-    const gameIds = games.map((g: any) => g.game_id).filter(Boolean);
+    const gameIds = games.map((g: any) => String(g.id)).filter(Boolean);
     const { count: intelCount } = await supabase
       .from('sbo_game_intelligence')
       .select('*', { count: 'exact', head: true })
@@ -158,10 +168,6 @@ serve(async (req) => {
     for (const ts of teamStats) {
       const fullName = TEAM_ABBREV_MAP[ts.Team];
       if (!fullName) continue;
-      const shortName = fullName.split(' ').pop() || fullName;
-
-      const standing = standingsMap.get(ts.Team);
-
       await supabase
         .from('sbo_team_stats')
         .update({
@@ -169,21 +175,11 @@ serve(async (req) => {
           opponent_points_per_game: ts.OpponentPointsPerGame || 0,
           offensive_rating: ts.PointsPerGame || 0,
           defensive_rating: ts.OpponentPointsPerGame || 0,
-          pace: ts.Possessions || (ts.FieldGoalsAttemptedPerGame ? ts.FieldGoalsAttemptedPerGame * 1.1 : 0),
-          rebounds_per_game: ts.ReboundsPerGame || 0,
-          assists_per_game: ts.AssistsPerGame || 0,
-          turnovers_per_game: ts.TurnoversPerGame || 0,
-          three_point_attempts_per_game: ts.ThreePointersAttemptedPerGame || 0,
-          wins: standing?.Wins ?? ts.Wins ?? 0,
-          losses: standing?.Losses ?? ts.Losses ?? 0,
-          home_wins: standing?.HomeWins ?? 0,
-          home_losses: standing?.HomeLosses ?? 0,
-          away_wins: standing?.AwayWins ?? 0,
-          away_losses: standing?.AwayLosses ?? 0,
-          last_10_wins: standing?.LastTenWins ?? 0,
+          wins: ts.Wins || 0,
+          losses: ts.Losses || 0,
           updated_at: new Date().toISOString(),
         })
-        .ilike('team_name', `%${shortName}%`);
+        .ilike('team_name', `%${fullName.split(' ').pop()}%`);
     }
 
     // Build intelligence for each game
@@ -220,7 +216,7 @@ serve(async (req) => {
       }));
 
       const intel = {
-        game_id: game.game_id,
+        game_id: String(game.id),
         injury_report: [...homeInjuries, ...awayInjuries],
         rest_days_home: b2bHome ? 0 : 1,
         rest_days_away: b2bAway ? 0 : 1,
@@ -247,7 +243,7 @@ serve(async (req) => {
       const { data: existing } = await supabase
         .from('sbo_game_intelligence')
         .select('id')
-        .eq('game_id', game.game_id)
+        .eq('game_id', String(game.id))
         .maybeSingle();
 
       if (existing) {
