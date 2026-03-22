@@ -2584,86 +2584,157 @@ export default function SportsBettingOS() {
     const startTime = Date.now();
     let gamesCount = 0;
     let propsCount = 0;
+    let predictionsCount = 0;
 
     try {
-      // Phase 0: Fetch intelligence
-      setRunAllPhase('Phase 0/4: Gathering game intelligence...');
-      try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
+      // PHASE 0 — Verify last night's results first
+      setRunAllPhase('Phase 0/6: Verifying last night\'s results...');
+      try {
+        const { data: verifyData } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+        if (verifyData?.verified > 0) {
+          toast.info(`${verifyData.verified} results verified — ${verifyData.accuracy}% accuracy`);
+        }
+      } catch { /* continue */ }
 
-      // Phase 1: Fetch games + predict all
-      setRunAllPhase('Phase 1/4: Fetching tonight\'s games...');
+      // PHASE 1 — Fetch tonight's games (skips if already fetched today)
+      setRunAllPhase('Phase 1/6: Loading tonight\'s games...');
       const { data: oddsData } = await supabase.functions.invoke('sbo-fetch-odds');
       gamesCount = oddsData?.games_processed || 0;
 
+      if (oddsData?.source === 'cache') {
+        toast.info(`Games already loaded — using ${gamesCount} games from today`);
+      } else {
+        toast.success(`${gamesCount} games fetched`);
+      }
+
+      // PHASE 2 — Fetch intelligence (skips if already fetched today)
+      setRunAllPhase('Phase 2/6: Loading team stats and intelligence...');
+      try {
+        const { data: intelData } = await supabase.functions.invoke('sbo-fetch-intelligence');
+        if (intelData?.source === 'cache') {
+          toast.info('Team intelligence already loaded today');
+        }
+      } catch { /* continue without intel */ }
+
+      // Small wait for DB writes
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // PHASE 3 — Run predictions (skips games already predicted today)
+      setRunAllPhase('Phase 3/6: Running AI predictions...');
       const today = new Date().toISOString().split('T')[0];
-      const { data: games } = await supabase
+
+      const { data: allGames } = await supabase
         .from('sbo_games')
-        .select('*, sbo_odds(*), sbo_predictions(*)')
+        .select('*, sbo_odds(*)')
         .gte('game_date', today + 'T00:00:00')
         .lte('game_date', today + 'T23:59:59');
 
-      const unpredicted = (games || []).filter((g: any) => !g.sbo_predictions?.length);
-      for (let i = 0; i < unpredicted.length; i++) {
-        setRunAllPhase(`Phase 1/3: Predicting game ${i + 1}/${unpredicted.length}...`);
-        const g = unpredicted[i];
-        const dkOdds = g.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline');
-        const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
-        await supabase.functions.invoke('sbo-run-predictions', {
-          body: { game_id: g.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
-        }).catch(() => {});
-      }
-
-      // Phase 2: Run all props
-      setRunAllPhase('Phase 2/3: Analyzing player props...');
-      const { data: props } = await supabase
-        .from('sbo_player_props')
-        .select('*, sbo_predictions(*)')
-        .order('created_at', { ascending: false });
-
-      const unanalyzed = (props || []).filter((p: any) => !p.sbo_predictions?.length);
-      for (let i = 0; i < unanalyzed.length; i++) {
-        setRunAllPhase(`Phase 2/3: Analyzing prop ${i + 1}/${unanalyzed.length}...`);
-        await supabase.functions.invoke('sbo-run-predictions', {
-          body: { prop_id: unanalyzed[i].id, prediction_type: 'player_prop', predicted_outcome: 'over' },
-        }).catch(() => {});
-        propsCount++;
-      }
-
-      // Phase 3: Auto-build best parlay
-      setRunAllPhase('Phase 3/3: Building best parlay...');
-      const { data: strongPreds } = await supabase
+      // Check which games already have predictions today
+      const { data: existingPreds } = await supabase
         .from('sbo_predictions')
-        .select('*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds)')
-        .in('confidence_tier', ['elite', 'strong'])
-        .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
-        .order('final_confidence', { ascending: false })
-        .limit(10);
+        .select('game_id')
+        .eq('prediction_type', 'moneyline')
+        .gte('created_at', `${today}T00:00:00`);
 
-      if ((strongPreds?.length || 0) >= 2) {
-        const usedGames = new Set<string>();
-        const legs: any[] = [];
-        for (const p of strongPreds || []) {
-          if (legs.length >= 3) break;
-          if (p.game_id && usedGames.has(p.game_id)) continue;
-          const label = p.prediction_type === 'moneyline'
-            ? `${p.predicted_outcome === 'home' ? p.sbo_games?.home_team : p.sbo_games?.away_team} ML`
-            : `${p.sbo_player_props?.player_name} ${p.predicted_outcome?.toUpperCase()} ${p.sbo_player_props?.line} ${p.sbo_player_props?.prop_type}`;
-          legs.push({ prediction_id: p.id, label, odds: -110, confidence: p.final_confidence });
-          if (p.game_id) usedGames.add(p.game_id);
-        }
-        if (legs.length >= 2) {
-          await supabase.from('sbo_parlays').insert({
-            name: `AI Best ${legs.length}-Leg — ${new Date().toLocaleDateString()}`,
-            legs: legs as any,
-            total_legs: legs.length,
-            combined_confidence: legs.reduce((p, l) => p * (l.confidence / 100), 1) * 100,
-            status: 'pending',
-          });
+      const predictedGameIds = new Set((existingPreds || []).map((p: any) => p.game_id));
+      const unpredictedGames = (allGames || []).filter((g: any) => !predictedGameIds.has(g.id));
+
+      if (unpredictedGames.length === 0) {
+        toast.info('All games already predicted today — loading existing results');
+      } else {
+        for (let i = 0; i < unpredictedGames.length; i++) {
+          setRunAllPhase(`Phase 3/6: Predicting game ${i + 1}/${unpredictedGames.length}...`);
+          const g = unpredictedGames[i];
+          const dkOdds = g.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline');
+          const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+
+          await supabase.functions.invoke('sbo-run-predictions', {
+            body: { game_id: g.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+          }).catch(() => {});
+          predictionsCount++;
+          await new Promise(resolve => setTimeout(resolve, 400));
         }
       }
 
-      // Phase 4: Recalibrate + CLV track
-      setRunAllPhase('Phase 4/4: Calibrating model + tracking CLV...');
+      // PHASE 4 — Run props (skips props already analyzed today)
+      setRunAllPhase('Phase 4/6: Analyzing player props...');
+      const { data: unanalyzedProps } = await supabase
+        .from('sbo_player_props')
+        .select('id')
+        .gte('created_at', `${today}T00:00:00`);
+
+      // Check which props already have predictions
+      const propIds = (unanalyzedProps || []).map((p: any) => p.id);
+      const { data: existingPropPreds } = await supabase
+        .from('sbo_predictions')
+        .select('prop_id')
+        .in('prop_id', propIds.length ? propIds : ['none'])
+        .gte('created_at', `${today}T00:00:00`);
+
+      const analyzedPropIds = new Set((existingPropPreds || []).map((p: any) => p.prop_id));
+      const propsToAnalyze = (unanalyzedProps || []).filter((p: any) => !analyzedPropIds.has(p.id));
+
+      if (!propsToAnalyze.length) {
+        toast.info('All props already analyzed today');
+      } else {
+        for (let i = 0; i < propsToAnalyze.length; i++) {
+          setRunAllPhase(`Phase 4/6: Analyzing prop ${i + 1}/${propsToAnalyze.length}...`);
+          await supabase.functions.invoke('sbo-run-predictions', {
+            body: { prop_id: propsToAnalyze[i].id, prediction_type: 'player_prop', predicted_outcome: 'over' },
+          }).catch(() => {});
+          propsCount++;
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+      }
+
+      // PHASE 5 — Build best parlay from today's top picks
+      setRunAllPhase('Phase 5/6: Building best parlay...');
+      try {
+        const { data: existingParlay } = await supabase
+          .from('sbo_parlays')
+          .select('id')
+          .gte('created_at', `${today}T00:00:00`)
+          .maybeSingle();
+
+        if (!existingParlay) {
+          const { data: strongPreds } = await supabase
+            .from('sbo_predictions')
+            .select('*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds)')
+            .in('confidence_tier', ['elite', 'strong'])
+            .gte('created_at', `${today}T00:00:00`)
+            .order('final_confidence', { ascending: false })
+            .limit(10);
+
+          if ((strongPreds?.length || 0) >= 2) {
+            const usedGames = new Set<string>();
+            const legs: any[] = [];
+            for (const p of strongPreds || []) {
+              if (legs.length >= 3) break;
+              if (p.game_id && usedGames.has(p.game_id)) continue;
+              const label = p.prediction_type === 'moneyline'
+                ? `${p.predicted_outcome === 'home' ? p.sbo_games?.home_team : p.sbo_games?.away_team} ML`
+                : `${p.sbo_player_props?.player_name} ${p.predicted_outcome?.toUpperCase()} ${p.sbo_player_props?.line} ${p.sbo_player_props?.prop_type}`;
+              legs.push({ prediction_id: p.id, label, odds: -110, confidence: p.final_confidence });
+              if (p.game_id) usedGames.add(p.game_id);
+            }
+            if (legs.length >= 2) {
+              await supabase.from('sbo_parlays').insert({
+                name: `AI Best ${legs.length}-Leg — ${new Date().toLocaleDateString()}`,
+                legs: legs as any,
+                total_legs: legs.length,
+                combined_confidence: legs.reduce((prev: number, l: any) => prev * (l.confidence / 100), 1) * 100,
+                status: 'pending',
+              });
+              toast.success('Best parlay built from today\'s top picks');
+            }
+          }
+        } else {
+          toast.info('Parlay already built today');
+        }
+      } catch { /* continue */ }
+
+      // PHASE 6 — Recalibrate model + CLV
+      setRunAllPhase('Phase 6/6: Calibrating model + tracking CLV...');
       try { await supabase.functions.invoke('sbo-recalibrate'); } catch { /* continue */ }
       try { await supabase.functions.invoke('sbo-track-clv'); } catch { /* continue */ }
 
@@ -2675,14 +2746,17 @@ export default function SportsBettingOS() {
         completed_at: new Date().toISOString(),
         duration_ms: duration,
         games_fetched: gamesCount,
-        games_predicted: unpredicted.length,
+        games_predicted: predictionsCount,
         props_analyzed: propsCount,
         parlay_built: true,
         status: 'completed',
       });
 
       refetchStrong();
-      toast.success(`All engines complete — ${unpredicted.length} games, ${propsCount} props, parlay built, model calibrated (${(duration / 1000).toFixed(1)}s)`);
+      const durationSec = ((Date.now() - startTime) / 1000).toFixed(1);
+      toast.success(
+        `Engine complete in ${durationSec}s — ${gamesCount} games, ${predictionsCount} new predictions, ${propsCount} props`
+      );
     } catch (e: any) {
       toast.error(e.message || 'Run All Engines failed');
     } finally {

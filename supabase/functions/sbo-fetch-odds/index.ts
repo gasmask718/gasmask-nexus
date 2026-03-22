@@ -16,6 +16,30 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const today = new Date().toISOString().split('T')[0];
+
+    // Check if we already fetched games today
+    const { count } = await supabase
+      .from('sbo_games')
+      .select('*', { count: 'exact', head: true })
+      .gte('game_date', `${today}T00:00:00`)
+      .lte('game_date', `${today}T23:59:59`);
+
+    if (count && count > 0) {
+      const { data: existingGames } = await supabase
+        .from('sbo_games')
+        .select('*')
+        .gte('game_date', `${today}T00:00:00`)
+        .lte('game_date', `${today}T23:59:59`);
+
+      return new Response(JSON.stringify({
+        success: true,
+        games_processed: existingGames?.length || 0,
+        source: 'cache',
+        message: `Using ${existingGames?.length} games already fetched today`,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const response = await fetch(
       `https://api.the-odds-api.com/v4/sports/basketball_nba/odds/?apiKey=${ODDS_API_KEY}&regions=us&markets=h2h,spreads,totals&oddsFormat=american&bookmakers=draftkings,fanduel,betmgm,caesars`
     );
