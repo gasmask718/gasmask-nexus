@@ -97,6 +97,7 @@ function TonightGamesTab() {
   const [fetchingOdds, setFetchingOdds] = useState(false);
   const [predictingAll, setPredictingAll] = useState(false);
   const [predictProgress, setPredictProgress] = useState('');
+  const [lastFetchTime, setLastFetchTime] = useState<string | null>(null);
 
   useEffect(() => { loadGames(); }, []);
 
