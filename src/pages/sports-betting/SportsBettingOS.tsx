@@ -2709,7 +2709,7 @@ export default function SportsBettingOS() {
 
       // PHASE 3 — Run predictions (skips games already predicted today)
       setRunAllPhase('Phase 3/6: Running AI predictions...');
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
       const { data: allGames } = await supabase
         .from('sbo_games')
