@@ -25,19 +25,16 @@ async function callClaude(system: string, user: string): Promise<string> {
   return data.content?.[0]?.text?.trim() || '';
 }
 
-async function runStatsBrain(ctx: any): Promise<{ score: number; reasoning: string }> {
+async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; reasoning: string; data_quality: string }> {
   const system = `You are a professional NBA statistical analyst. You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
+If stats show N/A or are missing, acknowledge the gap and lower your confidence.
 
 Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences referencing the actual stats provided"}`;
 
   let statsContext = '';
+  let dataQuality = 'odds_only';
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
     if (ctx.prediction_type === 'player_prop' && ctx.player_name) {
       const { data } = await supabase.functions.invoke('sbo-get-player-context', {
         body: {
@@ -50,57 +47,101 @@ Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences refer
       });
       if (data?.context_text) {
         statsContext = data.context_text;
+        dataQuality = 'full';
       }
     } else if (ctx.prediction_type === 'moneyline') {
-      const { data: homeTeam } = await supabase
-        .from('sbo_team_stats')
+      // PRIMARY: Read from sbo_game_intelligence (populated by sbo-fetch-intelligence)
+      const { data: intel } = await supabase
+        .from('sbo_game_intelligence')
         .select('*')
-        .ilike('team_name', `%${ctx.home_team}%`)
+        .eq('game_id', ctx.game_id)
         .maybeSingle();
 
-      const { data: awayTeam } = await supabase
-        .from('sbo_team_stats')
-        .select('*')
-        .ilike('team_name', `%${ctx.away_team}%`)
-        .maybeSingle();
+      const hasIntel = intel && (
+        intel.offensive_rating_home !== null ||
+        intel.offensive_rating_away !== null ||
+        intel.home_record_home !== null
+      );
 
-      const { data: homeInjuries } = await supabase
-        .from('sbo_injuries')
-        .select('player_name, status, injury_type')
-        .ilike('team', `%${ctx.home_team?.slice(0, 3)}%`)
-        .eq('is_active', true)
-        .in('status', ['Out', 'Questionable', 'Doubtful']);
+      if (hasIntel) {
+        dataQuality = (intel.offensive_rating_home && intel.offensive_rating_away) ? 'full' : 'partial';
+        statsContext = `
+GAME: ${ctx.away_team} @ ${ctx.home_team}
 
-      const { data: awayInjuries } = await supabase
-        .from('sbo_injuries')
-        .select('player_name, status, injury_type')
-        .ilike('team', `%${ctx.away_team?.slice(0, 3)}%`)
-        .eq('is_active', true)
-        .in('status', ['Out', 'Questionable', 'Doubtful']);
+=== REAL TEAM STATISTICS (Current Season) ===
+${ctx.home_team}:
+- Offensive Rating: ${intel.offensive_rating_home ?? 'N/A'} pts/game
+- Defensive Rating: ${intel.defensive_rating_home ?? 'N/A'} opp pts/game
+- Home Record: ${intel.home_record_home ?? 'N/A'}
+- Last 10: ${intel.last_5_home ? JSON.stringify(intel.last_5_home) : 'N/A'}
+- Pace: ${intel.pace_home ?? 'N/A'} possessions
+- Back-to-Back: ${intel.back_to_back_home ? 'YES — fatigue factor' : 'No'}
+- Rest Days: ${intel.rest_days_home ?? 'N/A'}
 
-      statsContext = `
+${ctx.away_team}:
+- Offensive Rating: ${intel.offensive_rating_away ?? 'N/A'} pts/game
+- Defensive Rating: ${intel.defensive_rating_away ?? 'N/A'} opp pts/game
+- Away Record: ${intel.away_record_away ?? 'N/A'}
+- Last 10: ${intel.last_5_away ? JSON.stringify(intel.last_5_away) : 'N/A'}
+- Pace: ${intel.pace_away ?? 'N/A'} possessions
+- Back-to-Back: ${intel.back_to_back_away ? 'YES — fatigue factor' : 'No'}
+- Rest Days: ${intel.rest_days_away ?? 'N/A'}
+
+Injury Report: ${intel.injury_report && Array.isArray(intel.injury_report) && intel.injury_report.length > 0
+  ? intel.injury_report.map((i: any) => `${i.player} (${i.status} - ${i.injury})`).join(', ')
+  : 'No significant injuries reported'}
+
+Projected Total (pace-based): ${
+  intel.pace_home && intel.pace_away
+    ? ((intel.pace_home + intel.pace_away) / 2 * 0.95).toFixed(1) + ' points'
+    : 'N/A'
+}`.trim();
+      } else {
+        // FALLBACK: Read from sbo_team_stats
+        const { data: homeTeam } = await supabase
+          .from('sbo_team_stats')
+          .select('*')
+          .ilike('team_name', `%${ctx.home_team?.split(' ').pop()}%`)
+          .maybeSingle();
+
+        const { data: awayTeam } = await supabase
+          .from('sbo_team_stats')
+          .select('*')
+          .ilike('team_name', `%${ctx.away_team?.split(' ').pop()}%`)
+          .maybeSingle();
+
+        const hasTeamStats = homeTeam && (homeTeam.points_per_game > 0 || homeTeam.wins > 0);
+
+        if (hasTeamStats) {
+          dataQuality = homeTeam.points_per_game > 0 ? 'partial' : 'partial';
+          statsContext = `
 GAME: ${ctx.away_team} @ ${ctx.home_team}
 
 ${ctx.home_team} STATS:
 - Record: ${homeTeam?.wins || '?'}-${homeTeam?.losses || '?'}
 - Points per game: ${homeTeam?.points_per_game || 'N/A'}
 - Opponent PPG allowed: ${homeTeam?.opponent_points_per_game || 'N/A'}
+- Offensive rating: ${homeTeam?.offensive_rating || 'N/A'}
 - Defensive rating: ${homeTeam?.defensive_rating || 'N/A'}
 - Home record: ${homeTeam?.home_wins || '?'}-${homeTeam?.home_losses || '?'}
-- Key injuries: ${homeInjuries?.map((i: any) => `${i.player_name} (${i.status})`).join(', ') || 'None reported'}
 
 ${ctx.away_team} STATS:
 - Record: ${awayTeam?.wins || '?'}-${awayTeam?.losses || '?'}
 - Points per game: ${awayTeam?.points_per_game || 'N/A'}
 - Opponent PPG allowed: ${awayTeam?.opponent_points_per_game || 'N/A'}
+- Offensive rating: ${awayTeam?.offensive_rating || 'N/A'}
 - Defensive rating: ${awayTeam?.defensive_rating || 'N/A'}
-- Away record: ${awayTeam?.away_wins || '?'}-${awayTeam?.away_losses || '?'}
-- Key injuries: ${awayInjuries?.map((i: any) => `${i.player_name} (${i.status})`).join(', ') || 'None reported'}
-      `.trim();
+- Away record: ${awayTeam?.away_wins || '?'}-${awayTeam?.away_losses || '?'}`.trim();
+        } else {
+          statsContext = `GAME: ${ctx.away_team} @ ${ctx.home_team}\n\nReal-time stats unavailable — base analysis on odds movement only. Flag low confidence.`;
+          dataQuality = 'odds_only';
+        }
+      }
     }
   } catch (e) {
     console.error('Stats context fetch error:', e);
     statsContext = 'Live stats unavailable — using general knowledge';
+    dataQuality = 'odds_only';
   }
 
   const user = ctx.prediction_type === 'moneyline'
@@ -108,6 +149,7 @@ ${ctx.away_team} STATS:
 
 Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} to WIN
 Home odds: ${ctx.home_odds} | Away odds: ${ctx.away_odds}
+${dataQuality === 'odds_only' ? 'WARNING: No real stats available. Cap your confidence at 55 maximum.' : ''}
 Statistical confidence 0-100.`
     : `${statsContext}
 
@@ -118,12 +160,16 @@ Statistical confidence 0-100 that ${ctx.player_name} goes ${ctx.predicted_outcom
   const raw = await callClaude(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+    let score = Math.min(100, Math.max(0, p.score || 50));
+    // Cap confidence if no real data
+    if (dataQuality === 'odds_only' && score > 55) score = 55;
     return {
-      score: Math.min(100, Math.max(0, p.score || 50)),
+      score,
       reasoning: p.reasoning || 'Statistical analysis complete',
+      data_quality: dataQuality,
     };
   } catch {
-    return { score: 50, reasoning: 'Statistical analysis inconclusive' };
+    return { score: 50, reasoning: 'Statistical analysis inconclusive', data_quality: dataQuality };
   }
 }
 
@@ -154,7 +200,6 @@ async function runContextBrain(ctx: any) {
   } catch { return { score: 50, reasoning: 'Context analysis inconclusive' }; }
 }
 
-// ─── BRAIN 4: POLYMARKET BRAIN ────────────────────────────────────────────
 async function runPolymarketBrain(
   ctx: any,
   supabase: any
@@ -210,10 +255,8 @@ async function runPolymarketBrain(
   return {
     score: finalScore,
     reasoning: `${interpretation}. Volume: $${(volumeUSD / 1000).toFixed(0)}k real money. ${
-      volumeUSD > 50000
-        ? 'High volume = strong signal.'
-        : volumeUSD > 10000
-        ? 'Moderate volume = reliable signal.'
+      volumeUSD > 50000 ? 'High volume = strong signal.'
+        : volumeUSD > 10000 ? 'Moderate volume = reliable signal.'
         : 'Lower volume — signal weighted accordingly.'
     }`,
     has_data: true,
@@ -240,12 +283,15 @@ serve(async (req) => {
     }
 
     // Run all 4 brains in parallel
-    const [stats, market, context, polyResult] = await Promise.all([
-      runStatsBrain(ctx),
+    const [statsResult, market, context, polyResult] = await Promise.all([
+      runStatsBrain(ctx, supabase),
       runMarketBrain(ctx),
       runContextBrain(ctx),
       runPolymarketBrain(ctx, supabase),
     ]);
+
+    const stats = { score: statsResult.score, reasoning: statsResult.reasoning };
+    const dataQuality = statsResult.data_quality;
 
     // Get current active model configuration for dynamic weights
     const { data: activeConfig } = await supabase
@@ -294,6 +340,7 @@ serve(async (req) => {
       final_confidence: finalScore,
       confidence_tier: tier,
       weights_used: weights,
+      data_quality: dataQuality,
     }).select().single();
 
     return new Response(JSON.stringify({
@@ -301,6 +348,7 @@ serve(async (req) => {
       prediction_id: prediction?.id,
       final_confidence: finalScore,
       confidence_tier: tier,
+      data_quality: dataQuality,
       brains: { stats, market, context, polymarket: polyResult },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
