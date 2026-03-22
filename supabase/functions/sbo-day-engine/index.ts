@@ -11,6 +11,8 @@ const API_COSTS: Record<string, { provider: string; cost_cents: number; note: st
   'sbo-sync-daily': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-pregame': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-prizepicks': { provider: 'prizepicks', cost_cents: 0, note: 'Free unofficial API' },
+  'sbo-sync-polymarket': { provider: 'polymarket', cost_cents: 0, note: 'Free public API' },
+  'sbo-track-results': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
 };
 
 const MORNING_STEPS = [
