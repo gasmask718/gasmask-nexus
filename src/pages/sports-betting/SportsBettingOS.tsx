@@ -290,7 +290,7 @@ function TonightGamesTab() {
     console.log('Yesterday query bounds:', start, 'to', end);
     const { data, error } = await supabase
       .from('sbo_games')
-      .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
+      .select(`*, sbo_predictions(*, sbo_results_verification(*)), sbo_odds(*)`)
       .gte('game_date', start)
       .lt('game_date', end)
       .order('game_date');
