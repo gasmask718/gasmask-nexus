@@ -2978,12 +2978,16 @@ export default function SportsBettingOS() {
     let predictionsCount = 0;
 
     try {
-      // PHASE 0 — Verify last night's results first
-      setRunAllPhase('Phase 0/6: Verifying last night\'s results...');
+      // PHASE 0 — Verify yesterday's results first
+      setRunAllPhase('Phase 0/6: Checking yesterday\'s results...');
       try {
         const { data: verifyData } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
         if (verifyData?.verified > 0) {
-          toast.info(`${verifyData.verified} results verified — ${verifyData.accuracy}% accuracy`);
+          toast.success(
+            `Yesterday verified: ${verifyData.correct}W - ${verifyData.incorrect}L · ${verifyData.accuracy}% accuracy`
+          );
+        } else if (verifyData?.message) {
+          toast.info(verifyData.message);
         }
       } catch { /* continue */ }
 
