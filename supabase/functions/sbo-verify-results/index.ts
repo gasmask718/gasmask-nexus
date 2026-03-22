@@ -20,10 +20,16 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { game_id, prediction_id } = body;
 
+    // Use Eastern Time for yesterday
+    const now = new Date();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayET = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const todayET = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
     let gamesToVerify: any[] = [];
 
     if (game_id) {
-      // Single game verification
       const { data } = await supabase
         .from('sbo_games')
         .select('*')
@@ -31,50 +37,99 @@ serve(async (req) => {
         .single();
       if (data) gamesToVerify = [data];
     } else {
-      // Bulk: all closed/completed games with unverified predictions
-      const { data } = await supabase
+      // First check for games already marked closed with scores
+      const { data: closedGames } = await supabase
         .from('sbo_games')
         .select('*')
         .in('status', ['closed', 'completed', 'final'])
         .not('home_score', 'is', null)
         .not('away_score', 'is', null);
-      gamesToVerify = data || [];
-    }
+      gamesToVerify = closedGames || [];
 
-    // If no games have scores yet, try fetching from SportsDataIO
-    if (gamesToVerify.length === 0 && !game_id) {
-      // Try to fetch completed scores from API
+      // Also try to fetch yesterday's scores from SportsDataIO
       const apiKey = Deno.env.get('SPORTSDATAIO_API_KEY');
       if (apiKey) {
-        const today = new Date().toISOString().split('T')[0];
-        const res = await fetch(
-          `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/${today}?key=${apiKey}`
-        );
-        if (res.ok) {
-          const apiGames = await res.json();
-          for (const ag of apiGames) {
-            if (ag.Status === 'Final' || ag.Status === 'F/OT') {
-              // Update sbo_games with final scores
-              await supabase
-                .from('sbo_games')
-                .update({
-                  home_score: ag.HomeTeamScore,
-                  away_score: ag.AwayTeamScore,
-                  status: 'closed',
-                  winner: ag.HomeTeamScore > ag.AwayTeamScore ? ag.HomeTeam : ag.AwayTeam,
-                })
-                .eq('external_id', String(ag.GameID));
+        // Fetch yesterday's final scores
+        try {
+          const res = await fetch(
+            `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/${yesterdayET}?key=${apiKey}`
+          );
+          if (res.ok) {
+            const apiGames = await res.json();
+            console.log(`SportsDataIO: ${apiGames.length} games found for ${yesterdayET}`);
+            
+            for (const ag of apiGames) {
+              if (ag.Status === 'Final' || ag.Status === 'F/OT') {
+                // Update sbo_games with final scores — match by team names or external_id
+                const { data: updated } = await supabase
+                  .from('sbo_games')
+                  .update({
+                    home_score: ag.HomeTeamScore,
+                    away_score: ag.AwayTeamScore,
+                    score_home: ag.HomeTeamScore,
+                    score_away: ag.AwayTeamScore,
+                    status: 'closed',
+                    winner: ag.HomeTeamScore > ag.AwayTeamScore ? ag.HomeTeam : ag.AwayTeam,
+                  })
+                  .eq('external_id', String(ag.GameID))
+                  .select();
+
+                // If external_id didn't match, try matching by team abbreviations in game_id
+                if (!updated?.length) {
+                  await supabase
+                    .from('sbo_games')
+                    .update({
+                      home_score: ag.HomeTeamScore,
+                      away_score: ag.AwayTeamScore,
+                      score_home: ag.HomeTeamScore,
+                      score_away: ag.AwayTeamScore,
+                      status: 'closed',
+                      winner: ag.HomeTeamScore > ag.AwayTeamScore ? ag.HomeTeam : ag.AwayTeam,
+                    })
+                    .like('game_id', `%${ag.HomeTeam}%`)
+                    .gte('game_date', `${yesterdayET}T00:00:00`)
+                    .lte('game_date', `${yesterdayET}T23:59:59`);
+                }
+              }
             }
           }
-          // Re-fetch updated games
-          const { data } = await supabase
-            .from('sbo_games')
-            .select('*')
-            .in('status', ['closed', 'completed', 'final'])
-            .not('home_score', 'is', null)
-            .not('away_score', 'is', null);
-          gamesToVerify = data || [];
+        } catch (e) {
+          console.warn('SportsDataIO fetch failed for yesterday:', e);
         }
+
+        // Also check today's games that might be finished
+        try {
+          const resToday = await fetch(
+            `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/${todayET}?key=${apiKey}`
+          );
+          if (resToday.ok) {
+            const todayApiGames = await resToday.json();
+            for (const ag of todayApiGames) {
+              if (ag.Status === 'Final' || ag.Status === 'F/OT') {
+                await supabase
+                  .from('sbo_games')
+                  .update({
+                    home_score: ag.HomeTeamScore,
+                    away_score: ag.AwayTeamScore,
+                    score_home: ag.HomeTeamScore,
+                    score_away: ag.AwayTeamScore,
+                    status: 'closed',
+                    winner: ag.HomeTeamScore > ag.AwayTeamScore ? ag.HomeTeam : ag.AwayTeam,
+                  })
+                  .eq('external_id', String(ag.GameID));
+              }
+            }
+          }
+        } catch { /* continue */ }
+
+        // Re-fetch all closed games with scores
+        const { data: allClosed } = await supabase
+          .from('sbo_games')
+          .select('*')
+          .in('status', ['closed', 'completed', 'final'])
+          .not('home_score', 'is', null)
+          .not('away_score', 'is', null);
+        gamesToVerify = allClosed || [];
       }
     }
 
@@ -84,7 +139,6 @@ serve(async (req) => {
     let pushes = 0;
 
     for (const game of gamesToVerify) {
-      // Get unverified predictions for this game
       let predQuery = supabase
         .from('sbo_predictions')
         .select('*')
@@ -98,16 +152,17 @@ serve(async (req) => {
       const { data: predictions } = await predQuery;
       if (!predictions?.length) continue;
 
+      const homeScore = game.home_score ?? game.score_home;
+      const awayScore = game.away_score ?? game.score_away;
+      if (homeScore === null || awayScore === null) continue;
+
       for (const pred of predictions) {
-        const homeScore = game.home_score;
-        const awayScore = game.away_score;
         let verdict: string;
 
         if (pred.prediction_type === 'moneyline') {
           const actualWinner = homeScore > awayScore ? 'home' : 'away';
           verdict = pred.predicted_outcome === actualWinner ? 'correct' : 'incorrect';
         } else {
-          // For props, skip if no actual value available
           continue;
         }
 
@@ -120,7 +175,7 @@ serve(async (req) => {
           our_confidence: pred.final_confidence,
           final_score_home: homeScore,
           final_score_away: awayScore,
-          actual_result: homeScore > awayScore ? 'home' : 'away',
+          actual_result: `${game.home_team} ${homeScore} - ${game.away_team} ${awayScore}`,
           verdict,
           profit_loss: verdict === 'correct' ? 100 : verdict === 'push' ? 0 : -100,
         });
@@ -158,7 +213,6 @@ serve(async (req) => {
       ? ((correct / (correct + incorrect)) * 100)
       : 0;
 
-    // Log to run_log
     if (verified > 0) {
       await supabase.from('sbo_run_log').insert({
         run_type: 'auto-verify',
@@ -175,10 +229,12 @@ serve(async (req) => {
       incorrect,
       pushes,
       accuracy: parseFloat(accuracy.toFixed(1)),
+      message: verified === 0 ? 'No unverified games with final scores found' : undefined,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: any) {
+    console.error('Verify results error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

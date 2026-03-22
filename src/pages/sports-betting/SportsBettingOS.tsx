@@ -91,15 +91,146 @@ function SavePickButton({
 // TONIGHT'S GAMES TAB
 // ═══════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════
+// YESTERDAY GAME CARD — Shows result verdict
+// ═══════════════════════════════════════════════════════════════
+
+function YesterdayGameCard({ game }: { game: any }) {
+  const prediction = game.sbo_predictions?.[0];
+  const verification = game.sbo_results_verification?.[0];
+  const homeScore = game.home_score ?? game.score_home;
+  const awayScore = game.away_score ?? game.score_away;
+  const hasResult = homeScore !== null && awayScore !== null;
+
+  const homeWon = hasResult && homeScore > awayScore;
+  const wasCorrect = verification?.verdict === 'correct';
+  const wasIncorrect = verification?.verdict === 'incorrect';
+
+  return (
+    <Card className={`${wasCorrect ? 'border-emerald-500/40' : wasIncorrect ? 'border-destructive/40' : ''}`}>
+      <CardContent className="p-4">
+        {/* Date and verdict badge */}
+        <div className="flex justify-between items-center mb-2 text-[11px] text-muted-foreground">
+          <span>
+            {new Date(game.game_date).toLocaleDateString('en-US', {
+              timeZone: 'America/New_York',
+              weekday: 'short', month: 'short', day: 'numeric'
+            })}
+          </span>
+          <Badge
+            variant="outline"
+            className={`text-[10px] ${
+              wasCorrect ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' :
+              wasIncorrect ? 'bg-destructive/10 text-destructive border-destructive/30' :
+              ''
+            }`}
+          >
+            {wasCorrect ? '✅ CORRECT' : wasIncorrect ? '❌ INCORRECT' : '⏳ Pending'}
+          </Badge>
+        </div>
+
+        {/* Teams and final score */}
+        <div className="grid grid-cols-3 items-center gap-2 mb-3">
+          <div className="text-center">
+            <p className={`font-bold text-sm ${!homeWon && hasResult ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {game.away_team}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Away</p>
+            {hasResult && (
+              <p className={`text-2xl font-bold mt-1 ${!homeWon ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {awayScore}
+              </p>
+            )}
+          </div>
+          <div className="text-center text-xs text-muted-foreground">
+            {hasResult ? 'FINAL' : 'vs'}
+          </div>
+          <div className="text-center">
+            <p className={`font-bold text-sm ${homeWon ? 'text-foreground' : 'text-muted-foreground'}`}>
+              {game.home_team}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Home</p>
+            {hasResult && (
+              <p className={`text-2xl font-bold mt-1 ${homeWon ? 'text-foreground' : 'text-muted-foreground'}`}>
+                {homeScore}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Our prediction vs result */}
+        {prediction && (
+          <div className="rounded-lg bg-muted/30 p-3 text-xs space-y-1.5">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Our prediction</span>
+              <span className="font-medium">
+                {prediction.predicted_outcome === 'home' ? game.home_team : game.away_team} ML
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Confidence</span>
+              <span className="font-medium">
+                {prediction.final_confidence}% — {prediction.confidence_tier?.toUpperCase()}
+              </span>
+            </div>
+            {hasResult && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Actual winner</span>
+                  <span className="font-medium text-emerald-500">
+                    {homeWon ? game.home_team : game.away_team} won
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Final score</span>
+                  <span className="font-medium">
+                    {game.away_team} {awayScore} — {game.home_team} {homeScore}
+                  </span>
+                </div>
+              </>
+            )}
+            {/* Verdict banner */}
+            {verification && (
+              <div className={`mt-2 p-2 rounded-md text-center font-medium text-[12px] ${
+                wasCorrect
+                  ? 'bg-emerald-500/10 text-emerald-500'
+                  : 'bg-destructive/10 text-destructive'
+              }`}>
+                {wasCorrect
+                  ? `✅ CORRECT — We picked ${prediction.predicted_outcome === 'home' ? game.home_team : game.away_team}`
+                  : `❌ INCORRECT — We picked ${prediction.predicted_outcome === 'home' ? game.home_team : game.away_team} but ${homeWon ? game.home_team : game.away_team} won`
+                }
+              </div>
+            )}
+          </div>
+        )}
+
+        {!prediction && (
+          <p className="text-xs text-muted-foreground text-center py-2">
+            No prediction was made for this game
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TONIGHT'S GAMES TAB — with Today/Yesterday sub-tabs
+// ═══════════════════════════════════════════════════════════════
+
 function TonightGamesTab() {
   const [games, setGames] = useState<any[]>([]);
+  const [yesterdayGames, setYesterdayGames] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchingOdds, setFetchingOdds] = useState(false);
   const [predictingAll, setPredictingAll] = useState(false);
   const [predictProgress, setPredictProgress] = useState('');
   const [lastFetchTime, setLastFetchTime] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'today' | 'yesterday'>('today');
 
   useEffect(() => { loadGames(); }, []);
+  useEffect(() => { if (viewMode === 'yesterday') loadYesterdayGames(); }, [viewMode]);
 
   const fetchOdds = async () => {
     setFetchingOdds(true);
@@ -131,13 +262,28 @@ function TonightGamesTab() {
     setLoading(false);
   };
 
+  const loadYesterdayGames = async () => {
+    setLoading(true);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayET = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+    const { data } = await supabase
+      .from('sbo_games')
+      .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
+      .gte('game_date', `${yesterdayET}T00:00:00`)
+      .lte('game_date', `${yesterdayET}T23:59:59`)
+      .order('game_date');
+    setYesterdayGames((data as any[]) || []);
+    setLoading(false);
+  };
+
   const [fetchingIntel, setFetchingIntel] = useState(false);
 
   const predictAllGames = async () => {
     setPredictingAll(true);
     let predicted = 0;
     try {
-      // Fetch odds first if no games loaded
       if (!games.length) {
         setPredictProgress('Fetching tonight\'s games...');
         const { data, error } = await supabase.functions.invoke('sbo-fetch-odds');
@@ -145,15 +291,11 @@ function TonightGamesTab() {
         await loadGames();
       }
 
-      // Fetch intelligence
       setPredictProgress('Gathering game intelligence (injuries, pace, B2B)...');
       setFetchingIntel(true);
-      try {
-        await supabase.functions.invoke('sbo-fetch-intelligence');
-      } catch { /* continue without intel */ }
+      try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
       setFetchingIntel(false);
 
-      // Re-fetch games to get fresh list
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const { data: freshGames } = await supabase
         .from('sbo_games')
@@ -174,8 +316,6 @@ function TonightGamesTab() {
 
       for (const game of gamesToPredict) {
         setPredictProgress(`Running prediction ${predicted + 1}/${gamesToPredict.length}...`);
-
-        // Determine favorite based on odds
         const dkOdds = game.sbo_odds?.find((o: any) =>
           o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
         );
@@ -190,7 +330,6 @@ function TonightGamesTab() {
         });
         if (error) console.error(`Prediction failed for ${game.home_team}:`, error);
         else {
-          // Auto-calculate Kelly stake
           if (data?.final_confidence && dkOdds) {
             const odds = pickHome ? dkOdds.home_odds : dkOdds.away_odds;
             const dec = odds > 0 ? 1 + odds / 100 : 1 + 100 / Math.abs(odds);
@@ -200,7 +339,7 @@ function TonightGamesTab() {
             await supabase.from('sbo_predictions').update({
               kelly_stake: Math.round(kelly * 10000) / 10000,
               recommended_units: Math.round(quarterKelly * 100) / 100,
-              recommended_stake: Math.round(quarterKelly * 500 * 100) / 100, // $500 default bankroll
+              recommended_stake: Math.round(quarterKelly * 500 * 100) / 100,
             }).eq('id', data.id);
           }
           predicted++;
@@ -218,90 +357,204 @@ function TonightGamesTab() {
     }
   };
 
+  // Yesterday summary calculations
+  const totalPredicted = yesterdayGames.filter(g => g.sbo_predictions?.length > 0).length;
+  const correctCount = yesterdayGames.filter(g =>
+    g.sbo_results_verification?.[0]?.verdict === 'correct'
+  ).length;
+  const incorrectCount = yesterdayGames.filter(g =>
+    g.sbo_results_verification?.[0]?.verdict === 'incorrect'
+  ).length;
+  const pendingCount = totalPredicted - correctCount - incorrectCount;
+  const accuracy = (correctCount + incorrectCount) > 0
+    ? Math.round((correctCount / (correctCount + incorrectCount)) * 100)
+    : 0;
+
   return (
     <div className="space-y-4">
-      {/* Date Banner */}
-      <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
-        <span className="text-sm font-medium text-foreground">
-          📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </span>
-        <div className="flex gap-4 items-center">
-          <span className="text-[11px] text-muted-foreground">
-            Last pulled: {lastFetchTime || 'Not yet fetched today'}
-          </span>
-          <span className="text-[11px] text-muted-foreground">{games.length} games loaded</span>
-        </div>
+      {/* Today / Yesterday sub-tabs */}
+      <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
+        <button
+          onClick={() => setViewMode('today')}
+          className={`px-4 py-1.5 rounded-md text-[13px] transition-colors ${
+            viewMode === 'today'
+              ? 'bg-background font-medium text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          📅 Today
+        </button>
+        <button
+          onClick={() => setViewMode('yesterday')}
+          className={`px-4 py-1.5 rounded-md text-[13px] transition-colors ${
+            viewMode === 'yesterday'
+              ? 'bg-background font-medium text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          📋 Yesterday Results
+        </button>
       </div>
 
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">Tonight's NBA Games</h2>
-          <p className="text-xs text-muted-foreground">{games.length} games loaded</p>
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={fetchOdds} disabled={fetchingOdds || predictingAll} size="sm" variant="outline">
-            {fetchingOdds
-              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Fetching...</>
-              : <><RefreshCw className="h-3 w-3 mr-1" /> Fetch Odds</>
-            }
-          </Button>
-          <Button onClick={predictAllGames} disabled={predictingAll || fetchingOdds} size="sm">
-            {predictingAll
-              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {predictProgress || 'Running...'}</>
-              : <><Brain className="h-3 w-3 mr-1" /> 🏀 Tonight's Games</>
-            }
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-            disabled={predictingAll || fetchingOdds}
-            onClick={async () => {
-              if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
-              setPredictingAll(true);
-              setPredictProgress('Clearing cached data...');
-              const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-              try {
-                await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
-                await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
-                await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
-                localStorage.removeItem('sbo_games_loaded_today');
-                localStorage.removeItem('sbo_predictions_ran_today');
-                localStorage.removeItem('sbo_last_run_date');
-                toast.success('Cache cleared — running fresh engine...');
-                await predictAllGames();
-              } catch (e: any) {
-                toast.error('Force refresh failed: ' + e.message);
-                setPredictingAll(false);
-                setPredictProgress('');
-              }
-            }}
-          >
-            🔄 Force Refresh
-          </Button>
-        </div>
-      </div>
+      {viewMode === 'today' ? (
+        <>
+          {/* Date Banner */}
+          <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
+            <span className="text-sm font-medium text-foreground">
+              📅 {new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+            <div className="flex gap-4 items-center">
+              <span className="text-[11px] text-muted-foreground">
+                Last pulled: {lastFetchTime || 'Not yet fetched today'}
+              </span>
+              <span className="text-[11px] text-muted-foreground">{games.length} games loaded</span>
+            </div>
+          </div>
 
-      {predictingAll && (
-        <Alert>
-          <AlertDescription className="text-xs flex items-center gap-2">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            {predictProgress}
-          </AlertDescription>
-        </Alert>
-      )}
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <h2 className="text-lg font-bold text-foreground">Tonight's NBA Games</h2>
+              <p className="text-xs text-muted-foreground">{games.length} games loaded</p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={fetchOdds} disabled={fetchingOdds || predictingAll} size="sm" variant="outline">
+                {fetchingOdds
+                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Fetching...</>
+                  : <><RefreshCw className="h-3 w-3 mr-1" /> Fetch Odds</>
+                }
+              </Button>
+              <Button onClick={predictAllGames} disabled={predictingAll || fetchingOdds} size="sm">
+                {predictingAll
+                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {predictProgress || 'Running...'}</>
+                  : <><Brain className="h-3 w-3 mr-1" /> 🏀 Tonight's Games</>
+                }
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                disabled={predictingAll || fetchingOdds}
+                onClick={async () => {
+                  if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
+                  setPredictingAll(true);
+                  setPredictProgress('Clearing cached data...');
+                  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+                  try {
+                    await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
+                    await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
+                    await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                    localStorage.removeItem('sbo_games_loaded_today');
+                    localStorage.removeItem('sbo_predictions_ran_today');
+                    localStorage.removeItem('sbo_last_run_date');
+                    toast.success('Cache cleared — running fresh engine...');
+                    await predictAllGames();
+                  } catch (e: any) {
+                    toast.error('Force refresh failed: ' + e.message);
+                    setPredictingAll(false);
+                    setPredictProgress('');
+                  }
+                }}
+              >
+                🔄 Force Refresh
+              </Button>
+            </div>
+          </div>
 
-      {loading ? (
-        <div className="grid gap-3">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
-        </div>
-      ) : !games.length ? (
-        <div className="text-center py-12 border border-dashed rounded-lg border-border">
-          <p className="text-muted-foreground font-medium">No games loaded for today.</p>
-          <p className="text-xs text-muted-foreground mt-1">Click "🏀 Tonight's Games" to fetch and predict all NBA games.</p>
-        </div>
+          {predictingAll && (
+            <Alert>
+              <AlertDescription className="text-xs flex items-center gap-2">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                {predictProgress}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {loading ? (
+            <div className="grid gap-3">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+            </div>
+          ) : !games.length ? (
+            <div className="text-center py-12 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground font-medium">No games loaded for today.</p>
+              <p className="text-xs text-muted-foreground mt-1">Click "🏀 Tonight's Games" to fetch and predict all NBA games.</p>
+            </div>
+          ) : (
+            games.map(game => <GameCard key={game.id} game={game} onUpdate={loadGames} />)
+          )}
+        </>
       ) : (
-        games.map(game => <GameCard key={game.id} game={game} onUpdate={loadGames} />)
+        <>
+          {/* Yesterday view */}
+          <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
+            <span className="text-sm font-medium text-foreground">
+              📋 {(() => {
+                const y = new Date();
+                y.setDate(y.getDate() - 1);
+                return y.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+              })()}
+            </span>
+            <span className="text-[11px] text-muted-foreground">{yesterdayGames.length} games</span>
+          </div>
+
+          {/* Yesterday summary bar */}
+          {totalPredicted > 0 && (
+            <div className="grid grid-cols-4 gap-2">
+              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
+                <p className="text-xl font-medium text-foreground">{correctCount}-{incorrectCount}</p>
+                <p className="text-[11px] text-muted-foreground">Yesterday's Record</p>
+              </div>
+              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
+                <p className={`text-xl font-medium ${
+                  accuracy >= 60 ? 'text-emerald-500' : accuracy >= 50 ? 'text-amber-500' : 'text-destructive'
+                }`}>
+                  {accuracy}%
+                </p>
+                <p className="text-[11px] text-muted-foreground">Accuracy</p>
+              </div>
+              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
+                <p className="text-xl font-medium text-emerald-500">{correctCount}</p>
+                <p className="text-[11px] text-muted-foreground">Correct</p>
+              </div>
+              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
+                <p className="text-xl font-medium text-destructive">{incorrectCount}</p>
+                <p className="text-[11px] text-muted-foreground">Incorrect</p>
+              </div>
+            </div>
+          )}
+
+          {pendingCount > 0 && (
+            <Alert>
+              <AlertDescription className="text-xs">
+                ⏳ {pendingCount} game{pendingCount !== 1 ? 's' : ''} still pending verification — scores may not be available yet.
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="ml-2 h-6 text-[11px]"
+                  onClick={async () => {
+                    toast.info('Verifying results...');
+                    await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                    await loadYesterdayGames();
+                    toast.success('Verification complete');
+                  }}
+                >
+                  Verify Now
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {loading ? (
+            <div className="grid gap-3">
+              {[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+            </div>
+          ) : !yesterdayGames.length ? (
+            <div className="text-center py-12 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground font-medium">No games found for yesterday.</p>
+            </div>
+          ) : (
+            yesterdayGames.map(game => <YesterdayGameCard key={game.id} game={game} />)
+          )}
+        </>
       )}
     </div>
   );
@@ -2725,12 +2978,16 @@ export default function SportsBettingOS() {
     let predictionsCount = 0;
 
     try {
-      // PHASE 0 — Verify last night's results first
-      setRunAllPhase('Phase 0/6: Verifying last night\'s results...');
+      // PHASE 0 — Verify yesterday's results first
+      setRunAllPhase('Phase 0/6: Checking yesterday\'s results...');
       try {
         const { data: verifyData } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
         if (verifyData?.verified > 0) {
-          toast.info(`${verifyData.verified} results verified — ${verifyData.accuracy}% accuracy`);
+          toast.success(
+            `Yesterday verified: ${verifyData.correct}W - ${verifyData.incorrect}L · ${verifyData.accuracy}% accuracy`
+          );
+        } else if (verifyData?.message) {
+          toast.info(verifyData.message);
         }
       } catch { /* continue */ }
 
