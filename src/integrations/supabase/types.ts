@@ -57794,6 +57794,150 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_line_movement: {
+        Row: {
+          created_at: string | null
+          current_implied_prob: number | null
+          current_odds: number | null
+          game_id: string | null
+          id: string
+          is_steam_move: boolean | null
+          market_type: string
+          movement_cents: number | null
+          movement_direction: string | null
+          opening_implied_prob: number | null
+          opening_odds: number | null
+          opening_recorded_at: string | null
+          outcome: string
+          prop_id: string | null
+          sportsbook: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_implied_prob?: number | null
+          current_odds?: number | null
+          game_id?: string | null
+          id?: string
+          is_steam_move?: boolean | null
+          market_type: string
+          movement_cents?: number | null
+          movement_direction?: string | null
+          opening_implied_prob?: number | null
+          opening_odds?: number | null
+          opening_recorded_at?: string | null
+          outcome: string
+          prop_id?: string | null
+          sportsbook: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_implied_prob?: number | null
+          current_odds?: number | null
+          game_id?: string | null
+          id?: string
+          is_steam_move?: boolean | null
+          market_type?: string
+          movement_cents?: number | null
+          movement_direction?: string | null
+          opening_implied_prob?: number | null
+          opening_odds?: number | null
+          opening_recorded_at?: string | null
+          outcome?: string
+          prop_id?: string | null
+          sportsbook?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_line_movement_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_line_movement_prop_id_fkey"
+            columns: ["prop_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_player_props"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_model_performance: {
+        Row: {
+          accuracy_pct: number | null
+          avg_accuracy_achieved: number | null
+          avg_confidence_given: number | null
+          brain_config: Json
+          calibration_score: number | null
+          context_weight: number | null
+          correct_predictions: number | null
+          created_at: string | null
+          elite_accuracy: number | null
+          evaluation_date: string
+          id: string
+          is_active: boolean | null
+          market_weight: number | null
+          moderate_accuracy: number | null
+          moneyline_accuracy: number | null
+          polymarket_weight: number | null
+          props_accuracy: number | null
+          stats_weight: number | null
+          strong_accuracy: number | null
+          total_predictions: number | null
+          weak_accuracy: number | null
+        }
+        Insert: {
+          accuracy_pct?: number | null
+          avg_accuracy_achieved?: number | null
+          avg_confidence_given?: number | null
+          brain_config: Json
+          calibration_score?: number | null
+          context_weight?: number | null
+          correct_predictions?: number | null
+          created_at?: string | null
+          elite_accuracy?: number | null
+          evaluation_date: string
+          id?: string
+          is_active?: boolean | null
+          market_weight?: number | null
+          moderate_accuracy?: number | null
+          moneyline_accuracy?: number | null
+          polymarket_weight?: number | null
+          props_accuracy?: number | null
+          stats_weight?: number | null
+          strong_accuracy?: number | null
+          total_predictions?: number | null
+          weak_accuracy?: number | null
+        }
+        Update: {
+          accuracy_pct?: number | null
+          avg_accuracy_achieved?: number | null
+          avg_confidence_given?: number | null
+          brain_config?: Json
+          calibration_score?: number | null
+          context_weight?: number | null
+          correct_predictions?: number | null
+          created_at?: string | null
+          elite_accuracy?: number | null
+          evaluation_date?: string
+          id?: string
+          is_active?: boolean | null
+          market_weight?: number | null
+          moderate_accuracy?: number | null
+          moneyline_accuracy?: number | null
+          polymarket_weight?: number | null
+          props_accuracy?: number | null
+          stats_weight?: number | null
+          strong_accuracy?: number | null
+          total_predictions?: number | null
+          weak_accuracy?: number | null
+        }
+        Relationships: []
+      }
       sbo_odds: {
         Row: {
           away_odds: number | null
@@ -57846,6 +57990,93 @@ export type Database = {
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_odds_comparison: {
+        Row: {
+          avg_sportsbook_prob: number | null
+          betmgm_prob: number | null
+          caesars_prob: number | null
+          comparison_date: string
+          created_at: string | null
+          draftkings_prob: number | null
+          edge_pct: number | null
+          fanduel_prob: number | null
+          game_id: string | null
+          has_value: boolean | null
+          id: string
+          market_type: string
+          max_divergence: number | null
+          notes: string | null
+          outcome: string
+          polymarket_prob: number | null
+          polymarket_volume: number | null
+          polymarket_vs_books: number | null
+          prop_id: string | null
+          sportsdata_prob: number | null
+          value_direction: string | null
+        }
+        Insert: {
+          avg_sportsbook_prob?: number | null
+          betmgm_prob?: number | null
+          caesars_prob?: number | null
+          comparison_date?: string
+          created_at?: string | null
+          draftkings_prob?: number | null
+          edge_pct?: number | null
+          fanduel_prob?: number | null
+          game_id?: string | null
+          has_value?: boolean | null
+          id?: string
+          market_type: string
+          max_divergence?: number | null
+          notes?: string | null
+          outcome: string
+          polymarket_prob?: number | null
+          polymarket_volume?: number | null
+          polymarket_vs_books?: number | null
+          prop_id?: string | null
+          sportsdata_prob?: number | null
+          value_direction?: string | null
+        }
+        Update: {
+          avg_sportsbook_prob?: number | null
+          betmgm_prob?: number | null
+          caesars_prob?: number | null
+          comparison_date?: string
+          created_at?: string | null
+          draftkings_prob?: number | null
+          edge_pct?: number | null
+          fanduel_prob?: number | null
+          game_id?: string | null
+          has_value?: boolean | null
+          id?: string
+          market_type?: string
+          max_divergence?: number | null
+          notes?: string | null
+          outcome?: string
+          polymarket_prob?: number | null
+          polymarket_volume?: number | null
+          polymarket_vs_books?: number | null
+          prop_id?: string | null
+          sportsdata_prob?: number | null
+          value_direction?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_odds_comparison_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_odds_comparison_prop_id_fkey"
+            columns: ["prop_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_player_props"
             referencedColumns: ["id"]
           },
         ]
@@ -58247,6 +58478,125 @@ export type Database = {
           },
         ]
       }
+      sbo_polymarket_markets: {
+        Row: {
+          away_team: string | null
+          category: string | null
+          condition_id: string
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          fetched_at: string | null
+          game_id: string | null
+          home_team: string | null
+          id: string
+          implied_prob_home: number | null
+          implied_prob_over: number | null
+          implied_prob_yes: number | null
+          is_active: boolean | null
+          liquidity: number | null
+          market_type: string | null
+          open_interest: number | null
+          player_name: string | null
+          prop_line: number | null
+          prop_type: string | null
+          question: string
+          raw_data: Json | null
+          resolution: string | null
+          resolved_at: string | null
+          token_away_price: number | null
+          token_home_price: number | null
+          token_no_price: number | null
+          token_over_price: number | null
+          token_under_price: number | null
+          token_yes_price: number | null
+          tokens: Json | null
+          updated_at: string | null
+          volume_24h: number | null
+          volume_total: number | null
+        }
+        Insert: {
+          away_team?: string | null
+          category?: string | null
+          condition_id: string
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          fetched_at?: string | null
+          game_id?: string | null
+          home_team?: string | null
+          id?: string
+          implied_prob_home?: number | null
+          implied_prob_over?: number | null
+          implied_prob_yes?: number | null
+          is_active?: boolean | null
+          liquidity?: number | null
+          market_type?: string | null
+          open_interest?: number | null
+          player_name?: string | null
+          prop_line?: number | null
+          prop_type?: string | null
+          question: string
+          raw_data?: Json | null
+          resolution?: string | null
+          resolved_at?: string | null
+          token_away_price?: number | null
+          token_home_price?: number | null
+          token_no_price?: number | null
+          token_over_price?: number | null
+          token_under_price?: number | null
+          token_yes_price?: number | null
+          tokens?: Json | null
+          updated_at?: string | null
+          volume_24h?: number | null
+          volume_total?: number | null
+        }
+        Update: {
+          away_team?: string | null
+          category?: string | null
+          condition_id?: string
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          fetched_at?: string | null
+          game_id?: string | null
+          home_team?: string | null
+          id?: string
+          implied_prob_home?: number | null
+          implied_prob_over?: number | null
+          implied_prob_yes?: number | null
+          is_active?: boolean | null
+          liquidity?: number | null
+          market_type?: string | null
+          open_interest?: number | null
+          player_name?: string | null
+          prop_line?: number | null
+          prop_type?: string | null
+          question?: string
+          raw_data?: Json | null
+          resolution?: string | null
+          resolved_at?: string | null
+          token_away_price?: number | null
+          token_home_price?: number | null
+          token_no_price?: number | null
+          token_over_price?: number | null
+          token_under_price?: number | null
+          token_yes_price?: number | null
+          tokens?: Json | null
+          updated_at?: string | null
+          volume_24h?: number | null
+          volume_total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_polymarket_markets_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_polymarket_signals: {
         Row: {
           created_at: string | null
@@ -58611,6 +58961,60 @@ export type Database = {
           notes?: string | null
           props_entered?: number | null
           session_date?: string
+        }
+        Relationships: []
+      }
+      sbo_weight_history: {
+        Row: {
+          accuracy_after_projected: number | null
+          accuracy_before: number | null
+          adjusted_at: string | null
+          auto_adjusted: boolean | null
+          context_weight_after: number | null
+          context_weight_before: number | null
+          id: string
+          market_weight_after: number | null
+          market_weight_before: number | null
+          polymarket_weight_after: number | null
+          polymarket_weight_before: number | null
+          predictions_analyzed: number | null
+          reason: string
+          stats_weight_after: number | null
+          stats_weight_before: number | null
+        }
+        Insert: {
+          accuracy_after_projected?: number | null
+          accuracy_before?: number | null
+          adjusted_at?: string | null
+          auto_adjusted?: boolean | null
+          context_weight_after?: number | null
+          context_weight_before?: number | null
+          id?: string
+          market_weight_after?: number | null
+          market_weight_before?: number | null
+          polymarket_weight_after?: number | null
+          polymarket_weight_before?: number | null
+          predictions_analyzed?: number | null
+          reason: string
+          stats_weight_after?: number | null
+          stats_weight_before?: number | null
+        }
+        Update: {
+          accuracy_after_projected?: number | null
+          accuracy_before?: number | null
+          adjusted_at?: string | null
+          auto_adjusted?: boolean | null
+          context_weight_after?: number | null
+          context_weight_before?: number | null
+          id?: string
+          market_weight_after?: number | null
+          market_weight_before?: number | null
+          polymarket_weight_after?: number | null
+          polymarket_weight_before?: number | null
+          predictions_analyzed?: number | null
+          reason?: string
+          stats_weight_after?: number | null
+          stats_weight_before?: number | null
         }
         Relationships: []
       }
