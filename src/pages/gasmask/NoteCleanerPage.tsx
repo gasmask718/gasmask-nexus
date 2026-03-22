@@ -9,7 +9,6 @@ import {
   Server, RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 interface DirtyNote {
@@ -46,9 +45,10 @@ export default function NoteCleanerPage() {
   const [scanned, setScanned] = useState(false);
   const [job, setJob] = useState<JobStatus | null>(null);
   const [starting, setStarting] = useState(false);
+  const [cleaning, setCleaning] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const abortRef = useRef(false);
 
-  // On mount — check for existing running job
   useEffect(() => {
     checkForRunningJob();
     return () => {
@@ -66,11 +66,13 @@ export default function NoteCleanerPage() {
 
     const jobs = data as any[];
     if (jobs?.length) {
-      setJob(jobs[0] as JobStatus);
-      startPolling(jobs[0].id);
-      toast.info('Reconnected to running cleaner job');
+      const runningJob = jobs[0] as JobStatus;
+      setJob(runningJob);
+      setCleaning(true);
+      toast.info(`Reconnected — ${runningJob.processed_records}/${runningJob.total_records} cleaned`);
+      // Resume batch processing
+      resumeBatching(runningJob.id);
     } else {
-      // Check most recent completed job
       const { data: recent } = await supabase
         .from('note_cleaner_jobs' as any)
         .select('*')
@@ -81,7 +83,6 @@ export default function NoteCleanerPage() {
       const recentJobs = recent as any[];
       if (recentJobs?.length) {
         const lastJob = recentJobs[0] as JobStatus;
-        // Only show if completed within last hour
         const completedAt = lastJob.completed_at ? new Date(lastJob.completed_at) : null;
         if (completedAt && Date.now() - completedAt.getTime() < 3600000) {
           setJob(lastJob);
@@ -102,17 +103,57 @@ export default function NoteCleanerPage() {
       if (data) {
         const j = data as unknown as JobStatus;
         setJob(j);
-        if (j.status === 'complete') {
+        if (j.status === 'complete' || j.status === 'failed') {
           if (pollRef.current) clearInterval(pollRef.current);
           pollRef.current = null;
-          toast.success(`Cleaning complete — ${j.processed_records} notes cleaned, ${j.failed_records} failed`);
-        } else if (j.status === 'failed') {
-          if (pollRef.current) clearInterval(pollRef.current);
-          pollRef.current = null;
-          toast.error(`Cleaning failed: ${j.error || 'Unknown error'}`);
         }
       }
     }, 3000);
+  };
+
+  const resumeBatching = async (jobId: string) => {
+    abortRef.current = false;
+    startPolling(jobId);
+
+    let hasMore = true;
+    while (hasMore && !abortRef.current) {
+      try {
+        const { data, error } = await supabase.functions.invoke('run-note-cleaner', {
+          body: { batch_size: 10, job_id: jobId },
+        });
+
+        if (error) {
+          console.error('Batch error:', error);
+          break;
+        }
+
+        if (!data?.success) {
+          if (data?.error) toast.error(data.error);
+          break;
+        }
+
+        hasMore = data.has_more;
+
+        if (!hasMore || data.status === 'complete') {
+          setCleaning(false);
+          toast.success(`Complete — ${data.total_processed} notes cleaned`);
+          break;
+        }
+
+        // Small delay between batches
+        await new Promise(r => setTimeout(r, 1500));
+      } catch (err: any) {
+        console.error('Batch chain error:', err);
+        toast.error('Batch processing interrupted — reopen to resume');
+        break;
+      }
+    }
+
+    setCleaning(false);
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = null;
+    // Final refresh
+    checkForRunningJob();
   };
 
   const runScan = useCallback(async () => {
@@ -153,27 +194,34 @@ export default function NoteCleanerPage() {
     setStarting(true);
     try {
       const { data, error } = await supabase.functions.invoke('run-note-cleaner', {
-        body: {},
+        body: { batch_size: 10 },
       });
 
       if (error) throw error;
 
       if (data?.job_id) {
-        setJob({
+        const newJob: JobStatus = {
           id: data.job_id,
           status: 'running',
-          total_records: data.total || 0,
-          processed_records: 0,
-          failed_records: 0,
+          total_records: data.total_records || 0,
+          processed_records: data.total_processed || data.processed_this_batch || 0,
+          failed_records: data.failed_this_batch || 0,
           current_record: null,
           error: null,
           started_at: new Date().toISOString(),
           completed_at: null,
-        });
-        startPolling(data.job_id);
-        toast.success('Cleaner running in background — safe to navigate away');
-      } else if (data?.error) {
-        toast.error(data.error);
+        };
+        setJob(newJob);
+        setCleaning(true);
+        toast.success('Cleaning started — processing in batches of 10');
+
+        // Chain remaining batches
+        if (data.has_more) {
+          resumeBatching(data.job_id);
+        } else {
+          setCleaning(false);
+          toast.success(`Complete — ${data.total_processed} notes cleaned`);
+        }
       } else if (data?.message) {
         toast.info(data.message);
       }
@@ -184,16 +232,15 @@ export default function NoteCleanerPage() {
     }
   }, []);
 
-  const isRunning = job?.status === 'running';
-  const isComplete = job?.status === 'complete';
-  const isFailed = job?.status === 'failed';
+  const isRunning = job?.status === 'running' || cleaning;
+  const isComplete = job?.status === 'complete' && !cleaning;
+  const isFailed = job?.status === 'failed' && !cleaning;
   const progressPct = job && job.total_records > 0
     ? Math.round((job.processed_records / job.total_records) * 100)
     : 0;
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
-      {/* Header */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -202,7 +249,7 @@ export default function NoteCleanerPage() {
               <div>
                 <CardTitle className="text-lg">Note Cleaner Agent</CardTitle>
                 <CardDescription>
-                  Scans account notes for legacy HTML formatting and rewrites in proper English — runs server-side
+                  Scans account notes for legacy HTML formatting and rewrites in proper English — processes in batches of 10
                 </CardDescription>
               </div>
             </div>
@@ -222,14 +269,13 @@ export default function NoteCleanerPage() {
         </CardHeader>
       </Card>
 
-      {/* Server-side job status */}
       {isRunning && job && (
         <Card className="border-blue-500/30 bg-blue-500/5">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Server className="h-4 w-4 text-blue-500 animate-pulse" />
-                <span className="text-sm font-medium">Server-side cleaning in progress</span>
+                <span className="text-sm font-medium">Batch cleaning in progress</span>
               </div>
               <Badge variant="outline" className="text-xs text-blue-600 border-blue-500/30">
                 <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -237,7 +283,7 @@ export default function NoteCleanerPage() {
               </Badge>
             </div>
             <div className="flex justify-between text-sm text-muted-foreground">
-              <span>{job.processed_records} of {job.total_records} notes processed</span>
+              <span>Cleaning: {job.processed_records} of {job.total_records} notes</span>
               <span className="font-medium">{progressPct}%</span>
             </div>
             <Progress value={progressPct} className="h-2" />
@@ -245,13 +291,12 @@ export default function NoteCleanerPage() {
               <p className="text-xs text-destructive">{job.failed_records} failed</p>
             )}
             <p className="text-xs text-muted-foreground">
-              Safe to navigate away — this job runs on the server and will continue in the background.
+              Processing in batches of 10 to avoid timeouts. Safe to navigate away — reopen to resume.
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Completed job */}
       {isComplete && job && (
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="p-4">
@@ -266,12 +311,7 @@ export default function NoteCleanerPage() {
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => { setJob(null); runScan(); }}
-              >
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => { setJob(null); runScan(); }}>
                 <RefreshCw className="h-3 w-3" />
                 Scan Again
               </Button>
@@ -280,7 +320,6 @@ export default function NoteCleanerPage() {
         </Card>
       )}
 
-      {/* Failed job */}
       {isFailed && job && (
         <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="p-4">
@@ -290,16 +329,11 @@ export default function NoteCleanerPage() {
                 <div>
                   <p className="text-sm font-medium">Cleaning Failed</p>
                   <p className="text-xs text-muted-foreground">
-                    {job.error || 'Unknown error'} — {job.processed_records} of {job.total_records} processed before failure
+                    {job.error || 'Unknown error'} — {job.processed_records} of {job.total_records} processed
                   </p>
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => { setJob(null); }}
-              >
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => setJob(null)}>
                 Dismiss
               </Button>
             </div>
@@ -307,7 +341,6 @@ export default function NoteCleanerPage() {
         </Card>
       )}
 
-      {/* Action bar when scan done */}
       {scanned && dirtyNotes.length > 0 && !isRunning && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardContent className="p-4 flex items-center justify-between">
@@ -318,18 +351,13 @@ export default function NoteCleanerPage() {
               </span>
             </div>
             <Button onClick={startCleaningJob} disabled={starting} className="gap-2">
-              {starting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Server className="h-4 w-4" />
-              )}
-              {starting ? 'Starting...' : 'Clean All (Server-Side)'}
+              {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Server className="h-4 w-4" />}
+              {starting ? 'Starting...' : 'Clean All (Batched)'}
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Preview of dirty notes */}
       {scanned && dirtyNotes.length > 0 && !isRunning && (
         <Card>
           <CardHeader className="pb-2">
@@ -339,10 +367,7 @@ export default function NoteCleanerPage() {
             <ScrollArea className="h-[calc(100vh-480px)]">
               <div className="space-y-2 pr-2">
                 {dirtyNotes.slice(0, 20).map(note => (
-                  <div
-                    key={note.id}
-                    className="p-3 rounded-md border border-border bg-muted/30 space-y-1"
-                  >
+                  <div key={note.id} className="p-3 rounded-md border border-border bg-muted/30 space-y-1">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-semibold">{note.store_name}</span>
                       <span className="text-[10px] text-muted-foreground">
@@ -365,7 +390,6 @@ export default function NoteCleanerPage() {
         </Card>
       )}
 
-      {/* Empty state */}
       {scanned && dirtyNotes.length === 0 && !isRunning && !isComplete && (
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="p-8 text-center">
