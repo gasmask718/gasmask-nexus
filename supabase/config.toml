@@ -418,5 +418,11 @@ verify_jwt = false
 [functions.sbo-sync-polymarket]
 verify_jwt = false
 
+[functions.sbo-sync-polymarket-full]
+verify_jwt = false
+
+[functions.sbo-compare-odds]
+verify_jwt = false
+
 [functions.sbo-track-results]
 verify_jwt = false

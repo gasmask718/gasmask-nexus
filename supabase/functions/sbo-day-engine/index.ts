@@ -11,7 +11,8 @@ const API_COSTS: Record<string, { provider: string; cost_cents: number; note: st
   'sbo-sync-daily': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-pregame': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-prizepicks': { provider: 'prizepicks', cost_cents: 0, note: 'Free unofficial API' },
-  'sbo-sync-polymarket': { provider: 'polymarket', cost_cents: 0, note: 'Free public API' },
+  'sbo-sync-polymarket-full': { provider: 'polymarket', cost_cents: 0, note: 'Free public API' },
+  'sbo-compare-odds': { provider: 'internal', cost_cents: 0, note: 'Internal comparison' },
   'sbo-track-results': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
 };
 
@@ -23,7 +24,8 @@ const PREGAME_STEPS = [
   { fn: 'sbo-fetch-odds', label: 'Live Odds (DK/FD/BetMGM/Caesars)', icon: '💰', required: true },
   { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true },
   { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false },
-  { fn: 'sbo-sync-polymarket', label: 'Polymarket Prediction Market Odds', icon: '🔮', required: false },
+  { fn: 'sbo-sync-polymarket-full', label: 'Polymarket Full (214 NBA Markets)', icon: '🔮', required: false },
+  { fn: 'sbo-compare-odds', label: 'Cross-Platform Odds Comparison', icon: '💎', required: false },
 ];
 
 const POSTGAME_STEPS = [

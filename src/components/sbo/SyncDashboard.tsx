@@ -56,6 +56,16 @@ const API_COST_INFO: Record<string, {
     costPerUnit: '$0',
     notes: 'Public prediction market API — free, no key needed. Real money consensus odds.',
   },
+  internal: {
+    label: 'Internal',
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-500/10',
+    borderColor: 'border-gray-500/30',
+    freeLimit: null,
+    unit: 'internal',
+    costPerUnit: '$0',
+    notes: 'Internal computation — compares data already in your database. No external API calls.',
+  },
 };
 
 const DAY_ENGINE_STEPS = {
