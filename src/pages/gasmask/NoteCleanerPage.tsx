@@ -1,13 +1,12 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Sparkles, Search, Check, SkipForward, Edit3, CheckCheck,
-  SkipBack, AlertTriangle, Loader2, FileText
+  Sparkles, Search, Check, AlertTriangle, Loader2, FileText,
+  Server, RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -21,10 +20,16 @@ interface DirtyNote {
   store_name?: string;
 }
 
-interface CleanedNote extends DirtyNote {
-  cleaned_text: string;
-  editing: boolean;
-  status: 'pending' | 'approved' | 'skipped';
+interface JobStatus {
+  id: string;
+  status: string;
+  total_records: number;
+  processed_records: number;
+  failed_records: number;
+  current_record: string | null;
+  error: string | null;
+  started_at: string | null;
+  completed_at: string | null;
 }
 
 function needsCleaning(note: string | null): boolean {
@@ -37,20 +42,83 @@ function needsCleaning(note: string | null): boolean {
 
 export default function NoteCleanerPage() {
   const [scanning, setScanning] = useState(false);
-  const [cleaning, setCleaning] = useState(false);
   const [dirtyNotes, setDirtyNotes] = useState<DirtyNote[]>([]);
-  const [cleanedNotes, setCleanedNotes] = useState<CleanedNote[]>([]);
-  const [cleaningProgress, setCleaningProgress] = useState(0);
-  const [approvedCount, setApprovedCount] = useState(0);
   const [scanned, setScanned] = useState(false);
+  const [job, setJob] = useState<JobStatus | null>(null);
+  const [starting, setStarting] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // On mount — check for existing running job
+  useEffect(() => {
+    checkForRunningJob();
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const checkForRunningJob = async () => {
+    const { data } = await supabase
+      .from('note_cleaner_jobs' as any)
+      .select('*')
+      .eq('status', 'running')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const jobs = data as any[];
+    if (jobs?.length) {
+      setJob(jobs[0] as JobStatus);
+      startPolling(jobs[0].id);
+      toast.info('Reconnected to running cleaner job');
+    } else {
+      // Check most recent completed job
+      const { data: recent } = await supabase
+        .from('note_cleaner_jobs' as any)
+        .select('*')
+        .in('status', ['complete', 'failed'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      const recentJobs = recent as any[];
+      if (recentJobs?.length) {
+        const lastJob = recentJobs[0] as JobStatus;
+        // Only show if completed within last hour
+        const completedAt = lastJob.completed_at ? new Date(lastJob.completed_at) : null;
+        if (completedAt && Date.now() - completedAt.getTime() < 3600000) {
+          setJob(lastJob);
+        }
+      }
+    }
+  };
+
+  const startPolling = (jobId: string) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from('note_cleaner_jobs' as any)
+        .select('*')
+        .eq('id', jobId)
+        .single();
+
+      if (data) {
+        const j = data as unknown as JobStatus;
+        setJob(j);
+        if (j.status === 'complete') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          toast.success(`Cleaning complete — ${j.processed_records} notes cleaned, ${j.failed_records} failed`);
+        } else if (j.status === 'failed') {
+          if (pollRef.current) clearInterval(pollRef.current);
+          pollRef.current = null;
+          toast.error(`Cleaning failed: ${j.error || 'Unknown error'}`);
+        }
+      }
+    }, 3000);
+  };
 
   const runScan = useCallback(async () => {
     setScanning(true);
     setScanned(false);
-    setCleanedNotes([]);
-    setApprovedCount(0);
     try {
-      // Fetch notes with HTML markers
       const { data, error } = await supabase
         .from('store_notes')
         .select('id, store_id, note_text, created_at, store_master!store_notes_store_id_fkey(store_name)')
@@ -81,142 +149,60 @@ export default function NoteCleanerPage() {
     }
   }, []);
 
-  const cleanAllNotes = useCallback(async () => {
-    if (!dirtyNotes.length) return;
-    setCleaning(true);
-    setCleaningProgress(0);
-    const results: CleanedNote[] = [];
-
-    for (let i = 0; i < dirtyNotes.length; i++) {
-      const note = dirtyNotes[i];
-      try {
-        const { data, error } = await supabase.functions.invoke('clean-note', {
-          body: { rawNote: note.note_text },
-        });
-        if (error) throw error;
-        results.push({
-          ...note,
-          cleaned_text: data.cleanedNote || note.note_text,
-          editing: false,
-          status: 'pending',
-        });
-      } catch (err: any) {
-        // On rate limit, pause and retry
-        if (err.message?.includes('429')) {
-          toast.warning('Rate limited — pausing for 5 seconds...');
-          await new Promise(r => setTimeout(r, 5000));
-          i--; // retry this note
-          continue;
-        }
-        results.push({
-          ...note,
-          cleaned_text: `[CLEANING FAILED: ${err.message}]`,
-          editing: false,
-          status: 'pending',
-        });
-      }
-      setCleaningProgress(Math.round(((i + 1) / dirtyNotes.length) * 100));
-      // Small delay to avoid rate limits
-      if (i < dirtyNotes.length - 1) {
-        await new Promise(r => setTimeout(r, 800));
-      }
-    }
-
-    setCleanedNotes(results);
-    setCleaning(false);
-    toast.success(`${results.length} notes cleaned — review and approve below`);
-  }, [dirtyNotes]);
-
-  const approveNote = useCallback(async (note: CleanedNote) => {
+  const startCleaningJob = useCallback(async () => {
+    setStarting(true);
     try {
-      // Backup original and save cleaned
-      const { error: updateErr } = await supabase
-        .from('store_notes')
-        .update({
-          original_note: note.note_text,
-          note_text: note.cleaned_text,
-          is_legacy: true,
-          needs_cleaning: false,
-          cleaning_status: 'approved',
-          cleaned_at: new Date().toISOString(),
-        })
-        .eq('id', note.id);
-      if (updateErr) throw updateErr;
-
-      // Log
-      await (supabase as any).from('note_cleaning_log').insert({
-        store_id: note.store_id,
-        note_id: note.id,
-        original_note: note.note_text,
-        cleaned_note: note.cleaned_text,
-        status: 'approved',
-        approved_at: new Date().toISOString(),
+      const { data, error } = await supabase.functions.invoke('run-note-cleaner', {
+        body: {},
       });
 
-      setCleanedNotes(prev =>
-        prev.map(n => (n.id === note.id ? { ...n, status: 'approved' as const } : n))
-      );
-      setApprovedCount(prev => prev + 1);
-      toast.success('Note approved & saved');
+      if (error) throw error;
+
+      if (data?.job_id) {
+        setJob({
+          id: data.job_id,
+          status: 'running',
+          total_records: data.total || 0,
+          processed_records: 0,
+          failed_records: 0,
+          current_record: null,
+          error: null,
+          started_at: new Date().toISOString(),
+          completed_at: null,
+        });
+        startPolling(data.job_id);
+        toast.success('Cleaner running in background — safe to navigate away');
+      } else if (data?.error) {
+        toast.error(data.error);
+      } else if (data?.message) {
+        toast.info(data.message);
+      }
     } catch (err: any) {
-      toast.error(err.message || 'Save failed');
+      toast.error(err.message || 'Failed to start cleaning job');
+    } finally {
+      setStarting(false);
     }
   }, []);
 
-  const skipNote = useCallback(async (noteId: string) => {
-    await supabase
-      .from('store_notes')
-      .update({ cleaning_status: 'skipped' })
-      .eq('id', noteId);
-
-    setCleanedNotes(prev =>
-      prev.map(n => (n.id === noteId ? { ...n, status: 'skipped' as const } : n))
-    );
-  }, []);
-
-  const toggleEdit = useCallback((noteId: string) => {
-    setCleanedNotes(prev =>
-      prev.map(n => (n.id === noteId ? { ...n, editing: !n.editing } : n))
-    );
-  }, []);
-
-  const updateCleanedText = useCallback((noteId: string, text: string) => {
-    setCleanedNotes(prev =>
-      prev.map(n => (n.id === noteId ? { ...n, cleaned_text: text } : n))
-    );
-  }, []);
-
-  const approveAll = useCallback(async () => {
-    const pending = cleanedNotes.filter(n => n.status === 'pending');
-    for (const note of pending) {
-      await approveNote(note);
-    }
-    toast.success(`${pending.length} notes approved`);
-  }, [cleanedNotes, approveNote]);
-
-  const skipAll = useCallback(async () => {
-    const pending = cleanedNotes.filter(n => n.status === 'pending');
-    for (const note of pending) {
-      await skipNote(note.id);
-    }
-    toast.info(`${pending.length} notes skipped`);
-  }, [cleanedNotes, skipNote]);
-
-  const pendingNotes = cleanedNotes.filter(n => n.status === 'pending');
-  const processedCount = cleanedNotes.filter(n => n.status !== 'pending').length;
+  const isRunning = job?.status === 'running';
+  const isComplete = job?.status === 'complete';
+  const isFailed = job?.status === 'failed';
+  const progressPct = job && job.total_records > 0
+    ? Math.round((job.processed_records / job.total_records) * 100)
+    : 0;
 
   return (
     <div className="p-4 md:p-6 space-y-4 max-w-5xl mx-auto">
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <Sparkles className="h-6 w-6 text-primary" />
               <div>
                 <CardTitle className="text-lg">Note Cleaner Agent</CardTitle>
                 <CardDescription>
-                  Scans account notes for legacy HTML formatting and rewrites in proper English
+                  Scans account notes for legacy HTML formatting and rewrites in proper English — runs server-side
                 </CardDescription>
               </div>
             </div>
@@ -227,30 +213,102 @@ export default function NoteCleanerPage() {
                   {dirtyNotes.length} notes need cleaning
                 </Badge>
               )}
-              <Button onClick={runScan} disabled={scanning || cleaning} className="gap-2">
+              <Button onClick={runScan} disabled={scanning || isRunning} variant="outline" className="gap-2">
                 {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                {scanning ? 'Scanning...' : 'Run Full Scan'}
+                {scanning ? 'Scanning...' : 'Scan Notes'}
               </Button>
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Progress / Cleaning bar */}
-      {cleaning && (
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Cleaning notes with AI...</span>
-              <span className="font-medium">{cleaningProgress}%</span>
+      {/* Server-side job status */}
+      {isRunning && job && (
+        <Card className="border-blue-500/30 bg-blue-500/5">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Server className="h-4 w-4 text-blue-500 animate-pulse" />
+                <span className="text-sm font-medium">Server-side cleaning in progress</span>
+              </div>
+              <Badge variant="outline" className="text-xs text-blue-600 border-blue-500/30">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                Running
+              </Badge>
             </div>
-            <Progress value={cleaningProgress} className="h-2" />
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>{job.processed_records} of {job.total_records} notes processed</span>
+              <span className="font-medium">{progressPct}%</span>
+            </div>
+            <Progress value={progressPct} className="h-2" />
+            {job.failed_records > 0 && (
+              <p className="text-xs text-destructive">{job.failed_records} failed</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Safe to navigate away — this job runs on the server and will continue in the background.
+            </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Action bar when scan done but not yet cleaned */}
-      {scanned && dirtyNotes.length > 0 && cleanedNotes.length === 0 && !cleaning && (
+      {/* Completed job */}
+      {isComplete && job && (
+        <Card className="border-green-500/30 bg-green-500/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Check className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium">Cleaning Complete</p>
+                  <p className="text-xs text-muted-foreground">
+                    {job.processed_records} cleaned, {job.failed_records} failed
+                    {job.completed_at && ` — ${new Date(job.completed_at).toLocaleTimeString()}`}
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => { setJob(null); runScan(); }}
+              >
+                <RefreshCw className="h-3 w-3" />
+                Scan Again
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Failed job */}
+      {isFailed && job && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+                <div>
+                  <p className="text-sm font-medium">Cleaning Failed</p>
+                  <p className="text-xs text-muted-foreground">
+                    {job.error || 'Unknown error'} — {job.processed_records} of {job.total_records} processed before failure
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => { setJob(null); }}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Action bar when scan done */}
+      {scanned && dirtyNotes.length > 0 && !isRunning && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <CardContent className="p-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -259,139 +317,56 @@ export default function NoteCleanerPage() {
                 {dirtyNotes.length} notes with legacy HTML detected
               </span>
             </div>
-            <Button onClick={cleanAllNotes} className="gap-2">
-              <Sparkles className="h-4 w-4" />
-              Clean All with AI
+            <Button onClick={startCleaningJob} disabled={starting} className="gap-2">
+              {starting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Server className="h-4 w-4" />
+              )}
+              {starting ? 'Starting...' : 'Clean All (Server-Side)'}
             </Button>
           </CardContent>
         </Card>
       )}
 
-      {/* Batch actions when cleaned */}
-      {cleanedNotes.length > 0 && pendingNotes.length > 0 && (
+      {/* Preview of dirty notes */}
+      {scanned && dirtyNotes.length > 0 && !isRunning && (
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="text-sm text-muted-foreground">
-                {processedCount} of {cleanedNotes.length} processed
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Preview — Notes to Clean</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-[calc(100vh-480px)]">
+              <div className="space-y-2 pr-2">
+                {dirtyNotes.slice(0, 20).map(note => (
+                  <div
+                    key={note.id}
+                    className="p-3 rounded-md border border-border bg-muted/30 space-y-1"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold">{note.store_name}</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(note.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-xs font-mono text-muted-foreground line-clamp-2 break-words">
+                      {note.note_text.slice(0, 200)}...
+                    </p>
+                  </div>
+                ))}
+                {dirtyNotes.length > 20 && (
+                  <p className="text-xs text-muted-foreground text-center py-2">
+                    + {dirtyNotes.length - 20} more notes
+                  </p>
+                )}
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={skipAll} className="gap-1">
-                  <SkipBack className="h-3 w-3" /> Skip All
-                </Button>
-                <Button size="sm" onClick={approveAll} className="gap-1">
-                  <CheckCheck className="h-3 w-3" /> Approve All
-                </Button>
-              </div>
-            </div>
-            <Progress
-              value={Math.round((processedCount / cleanedNotes.length) * 100)}
-              className="h-1.5 mt-2"
-            />
+            </ScrollArea>
           </CardContent>
         </Card>
       )}
 
-      {/* Notes list */}
-      {cleanedNotes.length > 0 && (
-        <ScrollArea className="h-[calc(100vh-320px)]">
-          <div className="space-y-3 pr-2">
-            {cleanedNotes.map(note => (
-              <Card
-                key={note.id}
-                className={cn(
-                  'transition-all',
-                  note.status === 'approved' && 'border-green-500/30 bg-green-500/5 opacity-60',
-                  note.status === 'skipped' && 'border-muted opacity-40'
-                )}
-              >
-                <CardContent className="p-4 space-y-3">
-                  {/* Note header */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-semibold">{note.store_name}</span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        {new Date(note.created_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    {note.status !== 'pending' && (
-                      <Badge
-                        variant={note.status === 'approved' ? 'default' : 'secondary'}
-                        className={cn(
-                          'text-xs',
-                          note.status === 'approved' && 'bg-green-500'
-                        )}
-                      >
-                        {note.status === 'approved' ? 'Approved' : 'Skipped'}
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Before / After */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {/* Before */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase text-muted-foreground font-medium">Before (raw)</span>
-                      <div className="bg-muted/50 rounded-md p-2 text-xs font-mono whitespace-pre-wrap break-words max-h-48 overflow-y-auto border border-border">
-                        {note.note_text}
-                      </div>
-                    </div>
-
-                    {/* After */}
-                    <div className="space-y-1">
-                      <span className="text-[10px] uppercase text-muted-foreground font-medium">After (cleaned)</span>
-                      {note.editing ? (
-                        <Textarea
-                          value={note.cleaned_text}
-                          onChange={(e) => updateCleanedText(note.id, e.target.value)}
-                          className="text-xs min-h-[120px] max-h-48"
-                        />
-                      ) : (
-                        <div className="bg-green-500/5 rounded-md p-2 text-xs whitespace-pre-wrap break-words max-h-48 overflow-y-auto border border-green-500/20">
-                          {note.cleaned_text}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  {note.status === 'pending' && (
-                    <div className="flex gap-2 justify-end">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-xs"
-                        onClick={() => toggleEdit(note.id)}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                        {note.editing ? 'Done Editing' : 'Edit Before Saving'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-xs"
-                        onClick={() => skipNote(note.id)}
-                      >
-                        <SkipForward className="h-3 w-3" /> Skip
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="gap-1 text-xs"
-                        onClick={() => approveNote(note)}
-                      >
-                        <Check className="h-3 w-3" /> Approve & Save
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </ScrollArea>
-      )}
-
       {/* Empty state */}
-      {scanned && dirtyNotes.length === 0 && (
+      {scanned && dirtyNotes.length === 0 && !isRunning && !isComplete && (
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="p-8 text-center">
             <Check className="h-10 w-10 text-green-500 mx-auto mb-2" />
