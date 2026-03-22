@@ -1085,6 +1085,170 @@ function AccuracyTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// VALUE SPOTS TAB
+// ═══════════════════════════════════════════════════════════════
+
+function ValueSpotsTab() {
+  const [comparing, setComparing] = useState(false);
+
+  const { data: valueSpots, refetch: refetchValue } = useQuery({
+    queryKey: ['value-spots'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await (supabase as any)
+        .from('sbo_odds_comparison')
+        .select(`*, sbo_games(home_team, away_team, game_date), sbo_player_props(player_name, prop_type, line)`)
+        .eq('comparison_date', today)
+        .eq('has_value', true)
+        .order('edge_pct', { ascending: false });
+      return data || [];
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: allComparisons } = useQuery({
+    queryKey: ['all-comparisons-today'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await (supabase as any)
+        .from('sbo_odds_comparison')
+        .select('*')
+        .eq('comparison_date', today)
+        .order('max_divergence', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
+  const runComparison = async () => {
+    setComparing(true);
+    try {
+      const { error } = await supabase.functions.invoke('sbo-compare-odds');
+      if (error) throw error;
+      toast.success('Odds comparison complete');
+      refetchValue();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setComparing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-foreground flex items-center gap-2">💎 Value Spots</h2>
+          <p className="text-xs text-muted-foreground">Where Polymarket and sportsbooks disagree by 5%+ — potential edge</p>
+        </div>
+        <Button size="sm" onClick={runComparison} disabled={comparing}>
+          {comparing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+          Run Comparison
+        </Button>
+      </div>
+
+      {!valueSpots?.length ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-sm text-muted-foreground">No value spots found yet today.</p>
+            <p className="text-xs text-muted-foreground mt-1">Run Pre-Game Sync + Polymarket Sync, then click Run Comparison.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        valueSpots.map((spot: any) => {
+          const game = spot.sbo_games;
+          const prop = spot.sbo_player_props;
+          const isPolymarketHigher = spot.value_direction === 'polymarket_higher';
+
+          return (
+            <Card key={spot.id} className="border-amber-500/30">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">
+                      {spot.market_type === 'player_prop' && prop
+                        ? `${prop.player_name} ${spot.outcome?.toUpperCase()} ${prop.line} ${prop.prop_type}`
+                        : `${game?.away_team} @ ${game?.home_team} — ${spot.outcome?.toUpperCase()} ML`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{game?.away_team} @ {game?.home_team}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-amber-500">+{spot.edge_pct?.toFixed(1)}%</p>
+                    <p className="text-[10px] text-muted-foreground">edge</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-violet-500/10 rounded-lg p-2">
+                    <p className="text-[10px] text-muted-foreground">🔮 Polymarket</p>
+                    <p className="text-sm font-bold text-foreground">{spot.polymarket_prob?.toFixed(1)}%</p>
+                    <p className="text-[10px] text-muted-foreground">${((spot.polymarket_volume || 0) / 1000).toFixed(0)}k vol</p>
+                  </div>
+                  <div className="flex items-center justify-center">
+                    <div className="text-center">
+                      <Badge variant={isPolymarketHigher ? 'default' : 'secondary'} className="text-[10px]">
+                        {isPolymarketHigher ? 'PM ↑' : 'Books ↑'}
+                      </Badge>
+                      <p className="text-[10px] text-muted-foreground mt-1">{spot.edge_pct?.toFixed(1)}% gap</p>
+                    </div>
+                  </div>
+                  <div className="bg-muted rounded-lg p-2">
+                    <p className="text-[10px] text-muted-foreground">📊 Avg Books</p>
+                    <p className="text-sm font-bold text-foreground">{spot.avg_sportsbook_prob?.toFixed(1)}%</p>
+                    <p className="text-[10px] text-muted-foreground">DK/FD/BM/C</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { label: 'DK', value: spot.draftkings_prob },
+                    { label: 'FD', value: spot.fanduel_prob },
+                    { label: 'BetMGM', value: spot.betmgm_prob },
+                    { label: 'Caesars', value: spot.caesars_prob },
+                  ].map(book => (
+                    <div key={book.label} className="bg-muted/50 rounded p-1.5">
+                      <p className="text-[10px] text-muted-foreground">{book.label}</p>
+                      <p className="text-xs font-medium text-foreground">{book.value ? `${book.value.toFixed(0)}%` : 'N/A'}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {spot.notes && <p className="text-xs text-amber-600">{spot.notes}</p>}
+              </CardContent>
+            </Card>
+          );
+        })
+      )}
+
+      {(allComparisons?.length || 0) > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">All Markets Compared Today</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1.5">
+              {allComparisons?.map((comp: any) => (
+                <div key={comp.id} className="flex items-center gap-2 text-xs py-1 border-b border-border last:border-0">
+                  <div className={`w-2 h-2 rounded-full ${
+                    (comp.edge_pct || 0) >= 5 ? 'bg-amber-500' : (comp.edge_pct || 0) >= 2 ? 'bg-blue-500' : 'bg-muted-foreground/30'
+                  }`} />
+                  <span className="flex-1 text-muted-foreground">{comp.market_type} · {comp.outcome}</span>
+                  <span className="text-foreground">PM: {comp.polymarket_prob?.toFixed(0) || '—'}%</span>
+                  <span className="text-foreground">Books: {comp.avg_sportsbook_prob?.toFixed(0) || '—'}%</span>
+                  <span className={`font-medium ${(comp.edge_pct || 0) >= 5 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                    {comp.edge_pct?.toFixed(1)}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
@@ -1102,6 +1266,20 @@ export default function SportsBettingOS() {
     refetchInterval: 30000,
   });
 
+  const { data: valueCount } = useQuery({
+    queryKey: ['value-count'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { count } = await (supabase as any)
+        .from('sbo_odds_comparison')
+        .select('*', { count: 'exact', head: true })
+        .eq('comparison_date', today)
+        .eq('has_value', true);
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-4">
       <div className="flex items-center justify-between">
@@ -1109,7 +1287,7 @@ export default function SportsBettingOS() {
           <Trophy className="h-6 w-6 text-orange-500" />
           <div>
             <h1 className="text-xl font-bold text-foreground">🏀 Sports Betting AI OS</h1>
-            <p className="text-xs text-muted-foreground">NBA · 3-Brain AI Engine · Moneyline + Player Props</p>
+            <p className="text-xs text-muted-foreground">NBA · 4-Brain AI Engine · Moneyline + Player Props</p>
           </div>
         </div>
         {(strongCount || 0) > 0 && (
@@ -1120,12 +1298,18 @@ export default function SportsBettingOS() {
       </div>
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
             {(strongCount || 0) > 0 && (
               <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 h-4">{strongCount}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="value" className="text-xs">
+            💎 Value
+            {(valueCount || 0) > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 h-4">{valueCount}</Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
@@ -1141,6 +1325,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="props" className="mt-4">
           <PlayerPropsTab />
+        </TabsContent>
+
+        <TabsContent value="value" className="mt-4">
+          <ValueSpotsTab />
         </TabsContent>
 
         <TabsContent value="parlay" className="mt-4">
