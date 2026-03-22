@@ -25,16 +25,107 @@ async function callClaude(system: string, user: string): Promise<string> {
   return data.content?.[0]?.text?.trim() || '';
 }
 
-async function runStatsBrain(ctx: any) {
-  const system = `You are a professional NBA statistical analyst. Analyze raw stats only: team performance, player efficiency, pace, rest days, home/away splits, back-to-backs. Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
+async function runStatsBrain(ctx: any): Promise<{ score: number; reasoning: string }> {
+  const system = `You are a professional NBA statistical analyst. You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
+
+Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences referencing the actual stats provided"}`;
+
+  let statsContext = '';
+
+  // Fetch real player context from our database
+  try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    if (ctx.prediction_type === 'player_prop' && ctx.player_name) {
+      const { data } = await supabase.functions.invoke('sbo-get-player-context', {
+        body: {
+          player_name: ctx.player_name,
+          team: ctx.team,
+          game_date: ctx.game_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+          prop_type: ctx.prop_type,
+          opponent: ctx.home_team === ctx.team ? ctx.away_team : ctx.home_team,
+        },
+      });
+      if (data?.context_text) {
+        statsContext = data.context_text;
+      }
+    } else if (ctx.prediction_type === 'moneyline') {
+      const { data: homeTeam } = await supabase
+        .from('sbo_team_stats')
+        .select('*')
+        .ilike('team_name', `%${ctx.home_team}%`)
+        .maybeSingle();
+
+      const { data: awayTeam } = await supabase
+        .from('sbo_team_stats')
+        .select('*')
+        .ilike('team_name', `%${ctx.away_team}%`)
+        .maybeSingle();
+
+      const { data: homeInjuries } = await supabase
+        .from('sbo_injuries')
+        .select('player_name, status, injury_type')
+        .ilike('team', `%${ctx.home_team?.slice(0, 3)}%`)
+        .eq('is_active', true)
+        .in('status', ['Out', 'Questionable', 'Doubtful']);
+
+      const { data: awayInjuries } = await supabase
+        .from('sbo_injuries')
+        .select('player_name, status, injury_type')
+        .ilike('team', `%${ctx.away_team?.slice(0, 3)}%`)
+        .eq('is_active', true)
+        .in('status', ['Out', 'Questionable', 'Doubtful']);
+
+      statsContext = `
+GAME: ${ctx.away_team} @ ${ctx.home_team}
+
+${ctx.home_team} STATS:
+- Record: ${homeTeam?.wins || '?'}-${homeTeam?.losses || '?'}
+- Points per game: ${homeTeam?.points_per_game || 'N/A'}
+- Opponent PPG allowed: ${homeTeam?.opponent_points_per_game || 'N/A'}
+- Defensive rating: ${homeTeam?.defensive_rating || 'N/A'}
+- Home record: ${homeTeam?.home_wins || '?'}-${homeTeam?.home_losses || '?'}
+- Key injuries: ${homeInjuries?.map((i: any) => `${i.player_name} (${i.status})`).join(', ') || 'None reported'}
+
+${ctx.away_team} STATS:
+- Record: ${awayTeam?.wins || '?'}-${awayTeam?.losses || '?'}
+- Points per game: ${awayTeam?.points_per_game || 'N/A'}
+- Opponent PPG allowed: ${awayTeam?.opponent_points_per_game || 'N/A'}
+- Defensive rating: ${awayTeam?.defensive_rating || 'N/A'}
+- Away record: ${awayTeam?.away_wins || '?'}-${awayTeam?.away_losses || '?'}
+- Key injuries: ${awayInjuries?.map((i: any) => `${i.player_name} (${i.status})`).join(', ') || 'None reported'}
+      `.trim();
+    }
+  } catch (e) {
+    console.error('Stats context fetch error:', e);
+    statsContext = 'Live stats unavailable — using general knowledge';
+  }
+
   const user = ctx.prediction_type === 'moneyline'
-    ? `Game: ${ctx.away_team} @ ${ctx.home_team} on ${ctx.game_date}. Predict ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} to win. Home odds: ${ctx.home_odds}, Away odds: ${ctx.away_odds}. Statistical confidence 0-100.`
-    : `Player: ${ctx.player_name} (${ctx.team}). Game: ${ctx.away_team} @ ${ctx.home_team}. Prop: ${ctx.prop_type} ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line}. Over: ${ctx.over_odds}, Under: ${ctx.under_odds}. Statistical confidence 0-100.`;
+    ? `${statsContext}
+
+Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} to WIN
+Home odds: ${ctx.home_odds} | Away odds: ${ctx.away_odds}
+Statistical confidence 0-100.`
+    : `${statsContext}
+
+Prop: ${ctx.prop_type} ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line}
+Over: ${ctx.over_odds} | Under: ${ctx.under_odds}
+Statistical confidence 0-100 that ${ctx.player_name} goes ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line} ${ctx.prop_type}.`;
+
   const raw = await callClaude(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
-    return { score: Math.min(100, Math.max(0, p.score || 50)), reasoning: p.reasoning || 'Analysis complete' };
-  } catch { return { score: 50, reasoning: 'Statistical analysis inconclusive' }; }
+    return {
+      score: Math.min(100, Math.max(0, p.score || 50)),
+      reasoning: p.reasoning || 'Statistical analysis complete',
+    };
+  } catch {
+    return { score: 50, reasoning: 'Statistical analysis inconclusive' };
+  }
 }
 
 async function runMarketBrain(ctx: any) {

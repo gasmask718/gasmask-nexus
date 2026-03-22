@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check } from 'lucide-react';
+import { SyncDashboard } from '@/components/sbo/SyncDashboard';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════════════
