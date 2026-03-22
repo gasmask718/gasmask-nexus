@@ -2011,7 +2011,10 @@ function MyBetsTab() {
 // ═══════════════════════════════════════════════════════════════
 
 export default function SportsBettingOS() {
-  const { data: strongCount } = useQuery({
+  const [runningAll, setRunningAll] = useState(false);
+  const [runAllPhase, setRunAllPhase] = useState('');
+
+  const { data: strongCount, refetch: refetchStrong } = useQuery({
     queryKey: ['strong-count'],
     queryFn: async () => {
       const { count } = await supabase
@@ -2038,9 +2041,112 @@ export default function SportsBettingOS() {
     refetchInterval: 30000,
   });
 
+  const runAllEngines = async () => {
+    setRunningAll(true);
+    const startTime = Date.now();
+    let gamesCount = 0;
+    let propsCount = 0;
+
+    try {
+      // Phase 1: Fetch games + predict all
+      setRunAllPhase('Phase 1/3: Fetching tonight\'s games...');
+      const { data: oddsData } = await supabase.functions.invoke('sbo-fetch-odds');
+      gamesCount = oddsData?.games_processed || 0;
+
+      const today = new Date().toISOString().split('T')[0];
+      const { data: games } = await supabase
+        .from('sbo_games')
+        .select('*, sbo_odds(*), sbo_predictions(*)')
+        .gte('game_date', today + 'T00:00:00')
+        .lte('game_date', today + 'T23:59:59');
+
+      const unpredicted = (games || []).filter((g: any) => !g.sbo_predictions?.length);
+      for (let i = 0; i < unpredicted.length; i++) {
+        setRunAllPhase(`Phase 1/3: Predicting game ${i + 1}/${unpredicted.length}...`);
+        const g = unpredicted[i];
+        const dkOdds = g.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline');
+        const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+        await supabase.functions.invoke('sbo-run-predictions', {
+          body: { game_id: g.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+        }).catch(() => {});
+      }
+
+      // Phase 2: Run all props
+      setRunAllPhase('Phase 2/3: Analyzing player props...');
+      const { data: props } = await supabase
+        .from('sbo_player_props')
+        .select('*, sbo_predictions(*)')
+        .order('created_at', { ascending: false });
+
+      const unanalyzed = (props || []).filter((p: any) => !p.sbo_predictions?.length);
+      for (let i = 0; i < unanalyzed.length; i++) {
+        setRunAllPhase(`Phase 2/3: Analyzing prop ${i + 1}/${unanalyzed.length}...`);
+        await supabase.functions.invoke('sbo-run-predictions', {
+          body: { prop_id: unanalyzed[i].id, prediction_type: 'player_prop', predicted_outcome: 'over' },
+        }).catch(() => {});
+        propsCount++;
+      }
+
+      // Phase 3: Auto-build best parlay
+      setRunAllPhase('Phase 3/3: Building best parlay...');
+      const { data: strongPreds } = await supabase
+        .from('sbo_predictions')
+        .select('*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds)')
+        .in('confidence_tier', ['elite', 'strong'])
+        .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
+        .order('final_confidence', { ascending: false })
+        .limit(10);
+
+      if ((strongPreds?.length || 0) >= 2) {
+        const usedGames = new Set<string>();
+        const legs: any[] = [];
+        for (const p of strongPreds || []) {
+          if (legs.length >= 3) break;
+          if (p.game_id && usedGames.has(p.game_id)) continue;
+          const label = p.prediction_type === 'moneyline'
+            ? `${p.predicted_outcome === 'home' ? p.sbo_games?.home_team : p.sbo_games?.away_team} ML`
+            : `${p.sbo_player_props?.player_name} ${p.predicted_outcome?.toUpperCase()} ${p.sbo_player_props?.line} ${p.sbo_player_props?.prop_type}`;
+          legs.push({ prediction_id: p.id, label, odds: -110, confidence: p.final_confidence });
+          if (p.game_id) usedGames.add(p.game_id);
+        }
+        if (legs.length >= 2) {
+          await supabase.from('sbo_parlays').insert({
+            name: `AI Best ${legs.length}-Leg — ${new Date().toLocaleDateString()}`,
+            legs: legs as any,
+            total_legs: legs.length,
+            combined_confidence: legs.reduce((p, l) => p * (l.confidence / 100), 1) * 100,
+            status: 'pending',
+          });
+        }
+      }
+
+      // Log the run
+      const duration = Date.now() - startTime;
+      await (supabase as any).from('sbo_run_log').insert({
+        run_type: 'full',
+        started_at: new Date(startTime).toISOString(),
+        completed_at: new Date().toISOString(),
+        duration_ms: duration,
+        games_fetched: gamesCount,
+        games_predicted: unpredicted.length,
+        props_analyzed: propsCount,
+        parlay_built: true,
+        status: 'completed',
+      });
+
+      refetchStrong();
+      toast.success(`All engines complete — ${unpredicted.length} games, ${propsCount} props, parlay built (${(duration / 1000).toFixed(1)}s)`);
+    } catch (e: any) {
+      toast.error(e.message || 'Run All Engines failed');
+    } finally {
+      setRunningAll(false);
+      setRunAllPhase('');
+    }
+  };
+
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <Trophy className="h-6 w-6 text-orange-500" />
           <div>
@@ -2048,12 +2154,19 @@ export default function SportsBettingOS() {
             <p className="text-xs text-muted-foreground">NBA · 4-Brain AI Engine · Moneyline + Player Props</p>
           </div>
         </div>
-        {(strongCount || 0) > 0 && (
-          <Badge variant="secondary" className="text-xs">
-            {strongCount} strong picks tonight
-          </Badge>
-        )}
-      </div>
+        <div className="flex items-center gap-2">
+          {(strongCount || 0) > 0 && (
+            <Badge variant="secondary" className="text-xs">
+              {strongCount} strong picks
+            </Badge>
+          )}
+          <Button onClick={runAllEngines} disabled={runningAll} size="sm">
+            {runningAll
+              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
+              : <>🚀 Run All Engines</>
+            }
+          </Button>
+        </div>
 
       <Tabs defaultValue="games" className="w-full">
         <TabsList className="grid w-full grid-cols-10">
