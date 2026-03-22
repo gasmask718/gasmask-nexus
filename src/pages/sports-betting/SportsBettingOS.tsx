@@ -1870,7 +1870,32 @@ function MyBetsTab() {
     },
   });
 
-  const sendBriefingNow = async () => {
+  const { data: savedPicks, refetch: refetchSaved } = useQuery({
+    queryKey: ['saved-picks'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_saved_picks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  const updatePickResult = async (pickId: string, result: string) => {
+    const { error } = await (supabase as any)
+      .from('sbo_saved_picks')
+      .update({ result })
+      .eq('id', pickId);
+    if (error) {
+      toast.error('Failed to update result');
+    } else {
+      toast.success(`Result updated to ${result}`);
+      refetchSaved();
+    }
+  };
+
     setSendingBriefing(true);
     try {
       await supabase.functions.invoke('sbo-send-daily-sms', {
