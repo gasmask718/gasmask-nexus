@@ -709,7 +709,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
           </div>
         ) : (
           <>
-            <PredictionResult prediction={localPrediction} />
+            <PredictionResult prediction={localPrediction} homeTeam={game.home_team} awayTeam={game.away_team} intel={intel} />
             {/* Prediction timestamp */}
             {localPrediction.created_at && (
               <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mt-1.5">
