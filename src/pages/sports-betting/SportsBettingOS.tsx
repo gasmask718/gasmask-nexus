@@ -429,6 +429,13 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         ) : (
           <>
             <PredictionResult prediction={localPrediction} />
+            {/* Prediction timestamp */}
+            {localPrediction.created_at && (
+              <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mt-1.5">
+                <span>🧠 AI ran: {new Date(localPrediction.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {new Date(localPrediction.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>📊 {localPrediction.data_quality === 'full' ? 'Full Stats' : localPrediction.data_quality === 'partial' ? 'Partial Stats' : 'Odds Only'}</span>
+              </div>
+            )}
             {/* Kelly stake recommendation */}
             {localPrediction.recommended_units > 0 && (
               <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs">
