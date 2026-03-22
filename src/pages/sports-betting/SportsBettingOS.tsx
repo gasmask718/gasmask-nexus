@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════════════
@@ -430,6 +431,405 @@ function VAPropEntryTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PARLAY BUILDER TAB
+// ═══════════════════════════════════════════════════════════════
+
+function ParlayBuilderTab() {
+  const [selectedLegs, setSelectedLegs] = useState<any[]>([]);
+  const [stake, setStake] = useState<number>(10);
+  const [parlayName, setParlayName] = useState('');
+
+  const { data: strongPredictions } = useQuery({
+    queryKey: ['strong-predictions'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sbo_predictions')
+        .select(`
+          *,
+          sbo_games(home_team, away_team, game_date),
+          sbo_player_props(player_name, prop_type, line, over_odds, under_odds)
+        `)
+        .in('confidence_tier', ['elite', 'strong'])
+        .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
+        .order('final_confidence', { ascending: false });
+      return (data as any[]) || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  const addLeg = (prediction: any) => {
+    if (selectedLegs.find(l => l.prediction_id === prediction.id)) {
+      toast.info('Already in parlay');
+      return;
+    }
+    const odds = prediction.prediction_type === 'moneyline'
+      ? -110
+      : (prediction.predicted_outcome === 'over'
+          ? prediction.sbo_player_props?.over_odds
+          : prediction.sbo_player_props?.under_odds) || -120;
+
+    const label = prediction.prediction_type === 'moneyline'
+      ? `${prediction.predicted_outcome === 'home'
+          ? prediction.sbo_games?.home_team
+          : prediction.sbo_games?.away_team} ML`
+      : `${prediction.sbo_player_props?.player_name} ${prediction.predicted_outcome?.toUpperCase()} ${prediction.sbo_player_props?.line} ${prediction.sbo_player_props?.prop_type}`;
+
+    setSelectedLegs(prev => [...prev, {
+      prediction_id: prediction.id,
+      label,
+      odds,
+      confidence: prediction.final_confidence,
+      tier: prediction.confidence_tier,
+    }]);
+    toast.success('Leg added to parlay');
+  };
+
+  const removeLeg = (id: string) => {
+    setSelectedLegs(prev => prev.filter(l => l.prediction_id !== id));
+  };
+
+  const combinedProb = selectedLegs.length > 0
+    ? selectedLegs.reduce((p, leg) => p * (leg.confidence / 100), 1) * 100
+    : 0;
+
+  const parlayMultiplier = selectedLegs.reduce((m, leg) => {
+    const decimal = leg.odds > 0
+      ? (leg.odds / 100) + 1
+      : (100 / Math.abs(leg.odds)) + 1;
+    return m * decimal;
+  }, 1);
+
+  const potentialPayout = parseFloat((stake * parlayMultiplier).toFixed(2));
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* LEFT — Available strong predictions */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Tonight's Strong Picks — click to add
+        </p>
+
+        {!strongPredictions?.length ? (
+          <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
+            <p className="text-xs">No strong predictions yet.</p>
+            <p className="text-[10px] mt-1">Run predictions on games and props first.</p>
+          </div>
+        ) : (
+          strongPredictions.map((pred: any) => {
+            const isAdded = selectedLegs.find(l => l.prediction_id === pred.id);
+            const label = pred.prediction_type === 'moneyline'
+              ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
+              : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
+
+            return (
+              <div
+                key={pred.id}
+                className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                  isAdded
+                    ? 'border-primary/60 bg-primary/5'
+                    : 'hover:border-primary/30 hover:bg-muted/30'
+                }`}
+                onClick={() => !isAdded && addLeg(pred)}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-medium flex-1 truncate">{label}</p>
+                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                      pred.confidence_tier === 'elite'
+                        ? 'bg-green-500/20 text-green-600'
+                        : 'bg-blue-500/20 text-blue-600'
+                    }`}>
+                      {pred.final_confidence}%
+                    </span>
+                    {isAdded && <Check className="w-3 h-3 text-primary" />}
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {pred.sbo_games?.away_team} @ {pred.sbo_games?.home_team}
+                </p>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* RIGHT — Parlay legs + controls */}
+      <div className="space-y-3">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          Your Parlay ({selectedLegs.length} legs)
+        </p>
+
+        <div>
+          <Label className="text-xs">Parlay Name (optional)</Label>
+          <Input
+            value={parlayName}
+            onChange={e => setParlayName(e.target.value)}
+            placeholder="Tonight's 3-leg NBA parlay"
+            className="h-7 text-xs mt-1"
+          />
+        </div>
+
+        {selectedLegs.length === 0 ? (
+          <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
+            <p className="text-xs">No legs added yet.</p>
+            <p className="text-[10px] mt-1">Click picks on the left to build your parlay.</p>
+          </div>
+        ) : (
+          <>
+            {selectedLegs.map((leg, i) => (
+              <div key={leg.prediction_id} className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/20">
+                <span className="text-[10px] text-muted-foreground w-4 flex-shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{leg.label}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
+                  </p>
+                </div>
+                <Button
+                  size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0"
+                  onClick={() => removeLeg(leg.prediction_id)}
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+
+            <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+              {[
+                { label: 'Combined Win Probability', value: `${combinedProb.toFixed(1)}%` },
+                { label: 'Parlay Multiplier', value: `${parlayMultiplier.toFixed(2)}x` },
+                { label: 'Potential Payout', value: `$${potentialPayout}` },
+              ].map(s => (
+                <div key={s.label} className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{s.label}</span>
+                  <span className="font-bold">{s.value}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Label className="text-xs flex-shrink-0">Stake $</Label>
+              <Input
+                type="number"
+                value={stake}
+                onChange={e => setStake(Number(e.target.value))}
+                className="h-7 text-xs w-24"
+                min={1}
+              />
+              {[5, 10, 25, 50, 100].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setStake(s)}
+                  className={`text-[10px] px-1.5 py-1 rounded border transition-all ${
+                    stake === s ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/30'
+                  }`}
+                >
+                  ${s}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SIMULATION TAB
+// ═══════════════════════════════════════════════════════════════
+
+function SimulationTab() {
+  const [selectedPredictionIds, setSelectedPredictionIds] = useState<string[]>([]);
+  const [stake, setStake] = useState(10);
+  const [result, setResult] = useState<any>(null);
+  const [running, setRunning] = useState(false);
+
+  const { data: predictions } = useQuery({
+    queryKey: ['all-today-predictions'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sbo_predictions')
+        .select(`
+          *,
+          sbo_games(home_team, away_team),
+          sbo_player_props(player_name, prop_type, line, over_odds, under_odds)
+        `)
+        .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
+        .order('final_confidence', { ascending: false });
+      return (data as any[]) || [];
+    },
+  });
+
+  const togglePrediction = (id: string) => {
+    setSelectedPredictionIds(prev =>
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    );
+  };
+
+  const runSimulation = async () => {
+    if (!selectedPredictionIds.length) {
+      toast.error('Select at least one prediction to simulate');
+      return;
+    }
+    setRunning(true);
+    try {
+      const legs = selectedPredictionIds.map(id => {
+        const pred = predictions?.find((p: any) => p.id === id);
+        const odds = pred?.prediction_type === 'player_prop'
+          ? (pred.predicted_outcome === 'over'
+              ? pred.sbo_player_props?.over_odds
+              : pred.sbo_player_props?.under_odds) || -110
+          : -110;
+        return { prediction_id: id, odds };
+      });
+
+      const { data, error } = await supabase.functions.invoke('sbo-simulate-parlay', {
+        body: { legs, stake, simulation_count: 10000 },
+      });
+      if (error) throw error;
+      setResult(data);
+    } catch (e: any) {
+      toast.error(e.message || 'Simulation failed');
+    } finally {
+      setRunning(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Left — pick predictions */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Select Legs to Simulate
+          </p>
+          {predictions?.map((pred: any) => {
+            const isSelected = selectedPredictionIds.includes(pred.id);
+            const label = pred.prediction_type === 'moneyline'
+              ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
+              : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
+
+            return (
+              <div
+                key={pred.id}
+                className={`flex items-center gap-2 p-2.5 border rounded-lg cursor-pointer transition-all ${
+                  isSelected ? 'border-primary bg-primary/5' : 'hover:border-border'
+                }`}
+                onClick={() => togglePrediction(pred.id)}
+              >
+                <div className={`w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center ${
+                  isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'
+                }`}>
+                  {isSelected && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{label}</p>
+                </div>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold flex-shrink-0 ${
+                  pred.confidence_tier === 'elite' ? 'bg-green-500/20 text-green-600' :
+                  pred.confidence_tier === 'strong' ? 'bg-blue-500/20 text-blue-600' :
+                  pred.confidence_tier === 'moderate' ? 'bg-amber-500/20 text-amber-600' :
+                  'bg-muted text-muted-foreground'
+                }`}>
+                  {pred.final_confidence}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right — controls + results */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Simulation Controls
+          </p>
+
+          <div className="flex items-center gap-2">
+            <Label className="text-xs flex-shrink-0">Stake $</Label>
+            <Input
+              type="number"
+              value={stake}
+              onChange={e => setStake(Number(e.target.value))}
+              className="h-7 text-xs w-24"
+              min={1}
+            />
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            {selectedPredictionIds.length} leg{selectedPredictionIds.length !== 1 ? 's' : ''} selected — 10,000 Monte Carlo simulations
+          </p>
+
+          <Button
+            onClick={runSimulation}
+            disabled={running || !selectedPredictionIds.length}
+            className="w-full gap-2"
+            size="sm"
+          >
+            {running
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Simulating...</>
+              : <>⚡ Run Simulation</>
+            }
+          </Button>
+
+          {result && (
+            <Card className="border-primary/30">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Results — {result.summary.legs} Legs</p>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { label: 'Win Probability', value: `${result.summary.combined_win_probability}%`, color: result.summary.combined_win_probability >= 30 ? 'text-green-500' : 'text-amber-500' },
+                    { label: 'Potential Payout', value: `$${result.summary.potential_payout}`, color: 'text-foreground' },
+                    { label: 'Expected Value', value: `$${result.summary.expected_value}`, color: result.summary.expected_value > 0 ? 'text-green-500' : 'text-red-500' },
+                    { label: 'Kelly Stake', value: `$${result.summary.kelly_suggested_stake}`, color: 'text-blue-500' },
+                    { label: 'Sim Wins', value: result.monte_carlo.simulated_wins.toLocaleString(), color: 'text-green-500' },
+                    { label: 'Sim Losses', value: result.monte_carlo.simulated_losses.toLocaleString(), color: 'text-red-500' },
+                  ].map(s => (
+                    <div key={s.label} className="bg-muted/40 rounded-lg p-2">
+                      <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                      <p className={`text-sm font-bold mt-0.5 ${s.color}`}>{s.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <span>Win rate: {result.monte_carlo.simulated_win_rate}%</span>
+                    <span>10,000 simulations</span>
+                  </div>
+                  <div className="h-3 bg-red-400/30 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 transition-all duration-700"
+                      style={{ width: `${result.monte_carlo.simulated_win_rate}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div className={`text-xs font-medium p-2 rounded-lg ${
+                  result.summary.expected_value > 0
+                    ? 'bg-green-500/10 text-green-600'
+                    : 'bg-red-500/10 text-red-600'
+                }`}>
+                  {result.summary.expected_value > 0
+                    ? `✓ Positive EV — this parlay has mathematical value at $${stake}`
+                    : `✗ Negative EV — consider smaller stake or better lines`
+                  }
+                </div>
+
+                <p className="text-[10px] text-muted-foreground">
+                  Parlay multiplier: {result.summary.parlay_multiplier}x · Type: {result.summary.parlay_tier?.replace('_', ' ')}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
@@ -445,10 +845,12 @@ export default function SportsBettingOS() {
       </div>
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="games">🏀 Tonight's Games</TabsTrigger>
-          <TabsTrigger value="props">📊 Player Props</TabsTrigger>
-          <TabsTrigger value="entry">📝 VA Entry</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="games" className="text-xs">🏀 Games</TabsTrigger>
+          <TabsTrigger value="props" className="text-xs">📊 Props</TabsTrigger>
+          <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
+          <TabsTrigger value="sim" className="text-xs">⚡ Simulate</TabsTrigger>
+          <TabsTrigger value="entry" className="text-xs">📝 VA Entry</TabsTrigger>
         </TabsList>
 
         <TabsContent value="games" className="mt-4">
@@ -457,6 +859,14 @@ export default function SportsBettingOS() {
 
         <TabsContent value="props" className="mt-4">
           <PlayerPropsTab />
+        </TabsContent>
+
+        <TabsContent value="parlay" className="mt-4">
+          <ParlayBuilderTab />
+        </TabsContent>
+
+        <TabsContent value="sim" className="mt-4">
+          <SimulationTab />
         </TabsContent>
 
         <TabsContent value="entry" className="mt-4">
