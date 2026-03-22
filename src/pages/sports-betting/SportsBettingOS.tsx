@@ -254,6 +254,8 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   const [props, setProps] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'strong' | 'elite'>('all');
   const [runningId, setRunningId] = useState<string | null>(null);
+  const [runningAll, setRunningAll] = useState(false);
+  const [allProgress, setAllProgress] = useState('');
 
   useEffect(() => { loadProps(); }, []);
 
@@ -281,6 +283,38 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     }
   };
 
+  const runAllProps = async () => {
+    setRunningAll(true);
+    let analyzed = 0;
+    try {
+      const unanalyzed = props.filter(p => !p.sbo_predictions?.length);
+      if (!unanalyzed.length) {
+        toast.info('All props already have predictions');
+        return;
+      }
+
+      for (const prop of unanalyzed) {
+        setAllProgress(`Analyzing ${analyzed + 1}/${unanalyzed.length} — ${prop.player_name}...`);
+        try {
+          await supabase.functions.invoke('sbo-run-predictions', {
+            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: 'over' },
+          });
+          analyzed++;
+        } catch (e) {
+          console.error(`Failed for ${prop.player_name}:`, e);
+        }
+      }
+
+      toast.success(`Props analysis saved — ${analyzed} props analyzed`);
+      await loadProps();
+    } catch (e: any) {
+      toast.error(e.message || 'Props analysis failed');
+    } finally {
+      setRunningAll(false);
+      setAllProgress('');
+    }
+  };
+
   const filtered = props.filter(p => {
     if (filter === 'all') return true;
     const pred = p.sbo_predictions?.[0];
@@ -303,7 +337,22 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           </Button>
         ))}
         <Badge variant="secondary" className="text-xs">{filtered.length} props</Badge>
+        <Button onClick={runAllProps} disabled={runningAll || !!runningId} size="sm" className="ml-auto">
+          {runningAll
+            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {allProgress || 'Running...'}</>
+            : <>📊 Run Props Analysis</>
+          }
+        </Button>
       </div>
+
+      {runningAll && (
+        <Alert>
+          <AlertDescription className="text-xs flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {allProgress}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {!filtered.length ? (
         <div className="text-center py-12 border border-dashed rounded-lg border-border">
