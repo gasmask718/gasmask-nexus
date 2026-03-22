@@ -1493,6 +1493,300 @@ function ModelIntelligenceTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// MY BETS TAB — SMS Bet Tracking + P&L
+// ═══════════════════════════════════════════════════════════════
+
+function MyBetsTab() {
+  const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll'>('today');
+  const [sendingBriefing, setSendingBriefing] = useState(false);
+  const [selectedStake, setSelectedStake] = useState(10);
+
+  const { data: todayBets } = useQuery({
+    queryKey: ['my-bets-today'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await (supabase as any)
+        .from('sbo_actual_bets')
+        .select('*')
+        .eq('bet_date', today)
+        .order('created_at', { ascending: false });
+      return data || [];
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: bankroll } = useQuery({
+    queryKey: ['bankroll-latest'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_bankroll')
+        .select('*')
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: betHistory } = useQuery({
+    queryKey: ['bet-history'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_actual_bets')
+        .select('*')
+        .not('outcome', 'eq', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
+  const { data: briefing } = useQuery({
+    queryKey: ['todays-briefing'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await (supabase as any)
+        .from('sbo_daily_briefings')
+        .select('*, sbo_parlay_payouts(*)')
+        .eq('briefing_date', today)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const sendBriefingNow = async () => {
+    setSendingBriefing(true);
+    try {
+      await supabase.functions.invoke('sbo-send-daily-sms', {
+        body: { date: new Date().toISOString().split('T')[0] },
+      });
+      toast.success('Briefing sent to your phone!');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSendingBriefing(false);
+    }
+  };
+
+  const todayWagered = todayBets?.reduce((s: number, b: any) => s + (b.stake_usd || 0), 0) || 0;
+  const todayWon = todayBets?.filter((b: any) => b.outcome === 'win').reduce((s: number, b: any) => s + (b.actual_payout || 0), 0) || 0;
+  const todayNet = todayWon - todayWagered;
+  const todayPending = todayBets?.filter((b: any) => b.outcome === 'pending').length || 0;
+
+  const outcomeEmoji = (outcome: string) =>
+    outcome === 'win' ? '🟢' : outcome === 'loss' ? '🔴' : outcome === 'push' ? '🟡' : '⏳';
+
+  return (
+    <div className="space-y-4">
+      {/* SMS Briefing control */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-sm font-semibold text-foreground">📱 Daily SMS Briefing</p>
+              <p className="text-xs text-muted-foreground">
+                {briefing?.status === 'sent'
+                  ? `Sent at ${briefing.sent_at ? new Date(briefing.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}`
+                  : 'Not yet sent today'}
+              </p>
+            </div>
+            <Button size="sm" onClick={sendBriefingNow} disabled={sendingBriefing}>
+              {sendingBriefing ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : '📱'} Send Now
+            </Button>
+          </div>
+          {briefing?.full_message && (
+            <pre className="text-[10px] text-muted-foreground bg-muted/30 p-3 rounded-lg max-h-48 overflow-auto whitespace-pre-wrap font-mono">
+              {briefing.full_message}
+            </pre>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Today's P&L summary */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { label: 'Wagered', value: `$${todayWagered.toFixed(2)}`, color: 'text-foreground' },
+          { label: 'Won', value: `$${todayWon.toFixed(2)}`, color: 'text-green-500' },
+          { label: 'Net', value: `${todayNet >= 0 ? '+' : ''}$${todayNet.toFixed(2)}`, color: todayNet >= 0 ? 'text-green-500' : 'text-red-500' },
+          { label: 'Pending', value: String(todayPending), color: 'text-amber-500' },
+        ].map(s => (
+          <Card key={s.label}>
+            <CardContent className="p-3 text-center">
+              <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* View tabs */}
+      <div className="flex gap-1">
+        {(['today', 'history', 'bankroll'] as const).map(view => (
+          <button
+            key={view}
+            onClick={() => setActiveView(view)}
+            className={`text-xs px-3 py-1.5 rounded-md transition-all ${
+              activeView === view
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {view === 'today' ? "📅 Today's Bets" : view === 'history' ? '📋 History' : '💰 Bankroll'}
+          </button>
+        ))}
+      </div>
+
+      {/* Today's bets */}
+      {activeView === 'today' && (
+        <div className="space-y-2">
+          {!todayBets?.length ? (
+            <div className="text-center py-8 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground font-medium">No bets recorded today.</p>
+              <p className="text-xs text-muted-foreground mt-1">Text BET [amount] [pick] to your Twilio number.</p>
+            </div>
+          ) : (
+            todayBets.map((bet: any) => (
+              <Card key={bet.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {outcomeEmoji(bet.outcome)} {bet.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Stake: ${bet.stake_usd} · To win: ${bet.potential_payout?.toFixed(2) || '?'}
+                        {bet.parlay_legs_count && ` · ${bet.parlay_legs_count}-leg parlay`}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-bold ${
+                        bet.outcome === 'win' ? 'text-green-500' :
+                        bet.outcome === 'loss' ? 'text-red-500' :
+                        bet.outcome === 'push' ? 'text-amber-500' : 'text-muted-foreground'
+                      }`}>
+                        {bet.outcome === 'win' ? `+$${(bet.actual_payout - bet.stake_usd).toFixed(2)}` :
+                         bet.outcome === 'loss' ? `-$${bet.stake_usd.toFixed(2)}` :
+                         bet.outcome === 'push' ? '$0' : 'Pending'}
+                      </p>
+                      {bet.outcome === 'pending' && (
+                        <p className="text-[9px] text-muted-foreground">
+                          Text WIN/LOSS/PUSH {bet.id.slice(-4).toUpperCase()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Parlay payout lookup */}
+      {activeView === 'today' && briefing?.sbo_parlay_payouts && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">🎯 Parlay Payouts — Today's Top Picks</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-muted-foreground">Stake $</span>
+              {[5, 10, 25, 50, 100].map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSelectedStake(s)}
+                  className={`text-[10px] px-2 py-1 rounded border transition-all ${
+                    selectedStake === s
+                      ? 'border-primary bg-primary/10 text-primary'
+                      : 'border-border hover:border-primary/30'
+                  }`}
+                >
+                  ${s}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {((briefing.sbo_parlay_payouts as any[]) || [])
+                .sort((a: any, b: any) => a.legs_count - b.legs_count)
+                .map((pp: any) => {
+                  const stakeKey = `payout_${selectedStake}`;
+                  const payout = pp[stakeKey] || parseFloat((selectedStake * (pp.parlay_multiplier || 1)).toFixed(2));
+                  const profit = (payout - selectedStake).toFixed(0);
+                  return (
+                    <div key={pp.legs_count} className="text-center p-2 bg-muted/30 rounded-lg">
+                      <p className="text-xs font-semibold text-foreground">{pp.legs_count}-Leg</p>
+                      <p className="text-[10px] text-muted-foreground">{pp.win_probability_pct?.toFixed(1)}% win</p>
+                      <p className="text-sm font-bold text-green-500 mt-1">${payout}</p>
+                      <p className="text-[9px] text-muted-foreground">+${profit} profit</p>
+                    </div>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bet history */}
+      {activeView === 'history' && (
+        <div className="space-y-1">
+          {!betHistory?.length ? (
+            <div className="text-center py-8 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground">No bet history yet.</p>
+            </div>
+          ) : (
+            betHistory.map((bet: any) => (
+              <div key={bet.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/20 text-xs">
+                <span>{outcomeEmoji(bet.outcome)} {bet.description}</span>
+                <span className="text-muted-foreground">${bet.stake_usd}</span>
+                <span className={
+                  bet.outcome === 'win' ? 'text-green-500 font-semibold' :
+                  bet.outcome === 'loss' ? 'text-red-500' : 'text-amber-500'
+                }>
+                  {bet.outcome === 'win' ? `+$${(bet.actual_payout - bet.stake_usd).toFixed(2)}` :
+                   bet.outcome === 'loss' ? `-$${bet.stake_usd.toFixed(2)}` : '$0'}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Bankroll view */}
+      {activeView === 'bankroll' && (
+        <div className="space-y-3">
+          {!bankroll ? (
+            <div className="text-center py-8 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground">No bankroll data yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Record bets and mark results to build history.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Total Wagered', value: `$${bankroll.total_wagered?.toFixed(2)}` },
+                { label: 'Net P&L', value: `${(bankroll.net_profit_loss || 0) >= 0 ? '+' : ''}$${bankroll.net_profit_loss?.toFixed(2)}`, color: (bankroll.net_profit_loss || 0) >= 0 ? 'text-green-500' : 'text-red-500' },
+                { label: 'ROI', value: `${(bankroll.roi_pct || 0) >= 0 ? '+' : ''}${bankroll.roi_pct?.toFixed(1)}%`, color: (bankroll.roi_pct || 0) >= 0 ? 'text-green-500' : 'text-red-500' },
+                { label: 'Win Rate', value: `${bankroll.win_rate_pct?.toFixed(1)}%` },
+                { label: 'Record', value: `${bankroll.win_count}W-${bankroll.loss_count}L` },
+                { label: 'Biggest Win', value: `+$${bankroll.biggest_win?.toFixed(2)}`, color: 'text-green-500' },
+              ].map(s => (
+                <Card key={s.label}>
+                  <CardContent className="p-3 text-center">
+                    <p className={`text-sm font-bold ${(s as any).color || 'text-foreground'}`}>{s.value}</p>
+                    <p className="text-[9px] text-muted-foreground">{s.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
