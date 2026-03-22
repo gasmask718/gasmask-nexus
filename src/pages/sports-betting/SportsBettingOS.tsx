@@ -601,8 +601,10 @@ function ParlayBuilderTab() {
   const [selectedLegs, setSelectedLegs] = useState<any[]>([]);
   const [stake, setStake] = useState<number>(10);
   const [parlayName, setParlayName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [autoBuilding, setAutoBuilding] = useState(false);
 
-  const { data: strongPredictions } = useQuery({
+  const { data: strongPredictions, refetch: refetchStrong } = useQuery({
     queryKey: ['strong-predictions'],
     queryFn: async () => {
       const { data } = await supabase
@@ -620,11 +622,7 @@ function ParlayBuilderTab() {
     refetchInterval: 30000,
   });
 
-  const addLeg = (prediction: any) => {
-    if (selectedLegs.find(l => l.prediction_id === prediction.id)) {
-      toast.info('Already in parlay');
-      return;
-    }
+  const buildLegFromPred = (prediction: any) => {
     const odds = prediction.prediction_type === 'moneyline'
       ? -110
       : (prediction.predicted_outcome === 'over'
@@ -637,18 +635,87 @@ function ParlayBuilderTab() {
           : prediction.sbo_games?.away_team} ML`
       : `${prediction.sbo_player_props?.player_name} ${prediction.predicted_outcome?.toUpperCase()} ${prediction.sbo_player_props?.line} ${prediction.sbo_player_props?.prop_type}`;
 
-    setSelectedLegs(prev => [...prev, {
+    return {
       prediction_id: prediction.id,
       label,
       odds,
       confidence: prediction.final_confidence,
       tier: prediction.confidence_tier,
-    }]);
+    };
+  };
+
+  const addLeg = (prediction: any) => {
+    if (selectedLegs.find(l => l.prediction_id === prediction.id)) {
+      toast.info('Already in parlay');
+      return;
+    }
+    setSelectedLegs(prev => [...prev, buildLegFromPred(prediction)]);
     toast.success('Leg added to parlay');
   };
 
   const removeLeg = (id: string) => {
     setSelectedLegs(prev => prev.filter(l => l.prediction_id !== id));
+  };
+
+  // AI Auto-Build: pick top 3 non-correlated legs
+  const autoBuildParlay = async () => {
+    setAutoBuilding(true);
+    try {
+      if (!strongPredictions?.length) {
+        toast.error('No strong predictions available. Run predictions first.');
+        return;
+      }
+
+      // Pick top 3 predictions from different games for non-correlation
+      const usedGameIds = new Set<string>();
+      const bestLegs: any[] = [];
+
+      for (const pred of strongPredictions) {
+        const gameId = pred.game_id;
+        if (usedGameIds.has(gameId) && bestLegs.length < 5) continue; // allow some from same game after 3
+        if (bestLegs.length >= 3) break;
+
+        bestLegs.push(buildLegFromPred(pred));
+        if (gameId) usedGameIds.add(gameId);
+      }
+
+      if (bestLegs.length < 2) {
+        toast.error('Not enough diverse predictions for a parlay');
+        return;
+      }
+
+      setSelectedLegs(bestLegs);
+      setParlayName(`AI Best ${bestLegs.length}-Leg Parlay — ${new Date().toLocaleDateString()}`);
+      toast.success(`AI built ${bestLegs.length}-leg parlay from top picks`);
+    } finally {
+      setAutoBuilding(false);
+    }
+  };
+
+  // Save parlay to DB
+  const saveParlay = async () => {
+    if (selectedLegs.length < 2) {
+      toast.error('Add at least 2 legs to save');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('sbo_parlays').insert({
+        name: parlayName || `${selectedLegs.length}-Leg Parlay`,
+        legs: selectedLegs,
+        stake_amount: stake,
+        total_odds: parlayMultiplier,
+        potential_payout: potentialPayout,
+        combined_probability: combinedProb,
+        status: 'pending',
+      });
+      if (error) throw error;
+      toast.success('Parlay saved successfully!');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save parlay');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const combinedProb = selectedLegs.length > 0
@@ -665,134 +732,158 @@ function ParlayBuilderTab() {
   const potentialPayout = parseFloat((stake * parlayMultiplier).toFixed(2));
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* LEFT — Available strong predictions */}
-      <div className="space-y-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Tonight's Strong Picks — click to add
-        </p>
-
-        {!strongPredictions?.length ? (
-          <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
-            <p className="text-xs">No strong predictions yet.</p>
-            <p className="text-[10px] mt-1">Run predictions on games and props first.</p>
-          </div>
-        ) : (
-          strongPredictions.map((pred: any) => {
-            const isAdded = selectedLegs.find(l => l.prediction_id === pred.id);
-            const label = pred.prediction_type === 'moneyline'
-              ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
-              : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
-
-            return (
-              <div
-                key={pred.id}
-                className={`border rounded-lg p-3 cursor-pointer transition-all ${
-                  isAdded
-                    ? 'border-primary/60 bg-primary/5'
-                    : 'hover:border-primary/30 hover:bg-muted/30'
-                }`}
-                onClick={() => !isAdded && addLeg(pred)}
-              >
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium flex-1 truncate">{label}</p>
-                  <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                      pred.confidence_tier === 'elite'
-                        ? 'bg-green-500/20 text-green-600'
-                        : 'bg-blue-500/20 text-blue-600'
-                    }`}>
-                      {pred.final_confidence}%
-                    </span>
-                    {isAdded && <Check className="w-3 h-3 text-primary" />}
-                  </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {pred.sbo_games?.away_team} @ {pred.sbo_games?.home_team}
-                </p>
-              </div>
-            );
-          })
-        )}
+    <div className="space-y-4">
+      {/* AI Build button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">🎯 Parlay Builder</h2>
+          <p className="text-xs text-muted-foreground">Build manually or let AI pick the best 3 legs</p>
+        </div>
+        <Button onClick={autoBuildParlay} disabled={autoBuilding} size="sm">
+          {autoBuilding
+            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Building...</>
+            : <>🤖 AI Build Best Parlay</>
+          }
+        </Button>
       </div>
 
-      {/* RIGHT — Parlay legs + controls */}
-      <div className="space-y-3">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Your Parlay ({selectedLegs.length} legs)
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* LEFT — Available strong predictions */}
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Tonight's Strong Picks — click to add
+          </p>
 
-        <div>
-          <Label className="text-xs">Parlay Name (optional)</Label>
-          <Input
-            value={parlayName}
-            onChange={e => setParlayName(e.target.value)}
-            placeholder="Tonight's 3-leg NBA parlay"
-            className="h-7 text-xs mt-1"
-          />
-        </div>
+          {!strongPredictions?.length ? (
+            <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
+              <p className="text-xs">No strong predictions yet.</p>
+              <p className="text-[10px] mt-1">Run predictions on games and props first.</p>
+            </div>
+          ) : (
+            strongPredictions.map((pred: any) => {
+              const isAdded = selectedLegs.find(l => l.prediction_id === pred.id);
+              const label = pred.prediction_type === 'moneyline'
+                ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
+                : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
 
-        {selectedLegs.length === 0 ? (
-          <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
-            <p className="text-xs">No legs added yet.</p>
-            <p className="text-[10px] mt-1">Click picks on the left to build your parlay.</p>
-          </div>
-        ) : (
-          <>
-            {selectedLegs.map((leg, i) => (
-              <div key={leg.prediction_id} className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/20">
-                <span className="text-[10px] text-muted-foreground w-4 flex-shrink-0">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{leg.label}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
+              return (
+                <div
+                  key={pred.id}
+                  className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                    isAdded
+                      ? 'border-primary/60 bg-primary/5'
+                      : 'hover:border-primary/30 hover:bg-muted/30'
+                  }`}
+                  onClick={() => !isAdded && addLeg(pred)}
+                >
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-medium flex-1 truncate">{label}</p>
+                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                        pred.confidence_tier === 'elite'
+                          ? 'bg-green-500/20 text-green-600'
+                          : 'bg-blue-500/20 text-blue-600'
+                      }`}>
+                        {pred.final_confidence}%
+                      </span>
+                      {isAdded && <Check className="w-3 h-3 text-primary" />}
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {pred.sbo_games?.away_team} @ {pred.sbo_games?.home_team}
                   </p>
                 </div>
-                <Button
-                  size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0"
-                  onClick={() => removeLeg(leg.prediction_id)}
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              </div>
-            ))}
+              );
+            })
+          )}
+        </div>
 
-            <div className="bg-muted/40 rounded-lg p-3 space-y-2">
-              {[
-                { label: 'Combined Win Probability', value: `${combinedProb.toFixed(1)}%` },
-                { label: 'Parlay Multiplier', value: `${parlayMultiplier.toFixed(2)}x` },
-                { label: 'Potential Payout', value: `$${potentialPayout}` },
-              ].map(s => (
-                <div key={s.label} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">{s.label}</span>
-                  <span className="font-bold">{s.value}</span>
+        {/* RIGHT — Parlay legs + controls */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Your Parlay ({selectedLegs.length} legs)
+          </p>
+
+          <div>
+            <Label className="text-xs">Parlay Name (optional)</Label>
+            <Input
+              value={parlayName}
+              onChange={e => setParlayName(e.target.value)}
+              placeholder="Tonight's 3-leg NBA parlay"
+              className="h-7 text-xs mt-1"
+            />
+          </div>
+
+          {selectedLegs.length === 0 ? (
+            <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
+              <p className="text-xs">No legs added yet.</p>
+              <p className="text-[10px] mt-1">Click picks on the left or use "AI Build Best Parlay".</p>
+            </div>
+          ) : (
+            <>
+              {selectedLegs.map((leg, i) => (
+                <div key={leg.prediction_id} className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/20">
+                  <span className="text-[10px] text-muted-foreground w-4 flex-shrink-0">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{leg.label}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
+                    </p>
+                  </div>
+                  <Button
+                    size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0"
+                    onClick={() => removeLeg(leg.prediction_id)}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
                 </div>
               ))}
-            </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <Label className="text-xs flex-shrink-0">Stake $</Label>
-              <Input
-                type="number"
-                value={stake}
-                onChange={e => setStake(Number(e.target.value))}
-                className="h-7 text-xs w-24"
-                min={1}
-              />
-              {[5, 10, 25, 50, 100].map(s => (
-                <button
-                  key={s}
-                  onClick={() => setStake(s)}
-                  className={`text-[10px] px-1.5 py-1 rounded border transition-all ${
-                    stake === s ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/30'
-                  }`}
-                >
-                  ${s}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
+              <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                {[
+                  { label: 'Combined Win Probability', value: `${combinedProb.toFixed(1)}%` },
+                  { label: 'Parlay Multiplier', value: `${parlayMultiplier.toFixed(2)}x` },
+                  { label: 'Potential Payout', value: `$${potentialPayout}` },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">{s.label}</span>
+                    <span className="font-bold">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <Label className="text-xs flex-shrink-0">Stake $</Label>
+                <Input
+                  type="number"
+                  value={stake}
+                  onChange={e => setStake(Number(e.target.value))}
+                  className="h-7 text-xs w-24"
+                  min={1}
+                />
+                {[5, 10, 25, 50, 100].map(s => (
+                  <button
+                    key={s}
+                    onClick={() => setStake(s)}
+                    className={`text-[10px] px-1.5 py-1 rounded border transition-all ${
+                      stake === s ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/30'
+                    }`}
+                  >
+                    ${s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Save Parlay Button */}
+              <Button onClick={saveParlay} disabled={saving} size="sm" className="w-full">
+                {saving
+                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving...</>
+                  : <><Save className="h-3 w-3 mr-1" /> Save Parlay</>
+                }
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
