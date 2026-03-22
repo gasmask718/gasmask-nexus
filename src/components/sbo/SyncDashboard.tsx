@@ -66,6 +66,16 @@ const API_COST_INFO: Record<string, {
     costPerUnit: '$0',
     notes: 'Internal computation — compares data already in your database. No external API calls.',
   },
+  twilio: {
+    label: 'Twilio',
+    color: 'text-red-500',
+    bgColor: 'bg-red-500/10',
+    borderColor: 'border-red-500/30',
+    freeLimit: null,
+    unit: 'per SMS',
+    costPerUnit: '~$0.01',
+    notes: 'Twilio SMS — approximately $0.0079 per outbound SMS segment.',
+  },
 };
 
 const DAY_ENGINE_STEPS = {
