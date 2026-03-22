@@ -1896,6 +1896,7 @@ function MyBetsTab() {
     }
   };
 
+  const sendBriefingNow = async () => {
     setSendingBriefing(true);
     try {
       await supabase.functions.invoke('sbo-send-daily-sms', {
