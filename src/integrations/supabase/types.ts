@@ -59023,6 +59023,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_saved_picks: {
+        Row: {
+          ai_analysis: string | null
+          confidence: number | null
+          created_at: string | null
+          detail: string | null
+          id: string
+          label: string | null
+          odds: string | null
+          pick_type: string | null
+          potential_payout: number | null
+          result: string | null
+          source_id: string | null
+          source_table: string | null
+          stake: number | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          detail?: string | null
+          id?: string
+          label?: string | null
+          odds?: string | null
+          pick_type?: string | null
+          potential_payout?: number | null
+          result?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          stake?: number | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          detail?: string | null
+          id?: string
+          label?: string | null
+          odds?: string | null
+          pick_type?: string | null
+          potential_payout?: number | null
+          result?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          stake?: number | null
+        }
+        Relationships: []
+      }
       sbo_sdio_props: {
         Row: {
           bet_type: string | null
