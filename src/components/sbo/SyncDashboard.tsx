@@ -175,6 +175,8 @@ export function SyncDashboard() {
   const [running, setRunning] = useState(false);
   const [runningStep, setRunningStep] = useState<string | null>(null);
   const [liveProgress, setLiveProgress] = useState<any[]>([]);
+  const [debugResult, setDebugResult] = useState<any>(null);
+  const [debugLoading, setDebugLoading] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: syncLogs } = useQuery({
