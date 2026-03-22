@@ -476,18 +476,30 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                 ) : (
                   <>
                     <PredictionResult prediction={existingPred} />
-                    {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="mt-2 w-full text-xs"
-                        onClick={() => onAddToParlay(existingPred,
-                          existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds
-                        )}
-                      >
-                        + Add to Parlay
-                      </Button>
-                    )}
+                    <div className="flex gap-2 mt-2">
+                      <SavePickButton
+                        pickType="prop"
+                        label={`${prop.player_name} ${existingPred.predicted_outcome?.toUpperCase()} ${prop.line} ${prop.prop_type}`}
+                        detail={`${game?.away_team} @ ${game?.home_team}`}
+                        odds={String(existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds)}
+                        aiAnalysis={existingPred.stats_brain_reasoning || existingPred.context_brain_reasoning || ''}
+                        confidence={existingPred.final_confidence}
+                        sourceTable="sbo_predictions"
+                        sourceId={existingPred.id}
+                      />
+                      {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1 text-xs"
+                          onClick={() => onAddToParlay(existingPred,
+                            existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds
+                          )}
+                        >
+                          + Add to Parlay
+                        </Button>
+                      )}
+                    </div>
                   </>
                 )}
               </CardContent>
