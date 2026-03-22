@@ -57500,6 +57500,39 @@ export type Database = {
           },
         ]
       }
+      sbo_accuracy_log: {
+        Row: {
+          accuracy_pct: number | null
+          by_tier: Json | null
+          by_type: Json | null
+          correct_predictions: number | null
+          created_at: string | null
+          date: string
+          id: string
+          total_predictions: number | null
+        }
+        Insert: {
+          accuracy_pct?: number | null
+          by_tier?: Json | null
+          by_type?: Json | null
+          correct_predictions?: number | null
+          created_at?: string | null
+          date: string
+          id?: string
+          total_predictions?: number | null
+        }
+        Update: {
+          accuracy_pct?: number | null
+          by_tier?: Json | null
+          by_type?: Json | null
+          correct_predictions?: number | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          total_predictions?: number | null
+        }
+        Relationships: []
+      }
       sbo_api_budget: {
         Row: {
           alert_threshold_pct: number | null
@@ -58143,9 +58176,122 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_polymarket: {
+        Row: {
+          away_team_price: number | null
+          category: string | null
+          created_at: string | null
+          end_date: string | null
+          fetched_at: string | null
+          game_id: string | null
+          home_team_price: number | null
+          id: string
+          liquidity_usd: number | null
+          market_id: string
+          outcome_no_price: number | null
+          outcome_yes_price: number | null
+          question: string
+          raw_data: Json | null
+          resolution: string | null
+          status: string | null
+          updated_at: string | null
+          volume_usd: number | null
+        }
+        Insert: {
+          away_team_price?: number | null
+          category?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          fetched_at?: string | null
+          game_id?: string | null
+          home_team_price?: number | null
+          id?: string
+          liquidity_usd?: number | null
+          market_id: string
+          outcome_no_price?: number | null
+          outcome_yes_price?: number | null
+          question: string
+          raw_data?: Json | null
+          resolution?: string | null
+          status?: string | null
+          updated_at?: string | null
+          volume_usd?: number | null
+        }
+        Update: {
+          away_team_price?: number | null
+          category?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          fetched_at?: string | null
+          game_id?: string | null
+          home_team_price?: number | null
+          id?: string
+          liquidity_usd?: number | null
+          market_id?: string
+          outcome_no_price?: number | null
+          outcome_yes_price?: number | null
+          question?: string
+          raw_data?: Json | null
+          resolution?: string | null
+          status?: string | null
+          updated_at?: string | null
+          volume_usd?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_polymarket_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_polymarket_signals: {
+        Row: {
+          created_at: string | null
+          id: string
+          interpretation: string | null
+          market_id: string | null
+          prediction_id: string | null
+          price_used: number | null
+          signal_strength: number | null
+          volume_used: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interpretation?: string | null
+          market_id?: string | null
+          prediction_id?: string | null
+          price_used?: number | null
+          signal_strength?: number | null
+          volume_used?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interpretation?: string | null
+          market_id?: string | null
+          prediction_id?: string | null
+          price_used?: number | null
+          signal_strength?: number | null
+          volume_used?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_polymarket_signals_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_predictions: {
         Row: {
           actual_outcome: string | null
+          brain_count: number | null
           confidence_tier: string | null
           context_brain_reasoning: string | null
           context_brain_score: number | null
@@ -58155,6 +58301,8 @@ export type Database = {
           id: string
           market_brain_reasoning: string | null
           market_brain_score: number | null
+          polymarket_brain_reasoning: string | null
+          polymarket_brain_score: number | null
           predicted_outcome: string
           prediction_type: string
           prop_id: string | null
@@ -58165,6 +58313,7 @@ export type Database = {
         }
         Insert: {
           actual_outcome?: string | null
+          brain_count?: number | null
           confidence_tier?: string | null
           context_brain_reasoning?: string | null
           context_brain_score?: number | null
@@ -58174,6 +58323,8 @@ export type Database = {
           id?: string
           market_brain_reasoning?: string | null
           market_brain_score?: number | null
+          polymarket_brain_reasoning?: string | null
+          polymarket_brain_score?: number | null
           predicted_outcome: string
           prediction_type: string
           prop_id?: string | null
@@ -58184,6 +58335,7 @@ export type Database = {
         }
         Update: {
           actual_outcome?: string | null
+          brain_count?: number | null
           confidence_tier?: string | null
           context_brain_reasoning?: string | null
           context_brain_score?: number | null
@@ -58193,6 +58345,8 @@ export type Database = {
           id?: string
           market_brain_reasoning?: string | null
           market_brain_score?: number | null
+          polymarket_brain_reasoning?: string | null
+          polymarket_brain_score?: number | null
           predicted_outcome?: string
           prediction_type?: string
           prop_id?: string | null
