@@ -3097,7 +3097,7 @@ export default function SportsBettingOS() {
       const { data: unanalyzedProps } = await supabase
         .from('sbo_player_props')
         .select('id')
-        .gte('created_at', `${today}T00:00:00`);
+        .gte('created_at', raStart);
 
       // Check which props already have predictions
       const propIds = (unanalyzedProps || []).map((p: any) => p.id);
