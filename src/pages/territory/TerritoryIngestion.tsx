@@ -353,7 +353,8 @@ export default function TerritoryIngestion() {
       if (data?.warning) {
         toast({ title: "Ingestion Warning", description: data.warning, variant: "destructive" });
       } else {
-        toast({ title: "Ingestion Complete", description: `${data?.inserted ?? 0} new addresses imported.` });
+        const enrichedMsg = data?.enriched ? ` · ${data.enriched} enriched with phone` : '';
+        toast({ title: "Ingestion Complete", description: `${data?.inserted ?? 0} new · ${data?.skipped ?? 0} skipped${enrichedMsg}` });
       }
     },
     onError: (err: any) => {
