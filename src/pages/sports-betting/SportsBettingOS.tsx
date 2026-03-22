@@ -273,16 +273,16 @@ function TonightGamesTab() {
 
   const loadGames = async () => {
     setLoading(true);
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const { start, end } = getTodayETBounds();
     const { data } = await supabase
       .from('sbo_games')
       .select(`*, sbo_odds(*), sbo_predictions(*)`)
-      .gte('game_date', today + 'T00:00:00')
-      .lte('game_date', today + 'T23:59:59')
+      .gte('game_date', start)
+      .lte('game_date', end)
       .order('game_date');
     setGames((data as any[]) || []);
     if (data?.length) {
-      setLastFetchTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      setLastFetchTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }));
     }
     setLoading(false);
   };
