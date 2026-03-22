@@ -308,12 +308,11 @@ export default function TerritoryIngestion() {
       setStep("ingesting");
       setApiProgress(5);
 
+      // Yelp now routes through Google Places with Yelp-style search terms
       const functionName =
-        source === "google_places"
+        source === "google_places" || source === "yelp"
           ? "ingest-google-places"
-          : source === "yelp"
-            ? "ingest-yelp"
-            : "ingest-openstreetmap";
+          : "ingest-openstreetmap";
 
       const totalTargets = selectedNeighborhoodIds.length || legacyNeighborhoods.length || 1;
       const isYelpManual = source === "yelp" && yelpSelectedItems.length > 0;
@@ -329,14 +328,10 @@ export default function TerritoryIngestion() {
         city: scopeCity,
         state: scopeState,
         country: scopeCountry,
-        business_types: scopeTypes,
+        business_types: source === "yelp"
+          ? ['smoke shop', 'tobacco store', 'bodega', 'corner store', 'deli grocery', 'convenience store', 'hookah lounge', 'vape shop']
+          : scopeTypes,
       };
-
-      // Pass the accumulated Yelp selection to the backend function
-      if (source === "yelp" && yelpSelectedItems.length > 0) {
-        body.manual_selection = yelpSelectedItems;
-        body.mode = "manual_selection"; // Flag for backend to switch logic
-      }
 
       // Prefer DB neighborhood IDs, fall back to legacy free-text
       if (selectedNeighborhoodIds.length > 0) {

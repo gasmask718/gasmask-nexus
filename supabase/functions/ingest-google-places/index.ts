@@ -69,12 +69,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY') || Deno.env.get('GOOGLE_MAPS_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
     if (!GOOGLE_MAPS_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GOOGLE_MAPS_API_KEY not configured. Add it via Settings.' }), {
+      return new Response(JSON.stringify({ error: 'Google API key not configured. Expected GOOGLE_PLACES_API_KEY in environment.' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    console.log('Google API key found, length:', GOOGLE_MAPS_API_KEY.length);
 
     const {
       city,
@@ -276,18 +277,40 @@ serve(async (req) => {
 
             if (existing && existing.length > 0) { result.skipped++; continue; }
 
+            // Fetch phone number via Place Details
+            let phone: string | null = null;
+            let website: string | null = null;
+            let detailAddress = addr;
+            try {
+              const detailRes = await fetch(
+                `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,formatted_address,website&key=${GOOGLE_MAPS_API_KEY}`
+              );
+              const detailData = await detailRes.json();
+              if (detailData.status === 'OK') {
+                phone = detailData.result.formatted_phone_number || null;
+                website = detailData.result.website || null;
+                detailAddress = detailData.result.formatted_address || addr;
+              }
+              await new Promise(r => setTimeout(r, 100));
+            } catch (e) {
+              console.warn('Place Details fetch failed for', place.name, e);
+            }
+
             const insertData: Record<string, any> = {
-              full_address: addr,
+              store_name: place.name || null,
+              full_address: detailAddress,
               city: city,
               state: state,
               latitude: place.geometry?.location?.lat,
               longitude: place.geometry?.location?.lng,
               address_type: (place.types || []).join(', '),
-              notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} [${target.name}]`,
+              notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} | Phone: ${phone || 'N/A'} [${target.name}]`,
               neighborhood: target.name,
               discovery_status: 'unknown',
               discovered_by: 'google_places',
             };
+            if (phone) insertData.phone = phone;
+            if (website) insertData.website = website;
             if (target.id) insertData.neighborhood_id = target.id;
 
             const { error } = await supabase.from('territory_addresses').insert(insertData);
@@ -351,16 +374,38 @@ serve(async (req) => {
 
           if (existing && existing.length > 0) { totalSkipped++; continue; }
 
+          // Fetch phone number via Place Details
+          let phone: string | null = null;
+          let website: string | null = null;
+          let detailAddress = addr;
+          try {
+            const detailRes = await fetch(
+              `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,formatted_address,website&key=${GOOGLE_MAPS_API_KEY}`
+            );
+            const detailData = await detailRes.json();
+            if (detailData.status === 'OK') {
+              phone = detailData.result.formatted_phone_number || null;
+              website = detailData.result.website || null;
+              detailAddress = detailData.result.formatted_address || addr;
+            }
+            await new Promise(r => setTimeout(r, 100));
+          } catch (e) {
+            console.warn('Place Details fetch failed for', place.name, e);
+          }
+
           const { error } = await supabase.from('territory_addresses').insert({
-            full_address: addr,
+            store_name: place.name || null,
+            full_address: detailAddress,
             city: city,
             state: state,
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
             address_type: (place.types || []).join(', '),
-            notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'}`,
+            notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} | Phone: ${phone || 'N/A'}`,
             discovery_status: 'unknown',
             discovered_by: 'google_places',
+            ...(phone ? { phone } : {}),
+            ...(website ? { website } : {}),
           });
 
           if (error) totalSkipped++; else totalInserted++;
