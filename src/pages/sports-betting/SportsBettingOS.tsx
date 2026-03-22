@@ -598,6 +598,15 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           return (
             <Card key={prop.id}>
               <CardContent className="p-4">
+                {/* Prop date & analysis timestamp */}
+                <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mb-2">
+                  <span>📅 {new Date(prop.game_date || prop.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  {existingPred ? (
+                    <span>🧠 Analyzed: {new Date(existingPred.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                  ) : (
+                    <span className="text-amber-500">⏳ Not yet analyzed</span>
+                  )}
+                </div>
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-bold text-foreground">{prop.player_name}</p>
