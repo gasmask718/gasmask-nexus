@@ -17,6 +17,30 @@ import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
 
+// Helper: get start/end of an ET day as offset-aware ISO strings
+// so Supabase/Postgres compares timestamps correctly
+const getETDayBounds = (date: Date) => {
+  const etDateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  // Determine EDT vs EST from timezone abbreviation
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    timeZoneName: 'short',
+  }).formatToParts(date);
+  const tzAbbr = parts.find(p => p.type === 'timeZoneName')?.value || 'EST';
+  const offset = tzAbbr === 'EDT' ? '-04:00' : '-05:00';
+  return {
+    start: `${etDateStr}T00:00:00${offset}`,
+    end: `${etDateStr}T23:59:59${offset}`,
+  };
+};
+
+const getTodayETBounds = () => getETDayBounds(new Date());
+const getYesterdayETBounds = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getETDayBounds(d);
+};
+
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
 // ═══════════════════════════════════════════════════════════════
@@ -249,31 +273,28 @@ function TonightGamesTab() {
 
   const loadGames = async () => {
     setLoading(true);
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const { start, end } = getTodayETBounds();
     const { data } = await supabase
       .from('sbo_games')
       .select(`*, sbo_odds(*), sbo_predictions(*)`)
-      .gte('game_date', today + 'T00:00:00')
-      .lte('game_date', today + 'T23:59:59')
+      .gte('game_date', start)
+      .lte('game_date', end)
       .order('game_date');
     setGames((data as any[]) || []);
     if (data?.length) {
-      setLastFetchTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+      setLastFetchTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }));
     }
     setLoading(false);
   };
 
   const loadYesterdayGames = async () => {
     setLoading(true);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayET = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-
+    const { start, end } = getYesterdayETBounds();
     const { data } = await supabase
       .from('sbo_games')
       .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
-      .gte('game_date', `${yesterdayET}T00:00:00`)
-      .lte('game_date', `${yesterdayET}T23:59:59`)
+      .gte('game_date', start)
+      .lte('game_date', end)
       .order('game_date');
     setYesterdayGames((data as any[]) || []);
     setLoading(false);
@@ -297,12 +318,12 @@ function TonightGamesTab() {
       try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
       setFetchingIntel(false);
 
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { start: tStart, end: tEnd } = getTodayETBounds();
       const { data: freshGames } = await supabase
         .from('sbo_games')
         .select(`*, sbo_odds(*), sbo_predictions(*)`)
-        .gte('game_date', today + 'T00:00:00')
-        .lte('game_date', today + 'T23:59:59')
+        .gte('game_date', tStart)
+        .lte('game_date', tEnd)
         .order('game_date');
 
       const gamesToPredict = (freshGames || []).filter(
@@ -439,11 +460,11 @@ function TonightGamesTab() {
                   if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
                   setPredictingAll(true);
                   setPredictProgress('Clearing cached data...');
-                  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+                  const { start: fStart, end: fEnd } = getTodayETBounds();
                   try {
-                    await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
-                    await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
-                    await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                    await supabase.from('sbo_predictions').delete().gte('created_at', fStart);
+                    await supabase.from('sbo_game_intelligence').delete().gte('created_at', fStart);
+                    await supabase.from('sbo_games').delete().gte('game_date', fStart).lte('game_date', fEnd);
                     localStorage.removeItem('sbo_games_loaded_today');
                     localStorage.removeItem('sbo_predictions_ran_today');
                     localStorage.removeItem('sbo_last_run_date');
@@ -742,9 +763,9 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
               <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={async () => {
                 // Rerun: delete old prediction and intelligence, re-fetch and re-predict
                 setRunning(true);
-                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+                const { start: rStart } = getTodayETBounds();
                 try {
-                  await supabase.from('sbo_predictions').delete().eq('game_id', game.id).gte('created_at', `${today}T00:00:00`);
+                  await supabase.from('sbo_predictions').delete().eq('game_id', game.id).gte('created_at', rStart);
                   await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.game_id);
                   try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch {}
                   await new Promise(resolve => setTimeout(resolve, 800));
@@ -3036,20 +3057,20 @@ export default function SportsBettingOS() {
 
       // PHASE 3 — Run predictions (skips games already predicted today)
       setRunAllPhase('Phase 3/6: Running AI predictions...');
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { start: raStart, end: raEnd } = getTodayETBounds();
 
       const { data: allGames } = await supabase
         .from('sbo_games')
         .select('*, sbo_odds(*)')
-        .gte('game_date', today + 'T00:00:00')
-        .lte('game_date', today + 'T23:59:59');
+        .gte('game_date', raStart)
+        .lte('game_date', raEnd);
 
       // Check which games already have predictions today
       const { data: existingPreds } = await supabase
         .from('sbo_predictions')
         .select('game_id')
         .eq('prediction_type', 'moneyline')
-        .gte('created_at', `${today}T00:00:00`);
+        .gte('created_at', raStart);
 
       const predictedGameIds = new Set((existingPreds || []).map((p: any) => p.game_id));
       const unpredictedGames = (allGames || []).filter((g: any) => !predictedGameIds.has(g.id));
@@ -3076,7 +3097,7 @@ export default function SportsBettingOS() {
       const { data: unanalyzedProps } = await supabase
         .from('sbo_player_props')
         .select('id')
-        .gte('created_at', `${today}T00:00:00`);
+        .gte('created_at', raStart);
 
       // Check which props already have predictions
       const propIds = (unanalyzedProps || []).map((p: any) => p.id);
@@ -3084,7 +3105,7 @@ export default function SportsBettingOS() {
         .from('sbo_predictions')
         .select('prop_id')
         .in('prop_id', propIds.length ? propIds : ['none'])
-        .gte('created_at', `${today}T00:00:00`);
+        .gte('created_at', raStart);
 
       const analyzedPropIds = new Set((existingPropPreds || []).map((p: any) => p.prop_id));
       const propsToAnalyze = (unanalyzedProps || []).filter((p: any) => !analyzedPropIds.has(p.id));
@@ -3113,7 +3134,7 @@ export default function SportsBettingOS() {
         const { data: existingParlay } = await supabase
           .from('sbo_parlays')
           .select('id')
-          .gte('created_at', `${today}T00:00:00`)
+          .gte('created_at', raStart)
           .maybeSingle();
 
         if (!existingParlay) {
@@ -3121,7 +3142,7 @@ export default function SportsBettingOS() {
             .from('sbo_predictions')
             .select('*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds)')
             .in('confidence_tier', ['elite', 'strong'])
-            .gte('created_at', `${today}T00:00:00`)
+            .gte('created_at', raStart)
             .order('final_confidence', { ascending: false })
             .limit(10);
 
@@ -3258,13 +3279,13 @@ export default function SportsBettingOS() {
             disabled={runningAll}
             onClick={async () => {
               if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
-              const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+              const { start: frStart, end: frEnd } = getTodayETBounds();
               setRunningAll(true);
               setRunAllPhase('Clearing cached data...');
               try {
-                await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
-                await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
-                await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                await supabase.from('sbo_predictions').delete().gte('created_at', frStart);
+                await supabase.from('sbo_game_intelligence').delete().gte('created_at', frStart);
+                await supabase.from('sbo_games').delete().gte('game_date', frStart).lte('game_date', frEnd);
                 localStorage.removeItem('sbo_games_loaded_today');
                 localStorage.removeItem('sbo_predictions_ran_today');
                 localStorage.removeItem('sbo_last_run_date');
