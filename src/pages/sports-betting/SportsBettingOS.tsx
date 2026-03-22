@@ -864,6 +864,70 @@ function SimulationTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ACCURACY HISTORY WIDGET
+// ═══════════════════════════════════════════════════════════════
+
+function AccuracyHistoryWidget() {
+  const { data: history } = useQuery({
+    queryKey: ['accuracy-history'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_accuracy_log')
+        .select('*')
+        .order('date', { ascending: false })
+        .limit(14);
+      return (data || []).reverse();
+    },
+  });
+
+  if (!history?.length) return null;
+
+  const avgAccuracy = history.reduce((sum: number, d: any) => sum + (d.accuracy_pct || 0), 0) / history.length;
+
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">14-Day Accuracy Trend</p>
+          <span className={`text-sm font-bold ${
+            avgAccuracy >= 60 ? 'text-green-500' :
+            avgAccuracy >= 50 ? 'text-amber-500' : 'text-red-500'
+          }`}>
+            {avgAccuracy.toFixed(1)}% avg
+          </span>
+        </div>
+        <div className="flex items-end gap-1 h-16">
+          {history.map((day: any, i: number) => {
+            const pct = day.accuracy_pct || 0;
+            const height = Math.max((pct / 100) * 64, 2);
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
+                <div
+                  className={`w-full rounded-sm ${
+                    pct >= 60 ? 'bg-green-500' :
+                    pct >= 50 ? 'bg-amber-500' : 'bg-red-400'
+                  }`}
+                  style={{ height: `${height}px` }}
+                  title={`${new Date(day.date).toLocaleDateString()}: ${pct}%`}
+                />
+                <span className="text-[7px] text-muted-foreground">
+                  {new Date(day.date).getDate()}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="flex justify-between text-[9px] text-muted-foreground">
+          <span>{history[0]?.date}</span>
+          <span>{history.reduce((sum: number, d: any) => sum + (d.total_predictions || 0), 0)} total predictions graded</span>
+          <span>{history[history.length - 1]?.date}</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // ACCURACY TAB
 // ═══════════════════════════════════════════════════════════════
 
@@ -927,6 +991,9 @@ function AccuracyTab() {
 
   return (
     <div className="space-y-4">
+      {/* Accuracy history chart */}
+      <AccuracyHistoryWidget />
+
       {/* Overall accuracy */}
       <div className="grid grid-cols-3 gap-3">
         {[

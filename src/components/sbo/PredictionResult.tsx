@@ -16,7 +16,10 @@ interface PredictionResultProps {
     market_brain_reasoning?: string;
     context_brain_score?: number;
     context_brain_reasoning?: string;
-    brains?: { stats: Brain; market: Brain; context: Brain };
+    polymarket_brain_score?: number | null;
+    polymarket_brain_reasoning?: string | null;
+    brain_count?: number;
+    brains?: { stats: Brain; market: Brain; context: Brain; polymarket?: Brain };
   };
 }
 
@@ -30,6 +33,7 @@ const tierColors: Record<string, string> = {
 export function PredictionResult({ prediction }: PredictionResultProps) {
   const tier = prediction.confidence_tier || 'moderate';
   const finalConf = prediction.final_confidence || 50;
+  const hasPolymarket = prediction.polymarket_brain_score != null;
 
   const brains = prediction.brains || {
     stats: { score: prediction.stats_brain_score || 50, reasoning: prediction.stats_brain_reasoning || '' },
@@ -37,11 +41,32 @@ export function PredictionResult({ prediction }: PredictionResultProps) {
     context: { score: prediction.context_brain_score || 50, reasoning: prediction.context_brain_reasoning || '' },
   };
 
+  const coreBrains: { label: string; key: string; weight: string; score: number; reasoning: string }[] = [
+    { label: '📊 Stats', key: 'stats', weight: hasPolymarket ? '35%' : '40%', score: brains.stats?.score || 0, reasoning: brains.stats?.reasoning || 'Analyzing...' },
+    { label: '💰 Market', key: 'market', weight: hasPolymarket ? '30%' : '35%', score: brains.market?.score || 0, reasoning: brains.market?.reasoning || 'Analyzing...' },
+    { label: '🧠 Context', key: 'context', weight: hasPolymarket ? '20%' : '25%', score: brains.context?.score || 0, reasoning: brains.context?.reasoning || 'Analyzing...' },
+  ];
+
+  if (hasPolymarket) {
+    coreBrains.push({
+      label: '🔮 Polymarket',
+      key: 'polymarket',
+      weight: '15%',
+      score: prediction.polymarket_brain_score || 0,
+      reasoning: prediction.polymarket_brain_reasoning || prediction.brains?.polymarket?.reasoning || 'Real money consensus',
+    });
+  }
+
   return (
     <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 space-y-3">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted-foreground">
           Prediction: {prediction.predicted_outcome}
+          {hasPolymarket && (
+            <Badge variant="outline" className="ml-1.5 text-[8px] h-3.5 px-1 text-violet-500 border-violet-500/40">
+              4-Brain
+            </Badge>
+          )}
         </span>
         <Badge className={`text-[10px] ${tierColors[tier] || tierColors.moderate}`}>
           {finalConf}% — {tier?.toUpperCase()}
@@ -59,25 +84,21 @@ export function PredictionResult({ prediction }: PredictionResultProps) {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {([
-          { label: '📊 Stats', key: 'stats' as const, weight: '40%' },
-          { label: '💰 Market', key: 'market' as const, weight: '35%' },
-          { label: '🧠 Context', key: 'context' as const, weight: '25%' },
-        ]).map(brain => (
+      <div className={`grid gap-2 ${hasPolymarket ? 'grid-cols-4' : 'grid-cols-3'}`}>
+        {coreBrains.map(brain => (
           <div key={brain.key} className="text-center space-y-1">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
               <span>{brain.label}</span>
               <span>{brain.weight}</span>
             </div>
             <p className={`text-lg font-bold ${
-              (brains[brain.key]?.score || 0) >= 70 ? 'text-green-500' :
-              (brains[brain.key]?.score || 0) >= 55 ? 'text-amber-500' : 'text-red-400'
+              brain.score >= 70 ? 'text-green-500' :
+              brain.score >= 55 ? 'text-amber-500' : 'text-red-400'
             }`}>
-              {brains[brain.key]?.score ?? '?'}
+              {brain.score}
             </p>
             <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2">
-              {brains[brain.key]?.reasoning || 'Analyzing...'}
+              {brain.reasoning}
             </p>
           </div>
         ))}

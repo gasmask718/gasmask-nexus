@@ -11,6 +11,8 @@ const API_COSTS: Record<string, { provider: string; cost_cents: number; note: st
   'sbo-sync-daily': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-pregame': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
   'sbo-sync-prizepicks': { provider: 'prizepicks', cost_cents: 0, note: 'Free unofficial API' },
+  'sbo-sync-polymarket': { provider: 'polymarket', cost_cents: 0, note: 'Free public API' },
+  'sbo-track-results': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
 };
 
 const MORNING_STEPS = [
@@ -21,6 +23,11 @@ const PREGAME_STEPS = [
   { fn: 'sbo-fetch-odds', label: 'Live Odds (DK/FD/BetMGM/Caesars)', icon: '💰', required: true },
   { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true },
   { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false },
+  { fn: 'sbo-sync-polymarket', label: 'Polymarket Prediction Market Odds', icon: '🔮', required: false },
+];
+
+const POSTGAME_STEPS = [
+  { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
 ];
 
 const FULL_STEPS = [...MORNING_STEPS, ...PREGAME_STEPS];
@@ -41,11 +48,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    const ALL_AVAILABLE = [...MORNING_STEPS, ...PREGAME_STEPS, ...POSTGAME_STEPS];
     const stepsToRun = steps === 'morning' ? MORNING_STEPS
       : steps === 'pregame' ? PREGAME_STEPS
-      : steps === 'full' ? FULL_STEPS
-      : Array.isArray(steps) ? FULL_STEPS.filter(s => steps.includes(s.fn))
-      : FULL_STEPS;
+      : steps === 'postgame' ? POSTGAME_STEPS
+      : steps === 'full' ? [...MORNING_STEPS, ...PREGAME_STEPS]
+      : Array.isArray(steps) ? ALL_AVAILABLE.filter(s => steps.includes(s.fn))
+      : [...MORNING_STEPS, ...PREGAME_STEPS];
 
     const { data: runRecord } = await supabase
       .from('sbo_day_engine_runs')
