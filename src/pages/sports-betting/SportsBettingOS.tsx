@@ -1249,6 +1249,250 @@ function ValueSpotsTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// MODEL INTELLIGENCE TAB
+// ═══════════════════════════════════════════════════════════════
+
+function ModelIntelligenceTab() {
+  const [analyzing, setAnalyzing] = useState(false);
+
+  const { data: activeConfig, refetch: refetchConfig } = useQuery({
+    queryKey: ['active-model-config'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_model_performance')
+        .select('*')
+        .eq('is_active', true)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: weightHistory } = useQuery({
+    queryKey: ['weight-history'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_weight_history')
+        .select('*')
+        .order('adjusted_at', { ascending: false })
+        .limit(10);
+      return data || [];
+    },
+  });
+
+  const { data: modelHistory } = useQuery({
+    queryKey: ['model-history'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_model_performance')
+        .select('*')
+        .order('evaluation_date', { ascending: false })
+        .limit(14);
+      return (data || []).reverse();
+    },
+  });
+
+  const runAnalysis = async () => {
+    setAnalyzing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-analyze-model');
+      if (error) throw error;
+
+      if (data.analysis?.adjustment_applied) {
+        toast.success(`Model updated — weights shifted. Accuracy: ${data.analysis.overall_accuracy.toFixed(1)}%`);
+      } else if (data.success === false) {
+        toast.info(data.reason || 'Need more graded predictions');
+      } else {
+        toast.info(`Analysis complete — weights stable. Accuracy: ${data.analysis.overall_accuracy.toFixed(1)}%`);
+      }
+      refetchConfig();
+    } catch (e: any) {
+      toast.error(e.message || 'Analysis failed');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  const brainLabels: Record<string, { label: string; icon: string; color: string }> = {
+    stats: { label: 'Stats Brain', icon: '📊', color: 'text-blue-500' },
+    market: { label: 'Market Brain', icon: '💰', color: 'text-green-500' },
+    context: { label: 'Context Brain', icon: '🧠', color: 'text-amber-500' },
+    polymarket: { label: 'Polymarket Brain', icon: '🔮', color: 'text-violet-500' },
+  };
+
+  const currentWeights: Record<string, number> = {
+    stats: activeConfig?.stats_weight || 0.40,
+    market: activeConfig?.market_weight || 0.35,
+    context: activeConfig?.context_weight || 0.25,
+    polymarket: activeConfig?.polymarket_weight || 0.00,
+  };
+
+  const brainConfig = (activeConfig?.brain_config as any) || {};
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold text-foreground">🧬 Model Intelligence</h2>
+          <p className="text-xs text-muted-foreground">Self-learning system — analyzes results and adjusts brain weights</p>
+        </div>
+        <Button onClick={runAnalysis} disabled={analyzing} size="sm">
+          {analyzing
+            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyzing...</>
+            : <><Brain className="h-3 w-3 mr-1" /> Run Analysis</>
+          }
+        </Button>
+      </div>
+
+      {/* Performance cards */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          {
+            label: 'Overall Accuracy',
+            value: `${activeConfig?.accuracy_pct?.toFixed(1) || '—'}%`,
+            sub: `${activeConfig?.total_predictions || 0} predictions`,
+            color: (activeConfig?.accuracy_pct || 0) >= 60 ? 'text-green-500' : (activeConfig?.accuracy_pct || 0) >= 50 ? 'text-amber-500' : 'text-red-500',
+          },
+          {
+            label: 'Calibration',
+            value: `${activeConfig?.calibration_score?.toFixed(0) || '—'}`,
+            sub: 'confidence vs accuracy',
+            color: (activeConfig?.calibration_score || 0) >= 80 ? 'text-green-500' : 'text-amber-500',
+          },
+          {
+            label: 'Last Analysis',
+            value: activeConfig?.evaluation_date ? new Date(activeConfig.evaluation_date).toLocaleDateString() : 'Never',
+            sub: 'model evaluated',
+            color: 'text-foreground',
+          },
+        ].map(stat => (
+          <Card key={stat.label}>
+            <CardContent className="p-3 text-center">
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+              <p className="text-xs font-medium text-foreground">{stat.label}</p>
+              <p className="text-[10px] text-muted-foreground">{stat.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Current brain weights */}
+      <Card>
+        <CardHeader className="p-3 pb-2">
+          <CardTitle className="text-sm">Current Brain Weights</CardTitle>
+        </CardHeader>
+        <CardContent className="p-3 pt-0 space-y-3">
+          {Object.entries(currentWeights).map(([brainName, weight]) => {
+            const info = brainLabels[brainName];
+            const pct = (weight * 100).toFixed(1);
+            const analysis = brainConfig[brainName];
+
+            return (
+              <div key={brainName} className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className={`font-medium ${info.color}`}>{info.icon} {info.label}</span>
+                  <div className="flex items-center gap-2">
+                    {analysis?.precision && (
+                      <Badge variant="outline" className="text-[9px] h-4">{analysis.precision.toFixed(0)}% precision</Badge>
+                    )}
+                    <span className="font-bold text-foreground">{pct}%</span>
+                  </div>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${parseFloat(pct)}%` }} />
+                </div>
+                {analysis?.predictive_power !== undefined && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Power: {analysis.predictive_power.toFixed(0)}/100 · Avg correct: {analysis.avg_score_correct?.toFixed(0)} vs wrong: {analysis.avg_score_wrong?.toFixed(0)}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Accuracy trend */}
+      {(modelHistory?.length || 0) > 1 && (
+        <Card>
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="text-sm">Model Accuracy Trend</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0">
+            <div className="flex items-end gap-1 h-24">
+              {modelHistory?.map((config: any, i: number) => {
+                const pct = config.accuracy_pct || 0;
+                const height = Math.max((pct / 100) * 80, 2);
+                return (
+                  <div key={i} className="flex flex-col items-center flex-1 gap-0.5">
+                    <span className="text-[8px] text-muted-foreground">{pct.toFixed(0)}%</span>
+                    <div
+                      className={`w-full rounded-t ${pct >= 60 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
+                      style={{ height: `${height}px` }}
+                      title={`${config.evaluation_date}: ${pct.toFixed(1)}%`}
+                    />
+                    <span className="text-[8px] text-muted-foreground">{new Date(config.evaluation_date).getDate()}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Weight adjustment history */}
+      {(weightHistory?.length || 0) > 0 && (
+        <Card>
+          <CardHeader className="p-3 pb-2">
+            <CardTitle className="text-sm">Weight Adjustment History</CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 pt-0 space-y-2">
+            {weightHistory?.map((adj: any) => (
+              <div key={adj.id} className="border border-border rounded-lg p-2 space-y-1.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-muted-foreground">{new Date(adj.adjusted_at).toLocaleDateString()}</span>
+                  <Badge variant="outline" className="text-[9px] h-4">{adj.auto_adjusted ? 'Auto' : 'Manual'}</Badge>
+                </div>
+                <div className="grid grid-cols-4 gap-1 text-center">
+                  {['stats', 'market', 'context', 'polymarket'].map(brain => {
+                    const before = adj[`${brain}_weight_before`] || 0;
+                    const after = adj[`${brain}_weight_after`] || 0;
+                    const changed = Math.abs(after - before) >= 0.005;
+                    return (
+                      <div key={brain}>
+                        <p className="text-[9px] text-muted-foreground">{brain.slice(0, 4)}</p>
+                        <p className={`text-[10px] font-medium ${changed ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                          {(before * 100).toFixed(0)}→{(after * 100).toFixed(0)}%
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                {adj.reason && <p className="text-[10px] text-muted-foreground line-clamp-2">{adj.reason}</p>}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* How it works */}
+      <Card className="border-muted">
+        <CardContent className="p-3 space-y-1.5">
+          <p className="text-xs font-medium text-foreground">How Self-Learning Works</p>
+          <p className="text-[10px] text-muted-foreground">
+            Run Analysis reviews all graded predictions and measures which brain was most predictive. Brains that score higher on correct predictions get more weight.
+          </p>
+          <p className="text-[10px] text-muted-foreground">
+            Shifts are small (max 8% per cycle) so the model improves gradually. After 200+ predictions the weights will be optimized for your prediction style.
+          </p>
+          <p className="text-[10px] text-muted-foreground font-medium">Minimum 50 graded predictions required before weights adjust.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
