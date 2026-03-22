@@ -1812,7 +1812,7 @@ function ModelIntelligenceTab() {
 // ═══════════════════════════════════════════════════════════════
 
 function MyBetsTab() {
-  const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll'>('today');
+  const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll' | 'saved'>('today');
   const [sendingBriefing, setSendingBriefing] = useState(false);
   const [selectedStake, setSelectedStake] = useState(10);
 
