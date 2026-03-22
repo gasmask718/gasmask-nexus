@@ -1963,7 +1963,7 @@ function MyBetsTab() {
 
       {/* View tabs */}
       <div className="flex gap-1">
-        {(['today', 'history', 'bankroll'] as const).map(view => (
+        {(['today', 'history', 'bankroll', 'saved'] as const).map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view)}
@@ -1973,7 +1973,7 @@ function MyBetsTab() {
                 : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
-            {view === 'today' ? "📅 Today's Bets" : view === 'history' ? '📋 History' : '💰 Bankroll'}
+            {view === 'today' ? "📅 Today's Bets" : view === 'history' ? '📋 History' : view === 'saved' ? '⭐ Saved Picks' : '💰 Bankroll'}
           </button>
         ))}
       </div>
