@@ -50,91 +50,93 @@ Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences refer
         dataQuality = 'full';
       }
     } else if (ctx.prediction_type === 'moneyline') {
-      // PRIMARY: Read from sbo_game_intelligence (populated by sbo-fetch-intelligence)
+      // PRIMARY — try sbo_game_intelligence first
       const { data: intel } = await supabase
         .from('sbo_game_intelligence')
         .select('*')
         .eq('game_id', ctx.game_id)
         .maybeSingle();
 
-      const hasIntel = intel && (
-        intel.offensive_rating_home !== null ||
-        intel.offensive_rating_away !== null ||
-        intel.home_record_home !== null
+      const hasRealIntel = intel && (
+        (intel.offensive_rating_home && intel.offensive_rating_home > 0) ||
+        (intel.home_record_home && intel.home_record_home !== 'null') ||
+        (intel.pace_home && intel.pace_home > 0)
       );
 
-      if (hasIntel) {
-        dataQuality = (intel.offensive_rating_home && intel.offensive_rating_away) ? 'full' : 'partial';
+      if (hasRealIntel) {
+        dataQuality = 'full';
         statsContext = `
 GAME: ${ctx.away_team} @ ${ctx.home_team}
 
-=== REAL TEAM STATISTICS (Current Season) ===
+=== REAL TEAM STATISTICS ===
 ${ctx.home_team}:
-- Offensive Rating: ${intel.offensive_rating_home ?? 'N/A'} pts/game
-- Defensive Rating: ${intel.defensive_rating_home ?? 'N/A'} opp pts/game
-- Home Record: ${intel.home_record_home ?? 'N/A'}
+- Points per game: ${intel.offensive_rating_home ?? 'N/A'}
+- Opponent PPG: ${intel.defensive_rating_home ?? 'N/A'}
+- Home record: ${intel.home_record_home ?? 'N/A'}
 - Last 10: ${intel.last_5_home ? JSON.stringify(intel.last_5_home) : 'N/A'}
-- Pace: ${intel.pace_home ?? 'N/A'} possessions
-- Back-to-Back: ${intel.back_to_back_home ? 'YES — fatigue factor' : 'No'}
-- Rest Days: ${intel.rest_days_home ?? 'N/A'}
+- Pace: ${intel.pace_home ?? 'N/A'}
+- Back to back: ${intel.back_to_back_home ? 'YES - fatigue risk' : 'No'}
+- Rest days: ${intel.rest_days_home ?? 'N/A'}
 
 ${ctx.away_team}:
-- Offensive Rating: ${intel.offensive_rating_away ?? 'N/A'} pts/game
-- Defensive Rating: ${intel.defensive_rating_away ?? 'N/A'} opp pts/game
-- Away Record: ${intel.away_record_away ?? 'N/A'}
+- Points per game: ${intel.offensive_rating_away ?? 'N/A'}
+- Opponent PPG: ${intel.defensive_rating_away ?? 'N/A'}
+- Away record: ${intel.away_record_away ?? 'N/A'}
 - Last 10: ${intel.last_5_away ? JSON.stringify(intel.last_5_away) : 'N/A'}
-- Pace: ${intel.pace_away ?? 'N/A'} possessions
-- Back-to-Back: ${intel.back_to_back_away ? 'YES — fatigue factor' : 'No'}
-- Rest Days: ${intel.rest_days_away ?? 'N/A'}
+- Pace: ${intel.pace_away ?? 'N/A'}
+- Back to back: ${intel.back_to_back_away ? 'YES - fatigue risk' : 'No'}
+- Rest days: ${intel.rest_days_away ?? 'N/A'}
 
-Injury Report: ${intel.injury_report && Array.isArray(intel.injury_report) && intel.injury_report.length > 0
-  ? intel.injury_report.map((i: any) => `${i.player} (${i.status} - ${i.injury})`).join(', ')
-  : 'No significant injuries reported'}
-
-Projected Total (pace-based): ${
-  intel.pace_home && intel.pace_away
-    ? ((intel.pace_home + intel.pace_away) / 2 * 0.95).toFixed(1) + ' points'
-    : 'N/A'
-}`.trim();
+Injuries: ${intel.injury_report?.length > 0
+  ? intel.injury_report.map((i: any) => `${i.player} (${i.status})`).join(', ')
+  : 'None reported'}
+`.trim();
       } else {
-        // FALLBACK: Read from sbo_team_stats
-        const { data: homeTeam } = await supabase
+        // FALLBACK — pull from sbo_team_stats using last word of team name
+        const homeLastWord = ctx.home_team?.split(' ').pop() || '';
+        const awayLastWord = ctx.away_team?.split(' ').pop() || '';
+
+        const { data: homeStats } = await supabase
           .from('sbo_team_stats')
           .select('*')
-          .ilike('team_name', `%${ctx.home_team?.split(' ').pop()}%`)
+          .ilike('team_name', `%${homeLastWord}%`)
           .maybeSingle();
 
-        const { data: awayTeam } = await supabase
+        const { data: awayStats } = await supabase
           .from('sbo_team_stats')
           .select('*')
-          .ilike('team_name', `%${ctx.away_team?.split(' ').pop()}%`)
+          .ilike('team_name', `%${awayLastWord}%`)
           .maybeSingle();
 
-        const hasTeamStats = homeTeam && (homeTeam.points_per_game > 0 || homeTeam.wins > 0);
+        const hasTeamStats = (homeStats?.wins > 0 || homeStats?.points_per_game > 0) ||
+                             (awayStats?.wins > 0 || awayStats?.points_per_game > 0);
 
         if (hasTeamStats) {
-          dataQuality = homeTeam.points_per_game > 0 ? 'partial' : 'partial';
+          dataQuality = 'partial';
           statsContext = `
 GAME: ${ctx.away_team} @ ${ctx.home_team}
 
-${ctx.home_team} STATS:
-- Record: ${homeTeam?.wins || '?'}-${homeTeam?.losses || '?'}
-- Points per game: ${homeTeam?.points_per_game || 'N/A'}
-- Opponent PPG allowed: ${homeTeam?.opponent_points_per_game || 'N/A'}
-- Offensive rating: ${homeTeam?.offensive_rating || 'N/A'}
-- Defensive rating: ${homeTeam?.defensive_rating || 'N/A'}
-- Home record: ${homeTeam?.home_wins || '?'}-${homeTeam?.home_losses || '?'}
+=== TEAM STATS (Season averages) ===
+${ctx.home_team}:
+- Record: ${homeStats?.wins ?? '?'}-${homeStats?.losses ?? '?'}
+- Points per game: ${homeStats?.points_per_game > 0 ? homeStats.points_per_game : 'N/A'}
+- Opponent PPG: ${homeStats?.opponent_points_per_game > 0 ? homeStats.opponent_points_per_game : 'N/A'}
+- Home record: ${homeStats?.home_wins ?? '?'}-${homeStats?.home_losses ?? '?'}
+- Offensive rating: ${homeStats?.offensive_rating > 0 ? homeStats.offensive_rating : 'N/A'}
+- Defensive rating: ${homeStats?.defensive_rating > 0 ? homeStats.defensive_rating : 'N/A'}
 
-${ctx.away_team} STATS:
-- Record: ${awayTeam?.wins || '?'}-${awayTeam?.losses || '?'}
-- Points per game: ${awayTeam?.points_per_game || 'N/A'}
-- Opponent PPG allowed: ${awayTeam?.opponent_points_per_game || 'N/A'}
-- Offensive rating: ${awayTeam?.offensive_rating || 'N/A'}
-- Defensive rating: ${awayTeam?.defensive_rating || 'N/A'}
-- Away record: ${awayTeam?.away_wins || '?'}-${awayTeam?.away_losses || '?'}`.trim();
+${ctx.away_team}:
+- Record: ${awayStats?.wins ?? '?'}-${awayStats?.losses ?? '?'}
+- Points per game: ${awayStats?.points_per_game > 0 ? awayStats.points_per_game : 'N/A'}
+- Opponent PPG: ${awayStats?.opponent_points_per_game > 0 ? awayStats.opponent_points_per_game : 'N/A'}
+- Away record: ${awayStats?.away_wins ?? '?'}-${awayStats?.away_losses ?? '?'}
+- Offensive rating: ${awayStats?.offensive_rating > 0 ? awayStats.offensive_rating : 'N/A'}
+- Defensive rating: ${awayStats?.defensive_rating > 0 ? awayStats.defensive_rating : 'N/A'}
+`.trim();
         } else {
-          statsContext = `GAME: ${ctx.away_team} @ ${ctx.home_team}\n\nReal-time stats unavailable — base analysis on odds movement only. Flag low confidence.`;
           dataQuality = 'odds_only';
+          statsContext = `GAME: ${ctx.away_team} @ ${ctx.home_team}
+No real stats available. Base prediction on odds and context only. Cap confidence at 55.`;
         }
       }
     }
