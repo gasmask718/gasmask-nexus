@@ -69,12 +69,13 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_MAPS_API_KEY');
+    const GOOGLE_MAPS_API_KEY = Deno.env.get('GOOGLE_PLACES_API_KEY') || Deno.env.get('GOOGLE_MAPS_API_KEY') || Deno.env.get('GOOGLE_API_KEY');
     if (!GOOGLE_MAPS_API_KEY) {
-      return new Response(JSON.stringify({ error: 'GOOGLE_MAPS_API_KEY not configured. Add it via Settings.' }), {
+      return new Response(JSON.stringify({ error: 'Google API key not configured. Expected GOOGLE_PLACES_API_KEY in environment.' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    console.log('Google API key found, length:', GOOGLE_MAPS_API_KEY.length);
 
     const {
       city,
