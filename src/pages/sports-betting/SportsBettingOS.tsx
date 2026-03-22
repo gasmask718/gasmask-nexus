@@ -12,8 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
 import { SyncDashboard } from '@/components/sbo/SyncDashboard';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
