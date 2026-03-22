@@ -287,12 +287,14 @@ function TonightGamesTab() {
   const loadYesterdayGames = async () => {
     setLoading(true);
     const { start, end } = getYesterdayETBounds();
-    const { data } = await supabase
+    console.log('Yesterday query bounds:', start, 'to', end);
+    const { data, error } = await supabase
       .from('sbo_games')
       .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
       .gte('game_date', start)
-      .lte('game_date', end)
+      .lt('game_date', end)
       .order('game_date');
+    console.log('Yesterday games found:', data?.length, 'error:', error);
     setYesterdayGames((data as any[]) || []);
     setLoading(false);
   };
