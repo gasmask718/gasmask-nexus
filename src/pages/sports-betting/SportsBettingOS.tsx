@@ -845,10 +845,12 @@ export default function SportsBettingOS() {
       </div>
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="games">🏀 Tonight's Games</TabsTrigger>
-          <TabsTrigger value="props">📊 Player Props</TabsTrigger>
-          <TabsTrigger value="entry">📝 VA Entry</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="games" className="text-xs">🏀 Games</TabsTrigger>
+          <TabsTrigger value="props" className="text-xs">📊 Props</TabsTrigger>
+          <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
+          <TabsTrigger value="sim" className="text-xs">⚡ Simulate</TabsTrigger>
+          <TabsTrigger value="entry" className="text-xs">📝 VA Entry</TabsTrigger>
         </TabsList>
 
         <TabsContent value="games" className="mt-4">
@@ -857,6 +859,14 @@ export default function SportsBettingOS() {
 
         <TabsContent value="props" className="mt-4">
           <PlayerPropsTab />
+        </TabsContent>
+
+        <TabsContent value="parlay" className="mt-4">
+          <ParlayBuilderTab />
+        </TabsContent>
+
+        <TabsContent value="sim" className="mt-4">
+          <SimulationTab />
         </TabsContent>
 
         <TabsContent value="entry" className="mt-4">
