@@ -374,16 +374,38 @@ serve(async (req) => {
 
           if (existing && existing.length > 0) { totalSkipped++; continue; }
 
+          // Fetch phone number via Place Details
+          let phone: string | null = null;
+          let website: string | null = null;
+          let detailAddress = addr;
+          try {
+            const detailRes = await fetch(
+              `https://maps.googleapis.com/maps/api/place/details/json?place_id=${place.place_id}&fields=formatted_phone_number,formatted_address,website&key=${GOOGLE_MAPS_API_KEY}`
+            );
+            const detailData = await detailRes.json();
+            if (detailData.status === 'OK') {
+              phone = detailData.result.formatted_phone_number || null;
+              website = detailData.result.website || null;
+              detailAddress = detailData.result.formatted_address || addr;
+            }
+            await new Promise(r => setTimeout(r, 100));
+          } catch (e) {
+            console.warn('Place Details fetch failed for', place.name, e);
+          }
+
           const { error } = await supabase.from('territory_addresses').insert({
-            full_address: addr,
+            store_name: place.name || null,
+            full_address: detailAddress,
             city: city,
             state: state,
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
             address_type: (place.types || []).join(', '),
-            notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'}`,
+            notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} | Phone: ${phone || 'N/A'}`,
             discovery_status: 'unknown',
             discovered_by: 'google_places',
+            ...(phone ? { phone } : {}),
+            ...(website ? { website } : {}),
           });
 
           if (error) totalSkipped++; else totalInserted++;
