@@ -984,6 +984,13 @@ function ParlayBuilderTab() {
 
   return (
     <div className="space-y-4">
+      {/* Date Banner */}
+      <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
+        <span className="text-sm font-medium text-foreground">
+          📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </span>
+      </div>
+
       {/* AI Build button */}
       <div className="flex items-center justify-between">
         <div>
