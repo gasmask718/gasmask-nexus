@@ -255,7 +255,7 @@ serve(async (req) => {
       } else {
         await supabase.from('sbo_game_intelligence').insert(intel);
       }
-      intelCount++;
+      processedCount++;
     }
 
     return new Response(JSON.stringify({
