@@ -291,6 +291,37 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 // VA PROP ENTRY TAB
 // ═══════════════════════════════════════════════════════════════
 
+function AutoPopulatedPropsNotice({ date }: { date: string }) {
+  const { data: apiProps } = useQuery({
+    queryKey: ['api-props-count', date],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('sbo_player_props')
+        .select('*', { count: 'exact', head: true })
+        .eq('entered_by', 'api')
+        .gte('created_at', date + 'T00:00:00');
+      return count || 0;
+    },
+  });
+
+  if (!apiProps && apiProps !== 0) return null;
+
+  return apiProps > 0 ? (
+    <Card className="border-green-500/30 bg-green-500/5">
+      <CardContent className="p-3 text-xs text-green-700">
+        ✓ {apiProps} props auto-pulled from DraftKings via SportsDataIO API today.
+        Use VA Entry only to add PrizePicks-specific lines not covered by the API.
+      </CardContent>
+    </Card>
+  ) : (
+    <Card className="border-amber-500/30 bg-amber-500/5">
+      <CardContent className="p-3 text-xs text-amber-700">
+        No props synced yet today. Run Pre-Game Sync in the ⚙️ Sync tab to auto-pull tonight's props.
+      </CardContent>
+    </Card>
+  );
+}
+
 function VAPropEntryTab() {
   const [games, setGames] = useState<any[]>([]);
   const [gameId, setGameId] = useState('');
