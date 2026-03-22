@@ -119,7 +119,7 @@ function SavePickButton({
 
 function YesterdayGameCard({ game }: { game: any }) {
   const prediction = game.sbo_predictions?.[0];
-  const verification = game.sbo_results_verification?.[0];
+  const verification = prediction?.sbo_results_verification?.[0] ?? game.sbo_results_verification?.[0];
   const homeScore = game.home_score ?? game.score_home;
   const awayScore = game.away_score ?? game.score_away;
   const hasResult = homeScore !== null && awayScore !== null;
@@ -290,7 +290,7 @@ function TonightGamesTab() {
     console.log('Yesterday query bounds:', start, 'to', end);
     const { data, error } = await supabase
       .from('sbo_games')
-      .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
+      .select(`*, sbo_predictions(*, sbo_results_verification(*)), sbo_odds(*)`)
       .gte('game_date', start)
       .lt('game_date', end)
       .order('game_date');
@@ -381,10 +381,10 @@ function TonightGamesTab() {
   // Yesterday summary calculations
   const totalPredicted = yesterdayGames.filter(g => g.sbo_predictions?.length > 0).length;
   const correctCount = yesterdayGames.filter(g =>
-    g.sbo_results_verification?.[0]?.verdict === 'correct'
+    g.sbo_predictions?.[0]?.sbo_results_verification?.[0]?.verdict === 'correct'
   ).length;
   const incorrectCount = yesterdayGames.filter(g =>
-    g.sbo_results_verification?.[0]?.verdict === 'incorrect'
+    g.sbo_predictions?.[0]?.sbo_results_verification?.[0]?.verdict === 'incorrect'
   ).length;
   const pendingCount = totalPredicted - correctCount - incorrectCount;
   const accuracy = (correctCount + incorrectCount) > 0
