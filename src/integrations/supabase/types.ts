@@ -58660,6 +58660,7 @@ export type Database = {
           stats_brain_score: number | null
           updated_at: string | null
           was_correct: boolean | null
+          weights_used: Json | null
         }
         Insert: {
           actual_outcome?: string | null
@@ -58682,6 +58683,7 @@ export type Database = {
           stats_brain_score?: number | null
           updated_at?: string | null
           was_correct?: boolean | null
+          weights_used?: Json | null
         }
         Update: {
           actual_outcome?: string | null
@@ -58704,6 +58706,7 @@ export type Database = {
           stats_brain_score?: number | null
           updated_at?: string | null
           was_correct?: boolean | null
+          weights_used?: Json | null
         }
         Relationships: [
           {

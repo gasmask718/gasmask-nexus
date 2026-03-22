@@ -424,5 +424,8 @@ verify_jwt = false
 [functions.sbo-compare-odds]
 verify_jwt = false
 
+[functions.sbo-analyze-model]
+verify_jwt = false
+
 [functions.sbo-track-results]
 verify_jwt = false

@@ -247,18 +247,32 @@ serve(async (req) => {
       runPolymarketBrain(ctx, supabase),
     ]);
 
-    // Dynamic weights based on Polymarket data availability
+    // Get current active model configuration for dynamic weights
+    const { data: activeConfig } = await supabase
+      .from('sbo_model_performance')
+      .select('stats_weight, market_weight, context_weight, polymarket_weight')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    const weights = {
+      stats: activeConfig?.stats_weight || 0.40,
+      market: activeConfig?.market_weight || 0.35,
+      context: activeConfig?.context_weight || 0.25,
+      polymarket: activeConfig?.polymarket_weight || 0.00,
+    };
+
+    // Calculate final score using dynamic weights
     const finalScore = polyResult.has_data
       ? Math.round(
-          stats.score * 0.35 +
-          market.score * 0.30 +
-          context.score * 0.20 +
-          polyResult.score * 0.15
+          stats.score * weights.stats +
+          market.score * weights.market +
+          context.score * weights.context +
+          polyResult.score * weights.polymarket
         )
       : Math.round(
-          stats.score * 0.40 +
-          market.score * 0.35 +
-          context.score * 0.25
+          stats.score * (weights.stats / (1 - weights.polymarket)) +
+          market.score * (weights.market / (1 - weights.polymarket)) +
+          context.score * (weights.context / (1 - weights.polymarket))
         );
 
     const tier = finalScore >= 85 ? 'elite' : finalScore >= 70 ? 'strong' : finalScore >= 55 ? 'moderate' : 'weak';
@@ -279,6 +293,7 @@ serve(async (req) => {
       brain_count: polyResult.has_data ? 4 : 3,
       final_confidence: finalScore,
       confidence_tier: tier,
+      weights_used: weights,
     }).select().single();
 
     return new Response(JSON.stringify({

@@ -14,6 +14,7 @@ const API_COSTS: Record<string, { provider: string; cost_cents: number; note: st
   'sbo-sync-polymarket-full': { provider: 'polymarket', cost_cents: 0, note: 'Free public API' },
   'sbo-compare-odds': { provider: 'internal', cost_cents: 0, note: 'Internal comparison' },
   'sbo-track-results': { provider: 'sportsdata_io', cost_cents: 0, note: 'Subscription included' },
+  'sbo-analyze-model': { provider: 'internal', cost_cents: 0, note: 'Internal model analysis' },
 };
 
 const MORNING_STEPS = [
@@ -30,6 +31,7 @@ const PREGAME_STEPS = [
 
 const POSTGAME_STEPS = [
   { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
+  { fn: 'sbo-analyze-model', label: 'Model Self-Analysis + Weight Adjustment', icon: '🧬', required: false },
 ];
 
 const FULL_STEPS = [...MORNING_STEPS, ...PREGAME_STEPS];
