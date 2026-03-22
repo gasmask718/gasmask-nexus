@@ -87,8 +87,8 @@ serve(async (req) => {
                       winner: ag.HomeTeamScore > ag.AwayTeamScore ? ag.HomeTeam : ag.AwayTeam,
                     })
                     .like('game_id', `%${ag.HomeTeam}%`)
-                    .gte('game_date', `${yesterdayET}T00:00:00`)
-                    .lte('game_date', `${yesterdayET}T23:59:59`);
+                    .gte('game_date', `${yesterdayET}T00:00:00-04:00`)
+                    .lte('game_date', `${yesterdayET}T23:59:59-04:00`);
                 }
               }
             }

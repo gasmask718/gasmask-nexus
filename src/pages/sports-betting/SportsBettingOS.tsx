@@ -21,13 +21,28 @@ import PredictionHistory from '@/components/sbo/PredictionHistory';
 // so Supabase/Postgres compares timestamps correctly
 const getETDayBounds = (date: Date) => {
   const etDateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-  // Determine EDT vs EST from timezone abbreviation
-  const parts = new Intl.DateTimeFormat('en-US', {
+  // Determine UTC offset for the ET date by comparing UTC vs ET hours
+  // Create a date at noon on that ET day to avoid DST edge cases
+  const noonET = new Date(`${etDateStr}T12:00:00`);
+  const utcHour = noonET.getUTCHours();
+  // In EDT (UTC-4), noon local = 16:00 UTC; in EST (UTC-5), noon local = 17:00 UTC
+  // But since we parse without TZ, JS treats it as local. Use Intl instead:
+  const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/New_York',
-    timeZoneName: 'short',
-  }).formatToParts(date);
-  const tzAbbr = parts.find(p => p.type === 'timeZoneName')?.value || 'EST';
-  const offset = tzAbbr === 'EDT' ? '-04:00' : '-05:00';
+    timeZoneName: 'shortOffset',
+  });
+  let offset = '-05:00'; // default EST
+  try {
+    const parts = formatter.formatToParts(date);
+    const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
+    // shortOffset returns "GMT-4" or "GMT-5"
+    if (tzPart.includes('-4')) offset = '-04:00';
+    else if (tzPart.includes('-5')) offset = '-05:00';
+  } catch {
+    // Fallback: check month-based heuristic (Mar-Nov is EDT)
+    const month = date.getMonth(); // 0-indexed
+    offset = (month >= 2 && month <= 10) ? '-04:00' : '-05:00';
+  }
   return {
     start: `${etDateStr}T00:00:00${offset}`,
     end: `${etDateStr}T23:59:59${offset}`,
