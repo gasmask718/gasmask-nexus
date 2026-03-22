@@ -23,6 +23,8 @@ function TonightGamesTab() {
   const [games, setGames] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchingOdds, setFetchingOdds] = useState(false);
+  const [predictingAll, setPredictingAll] = useState(false);
+  const [predictProgress, setPredictProgress] = useState('');
 
   useEffect(() => { loadGames(); }, []);
 
@@ -53,20 +55,98 @@ function TonightGamesTab() {
     setLoading(false);
   };
 
+  const predictAllGames = async () => {
+    setPredictingAll(true);
+    let predicted = 0;
+    try {
+      // Fetch odds first if no games loaded
+      if (!games.length) {
+        setPredictProgress('Fetching tonight\'s games...');
+        const { data, error } = await supabase.functions.invoke('sbo-fetch-odds');
+        if (error) throw error;
+        await loadGames();
+      }
+
+      // Re-fetch games to get fresh list
+      const today = new Date().toISOString().split('T')[0];
+      const { data: freshGames } = await supabase
+        .from('sbo_games')
+        .select(`*, sbo_odds(*), sbo_predictions(*)`)
+        .gte('game_date', today + 'T00:00:00')
+        .lte('game_date', today + 'T23:59:59')
+        .order('game_date');
+
+      const gamesToPredict = (freshGames || []).filter(
+        (g: any) => !g.sbo_predictions?.length
+      );
+
+      if (!gamesToPredict.length && freshGames?.length) {
+        toast.info('All games already have predictions');
+        await loadGames();
+        return;
+      }
+
+      for (const game of gamesToPredict) {
+        setPredictProgress(`Running prediction ${predicted + 1}/${gamesToPredict.length}...`);
+
+        // Determine favorite based on odds
+        const dkOdds = game.sbo_odds?.find((o: any) =>
+          o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
+        );
+        const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+
+        const { error } = await supabase.functions.invoke('sbo-run-predictions', {
+          body: {
+            game_id: game.id,
+            prediction_type: 'moneyline',
+            predicted_outcome: pickHome ? 'home' : 'away',
+          },
+        });
+        if (error) console.error(`Prediction failed for ${game.home_team}:`, error);
+        else predicted++;
+      }
+
+      toast.success(`Tonight's predictions saved — ${predicted} games analyzed`);
+      await loadGames();
+    } catch (e: any) {
+      toast.error(e.message || 'Prediction run failed');
+    } finally {
+      setPredictingAll(false);
+      setPredictProgress('');
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h2 className="text-lg font-bold text-foreground">Tonight's NBA Games</h2>
           <p className="text-xs text-muted-foreground">{games.length} games loaded</p>
         </div>
-        <Button onClick={fetchOdds} disabled={fetchingOdds} size="sm">
-          {fetchingOdds
-            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Fetching...</>
-            : <><RefreshCw className="h-3 w-3 mr-1" /> Fetch Live Odds</>
-          }
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={fetchOdds} disabled={fetchingOdds || predictingAll} size="sm" variant="outline">
+            {fetchingOdds
+              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Fetching...</>
+              : <><RefreshCw className="h-3 w-3 mr-1" /> Fetch Odds</>
+            }
+          </Button>
+          <Button onClick={predictAllGames} disabled={predictingAll || fetchingOdds} size="sm">
+            {predictingAll
+              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {predictProgress || 'Running...'}</>
+              : <><Brain className="h-3 w-3 mr-1" /> 🏀 Tonight's Games</>
+            }
+          </Button>
+        </div>
       </div>
+
+      {predictingAll && (
+        <Alert>
+          <AlertDescription className="text-xs flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {predictProgress}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {loading ? (
         <div className="grid gap-3">
@@ -75,7 +155,7 @@ function TonightGamesTab() {
       ) : !games.length ? (
         <div className="text-center py-12 border border-dashed rounded-lg border-border">
           <p className="text-muted-foreground font-medium">No games loaded for today.</p>
-          <p className="text-xs text-muted-foreground mt-1">Click "Fetch Live Odds" to pull tonight's NBA schedule.</p>
+          <p className="text-xs text-muted-foreground mt-1">Click "🏀 Tonight's Games" to fetch and predict all NBA games.</p>
         </div>
       ) : (
         games.map(game => <GameCard key={game.id} game={game} onUpdate={loadGames} />)
