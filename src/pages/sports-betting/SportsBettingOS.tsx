@@ -910,10 +910,29 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                     <span className="text-amber-500">⏳ Not yet analyzed</span>
                   )}
                 </div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-bold text-foreground">{prop.player_name}</p>
-                    <p className="text-xs text-muted-foreground">{prop.team} · {game?.away_team} @ {game?.home_team}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {/* Player image */}
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                      {prop.player_image_url ? (
+                        <img
+                          src={prop.player_image_url}
+                          alt={prop.player_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(prop.player_name || '')}&background=1a1a1a&color=ffffff&size=128`;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
+                          {prop.player_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold text-foreground">{prop.player_name}</p>
+                      <p className="text-xs text-muted-foreground">{prop.team} · {game?.away_team} @ {game?.home_team}</p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-foreground">{prop.prop_type} {prop.line}</p>
