@@ -308,12 +308,11 @@ export default function TerritoryIngestion() {
       setStep("ingesting");
       setApiProgress(5);
 
+      // Yelp now routes through Google Places with Yelp-style search terms
       const functionName =
-        source === "google_places"
+        source === "google_places" || source === "yelp"
           ? "ingest-google-places"
-          : source === "yelp"
-            ? "ingest-yelp"
-            : "ingest-openstreetmap";
+          : "ingest-openstreetmap";
 
       const totalTargets = selectedNeighborhoodIds.length || legacyNeighborhoods.length || 1;
       const isYelpManual = source === "yelp" && yelpSelectedItems.length > 0;
