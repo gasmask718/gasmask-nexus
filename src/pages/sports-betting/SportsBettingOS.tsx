@@ -530,7 +530,9 @@ function TonightGamesTab() {
                 return y.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
               })()}
             </span>
-            <span className="text-[11px] text-muted-foreground">{yesterdayGames.length} games</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">{yesterdayGames.length} games</span>
+            </div>
           </div>
 
           {/* Yesterday summary bar */}
@@ -559,23 +561,83 @@ function TonightGamesTab() {
             </div>
           )}
 
+          {/* Backfill + Verify buttons */}
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              size="sm"
+              disabled={loading}
+              onClick={async () => {
+                setLoading(true);
+                toast.info('Backfilling yesterday\'s scores and predictions...');
+                try {
+                  const { start, end } = getYesterdayETBounds();
+                  // Step 1 — fetch yesterday's games
+                  const { data: yGames } = await supabase
+                    .from('sbo_games')
+                    .select('*, sbo_predictions(*), sbo_odds(*)')
+                    .gte('game_date', start)
+                    .lte('game_date', end);
+                  if (!yGames?.length) { toast.error('No yesterday games found'); setLoading(false); return; }
+
+                  // Step 2 — fetch final scores via verify edge function
+                  const { data: scoresData } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
+                  if (scoresData?.scores_updated > 0) {
+                    toast.success(`${scoresData.scores_updated} game scores fetched`);
+                  }
+
+                  // Step 3 — run predictions on unpredicted games
+                  const unpredicted = yGames.filter((g: any) => !g.sbo_predictions?.length);
+                  if (unpredicted.length > 0) {
+                    toast.info(`Running AI on ${unpredicted.length} unpredicted games...`);
+                    for (const game of unpredicted) {
+                      const dkOdds = (game.sbo_odds || []).find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline');
+                      const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+                      await supabase.functions.invoke('sbo-run-predictions', {
+                        body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+                      });
+                      await new Promise(r => setTimeout(r, 500));
+                    }
+                    toast.success(`${unpredicted.length} predictions added`);
+                  }
+
+                  // Step 4 — verify all predictions
+                  const { data: verifyData } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                  if (verifyData?.verified > 0) {
+                    toast.success(`Verified: ${verifyData.correct}W - ${verifyData.incorrect}L · ${verifyData.accuracy}% accuracy`);
+                  }
+
+                  await loadYesterdayGames();
+                } catch (e: any) {
+                  toast.error('Backfill failed: ' + e.message);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              {loading ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running...</> : '⚡ Backfill Scores + Predictions'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                toast.info('Verifying results...');
+                const { data } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                toast.success(
+                  data?.verified > 0
+                    ? `${data.correct}W - ${data.incorrect}L · ${data.accuracy}%`
+                    : 'No new results to verify'
+                );
+                await loadYesterdayGames();
+              }}
+            >
+              🔍 Verify Results
+            </Button>
+          </div>
+
           {pendingCount > 0 && (
             <Alert>
               <AlertDescription className="text-xs">
                 ⏳ {pendingCount} game{pendingCount !== 1 ? 's' : ''} still pending verification — scores may not be available yet.
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="ml-2 h-6 text-[11px]"
-                  onClick={async () => {
-                    toast.info('Verifying results...');
-                    await supabase.functions.invoke('sbo-verify-results', { body: {} });
-                    await loadYesterdayGames();
-                    toast.success('Verification complete');
-                  }}
-                >
-                  Verify Now
-                </Button>
               </AlertDescription>
             </Alert>
           )}
