@@ -411,3 +411,6 @@ verify_jwt = false
 
 [functions.sbo-sync-prizepicks]
 verify_jwt = false
+
+[functions.sbo-day-engine]
+verify_jwt = false
