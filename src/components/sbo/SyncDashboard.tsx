@@ -47,15 +47,24 @@ export function SyncDashboard() {
     },
   });
 
-  const runSync = async (syncType: 'daily' | 'pregame') => {
+  const runSync = async (syncType: 'daily' | 'pregame' | 'prizepicks') => {
     setSyncing(syncType);
     try {
-      const fnName = syncType === 'daily' ? 'sbo-sync-daily' : 'sbo-sync-pregame';
-      const { data, error } = await supabase.functions.invoke(fnName, {
+      const fnMap: Record<string, string> = {
+        daily: 'sbo-sync-daily',
+        pregame: 'sbo-sync-pregame',
+        prizepicks: 'sbo-sync-prizepicks',
+      };
+      const labelMap: Record<string, string> = {
+        daily: 'Daily',
+        pregame: 'Pre-game',
+        prizepicks: 'PrizePicks',
+      };
+      const { data, error } = await supabase.functions.invoke(fnMap[syncType], {
         body: { date: new Date().toISOString().split('T')[0] },
       });
       if (error) throw error;
-      toast.success(`${syncType === 'daily' ? 'Daily' : 'Pre-game'} sync complete`);
+      toast.success(`${labelMap[syncType]} sync complete`);
       refetch();
     } catch (e: any) {
       toast.error(e.message || 'Sync failed');
