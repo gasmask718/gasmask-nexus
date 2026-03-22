@@ -57500,6 +57500,129 @@ export type Database = {
           },
         ]
       }
+      sbo_api_budget: {
+        Row: {
+          alert_threshold_pct: number | null
+          current_month_spend_cents: number | null
+          id: string
+          monthly_limit_cents: number
+          plan_details: string | null
+          plan_name: string | null
+          provider: string
+          updated_at: string | null
+        }
+        Insert: {
+          alert_threshold_pct?: number | null
+          current_month_spend_cents?: number | null
+          id?: string
+          monthly_limit_cents?: number
+          plan_details?: string | null
+          plan_name?: string | null
+          provider: string
+          updated_at?: string | null
+        }
+        Update: {
+          alert_threshold_pct?: number | null
+          current_month_spend_cents?: number | null
+          id?: string
+          monthly_limit_cents?: number
+          plan_details?: string | null
+          plan_name?: string | null
+          provider?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sbo_api_costs: {
+        Row: {
+          api_calls_made: number | null
+          api_provider: string
+          created_at: string | null
+          endpoint_called: string | null
+          estimated_cost_cents: number | null
+          feed_name: string
+          id: string
+          records_returned: number | null
+          response_status: string | null
+          run_date: string
+        }
+        Insert: {
+          api_calls_made?: number | null
+          api_provider: string
+          created_at?: string | null
+          endpoint_called?: string | null
+          estimated_cost_cents?: number | null
+          feed_name: string
+          id?: string
+          records_returned?: number | null
+          response_status?: string | null
+          run_date?: string
+        }
+        Update: {
+          api_calls_made?: number | null
+          api_provider?: string
+          created_at?: string | null
+          endpoint_called?: string | null
+          estimated_cost_cents?: number | null
+          feed_name?: string
+          id?: string
+          records_returned?: number | null
+          response_status?: string | null
+          run_date?: string
+        }
+        Relationships: []
+      }
+      sbo_day_engine_runs: {
+        Row: {
+          completed_at: string | null
+          duration_seconds: number | null
+          estimated_cost_cents: number | null
+          id: string
+          notes: string | null
+          run_date: string
+          run_type: string
+          started_at: string | null
+          status: string | null
+          steps_completed: Json | null
+          steps_failed: Json | null
+          total_api_calls: number | null
+          total_records_synced: number | null
+          trigger_time: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_seconds?: number | null
+          estimated_cost_cents?: number | null
+          id?: string
+          notes?: string | null
+          run_date?: string
+          run_type: string
+          started_at?: string | null
+          status?: string | null
+          steps_completed?: Json | null
+          steps_failed?: Json | null
+          total_api_calls?: number | null
+          total_records_synced?: number | null
+          trigger_time: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration_seconds?: number | null
+          estimated_cost_cents?: number | null
+          id?: string
+          notes?: string | null
+          run_date?: string
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+          steps_completed?: Json | null
+          steps_failed?: Json | null
+          total_api_calls?: number | null
+          total_records_synced?: number | null
+          trigger_time?: string
+        }
+        Relationships: []
+      }
       sbo_defense_vs_position: {
         Row: {
           assists_allowed_avg: number | null
