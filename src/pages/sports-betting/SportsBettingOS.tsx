@@ -125,6 +125,9 @@ function TonightGamesTab() {
       .lte('game_date', today + 'T23:59:59')
       .order('game_date');
     setGames((data as any[]) || []);
+    if (data?.length) {
+      setLastFetchTime(new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
+    }
     setLoading(false);
   };
 
