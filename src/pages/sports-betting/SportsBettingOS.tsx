@@ -3142,7 +3142,7 @@ export default function SportsBettingOS() {
             .from('sbo_predictions')
             .select('*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds)')
             .in('confidence_tier', ['elite', 'strong'])
-            .gte('created_at', `${today}T00:00:00`)
+            .gte('created_at', raStart)
             .order('final_confidence', { ascending: false })
             .limit(10);
 
