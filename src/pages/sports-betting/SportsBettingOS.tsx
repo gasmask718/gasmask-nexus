@@ -15,6 +15,7 @@ import { SyncDashboard } from '@/components/sbo/SyncDashboard';
 import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
+import PredictionHistory from '@/components/sbo/PredictionHistory';
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
