@@ -260,11 +260,11 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({
       success: true,
-      games_analyzed: intelCount,
+      games_analyzed: processedCount,
       team_stats_updated: teamStats.length,
       standings_loaded: standings.length,
       injuries_loaded: injuries.length,
-      message: `Intelligence gathered for ${intelCount} games`,
+      message: `Intelligence gathered for ${processedCount} games`,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Intelligence fetch error:', e);

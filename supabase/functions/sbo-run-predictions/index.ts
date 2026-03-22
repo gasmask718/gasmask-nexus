@@ -269,7 +269,7 @@ serve(async (req) => {
     const { game_id, prop_id, prediction_type, predicted_outcome } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
     // Never re-predict a game that already has a prediction today
     if (game_id && prediction_type === 'moneyline') {
