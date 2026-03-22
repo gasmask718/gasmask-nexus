@@ -1058,6 +1058,10 @@ export default function SportsBettingOS() {
         <TabsContent value="entry" className="mt-4">
           <VAPropEntryTab />
         </TabsContent>
+
+        <TabsContent value="sync" className="mt-4">
+          <SyncDashboard />
+        </TabsContent>
       </Tabs>
     </div>
   );
