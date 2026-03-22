@@ -460,11 +460,11 @@ function TonightGamesTab() {
                   if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
                   setPredictingAll(true);
                   setPredictProgress('Clearing cached data...');
-                  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+                  const { start: fStart, end: fEnd } = getTodayETBounds();
                   try {
-                    await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
-                    await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
-                    await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                    await supabase.from('sbo_predictions').delete().gte('created_at', fStart);
+                    await supabase.from('sbo_game_intelligence').delete().gte('created_at', fStart);
+                    await supabase.from('sbo_games').delete().gte('game_date', fStart).lte('game_date', fEnd);
                     localStorage.removeItem('sbo_games_loaded_today');
                     localStorage.removeItem('sbo_predictions_ran_today');
                     localStorage.removeItem('sbo_last_run_date');
