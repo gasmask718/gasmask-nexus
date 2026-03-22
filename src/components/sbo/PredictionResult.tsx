@@ -19,6 +19,7 @@ interface PredictionResultProps {
     polymarket_brain_score?: number | null;
     polymarket_brain_reasoning?: string | null;
     brain_count?: number;
+    data_quality?: string;
     brains?: { stats: Brain; market: Brain; context: Brain; polymarket?: Brain };
   };
 }
