@@ -17,6 +17,30 @@ import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
 
+// Helper: get start/end of an ET day as offset-aware ISO strings
+// so Supabase/Postgres compares timestamps correctly
+const getETDayBounds = (date: Date) => {
+  const etDateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  // Determine EDT vs EST from timezone abbreviation
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    timeZoneName: 'short',
+  }).formatToParts(date);
+  const tzAbbr = parts.find(p => p.type === 'timeZoneName')?.value || 'EST';
+  const offset = tzAbbr === 'EDT' ? '-04:00' : '-05:00';
+  return {
+    start: `${etDateStr}T00:00:00${offset}`,
+    end: `${etDateStr}T23:59:59${offset}`,
+  };
+};
+
+const getTodayETBounds = () => getETDayBounds(new Date());
+const getYesterdayETBounds = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return getETDayBounds(d);
+};
+
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
 // ═══════════════════════════════════════════════════════════════
