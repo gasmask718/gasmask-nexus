@@ -20,12 +20,22 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { game_id, prediction_id } = body;
 
-    // Use Eastern Time for yesterday
+    // Use Eastern Time for yesterday and today
     const now = new Date();
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayET = yesterday.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const todayET = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    // Determine ET offset (EDT=-04:00, EST=-05:00)
+    const etOffset = (() => {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: 'America/New_York', timeZoneName: 'shortOffset'
+        }).formatToParts(now);
+        const tz = parts.find(p => p.type === 'timeZoneName')?.value || '';
+        return tz.includes('-4') ? '-04:00' : '-05:00';
+      } catch { return '-05:00'; }
+    })();
 
     let gamesToVerify: any[] = [];
 
