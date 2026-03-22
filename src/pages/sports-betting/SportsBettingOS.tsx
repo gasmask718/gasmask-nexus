@@ -2262,6 +2262,33 @@ function MyBetsTab() {
       {/* Saved picks view */}
       {activeView === 'saved' && (
         <div className="space-y-2">
+          {/* Running P&L total */}
+          {savedPicks && savedPicks.length > 0 && (() => {
+            const wonPicks = savedPicks.filter((p: any) => p.result === 'won');
+            const lostPicks = savedPicks.filter((p: any) => p.result === 'lost');
+            const totalStaked = savedPicks.reduce((s: number, p: any) => s + (p.stake || 0), 0);
+            const totalWon = wonPicks.reduce((s: number, p: any) => s + (p.potential_payout || p.stake || 0), 0);
+            const totalLost = lostPicks.reduce((s: number, p: any) => s + (p.stake || 0), 0);
+            const netPL = totalWon - totalLost;
+            return (
+              <div className="grid grid-cols-4 gap-2 mb-2">
+                {[
+                  { label: 'Picks', value: String(savedPicks.length), color: 'text-foreground' },
+                  { label: 'Won', value: String(wonPicks.length), color: 'text-green-500' },
+                  { label: 'Lost', value: String(lostPicks.length), color: 'text-red-500' },
+                  { label: 'Net P&L', value: `${netPL >= 0 ? '+' : ''}$${netPL.toFixed(2)}`, color: netPL >= 0 ? 'text-green-500' : 'text-red-500' },
+                ].map(s => (
+                  <Card key={s.label}>
+                    <CardContent className="p-2 text-center">
+                      <p className={`text-sm font-bold ${s.color}`}>{s.value}</p>
+                      <p className="text-[9px] text-muted-foreground">{s.label}</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            );
+          })()}
+
           {!savedPicks?.length ? (
             <div className="text-center py-8 border border-dashed rounded-lg border-border">
               <p className="text-muted-foreground font-medium">No saved picks yet.</p>
@@ -2276,15 +2303,20 @@ function MyBetsTab() {
                 push: 'text-amber-500',
               };
               const resultEmoji: Record<string, string> = {
-                pending: '⏳', won: '🟢', lost: '🔴', push: '🟡',
+                pending: '🕐', won: '✅', lost: '❌', push: '➖',
               };
+              const plDisplay = pick.result === 'won'
+                ? `+$${(pick.potential_payout || pick.stake || 0).toFixed(2)}`
+                : pick.result === 'lost'
+                ? `-$${(pick.stake || 0).toFixed(2)}`
+                : pick.result === 'push' ? '$0' : '';
               return (
                 <Card key={pick.id}>
                   <CardContent className="p-3">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">
-                          {resultEmoji[pick.result] || '⏳'} {pick.label}
+                          {resultEmoji[pick.result] || '🕐'} {pick.label}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">{pick.detail}</p>
                         {pick.ai_analysis && (
@@ -2296,6 +2328,9 @@ function MyBetsTab() {
                             <span className="text-[10px] text-muted-foreground">{pick.confidence}% conf</span>
                           )}
                           {pick.odds && <span className="text-[10px] font-mono text-muted-foreground">{pick.odds}</span>}
+                          {plDisplay && (
+                            <span className={`text-[10px] font-bold ${resultColors[pick.result] || ''}`}>{plDisplay}</span>
+                          )}
                         </div>
                       </div>
                       <Select value={pick.result || 'pending'} onValueChange={(v) => updatePickResult(pick.id, v)}>
@@ -2303,10 +2338,10 @@ function MyBetsTab() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pending" className="text-xs">⏳ Pending</SelectItem>
-                          <SelectItem value="won" className="text-xs">🟢 Won</SelectItem>
-                          <SelectItem value="lost" className="text-xs">🔴 Lost</SelectItem>
-                          <SelectItem value="push" className="text-xs">🟡 Push</SelectItem>
+                          <SelectItem value="pending" className="text-xs">🕐 Pending</SelectItem>
+                          <SelectItem value="won" className="text-xs">✅ Won</SelectItem>
+                          <SelectItem value="lost" className="text-xs">❌ Lost</SelectItem>
+                          <SelectItem value="push" className="text-xs">➖ Push</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
