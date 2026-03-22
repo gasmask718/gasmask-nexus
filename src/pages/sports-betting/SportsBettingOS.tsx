@@ -117,7 +117,7 @@ function TonightGamesTab() {
 
   const loadGames = async () => {
     setLoading(true);
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const { data } = await supabase
       .from('sbo_games')
       .select(`*, sbo_odds(*), sbo_predictions(*)`)
