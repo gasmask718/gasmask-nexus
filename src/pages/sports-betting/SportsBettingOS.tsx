@@ -485,8 +485,30 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
                 sourceTable="sbo_predictions"
                 sourceId={localPrediction.id || game.id}
               />
-              <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={() => setLocalPrediction(null)}>
-                Run Different Prediction
+              <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={async () => {
+                // Rerun: delete old prediction and intelligence, re-fetch and re-predict
+                setRunning(true);
+                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+                try {
+                  await supabase.from('sbo_predictions').delete().eq('game_id', game.id).gte('created_at', `${today}T00:00:00`);
+                  await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.game_id);
+                  try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch {}
+                  await new Promise(resolve => setTimeout(resolve, 800));
+                  const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+                  const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
+                    body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+                  });
+                  if (error) throw error;
+                  setLocalPrediction(data);
+                  toast.success(`Rerun: ${data.final_confidence}% · ${data.data_quality === 'full' ? '📊 Full Stats' : data.data_quality === 'partial' ? '⚠️ Partial' : '🔴 Odds Only'}`);
+                } catch (e: any) {
+                  toast.error('Rerun failed: ' + e.message);
+                  setLocalPrediction(null);
+                } finally {
+                  setRunning(false);
+                }
+              }}>
+                {localPrediction?.data_quality === 'odds_only' ? '⚡ Rerun With Real Stats' : '🔄 Run Different Prediction'}
               </Button>
             </div>
           </>
