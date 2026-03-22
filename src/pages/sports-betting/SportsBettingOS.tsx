@@ -17,35 +17,17 @@ import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
 
-// Helper: get start/end of an ET day as offset-aware ISO strings
-// so Supabase/Postgres compares timestamps correctly
+// Helper: get start/end of an ET day as UTC ISO strings
+// Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
 const getETDayBounds = (date: Date) => {
   const etDateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-  // Determine UTC offset for the ET date by comparing UTC vs ET hours
-  // Create a date at noon on that ET day to avoid DST edge cases
-  const noonET = new Date(`${etDateStr}T12:00:00`);
-  const utcHour = noonET.getUTCHours();
-  // In EDT (UTC-4), noon local = 16:00 UTC; in EST (UTC-5), noon local = 17:00 UTC
-  // But since we parse without TZ, JS treats it as local. Use Intl instead:
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/New_York',
-    timeZoneName: 'shortOffset',
-  });
-  let offset = '-05:00'; // default EST
-  try {
-    const parts = formatter.formatToParts(date);
-    const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
-    // shortOffset returns "GMT-4" or "GMT-5"
-    if (tzPart.includes('-4')) offset = '-04:00';
-    else if (tzPart.includes('-5')) offset = '-05:00';
-  } catch {
-    // Fallback: check month-based heuristic (Mar-Nov is EDT)
-    const month = date.getMonth(); // 0-indexed
-    offset = (month >= 2 && month <= 10) ? '-04:00' : '-05:00';
-  }
+  const [year, month, day] = etDateStr.split('-').map(Number);
+  // ET day boundary at 05:00 UTC (midnight EST / 1am EDT — safely before any NBA game)
+  const start = new Date(Date.UTC(year, month - 1, day, 5, 0, 0));
+  const end = new Date(Date.UTC(year, month - 1, day + 1, 5, 0, 0));
   return {
-    start: `${etDateStr}T00:00:00${offset}`,
-    end: `${etDateStr}T23:59:59${offset}`,
+    start: start.toISOString(),
+    end: end.toISOString(),
   };
 };
 
@@ -305,12 +287,14 @@ function TonightGamesTab() {
   const loadYesterdayGames = async () => {
     setLoading(true);
     const { start, end } = getYesterdayETBounds();
-    const { data } = await supabase
+    console.log('Yesterday query bounds:', start, 'to', end);
+    const { data, error } = await supabase
       .from('sbo_games')
       .select(`*, sbo_predictions(*), sbo_odds(*), sbo_results_verification(*)`)
       .gte('game_date', start)
-      .lte('game_date', end)
+      .lt('game_date', end)
       .order('game_date');
+    console.log('Yesterday games found:', data?.length, 'error:', error);
     setYesterdayGames((data as any[]) || []);
     setLoading(false);
   };
