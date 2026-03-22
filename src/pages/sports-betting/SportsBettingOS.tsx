@@ -991,6 +991,9 @@ function AccuracyTab() {
 
   return (
     <div className="space-y-4">
+      {/* Accuracy history chart */}
+      <AccuracyHistoryWidget />
+
       {/* Overall accuracy */}
       <div className="grid grid-cols-3 gap-3">
         {[
