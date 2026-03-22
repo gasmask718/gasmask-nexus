@@ -338,6 +338,15 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
   return (
     <Card>
       <CardContent className="p-4">
+        {/* Game date & pull timestamp */}
+        <div className="flex justify-between items-center mb-2 text-[11px] text-muted-foreground">
+          <span>
+            🏀 {new Date(game.game_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Tip {new Date(game.game_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+          </span>
+          <span>
+            Pulled: {new Date(game.created_at || game.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
         {/* Sharp money / line movement badges */}
         <div className="flex flex-wrap gap-1 mb-2">
           {lineMove?.steam_move && (
