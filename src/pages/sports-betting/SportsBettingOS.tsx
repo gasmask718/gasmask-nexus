@@ -318,12 +318,12 @@ function TonightGamesTab() {
       try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
       setFetchingIntel(false);
 
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { start: tStart, end: tEnd } = getTodayETBounds();
       const { data: freshGames } = await supabase
         .from('sbo_games')
         .select(`*, sbo_odds(*), sbo_predictions(*)`)
-        .gte('game_date', today + 'T00:00:00')
-        .lte('game_date', today + 'T23:59:59')
+        .gte('game_date', tStart)
+        .lte('game_date', tEnd)
         .order('game_date');
 
       const gamesToPredict = (freshGames || []).filter(
