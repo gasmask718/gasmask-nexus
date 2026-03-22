@@ -57533,6 +57533,77 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_actual_bets: {
+        Row: {
+          actual_payout: number | null
+          bet_date: string
+          bet_type: string
+          briefing_id: string | null
+          confirmed: boolean | null
+          created_at: string | null
+          description: string
+          id: string
+          legs: Json | null
+          odds_american: number | null
+          outcome: string | null
+          parlay_legs_count: number | null
+          parsed_by_ai: boolean | null
+          potential_payout: number | null
+          profit_loss: number | null
+          raw_reply: string | null
+          stake_usd: number
+          updated_at: string | null
+        }
+        Insert: {
+          actual_payout?: number | null
+          bet_date?: string
+          bet_type: string
+          briefing_id?: string | null
+          confirmed?: boolean | null
+          created_at?: string | null
+          description: string
+          id?: string
+          legs?: Json | null
+          odds_american?: number | null
+          outcome?: string | null
+          parlay_legs_count?: number | null
+          parsed_by_ai?: boolean | null
+          potential_payout?: number | null
+          profit_loss?: number | null
+          raw_reply?: string | null
+          stake_usd: number
+          updated_at?: string | null
+        }
+        Update: {
+          actual_payout?: number | null
+          bet_date?: string
+          bet_type?: string
+          briefing_id?: string | null
+          confirmed?: boolean | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          legs?: Json | null
+          odds_american?: number | null
+          outcome?: string | null
+          parlay_legs_count?: number | null
+          parsed_by_ai?: boolean | null
+          potential_payout?: number | null
+          profit_loss?: number | null
+          raw_reply?: string | null
+          stake_usd?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_actual_bets_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_daily_briefings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_api_budget: {
         Row: {
           alert_threshold_pct: number | null
@@ -57602,6 +57673,126 @@ export type Database = {
           records_returned?: number | null
           response_status?: string | null
           run_date?: string
+        }
+        Relationships: []
+      }
+      sbo_bankroll: {
+        Row: {
+          biggest_loss: number | null
+          biggest_win: number | null
+          current_streak: number | null
+          id: string
+          loss_count: number | null
+          net_profit_loss: number | null
+          push_count: number | null
+          roi_pct: number | null
+          snapshot_date: string
+          starting_bankroll: number | null
+          streak_type: string | null
+          total_lost: number | null
+          total_wagered: number | null
+          total_won: number | null
+          updated_at: string | null
+          win_count: number | null
+          win_rate_pct: number | null
+        }
+        Insert: {
+          biggest_loss?: number | null
+          biggest_win?: number | null
+          current_streak?: number | null
+          id?: string
+          loss_count?: number | null
+          net_profit_loss?: number | null
+          push_count?: number | null
+          roi_pct?: number | null
+          snapshot_date?: string
+          starting_bankroll?: number | null
+          streak_type?: string | null
+          total_lost?: number | null
+          total_wagered?: number | null
+          total_won?: number | null
+          updated_at?: string | null
+          win_count?: number | null
+          win_rate_pct?: number | null
+        }
+        Update: {
+          biggest_loss?: number | null
+          biggest_win?: number | null
+          current_streak?: number | null
+          id?: string
+          loss_count?: number | null
+          net_profit_loss?: number | null
+          push_count?: number | null
+          roi_pct?: number | null
+          snapshot_date?: string
+          starting_bankroll?: number | null
+          streak_type?: string | null
+          total_lost?: number | null
+          total_wagered?: number | null
+          total_won?: number | null
+          updated_at?: string | null
+          win_count?: number | null
+          win_rate_pct?: number | null
+        }
+        Relationships: []
+      }
+      sbo_daily_briefings: {
+        Row: {
+          best_parlay_confidence: number | null
+          briefing_date: string
+          created_at: string | null
+          error_message: string | null
+          full_message: string | null
+          games_tonight: number | null
+          id: string
+          moneylines_section: string | null
+          parlay_legs: Json | null
+          parlay_section: string | null
+          phone_number: string
+          props_available: number | null
+          props_section: string | null
+          sent_at: string | null
+          status: string | null
+          top_moneylines: Json | null
+          top_props: Json | null
+        }
+        Insert: {
+          best_parlay_confidence?: number | null
+          briefing_date: string
+          created_at?: string | null
+          error_message?: string | null
+          full_message?: string | null
+          games_tonight?: number | null
+          id?: string
+          moneylines_section?: string | null
+          parlay_legs?: Json | null
+          parlay_section?: string | null
+          phone_number: string
+          props_available?: number | null
+          props_section?: string | null
+          sent_at?: string | null
+          status?: string | null
+          top_moneylines?: Json | null
+          top_props?: Json | null
+        }
+        Update: {
+          best_parlay_confidence?: number | null
+          briefing_date?: string
+          created_at?: string | null
+          error_message?: string | null
+          full_message?: string | null
+          games_tonight?: number | null
+          id?: string
+          moneylines_section?: string | null
+          parlay_legs?: Json | null
+          parlay_section?: string | null
+          phone_number?: string
+          props_available?: number | null
+          props_section?: string | null
+          sent_at?: string | null
+          status?: string | null
+          top_moneylines?: Json | null
+          top_props?: Json | null
         }
         Relationships: []
       }
@@ -58077,6 +58268,68 @@ export type Database = {
             columns: ["prop_id"]
             isOneToOne: false
             referencedRelation: "sbo_player_props"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_parlay_payouts: {
+        Row: {
+          briefing_id: string | null
+          combined_odds: number | null
+          created_at: string | null
+          expected_value_10: number | null
+          id: string
+          leg_details: Json
+          legs_count: number
+          parlay_multiplier: number | null
+          payout_10: number | null
+          payout_100: number | null
+          payout_20: number | null
+          payout_25: number | null
+          payout_5: number | null
+          payout_50: number | null
+          win_probability_pct: number | null
+        }
+        Insert: {
+          briefing_id?: string | null
+          combined_odds?: number | null
+          created_at?: string | null
+          expected_value_10?: number | null
+          id?: string
+          leg_details: Json
+          legs_count: number
+          parlay_multiplier?: number | null
+          payout_10?: number | null
+          payout_100?: number | null
+          payout_20?: number | null
+          payout_25?: number | null
+          payout_5?: number | null
+          payout_50?: number | null
+          win_probability_pct?: number | null
+        }
+        Update: {
+          briefing_id?: string | null
+          combined_odds?: number | null
+          created_at?: string | null
+          expected_value_10?: number | null
+          id?: string
+          leg_details?: Json
+          legs_count?: number
+          parlay_multiplier?: number | null
+          payout_10?: number | null
+          payout_100?: number | null
+          payout_20?: number | null
+          payout_25?: number | null
+          payout_5?: number | null
+          payout_50?: number | null
+          win_probability_pct?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_parlay_payouts_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_daily_briefings"
             referencedColumns: ["id"]
           },
         ]
@@ -58828,6 +59081,57 @@ export type Database = {
             columns: ["parlay_id"]
             isOneToOne: false
             referencedRelation: "sbo_parlays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_sms_log: {
+        Row: {
+          briefing_id: string | null
+          created_at: string | null
+          direction: string
+          id: string
+          message_body: string
+          phone_number: string
+          processed: boolean | null
+          related_bet_id: string | null
+          twilio_sid: string | null
+        }
+        Insert: {
+          briefing_id?: string | null
+          created_at?: string | null
+          direction: string
+          id?: string
+          message_body: string
+          phone_number: string
+          processed?: boolean | null
+          related_bet_id?: string | null
+          twilio_sid?: string | null
+        }
+        Update: {
+          briefing_id?: string | null
+          created_at?: string | null
+          direction?: string
+          id?: string
+          message_body?: string
+          phone_number?: string
+          processed?: boolean | null
+          related_bet_id?: string | null
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_sms_log_briefing_id_fkey"
+            columns: ["briefing_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_daily_briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_sms_log_related_bet_id_fkey"
+            columns: ["related_bet_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_actual_bets"
             referencedColumns: ["id"]
           },
         ]

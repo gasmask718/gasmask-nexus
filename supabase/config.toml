@@ -429,3 +429,9 @@ verify_jwt = false
 
 [functions.sbo-track-results]
 verify_jwt = false
+
+[functions.sbo-generate-daily-briefing]
+verify_jwt = false
+
+[functions.sbo-send-daily-sms]
+verify_jwt = false
