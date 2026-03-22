@@ -547,6 +547,14 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 
   return (
     <div className="space-y-4">
+      {/* Date Banner */}
+      <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
+        <span className="text-sm font-medium text-foreground">
+          📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        </span>
+        <span className="text-[11px] text-muted-foreground">{filtered.length} props loaded</span>
+      </div>
+
       <div className="flex items-center gap-2 flex-wrap">
         {(['all', 'strong', 'elite'] as const).map(f => (
           <Button
