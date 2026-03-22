@@ -530,7 +530,9 @@ function TonightGamesTab() {
                 return y.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
               })()}
             </span>
-            <span className="text-[11px] text-muted-foreground">{yesterdayGames.length} games</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">{yesterdayGames.length} games</span>
+            </div>
           </div>
 
           {/* Yesterday summary bar */}
