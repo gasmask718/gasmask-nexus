@@ -3279,13 +3279,13 @@ export default function SportsBettingOS() {
             disabled={runningAll}
             onClick={async () => {
               if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
-              const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+              const { start: frStart, end: frEnd } = getTodayETBounds();
               setRunningAll(true);
               setRunAllPhase('Clearing cached data...');
               try {
-                await supabase.from('sbo_predictions').delete().gte('created_at', `${today}T00:00:00`);
-                await supabase.from('sbo_game_intelligence').delete().gte('created_at', `${today}T00:00:00`);
-                await supabase.from('sbo_games').delete().gte('game_date', `${today}T00:00:00`).lte('game_date', `${today}T23:59:59`);
+                await supabase.from('sbo_predictions').delete().gte('created_at', frStart);
+                await supabase.from('sbo_game_intelligence').delete().gte('created_at', frStart);
+                await supabase.from('sbo_games').delete().gte('game_date', frStart).lte('game_date', frEnd);
                 localStorage.removeItem('sbo_games_loaded_today');
                 localStorage.removeItem('sbo_predictions_ran_today');
                 localStorage.removeItem('sbo_last_run_date');
