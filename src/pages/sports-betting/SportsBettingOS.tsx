@@ -127,6 +127,8 @@ function TonightGamesTab() {
     setLoading(false);
   };
 
+  const [fetchingIntel, setFetchingIntel] = useState(false);
+
   const predictAllGames = async () => {
     setPredictingAll(true);
     let predicted = 0;
@@ -138,6 +140,14 @@ function TonightGamesTab() {
         if (error) throw error;
         await loadGames();
       }
+
+      // Fetch intelligence
+      setPredictProgress('Gathering game intelligence (injuries, pace, B2B)...');
+      setFetchingIntel(true);
+      try {
+        await supabase.functions.invoke('sbo-fetch-intelligence');
+      } catch { /* continue without intel */ }
+      setFetchingIntel(false);
 
       // Re-fetch games to get fresh list
       const today = new Date().toISOString().split('T')[0];
@@ -167,7 +177,7 @@ function TonightGamesTab() {
         );
         const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
 
-        const { error } = await supabase.functions.invoke('sbo-run-predictions', {
+        const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
           body: {
             game_id: game.id,
             prediction_type: 'moneyline',
@@ -175,16 +185,32 @@ function TonightGamesTab() {
           },
         });
         if (error) console.error(`Prediction failed for ${game.home_team}:`, error);
-        else predicted++;
+        else {
+          // Auto-calculate Kelly stake
+          if (data?.final_confidence && dkOdds) {
+            const odds = pickHome ? dkOdds.home_odds : dkOdds.away_odds;
+            const dec = odds > 0 ? 1 + odds / 100 : 1 + 100 / Math.abs(odds);
+            const conf = data.final_confidence / 100;
+            const kelly = ((conf * (dec - 1)) - (1 - conf)) / (dec - 1);
+            const quarterKelly = Math.max(0, kelly * 0.25);
+            await supabase.from('sbo_predictions').update({
+              kelly_stake: Math.round(kelly * 10000) / 10000,
+              recommended_units: Math.round(quarterKelly * 100) / 100,
+              recommended_stake: Math.round(quarterKelly * 500 * 100) / 100, // $500 default bankroll
+            }).eq('id', data.id);
+          }
+          predicted++;
+        }
       }
 
-      toast.success(`Tonight's predictions saved — ${predicted} games analyzed`);
+      toast.success(`Tonight's predictions saved — ${predicted} games analyzed with intelligence`);
       await loadGames();
     } catch (e: any) {
       toast.error(e.message || 'Prediction run failed');
     } finally {
       setPredictingAll(false);
       setPredictProgress('');
+      setFetchingIntel(false);
     }
   };
 
@@ -242,6 +268,36 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
     game.sbo_predictions?.[0] || null
   );
 
+  // Fetch game intelligence
+  const { data: intel } = useQuery({
+    queryKey: ['game-intel', game.game_id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_game_intelligence')
+        .select('*')
+        .eq('game_id', game.game_id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60000,
+  });
+
+  // Fetch sharp money indicators
+  const { data: lineMove } = useQuery({
+    queryKey: ['line-move', game.game_id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_line_movement')
+        .select('*')
+        .eq('game_id', game.game_id)
+        .order('recorded_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60000,
+  });
+
   const dkOdds = game.sbo_odds?.find((o: any) =>
     o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
   );
@@ -265,14 +321,36 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
   return (
     <Card>
       <CardContent className="p-4">
+        {/* Sharp money / line movement badges */}
+        <div className="flex flex-wrap gap-1 mb-2">
+          {lineMove?.steam_move && (
+            <Badge className="text-[9px] bg-destructive/20 text-destructive border-destructive/30">🔥 STEAM MOVE</Badge>
+          )}
+          {lineMove?.reverse_line_move && (
+            <Badge className="text-[9px] bg-amber-500/20 text-amber-600 border-amber-500/30">⚡ REVERSE LINE</Badge>
+          )}
+          {lineMove?.sharp_indicator && (
+            <Badge className="text-[9px] bg-blue-500/20 text-blue-500 border-blue-500/30">🎯 SHARP ACTION</Badge>
+          )}
+          {intel?.back_to_back_home && (
+            <Badge variant="outline" className="text-[9px] text-amber-500">⚠️ {game.home_team} B2B</Badge>
+          )}
+          {intel?.back_to_back_away && (
+            <Badge variant="outline" className="text-[9px] text-amber-500">⚠️ {game.away_team} B2B</Badge>
+          )}
+        </div>
+
         <div className="flex items-center justify-between">
           <div className="text-center flex-1">
             <p className="font-bold text-foreground">{game.away_team}</p>
             <p className="text-[10px] text-muted-foreground">Away</p>
             {dkOdds && (
-              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.away_odds > 0 ? 'text-green-500' : 'text-foreground'}`}>
+              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.away_odds > 0 ? 'text-emerald-500' : 'text-foreground'}`}>
                 {dkOdds.away_odds > 0 ? '+' : ''}{dkOdds.away_odds}
               </p>
+            )}
+            {intel?.away_record_away && (
+              <p className="text-[9px] text-muted-foreground">{intel.away_record_away} away</p>
             )}
           </div>
 
@@ -281,18 +359,35 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
               {new Date(game.game_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Badge>
             <p className="text-xs text-muted-foreground mt-1">@</p>
+            {intel?.pace_home && intel?.pace_away && (
+              <p className="text-[9px] text-muted-foreground mt-1">
+                Pace: {((intel.pace_home + intel.pace_away) / 2).toFixed(0)}
+              </p>
+            )}
           </div>
 
           <div className="text-center flex-1">
             <p className="font-bold text-foreground">{game.home_team}</p>
             <p className="text-[10px] text-muted-foreground">Home</p>
             {dkOdds && (
-              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.home_odds > 0 ? 'text-green-500' : 'text-foreground'}`}>
+              <p className={`text-sm font-mono font-bold mt-1 ${dkOdds.home_odds > 0 ? 'text-emerald-500' : 'text-foreground'}`}>
                 {dkOdds.home_odds > 0 ? '+' : ''}{dkOdds.home_odds}
               </p>
             )}
+            {intel?.home_record_home && (
+              <p className="text-[9px] text-muted-foreground">{intel.home_record_home} home</p>
+            )}
           </div>
         </div>
+
+        {/* Intelligence bar */}
+        {intel && (
+          <div className="mt-2 p-2 rounded bg-muted/30 text-[9px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+            {intel.offensive_rating_home && <span>🏀 {game.home_team}: {intel.offensive_rating_home?.toFixed(1)} ORtg / {intel.defensive_rating_home?.toFixed(1)} DRtg</span>}
+            {intel.offensive_rating_away && <span>🏀 {game.away_team}: {intel.offensive_rating_away?.toFixed(1)} ORtg / {intel.defensive_rating_away?.toFixed(1)} DRtg</span>}
+            {intel.rest_days_home !== null && <span>💤 Rest: {game.home_team} {intel.rest_days_home}d / {game.away_team} {intel.rest_days_away}d</span>}
+          </div>
+        )}
 
         {!localPrediction ? (
           <div className="flex gap-2 mt-4">
@@ -308,6 +403,16 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         ) : (
           <>
             <PredictionResult prediction={localPrediction} />
+            {/* Kelly stake recommendation */}
+            {localPrediction.recommended_units > 0 && (
+              <div className="mt-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/20 text-xs">
+                <span className="text-emerald-500 font-medium">📊 Kelly Rec:</span>
+                <span className="ml-1">{localPrediction.recommended_units?.toFixed(2)} units</span>
+                {localPrediction.recommended_stake > 0 && (
+                  <span className="ml-1 text-muted-foreground">(${localPrediction.recommended_stake?.toFixed(2)})</span>
+                )}
+              </div>
+            )}
             <div className="flex gap-2 mt-2">
               <SavePickButton
                 pickType="game"
@@ -2465,6 +2570,15 @@ export default function SportsBettingOS() {
     refetchInterval: 30000,
   });
 
+  const { data: bettorProfile } = useQuery({
+    queryKey: ['bettor-profile'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_bettor_profile').select('*').limit(1).maybeSingle();
+      return data;
+    },
+    refetchInterval: 60000,
+  });
+
   const runAllEngines = async () => {
     setRunningAll(true);
     const startTime = Date.now();
@@ -2472,8 +2586,12 @@ export default function SportsBettingOS() {
     let propsCount = 0;
 
     try {
+      // Phase 0: Fetch intelligence
+      setRunAllPhase('Phase 0/4: Gathering game intelligence...');
+      try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
+
       // Phase 1: Fetch games + predict all
-      setRunAllPhase('Phase 1/3: Fetching tonight\'s games...');
+      setRunAllPhase('Phase 1/4: Fetching tonight\'s games...');
       const { data: oddsData } = await supabase.functions.invoke('sbo-fetch-odds');
       gamesCount = oddsData?.games_processed || 0;
 
@@ -2544,6 +2662,11 @@ export default function SportsBettingOS() {
         }
       }
 
+      // Phase 4: Recalibrate + CLV track
+      setRunAllPhase('Phase 4/4: Calibrating model + tracking CLV...');
+      try { await supabase.functions.invoke('sbo-recalibrate'); } catch { /* continue */ }
+      try { await supabase.functions.invoke('sbo-track-clv'); } catch { /* continue */ }
+
       // Log the run
       const duration = Date.now() - startTime;
       await (supabase as any).from('sbo_run_log').insert({
@@ -2559,7 +2682,7 @@ export default function SportsBettingOS() {
       });
 
       refetchStrong();
-      toast.success(`All engines complete — ${unpredicted.length} games, ${propsCount} props, parlay built (${(duration / 1000).toFixed(1)}s)`);
+      toast.success(`All engines complete — ${unpredicted.length} games, ${propsCount} props, parlay built, model calibrated (${(duration / 1000).toFixed(1)}s)`);
     } catch (e: any) {
       toast.error(e.message || 'Run All Engines failed');
     } finally {
@@ -2570,6 +2693,28 @@ export default function SportsBettingOS() {
 
   return (
     <div className="p-4 max-w-5xl mx-auto space-y-4">
+      {/* Bettor Profile Edge Score */}
+      {bettorProfile && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3 flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-primary">{bettorProfile.overall_edge_score || 0}</p>
+                <p className="text-[9px] text-muted-foreground">EDGE SCORE</p>
+              </div>
+              <Badge variant={bettorProfile.sharp_rating === 'Elite' ? 'default' : 'secondary'} className="text-xs">
+                {bettorProfile.sharp_rating === 'Elite' ? '🏆' : bettorProfile.sharp_rating === 'Sharp' ? '🎯' : bettorProfile.sharp_rating === 'Semi-Sharp' ? '📈' : '🎲'} {bettorProfile.sharp_rating || 'Recreational'}
+              </Badge>
+            </div>
+            <div className="flex gap-4 text-xs">
+              {bettorProfile.avg_clv !== null && <div className="text-center"><p className="font-mono font-bold">{bettorProfile.avg_clv > 0 ? '+' : ''}{bettorProfile.avg_clv?.toFixed(1)}%</p><p className="text-[9px] text-muted-foreground">Avg CLV</p></div>}
+              {bettorProfile.roi_all_time !== null && <div className="text-center"><p className="font-mono font-bold">{bettorProfile.roi_all_time?.toFixed(1)}%</p><p className="text-[9px] text-muted-foreground">Accuracy</p></div>}
+              {bettorProfile.total_units_wagered && <div className="text-center"><p className="font-mono font-bold">{bettorProfile.total_units_wagered}</p><p className="text-[9px] text-muted-foreground">Picks</p></div>}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-3">
           <Trophy className="h-6 w-6 text-orange-500" />

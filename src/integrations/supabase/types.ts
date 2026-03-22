@@ -57749,10 +57749,13 @@ export type Database = {
         Row: {
           biggest_loss: number | null
           biggest_win: number | null
+          current_bankroll: number | null
           current_streak: number | null
           id: string
+          kelly_fraction: number | null
           loss_count: number | null
           net_profit_loss: number | null
+          peak_bankroll: number | null
           push_count: number | null
           roi_pct: number | null
           snapshot_date: string
@@ -57761,6 +57764,8 @@ export type Database = {
           total_lost: number | null
           total_wagered: number | null
           total_won: number | null
+          unit_size: number | null
+          units: number | null
           updated_at: string | null
           win_count: number | null
           win_rate_pct: number | null
@@ -57768,10 +57773,13 @@ export type Database = {
         Insert: {
           biggest_loss?: number | null
           biggest_win?: number | null
+          current_bankroll?: number | null
           current_streak?: number | null
           id?: string
+          kelly_fraction?: number | null
           loss_count?: number | null
           net_profit_loss?: number | null
+          peak_bankroll?: number | null
           push_count?: number | null
           roi_pct?: number | null
           snapshot_date?: string
@@ -57780,6 +57788,8 @@ export type Database = {
           total_lost?: number | null
           total_wagered?: number | null
           total_won?: number | null
+          unit_size?: number | null
+          units?: number | null
           updated_at?: string | null
           win_count?: number | null
           win_rate_pct?: number | null
@@ -57787,10 +57797,13 @@ export type Database = {
         Update: {
           biggest_loss?: number | null
           biggest_win?: number | null
+          current_bankroll?: number | null
           current_streak?: number | null
           id?: string
+          kelly_fraction?: number | null
           loss_count?: number | null
           net_profit_loss?: number | null
+          peak_bankroll?: number | null
           push_count?: number | null
           roi_pct?: number | null
           snapshot_date?: string
@@ -57799,11 +57812,150 @@ export type Database = {
           total_lost?: number | null
           total_wagered?: number | null
           total_won?: number | null
+          unit_size?: number | null
+          units?: number | null
           updated_at?: string | null
           win_count?: number | null
           win_rate_pct?: number | null
         }
         Relationships: []
+      }
+      sbo_bettor_profile: {
+        Row: {
+          avg_clv: number | null
+          best_confidence_tier: string | null
+          best_sport: string | null
+          id: string
+          longest_loss_streak: number | null
+          longest_win_streak: number | null
+          overall_edge_score: number | null
+          roi_30d: number | null
+          roi_7d: number | null
+          roi_all_time: number | null
+          sharp_rating: string | null
+          strongest_bet_type: string | null
+          total_units_wagered: number | null
+          total_units_won: number | null
+          updated_at: string | null
+          weakest_bet_type: string | null
+        }
+        Insert: {
+          avg_clv?: number | null
+          best_confidence_tier?: string | null
+          best_sport?: string | null
+          id?: string
+          longest_loss_streak?: number | null
+          longest_win_streak?: number | null
+          overall_edge_score?: number | null
+          roi_30d?: number | null
+          roi_7d?: number | null
+          roi_all_time?: number | null
+          sharp_rating?: string | null
+          strongest_bet_type?: string | null
+          total_units_wagered?: number | null
+          total_units_won?: number | null
+          updated_at?: string | null
+          weakest_bet_type?: string | null
+        }
+        Update: {
+          avg_clv?: number | null
+          best_confidence_tier?: string | null
+          best_sport?: string | null
+          id?: string
+          longest_loss_streak?: number | null
+          longest_win_streak?: number | null
+          overall_edge_score?: number | null
+          roi_30d?: number | null
+          roi_7d?: number | null
+          roi_all_time?: number | null
+          sharp_rating?: string | null
+          strongest_bet_type?: string | null
+          total_units_wagered?: number | null
+          total_units_won?: number | null
+          updated_at?: string | null
+          weakest_bet_type?: string | null
+        }
+        Relationships: []
+      }
+      sbo_calibration: {
+        Row: {
+          actual_accuracy: number | null
+          calibration_score: number | null
+          confidence_bucket: string | null
+          correct_picks: number | null
+          expected_accuracy: number | null
+          id: string
+          last_updated: string | null
+          total_picks: number | null
+        }
+        Insert: {
+          actual_accuracy?: number | null
+          calibration_score?: number | null
+          confidence_bucket?: string | null
+          correct_picks?: number | null
+          expected_accuracy?: number | null
+          id?: string
+          last_updated?: string | null
+          total_picks?: number | null
+        }
+        Update: {
+          actual_accuracy?: number | null
+          calibration_score?: number | null
+          confidence_bucket?: string | null
+          correct_picks?: number | null
+          expected_accuracy?: number | null
+          id?: string
+          last_updated?: string | null
+          total_picks?: number | null
+        }
+        Relationships: []
+      }
+      sbo_clv_tracker: {
+        Row: {
+          closing_odds: string | null
+          clv_percentage: number | null
+          clv_value: number | null
+          game_id: string | null
+          id: string
+          odds_when_predicted: string | null
+          our_pick: string | null
+          prediction_id: string | null
+          recorded_at: string | null
+          verdict: string | null
+        }
+        Insert: {
+          closing_odds?: string | null
+          clv_percentage?: number | null
+          clv_value?: number | null
+          game_id?: string | null
+          id?: string
+          odds_when_predicted?: string | null
+          our_pick?: string | null
+          prediction_id?: string | null
+          recorded_at?: string | null
+          verdict?: string | null
+        }
+        Update: {
+          closing_odds?: string | null
+          clv_percentage?: number | null
+          clv_value?: number | null
+          game_id?: string | null
+          id?: string
+          odds_when_predicted?: string | null
+          our_pick?: string | null
+          prediction_id?: string | null
+          recorded_at?: string | null
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_clv_tracker_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_predictions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sbo_daily_briefings: {
         Row: {
@@ -58009,6 +58161,78 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_game_intelligence: {
+        Row: {
+          ats_record_away: string | null
+          ats_record_home: string | null
+          away_record_away: string | null
+          back_to_back_away: boolean | null
+          back_to_back_home: boolean | null
+          created_at: string | null
+          defensive_rating_away: number | null
+          defensive_rating_home: number | null
+          game_id: string | null
+          head_to_head: Json | null
+          home_record_home: string | null
+          id: string
+          injury_report: Json | null
+          last_5_away: Json | null
+          last_5_home: Json | null
+          offensive_rating_away: number | null
+          offensive_rating_home: number | null
+          pace_away: number | null
+          pace_home: number | null
+          rest_days_away: number | null
+          rest_days_home: number | null
+        }
+        Insert: {
+          ats_record_away?: string | null
+          ats_record_home?: string | null
+          away_record_away?: string | null
+          back_to_back_away?: boolean | null
+          back_to_back_home?: boolean | null
+          created_at?: string | null
+          defensive_rating_away?: number | null
+          defensive_rating_home?: number | null
+          game_id?: string | null
+          head_to_head?: Json | null
+          home_record_home?: string | null
+          id?: string
+          injury_report?: Json | null
+          last_5_away?: Json | null
+          last_5_home?: Json | null
+          offensive_rating_away?: number | null
+          offensive_rating_home?: number | null
+          pace_away?: number | null
+          pace_home?: number | null
+          rest_days_away?: number | null
+          rest_days_home?: number | null
+        }
+        Update: {
+          ats_record_away?: string | null
+          ats_record_home?: string | null
+          away_record_away?: string | null
+          back_to_back_away?: boolean | null
+          back_to_back_home?: boolean | null
+          created_at?: string | null
+          defensive_rating_away?: number | null
+          defensive_rating_home?: number | null
+          game_id?: string | null
+          head_to_head?: Json | null
+          home_record_home?: string | null
+          id?: string
+          injury_report?: Json | null
+          last_5_away?: Json | null
+          last_5_home?: Json | null
+          offensive_rating_away?: number | null
+          offensive_rating_home?: number | null
+          pace_away?: number | null
+          pace_home?: number | null
+          rest_days_away?: number | null
+          rest_days_home?: number | null
+        }
+        Relationships: []
+      }
       sbo_games: {
         Row: {
           away_score: number | null
@@ -58202,7 +58426,13 @@ export type Database = {
           opening_recorded_at: string | null
           outcome: string
           prop_id: string | null
+          public_percentage_away: number | null
+          public_percentage_home: number | null
+          reverse_line_move: boolean | null
+          sharp_percentage_away: number | null
+          sharp_percentage_home: number | null
           sportsbook: string
+          steam_move: boolean | null
           updated_at: string | null
         }
         Insert: {
@@ -58220,7 +58450,13 @@ export type Database = {
           opening_recorded_at?: string | null
           outcome: string
           prop_id?: string | null
+          public_percentage_away?: number | null
+          public_percentage_home?: number | null
+          reverse_line_move?: boolean | null
+          sharp_percentage_away?: number | null
+          sharp_percentage_home?: number | null
           sportsbook: string
+          steam_move?: boolean | null
           updated_at?: string | null
         }
         Update: {
@@ -58238,7 +58474,13 @@ export type Database = {
           opening_recorded_at?: string | null
           outcome?: string
           prop_id?: string | null
+          public_percentage_away?: number | null
+          public_percentage_home?: number | null
+          reverse_line_move?: boolean | null
+          sharp_percentage_away?: number | null
+          sharp_percentage_home?: number | null
           sportsbook?: string
+          steam_move?: boolean | null
           updated_at?: string | null
         }
         Relationships: [
@@ -58257,6 +58499,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sbo_live_picks: {
+        Row: {
+          ai_live_analysis: string | null
+          ai_live_confidence: number | null
+          ai_live_pick: string | null
+          clock: string | null
+          created_at: string | null
+          current_score_away: number | null
+          current_score_home: number | null
+          game_id: string | null
+          id: string
+          live_line: string | null
+          live_total: string | null
+          momentum_indicator: string | null
+          quarter: number | null
+        }
+        Insert: {
+          ai_live_analysis?: string | null
+          ai_live_confidence?: number | null
+          ai_live_pick?: string | null
+          clock?: string | null
+          created_at?: string | null
+          current_score_away?: number | null
+          current_score_home?: number | null
+          game_id?: string | null
+          id?: string
+          live_line?: string | null
+          live_total?: string | null
+          momentum_indicator?: string | null
+          quarter?: number | null
+        }
+        Update: {
+          ai_live_analysis?: string | null
+          ai_live_confidence?: number | null
+          ai_live_pick?: string | null
+          clock?: string | null
+          created_at?: string | null
+          current_score_away?: number | null
+          current_score_home?: number | null
+          game_id?: string | null
+          id?: string
+          live_line?: string | null
+          live_total?: string | null
+          momentum_indicator?: string | null
+          quarter?: number | null
+        }
+        Relationships: []
       }
       sbo_model_performance: {
         Row: {
@@ -59108,6 +59398,7 @@ export type Database = {
         Row: {
           actual_outcome: string | null
           brain_count: number | null
+          clv_tracked: boolean | null
           confidence_tier: string | null
           context_brain_reasoning: string | null
           context_brain_score: number | null
@@ -59117,6 +59408,7 @@ export type Database = {
           final_score_home: number | null
           game_id: string | null
           id: string
+          kelly_stake: number | null
           market_brain_reasoning: string | null
           market_brain_score: number | null
           polymarket_brain_reasoning: string | null
@@ -59124,6 +59416,9 @@ export type Database = {
           predicted_outcome: string
           prediction_type: string
           prop_id: string | null
+          recommended_stake: number | null
+          recommended_units: number | null
+          sharp_indicator: boolean | null
           stats_brain_reasoning: string | null
           stats_brain_score: number | null
           updated_at: string | null
@@ -59136,6 +59431,7 @@ export type Database = {
         Insert: {
           actual_outcome?: string | null
           brain_count?: number | null
+          clv_tracked?: boolean | null
           confidence_tier?: string | null
           context_brain_reasoning?: string | null
           context_brain_score?: number | null
@@ -59145,6 +59441,7 @@ export type Database = {
           final_score_home?: number | null
           game_id?: string | null
           id?: string
+          kelly_stake?: number | null
           market_brain_reasoning?: string | null
           market_brain_score?: number | null
           polymarket_brain_reasoning?: string | null
@@ -59152,6 +59449,9 @@ export type Database = {
           predicted_outcome: string
           prediction_type: string
           prop_id?: string | null
+          recommended_stake?: number | null
+          recommended_units?: number | null
+          sharp_indicator?: boolean | null
           stats_brain_reasoning?: string | null
           stats_brain_score?: number | null
           updated_at?: string | null
@@ -59164,6 +59464,7 @@ export type Database = {
         Update: {
           actual_outcome?: string | null
           brain_count?: number | null
+          clv_tracked?: boolean | null
           confidence_tier?: string | null
           context_brain_reasoning?: string | null
           context_brain_score?: number | null
@@ -59173,6 +59474,7 @@ export type Database = {
           final_score_home?: number | null
           game_id?: string | null
           id?: string
+          kelly_stake?: number | null
           market_brain_reasoning?: string | null
           market_brain_score?: number | null
           polymarket_brain_reasoning?: string | null
@@ -59180,6 +59482,9 @@ export type Database = {
           predicted_outcome?: string
           prediction_type?: string
           prop_id?: string | null
+          recommended_stake?: number | null
+          recommended_units?: number | null
+          sharp_indicator?: boolean | null
           stats_brain_reasoning?: string | null
           stats_brain_score?: number | null
           updated_at?: string | null
@@ -59205,6 +59510,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sbo_prop_correlations: {
+        Row: {
+          correlation_score: number | null
+          correlation_type: string | null
+          created_at: string | null
+          historical_hit_rate: number | null
+          id: string
+          prop_a_id: string | null
+          prop_b_id: string | null
+          reasoning: string | null
+        }
+        Insert: {
+          correlation_score?: number | null
+          correlation_type?: string | null
+          created_at?: string | null
+          historical_hit_rate?: number | null
+          id?: string
+          prop_a_id?: string | null
+          prop_b_id?: string | null
+          reasoning?: string | null
+        }
+        Update: {
+          correlation_score?: number | null
+          correlation_type?: string | null
+          created_at?: string | null
+          historical_hit_rate?: number | null
+          id?: string
+          prop_a_id?: string | null
+          prop_b_id?: string | null
+          reasoning?: string | null
+        }
+        Relationships: []
       }
       sbo_results_verification: {
         Row: {
@@ -59621,6 +59959,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_unit_log: {
+        Row: {
+          actual_stake: number | null
+          bankroll_after: number | null
+          id: string
+          kelly_recommended: number | null
+          logged_at: string | null
+          pick_id: string | null
+          profit_loss: number | null
+          result: string | null
+          units_wagered: number | null
+        }
+        Insert: {
+          actual_stake?: number | null
+          bankroll_after?: number | null
+          id?: string
+          kelly_recommended?: number | null
+          logged_at?: string | null
+          pick_id?: string | null
+          profit_loss?: number | null
+          result?: string | null
+          units_wagered?: number | null
+        }
+        Update: {
+          actual_stake?: number | null
+          bankroll_after?: number | null
+          id?: string
+          kelly_recommended?: number | null
+          logged_at?: string | null
+          pick_id?: string | null
+          profit_loss?: number | null
+          result?: string | null
+          units_wagered?: number | null
+        }
+        Relationships: []
+      }
       sbo_user_books: {
         Row: {
           account_balance: number | null
@@ -59678,6 +60052,51 @@ export type Database = {
           notes?: string | null
           props_entered?: number | null
           session_date?: string
+        }
+        Relationships: []
+      }
+      sbo_wealth_sync: {
+        Row: {
+          best_pick: string | null
+          created_at: string | null
+          gross_loss: number | null
+          gross_profit: number | null
+          id: string
+          net_profit: number | null
+          period: string | null
+          roi: number | null
+          synced_at: string | null
+          synced_to_wealth_engine: boolean | null
+          units_won: number | null
+          worst_pick: string | null
+        }
+        Insert: {
+          best_pick?: string | null
+          created_at?: string | null
+          gross_loss?: number | null
+          gross_profit?: number | null
+          id?: string
+          net_profit?: number | null
+          period?: string | null
+          roi?: number | null
+          synced_at?: string | null
+          synced_to_wealth_engine?: boolean | null
+          units_won?: number | null
+          worst_pick?: string | null
+        }
+        Update: {
+          best_pick?: string | null
+          created_at?: string | null
+          gross_loss?: number | null
+          gross_profit?: number | null
+          id?: string
+          net_profit?: number | null
+          period?: string | null
+          roi?: number | null
+          synced_at?: string | null
+          synced_to_wealth_engine?: boolean | null
+          units_won?: number | null
+          worst_pick?: string | null
         }
         Relationships: []
       }
