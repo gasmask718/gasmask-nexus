@@ -78,6 +78,8 @@ const DAY_ENGINE_STEPS = {
     { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', provider: 'prizepicks', cost: '$0 (free)', when: '6:00 PM' },
     { fn: 'sbo-sync-polymarket-full', label: 'Polymarket Full Sync', icon: '🔮', provider: 'polymarket', cost: '$0 (free)', when: '6:00 PM' },
     { fn: 'sbo-compare-odds', label: 'Odds Comparison Engine', icon: '💎', provider: 'internal', cost: '$0', when: '6:05 PM' },
+    { fn: 'sbo-generate-daily-briefing', label: 'Generate SMS Briefing', icon: '📱', provider: 'internal', cost: '$0', when: '5:30 PM' },
+    { fn: 'sbo-send-daily-sms', label: 'Send SMS to Phone', icon: '✉️', provider: 'twilio', cost: '~$0.01', when: '6:00 PM' },
   ],
   postgame: [
     { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', provider: 'sportsdata_io', cost: '$0 (subscription)', when: '11:00 PM' },
