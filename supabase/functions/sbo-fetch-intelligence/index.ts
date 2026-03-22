@@ -131,7 +131,7 @@ serve(async (req) => {
     } catch { /* continue */ }
 
     // Fetch yesterday's games for B2B detection
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     let yesterdayGames: any[] = [];
     try {
       const ydRes = await fetch(`${BASE}/scores/json/GamesByDate/${yesterday}?key=${SPORTSDATAIO_KEY}`);
