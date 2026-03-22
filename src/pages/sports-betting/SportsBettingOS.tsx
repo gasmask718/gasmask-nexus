@@ -2123,6 +2123,65 @@ function MyBetsTab() {
           )}
         </div>
       )}
+
+      {/* Saved picks view */}
+      {activeView === 'saved' && (
+        <div className="space-y-2">
+          {!savedPicks?.length ? (
+            <div className="text-center py-8 border border-dashed rounded-lg border-border">
+              <p className="text-muted-foreground font-medium">No saved picks yet.</p>
+              <p className="text-xs text-muted-foreground mt-1">Use the Save Pick button on any prediction to save it here.</p>
+            </div>
+          ) : (
+            savedPicks.map((pick: any) => {
+              const resultColors: Record<string, string> = {
+                pending: 'text-muted-foreground',
+                won: 'text-green-500',
+                lost: 'text-red-500',
+                push: 'text-amber-500',
+              };
+              const resultEmoji: Record<string, string> = {
+                pending: '⏳', won: '🟢', lost: '🔴', push: '🟡',
+              };
+              return (
+                <Card key={pick.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {resultEmoji[pick.result] || '⏳'} {pick.label}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{pick.detail}</p>
+                        {pick.ai_analysis && (
+                          <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{pick.ai_analysis}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-[9px] h-4">{pick.pick_type}</Badge>
+                          {pick.confidence > 0 && (
+                            <span className="text-[10px] text-muted-foreground">{pick.confidence}% conf</span>
+                          )}
+                          {pick.odds && <span className="text-[10px] font-mono text-muted-foreground">{pick.odds}</span>}
+                        </div>
+                      </div>
+                      <Select value={pick.result || 'pending'} onValueChange={(v) => updatePickResult(pick.id, v)}>
+                        <SelectTrigger className={`h-7 w-24 text-xs ${resultColors[pick.result] || ''}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pending" className="text-xs">⏳ Pending</SelectItem>
+                          <SelectItem value="won" className="text-xs">🟢 Won</SelectItem>
+                          <SelectItem value="lost" className="text-xs">🔴 Lost</SelectItem>
+                          <SelectItem value="push" className="text-xs">🟡 Push</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }
