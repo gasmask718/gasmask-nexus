@@ -15,6 +15,7 @@ import { SyncDashboard } from '@/components/sbo/SyncDashboard';
 import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
+import PredictionHistory from '@/components/sbo/PredictionHistory';
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
@@ -709,7 +710,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
           </div>
         ) : (
           <>
-            <PredictionResult prediction={localPrediction} />
+            <PredictionResult prediction={localPrediction} homeTeam={game.home_team} awayTeam={game.away_team} intel={intel} />
             {/* Prediction timestamp */}
             {localPrediction.created_at && (
               <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mt-1.5">
@@ -787,7 +788,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   const loadProps = async () => {
     const { data } = await supabase
       .from('sbo_player_props')
-      .select('*, sbo_games(home_team, away_team, game_date), sbo_predictions(*)')
+      .select('*, sbo_games(home_team, away_team, game_date), sbo_predictions(*), player_image_url')
       .order('created_at', { ascending: false });
     setProps((data as any[]) || []);
   };
@@ -910,10 +911,29 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                     <span className="text-amber-500">⏳ Not yet analyzed</span>
                   )}
                 </div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-bold text-foreground">{prop.player_name}</p>
-                    <p className="text-xs text-muted-foreground">{prop.team} · {game?.away_team} @ {game?.home_team}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    {/* Player image */}
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                      {prop.player_image_url ? (
+                        <img
+                          src={prop.player_image_url}
+                          alt={prop.player_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(prop.player_name || '')}&background=1a1a1a&color=ffffff&size=128`;
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
+                          {prop.player_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-bold text-foreground">{prop.player_name}</p>
+                      <p className="text-xs text-muted-foreground">{prop.team} · {game?.away_team} @ {game?.home_team}</p>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-foreground">{prop.prop_type} {prop.line}</p>
@@ -3082,6 +3102,11 @@ export default function SportsBettingOS() {
         }
       }
 
+      // Cache player images
+      try {
+        await supabase.functions.invoke('sbo-cache-player-images');
+      } catch { /* continue */ }
+
       // PHASE 5 — Build best parlay from today's top picks
       setRunAllPhase('Phase 5/6: Building best parlay...');
       try {
@@ -3276,7 +3301,7 @@ export default function SportsBettingOS() {
       <TodaysGuaranteeWidget />
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -3296,6 +3321,7 @@ export default function SportsBettingOS() {
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
           <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
           <TabsTrigger value="mybets" className="text-xs">📱 My Bets</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">📜 History</TabsTrigger>
           <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
           <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
         </TabsList>
@@ -3334,6 +3360,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="mybets" className="mt-4">
           <MyBetsTab />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <PredictionHistory />
         </TabsContent>
 
         <TabsContent value="entry" className="mt-4">

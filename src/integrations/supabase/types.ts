@@ -59071,6 +59071,9 @@ export type Database = {
           id: string
           line: number
           over_odds: number | null
+          player_image_cached: boolean | null
+          player_image_cached_at: string | null
+          player_image_url: string | null
           player_name: string
           prop_type: string
           source: string | null
@@ -59089,6 +59092,9 @@ export type Database = {
           id?: string
           line: number
           over_odds?: number | null
+          player_image_cached?: boolean | null
+          player_image_cached_at?: string | null
+          player_image_url?: string | null
           player_name: string
           prop_type: string
           source?: string | null
@@ -59107,6 +59113,9 @@ export type Database = {
           id?: string
           line?: number
           over_odds?: number | null
+          player_image_cached?: boolean | null
+          player_image_cached_at?: string | null
+          player_image_url?: string | null
           player_name?: string
           prop_type?: string
           source?: string | null
