@@ -81,6 +81,7 @@ const DAY_ENGINE_STEPS = {
   ],
   postgame: [
     { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', provider: 'sportsdata_io', cost: '$0 (subscription)', when: '11:00 PM' },
+    { fn: 'sbo-analyze-model', label: 'Model Analysis', icon: '🧬', provider: 'internal', cost: '$0', when: 'Weekly' },
   ],
 };
 
