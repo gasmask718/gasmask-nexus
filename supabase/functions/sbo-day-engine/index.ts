@@ -30,6 +30,7 @@ const PREGAME_STEPS = [
 
 const POSTGAME_STEPS = [
   { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
+  { fn: 'sbo-analyze-model', label: 'Model Self-Analysis + Weight Adjustment', icon: '🧬', required: false },
 ];
 
 const FULL_STEPS = [...MORNING_STEPS, ...PREGAME_STEPS];
