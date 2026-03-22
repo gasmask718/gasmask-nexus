@@ -3102,6 +3102,11 @@ export default function SportsBettingOS() {
         }
       }
 
+      // Cache player images
+      try {
+        await supabase.functions.invoke('sbo-cache-player-images');
+      } catch { /* continue */ }
+
       // PHASE 5 — Build best parlay from today's top picks
       setRunAllPhase('Phase 5/6: Building best parlay...');
       try {
