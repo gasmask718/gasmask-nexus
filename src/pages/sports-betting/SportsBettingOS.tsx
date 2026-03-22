@@ -788,7 +788,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   const loadProps = async () => {
     const { data } = await supabase
       .from('sbo_player_props')
-      .select('*, sbo_games(home_team, away_team, game_date), sbo_predictions(*)')
+      .select('*, sbo_games(home_team, away_team, game_date), sbo_predictions(*), player_image_url')
       .order('created_at', { ascending: false });
     setProps((data as any[]) || []);
   };
