@@ -3296,7 +3296,7 @@ export default function SportsBettingOS() {
       <TodaysGuaranteeWidget />
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-11">
+        <TabsList className="grid w-full grid-cols-12">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -3316,6 +3316,7 @@ export default function SportsBettingOS() {
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
           <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
           <TabsTrigger value="mybets" className="text-xs">📱 My Bets</TabsTrigger>
+          <TabsTrigger value="history" className="text-xs">📜 History</TabsTrigger>
           <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
           <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
         </TabsList>
@@ -3354,6 +3355,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="mybets" className="mt-4">
           <MyBetsTab />
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          <PredictionHistory />
         </TabsContent>
 
         <TabsContent value="entry" className="mt-4">
