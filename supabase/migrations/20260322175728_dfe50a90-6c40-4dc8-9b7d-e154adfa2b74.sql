@@ -1,0 +1,1 @@
+ALTER TABLE sbo_predictions ADD COLUMN IF NOT EXISTS data_quality text DEFAULT 'odds_only';

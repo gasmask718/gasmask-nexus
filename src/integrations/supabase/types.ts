@@ -59445,6 +59445,7 @@ export type Database = {
           context_brain_reasoning: string | null
           context_brain_score: number | null
           created_at: string | null
+          data_quality: string | null
           final_confidence: number | null
           final_score_away: number | null
           final_score_home: number | null
@@ -59478,6 +59479,7 @@ export type Database = {
           context_brain_reasoning?: string | null
           context_brain_score?: number | null
           created_at?: string | null
+          data_quality?: string | null
           final_confidence?: number | null
           final_score_away?: number | null
           final_score_home?: number | null
@@ -59511,6 +59513,7 @@ export type Database = {
           context_brain_reasoning?: string | null
           context_brain_score?: number | null
           created_at?: string | null
+          data_quality?: string | null
           final_confidence?: number | null
           final_score_away?: number | null
           final_score_home?: number | null
