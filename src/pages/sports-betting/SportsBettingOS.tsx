@@ -369,7 +369,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
         {/* Game date & pull timestamp */}
         <div className="flex justify-between items-center mb-2 text-[11px] text-muted-foreground">
           <span>
-            🏀 {new Date(game.game_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} · Tip {new Date(game.game_date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
+            🏀 {new Date(game.game_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })} · Tip {new Date(game.game_date).toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' })}
           </span>
           <span>
             Pulled: {new Date(game.created_at || game.updated_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
