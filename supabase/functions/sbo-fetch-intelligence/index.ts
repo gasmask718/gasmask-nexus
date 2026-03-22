@@ -96,7 +96,7 @@ serve(async (req) => {
 
     const BASE = 'https://api.sportsdata.io/v3/nba';
     const SEASON = '2025';
-    let intelCount = 0;
+    let processedCount = 0;
 
     // Fetch team season stats — primary source for ORtg/DRtg
     let teamStats: any[] = [];
