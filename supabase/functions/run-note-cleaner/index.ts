@@ -43,212 +43,210 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Check if there's already a running job
-    const { data: existingJob } = await supabase
-      .from("note_cleaner_jobs")
-      .select("id")
-      .eq("status", "running")
-      .maybeSingle();
+    const { batch_size = 10, job_id = null } = await req.json().catch(() => ({}));
 
-    if (existingJob) {
-      return new Response(
-        JSON.stringify({ error: "A cleaning job is already running", job_id: existingJob.id }),
-        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // If resuming an existing job
+    let jobRecord: any = null;
+    if (job_id) {
+      const { data } = await supabase
+        .from("note_cleaner_jobs")
+        .select("*")
+        .eq("id", job_id)
+        .single();
+      jobRecord = data;
+      if (!jobRecord) throw new Error("Job not found");
     }
 
-    // Fetch dirty notes
+    // Fetch one batch of dirty notes (only uncleaned ones)
     const { data: notes, error: fetchErr } = await supabase
       .from("store_notes")
       .select("id, store_id, note_text, created_at")
       .or("note_text.ilike.%<div>%,note_text.ilike.%<br>%,note_text.ilike.%<p %,note_text.ilike.%<span>%,note_text.ilike.%&amp;%,note_text.ilike.%&nbsp;%,note_text.ilike.%â%")
       .is("cleaning_status", null)
       .order("created_at", { ascending: true })
-      .limit(500);
+      .limit(batch_size);
 
     if (fetchErr) throw fetchErr;
 
     const dirtyNotes = (notes || []).filter((n: any) => needsCleaning(n.note_text));
 
-    if (dirtyNotes.length === 0) {
+    // If no job yet, create one and count total
+    if (!jobRecord) {
+      // Count all dirty notes for the job total
+      const { count } = await supabase
+        .from("store_notes")
+        .select("*", { count: "exact", head: true })
+        .or("note_text.ilike.%<div>%,note_text.ilike.%<br>%,note_text.ilike.%<p %,note_text.ilike.%<span>%,note_text.ilike.%&amp;%,note_text.ilike.%&nbsp;%,note_text.ilike.%â%")
+        .is("cleaning_status", null);
+
+      if (!dirtyNotes.length) {
+        return new Response(
+          JSON.stringify({ success: true, message: "No dirty notes found", job_id: null, has_more: false }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const { data: newJob, error: jobErr } = await supabase
+        .from("note_cleaner_jobs")
+        .insert({
+          status: "running",
+          total_records: count || dirtyNotes.length,
+          processed_records: 0,
+          failed_records: 0,
+          started_at: new Date().toISOString(),
+        })
+        .select("*")
+        .single();
+
+      if (jobErr) throw jobErr;
+      jobRecord = newJob;
+    }
+
+    // If no more dirty notes, mark complete
+    if (!dirtyNotes.length) {
+      await supabase
+        .from("note_cleaner_jobs")
+        .update({
+          status: "complete",
+          completed_at: new Date().toISOString(),
+          current_record: null,
+        })
+        .eq("id", jobRecord.id);
+
       return new Response(
-        JSON.stringify({ message: "No dirty notes found", job_id: null }),
+        JSON.stringify({
+          success: true,
+          job_id: jobRecord.id,
+          status: "complete",
+          total_processed: jobRecord.processed_records,
+          total_records: jobRecord.total_records,
+          has_more: false,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create job record
-    const { data: job, error: jobErr } = await supabase
-      .from("note_cleaner_jobs")
-      .insert({
-        status: "running",
-        total_records: dirtyNotes.length,
-        processed_records: 0,
-        failed_records: 0,
-        started_at: new Date().toISOString(),
-      })
-      .select("id")
-      .single();
+    // Process this batch
+    let processed = 0;
+    let failed = 0;
 
-    if (jobErr) throw jobErr;
+    for (const note of dirtyNotes) {
+      try {
+        await supabase
+          .from("note_cleaner_jobs")
+          .update({ current_record: note.id })
+          .eq("id", jobRecord.id);
 
-    // Return immediately — client can poll
-    const jobId = job.id;
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash-lite",
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: `RAW NOTE:\n${note.note_text}\n\nCLEANED NOTE:` },
+            ],
+          }),
+        });
 
-    // Respond to client right away
-    const responseBody = JSON.stringify({
-      success: true,
-      job_id: jobId,
-      total: dirtyNotes.length,
-      message: "Cleaning job started — runs server-side",
-    });
-
-    // Kick off background processing (non-blocking)
-    const processingPromise = (async () => {
-      let processed = 0;
-      let failed = 0;
-      const results: any[] = [];
-
-      for (const note of dirtyNotes) {
-        try {
-          // Update current record
-          await supabase
-            .from("note_cleaner_jobs")
-            .update({ current_record: note.id })
-            .eq("id", jobId);
-
-          // Call AI to clean
-          const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        if (aiResp.status === 429) {
+          // Rate limited — wait and retry once
+          await new Promise((r) => setTimeout(r, 5000));
+          const retryResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
             method: "POST",
             headers: {
               Authorization: `Bearer ${LOVABLE_API_KEY}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-3-flash-preview",
+              model: "google/gemini-2.5-flash-lite",
               messages: [
                 { role: "system", content: SYSTEM_PROMPT },
                 { role: "user", content: `RAW NOTE:\n${note.note_text}\n\nCLEANED NOTE:` },
               ],
             }),
           });
-
-          if (aiResp.status === 429) {
-            // Rate limited — wait and retry
-            await new Promise((r) => setTimeout(r, 5000));
-            const retryResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${LOVABLE_API_KEY}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                model: "google/gemini-3-flash-preview",
-                messages: [
-                  { role: "system", content: SYSTEM_PROMPT },
-                  { role: "user", content: `RAW NOTE:\n${note.note_text}\n\nCLEANED NOTE:` },
-                ],
-              }),
-            });
-            if (!retryResp.ok) throw new Error(`AI error after retry: ${retryResp.status}`);
-            const retryData = await retryResp.json();
-            const cleanedText = retryData.choices?.[0]?.message?.content?.trim() || "";
-
-            await supabase
-              .from("store_notes")
-              .update({
-                original_note: note.note_text,
-                note_text: cleanedText,
-                is_legacy: true,
-                needs_cleaning: false,
-                cleaning_status: "approved",
-                cleaned_at: new Date().toISOString(),
-              })
-              .eq("id", note.id);
-
-            results.push({ id: note.id, status: "cleaned" });
-            processed++;
-          } else if (!aiResp.ok) {
-            throw new Error(`AI error: ${aiResp.status}`);
-          } else {
-            const aiData = await aiResp.json();
-            const cleanedText = aiData.choices?.[0]?.message?.content?.trim() || "";
-
-            // Save cleaned note back
-            await supabase
-              .from("store_notes")
-              .update({
-                original_note: note.note_text,
-                note_text: cleanedText,
-                is_legacy: true,
-                needs_cleaning: false,
-                cleaning_status: "approved",
-                cleaned_at: new Date().toISOString(),
-              })
-              .eq("id", note.id);
-
-            results.push({ id: note.id, status: "cleaned" });
-            processed++;
-          }
-        } catch (err: any) {
-          failed++;
-          results.push({ id: note.id, status: "failed", error: err.message });
+          if (!retryResp.ok) throw new Error(`AI error after retry: ${retryResp.status}`);
+          const retryData = await retryResp.json();
+          const cleanedText = retryData.choices?.[0]?.message?.content?.trim() || "";
+          await supabase
+            .from("store_notes")
+            .update({
+              original_note: note.note_text,
+              note_text: cleanedText,
+              is_legacy: true,
+              needs_cleaning: false,
+              cleaning_status: "approved",
+              cleaned_at: new Date().toISOString(),
+            })
+            .eq("id", note.id);
+          processed++;
+        } else if (!aiResp.ok) {
+          const errText = await aiResp.text();
+          throw new Error(`AI error ${aiResp.status}: ${errText.slice(0, 200)}`);
+        } else {
+          const aiData = await aiResp.json();
+          const cleanedText = aiData.choices?.[0]?.message?.content?.trim() || "";
+          await supabase
+            .from("store_notes")
+            .update({
+              original_note: note.note_text,
+              note_text: cleanedText,
+              is_legacy: true,
+              needs_cleaning: false,
+              cleaning_status: "approved",
+              cleaned_at: new Date().toISOString(),
+            })
+            .eq("id", note.id);
+          processed++;
         }
-
-        // Update progress
+      } catch (err: any) {
+        console.error(`Failed to clean ${note.id}:`, err.message);
+        failed++;
+        // Mark this note so we skip it next batch
         await supabase
-          .from("note_cleaner_jobs")
-          .update({
-            processed_records: processed + failed,
-            failed_records: failed,
-            results,
-          })
-          .eq("id", jobId);
-
-        // Delay between notes to avoid rate limits
-        await new Promise((r) => setTimeout(r, 1000));
+          .from("store_notes")
+          .update({ cleaning_status: "failed" })
+          .eq("id", note.id);
       }
 
-      // Mark complete
-      await supabase
-        .from("note_cleaner_jobs")
-        .update({
-          status: "complete",
-          processed_records: processed,
-          failed_records: failed,
-          results,
-          current_record: null,
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", jobId);
-    })();
+      // Small delay between notes
+      await new Promise((r) => setTimeout(r, 500));
+    }
 
-    // Don't await — let it run in background
-    // Edge functions in Deno have ~400s timeout, which is enough for many notes
-    // For very large batches, the function will process as many as it can
-    processingPromise.catch(async (err) => {
-      console.error("Background processing error:", err);
-      await supabase
-        .from("note_cleaner_jobs")
-        .update({
-          status: "failed",
-          error: err.message || "Unknown background error",
-          completed_at: new Date().toISOString(),
-        })
-        .eq("id", jobId);
-    });
+    // Update job progress
+    const newProcessed = (jobRecord.processed_records || 0) + processed;
+    const newFailed = (jobRecord.failed_records || 0) + failed;
 
-    // Wait for the processing to complete before responding
-    // This ensures the edge function stays alive while processing
-    await processingPromise;
+    await supabase
+      .from("note_cleaner_jobs")
+      .update({
+        processed_records: newProcessed,
+        failed_records: newFailed,
+        current_record: null,
+      })
+      .eq("id", jobRecord.id);
 
-    return new Response(responseBody, {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        job_id: jobRecord.id,
+        processed_this_batch: processed,
+        failed_this_batch: failed,
+        total_processed: newProcessed,
+        total_records: jobRecord.total_records,
+        status: "running",
+        has_more: true,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e: any) {
     console.error("run-note-cleaner error:", e);
     return new Response(
-      JSON.stringify({ error: e.message || "Unknown error" }),
+      JSON.stringify({ success: false, error: e.message || "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
