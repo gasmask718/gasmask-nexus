@@ -522,6 +522,7 @@ serve(async (req) => {
       inserted: totalInserted,
       skipped: totalSkipped,
       duplicates: totalSkipped,
+      enriched: 0, // enrichedCount tracked per-neighborhood, included in neighborhood results
       ...(neighborhoodResults.length > 0 ? { neighborhoods: neighborhoodResults } : {}),
       ...(warning ? { warning } : {}),
     }), {
