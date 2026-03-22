@@ -381,10 +381,10 @@ function TonightGamesTab() {
   // Yesterday summary calculations
   const totalPredicted = yesterdayGames.filter(g => g.sbo_predictions?.length > 0).length;
   const correctCount = yesterdayGames.filter(g =>
-    g.sbo_results_verification?.[0]?.verdict === 'correct'
+    g.sbo_predictions?.[0]?.sbo_results_verification?.[0]?.verdict === 'correct'
   ).length;
   const incorrectCount = yesterdayGames.filter(g =>
-    g.sbo_results_verification?.[0]?.verdict === 'incorrect'
+    g.sbo_predictions?.[0]?.sbo_results_verification?.[0]?.verdict === 'incorrect'
   ).length;
   const pendingCount = totalPredicted - correctCount - incorrectCount;
   const accuracy = (correctCount + incorrectCount) > 0
