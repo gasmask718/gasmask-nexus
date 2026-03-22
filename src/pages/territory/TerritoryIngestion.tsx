@@ -1002,8 +1002,26 @@ export default function TerritoryIngestion() {
                 </p>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={resetAll}>Import More Data</Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    toast({ title: "Enriching...", description: "Fetching missing phone numbers from Google..." });
+                    const { data, error } = await supabase.functions.invoke('ingestion-enrich-phones', { body: {} });
+                    if (error) throw error;
+                    toast({
+                      title: "Enrich Complete",
+                      description: data.message || `${data.enriched} phones added`,
+                    });
+                  } catch (e: any) {
+                    toast({ title: "Enrich Failed", description: e.message, variant: "destructive" });
+                  }
+                }}
+              >
+                📞 Enrich Missing Phones
+              </Button>
               {failedNeighborhoods.length > 0 && (
                 <Button variant="destructive" onClick={retryFailed}>
                   <RefreshCw className="h-4 w-4 mr-2" />
