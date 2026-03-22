@@ -353,7 +353,8 @@ export default function TerritoryIngestion() {
       if (data?.warning) {
         toast({ title: "Ingestion Warning", description: data.warning, variant: "destructive" });
       } else {
-        toast({ title: "Ingestion Complete", description: `${data?.inserted ?? 0} new addresses imported.` });
+        const enrichedMsg = data?.enriched ? ` · ${data.enriched} enriched with phone` : '';
+        toast({ title: "Ingestion Complete", description: `${data?.inserted ?? 0} new · ${data?.skipped ?? 0} skipped${enrichedMsg}` });
       }
     },
     onError: (err: any) => {
@@ -906,18 +907,22 @@ export default function TerritoryIngestion() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-foreground">{apiResults.total || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Processed</p>
+                <p className="text-sm text-muted-foreground">Total Found</p>
               </div>
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-emerald-500">{apiResults.inserted || 0}</p>
-                <p className="text-sm text-muted-foreground">New Addresses</p>
+                <p className="text-sm text-muted-foreground">New Saved</p>
+              </div>
+              <div className="border rounded-lg p-4 text-center">
+                <p className="text-3xl font-bold text-blue-500">{apiResults.enriched || 0}</p>
+                <p className="text-sm text-muted-foreground">Phones Added</p>
               </div>
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-amber-500">{apiResults.duplicates || apiResults.skipped || 0}</p>
-                <p className="text-sm text-muted-foreground">Duplicates Skipped</p>
+                <p className="text-sm text-muted-foreground">Already Complete</p>
               </div>
             </div>
 
@@ -997,8 +1002,26 @@ export default function TerritoryIngestion() {
                 </p>
               </div>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button onClick={resetAll}>Import More Data</Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    toast({ title: "Enriching...", description: "Fetching missing phone numbers from Google..." });
+                    const { data, error } = await supabase.functions.invoke('ingestion-enrich-phones', { body: {} });
+                    if (error) throw error;
+                    toast({
+                      title: "Enrich Complete",
+                      description: data.message || `${data.enriched} phones added`,
+                    });
+                  } catch (e: any) {
+                    toast({ title: "Enrich Failed", description: e.message, variant: "destructive" });
+                  }
+                }}
+              >
+                📞 Enrich Missing Phones
+              </Button>
               {failedNeighborhoods.length > 0 && (
                 <Button variant="destructive" onClick={retryFailed}>
                   <RefreshCw className="h-4 w-4 mr-2" />

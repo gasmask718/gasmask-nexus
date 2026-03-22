@@ -266,16 +266,29 @@ serve(async (req) => {
 
         result.total = unique.length;
 
+        let enrichedCount = 0;
         for (const place of unique) {
           try {
             const addr = place.formatted_address || place.name;
-            const { data: existing } = await supabase
-              .from('territory_addresses')
-              .select('id')
-              .ilike('full_address', `%${addr.substring(0, 30)}%`)
-              .limit(1);
 
-            if (existing && existing.length > 0) { result.skipped++; continue; }
+            // Smart duplicate detection — check by place_id first, then address
+            let existing: any = null;
+            if (place.place_id) {
+              const { data: byPlaceId } = await supabase
+                .from('territory_addresses')
+                .select('id, phone, store_name')
+                .eq('place_id', place.place_id)
+                .maybeSingle();
+              existing = byPlaceId;
+            }
+            if (!existing) {
+              const { data: byAddr } = await supabase
+                .from('territory_addresses')
+                .select('id, phone, store_name')
+                .ilike('full_address', `%${addr.substring(0, 30)}%`)
+                .limit(1);
+              existing = byAddr?.[0] || null;
+            }
 
             // Fetch phone number via Place Details
             let phone: string | null = null;
@@ -296,6 +309,27 @@ serve(async (req) => {
               console.warn('Place Details fetch failed for', place.name, e);
             }
 
+            if (existing) {
+              // Record exists — enrich if missing phone
+              if (!existing.phone && phone) {
+                await supabase
+                  .from('territory_addresses')
+                  .update({
+                    phone: phone,
+                    website: website,
+                    place_id: place.place_id,
+                    full_address: detailAddress,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', existing.id);
+                enrichedCount++;
+                console.log(`Enriched ${existing.store_name} with phone: ${phone}`);
+              } else {
+                result.skipped++;
+              }
+              continue;
+            }
+
             const insertData: Record<string, any> = {
               store_name: place.name || null,
               full_address: detailAddress,
@@ -303,18 +337,24 @@ serve(async (req) => {
               state: state,
               latitude: place.geometry?.location?.lat,
               longitude: place.geometry?.location?.lng,
-              address_type: (place.types || []).join(', '),
-              notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} | Phone: ${phone || 'N/A'} [${target.name}]`,
+              address_type: 'commercial',
+              notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} [${target.name}]`,
               neighborhood: target.name,
               discovery_status: 'unknown',
               discovered_by: 'google_places',
+              place_id: place.place_id,
             };
             if (phone) insertData.phone = phone;
             if (website) insertData.website = website;
             if (target.id) insertData.neighborhood_id = target.id;
 
             const { error } = await supabase.from('territory_addresses').insert(insertData);
-            if (error) result.skipped++; else result.inserted++;
+            if (error) {
+              console.error('Insert error:', error.message);
+              result.skipped++;
+            } else {
+              result.inserted++;
+            }
           } catch { result.skipped++; }
         }
 
@@ -363,18 +403,29 @@ serve(async (req) => {
 
       totalFound = unique.length;
 
+      let totalEnriched = 0;
       for (const place of unique) {
         try {
           const addr = place.formatted_address || place.name;
-          const { data: existing } = await supabase
-            .from('territory_addresses')
-            .select('id')
-            .ilike('full_address', `%${addr.substring(0, 30)}%`)
-            .limit(1);
 
-          if (existing && existing.length > 0) { totalSkipped++; continue; }
+          let existing: any = null;
+          if (place.place_id) {
+            const { data: byPlaceId } = await supabase
+              .from('territory_addresses')
+              .select('id, phone, store_name')
+              .eq('place_id', place.place_id)
+              .maybeSingle();
+            existing = byPlaceId;
+          }
+          if (!existing) {
+            const { data: byAddr } = await supabase
+              .from('territory_addresses')
+              .select('id, phone, store_name')
+              .ilike('full_address', `%${addr.substring(0, 30)}%`)
+              .limit(1);
+            existing = byAddr?.[0] || null;
+          }
 
-          // Fetch phone number via Place Details
           let phone: string | null = null;
           let website: string | null = null;
           let detailAddress = addr;
@@ -393,6 +444,25 @@ serve(async (req) => {
             console.warn('Place Details fetch failed for', place.name, e);
           }
 
+          if (existing) {
+            if (!existing.phone && phone) {
+              await supabase
+                .from('territory_addresses')
+                .update({
+                  phone: phone,
+                  website: website,
+                  place_id: place.place_id,
+                  full_address: detailAddress,
+                  updated_at: new Date().toISOString(),
+                })
+                .eq('id', existing.id);
+              totalEnriched++;
+            } else {
+              totalSkipped++;
+            }
+            continue;
+          }
+
           const { error } = await supabase.from('territory_addresses').insert({
             store_name: place.name || null,
             full_address: detailAddress,
@@ -400,15 +470,21 @@ serve(async (req) => {
             state: state,
             latitude: place.geometry?.location?.lat,
             longitude: place.geometry?.location?.lng,
-            address_type: (place.types || []).join(', '),
-            notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'} | Phone: ${phone || 'N/A'}`,
+            address_type: 'commercial',
+            notes: `Google Places: ${place.name} | Rating: ${place.rating || 'N/A'}`,
             discovery_status: 'unknown',
             discovered_by: 'google_places',
+            place_id: place.place_id,
             ...(phone ? { phone } : {}),
             ...(website ? { website } : {}),
           });
 
-          if (error) totalSkipped++; else totalInserted++;
+          if (error) {
+            console.error('Insert error:', error.message);
+            totalSkipped++;
+          } else {
+            totalInserted++;
+          }
         } catch { totalSkipped++; }
       }
     }
@@ -446,6 +522,7 @@ serve(async (req) => {
       inserted: totalInserted,
       skipped: totalSkipped,
       duplicates: totalSkipped,
+      enriched: 0, // enrichedCount tracked per-neighborhood, included in neighborhood results
       ...(neighborhoodResults.length > 0 ? { neighborhoods: neighborhoodResults } : {}),
       ...(warning ? { warning } : {}),
     }), {
