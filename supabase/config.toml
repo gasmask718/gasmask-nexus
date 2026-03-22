@@ -435,3 +435,6 @@ verify_jwt = false
 
 [functions.sbo-send-daily-sms]
 verify_jwt = false
+
+[functions.sbo-inbound-sms]
+verify_jwt = false
