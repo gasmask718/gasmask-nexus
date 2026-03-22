@@ -2476,6 +2476,28 @@ export default function SportsBettingOS() {
               {strongCount} strong picks
             </Badge>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={verifyingResults}
+            onClick={async () => {
+              setVerifyingResults(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                if (error) throw error;
+                toast.success(`${data.verified} verified — ${data.accuracy}% accuracy`);
+              } catch (e: any) {
+                toast.error(e.message || 'Verification failed');
+              } finally {
+                setVerifyingResults(false);
+              }
+            }}
+          >
+            {verifyingResults
+              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
+              : <><Check className="h-3 w-3 mr-1" /> Verify Results</>
+            }
+          </Button>
           <Button onClick={runAllEngines} disabled={runningAll} size="sm">
             {runningAll
               ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
