@@ -907,18 +907,22 @@ export default function TerritoryIngestion() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-foreground">{apiResults.total || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Processed</p>
+                <p className="text-sm text-muted-foreground">Total Found</p>
               </div>
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-emerald-500">{apiResults.inserted || 0}</p>
-                <p className="text-sm text-muted-foreground">New Addresses</p>
+                <p className="text-sm text-muted-foreground">New Saved</p>
+              </div>
+              <div className="border rounded-lg p-4 text-center">
+                <p className="text-3xl font-bold text-blue-500">{apiResults.enriched || 0}</p>
+                <p className="text-sm text-muted-foreground">Phones Added</p>
               </div>
               <div className="border rounded-lg p-4 text-center">
                 <p className="text-3xl font-bold text-amber-500">{apiResults.duplicates || apiResults.skipped || 0}</p>
-                <p className="text-sm text-muted-foreground">Duplicates Skipped</p>
+                <p className="text-sm text-muted-foreground">Already Complete</p>
               </div>
             </div>
 
