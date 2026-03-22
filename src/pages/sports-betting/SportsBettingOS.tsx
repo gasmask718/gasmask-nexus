@@ -2905,6 +2905,21 @@ export default function SportsBettingOS() {
         </div>
       </div>
 
+      {/* Last Engine Run Display */}
+      {lastRun ? (
+        <div className="text-xs text-muted-foreground px-3 py-2 rounded-lg bg-muted/30 border border-border">
+          <span>⚡ Last engine run: </span>
+          <span className="font-medium text-foreground">
+            {new Date(lastRun.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at {new Date(lastRun.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <span> · {lastRun.games_fetched || lastRun.games_analyzed || 0} games · {lastRun.props_analyzed || 0} props · {((lastRun.duration_ms || 0) / 1000).toFixed(1)}s</span>
+        </div>
+      ) : (
+        <div className="text-xs text-amber-500 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          ⚠️ Engine has not been run today — press Run All Engines to load today's slate
+        </div>
+      )}
+
       {/* Today's Guarantee Widget */}
       <TodaysGuaranteeWidget />
 
