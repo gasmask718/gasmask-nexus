@@ -12,8 +12,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
 import { SyncDashboard } from '@/components/sbo/SyncDashboard';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark } from 'lucide-react';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
@@ -2357,6 +2358,78 @@ function MyBetsTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// TODAY'S GUARANTEE WIDGET
+// ═══════════════════════════════════════════════════════════════
+
+function TodaysGuaranteeWidget() {
+  const { data: plan } = useQuery({
+    queryKey: ['guarantee-widget'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await (supabase as any)
+        .from('sbo_daily_profit_plan')
+        .select('*')
+        .eq('plan_date', today)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    refetchInterval: 60000,
+  });
+
+  const { data: activeHedges } = useQuery({
+    queryKey: ['active-hedges-count'],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('sbo_hedge_engine')
+        .select('*', { count: 'exact', head: true })
+        .eq('result', 'pending')
+        .eq('hedge_triggered', false);
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
+  if (!plan) return null;
+
+  const status = plan.status === 'complete' ? 'PLAN COMPLETE' : (activeHedges || 0) > 0 ? 'HEDGE NEEDED' : 'ON TRACK';
+  const statusColor = status === 'PLAN COMPLETE' ? 'text-emerald-500' : status === 'HEDGE NEEDED' ? 'text-destructive' : 'text-blue-500';
+
+  return (
+    <Card className="border-emerald-500/30 bg-emerald-500/5">
+      <CardContent className="p-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-emerald-500" />
+            <span className="text-sm font-bold">Today's Guarantee</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs">
+            <div className="text-center">
+              <p className="font-bold text-emerald-500 text-lg">${plan.guaranteed_profit?.toFixed(2) || '0'}</p>
+              <p className="text-muted-foreground">Floor</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-blue-500 text-lg">${plan.projected_profit?.toFixed(2) || '0'}</p>
+              <p className="text-muted-foreground">Upside</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-foreground">{activeHedges || 0}</p>
+              <p className="text-muted-foreground">Hedges Pending</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold text-foreground">${plan.total_capital_required?.toFixed(0) || '0'}</p>
+              <p className="text-muted-foreground">Capital</p>
+            </div>
+            <Badge variant="outline" className={`${statusColor} border-current`}>{status}</Badge>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
@@ -2542,8 +2615,11 @@ export default function SportsBettingOS() {
         </div>
       </div>
 
+      {/* Today's Guarantee Widget */}
+      <TodaysGuaranteeWidget />
+
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-10">
+        <TabsList className="grid w-full grid-cols-11">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -2558,6 +2634,7 @@ export default function SportsBettingOS() {
             )}
           </TabsTrigger>
           <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
+          <TabsTrigger value="hedge" className="text-xs">🔒 Hedge</TabsTrigger>
           <TabsTrigger value="sim" className="text-xs">⚡ Sim</TabsTrigger>
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
           <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
@@ -2580,6 +2657,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="parlay" className="mt-4">
           <ParlayBuilderTab />
+        </TabsContent>
+
+        <TabsContent value="hedge" className="mt-4">
+          <HedgeCenter />
         </TabsContent>
 
         <TabsContent value="sim" className="mt-4">

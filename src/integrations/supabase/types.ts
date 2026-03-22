@@ -57676,6 +57676,75 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_arbitrage: {
+        Row: {
+          arb_percentage: number | null
+          bet_type: string | null
+          created_at: string | null
+          executed: boolean | null
+          game_id: string | null
+          guaranteed_profit: number | null
+          id: string
+          side_a_book: string | null
+          side_a_odds: string | null
+          side_a_payout: number | null
+          side_a_pick: string | null
+          side_a_stake: number | null
+          side_b_book: string | null
+          side_b_odds: string | null
+          side_b_payout: number | null
+          side_b_pick: string | null
+          side_b_stake: number | null
+          total_stake: number | null
+          window_closed_at: string | null
+          window_open_at: string | null
+        }
+        Insert: {
+          arb_percentage?: number | null
+          bet_type?: string | null
+          created_at?: string | null
+          executed?: boolean | null
+          game_id?: string | null
+          guaranteed_profit?: number | null
+          id?: string
+          side_a_book?: string | null
+          side_a_odds?: string | null
+          side_a_payout?: number | null
+          side_a_pick?: string | null
+          side_a_stake?: number | null
+          side_b_book?: string | null
+          side_b_odds?: string | null
+          side_b_payout?: number | null
+          side_b_pick?: string | null
+          side_b_stake?: number | null
+          total_stake?: number | null
+          window_closed_at?: string | null
+          window_open_at?: string | null
+        }
+        Update: {
+          arb_percentage?: number | null
+          bet_type?: string | null
+          created_at?: string | null
+          executed?: boolean | null
+          game_id?: string | null
+          guaranteed_profit?: number | null
+          id?: string
+          side_a_book?: string | null
+          side_a_odds?: string | null
+          side_a_payout?: number | null
+          side_a_pick?: string | null
+          side_a_stake?: number | null
+          side_b_book?: string | null
+          side_b_odds?: string | null
+          side_b_payout?: number | null
+          side_b_pick?: string | null
+          side_b_stake?: number | null
+          total_stake?: number | null
+          window_closed_at?: string | null
+          window_open_at?: string | null
+        }
+        Relationships: []
+      }
       sbo_bankroll: {
         Row: {
           biggest_loss: number | null
@@ -57793,6 +57862,54 @@ export type Database = {
           status?: string | null
           top_moneylines?: Json | null
           top_props?: Json | null
+        }
+        Relationships: []
+      }
+      sbo_daily_profit_plan: {
+        Row: {
+          actual_profit: number | null
+          bets: Json | null
+          books_needed: Json | null
+          created_at: string | null
+          guaranteed_profit: number | null
+          hedges: Json | null
+          id: string
+          plan_date: string | null
+          projected_profit: number | null
+          status: string | null
+          target_profit: number | null
+          total_capital_required: number | null
+          total_stakes: number | null
+        }
+        Insert: {
+          actual_profit?: number | null
+          bets?: Json | null
+          books_needed?: Json | null
+          created_at?: string | null
+          guaranteed_profit?: number | null
+          hedges?: Json | null
+          id?: string
+          plan_date?: string | null
+          projected_profit?: number | null
+          status?: string | null
+          target_profit?: number | null
+          total_capital_required?: number | null
+          total_stakes?: number | null
+        }
+        Update: {
+          actual_profit?: number | null
+          bets?: Json | null
+          books_needed?: Json | null
+          created_at?: string | null
+          guaranteed_profit?: number | null
+          hedges?: Json | null
+          id?: string
+          plan_date?: string | null
+          projected_profit?: number | null
+          status?: string | null
+          target_profit?: number | null
+          total_capital_required?: number | null
+          total_stakes?: number | null
         }
         Relationships: []
       }
@@ -57934,6 +58051,90 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           winner?: string | null
+        }
+        Relationships: []
+      }
+      sbo_hedge_engine: {
+        Row: {
+          actual_profit: number | null
+          best_case_profit: number | null
+          created_at: string | null
+          game_id: string | null
+          guaranteed_profit: number | null
+          guaranteed_profit_pct: number | null
+          hedge_book: string | null
+          hedge_efficiency: number | null
+          hedge_odds: string | null
+          hedge_pick: string | null
+          hedge_potential_payout: number | null
+          hedge_stake: number | null
+          hedge_trigger: string | null
+          hedge_triggered: boolean | null
+          hedge_triggered_at: string | null
+          id: string
+          phase: string | null
+          pregame_book: string | null
+          pregame_odds: string | null
+          pregame_pick: string | null
+          pregame_potential_payout: number | null
+          pregame_stake: number | null
+          result: string | null
+          updated_at: string | null
+          worst_case_loss: number | null
+        }
+        Insert: {
+          actual_profit?: number | null
+          best_case_profit?: number | null
+          created_at?: string | null
+          game_id?: string | null
+          guaranteed_profit?: number | null
+          guaranteed_profit_pct?: number | null
+          hedge_book?: string | null
+          hedge_efficiency?: number | null
+          hedge_odds?: string | null
+          hedge_pick?: string | null
+          hedge_potential_payout?: number | null
+          hedge_stake?: number | null
+          hedge_trigger?: string | null
+          hedge_triggered?: boolean | null
+          hedge_triggered_at?: string | null
+          id?: string
+          phase?: string | null
+          pregame_book?: string | null
+          pregame_odds?: string | null
+          pregame_pick?: string | null
+          pregame_potential_payout?: number | null
+          pregame_stake?: number | null
+          result?: string | null
+          updated_at?: string | null
+          worst_case_loss?: number | null
+        }
+        Update: {
+          actual_profit?: number | null
+          best_case_profit?: number | null
+          created_at?: string | null
+          game_id?: string | null
+          guaranteed_profit?: number | null
+          guaranteed_profit_pct?: number | null
+          hedge_book?: string | null
+          hedge_efficiency?: number | null
+          hedge_odds?: string | null
+          hedge_pick?: string | null
+          hedge_potential_payout?: number | null
+          hedge_stake?: number | null
+          hedge_trigger?: string | null
+          hedge_triggered?: boolean | null
+          hedge_triggered_at?: string | null
+          id?: string
+          phase?: string | null
+          pregame_book?: string | null
+          pregame_odds?: string | null
+          pregame_pick?: string | null
+          pregame_potential_payout?: number | null
+          pregame_stake?: number | null
+          result?: string | null
+          updated_at?: string | null
+          worst_case_loss?: number | null
         }
         Relationships: []
       }
@@ -59417,6 +59618,36 @@ export type Database = {
           turnovers_per_game?: number | null
           updated_at?: string | null
           wins?: number | null
+        }
+        Relationships: []
+      }
+      sbo_user_books: {
+        Row: {
+          account_balance: number | null
+          added_at: string | null
+          best_for: string | null
+          book_name: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+        }
+        Insert: {
+          account_balance?: number | null
+          added_at?: string | null
+          best_for?: string | null
+          book_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+        }
+        Update: {
+          account_balance?: number | null
+          added_at?: string | null
+          best_for?: string | null
+          book_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
         }
         Relationships: []
       }
