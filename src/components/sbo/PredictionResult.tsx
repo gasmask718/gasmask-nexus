@@ -68,6 +68,17 @@ export function PredictionResult({ prediction }: PredictionResultProps) {
               4-Brain
             </Badge>
           )}
+          {prediction.data_quality && (
+            <Badge variant="outline" className={`ml-1.5 text-[8px] h-3.5 px-1 ${
+              prediction.data_quality === 'full' ? 'text-green-500 border-green-500/40' :
+              prediction.data_quality === 'partial' ? 'text-amber-500 border-amber-500/40' :
+              'text-red-400 border-red-400/40'
+            }`}>
+              {prediction.data_quality === 'full' ? '📊 Full Stats' :
+               prediction.data_quality === 'partial' ? '⚠️ Partial Stats' :
+               '🔴 Odds Only'}
+            </Badge>
+          )}
         </span>
         <Badge className={`text-[10px] ${tierColors[tier] || tierColors.moderate}`}>
           {finalConf}% — {tier?.toUpperCase()}
