@@ -65,7 +65,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const { data: games } = await supabase
       .from('sbo_games')
       .select('*')
