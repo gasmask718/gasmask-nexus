@@ -830,27 +830,207 @@ function SimulationTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ACCURACY TAB
+// ═══════════════════════════════════════════════════════════════
+
+function AccuracyTab() {
+  const { data: predictions, refetch: refetchGraded } = useQuery({
+    queryKey: ['all-predictions-accuracy'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sbo_predictions')
+        .select('*')
+        .not('was_correct', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(200);
+      return (data as any[]) || [];
+    },
+  });
+
+  const { data: pending, refetch: refetchPending } = useQuery({
+    queryKey: ['pending-predictions'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sbo_predictions')
+        .select(`
+          *,
+          sbo_games(home_team, away_team, game_date, status, winner),
+          sbo_player_props(player_name, prop_type, line)
+        `)
+        .is('was_correct', null)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      return (data as any[]) || [];
+    },
+  });
+
+  const total = predictions?.length || 0;
+  const correct = predictions?.filter(p => p.was_correct).length || 0;
+  const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : '0';
+
+  const byTier = ['elite', 'strong', 'moderate', 'weak'].map(tier => {
+    const tierPreds = predictions?.filter(p => p.confidence_tier === tier) || [];
+    const tierCorrect = tierPreds.filter(p => p.was_correct).length;
+    return {
+      tier,
+      total: tierPreds.length,
+      correct: tierCorrect,
+      accuracy: tierPreds.length > 0
+        ? ((tierCorrect / tierPreds.length) * 100).toFixed(1)
+        : 'N/A',
+    };
+  });
+
+  const markResult = async (predId: string, wasCorrect: boolean) => {
+    await supabase
+      .from('sbo_predictions')
+      .update({ was_correct: wasCorrect, actual_outcome: wasCorrect ? 'correct' : 'incorrect' })
+      .eq('id', predId);
+    toast.success('Result recorded');
+    refetchGraded();
+    refetchPending();
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Overall accuracy */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Total Graded', value: total, color: 'text-foreground' },
+          { label: 'Correct', value: correct, color: 'text-green-500' },
+          { label: 'Accuracy', value: `${accuracy}%`, color: parseFloat(accuracy) >= 55 ? 'text-green-500' : 'text-amber-500' },
+        ].map(s => (
+          <Card key={s.label}>
+            <CardContent className="p-3 text-center">
+              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Accuracy by confidence tier */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <p className="text-sm font-semibold text-foreground">Accuracy by Confidence Tier</p>
+          <div className="space-y-2">
+            {byTier.map(t => (
+              <div key={t.tier} className="flex items-center gap-3">
+                <Badge variant="outline" className="text-[10px] w-20 justify-center capitalize">
+                  {t.tier}
+                </Badge>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      parseFloat(t.accuracy) >= 60 ? 'bg-green-500' :
+                      parseFloat(t.accuracy) >= 50 ? 'bg-amber-500' : 'bg-red-400'
+                    }`}
+                    style={{ width: t.accuracy === 'N/A' ? '0%' : `${t.accuracy}%` }}
+                  />
+                </div>
+                <span className="text-xs font-bold w-12 text-right">{t.accuracy}%</span>
+                <span className="text-[10px] text-muted-foreground w-10 text-right">
+                  {t.correct}/{t.total}
+                </span>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pending predictions — mark results */}
+      {(pending?.length || 0) > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Mark Results ({pending?.length} pending)
+          </p>
+          {pending?.map((pred: any) => {
+            const label = pred.prediction_type === 'moneyline'
+              ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
+              : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
+
+            return (
+              <Card key={pred.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{label}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {pred.sbo_games?.away_team} @ {pred.sbo_games?.home_team} ·{' '}
+                        <span className="font-bold">{pred.final_confidence}%</span>
+                      </p>
+                    </div>
+                    <div className="flex gap-1.5 flex-shrink-0 ml-2">
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-green-600 hover:bg-green-500/10"
+                        onClick={() => markResult(pred.id, true)}
+                      >
+                        ✓ Win
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] px-2 text-red-500 hover:bg-red-500/10"
+                        onClick={() => markResult(pred.id, false)}
+                      >
+                        ✗ Loss
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
 export default function SportsBettingOS() {
+  const { data: strongCount } = useQuery({
+    queryKey: ['strong-count'],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('sbo_predictions')
+        .select('*', { count: 'exact', head: true })
+        .in('confidence_tier', ['elite', 'strong'])
+        .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString());
+      return count || 0;
+    },
+    refetchInterval: 30000,
+  });
+
   return (
-    <div className="p-4 max-w-4xl mx-auto space-y-4">
-      <div className="flex items-center gap-3">
-        <Trophy className="h-6 w-6 text-orange-500" />
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Sports Betting AI OS</h1>
-          <p className="text-xs text-muted-foreground">3-Brain AI Prediction Engine · NBA</p>
+    <div className="p-4 max-w-5xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Trophy className="h-6 w-6 text-orange-500" />
+          <div>
+            <h1 className="text-xl font-bold text-foreground">🏀 Sports Betting AI OS</h1>
+            <p className="text-xs text-muted-foreground">NBA · 3-Brain AI Engine · Moneyline + Player Props</p>
+          </div>
         </div>
+        {(strongCount || 0) > 0 && (
+          <Badge variant="secondary" className="text-xs">
+            {strongCount} strong picks tonight
+          </Badge>
+        )}
       </div>
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="games" className="text-xs">🏀 Games</TabsTrigger>
-          <TabsTrigger value="props" className="text-xs">📊 Props</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
+          <TabsTrigger value="props" className="text-xs">
+            Props
+            {(strongCount || 0) > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 h-4">{strongCount}</Badge>
+            )}
+          </TabsTrigger>
           <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
           <TabsTrigger value="sim" className="text-xs">⚡ Simulate</TabsTrigger>
-          <TabsTrigger value="entry" className="text-xs">📝 VA Entry</TabsTrigger>
+          <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
+          <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
         </TabsList>
 
         <TabsContent value="games" className="mt-4">
@@ -867,6 +1047,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="sim" className="mt-4">
           <SimulationTab />
+        </TabsContent>
+
+        <TabsContent value="accuracy" className="mt-4">
+          <AccuracyTab />
         </TabsContent>
 
         <TabsContent value="entry" className="mt-4">
