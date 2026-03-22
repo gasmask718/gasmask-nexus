@@ -40,7 +40,7 @@ Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences refer
         body: {
           player_name: ctx.player_name,
           team: ctx.team,
-          game_date: ctx.game_date?.split('T')[0] || new Date().toISOString().split('T')[0],
+          game_date: ctx.game_date?.split('T')[0] || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }),
           prop_type: ctx.prop_type,
           opponent: ctx.home_team === ctx.team ? ctx.away_team : ctx.home_team,
         },
