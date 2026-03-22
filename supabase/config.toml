@@ -399,3 +399,12 @@ verify_jwt = false
 
 [functions.gasmask-sms-inbound]
 verify_jwt = false
+
+[functions.sbo-sync-daily]
+verify_jwt = false
+
+[functions.sbo-sync-pregame]
+verify_jwt = false
+
+[functions.sbo-get-player-context]
+verify_jwt = false
