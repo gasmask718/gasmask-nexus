@@ -3057,20 +3057,20 @@ export default function SportsBettingOS() {
 
       // PHASE 3 — Run predictions (skips games already predicted today)
       setRunAllPhase('Phase 3/6: Running AI predictions...');
-      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { start: raStart, end: raEnd } = getTodayETBounds();
 
       const { data: allGames } = await supabase
         .from('sbo_games')
         .select('*, sbo_odds(*)')
-        .gte('game_date', today + 'T00:00:00')
-        .lte('game_date', today + 'T23:59:59');
+        .gte('game_date', raStart)
+        .lte('game_date', raEnd);
 
       // Check which games already have predictions today
       const { data: existingPreds } = await supabase
         .from('sbo_predictions')
         .select('game_id')
         .eq('prediction_type', 'moneyline')
-        .gte('created_at', `${today}T00:00:00`);
+        .gte('created_at', raStart);
 
       const predictedGameIds = new Set((existingPreds || []).map((p: any) => p.game_id));
       const unpredictedGames = (allGames || []).filter((g: any) => !predictedGameIds.has(g.id));
