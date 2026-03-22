@@ -23,6 +23,11 @@ const PREGAME_STEPS = [
   { fn: 'sbo-fetch-odds', label: 'Live Odds (DK/FD/BetMGM/Caesars)', icon: '💰', required: true },
   { fn: 'sbo-sync-pregame', label: 'Projections + Game Logs + SDIO Props', icon: '📈', required: true },
   { fn: 'sbo-sync-prizepicks', label: 'PrizePicks Props', icon: '🎯', required: false },
+  { fn: 'sbo-sync-polymarket', label: 'Polymarket Prediction Market Odds', icon: '🔮', required: false },
+];
+
+const POSTGAME_STEPS = [
+  { fn: 'sbo-track-results', label: 'Grade Predictions + Update Accuracy', icon: '📋', required: false },
 ];
 
 const FULL_STEPS = [...MORNING_STEPS, ...PREGAME_STEPS];
