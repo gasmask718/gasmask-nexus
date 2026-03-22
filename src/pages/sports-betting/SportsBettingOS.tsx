@@ -2662,6 +2662,11 @@ export default function SportsBettingOS() {
         }
       }
 
+      // Phase 4: Recalibrate + CLV track
+      setRunAllPhase('Phase 4/4: Calibrating model + tracking CLV...');
+      try { await supabase.functions.invoke('sbo-recalibrate'); } catch { /* continue */ }
+      try { await supabase.functions.invoke('sbo-track-clv'); } catch { /* continue */ }
+
       // Log the run
       const duration = Date.now() - startTime;
       await (supabase as any).from('sbo_run_log').insert({
@@ -2677,7 +2682,7 @@ export default function SportsBettingOS() {
       });
 
       refetchStrong();
-      toast.success(`All engines complete — ${unpredicted.length} games, ${propsCount} props, parlay built (${(duration / 1000).toFixed(1)}s)`);
+      toast.success(`All engines complete — ${unpredicted.length} games, ${propsCount} props, parlay built, model calibrated (${(duration / 1000).toFixed(1)}s)`);
     } catch (e: any) {
       toast.error(e.message || 'Run All Engines failed');
     } finally {
