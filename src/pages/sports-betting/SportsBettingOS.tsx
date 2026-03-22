@@ -1542,7 +1542,7 @@ export default function SportsBettingOS() {
       </div>
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -1557,8 +1557,9 @@ export default function SportsBettingOS() {
             )}
           </TabsTrigger>
           <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
-          <TabsTrigger value="sim" className="text-xs">⚡ Simulate</TabsTrigger>
+          <TabsTrigger value="sim" className="text-xs">⚡ Sim</TabsTrigger>
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
+          <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
           <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
           <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
         </TabsList>
