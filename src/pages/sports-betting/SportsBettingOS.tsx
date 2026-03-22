@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
-import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check } from 'lucide-react';
+import { SyncDashboard } from '@/components/sbo/SyncDashboard';
+import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════════════
@@ -290,6 +291,37 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 // VA PROP ENTRY TAB
 // ═══════════════════════════════════════════════════════════════
 
+function AutoPopulatedPropsNotice({ date }: { date: string }) {
+  const { data: apiProps } = useQuery({
+    queryKey: ['api-props-count', date],
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from('sbo_player_props')
+        .select('*', { count: 'exact', head: true })
+        .eq('entered_by', 'api')
+        .gte('created_at', date + 'T00:00:00');
+      return count || 0;
+    },
+  });
+
+  if (!apiProps && apiProps !== 0) return null;
+
+  return apiProps > 0 ? (
+    <Card className="border-green-500/30 bg-green-500/5">
+      <CardContent className="p-3 text-xs text-green-700">
+        ✓ {apiProps} props auto-pulled from DraftKings via SportsDataIO API today.
+        Use VA Entry only to add PrizePicks-specific lines not covered by the API.
+      </CardContent>
+    </Card>
+  ) : (
+    <Card className="border-amber-500/30 bg-amber-500/5">
+      <CardContent className="p-3 text-xs text-amber-700">
+        No props synced yet today. Run Pre-Game Sync in the ⚙️ Sync tab to auto-pull tonight's props.
+      </CardContent>
+    </Card>
+  );
+}
+
 function VAPropEntryTab() {
   const [games, setGames] = useState<any[]>([]);
   const [gameId, setGameId] = useState('');
@@ -350,6 +382,8 @@ function VAPropEntryTab() {
           VA Entry — Open PrizePicks and enter tonight's player props below. Select the game, then add each player's line and odds.
         </AlertDescription>
       </Alert>
+
+      <AutoPopulatedPropsNotice date={new Date().toISOString().split('T')[0]} />
 
       <div className="space-y-1.5">
         <Label className="text-xs">Select Game</Label>
@@ -1019,7 +1053,7 @@ export default function SportsBettingOS() {
       </div>
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -1031,6 +1065,7 @@ export default function SportsBettingOS() {
           <TabsTrigger value="sim" className="text-xs">⚡ Simulate</TabsTrigger>
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
           <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
+          <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
         </TabsList>
 
         <TabsContent value="games" className="mt-4">
@@ -1055,6 +1090,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="entry" className="mt-4">
           <VAPropEntryTab />
+        </TabsContent>
+
+        <TabsContent value="sync" className="mt-4">
+          <SyncDashboard />
         </TabsContent>
       </Tabs>
     </div>
