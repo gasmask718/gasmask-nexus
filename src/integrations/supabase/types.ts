@@ -58978,6 +58978,51 @@ export type Database = {
           },
         ]
       }
+      sbo_run_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          games_fetched: number | null
+          games_predicted: number | null
+          id: string
+          parlay_built: boolean | null
+          props_analyzed: number | null
+          run_type: string
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          games_fetched?: number | null
+          games_predicted?: number | null
+          id?: string
+          parlay_built?: boolean | null
+          props_analyzed?: number | null
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          games_fetched?: number | null
+          games_predicted?: number | null
+          id?: string
+          parlay_built?: boolean | null
+          props_analyzed?: number | null
+          run_type?: string
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       sbo_sdio_props: {
         Row: {
           bet_type: string | null
