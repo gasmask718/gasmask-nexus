@@ -1773,16 +1773,38 @@ function ParlayBuilderTab() {
   // Save AI parlay to sbo_parlays
   const saveAiParlay = async (parlay: any) => {
     try {
-      await supabase.from('sbo_parlays').insert({
+      const parlayLegs = (parlay.legs as any[]) || [];
+      const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { data: inserted } = await (supabase as any).from('sbo_parlays').insert({
         name: parlay.parlay_name,
         legs: parlay.legs as any,
         total_legs: parlay.leg_count,
         suggested_stake: aiStake,
+        stake: aiStake,
+        odds: parseInt(parlay.combined_odds_american) || 0,
+        potential_payout: Math.round(aiStake * (parlay.combined_odds_decimal || 1) * 100) / 100,
+        parlay_date: todayEST,
         combined_confidence: parlay.win_probability,
         expected_value: parlay.profit_if_win,
         status: 'pending',
-      });
-      toast.success('Parlay saved to My Bets');
+      }).select().single();
+
+      // Save legs to sbo_parlay_legs
+      if (inserted?.id && parlayLegs.length > 0) {
+        const legRows = parlayLegs.map((leg: any) => ({
+          parlay_id: inserted.id,
+          prediction_id: leg.id || null,
+          leg_type: leg.type === 'game' ? 'moneyline' : (leg.type || 'prop'),
+          label: leg.label,
+          odds: leg.odds,
+          confidence: leg.confidence,
+          result: 'pending',
+        }));
+        await (supabase as any).from('sbo_parlay_legs').insert(legRows);
+      }
+
+      toast.success('Parlay saved to My Bets with leg tracking');
+      loadSavedParlays();
     } catch (e: any) {
       toast.error('Save failed: ' + e.message);
     }
@@ -2147,6 +2169,9 @@ function ParlayBuilderTab() {
                         <p className="text-[10px] text-muted-foreground">
                           Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
                         </p>
+                        {leg.confidence < 55 && (
+                          <p className="text-[10px] text-amber-500 mt-0.5">⚠️ Low confidence — weakens parlay</p>
+                        )}
                       </div>
                       <Button size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0" onClick={() => removeLeg(leg.prediction_id)}>
                         <X className="w-3 h-3" />
@@ -2164,6 +2189,9 @@ function ParlayBuilderTab() {
                         <span className="font-bold">{s.value}</span>
                       </div>
                     ))}
+                    {selectedLegs.length > 5 && (
+                      <p className="text-[10px] text-amber-500 mt-1">⚠️ 6+ leg parlays hit under 5% — consider trimming</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Label className="text-xs flex-shrink-0">Stake $</Label>
