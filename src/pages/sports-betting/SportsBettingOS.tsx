@@ -2133,6 +2133,66 @@ function AccuracyTab() {
         </CardContent>
       </Card>
 
+      {/* Props vs Games breakdown */}
+      {(() => {
+        const gameVer = (verifications || []).filter((v: any) => v.pick_type !== 'prop');
+        const propVer = propVerifications || [];
+        const gameCorrect = gameVer.filter((v: any) => v.verdict === 'correct').length;
+        const gameTotal = gameVer.filter((v: any) => v.verdict !== 'push').length;
+        const propCorrect = propVer.filter((v: any) => v.verdict === 'correct').length;
+        const propTotal = propVer.filter((v: any) => v.verdict !== 'push').length;
+        const gameAcc = gameTotal > 0 ? Math.round((gameCorrect / gameTotal) * 100) : 0;
+        const propAcc = propTotal > 0 ? Math.round((propCorrect / propTotal) * 100) : 0;
+
+        const STAT_TYPES = ['points', 'rebounds', 'assists', 'threes', 'steals', 'blocks'];
+
+        return (gameTotal > 0 || propTotal > 0) ? (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">Games vs Props Accuracy</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className={`text-xl font-bold ${gameAcc >= 55 ? 'text-green-500' : 'text-amber-500'}`}>{gameAcc}%</p>
+                  <p className="text-[10px] text-muted-foreground">🏀 Games {gameCorrect}-{gameTotal - gameCorrect}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className={`text-xl font-bold ${propAcc >= 55 ? 'text-green-500' : 'text-amber-500'}`}>{propAcc}%</p>
+                  <p className="text-[10px] text-muted-foreground">📊 Props {propCorrect}-{propTotal - propCorrect}</p>
+                </div>
+              </div>
+              {propTotal > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-[11px] font-medium text-muted-foreground">Props by Stat Type</p>
+                  {STAT_TYPES.map(type => {
+                    const typeResults = propVer.filter((p: any) =>
+                      p.actual_result?.toLowerCase().includes(type)
+                    );
+                    const tCorrect = typeResults.filter((p: any) => p.verdict === 'correct').length;
+                    const tTotal = typeResults.filter((p: any) => p.verdict !== 'push').length;
+                    const pct = tTotal > 0 ? Math.round((tCorrect / tTotal) * 100) : 0;
+
+                    if (tTotal === 0) return null;
+                    return (
+                      <div key={type} className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground w-16 capitalize">{type}</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${pct >= 60 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold w-12 text-right">{pct}%</span>
+                        <span className="text-[10px] text-muted-foreground w-8 text-right">{tCorrect}/{tTotal}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : null;
+      })()}
+
       {/* Recent verifications */}
       {(verifications?.length || 0) > 0 && (
         <Card>
