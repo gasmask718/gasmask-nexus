@@ -657,7 +657,7 @@ export function ManualCampaignCallModal({
     stopSpeechRecognition,
   ]);
 
-  const handleTransfer = useCallback(async (transferType: "elevenlabs" | "human") => {
+  const handleTransfer = useCallback(async (transferType: "elevenlabs" | "human", agentOverride?: { id: string; name: string }) => {
     const sid = currentCallSidRef.current || activeCallSid;
     if (!sid) {
       toast.error("No active call to transfer");
@@ -666,6 +666,9 @@ export function ManualCampaignCallModal({
 
     setIsTransferring(true);
     setShowTransferPicker(false);
+    setSelectedTransferAgent(null);
+
+    const agent = agentOverride || selectedTransferAgent;
 
     try {
       const { data, error } = await supabase.functions.invoke("transfer-campaign-call", {
@@ -674,12 +677,19 @@ export function ManualCampaignCallModal({
           transfer_type: transferType,
           queue_item_id: currentItem?.id,
           campaign_id: campaignId,
+          ...(transferType === "elevenlabs" && agent ? {
+            agent_id: agent.id,
+            agent_name: agent.name,
+          } : {}),
         },
       });
 
       if (error) throw error;
 
-      toast.success(`Call transferred to ${transferType === "elevenlabs" ? "AI Agent (GASMASK INVENTORY CHECK)" : "Human Agent"}`);
+      const agentLabel = transferType === "elevenlabs" 
+        ? `AI Agent (${agent?.name || "Default"})` 
+        : "Human Agent";
+      toast.success(`Call transferred to ${agentLabel}`);
 
       // Show the transfer panel so user can monitor
       setShowTransferPanel(true);
