@@ -906,7 +906,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         setAllProgress(`Analyzing ${analyzed + 1}/${unanalyzed.length} — ${prop.player_name}...`);
         try {
           await supabase.functions.invoke('sbo-run-predictions', {
-            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: 'over' },
+            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null },
           });
           analyzed++;
         } catch (e) {
