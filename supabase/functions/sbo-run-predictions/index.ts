@@ -46,11 +46,15 @@ async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; 
       }
     } else if (ctx.prediction_type === 'moneyline') {
       // PRIMARY — try sbo_game_intelligence first
-      const { data: intel } = await supabase
+      console.log('Looking up intel for game_id:', ctx.game_id, 'type:', typeof ctx.game_id);
+      const { data: intel, error: intelError } = await supabase
         .from('sbo_game_intelligence')
         .select('*')
-        .eq('game_id', ctx.game_id)
+        .eq('game_id', String(ctx.game_id))
         .maybeSingle();
+
+      console.log('Intel found:', !!intel, 'error:', intelError?.message);
+      if (intel) console.log('Intel ORtg:', intel.offensive_rating_home, 'record:', intel.home_record_home, 'pace:', intel.pace_home);
 
       const hasRealIntel = intel && (
         (intel.offensive_rating_home && intel.offensive_rating_home > 0) ||
@@ -310,13 +314,13 @@ async function runPolymarketBrain(
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    const { game_id, prop_id, prediction_type, predicted_outcome } = await req.json();
+    const { game_id, prop_id, prediction_type, predicted_outcome, force_rerun } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-    // Never re-predict a game that already has a prediction today
-    if (game_id && prediction_type === 'moneyline') {
+    // Never re-predict a game that already has a prediction today (unless force_rerun)
+    if (game_id && prediction_type === 'moneyline' && !force_rerun) {
       const { data: existingPred } = await supabase
         .from('sbo_predictions')
         .select('id, final_confidence, confidence_tier, data_quality')

@@ -529,6 +529,84 @@ function TonightGamesTab() {
             </div>
           </div>
 
+          {/* Rerun All With Full Stats — show when any game has odds_only or partial */}
+          {games.some((g: any) =>
+            g.sbo_predictions?.[0]?.data_quality === 'odds_only' ||
+            g.sbo_predictions?.[0]?.data_quality === 'partial'
+          ) && (
+            <button
+              onClick={async () => {
+                setPredictingAll(true);
+                try {
+                  setPredictProgress('Loading team stats from SportsDataIO...');
+                  try {
+                    const { data: intelData } = await supabase.functions.invoke('sbo-fetch-intelligence');
+                    if (intelData?.team_stats_updated > 0) {
+                      toast.success(`Stats loaded — ${intelData.team_stats_updated} teams updated`);
+                    }
+                  } catch {}
+                  await new Promise(r => setTimeout(r, 1200));
+
+                  // Delete all today's predictions
+                  const allPredIds = games
+                    .flatMap((g: any) => g.sbo_predictions || [])
+                    .map((p: any) => p.id)
+                    .filter(Boolean);
+                  if (allPredIds.length > 0) {
+                    await supabase.from('sbo_predictions').delete().in('id', allPredIds);
+                    await (supabase as any).from('sbo_saved_picks').delete().in('source_id', allPredIds);
+                  }
+
+                  await loadGames();
+                  const { start: rStart, end: rEnd } = getTodayETBounds();
+                  const { data: freshGames } = await supabase
+                    .from('sbo_games')
+                    .select('*, sbo_odds(*), sbo_predictions(*)')
+                    .gte('game_date', rStart)
+                    .lte('game_date', rEnd)
+                    .order('game_date');
+
+                  let count = 0;
+                  for (const game of (freshGames || [])) {
+                    setPredictProgress(`Predicting ${count + 1}/${freshGames?.length}: ${game.away_team} @ ${game.home_team}`);
+                    const dk = game.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline') || game.sbo_odds?.[0];
+                    const pickHome = dk ? Math.abs(dk.home_odds) < Math.abs(dk.away_odds) : true;
+                    await supabase.functions.invoke('sbo-run-predictions', {
+                      body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away', force_rerun: true },
+                    });
+                    const { data: updatedGame } = await supabase
+                      .from('sbo_games')
+                      .select('*, sbo_odds(*), sbo_predictions(*)')
+                      .eq('id', game.id)
+                      .single();
+                    if (updatedGame) setGames(prev => prev.map((g: any) => g.id === game.id ? updatedGame : g));
+                    count++;
+                    await new Promise(r => setTimeout(r, 500));
+                  }
+                  toast.success(`${count} predictions rerun with full stats`);
+                  await loadGames();
+                } catch (e: any) {
+                  toast.error('Rerun failed: ' + e.message);
+                } finally {
+                  setPredictingAll(false);
+                  setPredictProgress('');
+                }
+              }}
+              disabled={predictingAll}
+              className={`w-full flex items-center justify-center gap-2 rounded-[10px] text-sm font-medium py-3 mb-3 transition-opacity ${
+                predictingAll ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'
+              } border border-amber-500/30 bg-transparent text-amber-500`}
+            >
+              ⚡ Rerun All With Full Stats
+              <span className="text-xs opacity-80">
+                ({games.filter((g: any) =>
+                  g.sbo_predictions?.[0]?.data_quality === 'odds_only' ||
+                  g.sbo_predictions?.[0]?.data_quality === 'partial'
+                ).length} games need real stats)
+              </span>
+            </button>
+          )}
+
           {predictingAll && (
             <Alert>
               <AlertDescription className="text-xs flex items-center gap-2">
@@ -697,14 +775,14 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
     game.sbo_predictions?.[0] || null
   );
 
-  // Fetch game intelligence
+  // Fetch game intelligence — use game.id (DB UUID), not game.game_id
   const { data: intel } = useQuery({
-    queryKey: ['game-intel', game.game_id],
+    queryKey: ['game-intel', game.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('sbo_game_intelligence')
         .select('*')
-        .eq('game_id', game.game_id)
+        .eq('game_id', game.id)
         .maybeSingle();
       return data;
     },
@@ -713,12 +791,12 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 
   // Fetch sharp money indicators
   const { data: lineMove } = useQuery({
-    queryKey: ['line-move', game.game_id],
+    queryKey: ['line-move', game.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('sbo_line_movement')
         .select('*')
-        .eq('game_id', game.game_id)
+        .eq('game_id', game.id)
         .order('recorded_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -868,12 +946,13 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
                 const { start: rStart } = getTodayETBounds();
                 try {
                   await supabase.from('sbo_predictions').delete().eq('game_id', game.id).gte('created_at', rStart);
-                  await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.game_id);
+                  await (supabase as any).from('sbo_saved_picks').delete().eq('source_id', localPrediction?.id || localPrediction?.prediction_id || '');
+                  await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.id);
                   try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch {}
                   await new Promise(resolve => setTimeout(resolve, 800));
                   const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
                   const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
-                    body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+                    body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away', force_rerun: true },
                   });
                   if (error) throw error;
                   setLocalPrediction(data);
