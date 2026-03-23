@@ -36,11 +36,6 @@ const getETDayBounds = (date: Date) => {
 };
 
 const getTodayETBounds = () => getETDayBounds(new Date());
-const getYesterdayETBounds = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return getETDayBounds(d);
-};
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
