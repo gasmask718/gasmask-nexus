@@ -15,28 +15,20 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Step 1: Fetch and persist tonight's games by calling get-todays-games
-    console.log('Step 1: Fetching and persisting tonight\'s games...');
-    const gamesRes = await fetch(`${supabaseUrl}/functions/v1/get-todays-games`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseKey}`,
-      },
-      body: JSON.stringify({}),
-    });
-    const gamesData = await gamesRes.json();
-    console.log(`Games fetched: ${gamesData?.meta?.merged || 0}, persisted: ${gamesData?.meta?.persisted || 0}`);
-
-    // Step 2: Query sbo_games for today's scheduled games
+    // Get today's date in EST — games are stored with game_date as midnight EDT in UTC
     const todayEST = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const todayStr = `${todayEST.getFullYear()}-${String(todayEST.getMonth() + 1).padStart(2, '0')}-${String(todayEST.getDate()).padStart(2, '0')}`;
-
+    
+    // Query sbo_games directly — games already persisted via Load Games button
+    // game_date is stored as timestamptz, e.g. 2026-03-23T04:00:00+00 (midnight EDT = 4am UTC)
+    const startOfDay = `${todayStr}T00:00:00+00:00`;
+    const endOfDay = `${todayStr}T23:59:59+00:00`;
+    
     const { data: tonightGames, error: gamesError } = await supabase
       .from('sbo_games')
-      .select('id, home_team, away_team, game_date, status')
-      .gte('game_date', `${todayStr}T00:00:00`)
-      .lt('game_date', `${todayStr}T23:59:59`)
+      .select('id, home_team, away_team, game_date, status, external_id')
+      .gte('game_date', startOfDay)
+      .lte('game_date', endOfDay)
       .in('status', ['scheduled', 'Scheduled']);
 
     if (gamesError) {
@@ -45,25 +37,49 @@ serve(async (req) => {
     }
 
     const games = tonightGames || [];
-    console.log(`Step 2: Found ${games.length} scheduled games in sbo_games`);
+    console.log(`Found ${games.length} scheduled games in sbo_games for ${todayStr}`);
 
     if (games.length === 0) {
+      // Try broader query in case timezone offset put them on a different UTC date
+      const { data: broaderGames } = await supabase
+        .from('sbo_games')
+        .select('id, home_team, away_team, game_date, status')
+        .in('status', ['scheduled', 'Scheduled'])
+        .order('game_date', { ascending: false })
+        .limit(20);
+      
+      const count = broaderGames?.length || 0;
+      console.log(`Broader query found ${count} scheduled games total`);
+      
       return new Response(JSON.stringify({
         success: true,
         games_found: 0,
         predictions_created: 0,
-        message: 'No scheduled games found for tonight. Make sure to Load Games first.',
+        message: `No scheduled games found for ${todayStr}. Found ${count} total scheduled games. Hit Load Games first to persist tonight's games.`,
+        debug: { todayStr, startOfDay, endOfDay, broaderGamesCount: count, sampleDates: broaderGames?.slice(0, 3).map(g => g.game_date) },
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Step 3: Run predictions for each game
+    // Get odds for each game
+    const gameIds = games.map(g => g.id);
+    const { data: allOdds } = await supabase
+      .from('sbo_odds')
+      .select('*')
+      .in('game_id', gameIds);
+
+    const oddsMap: Record<string, any> = {};
+    for (const o of (allOdds || [])) {
+      oddsMap[o.game_id] = o;
+    }
+
+    // Run predictions for each game
     let predictionsCreated = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     for (const game of games) {
+      const odds = oddsMap[game.id];
       console.log(`Analyzing: ${game.away_team} @ ${game.home_team} (${game.id})`);
 
-      // Run prediction for the game (moneyline — the AI determines the best pick)
       try {
         const predRes = await fetch(`${supabaseUrl}/functions/v1/sbo-run-predictions`, {
           method: 'POST',
@@ -76,13 +92,16 @@ serve(async (req) => {
             prediction_type: 'moneyline',
             predicted_outcome: 'home',
             force_rerun: false,
+            // Pass odds context so sbo-run-predictions doesn't need to look them up
+            home_odds: odds?.home_odds ?? null,
+            away_odds: odds?.away_odds ?? null,
           }),
         });
 
         const predData = await predRes.json();
         if (predData?.success) {
           predictionsCreated++;
-          console.log(`✅ ${game.home_team} ML: ${predData.final_confidence}% (${predData.confidence_tier}) [${predData.source || 'fresh'}]`);
+          console.log(`✅ ${game.home_team}: ${predData.final_confidence}% (${predData.confidence_tier}) [${predData.source || 'fresh'}]`);
         } else {
           const errMsg = `${game.home_team} vs ${game.away_team}: ${predData?.error || 'Unknown error'}`;
           console.error('❌', errMsg);
@@ -94,18 +113,18 @@ serve(async (req) => {
         errors.push(errMsg);
       }
 
-      // Small delay between calls to avoid rate limiting
-      await new Promise(r => setTimeout(r, 500));
+      // Small delay between AI calls
+      await new Promise(r => setTimeout(r, 300));
     }
 
-    // Step 4: Get summary of today's predictions
+    // Get summary
     const { data: todayPreds } = await supabase
       .from('sbo_predictions')
       .select('id, prediction_type, final_confidence, confidence_tier, data_quality, predicted_outcome')
       .gte('created_at', `${todayStr}T00:00:00`)
       .eq('prediction_type', 'moneyline');
 
-    console.log(`Done. ${predictionsCreated} predictions created, ${errors.length} errors`);
+    console.log(`Done. ${predictionsCreated} predictions created, ${errors.length} errors, ${todayPreds?.length || 0} total today`);
 
     return new Response(JSON.stringify({
       success: true,
