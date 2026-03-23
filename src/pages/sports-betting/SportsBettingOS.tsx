@@ -1204,7 +1204,8 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           const game = prop.sbo_games;
           const isRunning = runningId === prop.id;
           const conf = existingPred?.final_confidence || 0;
-          const typeAcc = propTypeStats[prop.prop_type]?.accuracy;
+          const normType = normalizePropType(prop.prop_type);
+          const typeAcc = propTypeStats[normType]?.accuracy;
 
           return (
             <div
