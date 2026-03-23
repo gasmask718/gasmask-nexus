@@ -254,6 +254,198 @@ serve(async (req) => {
       }
     }
 
+    // ═══════════════════════════════════════
+    // PROP VERIFICATION
+    // ═══════════════════════════════════════
+    let propsVerified = 0;
+    let propsCorrect = 0;
+    let propsIncorrect = 0;
+    let propsPush = 0;
+
+    if (apiKey) {
+      // Get unverified props from yesterday and today
+      const { data: unverifiedProps } = await supabase
+        .from('sbo_player_props')
+        .select(`
+          *,
+          sbo_predictions(
+            id,
+            predicted_outcome,
+            final_confidence,
+            verdict,
+            verified
+          )
+        `)
+        .is('verdict', null)
+        .gte('created_at', `${yesterdayET}T00:00:00${etOffset}`)
+        .lte('created_at', `${todayET}T23:59:59${etOffset}`);
+
+      console.log(`Props to verify: ${unverifiedProps?.length || 0}`);
+
+      if (unverifiedProps?.length) {
+        // Fetch player box scores from SportsDataIO for yesterday and today
+        let playerStats: any[] = [];
+
+        for (const dateStr of [yesterdayET, todayET]) {
+          try {
+            const gamesRes = await fetch(
+              `https://api.sportsdata.io/v3/nba/scores/json/GamesByDate/${dateStr}?key=${apiKey}`
+            );
+            if (!gamesRes.ok) continue;
+            const games = await gamesRes.json();
+
+            for (const game of games) {
+              if (game.Status !== 'Final' && game.Status !== 'F/OT') continue;
+              try {
+                const boxRes = await fetch(
+                  `https://api.sportsdata.io/v3/nba/stats/json/BoxScore/${game.GameID}?key=${apiKey}`
+                );
+                if (boxRes.ok) {
+                  const boxScore = await boxRes.json();
+                  playerStats = [...playerStats, ...(boxScore.PlayerGames || [])];
+                }
+              } catch (e: any) {
+                console.error(`BoxScore fetch failed for ${game.GameID}:`, e.message);
+              }
+              await new Promise(r => setTimeout(r, 150));
+            }
+          } catch (e: any) {
+            console.error(`Games fetch failed for ${dateStr}:`, e.message);
+          }
+        }
+
+        console.log(`Total player stat lines fetched: ${playerStats.length}`);
+
+        // Build lookup map
+        const playerStatsMap = new Map<string, any>();
+        for (const ps of playerStats) {
+          const fullName = `${ps.Name || ''}`.toLowerCase().trim();
+          const lastName = fullName.split(' ').pop() || '';
+          playerStatsMap.set(fullName, ps);
+          if (lastName.length > 3) playerStatsMap.set(lastName, ps);
+        }
+
+        for (const prop of unverifiedProps) {
+          try {
+            const playerName = prop.player_name?.toLowerCase().trim() || '';
+            const lastName = playerName.split(' ').pop() || '';
+            const playerStat = playerStatsMap.get(playerName) || playerStatsMap.get(lastName);
+
+            if (!playerStat) {
+              console.log(`No stats found for: ${prop.player_name}`);
+              continue;
+            }
+
+            // Map prop type to SportsDataIO field
+            let actualValue: number | null = null;
+            const pt = (prop.prop_type || '').toLowerCase();
+
+            if (pt.includes('point') || pt === 'pts' || pt === 'points') actualValue = playerStat.Points ?? null;
+            else if (pt.includes('rebound') || pt === 'reb' || pt === 'rebounds') actualValue = playerStat.Rebounds ?? null;
+            else if (pt.includes('assist') || pt === 'ast' || pt === 'assists') actualValue = playerStat.Assists ?? null;
+            else if (pt.includes('three') || pt.includes('3pt') || pt === 'threes') actualValue = playerStat.ThreePointersMade ?? null;
+            else if (pt.includes('steal') || pt === 'stl' || pt === 'steals') actualValue = playerStat.Steals ?? null;
+            else if (pt.includes('block') || pt === 'blk' || pt === 'blocks') actualValue = playerStat.BlockedShots ?? null;
+            else if (pt.includes('turnover') || pt === 'tov' || pt === 'turnovers') actualValue = playerStat.Turnovers ?? null;
+            else if (pt === 'pts_reb' || pt.includes('points_rebounds')) actualValue = (playerStat.Points ?? 0) + (playerStat.Rebounds ?? 0);
+            else if (pt === 'pts_ast' || pt.includes('points_assists')) actualValue = (playerStat.Points ?? 0) + (playerStat.Assists ?? 0);
+            else if (pt === 'pts_reb_ast' || pt.includes('points_rebounds_assists')) actualValue = (playerStat.Points ?? 0) + (playerStat.Rebounds ?? 0) + (playerStat.Assists ?? 0);
+            else if (pt === 'reb_ast') actualValue = (playerStat.Rebounds ?? 0) + (playerStat.Assists ?? 0);
+            else if (pt.includes('minute') || pt === 'min') actualValue = playerStat.Minutes ?? null;
+
+            if (actualValue === null) {
+              console.log(`Could not map prop type: ${prop.prop_type} for ${prop.player_name}`);
+              continue;
+            }
+
+            const line = parseFloat(String(prop.line));
+            const resultDirection = actualValue > line ? 'over' : actualValue < line ? 'under' : 'push';
+
+            const aiPick = prop.sbo_predictions?.[0]?.predicted_outcome?.toLowerCase() || null;
+
+            let predictionVerdict: string;
+            if (resultDirection === 'push') predictionVerdict = 'push';
+            else if (aiPick && aiPick === resultDirection) predictionVerdict = 'correct';
+            else if (aiPick) predictionVerdict = 'incorrect';
+            else predictionVerdict = resultDirection;
+
+            console.log(
+              `${prop.player_name} ${prop.prop_type} ${line}: actual=${actualValue}, pick=${aiPick?.toUpperCase()}, result=${resultDirection.toUpperCase()}, verdict=${predictionVerdict}`
+            );
+
+            // Update sbo_player_props
+            await supabase
+              .from('sbo_player_props')
+              .update({
+                actual_value: actualValue,
+                verdict: predictionVerdict,
+                verified: true,
+                verified_at: new Date().toISOString(),
+              })
+              .eq('id', prop.id);
+
+            // Update sbo_predictions
+            if (prop.sbo_predictions?.[0]?.id) {
+              await supabase
+                .from('sbo_predictions')
+                .update({
+                  verified: true,
+                  verdict: predictionVerdict,
+                  was_correct: predictionVerdict === 'correct',
+                  actual_outcome: predictionVerdict,
+                  verified_at: new Date().toISOString(),
+                })
+                .eq('id', prop.sbo_predictions[0].id);
+            }
+
+            // Insert into sbo_results_verification
+            await supabase
+              .from('sbo_results_verification')
+              .insert({
+                prediction_id: prop.sbo_predictions?.[0]?.id || null,
+                game_id: prop.game_id || null,
+                pick_type: 'prop',
+                our_pick: aiPick || 'unknown',
+                our_confidence: prop.sbo_predictions?.[0]?.final_confidence || null,
+                actual_result: `${prop.player_name} ${prop.prop_type}: ${actualValue} (line was ${line})`,
+                verdict: predictionVerdict,
+                profit_loss: predictionVerdict === 'correct' ? 100 : predictionVerdict === 'push' ? 0 : -100,
+                verified_at: new Date().toISOString(),
+              });
+
+            // Update saved picks
+            if (prop.sbo_predictions?.[0]?.id) {
+              await supabase
+                .from('sbo_saved_picks')
+                .update({
+                  result: predictionVerdict === 'correct' ? 'won' : predictionVerdict === 'push' ? 'push' : 'lost',
+                })
+                .eq('source_id', prop.sbo_predictions[0].id);
+            }
+
+            propsVerified++;
+            if (predictionVerdict === 'correct') propsCorrect++;
+            else if (predictionVerdict === 'incorrect') propsIncorrect++;
+            else propsPush++;
+
+          } catch (e: any) {
+            console.error(`Prop verification failed for ${prop.player_name}:`, e.message);
+          }
+        }
+      }
+    }
+
+    verified += propsVerified;
+    correct += propsCorrect;
+    incorrect += propsIncorrect;
+    pushes += propsPush;
+
+    const propAccuracy = (propsCorrect + propsIncorrect) > 0
+      ? Math.round((propsCorrect / (propsCorrect + propsIncorrect)) * 100)
+      : 0;
+
+    console.log(`Props verified: ${propsVerified} | Correct: ${propsCorrect} | Incorrect: ${propsIncorrect} | Accuracy: ${propAccuracy}%`);
+
     const accuracy = (correct + incorrect) > 0
       ? ((correct / (correct + incorrect)) * 100)
       : 0;
@@ -275,8 +467,12 @@ serve(async (req) => {
       pushes,
       scores_updated: scoresUpdated,
       accuracy: parseFloat(accuracy.toFixed(1)),
+      props_verified: propsVerified,
+      props_correct: propsCorrect,
+      props_incorrect: propsIncorrect,
+      props_accuracy: propAccuracy,
       message: verified === 0 && scoresUpdated === 0
-        ? 'No unverified games with final scores found'
+        ? 'No unverified games or props with final scores found'
         : undefined,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

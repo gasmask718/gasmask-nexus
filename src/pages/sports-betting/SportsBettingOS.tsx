@@ -868,6 +868,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   const [runningId, setRunningId] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [allProgress, setAllProgress] = useState('');
+  const [verifyingProps, setVerifyingProps] = useState(false);
 
   useEffect(() => { loadProps(); }, []);
 
@@ -893,6 +894,31 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       toast.error(e.message || 'Prediction failed');
     } finally {
       setRunningId(null);
+    }
+  };
+
+  const verifyPropResults = async () => {
+    setVerifyingProps(true);
+    toast.info('Verifying prop results against box scores...');
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-verify-results', {
+        body: { verify_props: true },
+      });
+      if (error) throw error;
+      if ((data.props_verified || 0) > 0) {
+        toast.success(
+          `Props verified: ${data.props_correct}W - ${data.props_incorrect}L · ${data.props_accuracy}% accuracy`
+        );
+      } else if (data.verified > 0) {
+        toast.success(`${data.verified} total verified — ${data.accuracy}% accuracy`);
+      } else {
+        toast.info('No props to verify yet — games may not be final');
+      }
+      await loadProps();
+    } catch (e: any) {
+      toast.error('Verification failed: ' + e.message);
+    } finally {
+      setVerifyingProps(false);
     }
   };
 
@@ -935,14 +961,12 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-      // Delete today's prop predictions
       await supabase
         .from('sbo_predictions')
         .delete()
         .eq('prediction_type', 'player_prop')
         .gte('created_at', `${today}T00:00:00-04:00`);
 
-      // Delete from saved picks too
       await supabase
         .from('sbo_saved_picks')
         .delete()
@@ -1005,13 +1029,19 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           </Button>
         ))}
         <Badge variant="secondary" className="text-xs">{filtered.length} props</Badge>
-        <Button onClick={runAllProps} disabled={runningAll || !!runningId} size="sm" className="ml-auto">
+        <Button onClick={runAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm" className="ml-auto">
           {runningAll
             ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {allProgress || 'Running...'}</>
             : <>📊 Run Props Analysis</>
           }
         </Button>
-        <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId} size="sm" variant="destructive">
+        <Button onClick={verifyPropResults} disabled={runningAll || !!runningId || verifyingProps} size="sm" variant="outline">
+          {verifyingProps
+            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
+            : <>🔍 Verify Results</>
+          }
+        </Button>
+        <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm" variant="destructive">
           🔄 Reanalyze All Props
         </Button>
       </div>
@@ -1089,6 +1119,31 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                 ) : (
                   <>
                     <PredictionResult prediction={existingPred} />
+                    {/* Verification result display */}
+                    {prop.verified && prop.verdict && (
+                      <div className={`mt-2 p-2.5 rounded-lg text-xs ${
+                        prop.verdict === 'correct'
+                          ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                          : prop.verdict === 'incorrect'
+                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                          : 'bg-muted text-muted-foreground border border-border'
+                      }`}>
+                        <div className="font-semibold mb-0.5">
+                          {prop.verdict === 'correct' ? '✅ CORRECT' :
+                           prop.verdict === 'incorrect' ? '❌ INCORRECT' :
+                           '➖ PUSH'}
+                        </div>
+                        <div className="text-[11px] opacity-80">
+                          Actual: {prop.actual_value} {prop.prop_type}
+                          {' · '}Line: {prop.line}
+                          {' · '}Pick: {existingPred.predicted_outcome?.toUpperCase()}
+                          {' · '}Result: {prop.actual_value > prop.line ? 'OVER' : prop.actual_value < prop.line ? 'UNDER' : 'PUSH'}
+                        </div>
+                      </div>
+                    )}
+                    {!prop.verified && existingPred && (
+                      <p className="text-[11px] text-muted-foreground mt-1.5">⏳ Pending verification</p>
+                    )}
                     <div className="flex gap-2 mt-2 items-center">
                       <span className="text-xs text-green-600 flex items-center gap-1">
                         <Check className="h-3 w-3" /> Auto-saved to My Bets
@@ -1906,6 +1961,18 @@ function AccuracyTab() {
     },
   });
 
+  // Props-specific accuracy from verifications
+  const { data: propVerifications } = useQuery({
+    queryKey: ['prop-verifications'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_results_verification')
+        .select('verdict, actual_result')
+        .eq('pick_type', 'prop');
+      return data || [];
+    },
+  });
+
   const total = predictions?.length || 0;
   const correct = predictions?.filter(p => p.was_correct).length || 0;
   const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : '0';
@@ -2065,6 +2132,66 @@ function AccuracyTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Props vs Games breakdown */}
+      {(() => {
+        const gameVer = (verifications || []).filter((v: any) => v.pick_type !== 'prop');
+        const propVer = propVerifications || [];
+        const gameCorrect = gameVer.filter((v: any) => v.verdict === 'correct').length;
+        const gameTotal = gameVer.filter((v: any) => v.verdict !== 'push').length;
+        const propCorrect = propVer.filter((v: any) => v.verdict === 'correct').length;
+        const propTotal = propVer.filter((v: any) => v.verdict !== 'push').length;
+        const gameAcc = gameTotal > 0 ? Math.round((gameCorrect / gameTotal) * 100) : 0;
+        const propAcc = propTotal > 0 ? Math.round((propCorrect / propTotal) * 100) : 0;
+
+        const STAT_TYPES = ['points', 'rebounds', 'assists', 'threes', 'steals', 'blocks'];
+
+        return (gameTotal > 0 || propTotal > 0) ? (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-sm font-semibold text-foreground">Games vs Props Accuracy</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className={`text-xl font-bold ${gameAcc >= 55 ? 'text-green-500' : 'text-amber-500'}`}>{gameAcc}%</p>
+                  <p className="text-[10px] text-muted-foreground">🏀 Games {gameCorrect}-{gameTotal - gameCorrect}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30 text-center">
+                  <p className={`text-xl font-bold ${propAcc >= 55 ? 'text-green-500' : 'text-amber-500'}`}>{propAcc}%</p>
+                  <p className="text-[10px] text-muted-foreground">📊 Props {propCorrect}-{propTotal - propCorrect}</p>
+                </div>
+              </div>
+              {propTotal > 0 && (
+                <div className="space-y-1.5 mt-2">
+                  <p className="text-[11px] font-medium text-muted-foreground">Props by Stat Type</p>
+                  {STAT_TYPES.map(type => {
+                    const typeResults = propVer.filter((p: any) =>
+                      p.actual_result?.toLowerCase().includes(type)
+                    );
+                    const tCorrect = typeResults.filter((p: any) => p.verdict === 'correct').length;
+                    const tTotal = typeResults.filter((p: any) => p.verdict !== 'push').length;
+                    const pct = tTotal > 0 ? Math.round((tCorrect / tTotal) * 100) : 0;
+
+                    if (tTotal === 0) return null;
+                    return (
+                      <div key={type} className="flex items-center gap-3">
+                        <span className="text-[10px] text-muted-foreground w-16 capitalize">{type}</span>
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${pct >= 60 ? 'bg-green-500' : pct >= 50 ? 'bg-amber-500' : 'bg-red-400'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold w-12 text-right">{pct}%</span>
+                        <span className="text-[10px] text-muted-foreground w-8 text-right">{tCorrect}/{tTotal}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : null;
+      })()}
 
       {/* Recent verifications */}
       {(verifications?.length || 0) > 0 && (
