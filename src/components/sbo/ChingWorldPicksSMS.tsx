@@ -60,6 +60,7 @@ async function buildChingWorldMessage(): Promise<string> {
   }
 
   const all = preds || [];
+  console.log(`ChingWorld: Found ${all.length} predictions for ${today}`);
   const lines: string[] = [];
 
   lines.push("🏆 CHINGWORLD PICKS 🏆");
