@@ -95,6 +95,28 @@ export function ManualCampaignCallModal({
   const [showTransferPicker, setShowTransferPicker] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
   const [showTransferPanel, setShowTransferPanel] = useState(false);
+  const [selectedTransferAgent, setSelectedTransferAgent] = useState<{ id: string; name: string } | null>(null);
+
+  // Fetch available ElevenLabs agents for transfer
+  const { data: transferAgents = [] } = useQuery({
+    queryKey: ["elevenlabs-agents-transfer"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("elevenlabs_agents")
+        .select("id, agent_name, elevenlabs_agent_id, script_label, agent_description, is_active")
+        .eq("is_active", true)
+        .order("sort_order");
+      return (data || []) as Array<{
+        id: string;
+        agent_name: string;
+        elevenlabs_agent_id: string | null;
+        script_label: string;
+        agent_description: string | null;
+        is_active: boolean;
+      }>;
+    },
+    enabled: open,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
@@ -635,7 +657,7 @@ export function ManualCampaignCallModal({
     stopSpeechRecognition,
   ]);
 
-  const handleTransfer = useCallback(async (transferType: "elevenlabs" | "human") => {
+  const handleTransfer = useCallback(async (transferType: "elevenlabs" | "human", agentOverride?: { id: string; name: string }) => {
     const sid = currentCallSidRef.current || activeCallSid;
     if (!sid) {
       toast.error("No active call to transfer");
@@ -644,6 +666,9 @@ export function ManualCampaignCallModal({
 
     setIsTransferring(true);
     setShowTransferPicker(false);
+    setSelectedTransferAgent(null);
+
+    const agent = agentOverride || selectedTransferAgent;
 
     try {
       const { data, error } = await supabase.functions.invoke("transfer-campaign-call", {
@@ -652,12 +677,19 @@ export function ManualCampaignCallModal({
           transfer_type: transferType,
           queue_item_id: currentItem?.id,
           campaign_id: campaignId,
+          ...(transferType === "elevenlabs" && agent ? {
+            agent_id: agent.id,
+            agent_name: agent.name,
+          } : {}),
         },
       });
 
       if (error) throw error;
 
-      toast.success(`Call transferred to ${transferType === "elevenlabs" ? "AI Agent (GASMASK INVENTORY CHECK)" : "Human Agent"}`);
+      const agentLabel = transferType === "elevenlabs" 
+        ? `AI Agent (${agent?.name || "Default"})` 
+        : "Human Agent";
+      toast.success(`Call transferred to ${agentLabel}`);
 
       // Show the transfer panel so user can monitor
       setShowTransferPanel(true);
@@ -692,7 +724,7 @@ export function ManualCampaignCallModal({
       toast.error(`Transfer failed: ${message}`);
       setIsTransferring(false);
     }
-  }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition]);
+  }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition, selectedTransferAgent]);
 
   const skipToNext = useCallback(() => {
     if (isDialing || isOnCall) {
@@ -896,30 +928,56 @@ export function ManualCampaignCallModal({
 
           {/* Transfer Picker */}
           {showTransferPicker && (
-            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+            <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
               <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
-              <div className="grid grid-cols-2 gap-2">
+              
+              {/* AI Agent Selection */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">AI Agents</p>
+                <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                  {transferAgents.length > 0 ? transferAgents.map((agent) => (
+                    <Button
+                      key={agent.id}
+                      variant="outline"
+                      className="h-auto flex items-start gap-2 py-2 px-3 hover:border-primary text-left justify-start"
+                      onClick={() => handleTransfer("elevenlabs", {
+                        id: agent.elevenlabs_agent_id || "",
+                        name: agent.agent_name,
+                      })}
+                      disabled={isTransferring || !agent.elevenlabs_agent_id}
+                    >
+                      <Bot className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold block truncate">{agent.agent_name}</span>
+                        <span className="text-[10px] text-muted-foreground block truncate">{agent.script_label}</span>
+                        {!agent.elevenlabs_agent_id && (
+                          <span className="text-[10px] text-destructive block">⚠ No Agent ID configured</span>
+                        )}
+                      </div>
+                    </Button>
+                  )) : (
+                    <p className="text-xs text-muted-foreground italic px-2">No AI agents configured</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Human Agent */}
+              <div className="space-y-2 border-t pt-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Human</p>
                 <Button
                   variant="outline"
-                  className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
-                  onClick={() => handleTransfer("elevenlabs")}
-                  disabled={isTransferring}
-                >
-                  <Bot className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-semibold">AI Agent</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">GASMASK INVENTORY CHECK</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                  className="w-full h-auto flex items-center gap-2 py-2 hover:border-primary justify-start"
                   onClick={() => handleTransfer("human")}
                   disabled={isTransferring}
                 >
-                  <UserCheck className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-semibold">Human Agent</span>
-                  <span className="text-[10px] text-muted-foreground">Google Voice</span>
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <div>
+                    <span className="text-xs font-semibold">Human Agent</span>
+                    <span className="text-[10px] text-muted-foreground block">Google Voice</span>
+                  </div>
                 </Button>
               </div>
+
               <Button
                 variant="ghost"
                 size="sm"

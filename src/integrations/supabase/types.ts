@@ -33695,6 +33695,71 @@ export type Database = {
         }
         Relationships: []
       }
+      elevenlabs_agents: {
+        Row: {
+          agent_description: string | null
+          agent_name: string
+          business_id: string | null
+          created_at: string | null
+          elevenlabs_agent_id: string | null
+          first_message: string | null
+          id: string
+          is_active: boolean | null
+          language: string | null
+          script_label: string
+          script_template_key: string
+          sort_order: number | null
+          system_prompt: string | null
+          updated_at: string | null
+          voice_id: string | null
+          voice_name: string | null
+        }
+        Insert: {
+          agent_description?: string | null
+          agent_name: string
+          business_id?: string | null
+          created_at?: string | null
+          elevenlabs_agent_id?: string | null
+          first_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          script_label: string
+          script_template_key: string
+          sort_order?: number | null
+          system_prompt?: string | null
+          updated_at?: string | null
+          voice_id?: string | null
+          voice_name?: string | null
+        }
+        Update: {
+          agent_description?: string | null
+          agent_name?: string
+          business_id?: string | null
+          created_at?: string | null
+          elevenlabs_agent_id?: string | null
+          first_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string | null
+          script_label?: string
+          script_template_key?: string
+          sort_order?: number | null
+          system_prompt?: string | null
+          updated_at?: string | null
+          voice_id?: string | null
+          voice_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "elevenlabs_agents_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       engagement_scores: {
         Row: {
           ai_notes: string | null
