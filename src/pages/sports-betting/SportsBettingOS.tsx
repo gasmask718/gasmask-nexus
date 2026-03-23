@@ -868,6 +868,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   const [runningId, setRunningId] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [allProgress, setAllProgress] = useState('');
+  const [verifyingProps, setVerifyingProps] = useState(false);
 
   useEffect(() => { loadProps(); }, []);
 
@@ -893,6 +894,31 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       toast.error(e.message || 'Prediction failed');
     } finally {
       setRunningId(null);
+    }
+  };
+
+  const verifyPropResults = async () => {
+    setVerifyingProps(true);
+    toast.info('Verifying prop results against box scores...');
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-verify-results', {
+        body: { verify_props: true },
+      });
+      if (error) throw error;
+      if ((data.props_verified || 0) > 0) {
+        toast.success(
+          `Props verified: ${data.props_correct}W - ${data.props_incorrect}L · ${data.props_accuracy}% accuracy`
+        );
+      } else if (data.verified > 0) {
+        toast.success(`${data.verified} total verified — ${data.accuracy}% accuracy`);
+      } else {
+        toast.info('No props to verify yet — games may not be final');
+      }
+      await loadProps();
+    } catch (e: any) {
+      toast.error('Verification failed: ' + e.message);
+    } finally {
+      setVerifyingProps(false);
     }
   };
 
@@ -935,14 +961,12 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-      // Delete today's prop predictions
       await supabase
         .from('sbo_predictions')
         .delete()
         .eq('prediction_type', 'player_prop')
         .gte('created_at', `${today}T00:00:00-04:00`);
 
-      // Delete from saved picks too
       await supabase
         .from('sbo_saved_picks')
         .delete()
