@@ -244,6 +244,7 @@ function YesterdayGameCard({ game }: { game: any }) {
 // ═══════════════════════════════════════════════════════════════
 
 function TonightGamesTab() {
+  const [subTab, setSubTab] = useState<'today' | 'yesterday'>('today');
   const [state, setState] = useState({
     games: [] as any[],
     picks: [] as any[],
@@ -253,6 +254,13 @@ function TonightGamesTab() {
     statusMsg: 'Not yet fetched today.',
     errorMsg: '',
     lastSynced: null as string | null,
+  });
+  const [yesterdayState, setYesterdayState] = useState({
+    games: [] as any[],
+    predictions: [] as any[],
+    loading: false,
+    verifying: false,
+    errorMsg: '',
   });
 
   const setTonightState = (patch: Partial<typeof state>) => {
@@ -443,7 +451,18 @@ function TonightGamesTab() {
         .order('confidence', { ascending: false });
 
       if (error) throw error;
-      setTonightState({ picks: data || [], errorMsg: '' });
+
+      // Deduplicate by label — keep highest confidence per unique label
+      const deduped: any[] = Object.values(
+        (data || []).reduce((acc: Record<string, any>, pick: any) => {
+          const key = pick.label;
+          if (!key) return acc;
+          if (!acc[key] || pick.confidence > acc[key].confidence) acc[key] = pick;
+          return acc;
+        }, {})
+      ).sort((a: any, b: any) => (b.confidence || 0) - (a.confidence || 0));
+
+      setTonightState({ picks: deduped, errorMsg: '' });
     } catch (e: any) {
       setTonightState({
         errorMsg: e?.message || 'Failed to load picks.',
@@ -506,12 +525,68 @@ function TonightGamesTab() {
     }
   };
 
+  // ── Yesterday functions ──
+  const loadYesterday = async () => {
+    setYesterdayState((p) => ({ ...p, loading: true, errorMsg: '' }));
+    try {
+      const { start, end } = getYesterdayETBounds();
+      const { data: games, error: gErr } = await (supabase as any)
+        .from('sbo_games')
+        .select('*, sbo_predictions(*), sbo_results_verification(*)')
+        .gte('game_date', start)
+        .lt('game_date', end);
+      if (gErr) throw gErr;
+
+      const yesterdayEST = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { data: picks } = await (supabase as any)
+        .from('sbo_saved_picks')
+        .select('*')
+        .eq('pick_date', yesterdayEST)
+        .eq('pick_type', 'game')
+        .order('confidence', { ascending: false });
+
+      setYesterdayState((p) => ({
+        ...p,
+        games: games || [],
+        predictions: picks || [],
+        loading: false,
+      }));
+    } catch (e: any) {
+      setYesterdayState((p) => ({ ...p, loading: false, errorMsg: e?.message || 'Failed to load yesterday.' }));
+    }
+  };
+
+  const verifyYesterday = async () => {
+    setYesterdayState((p) => ({ ...p, verifying: true }));
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-verify-results');
+      if (error) throw error;
+      toast.success(data?.message || 'Verification complete');
+      await loadYesterday();
+    } catch (e: any) {
+      toast.error(e?.message || 'Verification failed');
+    } finally {
+      setYesterdayState((p) => ({ ...p, verifying: false }));
+    }
+  };
+
   useEffect(() => {
     loadGames();
     loadPicks();
   }, []);
 
+  useEffect(() => {
+    if (subTab === 'yesterday') loadYesterday();
+  }, [subTab]);
+
   const dateTitle = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const yesterdayTitle = new Date(Date.now() - 86400000).toLocaleDateString('en-US', {
     timeZone: 'America/New_York',
     weekday: 'short',
     month: 'long',
@@ -532,123 +607,250 @@ function TonightGamesTab() {
     return 'WEAK';
   };
 
+  // Yesterday stats
+  const yWon = yesterdayState.predictions.filter((p: any) => p.result === 'won').length;
+  const yLost = yesterdayState.predictions.filter((p: any) => p.result === 'lost').length;
+  const yTotal = yWon + yLost;
+  const yAccuracy = yTotal > 0 ? Math.round((yWon / yTotal) * 100) : 0;
+
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">🏀 Tonight&apos;s NBA Games — {dateTitle}</CardTitle>
-          <p className="text-xs text-muted-foreground">
-            Last synced: {state.lastSynced || 'Not yet fetched today'} | {state.games.length} games loaded
-          </p>
-        </CardHeader>
+      {/* Today / Yesterday toggle */}
+      <div className="flex gap-2">
+        <Button
+          variant={subTab === 'today' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setSubTab('today')}
+        >📅 Today</Button>
+        <Button
+          variant={subTab === 'yesterday' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setSubTab('yesterday')}
+        >⏪ Yesterday</Button>
+      </div>
 
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
-              {state.gamesLoading
-                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
-                : '🏀 Load Tonight\'s Games'}
-            </Button>
+      {subTab === 'today' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg">🏀 Tonight&apos;s NBA Games — {dateTitle}</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Last synced: {state.lastSynced || 'Not yet fetched today'} | {state.games.length} games loaded
+            </p>
+          </CardHeader>
 
-            <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
-              {state.analyzing
-                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
-                : '⚡ Run AI Predictions'}
-            </Button>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+                {state.gamesLoading
+                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
+                  : '🏀 Load Tonight\'s Games'}
+              </Button>
+              <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
+                {state.analyzing
+                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
+                  : '⚡ Run AI Predictions'}
+              </Button>
+              <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+                {state.refreshing
+                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
+                  : '🔄 Refresh'}
+              </Button>
+            </div>
 
-            <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
-              {state.refreshing
-                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
-                : '🔄 Refresh'}
-            </Button>
-          </div>
+            {state.errorMsg ? (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">{state.errorMsg}</AlertDescription>
+              </Alert>
+            ) : (
+              <Alert>
+                <AlertDescription className="text-sm">{state.statusMsg}</AlertDescription>
+              </Alert>
+            )}
 
-          {state.errorMsg ? (
-            <Alert variant="destructive">
-              <AlertDescription className="text-sm">{state.errorMsg}</AlertDescription>
-            </Alert>
-          ) : (
-            <Alert>
-              <AlertDescription className="text-sm">{state.statusMsg}</AlertDescription>
-            </Alert>
-          )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {state.games.map((game) => {
+                const isLive = /live|inprogress|in_progress|in progress|active/i.test(String(game.status || ''));
+                return (
+                  <Card key={game.id || game.externalId} className="border-border/70">
+                    <CardContent className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-sm text-foreground">{game.awayTeam} @ {game.homeTeam}</p>
+                        {isLive && (
+                          <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/40">LIVE</Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(game.gameDate).toLocaleTimeString('en-US', {
+                          timeZone: 'America/New_York',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })} ET
+                      </p>
+                      <div className="text-xs text-muted-foreground border-t border-border/60 pt-2">
+                        ML {game.awayMoneyline ?? '-'} / {game.homeMoneyline ?? '-'} | Spread {game.spread ?? '-'} | O/U {game.total ?? '-'}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {state.games.map((game) => {
-              const isLive = /live|inprogress|in_progress|in progress|active/i.test(String(game.status || ''));
+            {!state.gamesLoading && !state.games.length && (
+              <div className="text-center py-10 border border-dashed rounded-lg border-border">
+                <p className="text-sm text-muted-foreground">No games loaded yet.</p>
+              </div>
+            )}
+
+            {state.picks.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold">🎯 AI Picks ({state.picks.filter((p: any) => p.label && !String(p.label).includes('undefined')).length})</h3>
+                  <RefreshCw className="h-4 w-4 text-muted-foreground cursor-pointer" onClick={loadPicks} />
+                </div>
+                <div className="space-y-2">
+                  {state.picks.filter((p: any) => p.label && !String(p.label).includes('undefined')).map((pick) => {
+                    const confidence = Number(pick.confidence || 0);
+                    const result = String(pick.result || 'pending').toUpperCase();
+                    const tone = confidenceColor(confidence);
+                    return (
+                      <div key={pick.id} className={`rounded-lg border bg-card px-4 py-3 border-l-4 ${tone}`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-semibold text-foreground text-sm">{pick.label}</p>
+                          <p className={`text-xl font-bold leading-none ${tone.split(' ')[0]}`}>{confidence}%</p>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <Badge variant="outline">{confidenceTier(confidence)}</Badge>
+                          <Badge variant="outline">{result}</Badge>
+                          <Badge variant="outline">{pick.odds || 'No odds'}</Badge>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                          {pick.detail || pick.ai_analysis || 'No additional detail provided.'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {subTab === 'yesterday' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">⏪ Yesterday&apos;s Results — {yesterdayTitle}</CardTitle>
+              <Button size="sm" onClick={verifyYesterday} disabled={yesterdayState.verifying}>
+                {yesterdayState.verifying
+                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
+                  : '⚡ Backfill + Verify'}
+              </Button>
+            </div>
+
+            {/* Summary bar */}
+            <div className="flex flex-wrap gap-3 mt-2 text-xs">
+              <Badge variant="outline" className="text-emerald-500 border-emerald-500/40">✅ {yWon}W</Badge>
+              <Badge variant="outline" className="text-destructive border-destructive/40">❌ {yLost}L</Badge>
+              <Badge variant="outline">{yTotal > 0 ? `${yAccuracy}% accuracy` : 'No settled picks'}</Badge>
+              <Badge variant="outline">{yesterdayState.games.length} games</Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-3">
+            {yesterdayState.loading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading yesterday&apos;s results...
+              </div>
+            )}
+
+            {yesterdayState.errorMsg && (
+              <Alert variant="destructive">
+                <AlertDescription className="text-sm">{yesterdayState.errorMsg}</AlertDescription>
+              </Alert>
+            )}
+
+            {!yesterdayState.loading && yesterdayState.predictions.length === 0 && yesterdayState.games.length === 0 && (
+              <div className="text-center py-10 border border-dashed rounded-lg border-border">
+                <p className="text-sm text-muted-foreground">No games or predictions found for yesterday.</p>
+              </div>
+            )}
+
+            {yesterdayState.games.map((game: any) => {
+              const pred = game.sbo_predictions?.[0];
+              const verification = game.sbo_results_verification?.[0];
+              const verdict = verification?.verdict || 'pending';
+              const homeScore = verification?.home_score;
+              const awayScore = verification?.away_score;
+
               return (
-                <Card key={game.id || game.externalId} className="border-border/70">
+                <Card key={game.id} className={`border-l-4 ${
+                  verdict === 'correct' ? 'border-emerald-500' :
+                  verdict === 'incorrect' ? 'border-destructive' : 'border-border'
+                }`}>
                   <CardContent className="p-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="font-semibold text-sm text-foreground">{game.awayTeam} @ {game.homeTeam}</p>
-                      {isLive && (
-                        <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/40">LIVE</Badge>
-                      )}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-sm text-foreground">
+                          {game.away_team} @ {game.home_team}
+                        </p>
+                        {homeScore != null && awayScore != null && (
+                          <p className="text-xs font-medium mt-1">
+                            Final: {awayScore} - {homeScore}
+                          </p>
+                        )}
+                      </div>
+                      <Badge variant="outline" className={
+                        verdict === 'correct' ? 'text-emerald-500 border-emerald-500/40' :
+                        verdict === 'incorrect' ? 'text-destructive border-destructive/40' :
+                        'text-muted-foreground'
+                      }>
+                        {verdict.toUpperCase()}
+                      </Badge>
                     </div>
 
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(game.gameDate).toLocaleTimeString('en-US', {
-                        timeZone: 'America/New_York',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })} ET
-                    </p>
-
-                    <div className="text-xs text-muted-foreground border-t border-border/60 pt-2">
-                      ML {game.awayMoneyline ?? '-'} / {game.homeMoneyline ?? '-'} | Spread {game.spread ?? '-'} | O/U {game.total ?? '-'}
-                    </div>
+                    {pred && (
+                      <div className="text-xs text-muted-foreground border-t border-border/60 pt-2">
+                        AI predicted: <span className="font-medium text-foreground">{pred.predicted_outcome === 'home' ? game.home_team : game.away_team}</span>
+                        {' '}at {pred.final_confidence || pred.confidence_score || '?'}% confidence
+                        {pred.confidence_tier && (
+                          <Badge variant="outline" className="ml-2 text-[10px]">{pred.confidence_tier?.toUpperCase()}</Badge>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
             })}
-          </div>
 
-          {!state.gamesLoading && !state.games.length && (
-            <div className="text-center py-10 border border-dashed rounded-lg border-border">
-              <p className="text-sm text-muted-foreground">No games loaded yet.</p>
-            </div>
-          )}
-
-          {state.picks.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-semibold">🎯 AI Picks ({state.picks.length})</h3>
-                <RefreshCw className="h-4 w-4 text-muted-foreground" />
-              </div>
-
-              <div className="space-y-2">
-                {state.picks.map((pick) => {
-                  const confidence = Number(pick.confidence || 0);
-                  const result = String(pick.result || 'pending').toUpperCase();
-                  const tone = confidenceColor(confidence);
-
-                  return (
-                    <div
-                      key={pick.id}
-                      className={`rounded-lg border bg-card px-4 py-3 border-l-4 ${tone}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="font-semibold text-foreground text-sm">{pick.label || 'Untitled pick'}</p>
-                        <p className={`text-xl font-bold leading-none ${tone.split(' ')[0]}`}>{confidence}%</p>
+            {/* Also show picks not matched to games */}
+            {yesterdayState.predictions.filter((p: any) => p.result && p.result !== 'pending').length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-semibold mb-2">📋 Settled Picks</h4>
+                <div className="space-y-2">
+                  {yesterdayState.predictions.filter((p: any) => p.result && p.result !== 'pending').map((pick: any) => {
+                    const confidence = Number(pick.confidence || 0);
+                    const tone = confidenceColor(confidence);
+                    return (
+                      <div key={pick.id} className={`rounded-lg border bg-card px-4 py-3 border-l-4 ${
+                        pick.result === 'won' ? 'border-emerald-500' : 'border-destructive'
+                      }`}>
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="font-semibold text-foreground text-sm">{pick.label}</p>
+                          <Badge variant="outline" className={pick.result === 'won' ? 'text-emerald-500 border-emerald-500/40' : 'text-destructive border-destructive/40'}>
+                            {pick.result.toUpperCase()}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">{confidence}% — {confidenceTier(confidence)}</p>
                       </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">{confidenceTier(confidence)}</Badge>
-                        <Badge variant="outline">{result}</Badge>
-                        <Badge variant="outline">{pick.odds || 'No odds'}</Badge>
-                      </div>
-
-                      <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
-                        {pick.detail || pick.ai_analysis || 'No additional detail provided.'}
-                      </p>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
