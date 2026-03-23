@@ -1083,6 +1083,24 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         </div>
       </div>
 
+      {/* ACCURACY STRIP — quick visual reference */}
+      {Object.keys(propTypeStats).length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 rounded-lg bg-muted/20 border border-border text-xs">
+          {PROP_TYPE_ORDER.filter(t => propTypeStats[t]).map((type, i) => {
+            const s = propTypeStats[type];
+            const emoji = s.accuracy >= 70 ? '✅' : s.accuracy >= 55 ? '⚠️' : '🔴';
+            return (
+              <span key={type} className="flex items-center gap-1">
+                {i > 0 && <span className="text-muted-foreground/40 mr-1">|</span>}
+                <span className="text-muted-foreground">{type}</span>
+                <span className={`font-semibold ${getAccuracyColor(s.accuracy)}`}>{s.accuracy.toFixed(1)}%</span>
+                <span className="text-[10px]">{emoji}</span>
+              </span>
+            );
+          })}
+        </div>
+      )}
+
       {/* SMART PROP TYPE FILTER BAR WITH W-L + ACCURACY */}
       <div className="space-y-1.5">
         <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Filter by prop type — with historical accuracy</p>
