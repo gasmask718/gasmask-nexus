@@ -244,529 +244,411 @@ function YesterdayGameCard({ game }: { game: any }) {
 // ═══════════════════════════════════════════════════════════════
 
 function TonightGamesTab() {
-  const [games, setGames] = useState<any[]>([]);
-  const [yesterdayGames, setYesterdayGames] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [fetchingOdds, setFetchingOdds] = useState(false);
-  const [predictingAll, setPredictingAll] = useState(false);
-  const [predictProgress, setPredictProgress] = useState('');
-  const [lastFetchTime, setLastFetchTime] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'today' | 'yesterday'>('today');
+  const [state, setState] = useState({
+    games: [] as any[],
+    picks: [] as any[],
+    gamesLoading: false,
+    analyzing: false,
+    refreshing: false,
+    statusMsg: 'Not yet fetched today.',
+    errorMsg: '',
+    lastSynced: null as string | null,
+  });
 
-  useEffect(() => { loadGames(); }, []);
-  useEffect(() => { if (viewMode === 'yesterday') loadYesterdayGames(); }, [viewMode]);
+  const setTonightState = (patch: Partial<typeof state>) => {
+    setState((prev) => ({ ...prev, ...patch }));
+  };
 
-  const fetchOdds = async () => {
-    setFetchingOdds(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('sbo-fetch-odds');
-      if (error) throw error;
-      toast.success(`Fetched ${data.games_processed} NBA games with live odds`);
-      loadGames();
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to fetch odds');
-    } finally {
-      setFetchingOdds(false);
-    }
+  const getEstDateRange = () => {
+    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const tomorrowEST = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    return {
+      todayEST,
+      fromUtc: `${todayEST}T00:00:00+00:00`,
+      toUtc: `${tomorrowEST}T05:00:00+00:00`,
+    };
+  };
+
+  const nowET = () => new Date().toLocaleTimeString('en-US', {
+    timeZone: 'America/New_York',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  const normalizeDbGames = (rows: any[] = []) => rows.map((game) => {
+    const dkOdds = game.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline') || game.sbo_odds?.[0];
+    return {
+      id: game.id,
+      externalId: game.external_id,
+      awayTeam: game.away_team,
+      homeTeam: game.home_team,
+      gameDate: game.game_date,
+      status: game.status,
+      awayMoneyline: dkOdds?.away_odds ?? null,
+      homeMoneyline: dkOdds?.home_odds ?? null,
+      spread: dkOdds?.home_spread ?? null,
+      total: dkOdds?.total_line ?? null,
+    };
+  });
+
+  const normalizeApiGames = (rows: any[] = []) => rows.map((game: any) => ({
+    id: null,
+    externalId: `${game.awayTeam || game.away_team}-${game.homeTeam || game.home_team}-${(game.commenceTime || '').slice(0, 10)}`,
+    awayTeam: game.awayTeam || game.away_team,
+    homeTeam: game.homeTeam || game.home_team,
+    gameDate: game.commenceTime || `${getEstDateRange().todayEST}T00:00:00+00:00`,
+    status: game.status || 'scheduled',
+    awayMoneyline: game.awayMoneyline ?? null,
+    homeMoneyline: game.homeMoneyline ?? null,
+    spread: game.spread ?? null,
+    total: game.total ?? null,
+  }));
+
+  const loadGamesFromDb = async () => {
+    const { fromUtc, toUtc } = getEstDateRange();
+    const { data, error } = await supabase
+      .from('sbo_games')
+      .select('id, external_id, away_team, home_team, game_date, status, sbo_odds(*)')
+      .gte('game_date', fromUtc)
+      .lte('game_date', toUtc)
+      .order('game_date', { ascending: true });
+
+    if (error) throw error;
+
+    const mapped = normalizeDbGames(data || []);
+    setTonightState({
+      games: mapped,
+      lastSynced: nowET(),
+      statusMsg: mapped.length
+        ? `Loaded ${mapped.length} game${mapped.length === 1 ? '' : 's'} from database.`
+        : 'No games found in database for tonight yet.',
+      errorMsg: '',
+    });
+
+    return mapped;
+  };
+
+  const upsertApiGamesToDb = async (apiGames: any[]) => {
+    if (!apiGames.length) return;
+
+    const { todayEST } = getEstDateRange();
+    const gamesToUpsert = apiGames.map((game: any) => {
+      const homeTeam = game.homeTeam || game.home_team || '';
+      const awayTeam = game.awayTeam || game.away_team || '';
+      const commenceTime = game.commenceTime || game.commence_time || `${todayEST}T00:00:00+00:00`;
+      const externalId = game.externalId || `${awayTeam}-${homeTeam}-${String(commenceTime).slice(0, 10)}`.toLowerCase().replace(/\s+/g, '-');
+
+      return {
+        external_id: externalId,
+        home_team: homeTeam,
+        away_team: awayTeam,
+        game_date: commenceTime,
+        sport: 'NBA',
+        status: String(game.status || 'scheduled').toLowerCase().includes('final') ? 'closed' : 'scheduled',
+        home_score: game.homeScore ?? null,
+        away_score: game.awayScore ?? null,
+      };
+    });
+
+    const { data: persistedGames, error: gamesError } = await supabase
+      .from('sbo_games')
+      .upsert(gamesToUpsert as any, { onConflict: 'external_id' })
+      .select('id, external_id');
+
+    if (gamesError) throw gamesError;
+
+    const gameIdByExternal = new Map((persistedGames || []).map((g: any) => [g.external_id, g.id]));
+
+    const oddsToUpsert = apiGames
+      .map((game: any) => {
+        const homeTeam = game.homeTeam || game.home_team || '';
+        const awayTeam = game.awayTeam || game.away_team || '';
+        const commenceTime = game.commenceTime || game.commence_time || `${todayEST}T00:00:00+00:00`;
+        const externalId = game.externalId || `${awayTeam}-${homeTeam}-${String(commenceTime).slice(0, 10)}`.toLowerCase().replace(/\s+/g, '-');
+        const gameId = gameIdByExternal.get(externalId);
+
+        if (!gameId) return null;
+
+        return {
+          game_id: gameId,
+          sportsbook: 'draftkings',
+          market_type: 'moneyline',
+          away_odds: game.awayMoneyline ?? game.away_odds ?? null,
+          home_odds: game.homeMoneyline ?? game.home_odds ?? null,
+          home_spread: game.spread ?? null,
+          total_line: game.total ?? null,
+          fetched_at: new Date().toISOString(),
+        };
+      })
+      .filter(Boolean);
+
+    if (!oddsToUpsert.length) return;
+
+    const { error: oddsError } = await supabase
+      .from('sbo_odds')
+      .upsert(oddsToUpsert as any, { onConflict: 'game_id,sportsbook,market_type' });
+
+    if (oddsError) throw oddsError;
   };
 
   const loadGames = async () => {
-    setLoading(true);
-    const { start, end } = getTodayETBounds();
-    const { data } = await supabase
-      .from('sbo_games')
-      .select(`*, sbo_odds(*), sbo_predictions(*)`)
-      .gte('game_date', start)
-      .lte('game_date', end)
-      .order('game_date');
-    setGames((data as any[]) || []);
-    if (data?.length) {
-      setLastFetchTime(new Date().toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour: '2-digit', minute: '2-digit' }));
-    }
-    setLoading(false);
-  };
+    setTonightState({ gamesLoading: true, errorMsg: '', statusMsg: 'Loading tonight games...' });
 
-  const loadYesterdayGames = async () => {
-    setLoading(true);
-    const { start, end } = getYesterdayETBounds();
-    console.log('Yesterday query bounds:', start, 'to', end);
-    const { data, error } = await supabase
-      .from('sbo_games')
-      .select(`*, sbo_predictions(*, sbo_results_verification(*)), sbo_odds(*)`)
-      .gte('game_date', start)
-      .lt('game_date', end)
-      .order('game_date');
-    console.log('Yesterday games found:', data?.length, 'error:', error);
-    setYesterdayGames((data as any[]) || []);
-    setLoading(false);
-  };
-
-  const [fetchingIntel, setFetchingIntel] = useState(false);
-
-  const predictAllGames = async () => {
-    setPredictingAll(true);
-    let predicted = 0;
     try {
-      if (!games.length) {
-        setPredictProgress('Fetching tonight\'s games...');
-        const { data, error } = await supabase.functions.invoke('sbo-fetch-odds');
-        if (error) throw error;
-        await loadGames();
-      }
+      const existing = await loadGamesFromDb();
 
-      setPredictProgress('Gathering game intelligence (injuries, pace, B2B)...');
-      setFetchingIntel(true);
-      try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch { /* continue */ }
-      setFetchingIntel(false);
-
-      const { start: tStart, end: tEnd } = getTodayETBounds();
-      const { data: freshGames } = await supabase
-        .from('sbo_games')
-        .select(`*, sbo_odds(*), sbo_predictions(*)`)
-        .gte('game_date', tStart)
-        .lte('game_date', tEnd)
-        .order('game_date');
-
-      const gamesToPredict = (freshGames || []).filter(
-        (g: any) => !g.sbo_predictions?.length
-      );
-
-      if (!gamesToPredict.length && freshGames?.length) {
-        toast.info('All games already have predictions');
-        await loadGames();
+      if (existing.length > 0) {
+        setTonightState({ gamesLoading: false, statusMsg: `Loaded ${existing.length} game${existing.length === 1 ? '' : 's'} from database.` });
         return;
       }
 
-      for (const game of gamesToPredict) {
-        setPredictProgress(`Predicting ${predicted + 1}/${gamesToPredict.length}: ${game.away_team} @ ${game.home_team}`);
-        const dkOdds = game.sbo_odds?.find((o: any) =>
-          o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
-        );
-        const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
+      setTonightState({ statusMsg: 'No cached games found — fetching from API...' });
 
-        const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
-          body: {
-            game_id: game.id,
-            prediction_type: 'moneyline',
-            predicted_outcome: pickHome ? 'home' : 'away',
-          },
-        });
-        if (error) console.error(`Prediction failed for ${game.home_team}:`, error);
-        else {
-          if (data?.final_confidence && dkOdds) {
-            const odds = pickHome ? dkOdds.home_odds : dkOdds.away_odds;
-            const dec = odds > 0 ? 1 + odds / 100 : 1 + 100 / Math.abs(odds);
-            const conf = data.final_confidence / 100;
-            const kelly = ((conf * (dec - 1)) - (1 - conf)) / (dec - 1);
-            const quarterKelly = Math.max(0, kelly * 0.25);
-            await supabase.from('sbo_predictions').update({
-              kelly_stake: Math.round(kelly * 10000) / 10000,
-              recommended_units: Math.round(quarterKelly * 100) / 100,
-              recommended_stake: Math.round(quarterKelly * 500 * 100) / 100,
-            }).eq('id', data.prediction_id || data.id);
-          }
-          predicted++;
+      const { data, error } = await supabase.functions.invoke('get-todays-games');
+      console.log('[TonightGamesTab] get-todays-games response:', data);
+      if (error) throw error;
 
-          // Live card update — reload this game and update state immediately
-          const { data: updatedGame } = await supabase
-            .from('sbo_games')
-            .select('*, sbo_odds(*), sbo_predictions(*)')
-            .eq('id', game.id)
-            .single();
-          if (updatedGame) {
-            setGames(prev => prev.map((g: any) => g.id === game.id ? updatedGame : g));
-          }
-        }
-        await new Promise(r => setTimeout(r, 300));
+      const apiGames = normalizeApiGames(data?.games || []);
+      setTonightState({
+        games: apiGames,
+        lastSynced: nowET(),
+        statusMsg: `Fetched ${apiGames.length} game${apiGames.length === 1 ? '' : 's'} from API.`,
+      });
+
+      try {
+        await upsertApiGamesToDb(data?.games || []);
+      } catch (persistError) {
+        console.error('[TonightGamesTab] upsert failed:', persistError);
       }
 
-      toast.success(`Tonight's predictions saved — ${predicted} games analyzed with intelligence`);
-      await loadGames();
+      await loadGamesFromDb();
     } catch (e: any) {
-      toast.error(e.message || 'Prediction run failed');
+      setTonightState({
+        errorMsg: e?.message || 'Failed to load tonight games.',
+        statusMsg: 'Failed to load games.',
+      });
     } finally {
-      setPredictingAll(false);
-      setPredictProgress('');
-      setFetchingIntel(false);
+      setTonightState({ gamesLoading: false });
     }
   };
 
-  // Yesterday summary calculations
-  const totalPredicted = yesterdayGames.filter(g => g.sbo_predictions?.length > 0).length;
-  const correctCount = yesterdayGames.filter(g =>
-    g.sbo_predictions?.[0]?.sbo_results_verification?.[0]?.verdict === 'correct'
-  ).length;
-  const incorrectCount = yesterdayGames.filter(g =>
-    g.sbo_predictions?.[0]?.sbo_results_verification?.[0]?.verdict === 'incorrect'
-  ).length;
-  const pendingCount = totalPredicted - correctCount - incorrectCount;
-  const accuracy = (correctCount + incorrectCount) > 0
-    ? Math.round((correctCount / (correctCount + incorrectCount)) * 100)
-    : 0;
+  const loadPicks = async () => {
+    try {
+      const { todayEST } = getEstDateRange();
+      const { data, error } = await (supabase as any)
+        .from('sbo_saved_picks')
+        .select('*')
+        .eq('pick_date', todayEST)
+        .eq('pick_type', 'game')
+        .order('confidence', { ascending: false });
+
+      if (error) throw error;
+      setTonightState({ picks: data || [], errorMsg: '' });
+    } catch (e: any) {
+      setTonightState({
+        errorMsg: e?.message || 'Failed to load picks.',
+        statusMsg: 'Failed to load picks.',
+      });
+    }
+  };
+
+  const runPredictions = async () => {
+    if (!state.games.length) {
+      setTonightState({ statusMsg: 'Load tonight\'s games before running predictions.', errorMsg: '' });
+      return;
+    }
+
+    setTonightState({ analyzing: true, errorMsg: '', statusMsg: 'Running AI predictions for tonight...' });
+
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-analyze-tonight');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      await Promise.all([loadGamesFromDb(), loadPicks()]);
+
+      setTonightState({
+        statusMsg: data?.predictions_created
+          ? `AI complete — ${data.predictions_created} picks generated.`
+          : data?.message || 'Analysis complete.',
+        errorMsg: '',
+      });
+    } catch (e: any) {
+      const message = e?.message || 'Failed to run predictions.';
+      const timeoutLike = /timeout|timed out|504/i.test(message);
+
+      setTonightState({
+        errorMsg: timeoutLike
+          ? 'Analysis timed out — predictions may still be processing. Click Refresh in 60 seconds.'
+          : message,
+        statusMsg: timeoutLike
+          ? 'Analysis timed out — predictions may still be processing. Click Refresh in 60 seconds.'
+          : 'Prediction run failed.',
+      });
+    } finally {
+      setTonightState({ analyzing: false });
+    }
+  };
+
+  const refreshFromDb = async () => {
+    setTonightState({ refreshing: true, errorMsg: '', statusMsg: 'Refreshing games and picks from database...' });
+
+    try {
+      await Promise.all([loadGamesFromDb(), loadPicks()]);
+      setTonightState({ statusMsg: 'Refreshed games and picks from database.' });
+    } catch (e: any) {
+      setTonightState({
+        errorMsg: e?.message || 'Refresh failed.',
+        statusMsg: 'Refresh failed.',
+      });
+    } finally {
+      setTonightState({ refreshing: false });
+    }
+  };
+
+  useEffect(() => {
+    loadGames();
+    loadPicks();
+  }, []);
+
+  const dateTitle = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/New_York',
+    weekday: 'short',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  const confidenceColor = (confidence: number) => {
+    if (confidence >= 85) return 'text-emerald-500 border-emerald-500/40';
+    if (confidence >= 70) return 'text-blue-500 border-blue-500/40';
+    if (confidence >= 55) return 'text-amber-500 border-amber-500/40';
+    return 'text-destructive border-destructive/40';
+  };
+
+  const confidenceTier = (confidence: number) => {
+    if (confidence >= 85) return 'ELITE';
+    if (confidence >= 70) return 'STRONG';
+    if (confidence >= 55) return 'MODERATE';
+    return 'WEAK';
+  };
 
   return (
     <div className="space-y-4">
-      {/* Today / Yesterday sub-tabs */}
-      <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
-        <button
-          onClick={() => setViewMode('today')}
-          className={`px-4 py-1.5 rounded-md text-[13px] transition-colors ${
-            viewMode === 'today'
-              ? 'bg-background font-medium text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          📅 Today
-        </button>
-        <button
-          onClick={() => setViewMode('yesterday')}
-          className={`px-4 py-1.5 rounded-md text-[13px] transition-colors ${
-            viewMode === 'yesterday'
-              ? 'bg-background font-medium text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          📋 Yesterday Results
-        </button>
-      </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">🏀 Tonight&apos;s NBA Games — {dateTitle}</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Last synced: {state.lastSynced || 'Not yet fetched today'} | {state.games.length} games loaded
+          </p>
+        </CardHeader>
 
-      {viewMode === 'today' ? (
-        <>
-          {/* Date Banner */}
-          <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
-            <span className="text-sm font-medium text-foreground">
-              📅 {new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
-            <div className="flex gap-4 items-center">
-              <span className="text-[11px] text-muted-foreground">
-                Last pulled: {lastFetchTime || 'Not yet fetched today'}
-              </span>
-              <span className="text-[11px] text-muted-foreground">{games.length} games loaded</span>
-            </div>
-          </div>
-
-          {/* PRIMARY ACTION BUTTON — Run Predictions */}
-          <button
-            onClick={predictAllGames}
-            disabled={predictingAll}
-            className={`w-full flex items-center justify-center gap-2 rounded-[10px] border-none text-sm font-medium transition-opacity mb-3 py-3.5 ${
-              predictingAll
-                ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                : 'bg-foreground text-background cursor-pointer hover:opacity-90'
-            }`}
-          >
-            {predictingAll ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" />
-                {predictProgress || 'Running predictions...'}
-              </>
-            ) : (
-              '🧠 Run Predictions — All Tonight\'s Games'
-            )}
-          </button>
-
-          {/* Progress bar */}
-          {predictingAll && (
-            <div className="h-[3px] bg-border rounded-sm overflow-hidden -mt-1 mb-3">
-              <div
-                className="h-full bg-foreground rounded-sm transition-all duration-500"
-                style={{
-                  width: predictProgress.includes('/')
-                    ? `${Math.round(
-                        (parseInt(predictProgress.match(/(\d+)\//)?.[1] || '0') /
-                        parseInt(predictProgress.match(/\/(\d+)/)?.[1] || '1')) * 100
-                      )}%`
-                    : '40%',
-                }}
-              />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div>
-              <h2 className="text-lg font-bold text-foreground">Tonight's NBA Games</h2>
-              <p className="text-xs text-muted-foreground">{games.length} games loaded</p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={fetchOdds} disabled={fetchingOdds || predictingAll} size="sm" variant="outline">
-                {fetchingOdds
-                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Fetching...</>
-                  : <><RefreshCw className="h-3 w-3 mr-1" /> Fetch Odds</>
-                }
-              </Button>
-              <Button onClick={predictAllGames} disabled={predictingAll || fetchingOdds} size="sm">
-                {predictingAll
-                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {predictProgress || 'Running...'}</>
-                  : <><Brain className="h-3 w-3 mr-1" /> 🏀 Tonight's Games</>
-                }
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                disabled={predictingAll || fetchingOdds}
-                onClick={async () => {
-                  if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
-                  setPredictingAll(true);
-                  setPredictProgress('Clearing cached data...');
-                  const { start: fStart, end: fEnd } = getTodayETBounds();
-                  try {
-                    await supabase.from('sbo_predictions').delete().gte('created_at', fStart);
-                    await supabase.from('sbo_game_intelligence').delete().gte('created_at', fStart);
-                    await supabase.from('sbo_games').delete().gte('game_date', fStart).lte('game_date', fEnd);
-                    localStorage.removeItem('sbo_games_loaded_today');
-                    localStorage.removeItem('sbo_predictions_ran_today');
-                    localStorage.removeItem('sbo_last_run_date');
-                    toast.success('Cache cleared — running fresh engine...');
-                    await predictAllGames();
-                  } catch (e: any) {
-                    toast.error('Force refresh failed: ' + e.message);
-                    setPredictingAll(false);
-                    setPredictProgress('');
-                  }
-                }}
-              >
-                🔄 Force Refresh
-              </Button>
-            </div>
-          </div>
-
-          {/* Rerun All With Full Stats — show when any game has odds_only or partial */}
-          {games.some((g: any) =>
-            g.sbo_predictions?.[0]?.data_quality === 'odds_only' ||
-            g.sbo_predictions?.[0]?.data_quality === 'partial'
-          ) && (
-            <button
-              onClick={async () => {
-                setPredictingAll(true);
-                try {
-                  setPredictProgress('Loading team stats from SportsDataIO...');
-                  try {
-                    const { data: intelData } = await supabase.functions.invoke('sbo-fetch-intelligence');
-                    if (intelData?.team_stats_updated > 0) {
-                      toast.success(`Stats loaded — ${intelData.team_stats_updated} teams updated`);
-                    }
-                  } catch {}
-                  await new Promise(r => setTimeout(r, 1200));
-
-                  // Delete all today's predictions
-                  const allPredIds = games
-                    .flatMap((g: any) => g.sbo_predictions || [])
-                    .map((p: any) => p.id)
-                    .filter(Boolean);
-                  if (allPredIds.length > 0) {
-                    await supabase.from('sbo_predictions').delete().in('id', allPredIds);
-                    await (supabase as any).from('sbo_saved_picks').delete().in('source_id', allPredIds);
-                  }
-
-                  await loadGames();
-                  const { start: rStart, end: rEnd } = getTodayETBounds();
-                  const { data: freshGames } = await supabase
-                    .from('sbo_games')
-                    .select('*, sbo_odds(*), sbo_predictions(*)')
-                    .gte('game_date', rStart)
-                    .lte('game_date', rEnd)
-                    .order('game_date');
-
-                  let count = 0;
-                  for (const game of (freshGames || [])) {
-                    setPredictProgress(`Predicting ${count + 1}/${freshGames?.length}: ${game.away_team} @ ${game.home_team}`);
-                    const dk = game.sbo_odds?.find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline') || game.sbo_odds?.[0];
-                    const pickHome = dk ? Math.abs(dk.home_odds) < Math.abs(dk.away_odds) : true;
-                    await supabase.functions.invoke('sbo-run-predictions', {
-                      body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away', force_rerun: true },
-                    });
-                    const { data: updatedGame } = await supabase
-                      .from('sbo_games')
-                      .select('*, sbo_odds(*), sbo_predictions(*)')
-                      .eq('id', game.id)
-                      .single();
-                    if (updatedGame) setGames(prev => prev.map((g: any) => g.id === game.id ? updatedGame : g));
-                    count++;
-                    await new Promise(r => setTimeout(r, 500));
-                  }
-                  toast.success(`${count} predictions rerun with full stats`);
-                  await loadGames();
-                } catch (e: any) {
-                  toast.error('Rerun failed: ' + e.message);
-                } finally {
-                  setPredictingAll(false);
-                  setPredictProgress('');
-                }
-              }}
-              disabled={predictingAll}
-              className={`w-full flex items-center justify-center gap-2 rounded-[10px] text-sm font-medium py-3 mb-3 transition-opacity ${
-                predictingAll ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:opacity-90'
-              } border border-amber-500/30 bg-transparent text-amber-500`}
-            >
-              ⚡ Rerun All With Full Stats
-              <span className="text-xs opacity-80">
-                ({games.filter((g: any) =>
-                  g.sbo_predictions?.[0]?.data_quality === 'odds_only' ||
-                  g.sbo_predictions?.[0]?.data_quality === 'partial'
-                ).length} games need real stats)
-              </span>
-            </button>
-          )}
-
-          {predictingAll && (
-            <Alert>
-              <AlertDescription className="text-xs flex items-center gap-2">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                {predictProgress}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {loading ? (
-            <div className="grid gap-3">
-              {[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
-            </div>
-          ) : !games.length ? (
-            <div className="text-center py-12 border border-dashed rounded-lg border-border">
-              <p className="text-muted-foreground font-medium">No games loaded for today.</p>
-              <p className="text-xs text-muted-foreground mt-1">Click "🏀 Tonight's Games" to fetch and predict all NBA games.</p>
-            </div>
-          ) : (
-            games.map(game => <GameCard key={game.id} game={game} onUpdate={loadGames} />)
-          )}
-        </>
-      ) : (
-        <>
-          {/* Yesterday view */}
-          <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
-            <span className="text-sm font-medium text-foreground">
-              📋 {(() => {
-                const y = new Date();
-                y.setDate(y.getDate() - 1);
-                return y.toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-              })()}
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-muted-foreground">{yesterdayGames.length} games</span>
-            </div>
-          </div>
-
-          {/* Yesterday summary bar */}
-          {totalPredicted > 0 && (
-            <div className="grid grid-cols-4 gap-2">
-              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
-                <p className="text-xl font-medium text-foreground">{correctCount}-{incorrectCount}</p>
-                <p className="text-[11px] text-muted-foreground">Yesterday's Record</p>
-              </div>
-              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
-                <p className={`text-xl font-medium ${
-                  accuracy >= 60 ? 'text-emerald-500' : accuracy >= 50 ? 'text-amber-500' : 'text-destructive'
-                }`}>
-                  {accuracy}%
-                </p>
-                <p className="text-[11px] text-muted-foreground">Accuracy</p>
-              </div>
-              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
-                <p className="text-xl font-medium text-emerald-500">{correctCount}</p>
-                <p className="text-[11px] text-muted-foreground">Correct</p>
-              </div>
-              <div className="rounded-lg bg-muted/30 border border-border p-3 text-center">
-                <p className="text-xl font-medium text-destructive">{incorrectCount}</p>
-                <p className="text-[11px] text-muted-foreground">Incorrect</p>
-              </div>
-            </div>
-          )}
-
-          {/* Backfill + Verify buttons */}
-          <div className="flex gap-2 flex-wrap">
-            <Button
-              size="sm"
-              disabled={loading}
-              onClick={async () => {
-                setLoading(true);
-                toast.info('Backfilling yesterday\'s scores and predictions...');
-                try {
-                  const { start, end } = getYesterdayETBounds();
-                  // Step 1 — fetch yesterday's games
-                  const { data: yGames } = await supabase
-                    .from('sbo_games')
-                    .select('*, sbo_predictions(*), sbo_odds(*)')
-                    .gte('game_date', start)
-                    .lte('game_date', end);
-                  if (!yGames?.length) { toast.error('No yesterday games found'); setLoading(false); return; }
-
-                  // Step 2 — fetch final scores via verify edge function
-                  const { data: scoresData } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
-                  if (scoresData?.scores_updated > 0) {
-                    toast.success(`${scoresData.scores_updated} game scores fetched`);
-                  }
-
-                  // Step 3 — run predictions on unpredicted games
-                  const unpredicted = yGames.filter((g: any) => !g.sbo_predictions?.length);
-                  if (unpredicted.length > 0) {
-                    toast.info(`Running AI on ${unpredicted.length} unpredicted games...`);
-                    for (const game of unpredicted) {
-                      const dkOdds = (game.sbo_odds || []).find((o: any) => o.sportsbook === 'draftkings' && o.market_type === 'moneyline');
-                      const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
-                      await supabase.functions.invoke('sbo-run-predictions', {
-                        body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
-                      });
-                      await new Promise(r => setTimeout(r, 500));
-                    }
-                    toast.success(`${unpredicted.length} predictions added`);
-                  }
-
-                  // Step 4 — verify all predictions
-                  const { data: verifyData } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
-                  if (verifyData?.verified > 0) {
-                    toast.success(`Verified: ${verifyData.correct}W - ${verifyData.incorrect}L · ${verifyData.accuracy}% accuracy`);
-                  }
-
-                  await loadYesterdayGames();
-                } catch (e: any) {
-                  toast.error('Backfill failed: ' + e.message);
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            >
-              {loading ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Running...</> : '⚡ Backfill Scores + Predictions'}
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+              {state.gamesLoading
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
+                : '🏀 Load Tonight\'s Games'}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                toast.info('Verifying results...');
-                const { data } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
-                toast.success(
-                  data?.verified > 0
-                    ? `${data.correct}W - ${data.incorrect}L · ${data.accuracy}%`
-                    : 'No new results to verify'
-                );
-                await loadYesterdayGames();
-              }}
-            >
-              🔍 Verify Results
+
+            <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
+              {state.analyzing
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
+                : '⚡ Run AI Predictions'}
+            </Button>
+
+            <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+              {state.refreshing
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
+                : '🔄 Refresh'}
             </Button>
           </div>
 
-          {pendingCount > 0 && (
+          {state.errorMsg ? (
+            <Alert variant="destructive">
+              <AlertDescription className="text-sm">{state.errorMsg}</AlertDescription>
+            </Alert>
+          ) : (
             <Alert>
-              <AlertDescription className="text-xs">
-                ⏳ {pendingCount} game{pendingCount !== 1 ? 's' : ''} still pending verification — scores may not be available yet.
-              </AlertDescription>
+              <AlertDescription className="text-sm">{state.statusMsg}</AlertDescription>
             </Alert>
           )}
 
-          {loading ? (
-            <div className="grid gap-3">
-              {[1,2,3].map(i => <Skeleton key={i} className="h-40 w-full rounded-lg" />)}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {state.games.map((game) => {
+              const isLive = /live|inprogress|in_progress|in progress|active/i.test(String(game.status || ''));
+              return (
+                <Card key={game.id || game.externalId} className="border-border/70">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm text-foreground">{game.awayTeam} @ {game.homeTeam}</p>
+                      {isLive && (
+                        <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/40">LIVE</Badge>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(game.gameDate).toLocaleTimeString('en-US', {
+                        timeZone: 'America/New_York',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })} ET
+                    </p>
+
+                    <div className="text-xs text-muted-foreground border-t border-border/60 pt-2">
+                      ML {game.awayMoneyline ?? '-'} / {game.homeMoneyline ?? '-'} | Spread {game.spread ?? '-'} | O/U {game.total ?? '-'}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {!state.gamesLoading && !state.games.length && (
+            <div className="text-center py-10 border border-dashed rounded-lg border-border">
+              <p className="text-sm text-muted-foreground">No games loaded yet.</p>
             </div>
-          ) : !yesterdayGames.length ? (
-            <div className="text-center py-12 border border-dashed rounded-lg border-border">
-              <p className="text-muted-foreground font-medium">No games found for yesterday.</p>
-            </div>
-          ) : (
-            yesterdayGames.map(game => <YesterdayGameCard key={game.id} game={game} />)
           )}
-        </>
-      )}
+
+          {state.picks.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-semibold">🎯 AI Picks ({state.picks.length})</h3>
+                <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              </div>
+
+              <div className="space-y-2">
+                {state.picks.map((pick) => {
+                  const confidence = Number(pick.confidence || 0);
+                  const result = String(pick.result || 'pending').toUpperCase();
+                  const tone = confidenceColor(confidence);
+
+                  return (
+                    <div
+                      key={pick.id}
+                      className={`rounded-lg border bg-card px-4 py-3 border-l-4 ${tone}`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="font-semibold text-foreground text-sm">{pick.label || 'Untitled pick'}</p>
+                        <p className={`text-xl font-bold leading-none ${tone.split(' ')[0]}`}>{confidence}%</p>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">{confidenceTier(confidence)}</Badge>
+                        <Badge variant="outline">{result}</Badge>
+                        <Badge variant="outline">{pick.odds || 'No odds'}</Badge>
+                      </div>
+
+                      <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                        {pick.detail || pick.ai_analysis || 'No additional detail provided.'}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
