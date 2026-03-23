@@ -983,19 +983,62 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
   const [props, setProps] = useState<any[]>([]);
   const [filter, setFilter] = useState<'all' | 'strong' | 'elite'>('all');
+  const [dateFilter, setDateFilter] = useState<string>('today');
+  const [loadingProps, setLoadingProps] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [allProgress, setAllProgress] = useState('');
   const [verifyingProps, setVerifyingProps] = useState(false);
 
-  useEffect(() => { loadProps(); }, []);
+  const getETDate = (offset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  };
+
+  const getDateBounds = () => {
+    switch (dateFilter) {
+      case 'today': return { date: getETDate(0), label: 'Today' };
+      case 'yesterday': return { date: getETDate(-1), label: 'Yesterday' };
+      case 'saturday': {
+        const now = new Date();
+        const day = now.getDay();
+        const diff = day === 6 ? 0 : day + 1;
+        const d = new Date(now);
+        d.setDate(d.getDate() - diff);
+        return { date: d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }), label: 'Saturday' };
+      }
+      case '7days': return { date: getETDate(-7), label: 'Last 7 Days' };
+      default: return { date: null, label: 'All Time' };
+    }
+  };
+
+  useEffect(() => { loadProps(); }, [dateFilter]);
 
   const loadProps = async () => {
-    const { data } = await supabase
-      .from('sbo_player_props')
-      .select('*, sbo_games(home_team, away_team, game_date), sbo_predictions(*), player_image_url')
-      .order('created_at', { ascending: false });
-    setProps((data as any[]) || []);
+    setLoadingProps(true);
+    try {
+      const bounds = getDateBounds();
+      let query = supabase
+        .from('sbo_player_props')
+        .select('*, sbo_games(home_team, away_team, game_date), sbo_predictions(*), player_image_url')
+        .order('created_at', { ascending: false })
+        .limit(300);
+
+      if (bounds.date && dateFilter !== '7days') {
+        // Filter by game_date or fallback to created_at date
+        query = query.or(`game_date.eq.${bounds.date},and(game_date.is.null,created_at.gte.${bounds.date}T00:00:00-04:00,created_at.lte.${bounds.date}T23:59:59-04:00)`);
+      } else if (dateFilter === '7days') {
+        query = query.or(`game_date.gte.${bounds.date},and(game_date.is.null,created_at.gte.${bounds.date}T00:00:00-04:00)`);
+      }
+
+      const { data } = await query;
+      setProps((data as any[]) || []);
+    } catch (e: any) {
+      console.error('Failed to load props:', e);
+    } finally {
+      setLoadingProps(false);
+    }
   };
 
   const runPropPrediction = async (prop: any, outcome?: 'over' | 'under') => {
