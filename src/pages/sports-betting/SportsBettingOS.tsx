@@ -2546,19 +2546,37 @@ function AccuracyTab() {
       <AccuracyHistoryWidget />
 
       {/* Overall accuracy */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-5 gap-2">
         {[
-          { label: 'Total Graded', value: total, color: 'text-foreground' },
-          { label: 'Correct', value: correct, color: 'text-green-500' },
-          { label: 'Accuracy', value: `${accuracy}%`, color: parseFloat(accuracy) >= 55 ? 'text-green-500' : 'text-amber-500' },
+          { label: 'Total', value: total, color: 'text-foreground' },
+          { label: 'Correct', value: correct, color: 'text-emerald-500' },
+          { label: 'Incorrect', value: incorrect, color: 'text-destructive' },
+          { label: 'Pending', value: pendingCount, color: 'text-amber-500' },
+          { label: 'Accuracy', value: `${accuracy}%`, color: parseFloat(accuracy) >= 55 ? 'text-emerald-500' : 'text-amber-500' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-3 text-center">
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Games vs Props breakdown */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="p-3 text-center">
+            <p className={`text-2xl font-bold ${parseFloat(gameAccuracy) >= 55 ? 'text-emerald-500' : 'text-amber-500'}`}>{gameAccuracy}%</p>
+            <p className="text-[10px] text-muted-foreground">🏀 Games · {gameCorrect}W-{gameIncorrect}L</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 text-center">
+            <p className={`text-2xl font-bold ${parseFloat(propAccuracy) >= 55 ? 'text-emerald-500' : 'text-amber-500'}`}>{propAccuracy}%</p>
+            <p className="text-[10px] text-muted-foreground">📊 Props · {propCorrectCount}W-{propIncorrectCount}L</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Accuracy by confidence tier */}
