@@ -802,7 +802,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 
       (data || []).forEach((row: any) => {
         const pred = row.sbo_predictions;
-        const propType = pred?.prop_type || pred?.sbo_player_props?.prop_type || 'unknown';
+        const propType = normalizePropType(pred?.prop_type || pred?.sbo_player_props?.prop_type || 'unknown');
         if (!statsMap[propType]) {
           statsMap[propType] = { correct: 0, incorrect: 0, total: 0, accuracy: 0, confCorrectSum: 0, confCorrectCount: 0, confIncorrectSum: 0, confIncorrectCount: 0, avgConfCorrect: 0, avgConfIncorrect: 0 };
         }
