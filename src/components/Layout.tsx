@@ -703,6 +703,17 @@ const Layout = ({ children }: LayoutProps) => {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 📊 EXPORTS FLOOR — REPORTS & BACKUP */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.exportsFloor.id,
+          DYNASTY_NAVIGATION.exportsFloor.name,
+          DYNASTY_NAVIGATION.exportsFloor.items
+        )}
+      </div>
+
+
       {/* ⚔️ BRANDARO DIGITAL HUB — SALES WAR ROOM */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-orange-500/30">
