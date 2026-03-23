@@ -1274,10 +1274,20 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           return (
             <Card key={prop.id}>
               <CardContent className="p-4">
-                {/* Prop date & analysis timestamp */}
-                <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground mb-2">
-                  <span>📅 {new Date(prop.game_date || prop.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-                  {existingPred ? (
+                {/* Game date badge + matchup */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                    📅 {prop.game_date
+                      ? new Date(prop.game_date + 'T12:00:00').toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
+                      : game?.game_date
+                      ? new Date(game.game_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
+                      : new Date(prop.created_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
+                    }
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {game?.away_team} @ {game?.home_team}
+                  </span>
+                </div>
                     <span>🧠 Analyzed: {new Date(existingPred.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                   ) : (
                     <span className="text-amber-500">⏳ Not yet analyzed</span>
