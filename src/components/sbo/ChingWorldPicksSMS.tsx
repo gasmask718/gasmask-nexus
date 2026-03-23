@@ -421,15 +421,18 @@ export function ChingWorldPicksSMS() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm">MESSAGE PREVIEW</CardTitle>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={generateMessage} disabled={generating}>
+              <Button size="sm" onClick={generateMessage} disabled={generating} className="bg-primary text-primary-foreground">
                 {generating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                Regenerate
+                {generating ? "Pulling picks..." : "🔄 Generate Today's Picks"}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                 {isEditing ? <><Check className="h-3 w-3 mr-1" /> Done</> : <><Edit3 className="h-3 w-3 mr-1" /> Edit</>}
               </Button>
             </div>
           </div>
+          {genStatus && (
+            <p className="text-xs text-muted-foreground mt-1">{genStatus}</p>
+          )}
         </CardHeader>
         <CardContent className="space-y-2">
           {isEditing ? (
