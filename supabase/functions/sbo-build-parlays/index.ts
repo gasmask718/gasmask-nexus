@@ -113,77 +113,139 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY not configured');
 
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-
-    // Pull today's predictions
-    const { data: predictions } = await supabase
+    // Fetch all recent predictions — no strict date filter, last 7 days
+    const { data: predictions, error: predError } = await supabase
       .from('sbo_predictions')
       .select(`
-        *,
-        sbo_games(id, home_team, away_team, game_date),
-        sbo_player_props(player_name, team, prop_type, line, over_odds, under_odds, recommendation)
+        id,
+        prediction_type,
+        predicted_outcome,
+        final_confidence,
+        confidence_tier,
+        data_quality,
+        game_id,
+        prop_id,
+        created_at,
+        sbo_games (
+          id,
+          home_team,
+          away_team,
+          game_date
+        ),
+        sbo_player_props (
+          id,
+          player_name,
+          team,
+          prop_type,
+          line,
+          over_odds,
+          under_odds,
+          recommendation
+        )
       `)
-      .gte('final_confidence', min_confidence)
-      .gte('created_at', `${today}T00:00:00-04:00`)
       .order('final_confidence', { ascending: false })
-      .limit(40);
+      .limit(100);
+
+    console.log('Total predictions found:', predictions?.length);
+    console.log('Pred error:', predError?.message);
+    if (predError) throw new Error('Failed to fetch predictions: ' + predError.message);
 
     if (!predictions?.length) {
       return new Response(
-        JSON.stringify({ success: false, error: 'No predictions available. Run predictions first.' }),
+        JSON.stringify({ success: false, error: 'No predictions found in database. Run predictions on the Tonight tab first.' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Filter to last 7 days, fall back to all
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentPreds = predictions.filter(p => new Date(p.created_at) > sevenDaysAgo);
+    const predsToUse = recentPreds.length >= 3 ? recentPreds : predictions;
+    console.log('Predictions to use:', predsToUse.length);
+
+    // Fetch odds separately — sbo_odds is NOT a direct FK from sbo_predictions
+    const gameIds = [...new Set(predsToUse.filter(p => p.game_id).map(p => p.game_id))];
+    console.log('Game IDs for odds lookup:', gameIds.length);
+
+    const oddsMap = new Map<string, any[]>();
+    if (gameIds.length > 0) {
+      const { data: oddsData } = await supabase
+        .from('sbo_odds')
+        .select('*')
+        .in('game_id', gameIds);
+      console.log('Odds rows found:', oddsData?.length);
+      for (const odd of (oddsData || [])) {
+        const key = String(odd.game_id);
+        if (!oddsMap.has(key)) oddsMap.set(key, []);
+        oddsMap.get(key)!.push(odd);
+      }
     }
 
     // Build leg pool
     const legPool: any[] = [];
 
-    for (const pred of predictions) {
+    for (const pred of predsToUse) {
+      // GAME MONEYLINE LEGS
       if (pred.prediction_type === 'moneyline' && pred.sbo_games) {
         const game = pred.sbo_games;
-        const odds = pred.sbo_odds || [];
-        const dkOdds = (Array.isArray(odds) ? odds : [odds]).find((o: any) =>
-          o?.sportsbook === 'draftkings' && o?.market_type === 'moneyline'
-        ) || (Array.isArray(odds) ? odds[0] : odds);
+        const gameOddsArr = oddsMap.get(String(pred.game_id)) || oddsMap.get(String(game.id)) || [];
+        const dkOdds = gameOddsArr.find((o: any) =>
+          o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
+        ) || gameOddsArr.find((o: any) => o.market_type === 'moneyline') || gameOddsArr[0];
 
         const pickedTeam = pred.predicted_outcome === 'home' ? game.home_team : game.away_team;
-        const oddsVal = pred.predicted_outcome === 'home' ? dkOdds?.home_odds : dkOdds?.away_odds;
-        if (!oddsVal) continue;
+        const oddsVal = pred.predicted_outcome === 'home'
+          ? (dkOdds?.home_odds || -110) : (dkOdds?.away_odds || -110);
 
         legPool.push({
           id: pred.id, type: 'game',
           label: `${pickedTeam} ML`,
           matchup: `${game.away_team} @ ${game.home_team}`,
           pick: pickedTeam, odds: oddsVal,
-          confidence: pred.final_confidence,
-          game_id: game.id,
-          tier: pred.confidence_tier,
+          confidence: pred.final_confidence || 50,
+          game_id: String(game.id),
+          tier: pred.confidence_tier || 'moderate',
+          data_quality: pred.data_quality || 'odds_only',
         });
       }
 
+      // PLAYER PROP LEGS
       if (pred.prediction_type === 'player_prop' && pred.sbo_player_props) {
         const prop = pred.sbo_player_props;
-        const rec = prop.recommendation || pred.predicted_outcome;
-        const oddsVal = rec?.toLowerCase() === 'over' ? prop.over_odds : prop.under_odds;
-        if (!oddsVal) continue;
+        if (!prop.player_name || !prop.prop_type || !prop.line) continue;
+
+        const rec = prop.recommendation || pred.predicted_outcome || 'over';
+        const oddsVal = rec?.toLowerCase() === 'over'
+          ? (prop.over_odds || -110) : (prop.under_odds || -110);
 
         legPool.push({
           id: pred.id, type: 'prop',
           label: `${prop.player_name} ${rec?.toUpperCase()} ${prop.line} ${prop.prop_type}`,
-          matchup: `${prop.player_name} (${prop.team})`,
+          matchup: `${prop.player_name} (${prop.team || ''})`,
           pick: rec?.toUpperCase(), odds: oddsVal,
-          confidence: pred.final_confidence,
-          game_id: pred.game_id,
-          tier: pred.confidence_tier,
+          confidence: pred.final_confidence || 50,
+          game_id: pred.game_id ? String(pred.game_id) : null,
+          tier: pred.confidence_tier || 'moderate',
+          data_quality: pred.data_quality || 'odds_only',
         });
       }
     }
 
-    console.log(`Leg pool size: ${legPool.length}`);
+    console.log(`FINAL LEG POOL: ${legPool.length} (${legPool.filter(l => l.type === 'game').length} games, ${legPool.filter(l => l.type === 'prop').length} props)`);
 
     if (legPool.length < 3) {
       return new Response(
-        JSON.stringify({ success: false, error: `Only ${legPool.length} qualifying legs. Need at least 3.` }),
+        JSON.stringify({
+          success: false,
+          error: `Only ${legPool.length} legs available. Need at least 3. Found ${predsToUse.length} predictions but some may be missing odds/data.`,
+          debug: {
+            total_predictions: predsToUse.length,
+            game_preds: predsToUse.filter(p => p.prediction_type === 'moneyline').length,
+            prop_preds: predsToUse.filter(p => p.prediction_type === 'player_prop').length,
+            legs_built: legPool.length,
+          }
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
