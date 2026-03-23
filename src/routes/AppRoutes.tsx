@@ -762,6 +762,7 @@ const Floor9ActionQueue = lazy(() => import('@/pages/floor9').then(m => ({ defau
 const Floor9InstinctLog = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9InstinctLog })));
 const Floor9Results = lazy(() => import('@/pages/floor9').then(m => ({ default: m.Floor9Results })));
 const Floor9Router = lazy(() => import('@/routes/Floor9Router'));
+const BackupControlPage = lazy(() => import('@/pages/grabba/BackupControlPage'));
 const CommandExport = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.CommandExport })));
 const Floor1Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor1Export })));
 const Floor2Export = lazy(() => import('@/pages/floor-exports').then(m => ({ default: m.Floor2Export })));
