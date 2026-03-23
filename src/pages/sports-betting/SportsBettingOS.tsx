@@ -868,12 +868,13 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
                 const { start: rStart } = getTodayETBounds();
                 try {
                   await supabase.from('sbo_predictions').delete().eq('game_id', game.id).gte('created_at', rStart);
-                  await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.game_id);
+                  await (supabase as any).from('sbo_saved_picks').delete().eq('source_id', localPrediction?.id || localPrediction?.prediction_id || '');
+                  await supabase.from('sbo_game_intelligence').delete().eq('game_id', game.id);
                   try { await supabase.functions.invoke('sbo-fetch-intelligence'); } catch {}
                   await new Promise(resolve => setTimeout(resolve, 800));
                   const pickHome = dkOdds ? Math.abs(dkOdds.home_odds) < Math.abs(dkOdds.away_odds) : true;
                   const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
-                    body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away' },
+                    body: { game_id: game.id, prediction_type: 'moneyline', predicted_outcome: pickHome ? 'home' : 'away', force_rerun: true },
                   });
                   if (error) throw error;
                   setLocalPrediction(data);
