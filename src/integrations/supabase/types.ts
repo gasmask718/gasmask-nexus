@@ -6748,6 +6748,33 @@ export type Database = {
         }
         Relationships: []
       }
+      api_fetch_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          games_returned: number | null
+          id: string
+          source: string
+          status_code: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          games_returned?: number | null
+          id?: string
+          source: string
+          status_code?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          games_returned?: number | null
+          id?: string
+          source?: string
+          status_code?: number | null
+        }
+        Relationships: []
+      }
       approved_disclosures: {
         Row: {
           approved_at: string | null
