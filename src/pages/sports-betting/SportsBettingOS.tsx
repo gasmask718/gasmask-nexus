@@ -1281,10 +1281,12 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                   <p className="text-[10px] text-muted-foreground font-mono">
                     O: {prop.over_odds > 0 ? '+' : ''}{prop.over_odds} / U: {prop.under_odds > 0 ? '+' : ''}{prop.under_odds}
                   </p>
-                  {typeAcc !== undefined && (
+                  {typeAcc !== undefined ? (
                     <p className={`text-[10px] mt-0.5 ${getAccuracyColor(typeAcc)}`}>
-                      {normType} props: {typeAcc.toFixed(1)}% historically
+                      {normType} props: {typeAcc.toFixed(1)}% {typeAcc >= 70 ? '✅' : typeAcc >= 55 ? '⚠️' : '🔴'}
                     </p>
+                  ) : (
+                    <p className="text-[10px] mt-0.5 text-muted-foreground">Historical: No data yet</p>
                   )}
                 </div>
               </div>
