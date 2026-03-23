@@ -628,7 +628,7 @@ function TonightGamesTab() {
               </div>
 
               <div className="space-y-2">
-                {state.picks.map((pick) => {
+                {state.picks.filter((p: any) => p.label && !String(p.label).includes('undefined')).map((pick) => {
                   const confidence = Number(pick.confidence || 0);
                   const result = String(pick.result || 'pending').toUpperCase();
                   const tone = confidenceColor(confidence);
