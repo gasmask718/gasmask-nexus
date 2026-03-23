@@ -1648,10 +1648,10 @@ function ParlayBuilderTab() {
 
       setBuildProgress('Building 3·6·10·15·20-leg variations...');
       const { data, error } = await supabase.functions.invoke('sbo-build-parlays', {
-        body: { stake: aiStake, min_confidence: 60, variations: 5 },
+        body: { stake: aiStake, min_confidence: 1, variations: 5 },
       });
       if (error) throw error;
-      if (!data.success) throw new Error(data.error);
+      if (!data?.success) throw new Error(data?.error || 'Build failed');
 
       toast.success(`${data.total_parlays_built} parlays built — ${data.summary.strong_bets} strong bets`);
       await loadAiParlays();
