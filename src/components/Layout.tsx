@@ -663,6 +663,7 @@ const Layout = ({ children }: LayoutProps) => {
             { path: '/grabba/export/floor7', label: 'Export Floor 7 — Wholesale', icon: Download },
             { path: '/grabba/export/floor8', label: 'Export Floor 8 — Ambassadors', icon: Download },
             { path: '/grabba/export/floor9', label: 'Export Floor 9 — AI', icon: Download },
+            { path: '/grabba/export/backup', label: '☁️ Google Drive Backup', icon: Upload },
             { path: '/territory/playbooks', label: 'Playbooks', icon: FileText },
           ].map(item => (
             <Link
