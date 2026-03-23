@@ -2072,6 +2072,14 @@ function ParlayBuilderTab() {
           </div>
         </div>
       )}
+
+      {/* Saved Parlay Results */}
+      <div className="mt-6">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Saved Parlay Results
+        </p>
+        <ParlayResultsSection parlays={savedParlays} onUpdate={loadSavedParlays} />
+      </div>
     </div>
   );
 }
