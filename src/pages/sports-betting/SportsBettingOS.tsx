@@ -16,6 +16,7 @@ import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Se
 import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
+import ParlayResultsSection from '@/components/sbo/ParlayResultsSection';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
