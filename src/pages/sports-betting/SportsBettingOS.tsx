@@ -389,6 +389,12 @@ function TonightGamesTab() {
   };
 
 
+  // Auto-load games and picks on mount
+  useEffect(() => {
+    loadGames();
+    loadPicks();
+  }, []);
+
   const dateTitle = new Date().toLocaleDateString('en-US', {
     timeZone: 'America/New_York',
     weekday: 'short',
