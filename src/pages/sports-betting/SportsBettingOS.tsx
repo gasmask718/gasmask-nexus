@@ -554,10 +554,10 @@ function TonightGamesTab() {
           onClick={() => setSubTab('today')}
         >📅 Today</Button>
         <Button
-          variant={subTab === 'yesterday' ? 'default' : 'outline'}
+          variant={subTab === 'history' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setSubTab('yesterday')}
-        >⏪ Yesterday</Button>
+          onClick={() => setSubTab('history')}
+        >📅 History</Button>
       </div>
 
       {subTab === 'today' && (
