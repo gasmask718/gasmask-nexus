@@ -1000,6 +1000,9 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
             : <>📊 Run Props Analysis</>
           }
         </Button>
+        <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId} size="sm" variant="destructive">
+          🔄 Reanalyze All Props
+        </Button>
       </div>
 
       {runningAll && (
