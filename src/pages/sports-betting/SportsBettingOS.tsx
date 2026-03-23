@@ -713,12 +713,12 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 
   // Fetch sharp money indicators
   const { data: lineMove } = useQuery({
-    queryKey: ['line-move', game.game_id],
+    queryKey: ['line-move', game.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('sbo_line_movement')
         .select('*')
-        .eq('game_id', game.game_id)
+        .eq('game_id', game.id)
         .order('recorded_at', { ascending: false })
         .limit(1)
         .maybeSingle();
