@@ -46,11 +46,15 @@ async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; 
       }
     } else if (ctx.prediction_type === 'moneyline') {
       // PRIMARY — try sbo_game_intelligence first
-      const { data: intel } = await supabase
+      console.log('Looking up intel for game_id:', ctx.game_id, 'type:', typeof ctx.game_id);
+      const { data: intel, error: intelError } = await supabase
         .from('sbo_game_intelligence')
         .select('*')
-        .eq('game_id', ctx.game_id)
+        .eq('game_id', String(ctx.game_id))
         .maybeSingle();
+
+      console.log('Intel found:', !!intel, 'error:', intelError?.message);
+      if (intel) console.log('Intel ORtg:', intel.offensive_rating_home, 'record:', intel.home_record_home, 'pace:', intel.pace_home);
 
       const hasRealIntel = intel && (
         (intel.offensive_rating_home && intel.offensive_rating_home > 0) ||
