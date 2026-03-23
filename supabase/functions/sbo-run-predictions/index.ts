@@ -6,23 +6,63 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-async function callClaude(system: string, user: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': Deno.env.get('ANTHROPIC_API_KEY')!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system,
-      messages: [{ role: 'user', content: user }],
-    }),
-  });
-  const data = await res.json();
-  return data.content?.[0]?.text?.trim() || '';
+// Use Lovable AI gateway instead of direct Anthropic (fixes IPv6 connection reset)
+async function callAI(system: string, user: string): Promise<string> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.error('LOVABLE_API_KEY not configured');
+    return '{"score": 50, "reasoning": "AI service not configured"}';
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+  try {
+    const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content?.trim() || '';
+  } catch (e) {
+    clearTimeout(timeout);
+    console.error('AI call failed, retrying once:', e);
+    // Retry once after 2s
+    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const res2 = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'system', content: system },
+            { role: 'user', content: user },
+          ],
+        }),
+      });
+      const data2 = await res2.json();
+      return data2.choices?.[0]?.message?.content?.trim() || '';
+    } catch (e2) {
+      console.error('AI retry also failed:', e2);
+      return '{"score": 50, "reasoning": "AI analysis unavailable — using fallback"}';
+    }
+  }
 }
 
 async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; reasoning: string; data_quality: string; ai_recommendation?: string; player_avg?: string; edge?: string }> {
@@ -45,7 +85,6 @@ async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; 
         dataQuality = 'full';
       }
     } else if (ctx.prediction_type === 'moneyline') {
-      // PRIMARY — try sbo_game_intelligence first
       console.log('Looking up intel for game_id:', ctx.game_id, 'type:', typeof ctx.game_id);
       const { data: intel, error: intelError } = await supabase
         .from('sbo_game_intelligence')
@@ -54,7 +93,6 @@ async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; 
         .maybeSingle();
 
       console.log('Intel found:', !!intel, 'error:', intelError?.message);
-      if (intel) console.log('Intel ORtg:', intel.offensive_rating_home, 'record:', intel.home_record_home, 'pace:', intel.pace_home);
 
       const hasRealIntel = intel && (
         (intel.offensive_rating_home && intel.offensive_rating_home > 0) ||
@@ -91,7 +129,6 @@ Injuries: ${intel.injury_report?.length > 0
   : 'None reported'}
 `.trim();
       } else {
-        // FALLBACK — pull from sbo_team_stats
         const homeLastWord = ctx.home_team?.split(' ').pop() || '';
         const awayLastWord = ctx.away_team?.split(' ').pop() || '';
 
@@ -145,7 +182,6 @@ No real stats available. Base prediction on odds and context only. Cap confidenc
     dataQuality = 'odds_only';
   }
 
-  // For player props — ask AI to decide OVER or UNDER
   if (ctx.prediction_type === 'player_prop') {
     const system = `You are an elite NBA prop analyst for Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.`;
 
@@ -174,7 +210,7 @@ Return ONLY valid JSON:
   "reasoning": "2-3 sentence analysis citing actual numbers"
 }`;
 
-    const raw = await callClaude(system, propPrompt);
+    const raw = await callAI(system, propPrompt);
     try {
       const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
       let score = Math.min(100, Math.max(0, p.score || 50));
@@ -193,7 +229,6 @@ Return ONLY valid JSON:
     }
   }
 
-  // For moneyline — original logic
   const system = `You are a professional NBA statistical analyst. You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
 If stats show N/A or are missing, acknowledge the gap and lower your confidence.
 
@@ -206,7 +241,7 @@ Home odds: ${ctx.home_odds} | Away odds: ${ctx.away_odds}
 ${dataQuality === 'odds_only' ? 'WARNING: No real stats available. Cap your confidence at 55 maximum.' : ''}
 Statistical confidence 0-100.`;
 
-  const raw = await callClaude(system, user);
+  const raw = await callAI(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
     let score = Math.min(100, Math.max(0, p.score || 50));
@@ -229,7 +264,7 @@ async function runMarketBrain(ctx: any) {
   const user = ctx.prediction_type === 'moneyline'
     ? `${ctx.away_team} @ ${ctx.home_team}. DK odds: Home ${ctx.home_odds} / Away ${ctx.away_odds}. Implied prob of predicted winner: ${impliedProb.toFixed(1)}%. Market confidence 0-100 that ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins.`
     : `${ctx.player_name} ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Over: ${ctx.over_odds}, Under: ${ctx.under_odds}. Market confidence 0-100.`;
-  const raw = await callClaude(system, user);
+  const raw = await callAI(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
     return { score: Math.min(100, Math.max(0, p.score || 50)), reasoning: p.reasoning || 'Market analysis complete' };
@@ -241,7 +276,7 @@ async function runContextBrain(ctx: any) {
   const user = ctx.prediction_type === 'moneyline'
     ? `${ctx.away_team} @ ${ctx.home_team} on ${ctx.game_date}. Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins. Contextual/situational confidence 0-100.`
     : `${ctx.player_name} (${ctx.team}) — ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Game: ${ctx.away_team} @ ${ctx.home_team}. Context confidence 0-100.`;
-  const raw = await callClaude(system, user);
+  const raw = await callAI(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
     return { score: Math.min(100, Math.max(0, p.score || 50)), reasoning: p.reasoning || 'Context analysis complete' };
@@ -312,14 +347,26 @@ async function runPolymarketBrain(
 }
 
 serve(async (req) => {
+  console.log('Function started — sbo-run-predictions');
+
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
   try {
+    // Validate required env vars
+    const missingVars = ['LOVABLE_API_KEY', 'SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY']
+      .filter(k => !Deno.env.get(k));
+    if (missingVars.length > 0) {
+      return new Response(JSON.stringify({
+        error: `Missing required environment variables: ${missingVars.join(', ')}`,
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     const { game_id, prop_id, prediction_type, predicted_outcome, force_rerun } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-    // Never re-predict a game that already has a prediction today (unless force_rerun)
+    // Cache check — moneyline
     if (game_id && prediction_type === 'moneyline' && !force_rerun) {
       const { data: existingPred } = await supabase
         .from('sbo_predictions')
@@ -342,7 +389,7 @@ serve(async (req) => {
       }
     }
 
-    // Skip props that already have analysis
+    // Cache check — props
     if (prop_id) {
       const { data: existingPropPred } = await supabase
         .from('sbo_predictions')
@@ -378,7 +425,6 @@ serve(async (req) => {
     // Run stats brain first for props to get AI recommendation
     const statsResult = await runStatsBrain(ctx, supabase);
 
-    // For props: use AI-determined recommendation instead of hardcoded value
     let finalOutcome = predicted_outcome;
     if (prediction_type === 'player_prop' && statsResult.ai_recommendation) {
       finalOutcome = statsResult.ai_recommendation;
@@ -386,7 +432,7 @@ serve(async (req) => {
       ctx.final_recommendation = finalOutcome;
     }
 
-    // Run remaining brains in parallel (market & context now use the AI recommendation)
+    // Run remaining brains in parallel
     const [market, context, polyResult] = await Promise.all([
       runMarketBrain(ctx),
       runContextBrain(ctx),
@@ -396,7 +442,6 @@ serve(async (req) => {
     const stats = { score: statsResult.score, reasoning: statsResult.reasoning };
     const dataQuality = statsResult.data_quality;
 
-    // Get current active model configuration for dynamic weights
     const { data: activeConfig } = await supabase
       .from('sbo_model_performance')
       .select('stats_weight, market_weight, context_weight, polymarket_weight')
@@ -410,7 +455,6 @@ serve(async (req) => {
       polymarket: activeConfig?.polymarket_weight || 0.00,
     };
 
-    // Calculate final score using dynamic weights
     const finalScore = polyResult.has_data
       ? Math.round(
           stats.score * weights.stats +
@@ -461,7 +505,6 @@ serve(async (req) => {
           ? (finalOutcome === 'over' ? ctx.over_odds : ctx.under_odds)
           : (finalOutcome === 'home' ? ctx.home_odds : ctx.away_odds);
 
-        // Check not already saved
         const { data: alreadySaved } = await supabase
           .from('sbo_saved_picks')
           .select('id')
@@ -501,6 +544,7 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
+    console.error('sbo-run-predictions fatal error:', e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
