@@ -724,7 +724,7 @@ export function ManualCampaignCallModal({
       toast.error(`Transfer failed: ${message}`);
       setIsTransferring(false);
     }
-  }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition]);
+  }, [activeCallSid, campaignId, currentIndex, currentItem?.id, device, queryClient, queueItems, refetchQueue, stopRemoteAudioCapture, stopSpeechRecognition, selectedTransferAgent]);
 
   const skipToNext = useCallback(() => {
     if (isDialing || isOnCall) {
