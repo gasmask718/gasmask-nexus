@@ -917,6 +917,53 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     }
   };
 
+  const reanalyzeAllProps = async () => {
+    if (!confirm('Delete today\'s prop predictions and rerun with corrected AI logic (OVER/UNDER)?')) return;
+    setRunningAll(true);
+    let count = 0;
+    try {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+      // Delete today's prop predictions
+      await supabase
+        .from('sbo_predictions')
+        .delete()
+        .eq('prediction_type', 'player_prop')
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      // Delete from saved picks too
+      await supabase
+        .from('sbo_saved_picks')
+        .delete()
+        .eq('pick_type', 'prop')
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      toast.info('Old prop predictions cleared — rerunning with AI-determined OVER/UNDER...');
+
+      const { data: todayProps } = await supabase
+        .from('sbo_player_props')
+        .select('id, player_name')
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      for (const prop of (todayProps || [])) {
+        setAllProgress(`Reanalyzing ${count + 1}/${todayProps?.length}: ${prop.player_name}`);
+        await supabase.functions.invoke('sbo-run-predictions', {
+          body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null },
+        });
+        count++;
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      toast.success(`${count} props reanalyzed with correct OVER/UNDER picks — all auto-saved`);
+      await loadProps();
+    } catch (e: any) {
+      toast.error('Reanalyze failed: ' + e.message);
+    } finally {
+      setRunningAll(false);
+      setAllProgress('');
+    }
+  };
+
   const filtered = props.filter(p => {
     if (filter === 'all') return true;
     const pred = p.sbo_predictions?.[0];
