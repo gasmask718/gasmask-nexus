@@ -167,7 +167,7 @@ export default function BackupControlPage() {
               <p className="text-xs text-muted-foreground">gasmaskapprovedllc@gmail.com</p>
             </div>
             <Badge variant="secondary" className="ml-auto text-xs">
-              Dynasty OS Backups / [Month Year] / [Floor Name]
+              A4 PDF Reports · Dynasty OS Backups / [Month] / [Floor]
             </Badge>
           </div>
         </CardContent>
