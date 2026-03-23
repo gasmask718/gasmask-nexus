@@ -114,7 +114,7 @@ function SavePickButton({
 
 
 function TonightGamesTab() {
-  const [subTab, setSubTab] = useState<'today' | 'history'>('today');
+  const [viewMode, setViewMode] = useState<'today' | 'history'>('today');
   const [state, setState] = useState({
     games: [] as any[],
     picks: [] as any[],
@@ -423,18 +423,18 @@ function TonightGamesTab() {
       {/* Today / Yesterday toggle */}
       <div className="flex gap-2">
         <Button
-          variant={subTab === 'today' ? 'default' : 'outline'}
+          variant={viewMode === 'today' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setSubTab('today')}
+          onClick={() => setViewMode('today')}
         >📅 Today</Button>
         <Button
-          variant={subTab === 'history' ? 'default' : 'outline'}
+          variant={viewMode === 'history' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setSubTab('history')}
+          onClick={() => setViewMode('history')}
         >📅 History</Button>
       </div>
 
-      {subTab === 'today' && (
+      {viewMode === 'today' && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">🏀 Tonight&apos;s NBA Games — {dateTitle}</CardTitle>
@@ -479,7 +479,7 @@ function TonightGamesTab() {
                   <Card key={game.id || game.externalId} className="border-border/70">
                     <CardContent className="p-4 space-y-2">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="font-semibold text-sm text-foreground">{game.awayTeam} @ {game.homeTeam}</p>
+                        <p className="font-semibold text-sm text-foreground">{game.awayTeam || game.away_team || 'TBD'} @ {game.homeTeam || game.home_team || 'TBD'}</p>
                         {isLive && (
                           <Badge className="bg-emerald-500/20 text-emerald-500 border-emerald-500/40">LIVE</Badge>
                         )}
@@ -541,7 +541,7 @@ function TonightGamesTab() {
         </Card>
       )}
 
-      {subTab === 'history' && <HistoryView />}
+      {viewMode === 'history' && <HistoryView />}
     </div>
   );
 }
@@ -821,23 +821,67 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 
   const loadPropTypeStats = async () => {
     try {
-      const { data } = await supabase
+      const { data: verificationRows, error: verificationError } = await supabase
         .from('sbo_results_verification')
-        .select('verdict, sbo_predictions!inner(prediction_type, prop_type, final_confidence, sbo_player_props(prop_type, player_name))')
-        .eq('sbo_predictions.prediction_type', 'player_prop')
+        .select('verdict, prediction_id')
+        .not('prediction_id', 'is', null)
         .not('verdict', 'is', null);
+
+      if (verificationError) throw verificationError;
+
+      const predictionIds = Array.from(
+        new Set((verificationRows || []).map((row: any) => row.prediction_id).filter(Boolean))
+      ) as string[];
+
+      if (!predictionIds.length) {
+        setPropTypeStats({});
+        return;
+      }
+
+      const { data: predictionRows, error: predictionError } = await supabase
+        .from('sbo_predictions')
+        .select('id, prediction_type, final_confidence, prop_id')
+        .in('id', predictionIds)
+        .eq('prediction_type', 'player_prop');
+
+      if (predictionError) throw predictionError;
+
+      const predictionById = new Map((predictionRows || []).map((prediction: any) => [prediction.id, prediction]));
+      const propIds = Array.from(
+        new Set((predictionRows || []).map((prediction: any) => prediction.prop_id).filter(Boolean))
+      ) as string[];
+
+      let propById = new Map<string, any>();
+      if (propIds.length) {
+        const { data: propRows, error: propError } = await supabase
+          .from('sbo_player_props')
+          .select('id, prop_type, player_name')
+          .in('id', propIds);
+
+        if (propError) throw propError;
+        propById = new Map((propRows || []).map((prop: any) => [prop.id, prop]));
+      }
 
       const statsMap: Record<string, { correct: number; incorrect: number; total: number; accuracy: number; confCorrectSum: number; confCorrectCount: number; confIncorrectSum: number; confIncorrectCount: number; avgConfCorrect: number; avgConfIncorrect: number }> = {};
 
-      (data || []).forEach((row: any) => {
-        const pred = row.sbo_predictions;
-        const propType = normalizePropType(pred?.prop_type || pred?.sbo_player_props?.prop_type || 'unknown');
+      (verificationRows || []).forEach((row: any) => {
+        const verdict = String(row.verdict || '').toLowerCase();
+        if (verdict !== 'correct' && verdict !== 'incorrect') return;
+
+        const pred = predictionById.get(row.prediction_id);
+        if (!pred) return;
+
+        const propMeta = pred.prop_id ? propById.get(pred.prop_id) : null;
+        const propType = normalizePropType(propMeta?.prop_type || 'Other');
+
         if (!statsMap[propType]) {
           statsMap[propType] = { correct: 0, incorrect: 0, total: 0, accuracy: 0, confCorrectSum: 0, confCorrectCount: 0, confIncorrectSum: 0, confIncorrectCount: 0, avgConfCorrect: 0, avgConfIncorrect: 0 };
         }
+
         const s = statsMap[propType];
         s.total++;
-        if (row.verdict === 'correct') {
+
+        if (verdict === 'correct') {
           s.correct++;
           s.confCorrectSum += (pred?.final_confidence || 0);
           s.confCorrectCount++;
@@ -849,7 +893,9 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       });
 
       Object.values(statsMap).forEach((s: any) => {
-        s.accuracy = s.total > 0 ? (s.correct / s.total) * 100 : 0;
+        const decidedTotal = s.correct + s.incorrect;
+        s.total = decidedTotal;
+        s.accuracy = decidedTotal > 0 ? (s.correct / decidedTotal) * 100 : 0;
         s.avgConfCorrect = s.confCorrectCount > 0 ? s.confCorrectSum / s.confCorrectCount : 0;
         s.avgConfIncorrect = s.confIncorrectCount > 0 ? s.confIncorrectSum / s.confIncorrectCount : 0;
       });
@@ -1016,6 +1062,11 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     });
 
   const getAccuracyColor = (acc: number) => acc >= 75 ? 'text-emerald-500' : acc >= 60 ? 'text-amber-500' : 'text-destructive';
+  const getPillAccuracyTone = (acc: number) => acc >= 75
+    ? 'bg-emerald-500/10 border-emerald-500/30'
+    : acc >= 60
+      ? 'bg-amber-500/10 border-amber-500/30'
+      : 'bg-destructive/10 border-destructive/30';
   const getConfColor = (c: number) => c >= 85 ? 'text-emerald-500' : c >= 70 ? 'text-blue-400' : c >= 55 ? 'text-amber-500' : 'text-destructive';
   const getConfBorder = (c: number) => c >= 85 ? 'border-l-emerald-500' : c >= 70 ? 'border-l-blue-400' : c >= 55 ? 'border-l-amber-500' : 'border-l-destructive';
 
@@ -1025,6 +1076,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     ...Object.keys(propTypeStats),
   ]);
   const propTypes = ['all', ...PROP_TYPE_ORDER.filter(t => allNormalizedTypes.has(t)), ...Array.from(allNormalizedTypes).filter(t => !PROP_TYPE_ORDER.includes(t)).sort()];
+  const summaryTypes = propTypes.filter((type) => type !== 'all' && !!propTypeStats[type]);
 
   // Count props per type (for types without stats yet)
   const propCountByType: Record<string, number> = {};
@@ -1084,17 +1136,15 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       </div>
 
       {/* ACCURACY STRIP — quick visual reference */}
-      {Object.keys(propTypeStats).length > 0 && (
+      {summaryTypes.length > 0 && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 rounded-lg bg-muted/20 border border-border text-xs">
-          {PROP_TYPE_ORDER.filter(t => propTypeStats[t]).map((type, i) => {
+          {summaryTypes.map((type, i) => {
             const s = propTypeStats[type];
-            const emoji = s.accuracy >= 70 ? '✅' : s.accuracy >= 55 ? '⚠️' : '🔴';
             return (
               <span key={type} className="flex items-center gap-1">
                 {i > 0 && <span className="text-muted-foreground/40 mr-1">|</span>}
                 <span className="text-muted-foreground">{type}</span>
                 <span className={`font-semibold ${getAccuracyColor(s.accuracy)}`}>{s.accuracy.toFixed(1)}%</span>
-                <span className="text-[10px]">{emoji}</span>
               </span>
             );
           })}
@@ -1111,26 +1161,30 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
             const w = type === 'all' ? totalStats.correct : (s as any)?.correct ?? 0;
             const l = type === 'all' ? totalStats.incorrect : (s as any)?.incorrect ?? 0;
             const count = propCountByType[type] || 0;
-            const hasStats = w > 0 || l > 0;
+            const hasStats = type === 'all' ? totalStats.total > 0 : (w + l) > 0;
             const isActive = selectedPropType === type;
+            const idleTone = hasStats ? getPillAccuracyTone(acc) : 'bg-muted/30 border-border';
             return (
               <button
                 key={type}
                 onClick={() => setSelectedPropType(type)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
                   isActive
-                    ? 'bg-primary text-primary-foreground border-primary shadow-md'
-                    : 'bg-muted/30 text-foreground border-border hover:bg-muted/60'
+                    ? 'bg-primary/10 text-foreground border-primary ring-1 ring-primary/40 shadow-sm'
+                    : `text-foreground ${idleTone} hover:bg-muted/60`
                 }`}
               >
                 <span>{type === 'all' ? 'All Props' : type}</span>
                 {hasStats ? (
                   <>
                     <span className="text-muted-foreground">{w}W-{l}L</span>
-                    <span className={isActive ? '' : getAccuracyColor(acc)}>{acc.toFixed(1)}%</span>
+                    <span className={getAccuracyColor(acc)}>{acc.toFixed(1)}%</span>
                   </>
                 ) : type !== 'all' && count > 0 ? (
-                  <span className="text-muted-foreground">{count} props</span>
+                  <>
+                    <span className="text-muted-foreground">{count} props</span>
+                    <span className="text-muted-foreground">---%</span>
+                  </>
                 ) : null}
               </button>
             );
@@ -1283,7 +1337,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                   </p>
                   {typeAcc !== undefined ? (
                     <p className={`text-[10px] mt-0.5 ${getAccuracyColor(typeAcc)}`}>
-                      {normType} props: {typeAcc.toFixed(1)}% {typeAcc >= 70 ? '✅' : typeAcc >= 55 ? '⚠️' : '🔴'}
+                      Historical: {normType} props {typeAcc.toFixed(1)}% {typeAcc >= 70 ? '✅' : typeAcc >= 55 ? '⚠️' : '🔴'}
                     </p>
                   ) : (
                     <p className="text-[10px] mt-0.5 text-muted-foreground">Historical: No data yet</p>
