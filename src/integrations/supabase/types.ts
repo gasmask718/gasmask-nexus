@@ -57879,6 +57879,36 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_automation_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          errors: Json | null
+          id: string
+          run_at: string | null
+          status: string | null
+          steps: Json | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          run_at?: string | null
+          status?: string | null
+          steps?: Json | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          errors?: Json | null
+          id?: string
+          run_at?: string | null
+          status?: string | null
+          steps?: Json | null
+        }
+        Relationships: []
+      }
       sbo_bankroll: {
         Row: {
           biggest_loss: number | null
@@ -60182,6 +60212,7 @@ export type Database = {
       sbo_sms_recipients: {
         Row: {
           active: boolean | null
+          auto_send: boolean | null
           created_at: string | null
           group_tag: string | null
           id: string
@@ -60193,6 +60224,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean | null
+          auto_send?: boolean | null
           created_at?: string | null
           group_tag?: string | null
           id?: string
@@ -60204,6 +60236,7 @@ export type Database = {
         }
         Update: {
           active?: boolean | null
+          auto_send?: boolean | null
           created_at?: string | null
           group_tag?: string | null
           id?: string

@@ -8,11 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   MessageSquare, Plus, Trash2, Send, TestTube, RefreshCw, Loader2,
   Phone, User, Star, Users, ToggleLeft, ToggleRight, Clock, Edit3, Check,
-  ChevronLeft, ChevronRight, SlidersHorizontal
+  ChevronLeft, ChevronRight, SlidersHorizontal, Play, Settings, AlertTriangle,
+  CheckCircle, XCircle, Zap
 } from "lucide-react";
 
 // ── Helpers ──
@@ -46,12 +48,8 @@ const CONF_OPTIONS = [55, 60, 65, 70, 75, 80, 85, 90];
 const MAX_OPTIONS = [3, 5, 8, 10];
 
 interface Thresholds {
-  topMin: number;
-  stealsMin: number;
-  blocksMin: number;
-  otherMin: number;
-  gamesMin: number;
-  maxPerCat: number;
+  topMin: number; stealsMin: number; blocksMin: number;
+  otherMin: number; gamesMin: number; maxPerCat: number;
 }
 
 // ── Multi-segment builder ──
@@ -61,7 +59,6 @@ function buildSegments(sections: { header: string; body: string }[]): string[] {
   const dateLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York",
   });
-
   const segments: string[] = [];
   let cur = `🏆 CHINGWORLD PICKS 🏆\n📅 ${dateLabel}\n─────────────────────\n\n`;
   let segNum = 1;
@@ -77,10 +74,8 @@ function buildSegments(sections: { header: string; body: string }[]): string[] {
       cur += block;
     }
   }
-
   cur += `💡 Bet responsibly\nGood luck! 🎯`;
   segments.push(cur);
-
   const total = segments.length;
   return segments.map((s) => s.replace(/\((\d+) of TOTAL\)/g, (_, n) => `(${n} of ${total})`));
 }
@@ -92,6 +87,15 @@ function formatPropLine(pp: any, pred: any): string {
   const propLabel = normPropType(pp.prop_type);
   return `${pp.player_name}${pp.team ? ` (${pp.team})` : ""}\n${propLabel} ${dir} ${pp.line} | ${pred?.final_confidence || "?"}% | ${oddsStr}\n\n`;
 }
+
+const formatET = (iso: string) => {
+  try {
+    return new Date(iso).toLocaleString("en-US", {
+      timeZone: "America/New_York", weekday: "short", month: "short", day: "numeric",
+      hour: "numeric", minute: "2-digit",
+    }) + " ET";
+  } catch { return iso; }
+};
 
 // ── Component ──
 export function ChingWorldPicksSMS() {
@@ -112,6 +116,8 @@ export function ChingWorldPicksSMS() {
   const [sendProgress, setSendProgress] = useState("");
   const [genStatus, setGenStatus] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [runningAutomation, setRunningAutomation] = useState(false);
+  const [automationProgress, setAutomationProgress] = useState("");
 
   // Thresholds
   const [thresholds, setThresholds] = useState<Thresholds>({
@@ -138,6 +144,14 @@ export function ChingWorldPicksSMS() {
     },
   });
 
+  const { data: automationLogs = [] } = useQuery({
+    queryKey: ["sbo-automation-log"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("sbo_automation_log").select("*").order("created_at", { ascending: false }).limit(30);
+      return data || [];
+    },
+  });
+
   // Generate on mount
   useEffect(() => { generateMessage(); }, []);
 
@@ -146,7 +160,6 @@ export function ChingWorldPicksSMS() {
     setGenStatus("⏳ Pulling picks from database...");
     try {
       const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-
       const { data: preds, error } = await supabase
         .from("sbo_predictions")
         .select("*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, team)")
@@ -154,81 +167,34 @@ export function ChingWorldPicksSMS() {
         .order("final_confidence", { ascending: false });
 
       if (error) console.error("ChingWorld query error:", error);
-
       const all = preds || [];
       const th = thresholds;
 
-      // ── Smart filtering ──
-      const topProps = all
-        .filter(p => p.prediction_type === "player_prop" && (p.final_confidence || 0) >= th.topMin)
-        .slice(0, th.maxPerCat);
-
-      const stealsProps = all
-        .filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Steals" && (p.final_confidence || 0) >= th.stealsMin)
-        .slice(0, th.maxPerCat);
-
-      const blocksProps = all
-        .filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Blocks" && (p.final_confidence || 0) >= th.blocksMin)
-        .slice(0, th.maxPerCat);
-
+      const topProps = all.filter(p => p.prediction_type === "player_prop" && (p.final_confidence || 0) >= th.topMin).slice(0, th.maxPerCat);
+      const stealsProps = all.filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Steals" && (p.final_confidence || 0) >= th.stealsMin).slice(0, th.maxPerCat);
+      const blocksProps = all.filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Blocks" && (p.final_confidence || 0) >= th.blocksMin).slice(0, th.maxPerCat);
       const excludeTypes = ["Steals", "Blocks"];
-      const otherProps = all
-        .filter(p => {
-          if (p.prediction_type !== "player_prop") return false;
-          const t = normPropType(p.sbo_player_props?.prop_type);
-          return !excludeTypes.includes(t) && (p.final_confidence || 0) >= th.otherMin && (p.final_confidence || 0) < th.topMin;
-        })
-        .slice(0, th.maxPerCat);
+      const otherProps = all.filter(p => {
+        if (p.prediction_type !== "player_prop") return false;
+        const t = normPropType(p.sbo_player_props?.prop_type);
+        return !excludeTypes.includes(t) && (p.final_confidence || 0) >= th.otherMin && (p.final_confidence || 0) < th.topMin;
+      }).slice(0, th.maxPerCat);
+      const gamePicks = all.filter(p => p.prediction_type === "moneyline" && (p.final_confidence || 0) >= th.gamesMin).slice(0, 5);
 
-      const gamePicks = all
-        .filter(p => p.prediction_type === "moneyline" && (p.final_confidence || 0) >= th.gamesMin)
-        .slice(0, 5);
-
-      // ── Build sections ──
       const sections: { header: string; body: string }[] = [];
-
-      if (topProps.length > 0) {
-        let body = "";
-        topProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
-        sections.push({ header: `🔥 TOP PROPS (${th.topMin}%+ CONFIDENCE)`, body });
-      }
-
-      if (stealsProps.length > 0) {
-        let body = "";
-        stealsProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
-        sections.push({ header: `🤿 STEALS PROPS (Top ${stealsProps.length})`, body });
-      }
-
-      if (blocksProps.length > 0) {
-        let body = "";
-        blocksProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
-        sections.push({ header: `🛡️ BLOCKS PROPS (Top ${blocksProps.length})`, body });
-      }
-
-      if (otherProps.length > 0) {
-        let body = "";
-        otherProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
-        sections.push({ header: `📊 OTHER TOP PROPS (${th.otherMin}%+)`, body });
-      }
-
+      if (topProps.length > 0) { let body = ""; topProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); }); sections.push({ header: `🔥 TOP PROPS (${th.topMin}%+ CONFIDENCE)`, body }); }
+      if (stealsProps.length > 0) { let body = ""; stealsProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); }); sections.push({ header: `🤿 STEALS PROPS (Top ${stealsProps.length})`, body }); }
+      if (blocksProps.length > 0) { let body = ""; blocksProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); }); sections.push({ header: `🛡️ BLOCKS PROPS (Top ${blocksProps.length})`, body }); }
+      if (otherProps.length > 0) { let body = ""; otherProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); }); sections.push({ header: `📊 OTHER TOP PROPS (${th.otherMin}%+)`, body }); }
       if (gamePicks.length > 0) {
         let body = "";
-        gamePicks.forEach(p => {
-          const g = p.sbo_games;
-          if (!g) return;
-          const team = p.predicted_outcome === "home" ? g.home_team : g.away_team;
-          body += `${g.away_team} @ ${g.home_team}\nPick: ${team} ML | ${p.final_confidence}%\n\n`;
-        });
+        gamePicks.forEach(p => { const g = p.sbo_games; if (!g) return; const team = p.predicted_outcome === "home" ? g.home_team : g.away_team; body += `${g.away_team} @ ${g.home_team}\nPick: ${team} ML | ${p.final_confidence}%\n\n`; });
         sections.push({ header: "🏀 TOP GAME PICKS", body });
       }
 
       if (sections.length === 0) {
-        const dateLabel = new Date().toLocaleDateString("en-US", {
-          weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York",
-        });
-        setMessageSegments([
-          `🏆 CHINGWORLD PICKS 🏆\n📅 ${dateLabel}\n─────────────────────\n\nNo picks available yet for today.\n\nTo generate picks:\n1. Go to Tonight's Games → Load Games → Run AI\n2. Go to Props → Run Props Analysis\n3. Come back here and press Generate\n\n─────────────────────\n💡 Bet responsibly\nGood luck! 🎯`,
-        ]);
+        const dateLabel = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York" });
+        setMessageSegments([`🏆 CHINGWORLD PICKS 🏆\n📅 ${dateLabel}\n─────────────────────\n\nNo picks available yet for today.\n\nTo generate picks:\n1. Go to Tonight's Games → Load Games → Run AI\n2. Go to Props → Run Props Analysis\n3. Come back here and press Generate\n\n─────────────────────\n💡 Bet responsibly\nGood luck! 🎯`]);
         setPreviewIndex(0);
         setGenStatus("⚠️ No picks found — run analysis first");
         return;
@@ -237,11 +203,8 @@ export function ChingWorldPicksSMS() {
       const segs = buildSegments(sections);
       setMessageSegments(segs);
       setPreviewIndex(0);
-
       const totalPicks = topProps.length + stealsProps.length + blocksProps.length + otherProps.length + gamePicks.length;
-      setGenStatus(
-        `✅ Generated — ${totalPicks} picks | ${segs.length} message${segs.length > 1 ? "s" : ""} | ${segs.reduce((a, s) => a + s.length, 0)} chars total`
-      );
+      setGenStatus(`✅ Generated — ${totalPicks} picks | ${segs.length} message${segs.length > 1 ? "s" : ""} | ${segs.reduce((a, s) => a + s.length, 0)} chars total`);
     } catch (e: any) {
       setGenStatus(`❌ Failed: ${e.message}`);
     } finally {
@@ -260,11 +223,7 @@ export function ChingWorldPicksSMS() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success("Recipient added");
-      setNewName(""); setNewPhone(""); setNewNotes("");
-      queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] });
-    },
+    onSuccess: () => { toast.success("Recipient added"); setNewName(""); setNewPhone(""); setNewNotes(""); queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] }); },
     onError: (e: any) => toast.error(e.message),
   });
 
@@ -280,6 +239,36 @@ export function ChingWorldPicksSMS() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] }),
   });
 
+  const toggleAutoSend = useMutation({
+    mutationFn: async ({ id, autoSend }: { id: string; autoSend: boolean }) => {
+      await (supabase as any).from("sbo_sms_recipients").update({ auto_send: !autoSend }).eq("id", id);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] }),
+  });
+
+  // ── Run Automation Now ──
+  const runAutomationNow = async () => {
+    setRunningAutomation(true);
+    setAutomationProgress("🚀 Starting full pipeline...");
+    try {
+      const { data, error } = await supabase.functions.invoke("sbo-daily-automation", { body: {} });
+      if (error) throw error;
+      const stepsDone = data?.steps?.filter((s: any) => s.status === "success")?.length || 0;
+      const stepsTotal = data?.steps?.length || 0;
+      const errs = data?.errors?.length || 0;
+      setAutomationProgress(`✅ Complete — ${stepsDone}/${stepsTotal} steps succeeded${errs > 0 ? `, ${errs} error(s)` : ""}`);
+      toast.success(`Automation complete: ${stepsDone}/${stepsTotal} steps`);
+      queryClient.invalidateQueries({ queryKey: ["sbo-automation-log"] });
+      queryClient.invalidateQueries({ queryKey: ["sbo-sms-sends-log"] });
+      queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] });
+    } catch (e: any) {
+      setAutomationProgress(`❌ Failed: ${e.message}`);
+      toast.error("Automation failed: " + e.message);
+    } finally {
+      setRunningAutomation(false);
+    }
+  };
+
   // ── Send (multi-segment) ──
   const sendSMS = async (targetGroup: "all" | "vip" | "test") => {
     const targets = recipients.filter((r: any) => {
@@ -292,7 +281,6 @@ export function ChingWorldPicksSMS() {
 
     setSendingTo(targetGroup);
     let totalSent = 0, totalFailed = 0;
-
     try {
       for (let ri = 0; ri < targets.length; ri++) {
         const r = targets[ri] as any;
@@ -309,16 +297,10 @@ export function ChingWorldPicksSMS() {
         }
         if (ri < targets.length - 1) await new Promise(r => setTimeout(r, 500));
       }
-
       toast.success(`✅ ${totalSent} segments sent${totalFailed > 0 ? `, ${totalFailed} failed` : ""}`);
       queryClient.invalidateQueries({ queryKey: ["sbo-sms-sends-log"] });
       queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] });
-    } catch (e: any) {
-      toast.error("Send failed: " + e.message);
-    } finally {
-      setSendingTo(null);
-      setSendProgress("");
-    }
+    } catch (e: any) { toast.error("Send failed: " + e.message); } finally { setSendingTo(null); setSendProgress(""); }
   };
 
   const charCount = currentMessage.length;
@@ -326,6 +308,10 @@ export function ChingWorldPicksSMS() {
   const activeAll = recipients.filter((r: any) => r.active).length;
   const activeVIP = recipients.filter((r: any) => r.active && r.group_tag === "vip").length;
   const activeTest = recipients.filter((r: any) => r.active && r.group_tag === "test").length;
+  const autoSendCount = recipients.filter((r: any) => r.active && r.auto_send).length;
+
+  const lastRun = automationLogs[0] as any;
+  const lastRunSteps = lastRun?.steps || [];
 
   const ThresholdSelect = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
     <div className="flex items-center gap-2">
@@ -349,10 +335,101 @@ export function ChingWorldPicksSMS() {
         </CardContent>
       </Card>
 
+      {/* ⚙️ Automation Status */}
+      <Card className="border-accent/30">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2"><Settings className="h-4 w-4" /> ⚙️ Daily Automation</CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-[10px]">📬 {autoSendCount} auto-send recipients</Badge>
+              <Badge variant="default" className="text-[10px] bg-emerald-600">✅ Active — 10:00 AM EST daily</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Last Run Summary */}
+          {lastRun ? (
+            <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium">Last Run: {formatET(lastRun.run_at || lastRun.created_at)}</span>
+                <Badge variant={lastRun.status === "success" ? "default" : lastRun.status === "partial" ? "secondary" : "destructive"} className="text-[10px]">
+                  {lastRun.status === "success" ? "✅" : lastRun.status === "partial" ? "⚠️" : "❌"} {lastRun.status}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {lastRunSteps.map((step: any, i: number) => (
+                  <div key={i} className="text-[10px] flex items-center gap-1">
+                    {step.status === "success" ? <CheckCircle className="h-3 w-3 text-emerald-500" /> : <XCircle className="h-3 w-3 text-destructive" />}
+                    <span className="truncate">{step.name?.replace(/_/g, " ")}</span>
+                  </div>
+                ))}
+              </div>
+              {lastRunSteps.length > 0 && (
+                <div className="flex gap-3 text-[10px] text-muted-foreground flex-wrap">
+                  {lastRunSteps.map((step: any, i: number) => {
+                    const r = step.result || {};
+                    const val = Object.entries(r).map(([k, v]) => `${k.replace(/_/g, " ")}: ${v}`).join(", ");
+                    return val ? <span key={i}>{step.name?.split("_")[0]}: {val}</span> : null;
+                  })}
+                </div>
+              )}
+              {(lastRun.errors as any[])?.length > 0 && (
+                <div className="text-[10px] text-destructive">
+                  <AlertTriangle className="h-3 w-3 inline mr-1" />
+                  {(lastRun.errors as any[]).slice(0, 2).join(" | ")}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">No automation runs yet</p>
+          )}
+
+          <div className="flex gap-2">
+            <Button size="sm" onClick={runAutomationNow} disabled={runningAutomation} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+              {runningAutomation ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Running...</> : <><Play className="h-3 w-3 mr-1" /> ▶ Run Now</>}
+            </Button>
+            {automationProgress && <span className="text-xs text-muted-foreground self-center">{automationProgress}</span>}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Automation Log History */}
+      {automationLogs.length > 1 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2"><Clock className="h-4 w-4" /> 📋 Automation Log</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="h-40">
+              <div className="space-y-1">
+                {automationLogs.map((log: any) => {
+                  const steps = log.steps || [];
+                  const successSteps = steps.filter((s: any) => s.status === "success").length;
+                  const totalDuration = steps.reduce((a: number, s: any) => a + (s.duration_ms || 0), 0);
+                  return (
+                    <div key={log.id} className="flex items-center gap-3 text-[10px] p-2 rounded bg-muted/20 border border-border">
+                      <span className="font-mono text-muted-foreground w-28 shrink-0">{formatET(log.run_at || log.created_at)}</span>
+                      <Badge variant={log.status === "success" ? "default" : log.status === "partial" ? "secondary" : "destructive"} className="text-[9px]">
+                        {log.status === "success" ? "✅" : log.status === "partial" ? "⚠️" : "❌"} {log.status}
+                      </Badge>
+                      <span>{successSteps}/{steps.length} steps</span>
+                      <span className="text-muted-foreground">{(totalDuration / 1000).toFixed(0)}s</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Recipient Manager */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Recipient Manager</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Recipient Manager</CardTitle>
+            <span className="text-[10px] text-muted-foreground">📬 Auto-Send: {autoSendCount} of {recipients.length} will receive 10am text</span>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-12 gap-2 items-end">
@@ -383,7 +460,7 @@ export function ChingWorldPicksSMS() {
             </div>
           </div>
 
-          <ScrollArea className="h-40 border rounded-md">
+          <ScrollArea className="h-48 border rounded-md">
             {recipientsLoading ? (
               <div className="p-4 text-center text-xs text-muted-foreground">Loading...</div>
             ) : recipients.length === 0 ? (
@@ -392,7 +469,7 @@ export function ChingWorldPicksSMS() {
               <div className="p-2 space-y-1">
                 {recipients.map((r: any) => (
                   <div key={r.id} className={`flex items-center gap-2 p-1.5 rounded text-xs ${r.active ? "bg-secondary/30" : "bg-muted/20 opacity-60"}`}>
-                    <button onClick={() => toggleActive.mutate({ id: r.id, active: r.active })} className="text-muted-foreground hover:text-primary">
+                    <button onClick={() => toggleActive.mutate({ id: r.id, active: r.active })} className="text-muted-foreground hover:text-primary" title={r.active ? "Active — click to pause" : "Paused — click to activate"}>
                       {r.active ? <ToggleRight className="h-4 w-4 text-emerald-500" /> : <ToggleLeft className="h-4 w-4" />}
                     </button>
                     <User className="h-3 w-3 text-muted-foreground" />
@@ -402,9 +479,30 @@ export function ChingWorldPicksSMS() {
                     <Badge variant="outline" className="text-[9px] px-1 py-0">
                       {r.group_tag === "vip" ? "⭐ VIP" : r.group_tag === "test" ? "🧪 Test" : "All"}
                     </Badge>
+                    {/* Auto-Send Toggle */}
+                    <div className="flex items-center gap-1 ml-1" title={r.auto_send ? "Auto-send ON — receives 10am text" : "Manual only"}>
+                      <Switch
+                        checked={!!r.auto_send}
+                        onCheckedChange={() => toggleAutoSend.mutate({ id: r.id, autoSend: !!r.auto_send })}
+                        className="h-4 w-7 data-[state=checked]:bg-emerald-600"
+                      />
+                      <span className="text-[9px] text-muted-foreground">{r.auto_send ? "📬 Auto" : "Manual"}</span>
+                    </div>
+                    {r.last_sent_at && (
+                      <span className="text-[9px] text-muted-foreground ml-1">
+                        Last: {new Date(r.last_sent_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    )}
                     {r.total_sends > 0 && <span className="text-[9px] text-muted-foreground">{r.total_sends} sent</span>}
                     <div className="flex-1" />
-                    <button onClick={() => deleteRecipient.mutate(r.id)} className="text-destructive/60 hover:text-destructive">
+                    <button
+                      onClick={() => {
+                        if (confirm(`Remove ${r.name} from ChingWorld list? They will no longer receive any picks.`)) {
+                          deleteRecipient.mutate(r.id);
+                        }
+                      }}
+                      className="text-destructive/60 hover:text-destructive"
+                    >
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
@@ -422,6 +520,7 @@ export function ChingWorldPicksSMS() {
           <span>📤 All Active: <strong>{activeAll}</strong></span>
           <span>⭐ VIP: <strong>{activeVIP}</strong></span>
           <span>🧪 Test: <strong>{activeTest}</strong></span>
+          <span className="ml-auto">📬 Auto-Send: <strong className="text-emerald-500">{autoSendCount}</strong></span>
         </CardContent>
       </Card>
 
@@ -429,12 +528,8 @@ export function ChingWorldPicksSMS() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4" /> Pick Filters
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="text-xs">
-              {showFilters ? "Hide" : "Show"}
-            </Button>
+            <CardTitle className="text-sm flex items-center gap-2"><SlidersHorizontal className="h-4 w-4" /> Pick Filters</CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="text-xs">{showFilters ? "Hide" : "Show"}</Button>
           </div>
         </CardHeader>
         {showFilters && (
@@ -492,25 +587,14 @@ export function ChingWorldPicksSMS() {
         </CardHeader>
         <CardContent className="space-y-2">
           {isEditing ? (
-            <Textarea
-              value={currentMessage}
-              onChange={e => {
-                const updated = [...messageSegments];
-                updated[previewIndex] = e.target.value;
-                setMessageSegments(updated);
-              }}
-              className="font-mono text-xs min-h-[300px]"
-            />
+            <Textarea value={currentMessage} onChange={e => { const updated = [...messageSegments]; updated[previewIndex] = e.target.value; setMessageSegments(updated); }} className="font-mono text-xs min-h-[300px]" />
           ) : (
             <div className="border rounded-lg p-3 bg-muted/20 max-h-[400px] overflow-y-auto">
               <pre className="text-xs whitespace-pre-wrap font-mono text-foreground">{currentMessage || "No message generated yet"}</pre>
             </div>
           )}
           <div className="flex gap-4 text-[10px] text-muted-foreground">
-            <span>
-              Characters: <strong className={charCount > MAX_CHARS ? "text-destructive" : "text-emerald-500"}>{charCount}</strong> / {MAX_CHARS}
-              {charCount <= MAX_CHARS ? " ✅" : " ⚠️ over limit"}
-            </span>
+            <span>Characters: <strong className={charCount > MAX_CHARS ? "text-destructive" : "text-emerald-500"}>{charCount}</strong> / {MAX_CHARS} {charCount <= MAX_CHARS ? "✅" : "⚠️ over limit"}</span>
             <span>SMS segments: <strong>{smsSegs}</strong></span>
           </div>
         </CardContent>
@@ -551,6 +635,7 @@ export function ChingWorldPicksSMS() {
                     {s.status === "sent" ? "✅" : s.status === "partial" ? "⚠️" : "❌"} {s.status}
                   </Badge>
                   <span>{s.recipient_count} recipients</span>
+                  <Badge variant="outline" className="text-[9px]">{s.send_type === "auto" ? "🤖 Auto" : "👤 Manual"}</Badge>
                   <span className="text-muted-foreground truncate max-w-[200px]">{s.message_preview?.substring(0, 80)}...</span>
                 </div>
               ))}
