@@ -139,8 +139,7 @@ Deno.serve(async (req) => {
           prop_type,
           line,
           over_odds,
-          under_odds,
-          recommendation
+          under_odds
         )
       `)
       .order('final_confidence', { ascending: false })
