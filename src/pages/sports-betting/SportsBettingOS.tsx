@@ -443,7 +443,18 @@ function TonightGamesTab() {
         .order('confidence', { ascending: false });
 
       if (error) throw error;
-      setTonightState({ picks: data || [], errorMsg: '' });
+
+      // Deduplicate by label — keep highest confidence per unique label
+      const deduped: any[] = Object.values(
+        (data || []).reduce((acc: Record<string, any>, pick: any) => {
+          const key = pick.label;
+          if (!key) return acc;
+          if (!acc[key] || pick.confidence > acc[key].confidence) acc[key] = pick;
+          return acc;
+        }, {})
+      ).sort((a: any, b: any) => (b.confidence || 0) - (a.confidence || 0));
+
+      setTonightState({ picks: deduped, errorMsg: '' });
     } catch (e: any) {
       setTonightState({
         errorMsg: e?.message || 'Failed to load picks.',
