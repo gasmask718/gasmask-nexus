@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import { PredictionResult } from '@/components/sbo/PredictionResult';
 import { SyncDashboard } from '@/components/sbo/SyncDashboard';
 import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Settings, Bookmark, Shield } from 'lucide-react';
@@ -1066,13 +1067,18 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 
 function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
   const [props, setProps] = useState<any[]>([]);
-  const [filter, setFilter] = useState<'all' | 'strong' | 'elite'>('all');
   const [dateFilter, setDateFilter] = useState<string>('today');
   const [loadingProps, setLoadingProps] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
   const [runningAll, setRunningAll] = useState(false);
   const [allProgress, setAllProgress] = useState('');
   const [verifyingProps, setVerifyingProps] = useState(false);
+
+  // Smart filter state
+  const [selectedPropType, setSelectedPropType] = useState('all');
+  const [sortBy, setSortBy] = useState('confidence');
+  const [bestBetsOnly, setBestBetsOnly] = useState(false);
+  const [propTypeStats, setPropTypeStats] = useState<Record<string, { correct: number; incorrect: number; total: number; accuracy: number; avgConfCorrect: number; avgConfIncorrect: number }>>({});
 
   const getETDate = (offset = 0) => {
     const d = new Date();
@@ -1098,6 +1104,48 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   };
 
   useEffect(() => { loadProps(); }, [dateFilter]);
+  useEffect(() => { Promise.all([loadProps(), loadPropTypeStats()]); }, []);
+
+  const loadPropTypeStats = async () => {
+    try {
+      const { data } = await supabase
+        .from('sbo_results_verification')
+        .select('verdict, sbo_predictions!inner(prediction_type, prop_type, final_confidence, sbo_player_props(prop_type, player_name))')
+        .eq('sbo_predictions.prediction_type', 'player_prop')
+        .not('verdict', 'is', null);
+
+      const statsMap: Record<string, { correct: number; incorrect: number; total: number; accuracy: number; confCorrectSum: number; confCorrectCount: number; confIncorrectSum: number; confIncorrectCount: number; avgConfCorrect: number; avgConfIncorrect: number }> = {};
+
+      (data || []).forEach((row: any) => {
+        const pred = row.sbo_predictions;
+        const propType = pred?.prop_type || pred?.sbo_player_props?.prop_type || 'unknown';
+        if (!statsMap[propType]) {
+          statsMap[propType] = { correct: 0, incorrect: 0, total: 0, accuracy: 0, confCorrectSum: 0, confCorrectCount: 0, confIncorrectSum: 0, confIncorrectCount: 0, avgConfCorrect: 0, avgConfIncorrect: 0 };
+        }
+        const s = statsMap[propType];
+        s.total++;
+        if (row.verdict === 'correct') {
+          s.correct++;
+          s.confCorrectSum += (pred?.final_confidence || 0);
+          s.confCorrectCount++;
+        } else {
+          s.incorrect++;
+          s.confIncorrectSum += (pred?.final_confidence || 0);
+          s.confIncorrectCount++;
+        }
+      });
+
+      Object.values(statsMap).forEach((s: any) => {
+        s.accuracy = s.total > 0 ? (s.correct / s.total) * 100 : 0;
+        s.avgConfCorrect = s.confCorrectCount > 0 ? s.confCorrectSum / s.confCorrectCount : 0;
+        s.avgConfIncorrect = s.confIncorrectCount > 0 ? s.confIncorrectSum / s.confIncorrectCount : 0;
+      });
+
+      setPropTypeStats(statsMap);
+    } catch (e) {
+      console.error('Failed to load prop type stats:', e);
+    }
+  };
 
   const loadProps = async () => {
     setLoadingProps(true);
@@ -1110,7 +1158,6 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         .limit(300);
 
       if (bounds.date && dateFilter !== '7days') {
-        // Filter by game_date or fallback to created_at date
         query = query.or(`game_date.eq.${bounds.date},and(game_date.is.null,created_at.gte.${bounds.date}T00:00:00-04:00,created_at.lte.${bounds.date}T23:59:59-04:00)`);
       } else if (dateFilter === '7days') {
         query = query.or(`game_date.gte.${bounds.date},and(game_date.is.null,created_at.gte.${bounds.date}T00:00:00-04:00)`);
@@ -1151,15 +1198,13 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       });
       if (error) throw error;
       if ((data.props_verified || 0) > 0) {
-        toast.success(
-          `Props verified: ${data.props_correct}W - ${data.props_incorrect}L · ${data.props_accuracy}% accuracy`
-        );
+        toast.success(`Props verified: ${data.props_correct}W - ${data.props_incorrect}L · ${data.props_accuracy}% accuracy`);
       } else if (data.verified > 0) {
         toast.success(`${data.verified} total verified — ${data.accuracy}% accuracy`);
       } else {
         toast.info('No props to verify yet — games may not be final');
       }
-      await loadProps();
+      await Promise.all([loadProps(), loadPropTypeStats()]);
     } catch (e: any) {
       toast.error('Verification failed: ' + e.message);
     } finally {
@@ -1176,7 +1221,6 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         toast.info('All props already have predictions');
         return;
       }
-
       for (const prop of unanalyzed) {
         setAllProgress(`Analyzing ${analyzed + 1}/${unanalyzed.length} — ${prop.player_name}...`);
         try {
@@ -1188,7 +1232,6 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           console.error(`Failed for ${prop.player_name}:`, e);
         }
       }
-
       toast.success(`Props analysis saved — ${analyzed} props analyzed`);
       await loadProps();
     } catch (e: any) {
@@ -1205,35 +1248,16 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     let count = 0;
     try {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-
-      await supabase
-        .from('sbo_predictions')
-        .delete()
-        .eq('prediction_type', 'player_prop')
-        .gte('created_at', `${today}T00:00:00-04:00`);
-
-      await supabase
-        .from('sbo_saved_picks')
-        .delete()
-        .eq('pick_type', 'prop')
-        .gte('created_at', `${today}T00:00:00-04:00`);
-
+      await supabase.from('sbo_predictions').delete().eq('prediction_type', 'player_prop').gte('created_at', `${today}T00:00:00-04:00`);
+      await supabase.from('sbo_saved_picks').delete().eq('pick_type', 'prop').gte('created_at', `${today}T00:00:00-04:00`);
       toast.info('Old prop predictions cleared — rerunning with AI-determined OVER/UNDER...');
-
-      const { data: todayProps } = await supabase
-        .from('sbo_player_props')
-        .select('id, player_name')
-        .gte('created_at', `${today}T00:00:00-04:00`);
-
+      const { data: todayProps } = await supabase.from('sbo_player_props').select('id, player_name').gte('created_at', `${today}T00:00:00-04:00`);
       for (const prop of (todayProps || [])) {
         setAllProgress(`Reanalyzing ${count + 1}/${todayProps?.length}: ${prop.player_name}`);
-        await supabase.functions.invoke('sbo-run-predictions', {
-          body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null },
-        });
+        await supabase.functions.invoke('sbo-run-predictions', { body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null } });
         count++;
         await new Promise(r => setTimeout(r, 500));
       }
-
       toast.success(`${count} props reanalyzed with correct OVER/UNDER picks — all auto-saved`);
       await loadProps();
     } catch (e: any) {
@@ -1244,17 +1268,78 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     }
   };
 
-  const filtered = props.filter(p => {
-    if (filter === 'all') return true;
-    const pred = p.sbo_predictions?.[0];
-    if (filter === 'elite') return pred?.confidence_tier === 'elite';
-    if (filter === 'strong') return ['elite', 'strong'].includes(pred?.confidence_tier);
-    return true;
-  });
+  // Compute totals from propTypeStats
+  const totalStats = Object.values(propTypeStats).reduce(
+    (acc, s) => ({ correct: acc.correct + s.correct, incorrect: acc.incorrect + s.incorrect, total: acc.total + s.total }),
+    { correct: 0, incorrect: 0, total: 0 }
+  );
+  const overallAccuracy = totalStats.total > 0 ? (totalStats.correct / totalStats.total * 100) : 0;
+  const bestType = Object.entries(propTypeStats).sort(([, a], [, b]) => b.accuracy - a.accuracy)[0];
+  const worstType = Object.entries(propTypeStats).filter(([, s]) => s.total >= 3).sort(([, a], [, b]) => a.accuracy - b.accuracy)[0];
+
+  // Smart filtering
+  const filteredProps = props
+    .filter(p => {
+      if (selectedPropType !== 'all' && p.prop_type !== selectedPropType) return false;
+      if (bestBetsOnly) {
+        const pred = p.sbo_predictions?.[0];
+        const conf = pred?.final_confidence || 0;
+        const typeAcc = propTypeStats[p.prop_type]?.accuracy ?? 0;
+        if (conf < 70 || typeAcc < 65) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const predA = a.sbo_predictions?.[0];
+      const predB = b.sbo_predictions?.[0];
+      if (sortBy === 'confidence') return (predB?.final_confidence || 0) - (predA?.final_confidence || 0);
+      if (sortBy === 'accuracy') return (propTypeStats[b.prop_type]?.accuracy ?? 0) - (propTypeStats[a.prop_type]?.accuracy ?? 0);
+      if (sortBy === 'recent') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === 'name') return (a.player_name || '').localeCompare(b.player_name || '');
+      if (sortBy === 'over') return predA?.predicted_outcome === 'over' ? -1 : 1;
+      if (sortBy === 'under') return predA?.predicted_outcome === 'under' ? -1 : 1;
+      return 0;
+    });
+
+  const getAccuracyColor = (acc: number) => acc >= 75 ? 'text-green-500' : acc >= 60 ? 'text-yellow-500' : 'text-red-500';
+  const getConfColor = (c: number) => c >= 85 ? 'text-green-500' : c >= 70 ? 'text-blue-400' : c >= 55 ? 'text-yellow-500' : 'text-red-500';
+  const getConfBorder = (c: number) => c >= 85 ? 'border-l-green-500' : c >= 70 ? 'border-l-blue-400' : c >= 55 ? 'border-l-yellow-500' : 'border-l-red-500';
+
+  const propTypes = ['all', ...Object.keys(propTypeStats).sort()];
 
   return (
     <div className="space-y-4">
-      {/* Date Filter Pills */}
+      {/* ACCURACY SUMMARY ROW */}
+      {totalStats.total > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
+          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-foreground">{props.length}</div>
+            <div className="text-[10px] text-muted-foreground">Total Props</div>
+          </div>
+          <div className="bg-muted/30 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-foreground">{totalStats.total}</div>
+            <div className="text-[10px] text-muted-foreground">Verified</div>
+          </div>
+          <div className="bg-green-500/10 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-green-500">{totalStats.correct}W</div>
+            <div className="text-[10px] text-muted-foreground">- {totalStats.incorrect}L</div>
+          </div>
+          <div className="bg-primary/10 rounded-lg p-2.5 text-center">
+            <div className={`text-lg font-bold ${getAccuracyColor(overallAccuracy)}`}>{overallAccuracy.toFixed(1)}%</div>
+            <div className="text-[10px] text-muted-foreground">Overall</div>
+          </div>
+          <div className="bg-green-500/10 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-green-500">{bestType ? bestType[1].accuracy.toFixed(0) + '%' : '-'}</div>
+            <div className="text-[10px] text-muted-foreground truncate">Best: {bestType?.[0] || '-'}</div>
+          </div>
+          <div className="bg-red-500/10 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-red-500">{worstType ? worstType[1].accuracy.toFixed(0) + '%' : '-'}</div>
+            <div className="text-[10px] text-muted-foreground truncate">Worst: {worstType?.[0] || '-'}</div>
+          </div>
+        </div>
+      )}
+
+      {/* DATE FILTER PILLS */}
       <div className="space-y-1.5">
         <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Filter props by game date</p>
         <div className="flex gap-1.5 flex-wrap">
@@ -1265,70 +1350,78 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
             { value: '7days', label: '📆 Last 7 Days' },
             { value: 'all', label: '📚 All' },
           ].map(opt => (
-            <Button
-              key={opt.value}
-              variant={dateFilter === opt.value ? 'default' : 'outline'}
-              size="sm"
-              className="text-xs h-7 rounded-full"
-              onClick={() => setDateFilter(opt.value)}
-            >
+            <Button key={opt.value} variant={dateFilter === opt.value ? 'default' : 'outline'} size="sm" className="text-xs h-7 rounded-full" onClick={() => setDateFilter(opt.value)}>
               {opt.label}
             </Button>
           ))}
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Showing {filtered.length} props · {getDateBounds().label}
-          {loadingProps && ' · Loading...'}
-        </p>
       </div>
 
-      {/* Date Banner */}
-      <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
-        <span className="text-sm font-medium text-foreground">
-          📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </span>
-        <span className="text-[11px] text-muted-foreground">{filtered.length} props loaded</span>
+      {/* SMART PROP TYPE FILTER BAR WITH W-L + ACCURACY */}
+      <div className="space-y-1.5">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Filter by prop type — with historical accuracy</p>
+        <div className="flex gap-1.5 flex-wrap">
+          {propTypes.map(type => {
+            const s = type === 'all' ? totalStats : propTypeStats[type];
+            const acc = type === 'all' ? overallAccuracy : (s as any)?.accuracy ?? 0;
+            const w = type === 'all' ? totalStats.correct : (s as any)?.correct ?? 0;
+            const l = type === 'all' ? totalStats.incorrect : (s as any)?.incorrect ?? 0;
+            const isActive = selectedPropType === type;
+            return (
+              <button
+                key={type}
+                onClick={() => setSelectedPropType(type)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                  isActive
+                    ? 'bg-primary text-primary-foreground border-primary shadow-md'
+                    : 'bg-muted/30 text-foreground border-border hover:bg-muted/60'
+                }`}
+              >
+                <span className="capitalize">{type === 'all' ? 'All Props' : type}</span>
+                {(w > 0 || l > 0) && (
+                  <>
+                    <span className="text-muted-foreground">{w}W-{l}L</span>
+                    <span className={getAccuracyColor(acc)}>{acc.toFixed(1)}%</span>
+                  </>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* PRIMARY ACTION BUTTON — Run Props Analysis */}
-      <button
-        onClick={runAllProps}
-        disabled={runningAll || !!runningId || verifyingProps}
-        className={`w-full flex items-center justify-center gap-2 rounded-[10px] border-none text-sm font-medium transition-opacity py-3.5 ${
-          runningAll
-            ? 'bg-muted text-muted-foreground cursor-not-allowed'
-            : 'bg-foreground text-background cursor-pointer hover:opacity-90'
-        }`}
-      >
-        {runningAll
-          ? <><Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" /> {allProgress || 'Running...'}</>
-          : '📊 Run Props Analysis — All Tonight\'s Players'
-        }
-      </button>
+      {/* SORT + BEST BETS TOGGLE */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-48 h-8 text-xs">
+            <SelectValue placeholder="Sort by..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="confidence">Highest Confidence</SelectItem>
+            <SelectItem value="accuracy">Highest Accuracy Type</SelectItem>
+            <SelectItem value="recent">Most Recent</SelectItem>
+            <SelectItem value="name">Player Name A-Z</SelectItem>
+            <SelectItem value="over">OVER picks only</SelectItem>
+            <SelectItem value="under">UNDER picks only</SelectItem>
+          </SelectContent>
+        </Select>
 
+        <div className="flex items-center gap-2">
+          <Switch checked={bestBetsOnly} onCheckedChange={setBestBetsOnly} />
+          <span className="text-xs font-medium text-foreground">⭐ Best Bets Only</span>
+          <span className="text-[10px] text-muted-foreground">(70%+ conf & 65%+ type acc)</span>
+        </div>
+
+        <Badge variant="secondary" className="text-xs ml-auto">{filteredProps.length} props</Badge>
+      </div>
+
+      {/* ACTION BUTTONS */}
       <div className="flex items-center gap-2 flex-wrap">
-        {(['all', 'strong', 'elite'] as const).map(f => (
-          <Button
-            key={f}
-            variant={filter === f ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter(f)}
-          >
-            {f === 'elite' ? '⭐ Elite 85%+' : f === 'strong' ? '💪 Strong 70%+' : 'All Props'}
-          </Button>
-        ))}
-        <Badge variant="secondary" className="text-xs">{filtered.length} props</Badge>
-        <Button onClick={runAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm" className="ml-auto">
-          {runningAll
-            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {allProgress || 'Running...'}</>
-            : <>📊 Run Props Analysis</>
-          }
+        <Button onClick={runAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm">
+          {runningAll ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {allProgress || 'Running...'}</> : <>📊 Run Props Analysis</>}
         </Button>
         <Button onClick={verifyPropResults} disabled={runningAll || !!runningId || verifyingProps} size="sm" variant="outline">
-          {verifyingProps
-            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
-            : <>🔍 Verify Results</>
-          }
+          {verifyingProps ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</> : <>🔍 Verify Results</>}
         </Button>
         <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm" variant="destructive">
           🔄 Reanalyze All Props
@@ -1344,126 +1437,118 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         </Alert>
       )}
 
-      {!filtered.length ? (
+      {/* PROPS LIST */}
+      {!filteredProps.length ? (
         <div className="text-center py-12 border border-dashed rounded-lg border-border">
-          <p className="text-muted-foreground font-medium">No props yet.</p>
-          <p className="text-xs text-muted-foreground mt-1">Use the VA Entry tab to add tonight's PrizePicks props.</p>
+          <p className="text-muted-foreground font-medium">
+            {bestBetsOnly ? 'No best bets match current filters.' : 'No props found.'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {bestBetsOnly ? 'Try disabling Best Bets Only filter.' : 'Use the VA Entry tab to add tonight\'s PrizePicks props.'}
+          </p>
         </div>
       ) : (
-        filtered.map(prop => {
+        filteredProps.map(prop => {
           const existingPred = prop.sbo_predictions?.[0];
           const game = prop.sbo_games;
           const isRunning = runningId === prop.id;
+          const conf = existingPred?.final_confidence || 0;
+          const typeAcc = propTypeStats[prop.prop_type]?.accuracy;
 
           return (
-            <Card key={prop.id}>
-              <CardContent className="p-4">
-                {/* Game date badge + matchup */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                    📅 {prop.game_date
-                      ? new Date(prop.game_date + 'T12:00:00').toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
-                      : game?.game_date
-                      ? new Date(game.game_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
-                      : new Date(prop.created_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
-                    }
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {game?.away_team} @ {game?.home_team}
-                  </span>
-                </div>
-                {existingPred ? (
-                  <span className="text-[10px] text-muted-foreground">🧠 Analyzed: {new Date(existingPred.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                ) : (
-                  <span className="text-[10px] text-amber-500">⏳ Not yet analyzed</span>
-                )}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    {/* Player image */}
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
-                      {prop.player_image_url ? (
-                        <img
-                          src={prop.player_image_url}
-                          alt={prop.player_name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(prop.player_name || '')}&background=1a1a1a&color=ffffff&size=128`;
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
-                          {prop.player_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-bold text-foreground">{prop.player_name}</p>
-                      <p className="text-xs text-muted-foreground">{prop.team} · {game?.away_team} @ {game?.home_team}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-foreground">{prop.prop_type} {prop.line}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">
-                      O: {prop.over_odds > 0 ? '+' : ''}{prop.over_odds} / U: {prop.under_odds > 0 ? '+' : ''}{prop.under_odds}
-                    </p>
-                  </div>
-                </div>
+            <div
+              key={prop.id}
+              className={`rounded-lg border-l-4 bg-[hsl(var(--muted))]/20 p-4 ${existingPred ? getConfBorder(conf) : 'border-l-border'}`}
+            >
+              {/* Game date badge + matchup */}
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                  📅 {prop.game_date
+                    ? new Date(prop.game_date + 'T12:00:00').toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
+                    : game?.game_date
+                    ? new Date(game.game_date).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
+                    : new Date(prop.created_at).toLocaleDateString('en-US', { timeZone: 'America/New_York', weekday: 'short', month: 'short', day: 'numeric' })
+                  }
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {game?.away_team} @ {game?.home_team}
+                </span>
+              </div>
 
-                {!existingPred ? (
-                  <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop)} disabled={isRunning}>
-                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} Analyze (AI picks OVER/UNDER)
-                    </Button>
-                  </div>
-                ) : (
-                  <>
-                    <PredictionResult prediction={existingPred} />
-                    {/* Verification result display */}
-                    {prop.verified && prop.verdict && (
-                      <div className={`mt-2 p-2.5 rounded-lg text-xs ${
-                        prop.verdict === 'correct'
-                          ? 'bg-green-500/10 text-green-600 border border-green-500/20'
-                          : prop.verdict === 'incorrect'
-                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                          : 'bg-muted text-muted-foreground border border-border'
-                      }`}>
-                        <div className="font-semibold mb-0.5">
-                          {prop.verdict === 'correct' ? '✅ CORRECT' :
-                           prop.verdict === 'incorrect' ? '❌ INCORRECT' :
-                           '➖ PUSH'}
-                        </div>
-                        <div className="text-[11px] opacity-80">
-                          Actual: {prop.actual_value} {prop.prop_type}
-                          {' · '}Line: {prop.line}
-                          {' · '}Pick: {existingPred.predicted_outcome?.toUpperCase()}
-                          {' · '}Result: {prop.actual_value > prop.line ? 'OVER' : prop.actual_value < prop.line ? 'UNDER' : 'PUSH'}
-                        </div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  {/* Player image */}
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex-shrink-0">
+                    {prop.player_image_url ? (
+                      <img src={prop.player_image_url} alt={prop.player_name} className="w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).src = `https://ui-avatars.com/api/?name=${encodeURIComponent(prop.player_name || '')}&background=1a1a1a&color=ffffff&size=128`; }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xs font-bold text-muted-foreground">
+                        {prop.player_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                       </div>
                     )}
-                    {!prop.verified && existingPred && (
-                      <p className="text-[11px] text-muted-foreground mt-1.5">⏳ Pending verification</p>
-                    )}
-                    <div className="flex gap-2 mt-2 items-center">
-                      <span className="text-xs text-green-600 flex items-center gap-1">
-                        <Check className="h-3 w-3" /> Auto-saved to My Bets
-                      </span>
-                      {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1 text-xs"
-                          onClick={() => onAddToParlay(existingPred,
-                            existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds
-                          )}
-                        >
-                          + Add to Parlay
-                        </Button>
-                      )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-foreground">{prop.player_name}</p>
+                    <p className="text-xs text-muted-foreground">{prop.team} · {game?.away_team} @ {game?.home_team}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-foreground">{prop.prop_type} {existingPred?.predicted_outcome?.toUpperCase() || ''} {prop.line}</p>
+                  {existingPred && (
+                    <div className="flex items-center justify-end gap-2 mt-0.5">
+                      <span className={`text-xl font-black ${getConfColor(conf)}`}>{conf}%</span>
+                      <Badge variant="outline" className="text-[10px]">{existingPred.confidence_tier}</Badge>
                     </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                  <p className="text-[10px] text-muted-foreground font-mono">
+                    O: {prop.over_odds > 0 ? '+' : ''}{prop.over_odds} / U: {prop.under_odds > 0 ? '+' : ''}{prop.under_odds}
+                  </p>
+                  {typeAcc !== undefined && (
+                    <p className={`text-[10px] mt-0.5 ${getAccuracyColor(typeAcc)}`}>
+                      {prop.prop_type} props: {typeAcc.toFixed(1)}% historically
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Verification result */}
+              {prop.verified && prop.verdict && (
+                <div className={`mt-2 p-2 rounded-lg text-xs ${
+                  prop.verdict === 'correct' ? 'bg-green-500/10 text-green-600 border border-green-500/20' :
+                  prop.verdict === 'incorrect' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
+                  'bg-muted text-muted-foreground border border-border'
+                }`}>
+                  <span className="font-semibold">{prop.verdict === 'correct' ? '✅ CORRECT' : prop.verdict === 'incorrect' ? '❌ INCORRECT' : '➖ PUSH'}</span>
+                  <span className="text-[11px] opacity-80 ml-2">
+                    Actual: {prop.actual_value} · Line: {prop.line} · Pick: {existingPred?.predicted_outcome?.toUpperCase()}
+                  </span>
+                </div>
+              )}
+              {!prop.verified && existingPred && <p className="text-[11px] text-muted-foreground mt-1.5">⏳ Pending verification</p>}
+
+              {!existingPred ? (
+                <div className="flex gap-2 mt-3">
+                  <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop)} disabled={isRunning}>
+                    {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} Analyze
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2 mt-2 items-center">
+                  <span className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" /> Auto-saved
+                  </span>
+                  {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
+                    <Button variant="secondary" size="sm" className="flex-1 text-xs"
+                      onClick={() => onAddToParlay(existingPred, existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds)}
+                    >
+                      + Add to Parlay
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           );
         })
       )}
