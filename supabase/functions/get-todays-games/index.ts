@@ -60,12 +60,12 @@ serve(async (req) => {
     }
 
     // Log fetch attempt
-    await supabase.from('api_fetch_logs').insert({
+    try { await supabase.from('api_fetch_logs').insert({
       source: 'odds_api',
       status_code: oddsStatus,
       error_message: oddsError,
       games_returned: oddsGames.length,
-    }).catch(() => {});
+    }); } catch {}
   } catch (e) {
     oddsError = e instanceof Error ? e.message : 'Odds API fetch failed';
     await supabase.from('api_fetch_logs').insert({
