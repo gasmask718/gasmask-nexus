@@ -244,6 +244,7 @@ function YesterdayGameCard({ game }: { game: any }) {
 // ═══════════════════════════════════════════════════════════════
 
 function TonightGamesTab() {
+  const [subTab, setSubTab] = useState<'today' | 'yesterday'>('today');
   const [state, setState] = useState({
     games: [] as any[],
     picks: [] as any[],
@@ -253,6 +254,13 @@ function TonightGamesTab() {
     statusMsg: 'Not yet fetched today.',
     errorMsg: '',
     lastSynced: null as string | null,
+  });
+  const [yesterdayState, setYesterdayState] = useState({
+    games: [] as any[],
+    predictions: [] as any[],
+    loading: false,
+    verifying: false,
+    errorMsg: '',
   });
 
   const setTonightState = (patch: Partial<typeof state>) => {
