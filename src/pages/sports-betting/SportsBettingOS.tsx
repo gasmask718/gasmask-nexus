@@ -1259,7 +1259,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                   </p>
                   {typeAcc !== undefined && (
                     <p className={`text-[10px] mt-0.5 ${getAccuracyColor(typeAcc)}`}>
-                      {prop.prop_type} props: {typeAcc.toFixed(1)}% historically
+                      {normType} props: {typeAcc.toFixed(1)}% historically
                     </p>
                   )}
                 </div>
