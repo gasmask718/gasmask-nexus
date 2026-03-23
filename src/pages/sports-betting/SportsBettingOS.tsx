@@ -1865,17 +1865,46 @@ function ParlayBuilderTab() {
     if (selectedLegs.length < 2) { toast.error('Add at least 2 legs'); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from('sbo_parlays').insert({
+      // Calculate combined american odds
+      const toDecOdds = (a: number) => a > 0 ? (a / 100) + 1 : (100 / Math.abs(a)) + 1;
+      const combinedDec = selectedLegs.reduce((m, l) => m * toDecOdds(l.odds), 1);
+      const combinedAmerican = combinedDec >= 2 ? Math.round((combinedDec - 1) * 100) : Math.round(-100 / (combinedDec - 1));
+      const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+      const { data: inserted, error } = await (supabase as any).from('sbo_parlays').insert({
         name: parlayName || `${selectedLegs.length}-Leg Parlay`,
         legs: selectedLegs as any,
         total_legs: selectedLegs.length,
-        suggested_stake: stake,
+        suggested_stake: stake, 
+        stake: stake,
+        odds: combinedAmerican,
+        potential_payout: potentialPayout,
+        parlay_date: todayEST,
         combined_confidence: combinedProb,
         expected_value: potentialPayout - stake,
         status: 'pending',
-      });
+      }).select().single();
       if (error) throw error;
-      toast.success('Parlay saved!');
+
+      // Also save individual legs to sbo_parlay_legs
+      if (inserted?.id) {
+        const legRows = selectedLegs.map(leg => ({
+          parlay_id: inserted.id,
+          prediction_id: leg.prediction_id || null,
+          leg_type: leg.type || (leg.label?.includes('ML') ? 'moneyline' : 'prop'),
+          label: leg.label,
+          odds: leg.odds,
+          pick: leg.pick || null,
+          confidence: leg.confidence,
+          result: 'pending',
+        }));
+        await (supabase as any).from('sbo_parlay_legs').insert(legRows);
+      }
+
+      toast.success(`Parlay saved! Combined odds: ${combinedAmerican > 0 ? '+' : ''}${combinedAmerican}`);
+      setSelectedLegs([]);
+      setParlayName('');
+      loadSavedParlays();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
