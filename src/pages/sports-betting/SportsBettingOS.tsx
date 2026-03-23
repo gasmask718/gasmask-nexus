@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
 import ParlayResultsSection from '@/components/sbo/ParlayResultsSection';
+import HistoryView from '@/components/sbo/HistoryView';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
@@ -35,11 +36,6 @@ const getETDayBounds = (date: Date) => {
 };
 
 const getTodayETBounds = () => getETDayBounds(new Date());
-const getYesterdayETBounds = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return getETDayBounds(d);
-};
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
@@ -116,136 +112,9 @@ function SavePickButton({
 // TONIGHT'S GAMES TAB
 // ═══════════════════════════════════════════════════════════════
 
-// ═══════════════════════════════════════════════════════════════
-// YESTERDAY GAME CARD — Shows result verdict
-// ═══════════════════════════════════════════════════════════════
-
-function YesterdayGameCard({ game }: { game: any }) {
-  const prediction = game.sbo_predictions?.[0];
-  const verification = prediction?.sbo_results_verification?.[0] ?? game.sbo_results_verification?.[0];
-  const homeScore = game.home_score ?? game.score_home;
-  const awayScore = game.away_score ?? game.score_away;
-  const hasResult = homeScore !== null && awayScore !== null;
-
-  const homeWon = hasResult && homeScore > awayScore;
-  const wasCorrect = verification?.verdict === 'correct';
-  const wasIncorrect = verification?.verdict === 'incorrect';
-
-  return (
-    <Card className={`${wasCorrect ? 'border-emerald-500/40' : wasIncorrect ? 'border-destructive/40' : ''}`}>
-      <CardContent className="p-4">
-        {/* Date and verdict badge */}
-        <div className="flex justify-between items-center mb-2 text-[11px] text-muted-foreground">
-          <span>
-            {new Date(game.game_date).toLocaleDateString('en-US', {
-              timeZone: 'America/New_York',
-              weekday: 'short', month: 'short', day: 'numeric'
-            })}
-          </span>
-          <Badge
-            variant="outline"
-            className={`text-[10px] ${
-              wasCorrect ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' :
-              wasIncorrect ? 'bg-destructive/10 text-destructive border-destructive/30' :
-              ''
-            }`}
-          >
-            {wasCorrect ? '✅ CORRECT' : wasIncorrect ? '❌ INCORRECT' : '⏳ Pending'}
-          </Badge>
-        </div>
-
-        {/* Teams and final score */}
-        <div className="grid grid-cols-3 items-center gap-2 mb-3">
-          <div className="text-center">
-            <p className={`font-bold text-sm ${!homeWon && hasResult ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {game.away_team}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Away</p>
-            {hasResult && (
-              <p className={`text-2xl font-bold mt-1 ${!homeWon ? 'text-foreground' : 'text-muted-foreground'}`}>
-                {awayScore}
-              </p>
-            )}
-          </div>
-          <div className="text-center text-xs text-muted-foreground">
-            {hasResult ? 'FINAL' : 'vs'}
-          </div>
-          <div className="text-center">
-            <p className={`font-bold text-sm ${homeWon ? 'text-foreground' : 'text-muted-foreground'}`}>
-              {game.home_team}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Home</p>
-            {hasResult && (
-              <p className={`text-2xl font-bold mt-1 ${homeWon ? 'text-foreground' : 'text-muted-foreground'}`}>
-                {homeScore}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Our prediction vs result */}
-        {prediction && (
-          <div className="rounded-lg bg-muted/30 p-3 text-xs space-y-1.5">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Our prediction</span>
-              <span className="font-medium">
-                {prediction.predicted_outcome === 'home' ? game.home_team : game.away_team} ML
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Confidence</span>
-              <span className="font-medium">
-                {prediction.final_confidence}% — {prediction.confidence_tier?.toUpperCase()}
-              </span>
-            </div>
-            {hasResult && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Actual winner</span>
-                  <span className="font-medium text-emerald-500">
-                    {homeWon ? game.home_team : game.away_team} won
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Final score</span>
-                  <span className="font-medium">
-                    {game.away_team} {awayScore} — {game.home_team} {homeScore}
-                  </span>
-                </div>
-              </>
-            )}
-            {/* Verdict banner */}
-            {verification && (
-              <div className={`mt-2 p-2 rounded-md text-center font-medium text-[12px] ${
-                wasCorrect
-                  ? 'bg-emerald-500/10 text-emerald-500'
-                  : 'bg-destructive/10 text-destructive'
-              }`}>
-                {wasCorrect
-                  ? `✅ CORRECT — We picked ${prediction.predicted_outcome === 'home' ? game.home_team : game.away_team}`
-                  : `❌ INCORRECT — We picked ${prediction.predicted_outcome === 'home' ? game.home_team : game.away_team} but ${homeWon ? game.home_team : game.away_team} won`
-                }
-              </div>
-            )}
-          </div>
-        )}
-
-        {!prediction && (
-          <p className="text-xs text-muted-foreground text-center py-2">
-            No prediction was made for this game
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TONIGHT'S GAMES TAB — with Today/Yesterday sub-tabs
-// ═══════════════════════════════════════════════════════════════
 
 function TonightGamesTab() {
-  const [subTab, setSubTab] = useState<'today' | 'yesterday'>('today');
+  const [subTab, setSubTab] = useState<'today' | 'history'>('today');
   const [state, setState] = useState({
     games: [] as any[],
     picks: [] as any[],
@@ -255,13 +124,6 @@ function TonightGamesTab() {
     statusMsg: 'Not yet fetched today.',
     errorMsg: '',
     lastSynced: null as string | null,
-  });
-  const [yesterdayState, setYesterdayState] = useState({
-    games: [] as any[],
-    predictions: [] as any[],
-    loading: false,
-    verifying: false,
-    errorMsg: '',
   });
 
   const setTonightState = (patch: Partial<typeof state>) => {
@@ -526,59 +388,6 @@ function TonightGamesTab() {
     }
   };
 
-  // ── Yesterday functions ──
-  const loadYesterday = async () => {
-    setYesterdayState((p) => ({ ...p, loading: true, errorMsg: '' }));
-    try {
-      const { start, end } = getYesterdayETBounds();
-      const { data: games, error: gErr } = await (supabase as any)
-        .from('sbo_games')
-        .select('*, sbo_predictions(*), sbo_results_verification(*)')
-        .gte('game_date', start)
-        .lt('game_date', end);
-      if (gErr) throw gErr;
-
-      const yesterdayEST = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-      const { data: picks } = await (supabase as any)
-        .from('sbo_saved_picks')
-        .select('*')
-        .eq('pick_date', yesterdayEST)
-        .eq('pick_type', 'game')
-        .order('confidence', { ascending: false });
-
-      setYesterdayState((p) => ({
-        ...p,
-        games: games || [],
-        predictions: picks || [],
-        loading: false,
-      }));
-    } catch (e: any) {
-      setYesterdayState((p) => ({ ...p, loading: false, errorMsg: e?.message || 'Failed to load yesterday.' }));
-    }
-  };
-
-  const verifyYesterday = async () => {
-    setYesterdayState((p) => ({ ...p, verifying: true }));
-    try {
-      const { data, error } = await supabase.functions.invoke('sbo-verify-results');
-      if (error) throw error;
-      toast.success(data?.message || 'Verification complete');
-      await loadYesterday();
-    } catch (e: any) {
-      toast.error(e?.message || 'Verification failed');
-    } finally {
-      setYesterdayState((p) => ({ ...p, verifying: false }));
-    }
-  };
-
-  useEffect(() => {
-    loadGames();
-    loadPicks();
-  }, []);
-
-  useEffect(() => {
-    if (subTab === 'yesterday') loadYesterday();
-  }, [subTab]);
 
   const dateTitle = new Date().toLocaleDateString('en-US', {
     timeZone: 'America/New_York',
@@ -587,12 +396,6 @@ function TonightGamesTab() {
     day: 'numeric',
   });
 
-  const yesterdayTitle = new Date(Date.now() - 86400000).toLocaleDateString('en-US', {
-    timeZone: 'America/New_York',
-    weekday: 'short',
-    month: 'long',
-    day: 'numeric',
-  });
 
   const confidenceColor = (confidence: number) => {
     if (confidence >= 85) return 'text-emerald-500 border-emerald-500/40';
@@ -608,11 +411,6 @@ function TonightGamesTab() {
     return 'WEAK';
   };
 
-  // Yesterday stats
-  const yWon = yesterdayState.predictions.filter((p: any) => p.result === 'won').length;
-  const yLost = yesterdayState.predictions.filter((p: any) => p.result === 'lost').length;
-  const yTotal = yWon + yLost;
-  const yAccuracy = yTotal > 0 ? Math.round((yWon / yTotal) * 100) : 0;
 
   return (
     <div className="space-y-4">
@@ -624,10 +422,10 @@ function TonightGamesTab() {
           onClick={() => setSubTab('today')}
         >📅 Today</Button>
         <Button
-          variant={subTab === 'yesterday' ? 'default' : 'outline'}
+          variant={subTab === 'history' ? 'default' : 'outline'}
           size="sm"
-          onClick={() => setSubTab('yesterday')}
-        >⏪ Yesterday</Button>
+          onClick={() => setSubTab('history')}
+        >📅 History</Button>
       </div>
 
       {subTab === 'today' && (
@@ -737,121 +535,7 @@ function TonightGamesTab() {
         </Card>
       )}
 
-      {subTab === 'yesterday' && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">⏪ Yesterday&apos;s Results — {yesterdayTitle}</CardTitle>
-              <Button size="sm" onClick={verifyYesterday} disabled={yesterdayState.verifying}>
-                {yesterdayState.verifying
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Verifying...</>
-                  : '⚡ Backfill + Verify'}
-              </Button>
-            </div>
-
-            {/* Summary bar */}
-            <div className="flex flex-wrap gap-3 mt-2 text-xs">
-              <Badge variant="outline" className="text-emerald-500 border-emerald-500/40">✅ {yWon}W</Badge>
-              <Badge variant="outline" className="text-destructive border-destructive/40">❌ {yLost}L</Badge>
-              <Badge variant="outline">{yTotal > 0 ? `${yAccuracy}% accuracy` : 'No settled picks'}</Badge>
-              <Badge variant="outline">{yesterdayState.games.length} games</Badge>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-3">
-            {yesterdayState.loading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading yesterday&apos;s results...
-              </div>
-            )}
-
-            {yesterdayState.errorMsg && (
-              <Alert variant="destructive">
-                <AlertDescription className="text-sm">{yesterdayState.errorMsg}</AlertDescription>
-              </Alert>
-            )}
-
-            {!yesterdayState.loading && yesterdayState.predictions.length === 0 && yesterdayState.games.length === 0 && (
-              <div className="text-center py-10 border border-dashed rounded-lg border-border">
-                <p className="text-sm text-muted-foreground">No games or predictions found for yesterday.</p>
-              </div>
-            )}
-
-            {yesterdayState.games.map((game: any) => {
-              const pred = game.sbo_predictions?.[0];
-              const verification = game.sbo_results_verification?.[0];
-              const verdict = verification?.verdict || 'pending';
-              const homeScore = verification?.home_score;
-              const awayScore = verification?.away_score;
-
-              return (
-                <Card key={game.id} className={`border-l-4 ${
-                  verdict === 'correct' ? 'border-emerald-500' :
-                  verdict === 'incorrect' ? 'border-destructive' : 'border-border'
-                }`}>
-                  <CardContent className="p-4 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-semibold text-sm text-foreground">
-                          {game.away_team} @ {game.home_team}
-                        </p>
-                        {homeScore != null && awayScore != null && (
-                          <p className="text-xs font-medium mt-1">
-                            Final: {awayScore} - {homeScore}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant="outline" className={
-                        verdict === 'correct' ? 'text-emerald-500 border-emerald-500/40' :
-                        verdict === 'incorrect' ? 'text-destructive border-destructive/40' :
-                        'text-muted-foreground'
-                      }>
-                        {verdict.toUpperCase()}
-                      </Badge>
-                    </div>
-
-                    {pred && (
-                      <div className="text-xs text-muted-foreground border-t border-border/60 pt-2">
-                        AI predicted: <span className="font-medium text-foreground">{pred.predicted_outcome === 'home' ? game.home_team : game.away_team}</span>
-                        {' '}at {pred.final_confidence || pred.confidence_score || '?'}% confidence
-                        {pred.confidence_tier && (
-                          <Badge variant="outline" className="ml-2 text-[10px]">{pred.confidence_tier?.toUpperCase()}</Badge>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-
-            {/* Also show picks not matched to games */}
-            {yesterdayState.predictions.filter((p: any) => p.result && p.result !== 'pending').length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-sm font-semibold mb-2">📋 Settled Picks</h4>
-                <div className="space-y-2">
-                  {yesterdayState.predictions.filter((p: any) => p.result && p.result !== 'pending').map((pick: any) => {
-                    const confidence = Number(pick.confidence || 0);
-                    const tone = confidenceColor(confidence);
-                    return (
-                      <div key={pick.id} className={`rounded-lg border bg-card px-4 py-3 border-l-4 ${
-                        pick.result === 'won' ? 'border-emerald-500' : 'border-destructive'
-                      }`}>
-                        <div className="flex items-start justify-between gap-3">
-                          <p className="font-semibold text-foreground text-sm">{pick.label}</p>
-                          <Badge variant="outline" className={pick.result === 'won' ? 'text-emerald-500 border-emerald-500/40' : 'text-destructive border-destructive/40'}>
-                            {pick.result.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">{confidence}% — {confidenceTier(confidence)}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {subTab === 'history' && <HistoryView />}
     </div>
   );
 }
