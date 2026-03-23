@@ -1040,20 +1040,20 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
             <div className="text-lg font-bold text-foreground">{totalStats.total}</div>
             <div className="text-[10px] text-muted-foreground">Verified</div>
           </div>
-          <div className="bg-green-500/10 rounded-lg p-2.5 text-center">
-            <div className="text-lg font-bold text-green-500">{totalStats.correct}W</div>
+          <div className="bg-emerald-500/10 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-emerald-500">{totalStats.correct}W</div>
             <div className="text-[10px] text-muted-foreground">- {totalStats.incorrect}L</div>
           </div>
           <div className="bg-primary/10 rounded-lg p-2.5 text-center">
             <div className={`text-lg font-bold ${getAccuracyColor(overallAccuracy)}`}>{overallAccuracy.toFixed(1)}%</div>
             <div className="text-[10px] text-muted-foreground">Overall</div>
           </div>
-          <div className="bg-green-500/10 rounded-lg p-2.5 text-center">
-            <div className="text-lg font-bold text-green-500">{bestType ? bestType[1].accuracy.toFixed(0) + '%' : '-'}</div>
+          <div className="bg-emerald-500/10 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-emerald-500">{bestType ? bestType[1].accuracy.toFixed(0) + '%' : '-'}</div>
             <div className="text-[10px] text-muted-foreground truncate">Best: {bestType?.[0] || '-'}</div>
           </div>
-          <div className="bg-red-500/10 rounded-lg p-2.5 text-center">
-            <div className="text-lg font-bold text-red-500">{worstType ? worstType[1].accuracy.toFixed(0) + '%' : '-'}</div>
+          <div className="bg-destructive/10 rounded-lg p-2.5 text-center">
+            <div className="text-lg font-bold text-destructive">{worstType ? worstType[1].accuracy.toFixed(0) + '%' : '-'}</div>
             <div className="text-[10px] text-muted-foreground truncate">Worst: {worstType?.[0] || '-'}</div>
           </div>
         </div>
