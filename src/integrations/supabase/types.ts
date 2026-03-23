@@ -58805,6 +58805,69 @@ export type Database = {
           },
         ]
       }
+      sbo_parlay_builder: {
+        Row: {
+          ai_analysis: string | null
+          ai_verdict: string | null
+          combined_odds_american: string | null
+          combined_odds_decimal: number | null
+          confidence_score: number | null
+          correlation_risk: string | null
+          created_at: string | null
+          ev_percentage: number | null
+          id: string
+          leg_count: number | null
+          legs: Json | null
+          parlay_name: string | null
+          potential_payout: number | null
+          profit_if_win: number | null
+          result: string | null
+          stake: number | null
+          variation_number: number | null
+          win_probability: number | null
+        }
+        Insert: {
+          ai_analysis?: string | null
+          ai_verdict?: string | null
+          combined_odds_american?: string | null
+          combined_odds_decimal?: number | null
+          confidence_score?: number | null
+          correlation_risk?: string | null
+          created_at?: string | null
+          ev_percentage?: number | null
+          id?: string
+          leg_count?: number | null
+          legs?: Json | null
+          parlay_name?: string | null
+          potential_payout?: number | null
+          profit_if_win?: number | null
+          result?: string | null
+          stake?: number | null
+          variation_number?: number | null
+          win_probability?: number | null
+        }
+        Update: {
+          ai_analysis?: string | null
+          ai_verdict?: string | null
+          combined_odds_american?: string | null
+          combined_odds_decimal?: number | null
+          confidence_score?: number | null
+          correlation_risk?: string | null
+          created_at?: string | null
+          ev_percentage?: number | null
+          id?: string
+          leg_count?: number | null
+          legs?: Json | null
+          parlay_name?: string | null
+          potential_payout?: number | null
+          profit_if_win?: number | null
+          result?: string | null
+          stake?: number | null
+          variation_number?: number | null
+          win_probability?: number | null
+        }
+        Relationships: []
+      }
       sbo_parlay_payouts: {
         Row: {
           briefing_id: string | null
