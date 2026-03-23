@@ -2382,6 +2382,9 @@ export default function AppRoutes() {
       <Route path="/grabba/export/floor9" element={
         <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} showLocked><Layout><GrabbaLayout><Floor9Export /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
       } />
+      <Route path="/grabba/export/backup" element={
+        <ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} showLocked><Layout><GrabbaLayout><BackupControlPage /></GrabbaLayout></Layout></RequireRole></ProtectedRoute>
+      } />
 
       {/* Ambassador Portal OS */}
       <Route path="/ambassador/dashboard" element={
