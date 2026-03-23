@@ -1028,27 +1028,17 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 
                 {!existingPred ? (
                   <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop, 'over')} disabled={isRunning}>
-                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} OVER
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop, 'under')} disabled={isRunning}>
-                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} UNDER
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop)} disabled={isRunning}>
+                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} Analyze (AI picks OVER/UNDER)
                     </Button>
                   </div>
                 ) : (
                   <>
                     <PredictionResult prediction={existingPred} />
-                    <div className="flex gap-2 mt-2">
-                      <SavePickButton
-                        pickType="prop"
-                        label={`${prop.player_name} ${existingPred.predicted_outcome?.toUpperCase()} ${prop.line} ${prop.prop_type}`}
-                        detail={`${game?.away_team} @ ${game?.home_team}`}
-                        odds={String(existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds)}
-                        aiAnalysis={existingPred.stats_brain_reasoning || existingPred.context_brain_reasoning || ''}
-                        confidence={existingPred.final_confidence}
-                        sourceTable="sbo_predictions"
-                        sourceId={existingPred.id}
-                      />
+                    <div className="flex gap-2 mt-2 items-center">
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Auto-saved to My Bets
+                      </span>
                       {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
                         <Button
                           variant="secondary"
