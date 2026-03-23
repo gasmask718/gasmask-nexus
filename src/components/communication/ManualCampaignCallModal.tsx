@@ -928,30 +928,56 @@ export function ManualCampaignCallModal({
 
           {/* Transfer Picker */}
           {showTransferPicker && (
-            <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+            <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
               <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
-              <div className="grid grid-cols-2 gap-2">
+              
+              {/* AI Agent Selection */}
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">AI Agents</p>
+                <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
+                  {transferAgents.length > 0 ? transferAgents.map((agent) => (
+                    <Button
+                      key={agent.id}
+                      variant="outline"
+                      className="h-auto flex items-start gap-2 py-2 px-3 hover:border-primary text-left justify-start"
+                      onClick={() => handleTransfer("elevenlabs", {
+                        id: agent.elevenlabs_agent_id || "",
+                        name: agent.agent_name,
+                      })}
+                      disabled={isTransferring || !agent.elevenlabs_agent_id}
+                    >
+                      <Bot className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs font-semibold block truncate">{agent.agent_name}</span>
+                        <span className="text-[10px] text-muted-foreground block truncate">{agent.script_label}</span>
+                        {!agent.elevenlabs_agent_id && (
+                          <span className="text-[10px] text-destructive block">⚠ No Agent ID configured</span>
+                        )}
+                      </div>
+                    </Button>
+                  )) : (
+                    <p className="text-xs text-muted-foreground italic px-2">No AI agents configured</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Human Agent */}
+              <div className="space-y-2 border-t pt-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Human</p>
                 <Button
                   variant="outline"
-                  className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
-                  onClick={() => handleTransfer("elevenlabs")}
-                  disabled={isTransferring}
-                >
-                  <Bot className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-semibold">AI Agent</span>
-                  <span className="text-[10px] text-muted-foreground leading-tight">GASMASK INVENTORY CHECK</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-auto flex flex-col items-center gap-1 py-3 hover:border-primary"
+                  className="w-full h-auto flex items-center gap-2 py-2 hover:border-primary justify-start"
                   onClick={() => handleTransfer("human")}
                   disabled={isTransferring}
                 >
-                  <UserCheck className="h-5 w-5 text-primary" />
-                  <span className="text-xs font-semibold">Human Agent</span>
-                  <span className="text-[10px] text-muted-foreground">Google Voice</span>
+                  <UserCheck className="h-4 w-4 text-primary" />
+                  <div>
+                    <span className="text-xs font-semibold">Human Agent</span>
+                    <span className="text-[10px] text-muted-foreground block">Google Voice</span>
+                  </div>
                 </Button>
               </div>
+
               <Button
                 variant="ghost"
                 size="sm"
