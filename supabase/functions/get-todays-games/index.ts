@@ -100,12 +100,12 @@ serve(async (req) => {
     }); } catch {}
   } catch (e) {
     sdioError = e instanceof Error ? e.message : 'SportsDataIO fetch failed';
-    await supabase.from('api_fetch_logs').insert({
+    try { await supabase.from('api_fetch_logs').insert({
       source: 'sportsdata',
       status_code: 0,
       error_message: sdioError,
       games_returned: 0,
-    }).catch(() => {});
+    }); } catch {}
   }
 
   // Merge data — Odds API is primary, SportsDataIO adds scores
