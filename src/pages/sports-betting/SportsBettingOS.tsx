@@ -16,6 +16,7 @@ import { Loader2, RefreshCw, Plus, Save, X, TrendingUp, Trophy, Brain, Check, Se
 import { toast } from 'sonner';
 import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
+import ParlayResultsSection from '@/components/sbo/ParlayResultsSection';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
@@ -1606,6 +1607,7 @@ function ParlayBuilderTab() {
   const [activeLegFilter, setActiveLegFilter] = useState<string | number>('all');
   const [activeVerdictFilter, setActiveVerdictFilter] = useState('all');
   const [mode, setMode] = useState<'ai' | 'manual'>('ai');
+  const [savedParlays, setSavedParlays] = useState<any[]>([]);
 
   const { data: strongPredictions } = useQuery({
     queryKey: ['strong-preds'],
@@ -1613,7 +1615,7 @@ function ParlayBuilderTab() {
       const bounds = getTodayETBounds();
       const { data } = await supabase
         .from('sbo_predictions')
-        .select(`*, sbo_games(id, home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, recommendation)`)
+        .select(`*, sbo_games(id, home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds)`)
         .gte('final_confidence', 60)
         .gte('created_at', bounds.start)
         .lt('created_at', bounds.end)
@@ -1633,7 +1635,29 @@ function ParlayBuilderTab() {
     setAiParlays(data || []);
   };
 
-  useEffect(() => { loadAiParlays(); }, []);
+  // Load saved parlays for results tracking
+  const loadSavedParlays = async () => {
+    const { data: manualParlays } = await (supabase as any)
+      .from('sbo_parlays')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const { data: builtParlays } = await (supabase as any)
+      .from('sbo_parlay_builder')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    const all = [
+      ...(manualParlays || []),
+      ...(builtParlays || []),
+    ].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    setSavedParlays(all);
+  };
+
+  useEffect(() => { loadAiParlays(); loadSavedParlays(); }, []);
 
   // Build all AI parlays
   const buildAllParlays = async () => {
@@ -1711,7 +1735,7 @@ function ParlayBuilderTab() {
       };
     }
     const prop = prediction.sbo_player_props;
-    const rec = prop?.recommendation || prediction.predicted_outcome;
+    const rec = prediction.predicted_outcome || 'over';
     return {
       prediction_id: prediction.id,
       label: `${prop?.player_name} ${rec?.toUpperCase()} ${prop?.line} ${prop?.prop_type}`,
@@ -2049,6 +2073,14 @@ function ParlayBuilderTab() {
           </div>
         </div>
       )}
+
+      {/* Saved Parlay Results */}
+      <div className="mt-6">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+          Saved Parlay Results
+        </p>
+        <ParlayResultsSection parlays={savedParlays} onUpdate={loadSavedParlays} />
+      </div>
     </div>
   );
 }

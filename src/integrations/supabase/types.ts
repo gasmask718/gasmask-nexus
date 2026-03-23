@@ -58807,6 +58807,7 @@ export type Database = {
       }
       sbo_parlay_builder: {
         Row: {
+          actual_payout: number | null
           ai_analysis: string | null
           ai_verdict: string | null
           combined_odds_american: string | null
@@ -58818,6 +58819,8 @@ export type Database = {
           id: string
           leg_count: number | null
           legs: Json | null
+          legs_lost: number | null
+          legs_won: number | null
           parlay_name: string | null
           potential_payout: number | null
           profit_if_win: number | null
@@ -58827,6 +58830,7 @@ export type Database = {
           win_probability: number | null
         }
         Insert: {
+          actual_payout?: number | null
           ai_analysis?: string | null
           ai_verdict?: string | null
           combined_odds_american?: string | null
@@ -58838,6 +58842,8 @@ export type Database = {
           id?: string
           leg_count?: number | null
           legs?: Json | null
+          legs_lost?: number | null
+          legs_won?: number | null
           parlay_name?: string | null
           potential_payout?: number | null
           profit_if_win?: number | null
@@ -58847,6 +58853,7 @@ export type Database = {
           win_probability?: number | null
         }
         Update: {
+          actual_payout?: number | null
           ai_analysis?: string | null
           ai_verdict?: string | null
           combined_odds_american?: string | null
@@ -58858,6 +58865,8 @@ export type Database = {
           id?: string
           leg_count?: number | null
           legs?: Json | null
+          legs_lost?: number | null
+          legs_won?: number | null
           parlay_name?: string | null
           potential_payout?: number | null
           profit_if_win?: number | null
@@ -58938,12 +58947,16 @@ export type Database = {
           expected_value: number | null
           id: string
           legs: Json
+          legs_lost: number | null
+          legs_won: number | null
           name: string | null
           notes: string | null
+          result: string | null
           status: string | null
           suggested_stake: number | null
           total_legs: number
           updated_at: string | null
+          verified_at: string | null
         }
         Insert: {
           actual_payout?: number | null
@@ -58952,12 +58965,16 @@ export type Database = {
           expected_value?: number | null
           id?: string
           legs?: Json
+          legs_lost?: number | null
+          legs_won?: number | null
           name?: string | null
           notes?: string | null
+          result?: string | null
           status?: string | null
           suggested_stake?: number | null
           total_legs: number
           updated_at?: string | null
+          verified_at?: string | null
         }
         Update: {
           actual_payout?: number | null
@@ -58966,12 +58983,16 @@ export type Database = {
           expected_value?: number | null
           id?: string
           legs?: Json
+          legs_lost?: number | null
+          legs_won?: number | null
           name?: string | null
           notes?: string | null
+          result?: string | null
           status?: string | null
           suggested_stake?: number | null
           total_legs?: number
           updated_at?: string | null
+          verified_at?: string | null
         }
         Relationships: []
       }

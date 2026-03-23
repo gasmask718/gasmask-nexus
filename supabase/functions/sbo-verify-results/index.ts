@@ -116,7 +116,13 @@ serve(async (req) => {
 
         for (const ag of apiGames) {
           if (ag.HomeTeamScore === null || ag.AwayTeamScore === null) continue;
-          if (ag.Status !== 'Final' && ag.Status !== 'F/OT') continue;
+          if (ag.Status !== 'Final' && ag.Status !== 'F/OT' && ag.Status !== 'F') continue;
+
+          // Validate scores are realistic — NBA games score 60+ points
+          if (ag.HomeTeamScore < 60 || ag.AwayTeamScore < 60) {
+            console.log(`Skipping ${ag.HomeTeam} vs ${ag.AwayTeam} — scores too low: ${ag.HomeTeamScore}-${ag.AwayTeamScore} (likely partial)`);
+            continue;
+          }
 
           // Match by team names
           const matched = ourGames.find(g =>

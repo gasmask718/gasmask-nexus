@@ -4,8 +4,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
+import ParlayResultsSection from './ParlayResultsSection';
 
-type HistoryFilter = 'all' | 'games' | 'props' | 'correct' | 'incorrect' | 'pending';
+type HistoryFilter = 'all' | 'games' | 'props' | 'parlays' | 'correct' | 'incorrect' | 'pending';
 type DateFilter = 'today' | 'yesterday' | '7days' | '30days' | 'alltime';
 
 export default function PredictionHistory() {
@@ -35,45 +37,65 @@ export default function PredictionHistory() {
 
   const loadHistory = async () => {
     setLoading(true);
-    const fromDate = getDateRange();
+    try {
+      const fromDate = getDateRange();
 
-    let query = (supabase as any)
-      .from('sbo_predictions')
-      .select(`*, sbo_games(home_team, away_team, game_date, score_home, score_away, status), sbo_player_props(player_name, team, prop_type, line, player_image_url)`)
-      .gte('created_at', fromDate)
-      .order('created_at', { ascending: false });
+      let query = (supabase as any)
+        .from('sbo_predictions')
+        .select(`
+          *,
+          sbo_games(id, home_team, away_team, game_date, home_score, away_score, status),
+          sbo_player_props(player_name, team, prop_type, line, player_image_url, actual_value, verdict),
+          sbo_results_verification(verdict, actual_result, final_score_home, final_score_away, verified_at)
+        `)
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: false });
 
-    if (typeFilter === 'games') query = query.eq('prediction_type', 'moneyline');
-    if (typeFilter === 'props') query = query.eq('prediction_type', 'player_prop');
-    if (typeFilter === 'correct') query = query.eq('verdict', 'correct');
-    if (typeFilter === 'incorrect') query = query.eq('verdict', 'incorrect');
-    if (typeFilter === 'pending') query = query.is('verdict', null);
+      if (typeFilter === 'games') query = query.eq('prediction_type', 'moneyline');
+      if (typeFilter === 'props') query = query.eq('prediction_type', 'player_prop');
+      if (typeFilter === 'correct') query = query.eq('verdict', 'correct');
+      if (typeFilter === 'incorrect') query = query.eq('verdict', 'incorrect');
+      if (typeFilter === 'pending') query = query.is('verdict', null);
 
-    const { data: preds } = await query;
+      const { data: preds, error } = await query.limit(500);
+      if (error) throw error;
 
-    const { data: parlayData } = await (supabase as any)
-      .from('sbo_parlays')
-      .select('*')
-      .gte('created_at', fromDate)
-      .order('created_at', { ascending: false });
+      // Load parlays from both tables
+      const { data: parlayData } = await (supabase as any)
+        .from('sbo_parlays')
+        .select('*')
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: false });
 
-    const filtered = (preds || []).filter((p: any) => {
-      if (!search) return true;
-      const home = p.sbo_games?.home_team?.toLowerCase() || '';
-      const away = p.sbo_games?.away_team?.toLowerCase() || '';
-      const player = p.sbo_player_props?.player_name?.toLowerCase() || '';
-      return home.includes(search.toLowerCase()) || away.includes(search.toLowerCase()) || player.includes(search.toLowerCase());
-    });
+      const { data: builderParlays } = await (supabase as any)
+        .from('sbo_parlay_builder')
+        .select('*')
+        .gte('created_at', fromDate)
+        .order('created_at', { ascending: false });
 
-    const settled = filtered.filter((p: any) => p.verdict !== null);
-    const correct = settled.filter((p: any) => p.verdict === 'correct').length;
-    const incorrect = settled.filter((p: any) => p.verdict === 'incorrect').length;
-    const accuracy = settled.length > 0 ? Math.round((correct / settled.length) * 100) : 0;
+      const filtered = (preds || []).filter((p: any) => {
+        if (!search) return true;
+        const home = p.sbo_games?.home_team?.toLowerCase() || '';
+        const away = p.sbo_games?.away_team?.toLowerCase() || '';
+        const player = p.sbo_player_props?.player_name?.toLowerCase() || '';
+        return home.includes(search.toLowerCase()) || away.includes(search.toLowerCase()) || player.includes(search.toLowerCase());
+      });
 
-    setPredictions(filtered);
-    setParlays(parlayData || []);
-    setStats({ total: filtered.length, correct, incorrect, pending: filtered.filter((p: any) => !p.verdict).length, accuracy });
-    setLoading(false);
+      const settled = filtered.filter((p: any) => p.verdict !== null);
+      const correct = settled.filter((p: any) => p.verdict === 'correct').length;
+      const incorrect = settled.filter((p: any) => p.verdict === 'incorrect').length;
+      const accuracy = settled.length > 0 ? Math.round((correct / settled.length) * 100) : 0;
+
+      setPredictions(filtered);
+      setParlays([...(parlayData || []), ...(builderParlays || [])].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      ));
+      setStats({ total: filtered.length, correct, incorrect, pending: filtered.filter((p: any) => !p.verdict).length, accuracy });
+    } catch (e: any) {
+      toast.error('History load failed: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { loadHistory(); }, [typeFilter, dateFilter, search]);
@@ -129,7 +151,7 @@ export default function PredictionHistory() {
 
       {/* Type filter pills */}
       <div className="flex flex-wrap gap-1">
-        {(['all', 'games', 'props', 'correct', 'incorrect', 'pending'] as HistoryFilter[]).map(f => (
+        {(['all', 'games', 'props', 'parlays', 'correct', 'incorrect', 'pending'] as HistoryFilter[]).map(f => (
           <button
             key={f}
             onClick={() => setTypeFilter(f)}
@@ -139,13 +161,15 @@ export default function PredictionHistory() {
                 : 'bg-transparent text-muted-foreground border-border hover:text-foreground'
             }`}
           >
-            {f === 'all' ? 'All' : f === 'games' ? '🏀 Games' : f === 'props' ? '📊 Props' : f === 'correct' ? '✅ Correct' : f === 'incorrect' ? '❌ Incorrect' : '⏳ Pending'}
+            {f === 'all' ? 'All' : f === 'games' ? '🏀 Games' : f === 'props' ? '📊 Props' : f === 'parlays' ? '🎯 Parlays' : f === 'correct' ? '✅ Correct' : f === 'incorrect' ? '❌ Incorrect' : '⏳ Pending'}
           </button>
         ))}
       </div>
 
-      {/* History list */}
-      {loading ? (
+      {/* Content */}
+      {typeFilter === 'parlays' ? (
+        <ParlayResultsSection parlays={parlays} onUpdate={loadHistory} />
+      ) : loading ? (
         <div className="grid gap-3">
           {[1,2,3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
         </div>
@@ -184,9 +208,9 @@ function PredictionHistoryRow({ prediction }: { prediction: any }) {
     ? (prediction.predicted_outcome === 'home' ? game?.home_team : game?.away_team)
     : null;
 
-  const hasResult = game?.score_home !== null && game?.score_away !== null && game?.score_home !== undefined;
+  const hasResult = game?.home_score !== null && game?.away_score !== null && game?.home_score !== undefined;
   const actualWinner = hasResult
-    ? (game.score_home > game.score_away ? game.home_team : game.away_team)
+    ? (game.home_score > game.away_score ? game.home_team : game.away_team)
     : null;
 
   const verdict = prediction.verdict;
@@ -225,8 +249,14 @@ function PredictionHistoryRow({ prediction }: { prediction: any }) {
 
           {isGame && hasResult && (
             <p className="text-[10px] text-muted-foreground">
-              Final: {game.away_team} {game.score_away} — {game.home_team} {game.score_home}
+              Final: {game.away_team} {game.away_score} — {game.home_team} {game.home_score}
               {actualWinner && <span className="text-emerald-500 ml-1">({actualWinner} won)</span>}
+            </p>
+          )}
+
+          {isProp && prop?.actual_value != null && (
+            <p className="text-[10px] text-muted-foreground">
+              Actual: {prop.actual_value} (line: {prop.line}) — {prop.verdict?.toUpperCase()}
             </p>
           )}
         </div>
