@@ -2217,10 +2217,58 @@ function ParlayBuilderTab() {
       {/* Saved Parlay Results */}
       <div className="mt-6">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Saved Parlay Results
+          📚 Parlay History & Results
         </p>
         <ParlayResultsSection parlays={savedParlays} onUpdate={loadSavedParlays} />
       </div>
+
+      {/* AI Suggested Parlay */}
+      {strongPredictions && strongPredictions.length >= 3 && (
+        <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">🤖 AI Suggested Parlay Tonight</h3>
+              <p className="text-[10px] text-muted-foreground">Top 3 picks by confidence (70%+)</p>
+            </div>
+          </div>
+          {(() => {
+            const eligible = (strongPredictions || []).filter((p: any) => p.final_confidence >= 70);
+            const top3 = eligible.slice(0, 3);
+            if (top3.length < 2) return <p className="text-xs text-muted-foreground">Not enough high-confidence picks (need 2+ at 70%+)</p>;
+            const avgConf = Math.round(top3.reduce((s: number, p: any) => s + p.final_confidence, 0) / top3.length);
+            const sugLegs = top3.map((pred: any) => buildLegFromPred(pred));
+            const toD = (a: number) => a > 0 ? (a / 100) + 1 : (100 / Math.abs(a)) + 1;
+            const combinedDec = sugLegs.reduce((m: number, l: any) => m * toD(l.odds), 1);
+            const combinedAm = combinedDec >= 2 ? Math.round((combinedDec - 1) * 100) : Math.round(-100 / (combinedDec - 1));
+            return (
+              <div className="space-y-2">
+                {sugLegs.map((leg: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <span className="text-foreground font-medium truncate flex-1">{leg.label}</span>
+                    <span className="text-muted-foreground flex-shrink-0 ml-2">{leg.confidence}% · {leg.odds > 0 ? '+' : ''}{leg.odds}</span>
+                  </div>
+                ))}
+                <div className="text-center py-2 rounded-lg bg-muted/30">
+                  <p className="text-xs text-muted-foreground">
+                    Avg confidence: <strong>{avgConf}%</strong> · Combined odds: <strong>{combinedAm > 0 ? '+' : ''}{combinedAm}</strong> · Suggested stake: 1-2 units
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedLegs(sugLegs);
+                    setParlayName(`AI Top ${sugLegs.length}-Leg — ${new Date().toLocaleDateString()}`);
+                    setMode('manual');
+                    toast.success(`${sugLegs.length} legs loaded into builder`);
+                  }}
+                  className="w-full py-2.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Add All to Builder
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }
