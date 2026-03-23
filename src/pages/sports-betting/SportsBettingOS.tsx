@@ -1054,6 +1054,22 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         <span className="text-[11px] text-muted-foreground">{filtered.length} props loaded</span>
       </div>
 
+      {/* PRIMARY ACTION BUTTON — Run Props Analysis */}
+      <button
+        onClick={runAllProps}
+        disabled={runningAll || !!runningId || verifyingProps}
+        className={`w-full flex items-center justify-center gap-2 rounded-[10px] border-none text-sm font-medium transition-opacity py-3.5 ${
+          runningAll
+            ? 'bg-muted text-muted-foreground cursor-not-allowed'
+            : 'bg-foreground text-background cursor-pointer hover:opacity-90'
+        }`}
+      >
+        {runningAll
+          ? <><Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" /> {allProgress || 'Running...'}</>
+          : '📊 Run Props Analysis — All Tonight\'s Players'
+        }
+      </button>
+
       <div className="flex items-center gap-2 flex-wrap">
         {(['all', 'strong', 'elite'] as const).map(f => (
           <Button
