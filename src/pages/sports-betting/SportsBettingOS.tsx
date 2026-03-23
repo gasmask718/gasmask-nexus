@@ -1086,6 +1086,8 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
             const acc = type === 'all' ? overallAccuracy : (s as any)?.accuracy ?? 0;
             const w = type === 'all' ? totalStats.correct : (s as any)?.correct ?? 0;
             const l = type === 'all' ? totalStats.incorrect : (s as any)?.incorrect ?? 0;
+            const count = propCountByType[type] || 0;
+            const hasStats = w > 0 || l > 0;
             const isActive = selectedPropType === type;
             return (
               <button
@@ -1097,18 +1099,47 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                     : 'bg-muted/30 text-foreground border-border hover:bg-muted/60'
                 }`}
               >
-                <span className="capitalize">{type === 'all' ? 'All Props' : type}</span>
-                {(w > 0 || l > 0) && (
+                <span>{type === 'all' ? 'All Props' : type}</span>
+                {hasStats ? (
                   <>
                     <span className="text-muted-foreground">{w}W-{l}L</span>
-                    <span className={getAccuracyColor(acc)}>{acc.toFixed(1)}%</span>
+                    <span className={isActive ? '' : getAccuracyColor(acc)}>{acc.toFixed(1)}%</span>
                   </>
-                )}
+                ) : type !== 'all' && count > 0 ? (
+                  <span className="text-muted-foreground">{count} props</span>
+                ) : null}
               </button>
             );
           })}
         </div>
       </div>
+
+      {/* PROP TYPE STATS DETAIL PANEL */}
+      {selectedPropType !== 'all' && propTypeStats[selectedPropType] && (
+        <div className="rounded-lg border border-border bg-muted/20 p-3 text-xs space-y-1">
+          <div className="flex items-center justify-between">
+            <span className="font-semibold text-foreground">{selectedPropType} — Detailed Stats</span>
+            <Badge variant="outline" className={getAccuracyColor(propTypeStats[selectedPropType].accuracy)}>
+              {propTypeStats[selectedPropType].accuracy.toFixed(1)}%
+            </Badge>
+          </div>
+          <div className="flex flex-wrap gap-4 text-muted-foreground">
+            <span>Verified: {propTypeStats[selectedPropType].total}</span>
+            <span className="text-emerald-500">{propTypeStats[selectedPropType].correct}W</span>
+            <span className="text-destructive">{propTypeStats[selectedPropType].incorrect}L</span>
+            <span>Avg Conf (✅): {propTypeStats[selectedPropType].avgConfCorrect.toFixed(1)}%</span>
+            <span>Avg Conf (❌): {propTypeStats[selectedPropType].avgConfIncorrect.toFixed(1)}%</span>
+          </div>
+          <p className="text-muted-foreground italic">
+            {propTypeStats[selectedPropType].accuracy >= 70
+              ? `✅ ${selectedPropType} props are a strong edge — hitting at ${propTypeStats[selectedPropType].accuracy.toFixed(1)}%`
+              : propTypeStats[selectedPropType].accuracy >= 55
+              ? `⚠️ ${selectedPropType} props are moderate — ${propTypeStats[selectedPropType].accuracy.toFixed(1)}% accuracy`
+              : `🔴 ${selectedPropType} props are underperforming at ${propTypeStats[selectedPropType].accuracy.toFixed(1)}% — use caution`
+            }
+          </p>
+        </div>
+      )}
 
       {/* SORT + BEST BETS TOGGLE */}
       <div className="flex items-center gap-3 flex-wrap">
