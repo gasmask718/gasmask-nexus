@@ -6,14 +6,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
-const ELEVENLABS_AGENT_NAME = "GASMASK INVENTORY CHECK";
+// Fallback if no agent_id provided
+const DEFAULT_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
+const DEFAULT_AGENT_NAME = "GASMASK INVENTORY CHECK";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { call_sid, transfer_type, queue_item_id, campaign_id, human_number } = await req.json();
+    const { call_sid, transfer_type, queue_item_id, campaign_id, human_number, agent_id, agent_name } = await req.json();
 
     if (!call_sid) throw new Error("call_sid is required");
     if (!transfer_type || !["elevenlabs", "human"].includes(transfer_type)) {
@@ -29,8 +30,12 @@ serve(async (req) => {
     const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${call_sid}.json`;
 
     if (transfer_type === "elevenlabs") {
-      // Redirect to ElevenLabs bridge with specific agent ID
-      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${ELEVENLABS_AGENT_ID}`;
+      // Use provided agent_id or fall back to default
+      const resolvedAgentId = agent_id || DEFAULT_AGENT_ID;
+      const resolvedAgentName = agent_name || DEFAULT_AGENT_NAME;
+
+      // Redirect to ElevenLabs bridge with the selected agent ID
+      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${resolvedAgentId}`;
 
       const updateRes = await fetch(twilioUrl, {
         method: "POST",
@@ -50,7 +55,7 @@ serve(async (req) => {
       if (queue_item_id) {
         await supabase.from("outbound_call_queue").update({
           status: "transferred",
-          notes: `[TRANSFER:elevenlabs] ${ELEVENLABS_AGENT_NAME}`,
+          notes: `[TRANSFER:elevenlabs] ${resolvedAgentName} (${resolvedAgentId})`,
           updated_at: new Date().toISOString(),
         }).eq("id", queue_item_id);
       }
@@ -59,13 +64,18 @@ serve(async (req) => {
         await supabase.from("live_call_transcripts").insert({
           call_sid,
           speaker: "system",
-          text: `[TRANSFERRED to AI Agent: ${ELEVENLABS_AGENT_NAME}]`,
+          text: `[TRANSFERRED to AI Agent: ${resolvedAgentName}]`,
           created_at: new Date().toISOString(),
         });
       }
 
-      console.log(`✅ Transferred ${call_sid} to ElevenLabs agent ${ELEVENLABS_AGENT_ID}`);
-      return new Response(JSON.stringify({ success: true, transfer_type: "elevenlabs", agent_name: ELEVENLABS_AGENT_NAME }), {
+      console.log(`✅ Transferred ${call_sid} to ElevenLabs agent ${resolvedAgentId} (${resolvedAgentName})`);
+      return new Response(JSON.stringify({ 
+        success: true, 
+        transfer_type: "elevenlabs", 
+        agent_id: resolvedAgentId,
+        agent_name: resolvedAgentName,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else {
@@ -73,7 +83,6 @@ serve(async (req) => {
       const targetNumber = human_number || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
       if (!targetNumber) throw new Error("No human agent number configured");
 
-      // Check if human agent is available
       const { data: lineStatus } = await supabase
         .from("human_agent_line_status")
         .select("status")
@@ -93,7 +102,6 @@ serve(async (req) => {
         });
       }
 
-      // Mark line as busy
       await supabase.from("human_agent_line_status").upsert({
         phone_number: targetNumber,
         status: "busy",
@@ -125,7 +133,6 @@ serve(async (req) => {
       });
 
       if (!updateRes.ok) {
-        // Release line on failure
         await supabase.from("human_agent_line_status").upsert({
           phone_number: targetNumber, status: "available",
           current_call_sid: null, current_queue_item_id: null,
