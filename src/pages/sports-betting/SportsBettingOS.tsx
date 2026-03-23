@@ -543,11 +543,6 @@ function TonightGamesTab() {
     return 'WEAK';
   };
 
-  // Yesterday stats
-  const yWon = yesterdayState.predictions.filter((p: any) => p.result === 'won').length;
-  const yLost = yesterdayState.predictions.filter((p: any) => p.result === 'lost').length;
-  const yTotal = yWon + yLost;
-  const yAccuracy = yTotal > 0 ? Math.round((yWon / yTotal) * 100) : 0;
 
   return (
     <div className="space-y-4">
