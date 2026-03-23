@@ -11,7 +11,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import {
   MessageSquare, Plus, Trash2, Send, TestTube, RefreshCw, Loader2,
-  Phone, User, Star, Users, ToggleLeft, ToggleRight, Clock, Edit3, Check
+  Phone, User, Star, Users, ToggleLeft, ToggleRight, Clock, Edit3, Check,
+  ChevronLeft, ChevronRight, SlidersHorizontal
 } from "lucide-react";
 
 // ── Helpers ──
@@ -41,159 +42,89 @@ const PROP_TYPE_LABELS: Record<string, string> = {
 
 const normPropType = (t: string) => PROP_TYPE_LABELS[t?.toLowerCase()?.trim()] || t || "Prop";
 
-// ── Message Builder ──
-async function buildChingWorldMessage(): Promise<string> {
-  const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+const CONF_OPTIONS = [55, 60, 65, 70, 75, 80, 85, 90];
+const MAX_OPTIONS = [3, 5, 8, 10];
+
+interface Thresholds {
+  topMin: number;
+  stealsMin: number;
+  blocksMin: number;
+  otherMin: number;
+  gamesMin: number;
+  maxPerCat: number;
+}
+
+// ── Multi-segment builder ──
+const MAX_CHARS = 1550;
+
+function buildSegments(sections: { header: string; body: string }[]): string[] {
   const dateLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York",
   });
 
-  // Get today's predictions — note: no "result" column exists, use verdict/was_correct
-  const { data: preds, error: predsErr } = await supabase
-    .from("sbo_predictions")
-    .select("*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, team)")
-    .gte("created_at", `${today}T00:00:00-04:00`)
-    .order("final_confidence", { ascending: false });
+  const segments: string[] = [];
+  let cur = `🏆 CHINGWORLD PICKS 🏆\n📅 ${dateLabel}\n─────────────────────\n\n`;
+  let segNum = 1;
 
-  if (predsErr) {
-    console.error("ChingWorld picks query error:", predsErr);
-  }
-
-  const all = preds || [];
-  console.log(`ChingWorld: Found ${all.length} predictions for ${today}`);
-  const lines: string[] = [];
-
-  lines.push("🏆 CHINGWORLD PICKS 🏆");
-  lines.push(`📅 ${dateLabel}`);
-  lines.push("─────────────────────");
-
-  // Top props 90%+
-  const top90 = all.filter(p => p.prediction_type === "player_prop" && (p.final_confidence || 0) >= 90);
-  if (top90.length > 0) {
-    lines.push("");
-    lines.push("🔥 TOP PROPS (90%+ CONFIDENCE)");
-    for (const p of top90) {
-      const pp = p.sbo_player_props;
-      if (!pp) continue;
-      const team = pp.team || "";
-      const propLabel = normPropType(pp.prop_type);
-      const dir = (p.predicted_outcome || "over").toUpperCase();
-      const odds = dir === "OVER" ? pp.over_odds : pp.under_odds;
-      lines.push(`${pp.player_name}${team ? ` (${team})` : ""}`);
-      lines.push(`${propLabel} ${dir} ${pp.line} | ${p.final_confidence}% | ${odds ? (odds > 0 ? "+" : "") + odds : "N/A"}`);
-      lines.push("");
-    }
-  }
-
-  // Steals
-  const steals = all.filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Steals");
-  if (steals.length > 0) {
-    lines.push("─────────────────────");
-    lines.push("📊 STEALS PROPS");
-    for (const p of steals) {
-      const pp = p.sbo_player_props;
-      if (!pp) continue;
-      const dir = (p.predicted_outcome || "over").toUpperCase();
-      const odds = dir === "OVER" ? pp.over_odds : pp.under_odds;
-      lines.push(`${pp.player_name}${pp.team ? ` (${pp.team})` : ""}`);
-      lines.push(`Steals ${dir} ${pp.line} | ${p.final_confidence}% | ${odds ? (odds > 0 ? "+" : "") + odds : "N/A"}`);
-    }
-  }
-
-  // Blocks
-  const blocks = all.filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Blocks");
-  if (blocks.length > 0) {
-    lines.push("");
-    lines.push("─────────────────────");
-    lines.push("🛡️ BLOCKS PROPS");
-    for (const p of blocks) {
-      const pp = p.sbo_player_props;
-      if (!pp) continue;
-      const dir = (p.predicted_outcome || "over").toUpperCase();
-      const odds = dir === "OVER" ? pp.over_odds : pp.under_odds;
-      lines.push(`${pp.player_name}${pp.team ? ` (${pp.team})` : ""}`);
-      lines.push(`Blocks ${dir} ${pp.line} | ${p.final_confidence}% | ${odds ? (odds > 0 ? "+" : "") + odds : "N/A"}`);
-    }
-  }
-
-  // Top game picks (ML 75%+)
-  const gamePicks = all
-    .filter(p => p.prediction_type === "moneyline" && (p.final_confidence || 0) >= 75)
-    .slice(0, 5);
-  if (gamePicks.length > 0) {
-    lines.push("");
-    lines.push("─────────────────────");
-    lines.push("🏀 TOP GAME PICKS");
-    for (const p of gamePicks) {
-      const g = p.sbo_games;
-      if (!g) continue;
-      const team = p.predicted_outcome === "home" ? g.home_team : g.away_team;
-      lines.push(`${g.away_team} @ ${g.home_team}`);
-      lines.push(`Pick: ${team} ML | ${p.final_confidence}%`);
-      lines.push("");
-    }
-  }
-
-  // If nothing found at all
-  if (top90.length === 0 && steals.length === 0 && blocks.length === 0 && gamePicks.length === 0) {
-    const otherProps = all.filter(p => p.prediction_type === "player_prop" && (p.final_confidence || 0) >= 70);
-    if (otherProps.length > 0) {
-      lines.push("");
-      lines.push("─────────────────────");
-      lines.push("📊 TOP PROPS (70%+ CONFIDENCE)");
-      for (const p of otherProps.slice(0, 10)) {
-        const pp = p.sbo_player_props;
-        if (!pp) continue;
-        const dir = (p.predicted_outcome || "over").toUpperCase();
-        const odds = dir === "OVER" ? pp.over_odds : pp.under_odds;
-        const propLabel = normPropType(pp.prop_type);
-        lines.push(`${pp.player_name}${pp.team ? ` (${pp.team})` : ""}`);
-        lines.push(`${propLabel} ${dir} ${pp.line} | ${p.final_confidence}% | ${odds ? (odds > 0 ? "+" : "") + odds : "N/A"}`);
-        lines.push("");
-      }
+  for (const section of sections) {
+    const block = `${section.header}\n${section.body}─────────────────────\n\n`;
+    if (cur.length + block.length > MAX_CHARS && cur.length > 100) {
+      cur += `💡 Continued in next message... (${segNum} of TOTAL)`;
+      segments.push(cur);
+      segNum++;
+      cur = `🏆 CHINGWORLD PICKS (cont.) 🏆\n─────────────────────\n\n${block}`;
     } else {
-      lines.push("");
-      lines.push("No picks available yet for today.");
-      lines.push("");
-      lines.push("To generate picks:");
-      lines.push("1. Go to Tonight's Games → Load Games → Run AI");
-      lines.push("2. Go to Props → Run Props Analysis");
-      lines.push("3. Come back here and press Generate");
-      lines.push("");
+      cur += block;
     }
   }
 
-  lines.push("─────────────────────");
-  lines.push("💡 Bet responsibly");
-  lines.push("Good luck! 🎯");
+  cur += `💡 Bet responsibly\nGood luck! 🎯`;
+  segments.push(cur);
 
-  return lines.join("\n");
+  const total = segments.length;
+  return segments.map((s) => s.replace(/\((\d+) of TOTAL\)/g, (_, n) => `(${n} of ${total})`));
+}
+
+function formatPropLine(pp: any, pred: any): string {
+  const dir = (pred?.predicted_outcome || "over").toUpperCase();
+  const odds = dir === "OVER" ? pp.over_odds : pp.under_odds;
+  const oddsStr = odds ? (odds > 0 ? `+${odds}` : `${odds}`) : "N/A";
+  const propLabel = normPropType(pp.prop_type);
+  return `${pp.player_name}${pp.team ? ` (${pp.team})` : ""}\n${propLabel} ${dir} ${pp.line} | ${pred?.final_confidence || "?"}% | ${oddsStr}\n\n`;
 }
 
 // ── Component ──
 export function ChingWorldPicksSMS() {
   const queryClient = useQueryClient();
 
-  // Recipient form state
+  // Recipient form
   const [newName, setNewName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newGroup, setNewGroup] = useState("all");
   const [newNotes, setNewNotes] = useState("");
 
   // Message state
-  const [message, setMessage] = useState("");
+  const [messageSegments, setMessageSegments] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [sendingTo, setSendingTo] = useState<string | null>(null);
+  const [sendProgress, setSendProgress] = useState("");
+  const [genStatus, setGenStatus] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Thresholds
+  const [thresholds, setThresholds] = useState<Thresholds>({
+    topMin: 90, stealsMin: 75, blocksMin: 80, otherMin: 70, gamesMin: 75, maxPerCat: 5,
+  });
+
+  const currentMessage = messageSegments[previewIndex] || "";
 
   // ── Queries ──
   const { data: recipients = [], isLoading: recipientsLoading } = useQuery({
     queryKey: ["sbo-sms-recipients"],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
-        .from("sbo_sms_recipients")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data, error } = await (supabase as any).from("sbo_sms_recipients").select("*").order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
@@ -202,38 +133,121 @@ export function ChingWorldPicksSMS() {
   const { data: sendHistory = [] } = useQuery({
     queryKey: ["sbo-sms-sends-log"],
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("sbo_sms_sends_log")
-        .select("*")
-        .order("sent_at", { ascending: false })
-        .limit(20);
+      const { data } = await (supabase as any).from("sbo_sms_sends_log").select("*").order("sent_at", { ascending: false }).limit(20);
       return data || [];
     },
   });
 
-  const [genStatus, setGenStatus] = useState("");
-
-  // Generate message on mount
-  useEffect(() => {
-    generateMessage();
-  }, []);
+  // Generate on mount
+  useEffect(() => { generateMessage(); }, []);
 
   const generateMessage = useCallback(async () => {
     setGenerating(true);
     setGenStatus("⏳ Pulling picks from database...");
     try {
-      const msg = await buildChingWorldMessage();
-      setMessage(msg);
-      // Count picks in message
-      const propCount = (msg.match(/\|.*%.*\|/g) || []).length;
-      setGenStatus(`✅ Generated — ${propCount} picks loaded`);
+      const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+
+      const { data: preds, error } = await supabase
+        .from("sbo_predictions")
+        .select("*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, team)")
+        .gte("created_at", `${today}T00:00:00-04:00`)
+        .order("final_confidence", { ascending: false });
+
+      if (error) console.error("ChingWorld query error:", error);
+
+      const all = preds || [];
+      const th = thresholds;
+
+      // ── Smart filtering ──
+      const topProps = all
+        .filter(p => p.prediction_type === "player_prop" && (p.final_confidence || 0) >= th.topMin)
+        .slice(0, th.maxPerCat);
+
+      const stealsProps = all
+        .filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Steals" && (p.final_confidence || 0) >= th.stealsMin)
+        .slice(0, th.maxPerCat);
+
+      const blocksProps = all
+        .filter(p => p.prediction_type === "player_prop" && normPropType(p.sbo_player_props?.prop_type) === "Blocks" && (p.final_confidence || 0) >= th.blocksMin)
+        .slice(0, th.maxPerCat);
+
+      const excludeTypes = ["Steals", "Blocks"];
+      const otherProps = all
+        .filter(p => {
+          if (p.prediction_type !== "player_prop") return false;
+          const t = normPropType(p.sbo_player_props?.prop_type);
+          return !excludeTypes.includes(t) && (p.final_confidence || 0) >= th.otherMin && (p.final_confidence || 0) < th.topMin;
+        })
+        .slice(0, th.maxPerCat);
+
+      const gamePicks = all
+        .filter(p => p.prediction_type === "moneyline" && (p.final_confidence || 0) >= th.gamesMin)
+        .slice(0, 5);
+
+      // ── Build sections ──
+      const sections: { header: string; body: string }[] = [];
+
+      if (topProps.length > 0) {
+        let body = "";
+        topProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
+        sections.push({ header: `🔥 TOP PROPS (${th.topMin}%+ CONFIDENCE)`, body });
+      }
+
+      if (stealsProps.length > 0) {
+        let body = "";
+        stealsProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
+        sections.push({ header: `🤿 STEALS PROPS (Top ${stealsProps.length})`, body });
+      }
+
+      if (blocksProps.length > 0) {
+        let body = "";
+        blocksProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
+        sections.push({ header: `🛡️ BLOCKS PROPS (Top ${blocksProps.length})`, body });
+      }
+
+      if (otherProps.length > 0) {
+        let body = "";
+        otherProps.forEach(p => { body += formatPropLine(p.sbo_player_props, p); });
+        sections.push({ header: `📊 OTHER TOP PROPS (${th.otherMin}%+)`, body });
+      }
+
+      if (gamePicks.length > 0) {
+        let body = "";
+        gamePicks.forEach(p => {
+          const g = p.sbo_games;
+          if (!g) return;
+          const team = p.predicted_outcome === "home" ? g.home_team : g.away_team;
+          body += `${g.away_team} @ ${g.home_team}\nPick: ${team} ML | ${p.final_confidence}%\n\n`;
+        });
+        sections.push({ header: "🏀 TOP GAME PICKS", body });
+      }
+
+      if (sections.length === 0) {
+        const dateLabel = new Date().toLocaleDateString("en-US", {
+          weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York",
+        });
+        setMessageSegments([
+          `🏆 CHINGWORLD PICKS 🏆\n📅 ${dateLabel}\n─────────────────────\n\nNo picks available yet for today.\n\nTo generate picks:\n1. Go to Tonight's Games → Load Games → Run AI\n2. Go to Props → Run Props Analysis\n3. Come back here and press Generate\n\n─────────────────────\n💡 Bet responsibly\nGood luck! 🎯`,
+        ]);
+        setPreviewIndex(0);
+        setGenStatus("⚠️ No picks found — run analysis first");
+        return;
+      }
+
+      const segs = buildSegments(sections);
+      setMessageSegments(segs);
+      setPreviewIndex(0);
+
+      const totalPicks = topProps.length + stealsProps.length + blocksProps.length + otherProps.length + gamePicks.length;
+      setGenStatus(
+        `✅ Generated — ${totalPicks} picks | ${segs.length} message${segs.length > 1 ? "s" : ""} | ${segs.reduce((a, s) => a + s.length, 0)} chars total`
+      );
     } catch (e: any) {
       setGenStatus(`❌ Failed: ${e.message}`);
-      toast.error("Failed to generate message: " + e.message);
     } finally {
       setGenerating(false);
     }
-  }, []);
+  }, [thresholds]);
 
   // ── Mutations ──
   const addRecipient = useMutation({
@@ -242,10 +256,7 @@ export function ChingWorldPicksSMS() {
       const formatted = formatPhone(newPhone);
       if (formatted.length < 11) throw new Error("Invalid phone number");
       const { error } = await (supabase as any).from("sbo_sms_recipients").insert({
-        name: newName.trim(),
-        phone_number: formatted,
-        group_tag: newGroup,
-        notes: newNotes.trim() || null,
+        name: newName.trim(), phone_number: formatted, group_tag: newGroup, notes: newNotes.trim() || null,
       });
       if (error) throw error;
     },
@@ -258,13 +269,8 @@ export function ChingWorldPicksSMS() {
   });
 
   const deleteRecipient = useMutation({
-    mutationFn: async (id: string) => {
-      await (supabase as any).from("sbo_sms_recipients").delete().eq("id", id);
-    },
-    onSuccess: () => {
-      toast.success("Recipient removed");
-      queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] });
-    },
+    mutationFn: async (id: string) => { await (supabase as any).from("sbo_sms_recipients").delete().eq("id", id); },
+    onSuccess: () => { toast.success("Removed"); queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] }); },
   });
 
   const toggleActive = useMutation({
@@ -274,45 +280,61 @@ export function ChingWorldPicksSMS() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] }),
   });
 
+  // ── Send (multi-segment) ──
   const sendSMS = async (targetGroup: "all" | "vip" | "test") => {
     const targets = recipients.filter((r: any) => {
       if (!r.active) return false;
       if (targetGroup === "all") return true;
       return r.group_tag === targetGroup;
     });
-
-    if (targets.length === 0) {
-      toast.error(`No active ${targetGroup} recipients`);
-      return;
-    }
-
-    if (!confirm(`Send to ${targets.length} ${targetGroup} recipient(s)?`)) return;
+    if (targets.length === 0) { toast.error(`No active ${targetGroup} recipients`); return; }
+    if (!confirm(`Send ${messageSegments.length} message${messageSegments.length > 1 ? "s" : ""} to ${targets.length} recipient(s)?`)) return;
 
     setSendingTo(targetGroup);
+    let totalSent = 0, totalFailed = 0;
+
     try {
-      const { data, error } = await supabase.functions.invoke("sbo-send-picks-sms", {
-        body: {
-          message,
-          recipients: targets.map((r: any) => r.phone_number),
-          send_type: "manual",
-        },
-      });
-      if (error) throw error;
-      toast.success(`✅ Sent to ${data.sent} recipients${data.failed > 0 ? `, ${data.failed} failed` : ""}`);
+      for (let ri = 0; ri < targets.length; ri++) {
+        const r = targets[ri] as any;
+        for (let si = 0; si < messageSegments.length; si++) {
+          setSendProgress(`Sending msg ${si + 1}/${messageSegments.length} to ${r.name} (${ri + 1}/${targets.length})`);
+          try {
+            const { error } = await supabase.functions.invoke("sbo-send-picks-sms", {
+              body: { message: messageSegments[si], recipients: [r.phone_number], send_type: "manual" },
+            });
+            if (error) throw error;
+            totalSent++;
+          } catch { totalFailed++; }
+          if (si < messageSegments.length - 1) await new Promise(r => setTimeout(r, 1000));
+        }
+        if (ri < targets.length - 1) await new Promise(r => setTimeout(r, 500));
+      }
+
+      toast.success(`✅ ${totalSent} segments sent${totalFailed > 0 ? `, ${totalFailed} failed` : ""}`);
       queryClient.invalidateQueries({ queryKey: ["sbo-sms-sends-log"] });
       queryClient.invalidateQueries({ queryKey: ["sbo-sms-recipients"] });
     } catch (e: any) {
       toast.error("Send failed: " + e.message);
     } finally {
       setSendingTo(null);
+      setSendProgress("");
     }
   };
 
-  const charCount = message.length;
-  const segments = Math.ceil(charCount / 160) || 1;
+  const charCount = currentMessage.length;
+  const smsSegs = Math.ceil(charCount / 160) || 1;
   const activeAll = recipients.filter((r: any) => r.active).length;
   const activeVIP = recipients.filter((r: any) => r.active && r.group_tag === "vip").length;
   const activeTest = recipients.filter((r: any) => r.active && r.group_tag === "test").length;
+
+  const ThresholdSelect = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
+    <div className="flex items-center gap-2">
+      <Label className="text-xs whitespace-nowrap w-32">{label}</Label>
+      <select value={value} onChange={e => onChange(Number(e.target.value))} className="h-7 text-xs rounded-md border border-input bg-background px-2">
+        {CONF_OPTIONS.map(v => <option key={v} value={v}>{v}%</option>)}
+      </select>
+    </div>
+  );
 
   return (
     <div className="space-y-4">
@@ -323,21 +345,16 @@ export function ChingWorldPicksSMS() {
             <MessageSquare className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-bold">📱 ChingWorld Picks — SMS Sender</h2>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Send tonight's top picks to your list. Add numbers, preview the message, hit send.
-          </p>
+          <p className="text-xs text-muted-foreground mt-1">Send tonight's top picks. Smart-trimmed to fit clean SMS segments.</p>
         </CardContent>
       </Card>
 
       {/* Recipient Manager */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Users className="h-4 w-4" /> Recipient Manager
-          </CardTitle>
+          <CardTitle className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> Recipient Manager</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Add form */}
           <div className="grid grid-cols-12 gap-2 items-end">
             <div className="col-span-3">
               <Label className="text-xs">Name</Label>
@@ -349,18 +366,14 @@ export function ChingWorldPicksSMS() {
             </div>
             <div className="col-span-2">
               <Label className="text-xs">Group</Label>
-              <select
-                value={newGroup}
-                onChange={e => setNewGroup(e.target.value)}
-                className="w-full h-8 text-xs rounded-md border border-input bg-background px-2"
-              >
+              <select value={newGroup} onChange={e => setNewGroup(e.target.value)} className="w-full h-8 text-xs rounded-md border border-input bg-background px-2">
                 <option value="all">All</option>
                 <option value="vip">VIP</option>
                 <option value="test">Test</option>
               </select>
             </div>
             <div className="col-span-3">
-              <Label className="text-xs">Notes (optional)</Label>
+              <Label className="text-xs">Notes</Label>
               <Input placeholder="Notes..." value={newNotes} onChange={e => setNewNotes(e.target.value)} className="h-8 text-xs" />
             </div>
             <div className="col-span-1">
@@ -370,12 +383,11 @@ export function ChingWorldPicksSMS() {
             </div>
           </div>
 
-          {/* Recipient list */}
           <ScrollArea className="h-40 border rounded-md">
             {recipientsLoading ? (
               <div className="p-4 text-center text-xs text-muted-foreground">Loading...</div>
             ) : recipients.length === 0 ? (
-              <div className="p-4 text-center text-xs text-muted-foreground">No recipients yet — add a number above</div>
+              <div className="p-4 text-center text-xs text-muted-foreground">No recipients yet</div>
             ) : (
               <div className="p-2 space-y-1">
                 {recipients.map((r: any) => (
@@ -390,9 +402,7 @@ export function ChingWorldPicksSMS() {
                     <Badge variant="outline" className="text-[9px] px-1 py-0">
                       {r.group_tag === "vip" ? "⭐ VIP" : r.group_tag === "test" ? "🧪 Test" : "All"}
                     </Badge>
-                    {r.total_sends > 0 && (
-                      <span className="text-[9px] text-muted-foreground">{r.total_sends} sent</span>
-                    )}
+                    {r.total_sends > 0 && <span className="text-[9px] text-muted-foreground">{r.total_sends} sent</span>}
                     <div className="flex-1" />
                     <button onClick={() => deleteRecipient.mutate(r.id)} className="text-destructive/60 hover:text-destructive">
                       <Trash2 className="h-3 w-3" />
@@ -410,9 +420,43 @@ export function ChingWorldPicksSMS() {
         <CardContent className="p-3 flex gap-4 text-xs">
           <span className="font-medium">SEND TO:</span>
           <span>📤 All Active: <strong>{activeAll}</strong></span>
-          <span>⭐ VIP Only: <strong>{activeVIP}</strong></span>
+          <span>⭐ VIP: <strong>{activeVIP}</strong></span>
           <span>🧪 Test: <strong>{activeTest}</strong></span>
         </CardContent>
+      </Card>
+
+      {/* Confidence Filters */}
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4" /> Pick Filters
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} className="text-xs">
+              {showFilters ? "Hide" : "Show"}
+            </Button>
+          </div>
+        </CardHeader>
+        {showFilters && (
+          <CardContent className="space-y-2 pb-4">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              <ThresholdSelect label="Top Props min:" value={thresholds.topMin} onChange={v => setThresholds(t => ({ ...t, topMin: v }))} />
+              <ThresholdSelect label="Steals min:" value={thresholds.stealsMin} onChange={v => setThresholds(t => ({ ...t, stealsMin: v }))} />
+              <ThresholdSelect label="Blocks min:" value={thresholds.blocksMin} onChange={v => setThresholds(t => ({ ...t, blocksMin: v }))} />
+              <ThresholdSelect label="Other Props min:" value={thresholds.otherMin} onChange={v => setThresholds(t => ({ ...t, otherMin: v }))} />
+              <ThresholdSelect label="Game Picks min:" value={thresholds.gamesMin} onChange={v => setThresholds(t => ({ ...t, gamesMin: v }))} />
+              <div className="flex items-center gap-2">
+                <Label className="text-xs whitespace-nowrap w-32">Max per category</Label>
+                <select value={thresholds.maxPerCat} onChange={e => setThresholds(t => ({ ...t, maxPerCat: Number(e.target.value) }))} className="h-7 text-xs rounded-md border border-input bg-background px-2">
+                  {MAX_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
+            </div>
+            <Button size="sm" variant="secondary" onClick={generateMessage} disabled={generating} className="mt-2">
+              <RefreshCw className="h-3 w-3 mr-1" /> Regenerate with new filters
+            </Button>
+          </CardContent>
+        )}
       </Card>
 
       {/* Message Preview */}
@@ -423,47 +467,69 @@ export function ChingWorldPicksSMS() {
             <div className="flex gap-2">
               <Button size="sm" onClick={generateMessage} disabled={generating} className="bg-primary text-primary-foreground">
                 {generating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-                {generating ? "Pulling picks..." : "🔄 Generate Today's Picks"}
+                {generating ? "Pulling picks..." : "🔄 Generate"}
               </Button>
               <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                 {isEditing ? <><Check className="h-3 w-3 mr-1" /> Done</> : <><Edit3 className="h-3 w-3 mr-1" /> Edit</>}
               </Button>
             </div>
           </div>
-          {genStatus && (
-            <p className="text-xs text-muted-foreground mt-1">{genStatus}</p>
+          {genStatus && <p className="text-xs text-muted-foreground mt-1">{genStatus}</p>}
+          {messageSegments.length > 1 && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="secondary" className="text-xs">📨 {messageSegments.length} messages will be sent</Badge>
+              <div className="flex items-center gap-1 ml-auto">
+                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={previewIndex === 0} onClick={() => setPreviewIndex(i => i - 1)}>
+                  <ChevronLeft className="h-3 w-3" />
+                </Button>
+                <span className="text-xs font-medium">Message {previewIndex + 1} of {messageSegments.length}</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={previewIndex >= messageSegments.length - 1} onClick={() => setPreviewIndex(i => i + 1)}>
+                  <ChevronRight className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardHeader>
         <CardContent className="space-y-2">
           {isEditing ? (
             <Textarea
-              value={message}
-              onChange={e => setMessage(e.target.value)}
+              value={currentMessage}
+              onChange={e => {
+                const updated = [...messageSegments];
+                updated[previewIndex] = e.target.value;
+                setMessageSegments(updated);
+              }}
               className="font-mono text-xs min-h-[300px]"
             />
           ) : (
             <div className="border rounded-lg p-3 bg-muted/20 max-h-[400px] overflow-y-auto">
-              <pre className="text-xs whitespace-pre-wrap font-mono text-foreground">{message || "No message generated yet"}</pre>
+              <pre className="text-xs whitespace-pre-wrap font-mono text-foreground">{currentMessage || "No message generated yet"}</pre>
             </div>
           )}
           <div className="flex gap-4 text-[10px] text-muted-foreground">
-            <span>Characters: <strong className={charCount > 1600 ? "text-destructive" : ""}>{charCount}</strong> / 1600</span>
-            <span>SMS segments: <strong>{segments}</strong> ({segments} message{segments > 1 ? "s" : ""})</span>
+            <span>
+              Characters: <strong className={charCount > MAX_CHARS ? "text-destructive" : "text-emerald-500"}>{charCount}</strong> / {MAX_CHARS}
+              {charCount <= MAX_CHARS ? " ✅" : " ⚠️ over limit"}
+            </span>
+            <span>SMS segments: <strong>{smsSegs}</strong></span>
           </div>
         </CardContent>
       </Card>
 
       {/* Send Buttons */}
-      <div className="flex gap-2 flex-wrap">
-        <Button onClick={() => sendSMS("all")} disabled={!!sendingTo || activeAll === 0}>
-          {sendingTo === "all" ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending...</> : <><Send className="h-4 w-4 mr-1" /> Send to All ({activeAll})</>}
-        </Button>
-        <Button variant="secondary" onClick={() => sendSMS("vip")} disabled={!!sendingTo || activeVIP === 0}>
-          {sendingTo === "vip" ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending...</> : <><Star className="h-4 w-4 mr-1" /> Send to VIP ({activeVIP})</>}
-        </Button>
-        <Button variant="outline" onClick={() => sendSMS("test")} disabled={!!sendingTo || activeTest === 0}>
-          {sendingTo === "test" ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending...</> : <><TestTube className="h-4 w-4 mr-1" /> Send Test ({activeTest})</>}
-        </Button>
+      <div className="space-y-2">
+        {sendProgress && <p className="text-xs text-muted-foreground animate-pulse">{sendProgress}</p>}
+        <div className="flex gap-2 flex-wrap">
+          <Button onClick={() => sendSMS("all")} disabled={!!sendingTo || activeAll === 0}>
+            {sendingTo === "all" ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending...</> : <><Send className="h-4 w-4 mr-1" /> Send to All ({activeAll})</>}
+          </Button>
+          <Button variant="secondary" onClick={() => sendSMS("vip")} disabled={!!sendingTo || activeVIP === 0}>
+            {sendingTo === "vip" ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending...</> : <><Star className="h-4 w-4 mr-1" /> Send to VIP ({activeVIP})</>}
+          </Button>
+          <Button variant="outline" onClick={() => sendSMS("test")} disabled={!!sendingTo || activeTest === 0}>
+            {sendingTo === "test" ? <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending...</> : <><TestTube className="h-4 w-4 mr-1" /> Send Test ({activeTest})</>}
+          </Button>
+        </div>
       </div>
 
       {/* Send History */}
@@ -485,9 +551,7 @@ export function ChingWorldPicksSMS() {
                     {s.status === "sent" ? "✅" : s.status === "partial" ? "⚠️" : "❌"} {s.status}
                   </Badge>
                   <span>{s.recipient_count} recipients</span>
-                  <span className="text-muted-foreground truncate max-w-[200px]">
-                    {s.message_preview?.substring(0, 80)}...
-                  </span>
+                  <span className="text-muted-foreground truncate max-w-[200px]">{s.message_preview?.substring(0, 80)}...</span>
                 </div>
               ))}
             </div>
