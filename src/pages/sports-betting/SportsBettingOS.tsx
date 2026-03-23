@@ -1350,6 +1350,112 @@ function VAPropEntryTab() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PARLAY CARD COMPONENT (AI Builder)
+// ═══════════════════════════════════════════════════════════════
+
+function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: number; onSave: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const payout = Math.round(stake * (parlay.combined_odds_decimal || 1) * 100) / 100;
+  const profit = Math.round((payout - stake) * 100) / 100;
+
+  const verdictStyles: Record<string, string> = {
+    'STRONG BET': 'bg-green-500/15 text-green-600 border-green-500/30',
+    'MODERATE BET': 'bg-blue-500/15 text-blue-600 border-blue-500/30',
+    'RISKY': 'bg-yellow-500/15 text-yellow-600 border-yellow-500/30',
+    'PASS': 'bg-red-500/15 text-red-600 border-red-500/30',
+  };
+
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-4 space-y-3">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-2">
+            <Badge className={verdictStyles[parlay.ai_verdict] || 'bg-muted text-muted-foreground'}>
+              {parlay.ai_verdict}
+            </Badge>
+            <span className="text-[10px] text-muted-foreground">
+              {parlay.leg_count}-leg · V{parlay.variation_number}
+            </span>
+          </div>
+          <span className="text-sm font-bold text-foreground">
+            {parlay.combined_odds_american}
+          </span>
+        </div>
+
+        {/* Payout */}
+        <div className="text-center py-2 rounded-lg bg-muted/30">
+          <p className="text-xl font-bold text-green-600">${profit.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground">profit on ${stake} · total: ${payout.toLocaleString()}</p>
+        </div>
+
+        {/* Metrics */}
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { label: 'Win prob', value: `${parlay.win_probability?.toFixed(1)}%` },
+            { label: 'EV', value: `${(parlay.ev_percentage || 0) > 0 ? '+' : ''}${parlay.ev_percentage?.toFixed(1)}%`, isEv: true },
+            { label: 'Corr risk', value: parlay.correlation_risk || 'low' },
+          ].map((m, i) => (
+            <div key={i} className="text-center">
+              <p className={`text-xs font-bold ${m.isEv ? ((parlay.ev_percentage || 0) > 0 ? 'text-green-600' : 'text-red-500') : 'text-foreground'}`}>
+                {m.value}
+              </p>
+              <p className="text-[10px] text-muted-foreground">{m.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* AI analysis */}
+        {parlay.ai_analysis && (
+          <p className="text-[11px] text-muted-foreground italic">"{parlay.ai_analysis}"</p>
+        )}
+
+        {/* Expand legs */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full text-center text-[11px] text-muted-foreground py-1.5 rounded border border-border hover:bg-muted/30 transition-all"
+        >
+          {expanded ? '▲ Hide legs' : `▼ Show ${parlay.leg_count} legs`}
+        </button>
+
+        {expanded && (
+          <div className="space-y-1.5">
+            {(parlay.legs as any[] || []).map((leg: any, i: number) => (
+              <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-border/50">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{leg.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{leg.matchup}</p>
+                </div>
+                <div className="text-right flex-shrink-0 ml-2">
+                  <p className="text-xs font-bold">{leg.odds > 0 ? '+' : ''}{leg.odds}</p>
+                  <p className="text-[10px] text-muted-foreground">{leg.confidence}%</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Save button */}
+        <Button
+          size="sm"
+          className="w-full"
+          variant={saved ? 'secondary' : 'default'}
+          disabled={saved}
+          onClick={async () => {
+            await onSave();
+            setSaved(true);
+          }}
+        >
+          {saved ? <><Check className="h-3 w-3 mr-1" /> Saved to My Bets</> : <><Bookmark className="h-3 w-3 mr-1" /> Save to My Bets</>}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PARLAY BUILDER TAB
 // ═══════════════════════════════════════════════════════════════
 
@@ -1360,43 +1466,126 @@ function ParlayBuilderTab() {
   const [saving, setSaving] = useState(false);
   const [autoBuilding, setAutoBuilding] = useState(false);
 
-  const { data: strongPredictions, refetch: refetchStrong } = useQuery({
-    queryKey: ['strong-predictions'],
+  // AI Builder state
+  const [aiStake, setAiStake] = useState(50);
+  const [building, setBuilding] = useState(false);
+  const [buildProgress, setBuildProgress] = useState('');
+  const [aiParlays, setAiParlays] = useState<any[]>([]);
+  const [activeLegFilter, setActiveLegFilter] = useState<string | number>('all');
+  const [activeVerdictFilter, setActiveVerdictFilter] = useState('all');
+  const [mode, setMode] = useState<'ai' | 'manual'>('ai');
+
+  const { data: strongPredictions } = useQuery({
+    queryKey: ['strong-preds'],
     queryFn: async () => {
+      const bounds = getTodayETBounds();
       const { data } = await supabase
         .from('sbo_predictions')
-        .select(`
-          *,
-          sbo_games(home_team, away_team, game_date),
-          sbo_player_props(player_name, prop_type, line, over_odds, under_odds)
-        `)
-        .in('confidence_tier', ['elite', 'strong'])
-        .gte('created_at', new Date(Date.now() - 24 * 3600000).toISOString())
+        .select(`*, sbo_games(id, home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, recommendation)`)
+        .gte('final_confidence', 60)
+        .gte('created_at', bounds.start)
+        .lt('created_at', bounds.end)
         .order('final_confidence', { ascending: false });
       return (data as any[]) || [];
     },
-    refetchInterval: 30000,
   });
 
+  // Load existing AI parlays
+  const loadAiParlays = async () => {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const { data } = await (supabase as any)
+      .from('sbo_parlay_builder')
+      .select('*')
+      .gte('created_at', `${today}T00:00:00-04:00`)
+      .order('created_at', { ascending: false });
+    setAiParlays(data || []);
+  };
+
+  useEffect(() => { loadAiParlays(); }, []);
+
+  // Build all AI parlays
+  const buildAllParlays = async () => {
+    setBuilding(true);
+    setBuildProgress('Gathering predictions...');
+    try {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      await (supabase as any)
+        .from('sbo_parlay_builder')
+        .delete()
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      setBuildProgress('Building 3·6·10·15·20-leg variations...');
+      const { data, error } = await supabase.functions.invoke('sbo-build-parlays', {
+        body: { stake: aiStake, min_confidence: 60, variations: 5 },
+      });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error);
+
+      toast.success(`${data.total_parlays_built} parlays built — ${data.summary.strong_bets} strong bets`);
+      await loadAiParlays();
+    } catch (e: any) {
+      toast.error('Build failed: ' + e.message);
+    } finally {
+      setBuilding(false);
+      setBuildProgress('');
+    }
+  };
+
+  // Save AI parlay to sbo_parlays
+  const saveAiParlay = async (parlay: any) => {
+    try {
+      await supabase.from('sbo_parlays').insert({
+        name: parlay.parlay_name,
+        legs: parlay.legs as any,
+        total_legs: parlay.leg_count,
+        suggested_stake: aiStake,
+        combined_confidence: parlay.win_probability,
+        expected_value: parlay.profit_if_win,
+        status: 'pending',
+      });
+      toast.success('Parlay saved to My Bets');
+    } catch (e: any) {
+      toast.error('Save failed: ' + e.message);
+    }
+  };
+
+  // Filtered AI parlays
+  const filteredParlays = aiParlays.filter((p: any) => {
+    if (activeLegFilter !== 'all' && p.leg_count !== activeLegFilter) return false;
+    if (activeVerdictFilter !== 'all' && p.ai_verdict !== activeVerdictFilter) return false;
+    return true;
+  });
+
+  // Recalculate payouts when stake changes
+  const displayParlays = filteredParlays.map((p: any) => ({
+    ...p,
+    potential_payout: Math.round(aiStake * (p.combined_odds_decimal || 1) * 100) / 100,
+    profit_if_win: Math.round((aiStake * (p.combined_odds_decimal || 1) - aiStake) * 100) / 100,
+  }));
+
+  // Manual builder helpers (unchanged)
   const buildLegFromPred = (prediction: any) => {
-    const odds = prediction.prediction_type === 'moneyline'
-      ? -110
-      : (prediction.predicted_outcome === 'over'
-          ? prediction.sbo_player_props?.over_odds
-          : prediction.sbo_player_props?.under_odds) || -120;
-
-    const label = prediction.prediction_type === 'moneyline'
-      ? `${prediction.predicted_outcome === 'home'
-          ? prediction.sbo_games?.home_team
-          : prediction.sbo_games?.away_team} ML`
-      : `${prediction.sbo_player_props?.player_name} ${prediction.predicted_outcome?.toUpperCase()} ${prediction.sbo_player_props?.line} ${prediction.sbo_player_props?.prop_type}`;
-
+    const isGame = prediction.prediction_type === 'moneyline';
+    if (isGame) {
+      const team = prediction.predicted_outcome === 'home'
+        ? prediction.sbo_games?.home_team
+        : prediction.sbo_games?.away_team;
+      return {
+        prediction_id: prediction.id,
+        label: `${team} ML`,
+        odds: -110,
+        confidence: prediction.final_confidence,
+        matchup: `${prediction.sbo_games?.away_team} @ ${prediction.sbo_games?.home_team}`,
+      };
+    }
+    const prop = prediction.sbo_player_props;
+    const rec = prop?.recommendation || prediction.predicted_outcome;
     return {
       prediction_id: prediction.id,
-      label,
-      odds,
+      label: `${prop?.player_name} ${rec?.toUpperCase()} ${prop?.line} ${prop?.prop_type}`,
+      odds: rec?.toLowerCase() === 'over' ? (prop?.over_odds || -110) : (prop?.under_odds || -110),
       confidence: prediction.final_confidence,
-      tier: prediction.confidence_tier,
+      matchup: `${prop?.player_name} (${prediction.sbo_games?.home_team || ''})`,
     };
   };
 
@@ -1406,54 +1595,35 @@ function ParlayBuilderTab() {
       return;
     }
     setSelectedLegs(prev => [...prev, buildLegFromPred(prediction)]);
-    toast.success('Leg added to parlay');
+    toast.success('Leg added');
   };
 
   const removeLeg = (id: string) => {
     setSelectedLegs(prev => prev.filter(l => l.prediction_id !== id));
   };
 
-  // AI Auto-Build: pick top 3 non-correlated legs
   const autoBuildParlay = async () => {
     setAutoBuilding(true);
     try {
-      if (!strongPredictions?.length) {
-        toast.error('No strong predictions available. Run predictions first.');
-        return;
-      }
-
-      // Pick top 3 predictions from different games for non-correlation
+      if (!strongPredictions?.length) { toast.error('No strong predictions available'); return; }
       const usedGameIds = new Set<string>();
       const bestLegs: any[] = [];
-
       for (const pred of strongPredictions) {
         const gameId = pred.game_id;
-        if (usedGameIds.has(gameId) && bestLegs.length < 5) continue; // allow some from same game after 3
+        if (usedGameIds.has(gameId) && bestLegs.length < 5) continue;
         if (bestLegs.length >= 3) break;
-
         bestLegs.push(buildLegFromPred(pred));
         if (gameId) usedGameIds.add(gameId);
       }
-
-      if (bestLegs.length < 2) {
-        toast.error('Not enough diverse predictions for a parlay');
-        return;
-      }
-
+      if (bestLegs.length < 2) { toast.error('Not enough diverse predictions'); return; }
       setSelectedLegs(bestLegs);
-      setParlayName(`AI Best ${bestLegs.length}-Leg Parlay — ${new Date().toLocaleDateString()}`);
-      toast.success(`AI built ${bestLegs.length}-leg parlay from top picks`);
-    } finally {
-      setAutoBuilding(false);
-    }
+      setParlayName(`AI Best ${bestLegs.length}-Leg — ${new Date().toLocaleDateString()}`);
+      toast.success(`AI built ${bestLegs.length}-leg parlay`);
+    } finally { setAutoBuilding(false); }
   };
 
-  // Save parlay to DB
   const saveParlay = async () => {
-    if (selectedLegs.length < 2) {
-      toast.error('Add at least 2 legs to save');
-      return;
-    }
+    if (selectedLegs.length < 2) { toast.error('Add at least 2 legs'); return; }
     setSaving(true);
     try {
       const { error } = await supabase.from('sbo_parlays').insert({
@@ -1466,188 +1636,287 @@ function ParlayBuilderTab() {
         status: 'pending',
       });
       if (error) throw error;
-      toast.success('Parlay saved successfully!');
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to save parlay');
-    } finally {
-      setSaving(false);
-    }
+      toast.success('Parlay saved!');
+    } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
   const combinedProb = selectedLegs.length > 0
-    ? selectedLegs.reduce((p, leg) => p * (leg.confidence / 100), 1) * 100
-    : 0;
-
+    ? selectedLegs.reduce((p, leg) => p * (leg.confidence / 100), 1) * 100 : 0;
   const parlayMultiplier = selectedLegs.reduce((m, leg) => {
-    const decimal = leg.odds > 0
-      ? (leg.odds / 100) + 1
-      : (100 / Math.abs(leg.odds)) + 1;
+    const decimal = leg.odds > 0 ? (leg.odds / 100) + 1 : (100 / Math.abs(leg.odds)) + 1;
     return m * decimal;
   }, 1);
-
   const potentialPayout = parseFloat((stake * parlayMultiplier).toFixed(2));
 
   return (
     <div className="space-y-4">
-      {/* Date Banner */}
-      <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5 mb-1">
-        <span className="text-sm font-medium text-foreground">
-          📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-        </span>
+      {/* Mode switcher */}
+      <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-1">
+        <button
+          onClick={() => setMode('ai')}
+          className={`flex-1 text-xs py-2 rounded-md font-medium transition-all ${
+            mode === 'ai' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+          }`}
+        >
+          🎯 AI Genius Builder
+        </button>
+        <button
+          onClick={() => setMode('manual')}
+          className={`flex-1 text-xs py-2 rounded-md font-medium transition-all ${
+            mode === 'manual' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground'
+          }`}
+        >
+          ✏️ Manual Builder
+        </button>
       </div>
 
-      {/* AI Build button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-foreground">🎯 Parlay Builder</h2>
-          <p className="text-xs text-muted-foreground">Build manually or let AI pick the best 3 legs</p>
-        </div>
-        <Button onClick={autoBuildParlay} disabled={autoBuilding} size="sm">
-          {autoBuilding
-            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Building...</>
-            : <>🤖 AI Build Best Parlay</>
-          }
-        </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* LEFT — Available strong predictions */}
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Tonight's Strong Picks — click to add
-          </p>
-
-          {!strongPredictions?.length ? (
-            <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
-              <p className="text-xs">No strong predictions yet.</p>
-              <p className="text-[10px] mt-1">Run predictions on games and props first.</p>
-            </div>
-          ) : (
-            strongPredictions.map((pred: any) => {
-              const isAdded = selectedLegs.find(l => l.prediction_id === pred.id);
-              const label = pred.prediction_type === 'moneyline'
-                ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
-                : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
-
-              return (
-                <div
-                  key={pred.id}
-                  className={`border rounded-lg p-3 cursor-pointer transition-all ${
-                    isAdded
-                      ? 'border-primary/60 bg-primary/5'
-                      : 'hover:border-primary/30 hover:bg-muted/30'
-                  }`}
-                  onClick={() => !isAdded && addLeg(pred)}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium flex-1 truncate">{label}</p>
-                    <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                        pred.confidence_tier === 'elite'
-                          ? 'bg-green-500/20 text-green-600'
-                          : 'bg-blue-500/20 text-blue-600'
-                      }`}>
-                        {pred.final_confidence}%
-                      </span>
-                      {isAdded && <Check className="w-3 h-3 text-primary" />}
-                    </div>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    {pred.sbo_games?.away_team} @ {pred.sbo_games?.home_team}
-                  </p>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* RIGHT — Parlay legs + controls */}
-        <div className="space-y-3">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Your Parlay ({selectedLegs.length} legs)
-          </p>
-
+      {mode === 'ai' ? (
+        /* ═══ AI GENIUS BUILDER ═══ */
+        <div className="space-y-4">
           <div>
-            <Label className="text-xs">Parlay Name (optional)</Label>
-            <Input
-              value={parlayName}
-              onChange={e => setParlayName(e.target.value)}
-              placeholder="Tonight's 3-leg NBA parlay"
-              className="h-7 text-xs mt-1"
-            />
+            <h2 className="text-lg font-bold text-foreground">🎯 AI Parlay Builder</h2>
+            <p className="text-xs text-muted-foreground">5 variations × (3·6·10·15·20 legs) from today's top predictions</p>
           </div>
 
-          {selectedLegs.length === 0 ? (
-            <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
-              <p className="text-xs">No legs added yet.</p>
-              <p className="text-[10px] mt-1">Click picks on the left or use "AI Build Best Parlay".</p>
+          {/* Stake + Build */}
+          <div className="flex items-end gap-3">
+            <div>
+              <Label className="text-xs">Stake ($)</Label>
+              <Input
+                type="number"
+                value={aiStake}
+                onChange={e => setAiStake(parseFloat(e.target.value) || 50)}
+                className="h-8 w-20 text-xs mt-1"
+              />
             </div>
-          ) : (
+            <Button
+              onClick={buildAllParlays}
+              disabled={building}
+              className="flex-1 h-10"
+            >
+              {building ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {buildProgress || 'Building...'}</>
+              ) : (
+                '🎯 Build All Parlays'
+              )}
+            </Button>
+          </div>
+
+          {aiParlays.length > 0 && (
             <>
-              {selectedLegs.map((leg, i) => (
-                <div key={leg.prediction_id} className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/20">
-                  <span className="text-[10px] text-muted-foreground w-4 flex-shrink-0">{i + 1}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium truncate">{leg.label}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
-                    </p>
-                  </div>
-                  <Button
-                    size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0"
-                    onClick={() => removeLeg(leg.prediction_id)}
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              ))}
-
-              <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+              {/* Summary stats */}
+              <div className="grid grid-cols-4 gap-2">
                 {[
-                  { label: 'Combined Win Probability', value: `${combinedProb.toFixed(1)}%` },
-                  { label: 'Parlay Multiplier', value: `${parlayMultiplier.toFixed(2)}x` },
-                  { label: 'Potential Payout', value: `$${potentialPayout}` },
-                ].map(s => (
-                  <div key={s.label} className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{s.label}</span>
-                    <span className="font-bold">{s.value}</span>
+                  { label: 'Total', value: aiParlays.length },
+                  { label: 'Strong', value: aiParlays.filter((p: any) => p.ai_verdict === 'STRONG BET').length },
+                  { label: 'Best payout', value: '$' + Math.max(...aiParlays.map((p: any) => Math.round(aiStake * (p.combined_odds_decimal || 1)))).toLocaleString() },
+                  { label: 'Best prob', value: Math.max(...aiParlays.map((p: any) => p.win_probability || 0)).toFixed(1) + '%' },
+                ].map((s, i) => (
+                  <div key={i} className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <p className="text-sm font-bold text-foreground">{s.value}</p>
+                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <Label className="text-xs flex-shrink-0">Stake $</Label>
-                <Input
-                  type="number"
-                  value={stake}
-                  onChange={e => setStake(Number(e.target.value))}
-                  className="h-7 text-xs w-24"
-                  min={1}
-                />
-                {[5, 10, 25, 50, 100].map(s => (
-                  <button
-                    key={s}
-                    onClick={() => setStake(s)}
-                    className={`text-[10px] px-1.5 py-1 rounded border transition-all ${
-                      stake === s ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/30'
-                    }`}
-                  >
-                    ${s}
-                  </button>
-                ))}
+              {/* Leg filter */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Filter by legs</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(['all', 3, 6, 10, 15, 20] as const).map(count => {
+                    const c = aiParlays.filter((p: any) => count === 'all' || p.leg_count === count).length;
+                    return (
+                      <button
+                        key={String(count)}
+                        onClick={() => setActiveLegFilter(count)}
+                        className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
+                          activeLegFilter === count
+                            ? 'bg-foreground text-background border-foreground'
+                            : 'border-border text-muted-foreground hover:border-foreground/30'
+                        }`}
+                      >
+                        {count === 'all' ? 'All' : `${count}-leg`} ({c})
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Save Parlay Button */}
-              <Button onClick={saveParlay} disabled={saving} size="sm" className="w-full">
-                {saving
-                  ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving...</>
-                  : <><Save className="h-3 w-3 mr-1" /> Save Parlay</>
-                }
-              </Button>
+              {/* Verdict filter */}
+              <div className="space-y-1.5">
+                <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide">Filter by verdict</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['all', 'STRONG BET', 'MODERATE BET', 'RISKY', 'PASS'].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setActiveVerdictFilter(v)}
+                      className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
+                        activeVerdictFilter === v
+                          ? 'bg-foreground text-background border-foreground'
+                          : 'border-border text-muted-foreground hover:border-foreground/30'
+                      }`}
+                    >
+                      {v === 'all' ? 'All verdicts' : v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Showing {displayParlays.length} of {aiParlays.length} parlays
+              </p>
+
+              {/* Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {displayParlays.map((p: any) => (
+                  <AIParlayCard
+                    key={p.id}
+                    parlay={p}
+                    stake={aiStake}
+                    onSave={() => saveAiParlay(p)}
+                  />
+                ))}
+              </div>
             </>
           )}
+
+          {aiParlays.length === 0 && !building && (
+            <div className="text-center py-12 border border-dashed border-border rounded-lg text-muted-foreground">
+              <p className="text-4xl mb-2">🎯</p>
+              <p className="text-sm font-medium">No parlays built yet</p>
+              <p className="text-xs mt-1">Set your stake and press Build All Parlays</p>
+            </div>
+          )}
         </div>
-      </div>
+      ) : (
+        /* ═══ MANUAL BUILDER (existing) ═══ */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
+            <span className="text-sm font-medium text-foreground">
+              📅 {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-foreground">✏️ Manual Parlay Builder</h2>
+              <p className="text-xs text-muted-foreground">Build manually or let AI pick the best 3 legs</p>
+            </div>
+            <Button onClick={autoBuildParlay} disabled={autoBuilding} size="sm">
+              {autoBuilding
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Building...</>
+                : <>🤖 AI Build Best Parlay</>
+              }
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* LEFT — Available predictions */}
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Tonight's Strong Picks — click to add
+              </p>
+              {!strongPredictions?.length ? (
+                <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
+                  <p className="text-xs">No strong predictions yet.</p>
+                  <p className="text-[10px] mt-1">Run predictions on games and props first.</p>
+                </div>
+              ) : (
+                strongPredictions.map((pred: any) => {
+                  const isAdded = selectedLegs.find(l => l.prediction_id === pred.id);
+                  const label = pred.prediction_type === 'moneyline'
+                    ? `${pred.predicted_outcome === 'home' ? pred.sbo_games?.home_team : pred.sbo_games?.away_team} ML`
+                    : `${pred.sbo_player_props?.player_name} ${pred.predicted_outcome?.toUpperCase()} ${pred.sbo_player_props?.line} ${pred.sbo_player_props?.prop_type}`;
+                  return (
+                    <div
+                      key={pred.id}
+                      className={`border rounded-lg p-3 cursor-pointer transition-all ${
+                        isAdded ? 'border-primary/60 bg-primary/5' : 'hover:border-primary/30 hover:bg-muted/30'
+                      }`}
+                      onClick={() => !isAdded && addLeg(pred)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-medium flex-1 truncate">{label}</p>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
+                            pred.confidence_tier === 'elite' ? 'bg-green-500/20 text-green-600' : 'bg-blue-500/20 text-blue-600'
+                          }`}>
+                            {pred.final_confidence}%
+                          </span>
+                          {isAdded && <Check className="w-3 h-3 text-primary" />}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {pred.sbo_games?.away_team} @ {pred.sbo_games?.home_team}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* RIGHT — Parlay legs */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Your Parlay ({selectedLegs.length} legs)
+              </p>
+              <div>
+                <Label className="text-xs">Parlay Name (optional)</Label>
+                <Input value={parlayName} onChange={e => setParlayName(e.target.value)} placeholder="Tonight's 3-leg NBA parlay" className="h-7 text-xs mt-1" />
+              </div>
+              {selectedLegs.length === 0 ? (
+                <div className="text-center py-8 border rounded-lg border-dashed border-border text-muted-foreground">
+                  <p className="text-xs">No legs added yet.</p>
+                  <p className="text-[10px] mt-1">Click picks on the left or use "AI Build Best Parlay".</p>
+                </div>
+              ) : (
+                <>
+                  {selectedLegs.map((leg, i) => (
+                    <div key={leg.prediction_id} className="flex items-center gap-2 p-2.5 border rounded-lg bg-muted/20">
+                      <span className="text-[10px] text-muted-foreground w-4 flex-shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate">{leg.label}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
+                        </p>
+                      </div>
+                      <Button size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0" onClick={() => removeLeg(leg.prediction_id)}>
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="bg-muted/40 rounded-lg p-3 space-y-2">
+                    {[
+                      { label: 'Combined Win Probability', value: `${combinedProb.toFixed(1)}%` },
+                      { label: 'Parlay Multiplier', value: `${parlayMultiplier.toFixed(2)}x` },
+                      { label: 'Potential Payout', value: `$${potentialPayout}` },
+                    ].map(s => (
+                      <div key={s.label} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{s.label}</span>
+                        <span className="font-bold">{s.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Label className="text-xs flex-shrink-0">Stake $</Label>
+                    <Input type="number" value={stake} onChange={e => setStake(Number(e.target.value))} className="h-7 text-xs w-24" min={1} />
+                    {[5, 10, 25, 50, 100].map(s => (
+                      <button key={s} onClick={() => setStake(s)}
+                        className={`text-[10px] px-1.5 py-1 rounded border transition-all ${
+                          stake === s ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:border-primary/30'
+                        }`}
+                      >${s}</button>
+                    ))}
+                  </div>
+                  <Button onClick={saveParlay} disabled={saving} size="sm" className="w-full">
+                    {saving ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving...</> : <><Save className="h-3 w-3 mr-1" /> Save Parlay</>}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
