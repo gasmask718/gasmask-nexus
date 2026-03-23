@@ -1170,6 +1170,34 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 
   return (
     <div className="space-y-4">
+      {/* Date Filter Pills */}
+      <div className="space-y-1.5">
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Filter props by game date</p>
+        <div className="flex gap-1.5 flex-wrap">
+          {[
+            { value: 'today', label: '📅 Today' },
+            { value: 'yesterday', label: '📋 Yesterday' },
+            { value: 'saturday', label: '🏀 Saturday' },
+            { value: '7days', label: '📆 Last 7 Days' },
+            { value: 'all', label: '📚 All' },
+          ].map(opt => (
+            <Button
+              key={opt.value}
+              variant={dateFilter === opt.value ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-7 rounded-full"
+              onClick={() => setDateFilter(opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Showing {filtered.length} props · {getDateBounds().label}
+          {loadingProps && ' · Loading...'}
+        </p>
+      </div>
+
       {/* Date Banner */}
       <div className="flex items-center justify-between flex-wrap gap-2 rounded-lg border border-border bg-muted/30 px-4 py-2.5">
         <span className="text-sm font-medium text-foreground">
