@@ -697,14 +697,14 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
     game.sbo_predictions?.[0] || null
   );
 
-  // Fetch game intelligence
+  // Fetch game intelligence — use game.id (DB UUID), not game.game_id
   const { data: intel } = useQuery({
-    queryKey: ['game-intel', game.game_id],
+    queryKey: ['game-intel', game.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('sbo_game_intelligence')
         .select('*')
-        .eq('game_id', game.game_id)
+        .eq('game_id', game.id)
         .maybeSingle();
       return data;
     },
