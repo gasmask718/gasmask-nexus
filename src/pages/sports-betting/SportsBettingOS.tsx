@@ -1288,11 +1288,11 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                     {game?.away_team} @ {game?.home_team}
                   </span>
                 </div>
-                    <span>🧠 Analyzed: {new Date(existingPred.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
-                  ) : (
-                    <span className="text-amber-500">⏳ Not yet analyzed</span>
-                  )}
-                </div>
+                {existingPred ? (
+                  <span className="text-[10px] text-muted-foreground">🧠 Analyzed: {new Date(existingPred.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                ) : (
+                  <span className="text-[10px] text-amber-500">⏳ Not yet analyzed</span>
+                )}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
                     {/* Player image */}
