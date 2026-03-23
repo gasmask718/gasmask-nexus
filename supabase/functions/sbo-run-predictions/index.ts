@@ -310,13 +310,13 @@ async function runPolymarketBrain(
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
-    const { game_id, prop_id, prediction_type, predicted_outcome } = await req.json();
+    const { game_id, prop_id, prediction_type, predicted_outcome, force_rerun } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-    // Never re-predict a game that already has a prediction today
-    if (game_id && prediction_type === 'moneyline') {
+    // Never re-predict a game that already has a prediction today (unless force_rerun)
+    if (game_id && prediction_type === 'moneyline' && !force_rerun) {
       const { data: existingPred } = await supabase
         .from('sbo_predictions')
         .select('id, final_confidence, confidence_tier, data_quality')
