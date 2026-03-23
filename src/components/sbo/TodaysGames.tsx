@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Zap } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface GameData {
   homeTeam: string;
@@ -48,6 +49,7 @@ function isLive(status: string): boolean {
 export default function TodaysGames() {
   const [games, setGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [meta, setMeta] = useState<any>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -62,6 +64,9 @@ export default function TodaysGames() {
       if (fnError) throw fnError;
       setGames(data?.games || []);
       setMeta(data?.meta || null);
+      if (data?.meta?.persisted > 0) {
+        toast.success(`${data.meta.persisted} games saved to database`);
+      }
     } catch (e: any) {
       setError(e.message || 'Failed to load games');
     } finally {
@@ -69,16 +74,38 @@ export default function TodaysGames() {
     }
   }, []);
 
+  const analyzeTonight = useCallback(async () => {
+    setAnalyzing(true);
+    toast.info(`Analyzing ${games.length} games with AI brains...`);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('sbo-analyze-tonight', {
+        body: {},
+      });
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
+
+      const created = data?.predictions_created || 0;
+      const total = data?.total_predictions_today || 0;
+      toast.success(`✅ ${created} predictions generated · ${total} total today`);
+
+      if (data?.errors?.length > 0) {
+        toast.warning(`${data.errors.length} games had errors`);
+      }
+    } catch (e: any) {
+      toast.error('Analysis failed: ' + (e.message || 'Unknown error'));
+    } finally {
+      setAnalyzing(false);
+    }
+  }, [games.length]);
+
   useEffect(() => {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-  // Auto-refresh if any game is live
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
-
     const hasLive = games.some(g => isLive(g.status));
     if (hasLive) {
       intervalRef.current = setInterval(loadGames, 60000);
@@ -91,16 +118,29 @@ export default function TodaysGames() {
         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
           Today's NBA Games
         </h3>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={loadGames}
-          disabled={loading}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Loading...' : 'Load Games'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadGames}
+            disabled={loading}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Loading...' : 'Load Games'}
+          </Button>
+          {games.length > 0 && (
+            <Button
+              size="sm"
+              onClick={analyzeTonight}
+              disabled={analyzing}
+              className="gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Zap className={`h-3.5 w-3.5 ${analyzing ? 'animate-pulse' : ''}`} />
+              {analyzing ? 'Analyzing...' : `⚡ Analyze ${games.length} Games`}
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && (
@@ -146,7 +186,6 @@ export default function TodaysGames() {
               </div>
             )}
             <CardContent className={`${live ? 'pt-3' : 'pt-5'} pb-4`}>
-              {/* Teams + Score */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex-1 space-y-1.5">
                   <div className="flex items-center justify-between">
@@ -174,7 +213,6 @@ export default function TodaysGames() {
                 </div>
               </div>
 
-              {/* Odds row */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-muted/50 rounded-lg py-2 px-1">
                   <div className="text-[10px] text-muted-foreground mb-0.5">ML</div>
@@ -213,7 +251,6 @@ export default function TodaysGames() {
                 </div>
               </div>
 
-              {/* Time / Status */}
               <div className="mt-2 text-xs text-muted-foreground text-center">
                 {final ? (
                   <span className="font-medium">Final</span>
@@ -226,10 +263,11 @@ export default function TodaysGames() {
         );
       })}
 
-      {/* Meta info */}
       {meta && (
         <div className="text-[10px] text-muted-foreground text-center space-y-0.5">
-          <div>Odds API: {meta.oddsApiGames} games · SportsData: {meta.sportsDataGames} games</div>
+          <div>
+            Odds API: {meta.oddsApiGames} · SportsData: {meta.sportsDataGames} · Saved: {meta.persisted ?? 0}
+          </div>
           {meta.oddsError && <div className="text-destructive">⚠️ {meta.oddsError}</div>}
           {meta.sdioError && <div className="text-destructive">⚠️ {meta.sdioError}</div>}
         </div>
