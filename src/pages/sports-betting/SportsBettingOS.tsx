@@ -4355,6 +4355,10 @@ export default function SportsBettingOS() {
           <MyBetsTab />
         </TabsContent>
 
+        <TabsContent value="sms" className="mt-4">
+          <ChingWorldPicksSMS />
+        </TabsContent>
+
         <TabsContent value="history" className="mt-4">
           <PredictionHistory />
         </TabsContent>
