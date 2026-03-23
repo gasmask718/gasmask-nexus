@@ -2583,14 +2583,13 @@ function AccuracyTab() {
     },
   });
 
-  // Computed stats from allPreds
-  const total = allPreds?.length || 0;
-  const verified = allPreds?.filter(p => p.verified).length || 0;
+  // Computed stats from allPreds (only verified predictions)
   const correct = allPreds?.filter(p => p.verdict === 'correct' || p.was_correct === true).length || 0;
   const incorrect = allPreds?.filter(p => p.verdict === 'incorrect' || p.was_correct === false).length || 0;
-  const pendingCount = allPreds?.filter(p => !p.verdict && p.was_correct === null).length || 0;
-  const accuracy = (correct + incorrect) > 0
-    ? ((correct / (correct + incorrect)) * 100).toFixed(1) : '0';
+  const total = correct + incorrect;
+  const pendingCount = pending?.length || 0;
+  const accuracy = total > 0
+    ? ((correct / total) * 100).toFixed(1) : '0';
 
   // Game vs prop breakdown
   const gamePreds = allPreds?.filter(p => p.prediction_type === 'moneyline') || [];
