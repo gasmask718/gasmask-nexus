@@ -20,6 +20,7 @@ import HedgeCenter from '@/pages/os/betting/HedgeCenter';
 import PredictionHistory from '@/components/sbo/PredictionHistory';
 import ParlayResultsSection from '@/components/sbo/ParlayResultsSection';
 import HistoryView from '@/components/sbo/HistoryView';
+import { ChingWorldPicksSMS } from '@/components/sbo/ChingWorldPicksSMS';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
@@ -4292,7 +4293,7 @@ export default function SportsBettingOS() {
 
 
       <Tabs defaultValue="games" className="w-full">
-        <TabsList className="grid w-full grid-cols-12">
+        <TabsList className="flex w-full overflow-x-auto">
           <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
           <TabsTrigger value="props" className="text-xs">
             Props
@@ -4312,6 +4313,7 @@ export default function SportsBettingOS() {
           <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
           <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
           <TabsTrigger value="mybets" className="text-xs">📱 My Bets</TabsTrigger>
+          <TabsTrigger value="sms" className="text-xs">📱 ChingWorld</TabsTrigger>
           <TabsTrigger value="history" className="text-xs">📜 History</TabsTrigger>
           <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
           <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
@@ -4351,6 +4353,10 @@ export default function SportsBettingOS() {
 
         <TabsContent value="mybets" className="mt-4">
           <MyBetsTab />
+        </TabsContent>
+
+        <TabsContent value="sms" className="mt-4">
+          <ChingWorldPicksSMS />
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">

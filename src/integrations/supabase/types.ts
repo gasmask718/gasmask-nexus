@@ -60179,6 +60179,75 @@ export type Database = {
           },
         ]
       }
+      sbo_sms_recipients: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          group_tag: string | null
+          id: string
+          last_sent_at: string | null
+          name: string
+          notes: string | null
+          phone_number: string
+          total_sends: number | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          group_tag?: string | null
+          id?: string
+          last_sent_at?: string | null
+          name: string
+          notes?: string | null
+          phone_number: string
+          total_sends?: number | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          group_tag?: string | null
+          id?: string
+          last_sent_at?: string | null
+          name?: string
+          notes?: string | null
+          phone_number?: string
+          total_sends?: number | null
+        }
+        Relationships: []
+      }
+      sbo_sms_sends_log: {
+        Row: {
+          error_message: string | null
+          id: string
+          message_preview: string | null
+          picks_included: number | null
+          recipient_count: number | null
+          send_type: string | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          error_message?: string | null
+          id?: string
+          message_preview?: string | null
+          picks_included?: number | null
+          recipient_count?: number | null
+          send_type?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          error_message?: string | null
+          id?: string
+          message_preview?: string | null
+          picks_included?: number | null
+          recipient_count?: number | null
+          send_type?: string | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       sbo_sync_log: {
         Row: {
           created_at: string | null
