@@ -6,7 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Map SportsDataIO abbreviations to full team names used in sbo_games
 const TEAM_ABBREV_MAP: Record<string, string> = {
   ATL: 'Atlanta Hawks', BOS: 'Boston Celtics', BKN: 'Brooklyn Nets',
   CHA: 'Charlotte Hornets', CHI: 'Chicago Bulls', CLE: 'Cleveland Cavaliers',
@@ -24,43 +23,54 @@ const TEAM_ABBREV_MAP: Record<string, string> = {
   UTA: 'Utah Jazz', WAS: 'Washington Wizards',
 };
 
-// Reverse map: full name → abbreviation(s)
 const NAME_TO_ABBREV = new Map<string, string>();
 for (const [abbr, name] of Object.entries(TEAM_ABBREV_MAP)) {
   NAME_TO_ABBREV.set(name, abbr);
-  // Also map by city or last word for fuzzy matching
   const parts = name.split(' ');
   NAME_TO_ABBREV.set(parts[parts.length - 1], abbr);
 }
 
-function findTeamStats(teamFullName: string, statsMap: Map<string, any>): any | null {
+function findTeamData(teamFullName: string, dataMap: Map<string, any>): any | null {
   if (!teamFullName) return null;
-
   const name = teamFullName.toLowerCase().trim();
+  const lastWord = name.split(' ').pop() || '';
 
-  // Try every entry in the map
-  for (const [abbr, stats] of statsMap) {
-    const fullName = (TEAM_ABBREV_MAP[abbr] || '').toLowerCase();
+  for (const [key, data] of dataMap) {
+    // key might be abbreviation or full name
+    const fullName = (TEAM_ABBREV_MAP[key] || key || '').toLowerCase();
+    if (!fullName) continue;
 
-    // Exact full name match
-    if (fullName === name) return stats;
+    if (fullName === name) return data;
+    if (lastWord.length > 3 && fullName.endsWith(lastWord)) return data;
 
-    // Last word match (Celtics, Lakers, Warriors etc)
-    const lastWord = name.split(' ').pop() || '';
-    if (fullName.endsWith(lastWord) && lastWord.length > 3) return stats;
-
-    // Abbreviation in team name
-    if (name.includes(abbr.toLowerCase())) return stats;
-
-    // Any word in full name matches any word in our name
     const ourWords = name.split(' ').filter(w => w.length > 3);
     const theirWords = fullName.split(' ').filter(w => w.length > 3);
     for (const word of ourWords) {
-      if (theirWords.includes(word)) return stats;
+      if (theirWords.includes(word)) return data;
     }
   }
-
   return null;
+}
+
+// Try multiple season strings
+async function fetchWithSeasonFallback(urlTemplate: string, apiKey: string): Promise<any[]> {
+  for (const season of ['2026', '2025']) {
+    try {
+      const url = urlTemplate.replace('{SEASON}', season) + `?key=${apiKey}`;
+      const res = await fetch(url);
+      console.log(`Season ${season}: HTTP ${res.status}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          console.log(`✅ Season ${season} works — ${data.length} items`);
+          return data;
+        }
+      }
+    } catch (e: any) {
+      console.error(`Season ${season} error:`, e.message);
+    }
+  }
+  return [];
 }
 
 serve(async (req) => {
@@ -88,7 +98,6 @@ serve(async (req) => {
       });
     }
 
-    // Check if intelligence already fetched for today's games
     const gameIds = games.map((g: any) => String(g.id)).filter(Boolean);
     const { count: intelCount } = await supabase
       .from('sbo_game_intelligence')
@@ -105,42 +114,33 @@ serve(async (req) => {
     }
 
     const BASE = 'https://api.sportsdata.io/v3/nba';
-    const SEASON = '2025';
     let processedCount = 0;
 
-    // Fetch team season stats — primary source for ORtg/DRtg
-    let teamStats: any[] = [];
-    try {
-      const tsRes = await fetch(`${BASE}/stats/json/TeamSeasonStats/${SEASON}?key=${SPORTSDATAIO_KEY}`);
-      console.log('TeamSeasonStats status:', tsRes.status);
-      if (tsRes.ok) {
-        teamStats = await tsRes.json();
-        console.log('TeamSeasonStats count:', teamStats.length, 'Sample:', teamStats[0]?.Team, teamStats[0]?.PointsPerGame);
-      } else {
-        console.error('TeamSeasonStats failed:', tsRes.status, await tsRes.text().catch(() => ''));
-      }
-    } catch (e) { console.error('TeamSeasonStats error:', e); }
+    // Fetch team season stats — TOTALS not per-game
+    const teamStats = await fetchWithSeasonFallback(
+      `${BASE}/stats/json/TeamSeasonStats/{SEASON}`, SPORTSDATAIO_KEY
+    );
+    if (teamStats.length > 0) {
+      const sample = teamStats[0];
+      console.log('TeamStats sample fields:', Object.keys(sample).filter(k => 
+        ['Points', 'Games', 'Team', 'Name', 'Possessions', 'FieldGoalsAttemptedPerGame', 'PointsPerGame'].includes(k)
+      ).join(', '));
+      console.log('Sample Points:', sample.Points, 'Games:', sample.Games, 'PPG:', sample.Points && sample.Games ? (sample.Points / sample.Games).toFixed(1) : 'N/A');
+    }
 
-    // Fetch standings for records, streaks, last 10
-    let standings: any[] = [];
-    try {
-      const standRes = await fetch(`${BASE}/scores/json/Standings/${SEASON}?key=${SPORTSDATAIO_KEY}`);
-      console.log('Standings status:', standRes.status);
-      if (standRes.ok) {
-        standings = await standRes.json();
-        console.log('Standings count:', standings.length);
-      }
-    } catch (e) { console.error('Standings error:', e); }
+    // Fetch standings — has PointsPerGameFor/Against already calculated
+    const standings = await fetchWithSeasonFallback(
+      `${BASE}/scores/json/Standings/{SEASON}`, SPORTSDATAIO_KEY
+    );
 
-    // Fetch today's schedule
+    // Fetch today's schedule for context
     let schedule: any[] = [];
     try {
       const schedRes = await fetch(`${BASE}/scores/json/GamesByDate/${today}?key=${SPORTSDATAIO_KEY}`);
-      console.log('Schedule status:', schedRes.status);
       if (schedRes.ok) schedule = await schedRes.json();
     } catch { /* continue */ }
 
-    // Fetch yesterday's games for B2B detection
+    // B2B detection
     const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     let yesterdayGames: any[] = [];
     try {
@@ -148,76 +148,76 @@ serve(async (req) => {
       if (ydRes.ok) yesterdayGames = await ydRes.json();
     } catch { /* continue */ }
 
-    // Fetch injuries
-    let injuries: any[] = [];
-    try {
-      const injRes = await fetch(`${BASE}/scores/json/PlayerInjuries?key=${SPORTSDATAIO_KEY}`);
-      console.log('Injuries status:', injRes.status);
-      if (injRes.ok) injuries = await injRes.json();
-    } catch { /* continue */ }
-
     const yesterdayTeams = new Set(
       yesterdayGames.flatMap((g: any) => [g.HomeTeam, g.AwayTeam])
     );
 
-    // Build lookup maps by abbreviation
+    // Build lookup maps by abbreviation (Key field)
     const teamStatsMap = new Map(teamStats.map((t: any) => [t.Team, t]));
-    const standingsMap = new Map(standings.map((s: any) => [s.Team, s]));
+    const standingsMap = new Map(standings.map((s: any) => [s.Key || s.Team, s]));
 
-    // Also update sbo_team_stats with real data from SportsDataIO
+    // Update sbo_team_stats with REAL calculated per-game data
     for (const ts of teamStats) {
       const fullName = TEAM_ABBREV_MAP[ts.Team];
       if (!fullName) continue;
+      
+      const gamesPlayed = ts.Games || 82;
+      const ppg = ts.Points ? +(ts.Points / gamesPlayed).toFixed(1) : 0;
+      const oppPpg = ts.OpponentStat?.Points ? +(ts.OpponentStat.Points / gamesPlayed).toFixed(1) : 0;
+
+      // Also get from standings for more accurate data
+      const standing = standingsMap.get(ts.Team);
+      const standPpg = standing?.PointsPerGameFor || ppg;
+      const standOppPpg = standing?.PointsPerGameAgainst || oppPpg;
+
       await supabase
         .from('sbo_team_stats')
         .update({
-          points_per_game: ts.PointsPerGame || 0,
-          opponent_points_per_game: ts.OpponentPointsPerGame || 0,
-          offensive_rating: ts.PointsPerGame || 0,
-          defensive_rating: ts.OpponentPointsPerGame || 0,
-          wins: ts.Wins || 0,
-          losses: ts.Losses || 0,
+          points_per_game: standPpg || ppg,
+          opponent_points_per_game: standOppPpg || oppPpg,
+          offensive_rating: standPpg || ppg,
+          defensive_rating: standOppPpg || oppPpg,
+          wins: standing?.Wins || ts.Wins || 0,
+          losses: standing?.Losses || ts.Losses || 0,
+          home_wins: standing?.HomeWins || 0,
+          home_losses: standing?.HomeLosses || 0,
+          away_wins: standing?.AwayWins || 0,
+          away_losses: standing?.AwayLosses || 0,
           updated_at: new Date().toISOString(),
         })
         .ilike('team_name', `%${fullName.split(' ').pop()}%`);
     }
+
+    console.log(`Updated sbo_team_stats for ${teamStats.length} teams`);
 
     // Build intelligence for each game
     for (const game of games) {
       const homeTeam = game.home_team;
       const awayTeam = game.away_team;
 
-      const homeStats = findTeamStats(homeTeam, teamStatsMap);
-      const awayStats = findTeamStats(awayTeam, teamStatsMap);
-      const homeStanding = findTeamStats(homeTeam, standingsMap);
-      const awayStanding = findTeamStats(awayTeam, standingsMap);
+      const homeStats = findTeamData(homeTeam, teamStatsMap);
+      const awayStats = findTeamData(awayTeam, teamStatsMap);
+      const homeStanding = findTeamData(homeTeam, standingsMap);
+      const awayStanding = findTeamData(awayTeam, standingsMap);
 
-      // Get abbreviations for B2B check
       const homeAbbr = NAME_TO_ABBREV.get(homeTeam) || homeTeam;
       const awayAbbr = NAME_TO_ABBREV.get(awayTeam) || awayTeam;
       const b2bHome = yesterdayTeams.has(homeAbbr);
       const b2bAway = yesterdayTeams.has(awayAbbr);
 
-      // Filter injuries for these teams
-      const homeInjuries = injuries.filter((i: any) =>
-        i.Team === homeAbbr || TEAM_ABBREV_MAP[i.Team] === homeTeam
-      ).map((i: any) => ({
-        player: i.Name || i.PlayerID,
-        status: i.Status,
-        injury: i.BodyPart || i.Type,
-      }));
-
-      const awayInjuries = injuries.filter((i: any) =>
-        i.Team === awayAbbr || TEAM_ABBREV_MAP[i.Team] === awayTeam
-      ).map((i: any) => ({
-        player: i.Name || i.PlayerID,
-        status: i.Status,
-        injury: i.BodyPart || i.Type,
-      }));
+      // Calculate per-game stats from totals
+      const homeGames = homeStats?.Games || 82;
+      const awayGames = awayStats?.Games || 82;
+      const homePPG = homeStanding?.PointsPerGameFor || (homeStats?.Points ? +(homeStats.Points / homeGames).toFixed(1) : null);
+      const homeOppPPG = homeStanding?.PointsPerGameAgainst || (homeStats?.OpponentStat?.Points ? +(homeStats.OpponentStat.Points / homeGames).toFixed(1) : null);
+      const awayPPG = awayStanding?.PointsPerGameFor || (awayStats?.Points ? +(awayStats.Points / awayGames).toFixed(1) : null);
+      const awayOppPPG = awayStanding?.PointsPerGameAgainst || (awayStats?.OpponentStat?.Points ? +(awayStats.OpponentStat.Points / awayGames).toFixed(1) : null);
+      const homePace = homeStats?.Possessions || (homeStats?.FieldGoalsAttempted ? +(homeStats.FieldGoalsAttempted / homeGames * 1.1).toFixed(1) : null);
+      const awayPace = awayStats?.Possessions || (awayStats?.FieldGoalsAttempted ? +(awayStats.FieldGoalsAttempted / awayGames * 1.1).toFixed(1) : null);
 
       const intel = {
         game_id: String(game.id),
-        injury_report: [...homeInjuries, ...awayInjuries],
+        injury_report: [],
         rest_days_home: b2bHome ? 0 : 1,
         rest_days_away: b2bAway ? 0 : 1,
         back_to_back_home: b2bHome,
@@ -226,20 +226,20 @@ serve(async (req) => {
         away_record_away: awayStanding ? `${awayStanding.AwayWins || 0}-${awayStanding.AwayLosses || 0}` : null,
         ats_record_home: null,
         ats_record_away: null,
-        last_5_home: homeStanding ? { wins: homeStanding.LastTenWins, losses: homeStanding.LastTenLosses, streak: homeStanding.Streak } : null,
-        last_5_away: awayStanding ? { wins: awayStanding.LastTenWins, losses: awayStanding.LastTenLosses, streak: awayStanding.Streak } : null,
+        last_5_home: homeStanding ? { wins: homeStanding.LastTenWins, losses: homeStanding.LastTenLosses, streak: homeStanding.StreakDescription } : null,
+        last_5_away: awayStanding ? { wins: awayStanding.LastTenWins, losses: awayStanding.LastTenLosses, streak: awayStanding.StreakDescription } : null,
         head_to_head: null,
-        pace_home: homeStats?.Possessions || (homeStats?.FieldGoalsAttemptedPerGame ? homeStats.FieldGoalsAttemptedPerGame * 1.1 : null),
-        pace_away: awayStats?.Possessions || (awayStats?.FieldGoalsAttemptedPerGame ? awayStats.FieldGoalsAttemptedPerGame * 1.1 : null),
-        offensive_rating_home: homeStats?.PointsPerGame || null,
-        defensive_rating_home: homeStats?.OpponentPointsPerGame || null,
-        offensive_rating_away: awayStats?.PointsPerGame || null,
-        defensive_rating_away: awayStats?.OpponentPointsPerGame || null,
+        pace_home: homePace,
+        pace_away: awayPace,
+        offensive_rating_home: homePPG,
+        defensive_rating_home: homeOppPPG,
+        offensive_rating_away: awayPPG,
+        defensive_rating_away: awayOppPPG,
       };
 
-      console.log(`Intel for ${homeTeam} vs ${awayTeam}: ORtg=${intel.offensive_rating_home}, DRtg=${intel.defensive_rating_home}`);
+      console.log(`Intel for ${homeTeam}: PPG=${homePPG}, OppPPG=${homeOppPPG}, Record=${intel.home_record_home}`);
+      console.log(`Intel for ${awayTeam}: PPG=${awayPPG}, OppPPG=${awayOppPPG}, Record=${intel.away_record_away}`);
 
-      // Upsert by game_id
       const { data: existing } = await supabase
         .from('sbo_game_intelligence')
         .select('id')
@@ -259,8 +259,7 @@ serve(async (req) => {
       games_analyzed: processedCount,
       team_stats_updated: teamStats.length,
       standings_loaded: standings.length,
-      injuries_loaded: injuries.length,
-      message: `Intelligence gathered for ${processedCount} games`,
+      message: `Intelligence gathered for ${processedCount} games with real SportsDataIO stats`,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e: any) {
     console.error('Intelligence fetch error:', e);
