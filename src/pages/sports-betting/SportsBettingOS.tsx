@@ -4175,8 +4175,6 @@ export default function SportsBettingOS() {
       {/* Today's Guarantee Widget */}
       <TodaysGuaranteeWidget />
 
-      {/* Load & Analyze Games from Odds API */}
-      <TodaysGames />
 
       <Tabs defaultValue="games" className="w-full">
         <TabsList className="grid w-full grid-cols-12">
