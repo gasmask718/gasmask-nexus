@@ -48,13 +48,16 @@ async function buildChingWorldMessage(): Promise<string> {
     weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "America/New_York",
   });
 
-  // Get today's predictions
-  const { data: preds } = await supabase
+  // Get today's predictions — note: no "result" column exists, use verdict/was_correct
+  const { data: preds, error: predsErr } = await supabase
     .from("sbo_predictions")
     .select("*, sbo_games(home_team, away_team), sbo_player_props(player_name, prop_type, line, over_odds, under_odds, team)")
     .gte("created_at", `${today}T00:00:00-04:00`)
-    .not("result", "in", '("lost","incorrect")')
     .order("final_confidence", { ascending: false });
+
+  if (predsErr) {
+    console.error("ChingWorld picks query error:", predsErr);
+  }
 
   const all = preds || [];
   const lines: string[] = [];
