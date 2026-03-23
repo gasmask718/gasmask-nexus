@@ -984,14 +984,15 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
   const bestType = Object.entries(propTypeStats).sort(([, a], [, b]) => b.accuracy - a.accuracy)[0];
   const worstType = Object.entries(propTypeStats).filter(([, s]) => s.total >= 3).sort(([, a], [, b]) => a.accuracy - b.accuracy)[0];
 
-  // Smart filtering
+  // Smart filtering — use normalized prop types
   const filteredProps = props
     .filter(p => {
-      if (selectedPropType !== 'all' && p.prop_type !== selectedPropType) return false;
+      const norm = normalizePropType(p.prop_type);
+      if (selectedPropType !== 'all' && norm !== selectedPropType) return false;
       if (bestBetsOnly) {
         const pred = p.sbo_predictions?.[0];
         const conf = pred?.final_confidence || 0;
-        const typeAcc = propTypeStats[p.prop_type]?.accuracy ?? 0;
+        const typeAcc = propTypeStats[norm]?.accuracy ?? 0;
         if (conf < 70 || typeAcc < 65) return false;
       }
       return true;
@@ -1000,7 +1001,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       const predA = a.sbo_predictions?.[0];
       const predB = b.sbo_predictions?.[0];
       if (sortBy === 'confidence') return (predB?.final_confidence || 0) - (predA?.final_confidence || 0);
-      if (sortBy === 'accuracy') return (propTypeStats[b.prop_type]?.accuracy ?? 0) - (propTypeStats[a.prop_type]?.accuracy ?? 0);
+      if (sortBy === 'accuracy') return (propTypeStats[normalizePropType(b.prop_type)]?.accuracy ?? 0) - (propTypeStats[normalizePropType(a.prop_type)]?.accuracy ?? 0);
       if (sortBy === 'recent') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       if (sortBy === 'name') return (a.player_name || '').localeCompare(b.player_name || '');
       if (sortBy === 'over') return predA?.predicted_outcome === 'over' ? -1 : 1;
@@ -1008,11 +1009,23 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       return 0;
     });
 
-  const getAccuracyColor = (acc: number) => acc >= 75 ? 'text-green-500' : acc >= 60 ? 'text-yellow-500' : 'text-red-500';
-  const getConfColor = (c: number) => c >= 85 ? 'text-green-500' : c >= 70 ? 'text-blue-400' : c >= 55 ? 'text-yellow-500' : 'text-red-500';
-  const getConfBorder = (c: number) => c >= 85 ? 'border-l-green-500' : c >= 70 ? 'border-l-blue-400' : c >= 55 ? 'border-l-yellow-500' : 'border-l-red-500';
+  const getAccuracyColor = (acc: number) => acc >= 75 ? 'text-emerald-500' : acc >= 60 ? 'text-amber-500' : 'text-destructive';
+  const getConfColor = (c: number) => c >= 85 ? 'text-emerald-500' : c >= 70 ? 'text-blue-400' : c >= 55 ? 'text-amber-500' : 'text-destructive';
+  const getConfBorder = (c: number) => c >= 85 ? 'border-l-emerald-500' : c >= 70 ? 'border-l-blue-400' : c >= 55 ? 'border-l-amber-500' : 'border-l-destructive';
 
-  const propTypes = ['all', ...Object.keys(propTypeStats).sort()];
+  // Build prop type list from ALL loaded props + stats, ordered by PROP_TYPE_ORDER
+  const allNormalizedTypes = new Set([
+    ...props.map(p => normalizePropType(p.prop_type)),
+    ...Object.keys(propTypeStats),
+  ]);
+  const propTypes = ['all', ...PROP_TYPE_ORDER.filter(t => allNormalizedTypes.has(t)), ...Array.from(allNormalizedTypes).filter(t => !PROP_TYPE_ORDER.includes(t)).sort()];
+
+  // Count props per type (for types without stats yet)
+  const propCountByType: Record<string, number> = {};
+  props.forEach(p => {
+    const norm = normalizePropType(p.prop_type);
+    propCountByType[norm] = (propCountByType[norm] || 0) + 1;
+  });
 
   return (
     <div className="space-y-4">
