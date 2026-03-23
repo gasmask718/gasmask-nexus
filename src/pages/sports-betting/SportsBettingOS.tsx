@@ -336,7 +336,7 @@ function TonightGamesTab() {
       }
 
       for (const game of gamesToPredict) {
-        setPredictProgress(`Running prediction ${predicted + 1}/${gamesToPredict.length}...`);
+        setPredictProgress(`Predicting ${predicted + 1}/${gamesToPredict.length}: ${game.away_team} @ ${game.home_team}`);
         const dkOdds = game.sbo_odds?.find((o: any) =>
           o.sportsbook === 'draftkings' && o.market_type === 'moneyline'
         );
@@ -361,10 +361,21 @@ function TonightGamesTab() {
               kelly_stake: Math.round(kelly * 10000) / 10000,
               recommended_units: Math.round(quarterKelly * 100) / 100,
               recommended_stake: Math.round(quarterKelly * 500 * 100) / 100,
-            }).eq('id', data.id);
+            }).eq('id', data.prediction_id || data.id);
           }
           predicted++;
+
+          // Live card update — reload this game and update state immediately
+          const { data: updatedGame } = await supabase
+            .from('sbo_games')
+            .select('*, sbo_odds(*), sbo_predictions(*)')
+            .eq('id', game.id)
+            .single();
+          if (updatedGame) {
+            setGames(prev => prev.map((g: any) => g.id === game.id ? updatedGame : g));
+          }
         }
+        await new Promise(r => setTimeout(r, 300));
       }
 
       toast.success(`Tonight's predictions saved — ${predicted} games analyzed with intelligence`);
