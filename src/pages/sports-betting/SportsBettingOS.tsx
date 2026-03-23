@@ -810,17 +810,10 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
                 )}
               </div>
             )}
-            <div className="flex gap-2 mt-2">
-              <SavePickButton
-                pickType="game"
-                label={`${localPrediction.predicted_outcome === 'home' ? game.home_team : game.away_team} ML`}
-                detail={`${game.away_team} @ ${game.home_team}`}
-                odds={dkOdds ? String(localPrediction.predicted_outcome === 'home' ? dkOdds.home_odds : dkOdds.away_odds) : ''}
-                aiAnalysis={localPrediction.stats_brain_reasoning || localPrediction.market_brain_reasoning || ''}
-                confidence={localPrediction.final_confidence}
-                sourceTable="sbo_predictions"
-                sourceId={localPrediction.id || game.id}
-              />
+            <div className="flex gap-2 mt-2 items-center">
+              <span className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="h-3 w-3" /> Auto-saved to My Bets
+              </span>
               <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={async () => {
                 // Rerun: delete old prediction and intelligence, re-fetch and re-predict
                 setRunning(true);
