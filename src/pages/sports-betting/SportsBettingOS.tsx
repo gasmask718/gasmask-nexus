@@ -1734,7 +1734,7 @@ function ParlayBuilderTab() {
       };
     }
     const prop = prediction.sbo_player_props;
-    const rec = prop?.recommendation || prediction.predicted_outcome;
+    const rec = prediction.predicted_outcome || 'over';
     return {
       prediction_id: prediction.id,
       label: `${prop?.player_name} ${rec?.toUpperCase()} ${prop?.line} ${prop?.prop_type}`,
