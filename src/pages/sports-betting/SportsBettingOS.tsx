@@ -1119,6 +1119,31 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                 ) : (
                   <>
                     <PredictionResult prediction={existingPred} />
+                    {/* Verification result display */}
+                    {prop.verified && prop.verdict && (
+                      <div className={`mt-2 p-2.5 rounded-lg text-xs ${
+                        prop.verdict === 'correct'
+                          ? 'bg-green-500/10 text-green-600 border border-green-500/20'
+                          : prop.verdict === 'incorrect'
+                          ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                          : 'bg-muted text-muted-foreground border border-border'
+                      }`}>
+                        <div className="font-semibold mb-0.5">
+                          {prop.verdict === 'correct' ? '✅ CORRECT' :
+                           prop.verdict === 'incorrect' ? '❌ INCORRECT' :
+                           '➖ PUSH'}
+                        </div>
+                        <div className="text-[11px] opacity-80">
+                          Actual: {prop.actual_value} {prop.prop_type}
+                          {' · '}Line: {prop.line}
+                          {' · '}Pick: {existingPred.predicted_outcome?.toUpperCase()}
+                          {' · '}Result: {prop.actual_value > prop.line ? 'OVER' : prop.actual_value < prop.line ? 'UNDER' : 'PUSH'}
+                        </div>
+                      </div>
+                    )}
+                    {!prop.verified && existingPred && (
+                      <p className="text-[11px] text-muted-foreground mt-1.5">⏳ Pending verification</p>
+                    )}
                     <div className="flex gap-2 mt-2 items-center">
                       <span className="text-xs text-green-600 flex items-center gap-1">
                         <Check className="h-3 w-3" /> Auto-saved to My Bets
