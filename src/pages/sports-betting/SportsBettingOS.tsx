@@ -257,13 +257,6 @@ function TonightGamesTab() {
     errorMsg: '',
     lastSynced: null as string | null,
   });
-  const [yesterdayState, setYesterdayState] = useState({
-    games: [] as any[],
-    predictions: [] as any[],
-    loading: false,
-    verifying: false,
-    errorMsg: '',
-  });
 
   const setTonightState = (patch: Partial<typeof state>) => {
     setState((prev) => ({ ...prev, ...patch }));
