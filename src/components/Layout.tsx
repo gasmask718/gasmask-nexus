@@ -301,6 +301,23 @@ const DYNASTY_NAVIGATION = {
       ],
     },
   ],
+  exportsFloor: {
+    id: 'exports-floor',
+    name: '📊 Exports Floor — Reports & Backup',
+    items: [
+      { path: '/grabba/export/command', label: '🔥 Command Export', icon: Download },
+      { path: '/grabba/export/floor1', label: '🏢 Export Floor 1 — CRM', icon: Download },
+      { path: '/grabba/export/floor2', label: '📞 Export Floor 2 — Comms', icon: Download },
+      { path: '/grabba/export/floor3', label: '📦 Export Floor 3 — Inventory', icon: Download },
+      { path: '/grabba/export/floor4', label: '🚚 Export Floor 4 — Delivery', icon: Download },
+      { path: '/grabba/export/floor5', label: '💰 Export Floor 5 — Orders', icon: Download },
+      { path: '/grabba/export/floor6', label: '🏭 Export Floor 6 — Production', icon: Download },
+      { path: '/grabba/export/floor7', label: '🛒 Export Floor 7 — Wholesale', icon: Download },
+      { path: '/grabba/export/floor8', label: '🎖️ Export Floor 8 — Ambassadors', icon: Download },
+      { path: '/grabba/export/floor9', label: '🤖 Export Floor 9 — AI', icon: Download },
+      { path: '/grabba/export/backup', label: '☁️ Google Drive Backup', icon: Upload },
+    ],
+  },
   grabbaBrands: {
     id: 'grabba-brands',
     name: '🔴 Grabba Product Brands',
