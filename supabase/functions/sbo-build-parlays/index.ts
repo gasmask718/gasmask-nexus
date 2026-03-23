@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
         allParlays.push({ ...savedParlay, legs: finalLegs });
         console.log(`Built ${parlayName}: ${american} | ${winProb.toFixed(1)}% | $${profit}`);
 
-        await new Promise(r => setTimeout(r, 200));
+        // no delay — build fast
       }
     }
 
