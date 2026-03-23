@@ -1029,13 +1029,19 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
           </Button>
         ))}
         <Badge variant="secondary" className="text-xs">{filtered.length} props</Badge>
-        <Button onClick={runAllProps} disabled={runningAll || !!runningId} size="sm" className="ml-auto">
+        <Button onClick={runAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm" className="ml-auto">
           {runningAll
             ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {allProgress || 'Running...'}</>
             : <>📊 Run Props Analysis</>
           }
         </Button>
-        <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId} size="sm" variant="destructive">
+        <Button onClick={verifyPropResults} disabled={runningAll || !!runningId || verifyingProps} size="sm" variant="outline">
+          {verifyingProps
+            ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
+            : <>🔍 Verify Results</>
+          }
+        </Button>
+        <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId || verifyingProps} size="sm" variant="destructive">
           🔄 Reanalyze All Props
         </Button>
       </div>
