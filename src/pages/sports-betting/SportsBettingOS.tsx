@@ -1773,16 +1773,38 @@ function ParlayBuilderTab() {
   // Save AI parlay to sbo_parlays
   const saveAiParlay = async (parlay: any) => {
     try {
-      await supabase.from('sbo_parlays').insert({
+      const parlayLegs = (parlay.legs as any[]) || [];
+      const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { data: inserted } = await (supabase as any).from('sbo_parlays').insert({
         name: parlay.parlay_name,
         legs: parlay.legs as any,
         total_legs: parlay.leg_count,
         suggested_stake: aiStake,
+        stake: aiStake,
+        odds: parseInt(parlay.combined_odds_american) || 0,
+        potential_payout: Math.round(aiStake * (parlay.combined_odds_decimal || 1) * 100) / 100,
+        parlay_date: todayEST,
         combined_confidence: parlay.win_probability,
         expected_value: parlay.profit_if_win,
         status: 'pending',
-      });
-      toast.success('Parlay saved to My Bets');
+      }).select().single();
+
+      // Save legs to sbo_parlay_legs
+      if (inserted?.id && parlayLegs.length > 0) {
+        const legRows = parlayLegs.map((leg: any) => ({
+          parlay_id: inserted.id,
+          prediction_id: leg.id || null,
+          leg_type: leg.type === 'game' ? 'moneyline' : (leg.type || 'prop'),
+          label: leg.label,
+          odds: leg.odds,
+          confidence: leg.confidence,
+          result: 'pending',
+        }));
+        await (supabase as any).from('sbo_parlay_legs').insert(legRows);
+      }
+
+      toast.success('Parlay saved to My Bets with leg tracking');
+      loadSavedParlays();
     } catch (e: any) {
       toast.error('Save failed: ' + e.message);
     }
@@ -1865,17 +1887,46 @@ function ParlayBuilderTab() {
     if (selectedLegs.length < 2) { toast.error('Add at least 2 legs'); return; }
     setSaving(true);
     try {
-      const { error } = await supabase.from('sbo_parlays').insert({
+      // Calculate combined american odds
+      const toDecOdds = (a: number) => a > 0 ? (a / 100) + 1 : (100 / Math.abs(a)) + 1;
+      const combinedDec = selectedLegs.reduce((m, l) => m * toDecOdds(l.odds), 1);
+      const combinedAmerican = combinedDec >= 2 ? Math.round((combinedDec - 1) * 100) : Math.round(-100 / (combinedDec - 1));
+      const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+      const { data: inserted, error } = await (supabase as any).from('sbo_parlays').insert({
         name: parlayName || `${selectedLegs.length}-Leg Parlay`,
         legs: selectedLegs as any,
         total_legs: selectedLegs.length,
-        suggested_stake: stake,
+        suggested_stake: stake, 
+        stake: stake,
+        odds: combinedAmerican,
+        potential_payout: potentialPayout,
+        parlay_date: todayEST,
         combined_confidence: combinedProb,
         expected_value: potentialPayout - stake,
         status: 'pending',
-      });
+      }).select().single();
       if (error) throw error;
-      toast.success('Parlay saved!');
+
+      // Also save individual legs to sbo_parlay_legs
+      if (inserted?.id) {
+        const legRows = selectedLegs.map(leg => ({
+          parlay_id: inserted.id,
+          prediction_id: leg.prediction_id || null,
+          leg_type: leg.type || (leg.label?.includes('ML') ? 'moneyline' : 'prop'),
+          label: leg.label,
+          odds: leg.odds,
+          pick: leg.pick || null,
+          confidence: leg.confidence,
+          result: 'pending',
+        }));
+        await (supabase as any).from('sbo_parlay_legs').insert(legRows);
+      }
+
+      toast.success(`Parlay saved! Combined odds: ${combinedAmerican > 0 ? '+' : ''}${combinedAmerican}`);
+      setSelectedLegs([]);
+      setParlayName('');
+      loadSavedParlays();
     } catch (e: any) { toast.error(e.message); } finally { setSaving(false); }
   };
 
@@ -2118,6 +2169,9 @@ function ParlayBuilderTab() {
                         <p className="text-[10px] text-muted-foreground">
                           Odds: {leg.odds > 0 ? '+' : ''}{leg.odds} · {leg.confidence}% conf
                         </p>
+                        {leg.confidence < 55 && (
+                          <p className="text-[10px] text-amber-500 mt-0.5">⚠️ Low confidence — weakens parlay</p>
+                        )}
                       </div>
                       <Button size="icon" variant="ghost" className="w-6 h-6 flex-shrink-0" onClick={() => removeLeg(leg.prediction_id)}>
                         <X className="w-3 h-3" />
@@ -2135,6 +2189,9 @@ function ParlayBuilderTab() {
                         <span className="font-bold">{s.value}</span>
                       </div>
                     ))}
+                    {selectedLegs.length > 5 && (
+                      <p className="text-[10px] text-amber-500 mt-1">⚠️ 6+ leg parlays hit under 5% — consider trimming</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Label className="text-xs flex-shrink-0">Stake $</Label>
@@ -2160,10 +2217,58 @@ function ParlayBuilderTab() {
       {/* Saved Parlay Results */}
       <div className="mt-6">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-          Saved Parlay Results
+          📚 Parlay History & Results
         </p>
         <ParlayResultsSection parlays={savedParlays} onUpdate={loadSavedParlays} />
       </div>
+
+      {/* AI Suggested Parlay */}
+      {strongPredictions && strongPredictions.length >= 3 && (
+        <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">🤖 AI Suggested Parlay Tonight</h3>
+              <p className="text-[10px] text-muted-foreground">Top 3 picks by confidence (70%+)</p>
+            </div>
+          </div>
+          {(() => {
+            const eligible = (strongPredictions || []).filter((p: any) => p.final_confidence >= 70);
+            const top3 = eligible.slice(0, 3);
+            if (top3.length < 2) return <p className="text-xs text-muted-foreground">Not enough high-confidence picks (need 2+ at 70%+)</p>;
+            const avgConf = Math.round(top3.reduce((s: number, p: any) => s + p.final_confidence, 0) / top3.length);
+            const sugLegs = top3.map((pred: any) => buildLegFromPred(pred));
+            const toD = (a: number) => a > 0 ? (a / 100) + 1 : (100 / Math.abs(a)) + 1;
+            const combinedDec = sugLegs.reduce((m: number, l: any) => m * toD(l.odds), 1);
+            const combinedAm = combinedDec >= 2 ? Math.round((combinedDec - 1) * 100) : Math.round(-100 / (combinedDec - 1));
+            return (
+              <div className="space-y-2">
+                {sugLegs.map((leg: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30 border border-border/50">
+                    <span className="text-foreground font-medium truncate flex-1">{leg.label}</span>
+                    <span className="text-muted-foreground flex-shrink-0 ml-2">{leg.confidence}% · {leg.odds > 0 ? '+' : ''}{leg.odds}</span>
+                  </div>
+                ))}
+                <div className="text-center py-2 rounded-lg bg-muted/30">
+                  <p className="text-xs text-muted-foreground">
+                    Avg confidence: <strong>{avgConf}%</strong> · Combined odds: <strong>{combinedAm > 0 ? '+' : ''}{combinedAm}</strong> · Suggested stake: 1-2 units
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedLegs(sugLegs);
+                    setParlayName(`AI Top ${sugLegs.length}-Leg — ${new Date().toLocaleDateString()}`);
+                    setMode('manual');
+                    toast.success(`${sugLegs.length} legs loaded into builder`);
+                  }}
+                  className="w-full py-2.5 rounded-lg text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Add All to Builder
+                </button>
+              </div>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }

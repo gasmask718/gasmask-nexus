@@ -58972,6 +58972,71 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_parlay_legs: {
+        Row: {
+          actual_value: number | null
+          confidence: number | null
+          created_at: string | null
+          game_id: string | null
+          id: string
+          label: string | null
+          leg_type: string | null
+          line: number | null
+          odds: number | null
+          parlay_id: string
+          pick: string | null
+          prediction_id: string | null
+          prop_id: string | null
+          result: string | null
+          verdict_note: string | null
+          verified_at: string | null
+        }
+        Insert: {
+          actual_value?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          label?: string | null
+          leg_type?: string | null
+          line?: number | null
+          odds?: number | null
+          parlay_id: string
+          pick?: string | null
+          prediction_id?: string | null
+          prop_id?: string | null
+          result?: string | null
+          verdict_note?: string | null
+          verified_at?: string | null
+        }
+        Update: {
+          actual_value?: number | null
+          confidence?: number | null
+          created_at?: string | null
+          game_id?: string | null
+          id?: string
+          label?: string | null
+          leg_type?: string | null
+          line?: number | null
+          odds?: number | null
+          parlay_id?: string
+          pick?: string | null
+          prediction_id?: string | null
+          prop_id?: string | null
+          result?: string | null
+          verdict_note?: string | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_parlay_legs_parlay_id_fkey"
+            columns: ["parlay_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_parlays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_parlay_payouts: {
         Row: {
           briefing_id: string | null
@@ -59047,7 +59112,11 @@ export type Database = {
           legs_won: number | null
           name: string | null
           notes: string | null
+          odds: number | null
+          parlay_date: string | null
+          potential_payout: number | null
           result: string | null
+          stake: number | null
           status: string | null
           suggested_stake: number | null
           total_legs: number
@@ -59066,7 +59135,11 @@ export type Database = {
           legs_won?: number | null
           name?: string | null
           notes?: string | null
+          odds?: number | null
+          parlay_date?: string | null
+          potential_payout?: number | null
           result?: string | null
+          stake?: number | null
           status?: string | null
           suggested_stake?: number | null
           total_legs: number
@@ -59085,7 +59158,11 @@ export type Database = {
           legs_won?: number | null
           name?: string | null
           notes?: string | null
+          odds?: number | null
+          parlay_date?: string | null
+          potential_payout?: number | null
           result?: string | null
+          stake?: number | null
           status?: string | null
           suggested_stake?: number | null
           total_legs?: number
