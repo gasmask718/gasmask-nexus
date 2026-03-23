@@ -211,6 +211,8 @@ export function ChingWorldPicksSMS() {
     },
   });
 
+  const [genStatus, setGenStatus] = useState("");
+
   // Generate message on mount
   useEffect(() => {
     generateMessage();
@@ -218,10 +220,15 @@ export function ChingWorldPicksSMS() {
 
   const generateMessage = useCallback(async () => {
     setGenerating(true);
+    setGenStatus("⏳ Pulling picks from database...");
     try {
       const msg = await buildChingWorldMessage();
       setMessage(msg);
+      // Count picks in message
+      const propCount = (msg.match(/\|.*%.*\|/g) || []).length;
+      setGenStatus(`✅ Generated — ${propCount} picks loaded`);
     } catch (e: any) {
+      setGenStatus(`❌ Failed: ${e.message}`);
       toast.error("Failed to generate message: " + e.message);
     } finally {
       setGenerating(false);
