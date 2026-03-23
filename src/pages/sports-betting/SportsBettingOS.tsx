@@ -810,17 +810,10 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
                 )}
               </div>
             )}
-            <div className="flex gap-2 mt-2">
-              <SavePickButton
-                pickType="game"
-                label={`${localPrediction.predicted_outcome === 'home' ? game.home_team : game.away_team} ML`}
-                detail={`${game.away_team} @ ${game.home_team}`}
-                odds={dkOdds ? String(localPrediction.predicted_outcome === 'home' ? dkOdds.home_odds : dkOdds.away_odds) : ''}
-                aiAnalysis={localPrediction.stats_brain_reasoning || localPrediction.market_brain_reasoning || ''}
-                confidence={localPrediction.final_confidence}
-                sourceTable="sbo_predictions"
-                sourceId={localPrediction.id || game.id}
-              />
+            <div className="flex gap-2 mt-2 items-center">
+              <span className="text-xs text-green-600 flex items-center gap-1">
+                <Check className="h-3 w-3" /> Auto-saved to My Bets
+              </span>
               <Button variant="ghost" size="sm" className="text-xs flex-1" onClick={async () => {
                 // Rerun: delete old prediction and intelligence, re-fetch and re-predict
                 setRunning(true);
@@ -875,14 +868,15 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     setProps((data as any[]) || []);
   };
 
-  const runPropPrediction = async (prop: any, outcome: 'over' | 'under') => {
+  const runPropPrediction = async (prop: any, outcome?: 'over' | 'under') => {
     setRunningId(prop.id);
     try {
       const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
-        body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: outcome },
+        body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: outcome || null },
       });
       if (error) throw error;
-      toast.success(`${prop.player_name} ${outcome.toUpperCase()} — ${data.final_confidence}% (${data.confidence_tier})`);
+      const pick = data.predicted_outcome || outcome || 'over';
+      toast.success(`${prop.player_name} ${pick.toUpperCase()} — ${data.final_confidence}% (${data.confidence_tier}) · Auto-saved`);
       loadProps();
     } catch (e: any) {
       toast.error(e.message || 'Prediction failed');
@@ -905,7 +899,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         setAllProgress(`Analyzing ${analyzed + 1}/${unanalyzed.length} — ${prop.player_name}...`);
         try {
           await supabase.functions.invoke('sbo-run-predictions', {
-            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: 'over' },
+            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null },
           });
           analyzed++;
         } catch (e) {
@@ -917,6 +911,53 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
       await loadProps();
     } catch (e: any) {
       toast.error(e.message || 'Props analysis failed');
+    } finally {
+      setRunningAll(false);
+      setAllProgress('');
+    }
+  };
+
+  const reanalyzeAllProps = async () => {
+    if (!confirm('Delete today\'s prop predictions and rerun with corrected AI logic (OVER/UNDER)?')) return;
+    setRunningAll(true);
+    let count = 0;
+    try {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+      // Delete today's prop predictions
+      await supabase
+        .from('sbo_predictions')
+        .delete()
+        .eq('prediction_type', 'player_prop')
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      // Delete from saved picks too
+      await supabase
+        .from('sbo_saved_picks')
+        .delete()
+        .eq('pick_type', 'prop')
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      toast.info('Old prop predictions cleared — rerunning with AI-determined OVER/UNDER...');
+
+      const { data: todayProps } = await supabase
+        .from('sbo_player_props')
+        .select('id, player_name')
+        .gte('created_at', `${today}T00:00:00-04:00`);
+
+      for (const prop of (todayProps || [])) {
+        setAllProgress(`Reanalyzing ${count + 1}/${todayProps?.length}: ${prop.player_name}`);
+        await supabase.functions.invoke('sbo-run-predictions', {
+          body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null },
+        });
+        count++;
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      toast.success(`${count} props reanalyzed with correct OVER/UNDER picks — all auto-saved`);
+      await loadProps();
+    } catch (e: any) {
+      toast.error('Reanalyze failed: ' + e.message);
     } finally {
       setRunningAll(false);
       setAllProgress('');
@@ -958,6 +999,9 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
             ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {allProgress || 'Running...'}</>
             : <>📊 Run Props Analysis</>
           }
+        </Button>
+        <Button onClick={reanalyzeAllProps} disabled={runningAll || !!runningId} size="sm" variant="destructive">
+          🔄 Reanalyze All Props
         </Button>
       </div>
 
@@ -1027,27 +1071,17 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 
                 {!existingPred ? (
                   <div className="flex gap-2 mt-3">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop, 'over')} disabled={isRunning}>
-                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} OVER
-                    </Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop, 'under')} disabled={isRunning}>
-                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} UNDER
+                    <Button variant="outline" size="sm" className="flex-1" onClick={() => runPropPrediction(prop)} disabled={isRunning}>
+                      {isRunning ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <span className="mr-1">🧠</span>} Analyze (AI picks OVER/UNDER)
                     </Button>
                   </div>
                 ) : (
                   <>
                     <PredictionResult prediction={existingPred} />
-                    <div className="flex gap-2 mt-2">
-                      <SavePickButton
-                        pickType="prop"
-                        label={`${prop.player_name} ${existingPred.predicted_outcome?.toUpperCase()} ${prop.line} ${prop.prop_type}`}
-                        detail={`${game?.away_team} @ ${game?.home_team}`}
-                        odds={String(existingPred.predicted_outcome === 'over' ? prop.over_odds : prop.under_odds)}
-                        aiAnalysis={existingPred.stats_brain_reasoning || existingPred.context_brain_reasoning || ''}
-                        confidence={existingPred.final_confidence}
-                        sourceTable="sbo_predictions"
-                        sourceId={existingPred.id}
-                      />
+                    <div className="flex gap-2 mt-2 items-center">
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Auto-saved to My Bets
+                      </span>
                       {onAddToParlay && ['elite', 'strong'].includes(existingPred.confidence_tier) && (
                         <Button
                           variant="secondary"
@@ -3211,7 +3245,7 @@ export default function SportsBettingOS() {
             body: {
               prop_id: propsNeedingAnalysis[i].id,
               prediction_type: 'player_prop',
-              predicted_outcome: 'over',
+              predicted_outcome: null,
             },
           });
 

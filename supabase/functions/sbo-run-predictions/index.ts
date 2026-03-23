@@ -25,12 +25,7 @@ async function callClaude(system: string, user: string): Promise<string> {
   return data.content?.[0]?.text?.trim() || '';
 }
 
-async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; reasoning: string; data_quality: string }> {
-  const system = `You are a professional NBA statistical analyst. You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
-If stats show N/A or are missing, acknowledge the gap and lower your confidence.
-
-Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences referencing the actual stats provided"}`;
-
+async function runStatsBrain(ctx: any, supabase: any): Promise<{ score: number; reasoning: string; data_quality: string; ai_recommendation?: string; player_avg?: string; edge?: string }> {
   let statsContext = '';
   let dataQuality = 'odds_only';
 
@@ -92,7 +87,7 @@ Injuries: ${intel.injury_report?.length > 0
   : 'None reported'}
 `.trim();
       } else {
-        // FALLBACK — pull from sbo_team_stats using last word of team name
+        // FALLBACK — pull from sbo_team_stats
         const homeLastWord = ctx.home_team?.split(' ').pop() || '';
         const awayLastWord = ctx.away_team?.split(' ').pop() || '';
 
@@ -146,24 +141,71 @@ No real stats available. Base prediction on odds and context only. Cap confidenc
     dataQuality = 'odds_only';
   }
 
-  const user = ctx.prediction_type === 'moneyline'
-    ? `${statsContext}
+  // For player props — ask AI to decide OVER or UNDER
+  if (ctx.prediction_type === 'player_prop') {
+    const system = `You are an elite NBA prop analyst for Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.`;
+
+    const propPrompt = `
+PLAYER: ${ctx.player_name} (${ctx.team || 'Unknown'})
+PROP: ${ctx.prop_type} line ${ctx.line}
+ODDS: Over ${ctx.over_odds} / Under ${ctx.under_odds}
+GAME: ${ctx.away_team || 'TBD'} @ ${ctx.home_team || 'TBD'}
+
+${statsContext || 'No detailed stats available.'}
+
+Analyze whether this player will go OVER or UNDER ${ctx.line} ${ctx.prop_type}.
+
+Rules:
+1. If player's season average for this stat is more than 20% below the line → pick UNDER
+2. If player's season average is above the line → lean OVER
+3. If line is near the average → analyze matchup context
+4. Do NOT default to OVER — base your pick on actual numbers
+
+Return ONLY valid JSON:
+{
+  "recommendation": "OVER" or "UNDER",
+  "score": 0-100,
+  "player_avg": "player's season average for this stat type",
+  "edge": "specific reason with numbers",
+  "reasoning": "2-3 sentence analysis citing actual numbers"
+}`;
+
+    const raw = await callClaude(system, propPrompt);
+    try {
+      const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+      let score = Math.min(100, Math.max(0, p.score || 50));
+      if (dataQuality === 'odds_only' && score > 55) score = 55;
+      const recommendation = (p.recommendation || 'OVER').toUpperCase();
+      return {
+        score,
+        reasoning: p.reasoning || 'Statistical analysis complete',
+        data_quality: dataQuality,
+        ai_recommendation: recommendation === 'UNDER' ? 'under' : 'over',
+        player_avg: p.player_avg || '',
+        edge: p.edge || '',
+      };
+    } catch {
+      return { score: 50, reasoning: 'Statistical analysis inconclusive', data_quality: dataQuality, ai_recommendation: 'over' };
+    }
+  }
+
+  // For moneyline — original logic
+  const system = `You are a professional NBA statistical analyst. You are given REAL current season data for tonight's game. Analyze the actual numbers provided — do not use general knowledge, use only the data given. Give a confidence score 0-100 based purely on the statistics.
+If stats show N/A or are missing, acknowledge the gap and lower your confidence.
+
+Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences referencing the actual stats provided"}`;
+
+  const user = `${statsContext}
 
 Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} to WIN
 Home odds: ${ctx.home_odds} | Away odds: ${ctx.away_odds}
 ${dataQuality === 'odds_only' ? 'WARNING: No real stats available. Cap your confidence at 55 maximum.' : ''}
-Statistical confidence 0-100.`
-    : `${statsContext}
-
-Prop: ${ctx.prop_type} ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line}
-Over: ${ctx.over_odds} | Under: ${ctx.under_odds}
-Statistical confidence 0-100 that ${ctx.player_name} goes ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line} ${ctx.prop_type}.`;
+Statistical confidence 0-100.`;
 
   const raw = await callClaude(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
     let score = Math.min(100, Math.max(0, p.score || 50));
-    // Cap confidence if no real data
     if (dataQuality === 'odds_only' && score > 55) score = 55;
     return {
       score,
@@ -182,7 +224,7 @@ async function runMarketBrain(ctx: any) {
     : 50;
   const user = ctx.prediction_type === 'moneyline'
     ? `${ctx.away_team} @ ${ctx.home_team}. DK odds: Home ${ctx.home_odds} / Away ${ctx.away_odds}. Implied prob of predicted winner: ${impliedProb.toFixed(1)}%. Market confidence 0-100 that ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins.`
-    : `${ctx.player_name} ${ctx.prop_type} ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line}. Over: ${ctx.over_odds}, Under: ${ctx.under_odds}. Market confidence 0-100.`;
+    : `${ctx.player_name} ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Over: ${ctx.over_odds}, Under: ${ctx.under_odds}. Market confidence 0-100.`;
   const raw = await callClaude(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -194,7 +236,7 @@ async function runContextBrain(ctx: any) {
   const system = `You are an NBA insider analyst. Assess qualitative factors: injuries, load management, motivation, revenge games, travel fatigue, coaching matchups, contract years, back-to-backs. Respond ONLY with valid JSON: {"score": 0-100, "reasoning": "2-3 sentences max"}`;
   const user = ctx.prediction_type === 'moneyline'
     ? `${ctx.away_team} @ ${ctx.home_team} on ${ctx.game_date}. Predict: ${ctx.predicted_outcome === 'home' ? ctx.home_team : ctx.away_team} wins. Contextual/situational confidence 0-100.`
-    : `${ctx.player_name} (${ctx.team}) — ${ctx.prop_type} ${ctx.predicted_outcome?.toUpperCase()} ${ctx.line}. Game: ${ctx.away_team} @ ${ctx.home_team}. Context confidence 0-100.`;
+    : `${ctx.player_name} (${ctx.team}) — ${ctx.prop_type} ${(ctx.final_recommendation || ctx.predicted_outcome || 'OVER').toUpperCase()} ${ctx.line}. Game: ${ctx.away_team} @ ${ctx.home_team}. Context confidence 0-100.`;
   const raw = await callClaude(system, user);
   try {
     const p = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
@@ -329,9 +371,19 @@ serve(async (req) => {
       ctx = { ...ctx, ...prop, home_team: (prop as any).sbo_games?.home_team, away_team: (prop as any).sbo_games?.away_team, game_date: (prop as any).sbo_games?.game_date, game_id: (prop as any).game_id };
     }
 
-    // Run all 4 brains in parallel
-    const [statsResult, market, context, polyResult] = await Promise.all([
-      runStatsBrain(ctx, supabase),
+    // Run stats brain first for props to get AI recommendation
+    const statsResult = await runStatsBrain(ctx, supabase);
+
+    // For props: use AI-determined recommendation instead of hardcoded value
+    let finalOutcome = predicted_outcome;
+    if (prediction_type === 'player_prop' && statsResult.ai_recommendation) {
+      finalOutcome = statsResult.ai_recommendation;
+      ctx.predicted_outcome = finalOutcome;
+      ctx.final_recommendation = finalOutcome;
+    }
+
+    // Run remaining brains in parallel (market & context now use the AI recommendation)
+    const [market, context, polyResult] = await Promise.all([
       runMarketBrain(ctx),
       runContextBrain(ctx),
       runPolymarketBrain(ctx, supabase),
@@ -374,7 +426,7 @@ serve(async (req) => {
       game_id: game_id || null,
       prop_id: prop_id || null,
       prediction_type,
-      predicted_outcome,
+      predicted_outcome: finalOutcome,
       stats_brain_score: stats.score,
       stats_brain_reasoning: stats.reasoning,
       market_brain_score: market.score,
@@ -390,18 +442,60 @@ serve(async (req) => {
       data_quality: dataQuality,
     }).select().single();
 
+    // AUTO-SAVE to sbo_saved_picks
+    if (prediction?.id) {
+      try {
+        const label = prediction_type === 'player_prop'
+          ? `${ctx.player_name} ${(finalOutcome || 'over').toUpperCase()} ${ctx.line} ${ctx.prop_type}`
+          : `${finalOutcome === 'home' ? ctx.home_team : ctx.away_team} ML`;
+
+        const detail = prediction_type === 'player_prop'
+          ? `${ctx.prop_type} line: ${ctx.line} · AI avg: ${statsResult.player_avg || 'N/A'} · ${statsResult.edge || ''}`
+          : `${ctx.away_team} @ ${ctx.home_team} · Confidence: ${finalScore}%`;
+
+        const odds = prediction_type === 'player_prop'
+          ? (finalOutcome === 'over' ? ctx.over_odds : ctx.under_odds)
+          : (finalOutcome === 'home' ? ctx.home_odds : ctx.away_odds);
+
+        // Check not already saved
+        const { data: alreadySaved } = await supabase
+          .from('sbo_saved_picks')
+          .select('id')
+          .eq('source_id', prediction.id)
+          .maybeSingle();
+
+        if (!alreadySaved) {
+          await supabase.from('sbo_saved_picks').insert({
+            pick_type: prediction_type === 'player_prop' ? 'prop' : 'game',
+            label,
+            detail: detail || '',
+            odds: String(odds || '-110'),
+            ai_analysis: stats.reasoning || '',
+            confidence: finalScore,
+            source_table: 'sbo_predictions',
+            source_id: prediction.id,
+            result: 'pending',
+          });
+        }
+      } catch (saveErr) {
+        console.error('Auto-save to saved_picks failed:', saveErr);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       prediction_id: prediction?.id,
       final_confidence: finalScore,
       confidence_tier: tier,
       data_quality: dataQuality,
+      predicted_outcome: finalOutcome,
       brains: { stats, market, context, polymarket: polyResult },
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : 'Unknown error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
