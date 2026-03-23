@@ -875,14 +875,15 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
     setProps((data as any[]) || []);
   };
 
-  const runPropPrediction = async (prop: any, outcome: 'over' | 'under') => {
+  const runPropPrediction = async (prop: any, outcome?: 'over' | 'under') => {
     setRunningId(prop.id);
     try {
       const { data, error } = await supabase.functions.invoke('sbo-run-predictions', {
-        body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: outcome },
+        body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: outcome || null },
       });
       if (error) throw error;
-      toast.success(`${prop.player_name} ${outcome.toUpperCase()} — ${data.final_confidence}% (${data.confidence_tier})`);
+      const pick = data.predicted_outcome || outcome || 'over';
+      toast.success(`${prop.player_name} ${pick.toUpperCase()} — ${data.final_confidence}% (${data.confidence_tier}) · Auto-saved`);
       loadProps();
     } catch (e: any) {
       toast.error(e.message || 'Prediction failed');
