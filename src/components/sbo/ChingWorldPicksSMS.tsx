@@ -134,8 +134,37 @@ async function buildChingWorldMessage(): Promise<string> {
     }
   }
 
+  // If nothing found at all
+  if (top90.length === 0 && steals.length === 0 && blocks.length === 0 && gamePicks.length === 0) {
+    const otherProps = all.filter(p => p.prediction_type === "player_prop" && (p.final_confidence || 0) >= 70);
+    if (otherProps.length > 0) {
+      lines.push("");
+      lines.push("─────────────────────");
+      lines.push("📊 TOP PROPS (70%+ CONFIDENCE)");
+      for (const p of otherProps.slice(0, 10)) {
+        const pp = p.sbo_player_props;
+        if (!pp) continue;
+        const dir = (p.predicted_outcome || "over").toUpperCase();
+        const odds = dir === "OVER" ? pp.over_odds : pp.under_odds;
+        const propLabel = normPropType(pp.prop_type);
+        lines.push(`${pp.player_name}${pp.team ? ` (${pp.team})` : ""}`);
+        lines.push(`${propLabel} ${dir} ${pp.line} | ${p.final_confidence}% | ${odds ? (odds > 0 ? "+" : "") + odds : "N/A"}`);
+        lines.push("");
+      }
+    } else {
+      lines.push("");
+      lines.push("No picks available yet for today.");
+      lines.push("");
+      lines.push("To generate picks:");
+      lines.push("1. Go to Tonight's Games → Load Games → Run AI");
+      lines.push("2. Go to Props → Run Props Analysis");
+      lines.push("3. Come back here and press Generate");
+      lines.push("");
+    }
+  }
+
   lines.push("─────────────────────");
-  lines.push("💡 More picks at ChingWorld");
+  lines.push("💡 Bet responsibly");
   lines.push("Good luck! 🎯");
 
   return lines.join("\n");
