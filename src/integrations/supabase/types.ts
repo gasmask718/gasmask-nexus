@@ -59708,14 +59708,17 @@ export type Database = {
           confidence: number | null
           created_at: string | null
           detail: string | null
+          game_date: string | null
           id: string
           label: string | null
           odds: string | null
+          pick_date: string | null
           pick_type: string | null
           potential_payout: number | null
           result: string | null
           source_id: string | null
           source_table: string | null
+          sport: string | null
           stake: number | null
         }
         Insert: {
@@ -59723,14 +59726,17 @@ export type Database = {
           confidence?: number | null
           created_at?: string | null
           detail?: string | null
+          game_date?: string | null
           id?: string
           label?: string | null
           odds?: string | null
+          pick_date?: string | null
           pick_type?: string | null
           potential_payout?: number | null
           result?: string | null
           source_id?: string | null
           source_table?: string | null
+          sport?: string | null
           stake?: number | null
         }
         Update: {
@@ -59738,14 +59744,17 @@ export type Database = {
           confidence?: number | null
           created_at?: string | null
           detail?: string | null
+          game_date?: string | null
           id?: string
           label?: string | null
           odds?: string | null
+          pick_date?: string | null
           pick_type?: string | null
           potential_payout?: number | null
           result?: string | null
           source_id?: string | null
           source_table?: string | null
+          sport?: string | null
           stake?: number | null
         }
         Relationships: []

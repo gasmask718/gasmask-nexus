@@ -1,0 +1,1 @@
+ALTER TABLE sbo_saved_picks ADD COLUMN IF NOT EXISTS game_date date, ADD COLUMN IF NOT EXISTS pick_date date DEFAULT current_date, ADD COLUMN IF NOT EXISTS sport text DEFAULT 'NBA';

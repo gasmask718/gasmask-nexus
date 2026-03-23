@@ -465,6 +465,7 @@ serve(async (req) => {
           .maybeSingle();
 
         if (!alreadySaved) {
+          const pickDate = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
           await supabase.from('sbo_saved_picks').insert({
             pick_type: prediction_type === 'player_prop' ? 'prop' : 'game',
             label,
@@ -475,6 +476,9 @@ serve(async (req) => {
             source_table: 'sbo_predictions',
             source_id: prediction.id,
             result: 'pending',
+            pick_date: pickDate,
+            game_date: ctx.game_date ? new Date(ctx.game_date).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }) : pickDate,
+            sport: 'NBA',
           });
         }
       } catch (saveErr) {
