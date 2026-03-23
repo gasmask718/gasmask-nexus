@@ -443,6 +443,43 @@ function TonightGamesTab() {
             </div>
           </div>
 
+          {/* PRIMARY ACTION BUTTON — Run Predictions */}
+          <button
+            onClick={predictAllGames}
+            disabled={predictingAll}
+            className={`w-full flex items-center justify-center gap-2 rounded-[10px] border-none text-sm font-medium transition-opacity mb-3 py-3.5 ${
+              predictingAll
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-foreground text-background cursor-pointer hover:opacity-90'
+            }`}
+          >
+            {predictingAll ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" />
+                {predictProgress || 'Running predictions...'}
+              </>
+            ) : (
+              '🧠 Run Predictions — All Tonight\'s Games'
+            )}
+          </button>
+
+          {/* Progress bar */}
+          {predictingAll && (
+            <div className="h-[3px] bg-border rounded-sm overflow-hidden -mt-1 mb-3">
+              <div
+                className="h-full bg-foreground rounded-sm transition-all duration-500"
+                style={{
+                  width: predictProgress.includes('/')
+                    ? `${Math.round(
+                        (parseInt(predictProgress.match(/(\d+)\//)?.[1] || '0') /
+                        parseInt(predictProgress.match(/\/(\d+)/)?.[1] || '1')) * 100
+                      )}%`
+                    : '40%',
+                }}
+              />
+            </div>
+          )}
+
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <h2 className="text-lg font-bold text-foreground">Tonight's NBA Games</h2>
@@ -1016,6 +1053,22 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
         </span>
         <span className="text-[11px] text-muted-foreground">{filtered.length} props loaded</span>
       </div>
+
+      {/* PRIMARY ACTION BUTTON — Run Props Analysis */}
+      <button
+        onClick={runAllProps}
+        disabled={runningAll || !!runningId || verifyingProps}
+        className={`w-full flex items-center justify-center gap-2 rounded-[10px] border-none text-sm font-medium transition-opacity py-3.5 ${
+          runningAll
+            ? 'bg-muted text-muted-foreground cursor-not-allowed'
+            : 'bg-foreground text-background cursor-pointer hover:opacity-90'
+        }`}
+      >
+        {runningAll
+          ? <><Loader2 className="h-3.5 w-3.5 animate-spin flex-shrink-0" /> {allProgress || 'Running...'}</>
+          : '📊 Run Props Analysis — All Tonight\'s Players'
+        }
+      </button>
 
       <div className="flex items-center gap-2 flex-wrap">
         {(['all', 'strong', 'elite'] as const).map(f => (
