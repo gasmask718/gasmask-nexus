@@ -95,6 +95,28 @@ export function ManualCampaignCallModal({
   const [showTransferPicker, setShowTransferPicker] = useState(false);
   const [isTransferring, setIsTransferring] = useState(false);
   const [showTransferPanel, setShowTransferPanel] = useState(false);
+  const [selectedTransferAgent, setSelectedTransferAgent] = useState<{ id: string; name: string } | null>(null);
+
+  // Fetch available ElevenLabs agents for transfer
+  const { data: transferAgents = [] } = useQuery({
+    queryKey: ["elevenlabs-agents-transfer"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("elevenlabs_agents")
+        .select("id, agent_name, elevenlabs_agent_id, script_label, agent_description, is_active")
+        .eq("is_active", true)
+        .order("sort_order");
+      return (data || []) as Array<{
+        id: string;
+        agent_name: string;
+        elevenlabs_agent_id: string | null;
+        script_label: string;
+        agent_description: string | null;
+        is_active: boolean;
+      }>;
+    },
+    enabled: open,
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
