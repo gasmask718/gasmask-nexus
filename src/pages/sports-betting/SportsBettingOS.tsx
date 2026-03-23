@@ -748,6 +748,29 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 // ═══════════════════════════════════════════════════════════════
 // PLAYER PROPS TAB
 // ═══════════════════════════════════════════════════════════════
+const PROP_TYPE_LABELS: Record<string, string> = {
+  points: 'Points', pts: 'Points', player_points: 'Points', point: 'Points',
+  rebounds: 'Rebounds', reb: 'Rebounds', player_rebounds: 'Rebounds', total_rebounds: 'Rebounds',
+  assists: 'Assists', ast: 'Assists', player_assists: 'Assists',
+  threes: '3-Pointers', three_pointers: '3-Pointers', threes_made: '3-Pointers', '3pt': '3-Pointers', three_point_field_goals_made: '3-Pointers', player_threes: '3-Pointers',
+  blocks: 'Blocks', blk: 'Blocks', player_blocks: 'Blocks',
+  steals: 'Steals', stl: 'Steals', player_steals: 'Steals',
+  turnovers: 'Turnovers', tov: 'Turnovers', player_turnovers: 'Turnovers',
+  pra: 'Pts+Reb+Ast', points_rebounds_assists: 'Pts+Reb+Ast', pts_reb_ast: 'Pts+Reb+Ast',
+  pr: 'Pts+Reb', points_rebounds: 'Pts+Reb', pts_reb: 'Pts+Reb',
+  pa: 'Pts+Ast', points_assists: 'Pts+Ast', pts_ast: 'Pts+Ast',
+  ra: 'Reb+Ast', rebounds_assists: 'Reb+Ast', reb_ast: 'Reb+Ast',
+  fantasy_points: 'Fantasy Pts', fantasy: 'Fantasy Pts',
+  minutes: 'Minutes', min: 'Minutes', player_minutes: 'Minutes',
+  double_double: 'Double-Double', triple_double: 'Triple-Double',
+};
+
+const PROP_TYPE_ORDER = ['Points', 'Rebounds', 'Assists', '3-Pointers', 'Blocks', 'Steals', 'Turnovers', 'Pts+Reb+Ast', 'Pts+Reb', 'Pts+Ast', 'Reb+Ast', 'Fantasy Pts', 'Minutes', 'Double-Double', 'Triple-Double'];
+
+const normalizePropType = (raw: string): string => {
+  if (!raw) return 'Other';
+  return PROP_TYPE_LABELS[raw.toLowerCase().trim()] || raw;
+};
 
 function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
   const [props, setProps] = useState<any[]>([]);
