@@ -314,9 +314,20 @@ Deno.serve(async (req) => {
           `${l.label} (${l.odds > 0 ? '+' : ''}${l.odds}) conf:${l.confidence}%`
         ).join(' | ');
 
-        const aiResult = await getAIAnalysis(legSummary, {
-          legCount: finalLegs.length, american, winProb, ev, stake, payout: totalPayout,
-        }, LOVABLE_API_KEY);
+        let aiResult;
+        if (finalLegs.length <= 3) {
+          aiResult = await getAIAnalysis(legSummary, {
+            legCount: finalLegs.length, american, winProb, ev, stake, payout: totalPayout,
+          }, LOVABLE_API_KEY);
+        } else {
+          aiResult = {
+            verdict: ev > 5 ? 'STRONG BET' : ev > 0 ? 'MODERATE BET' : ev > -10 ? 'RISKY' : 'PASS',
+            weakest_leg: finalLegs[finalLegs.length - 1]?.label || '',
+            correlation_risk: finalLegs.length > 10 ? 'high' : finalLegs.length > 6 ? 'medium' : 'low',
+            analysis: `${finalLegs.length}-leg parlay · ${winProb.toFixed(1)}% win probability · ${american} odds · $${profit} profit on $${stake}`,
+            confidence_score: Math.round(winProb),
+          };
+        }
 
         const parlayName = `${finalLegs.length}-Leg V${variation} — ${aiResult.verdict}`;
 
