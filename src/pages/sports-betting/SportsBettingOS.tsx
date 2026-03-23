@@ -1247,7 +1247,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-foreground">{prop.prop_type} {existingPred?.predicted_outcome?.toUpperCase() || ''} {prop.line}</p>
+                  <p className="font-bold text-foreground">{normType} {existingPred?.predicted_outcome?.toUpperCase() || ''} {prop.line}</p>
                   {existingPred && (
                     <div className="flex items-center justify-end gap-2 mt-0.5">
                       <span className={`text-xl font-black ${getConfColor(conf)}`}>{conf}%</span>
