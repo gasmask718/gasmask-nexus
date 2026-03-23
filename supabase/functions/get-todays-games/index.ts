@@ -68,12 +68,12 @@ serve(async (req) => {
     }); } catch {}
   } catch (e) {
     oddsError = e instanceof Error ? e.message : 'Odds API fetch failed';
-    await supabase.from('api_fetch_logs').insert({
+    try { await supabase.from('api_fetch_logs').insert({
       source: 'odds_api',
       status_code: 0,
       error_message: oddsError,
       games_returned: 0,
-    }).catch(() => {});
+    }); } catch {}
   }
 
   // Fetch from SportsDataIO
