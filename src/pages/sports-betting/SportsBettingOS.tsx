@@ -2868,25 +2868,35 @@ function AccuracyTab() {
             <p className="text-sm font-semibold text-foreground">Recent Verifications</p>
             <div className="max-h-64 overflow-y-auto space-y-1">
               {verifications?.map((v: any) => {
-                const game = v.sbo_predictions?.sbo_games;
+                const pred = v.sbo_predictions;
+                const game = pred?.sbo_games;
+                const isGame = pred?.prediction_type === 'moneyline';
                 const verdictBadge = v.verdict === 'correct'
                   ? { label: '✅ Correct', color: 'bg-green-500/10 text-green-600' }
                   : v.verdict === 'push'
                   ? { label: '➖ Push', color: 'bg-amber-500/10 text-amber-600' }
                   : { label: '❌ Incorrect', color: 'bg-red-500/10 text-red-600' };
 
+                const displayLabel = isGame && game
+                  ? `${game.away_team} @ ${game.home_team}`
+                  : v.actual_result
+                  ? v.actual_result.split(' (')[0]
+                  : 'Unknown';
+
                 return (
                   <div key={v.id} className="flex items-center justify-between p-2 rounded bg-muted/20 text-xs">
                     <div className="flex-1 min-w-0">
-                      <span className="text-foreground truncate">
-                        {game ? `${game.away_team} @ ${game.home_team}` : 'Game'}
+                      <span className="text-foreground truncate block">
+                        {isGame ? '🏀' : '📊'} {displayLabel}
                       </span>
-                      <span className="text-muted-foreground ml-2">
-                        {v.final_score_away}-{v.final_score_home}
-                      </span>
+                      {isGame && v.final_score_away != null && (
+                        <span className="text-muted-foreground">
+                          {v.final_score_away}-{v.final_score_home}
+                        </span>
+                      )}
                     </div>
-                    <span className="text-muted-foreground mx-2">{v.our_confidence}%</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full ${verdictBadge.color}`}>
+                    <span className="text-muted-foreground mx-2">{pred?.final_confidence || '—'}%</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap ${verdictBadge.color}`}>
                       {verdictBadge.label}
                     </span>
                   </div>
