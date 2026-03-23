@@ -246,7 +246,7 @@ function YesterdayGameCard({ game }: { game: any }) {
 // ═══════════════════════════════════════════════════════════════
 
 function TonightGamesTab() {
-  const [subTab, setSubTab] = useState<'today' | 'yesterday'>('today');
+  const [subTab, setSubTab] = useState<'today' | 'history'>('today');
   const [state, setState] = useState({
     games: [] as any[],
     picks: [] as any[],
