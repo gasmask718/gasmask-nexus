@@ -528,12 +528,6 @@ function TonightGamesTab() {
     day: 'numeric',
   });
 
-  const yesterdayTitle = new Date(Date.now() - 86400000).toLocaleDateString('en-US', {
-    timeZone: 'America/New_York',
-    weekday: 'short',
-    month: 'long',
-    day: 'numeric',
-  });
 
   const confidenceColor = (confidence: number) => {
     if (confidence >= 85) return 'text-emerald-500 border-emerald-500/40';
