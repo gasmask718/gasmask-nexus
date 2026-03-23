@@ -92,12 +92,12 @@ serve(async (req) => {
       sdioError = `SportsDataIO ${sdioStatus}: ${errText}`;
     }
 
-    await supabase.from('api_fetch_logs').insert({
+    try { await supabase.from('api_fetch_logs').insert({
       source: 'sportsdata',
       status_code: sdioStatus,
       error_message: sdioError,
       games_returned: sdioGames.length,
-    }).catch(() => {});
+    }); } catch {}
   } catch (e) {
     sdioError = e instanceof Error ? e.message : 'SportsDataIO fetch failed';
     await supabase.from('api_fetch_logs').insert({
