@@ -520,59 +520,6 @@ function TonightGamesTab() {
     }
   };
 
-  // ── Yesterday functions ──
-  const loadYesterday = async () => {
-    setYesterdayState((p) => ({ ...p, loading: true, errorMsg: '' }));
-    try {
-      const { start, end } = getYesterdayETBounds();
-      const { data: games, error: gErr } = await (supabase as any)
-        .from('sbo_games')
-        .select('*, sbo_predictions(*), sbo_results_verification(*)')
-        .gte('game_date', start)
-        .lt('game_date', end);
-      if (gErr) throw gErr;
-
-      const yesterdayEST = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-      const { data: picks } = await (supabase as any)
-        .from('sbo_saved_picks')
-        .select('*')
-        .eq('pick_date', yesterdayEST)
-        .eq('pick_type', 'game')
-        .order('confidence', { ascending: false });
-
-      setYesterdayState((p) => ({
-        ...p,
-        games: games || [],
-        predictions: picks || [],
-        loading: false,
-      }));
-    } catch (e: any) {
-      setYesterdayState((p) => ({ ...p, loading: false, errorMsg: e?.message || 'Failed to load yesterday.' }));
-    }
-  };
-
-  const verifyYesterday = async () => {
-    setYesterdayState((p) => ({ ...p, verifying: true }));
-    try {
-      const { data, error } = await supabase.functions.invoke('sbo-verify-results');
-      if (error) throw error;
-      toast.success(data?.message || 'Verification complete');
-      await loadYesterday();
-    } catch (e: any) {
-      toast.error(e?.message || 'Verification failed');
-    } finally {
-      setYesterdayState((p) => ({ ...p, verifying: false }));
-    }
-  };
-
-  useEffect(() => {
-    loadGames();
-    loadPicks();
-  }, []);
-
-  useEffect(() => {
-    if (subTab === 'yesterday') loadYesterday();
-  }, [subTab]);
 
   const dateTitle = new Date().toLocaleDateString('en-US', {
     timeZone: 'America/New_York',
