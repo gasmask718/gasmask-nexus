@@ -58816,6 +58816,7 @@ export type Database = {
           correlation_risk: string | null
           created_at: string | null
           ev_percentage: number | null
+          game_date: string | null
           id: string
           leg_count: number | null
           legs: Json | null
@@ -58839,6 +58840,7 @@ export type Database = {
           correlation_risk?: string | null
           created_at?: string | null
           ev_percentage?: number | null
+          game_date?: string | null
           id?: string
           leg_count?: number | null
           legs?: Json | null
@@ -58862,6 +58864,7 @@ export type Database = {
           correlation_risk?: string | null
           created_at?: string | null
           ev_percentage?: number | null
+          game_date?: string | null
           id?: string
           leg_count?: number | null
           legs?: Json | null
@@ -58945,6 +58948,7 @@ export type Database = {
           combined_confidence: number | null
           created_at: string | null
           expected_value: number | null
+          game_date: string | null
           id: string
           legs: Json
           legs_lost: number | null
@@ -58963,6 +58967,7 @@ export type Database = {
           combined_confidence?: number | null
           created_at?: string | null
           expected_value?: number | null
+          game_date?: string | null
           id?: string
           legs?: Json
           legs_lost?: number | null
@@ -58981,6 +58986,7 @@ export type Database = {
           combined_confidence?: number | null
           created_at?: string | null
           expected_value?: number | null
+          game_date?: string | null
           id?: string
           legs?: Json
           legs_lost?: number | null

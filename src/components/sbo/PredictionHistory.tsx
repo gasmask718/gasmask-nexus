@@ -12,7 +12,7 @@ type DateFilter = 'today' | 'yesterday' | '7days' | '30days' | 'alltime';
 
 export default function PredictionHistory() {
   const [typeFilter, setTypeFilter] = useState<HistoryFilter>('all');
-  const [dateFilter, setDateFilter] = useState<DateFilter>('7days');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('alltime');
   const [search, setSearch] = useState('');
   const [predictions, setPredictions] = useState<any[]>([]);
   const [parlays, setParlays] = useState<any[]>([]);

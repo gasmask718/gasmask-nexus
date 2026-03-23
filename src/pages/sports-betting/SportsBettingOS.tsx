@@ -2352,15 +2352,27 @@ function AccuracyTab() {
   const [verifyProgress, setVerifyProgress] = useState('');
   const queryClient = useQueryClient();
 
+  const { data: allPreds, refetch: refetchAll } = useQuery({
+    queryKey: ['all-predictions-accuracy-full'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('sbo_predictions')
+        .select('id, prediction_type, predicted_outcome, final_confidence, confidence_tier, verdict, verified, was_correct, created_at')
+        .order('created_at', { ascending: false })
+        .limit(1000);
+      return (data as any[]) || [];
+    },
+  });
+
   const { data: predictions, refetch: refetchGraded } = useQuery({
     queryKey: ['all-predictions-accuracy'],
     queryFn: async () => {
       const { data } = await supabase
         .from('sbo_predictions')
         .select('*')
-        .not('was_correct', 'is', null)
+        .not('verdict', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(200);
+        .limit(500);
       return (data as any[]) || [];
     },
   });
@@ -2375,7 +2387,7 @@ function AccuracyTab() {
           sbo_games(home_team, away_team, game_date, status, winner),
           sbo_player_props(player_name, prop_type, line)
         `)
-        .is('was_correct', null)
+        .is('verdict', null)
         .order('created_at', { ascending: false })
         .limit(50);
       return (data as any[]) || [];
@@ -2394,7 +2406,6 @@ function AccuracyTab() {
     },
   });
 
-  // Props-specific accuracy from verifications
   const { data: propVerifications } = useQuery({
     queryKey: ['prop-verifications'],
     queryFn: async () => {
@@ -2406,35 +2417,49 @@ function AccuracyTab() {
     },
   });
 
-  const total = predictions?.length || 0;
-  const correct = predictions?.filter(p => p.was_correct).length || 0;
-  const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : '0';
+  // Computed stats from allPreds
+  const total = allPreds?.length || 0;
+  const verified = allPreds?.filter(p => p.verified).length || 0;
+  const correct = allPreds?.filter(p => p.verdict === 'correct' || p.was_correct === true).length || 0;
+  const incorrect = allPreds?.filter(p => p.verdict === 'incorrect' || p.was_correct === false).length || 0;
+  const pendingCount = allPreds?.filter(p => !p.verdict && p.was_correct === null).length || 0;
+  const accuracy = (correct + incorrect) > 0
+    ? ((correct / (correct + incorrect)) * 100).toFixed(1) : '0';
+
+  // Game vs prop breakdown
+  const gamePreds = allPreds?.filter(p => p.prediction_type === 'moneyline') || [];
+  const propPreds = allPreds?.filter(p => p.prediction_type === 'player_prop') || [];
+  const gameCorrect = gamePreds.filter(p => p.verdict === 'correct' || p.was_correct === true).length;
+  const gameIncorrect = gamePreds.filter(p => p.verdict === 'incorrect' || p.was_correct === false).length;
+  const gameAccuracy = (gameCorrect + gameIncorrect) > 0 ? ((gameCorrect / (gameCorrect + gameIncorrect)) * 100).toFixed(1) : '0';
+  const propCorrectCount = propPreds.filter(p => p.verdict === 'correct' || p.was_correct === true).length;
+  const propIncorrectCount = propPreds.filter(p => p.verdict === 'incorrect' || p.was_correct === false).length;
+  const propAccuracy = (propCorrectCount + propIncorrectCount) > 0 ? ((propCorrectCount / (propCorrectCount + propIncorrectCount)) * 100).toFixed(1) : '0';
 
   const byTier = ['elite', 'strong', 'moderate', 'weak'].map(tier => {
-    const tierPreds = predictions?.filter(p => p.confidence_tier === tier) || [];
-    const tierCorrect = tierPreds.filter(p => p.was_correct).length;
+    const tierPreds = allPreds?.filter(p => p.confidence_tier === tier) || [];
+    const tc = tierPreds.filter(p => p.verdict === 'correct' || p.was_correct === true).length;
+    const ti = tierPreds.filter(p => p.verdict === 'incorrect' || p.was_correct === false).length;
     return {
       tier,
       total: tierPreds.length,
-      correct: tierCorrect,
-      accuracy: tierPreds.length > 0
-        ? ((tierCorrect / tierPreds.length) * 100).toFixed(1)
-        : 'N/A',
+      correct: tc,
+      incorrect: ti,
+      accuracy: (tc + ti) > 0 ? ((tc / (tc + ti)) * 100).toFixed(1) : 'N/A',
     };
   });
 
-  // Accuracy by confidence band
   const byConfidenceBand = [
     { label: '55-65%', min: 55, max: 65 },
     { label: '65-75%', min: 65, max: 75 },
     { label: '75-90%', min: 75, max: 90 },
     { label: '90%+', min: 90, max: 100 },
   ].map(band => {
-    const inBand = predictions?.filter(p => {
+    const inBand = allPreds?.filter(p => {
       const conf = p.final_confidence || 0;
       return conf >= band.min && conf < (band.max === 100 ? 101 : band.max);
     }) || [];
-    const wins = inBand.filter(p => p.was_correct).length;
+    const wins = inBand.filter(p => p.verdict === 'correct' || p.was_correct === true).length;
     return {
       ...band,
       total: inBand.length,
@@ -2446,9 +2471,15 @@ function AccuracyTab() {
   const markResult = async (predId: string, wasCorrect: boolean) => {
     await supabase
       .from('sbo_predictions')
-      .update({ was_correct: wasCorrect, actual_outcome: wasCorrect ? 'correct' : 'incorrect' })
+      .update({
+        was_correct: wasCorrect,
+        verdict: wasCorrect ? 'correct' : 'incorrect',
+        verified: true,
+        verified_at: new Date().toISOString(),
+      })
       .eq('id', predId);
     toast.success('Result recorded');
+    refetchAll();
     refetchGraded();
     refetchPending();
   };
@@ -2462,8 +2493,11 @@ function AccuracyTab() {
       });
       if (error) throw error;
       toast.success(
-        `${data.verified} predictions verified — ${data.accuracy}% accuracy today`
+        data.verified > 0
+          ? `${data.correct}W - ${data.incorrect}L · ${data.accuracy}% accuracy`
+          : data.message || 'No new results to verify'
       );
+      refetchAll();
       refetchGraded();
       refetchPending();
       queryClient.invalidateQueries({ queryKey: ['recent-verifications'] });
@@ -2474,6 +2508,23 @@ function AccuracyTab() {
       setVerifyProgress('');
     }
   };
+
+  // Auto-verify on mount
+  useEffect(() => {
+    const autoVerify = async () => {
+      try {
+        const { data } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+        if (data?.verified > 0) {
+          toast.info(`Auto-verified ${data.verified} results`);
+          refetchAll();
+          refetchGraded();
+          refetchPending();
+          queryClient.invalidateQueries({ queryKey: ['recent-verifications'] });
+        }
+      } catch { /* silent */ }
+    };
+    autoVerify();
+  }, []);
 
   return (
     <div className="space-y-4">
@@ -2495,19 +2546,37 @@ function AccuracyTab() {
       <AccuracyHistoryWidget />
 
       {/* Overall accuracy */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-5 gap-2">
         {[
-          { label: 'Total Graded', value: total, color: 'text-foreground' },
-          { label: 'Correct', value: correct, color: 'text-green-500' },
-          { label: 'Accuracy', value: `${accuracy}%`, color: parseFloat(accuracy) >= 55 ? 'text-green-500' : 'text-amber-500' },
+          { label: 'Total', value: total, color: 'text-foreground' },
+          { label: 'Correct', value: correct, color: 'text-emerald-500' },
+          { label: 'Incorrect', value: incorrect, color: 'text-destructive' },
+          { label: 'Pending', value: pendingCount, color: 'text-amber-500' },
+          { label: 'Accuracy', value: `${accuracy}%`, color: parseFloat(accuracy) >= 55 ? 'text-emerald-500' : 'text-amber-500' },
         ].map(s => (
           <Card key={s.label}>
             <CardContent className="p-3 text-center">
-              <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
               <p className="text-[10px] text-muted-foreground mt-0.5">{s.label}</p>
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Games vs Props breakdown */}
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="p-3 text-center">
+            <p className={`text-2xl font-bold ${parseFloat(gameAccuracy) >= 55 ? 'text-emerald-500' : 'text-amber-500'}`}>{gameAccuracy}%</p>
+            <p className="text-[10px] text-muted-foreground">🏀 Games · {gameCorrect}W-{gameIncorrect}L</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-3 text-center">
+            <p className={`text-2xl font-bold ${parseFloat(propAccuracy) >= 55 ? 'text-emerald-500' : 'text-amber-500'}`}>{propAccuracy}%</p>
+            <p className="text-[10px] text-muted-foreground">📊 Props · {propCorrectCount}W-{propIncorrectCount}L</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Accuracy by confidence tier */}
