@@ -1961,6 +1961,18 @@ function AccuracyTab() {
     },
   });
 
+  // Props-specific accuracy from verifications
+  const { data: propVerifications } = useQuery({
+    queryKey: ['prop-verifications'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_results_verification')
+        .select('verdict, actual_result')
+        .eq('pick_type', 'prop');
+      return data || [];
+    },
+  });
+
   const total = predictions?.length || 0;
   const correct = predictions?.filter(p => p.was_correct).length || 0;
   const accuracy = total > 0 ? ((correct / total) * 100).toFixed(1) : '0';
