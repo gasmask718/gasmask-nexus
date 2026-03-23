@@ -3195,7 +3195,7 @@ export default function SportsBettingOS() {
             body: {
               prop_id: propsNeedingAnalysis[i].id,
               prediction_type: 'player_prop',
-              predicted_outcome: 'over',
+              predicted_outcome: null,
             },
           });
 
