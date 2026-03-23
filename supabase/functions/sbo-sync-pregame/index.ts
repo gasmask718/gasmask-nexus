@@ -220,6 +220,7 @@ serve(async (req) => {
             under_odds: underProp?.under_payout || -110,
             source: 'draftkings',
             entered_by: 'api',
+            game_date: new Date(matchingGame.game_date).toLocaleDateString('en-CA', { timeZone: 'America/New_York' }),
           });
           inserted++;
         }

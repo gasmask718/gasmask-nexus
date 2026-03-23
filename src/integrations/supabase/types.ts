@@ -59249,6 +59249,7 @@ export type Database = {
           actual_value: number | null
           created_at: string | null
           entered_by: string | null
+          game_date: string | null
           game_id: string | null
           id: string
           line: number
@@ -59270,6 +59271,7 @@ export type Database = {
           actual_value?: number | null
           created_at?: string | null
           entered_by?: string | null
+          game_date?: string | null
           game_id?: string | null
           id?: string
           line: number
@@ -59291,6 +59293,7 @@ export type Database = {
           actual_value?: number | null
           created_at?: string | null
           entered_by?: string | null
+          game_date?: string | null
           game_id?: string | null
           id?: string
           line?: number

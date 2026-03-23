@@ -117,10 +117,13 @@ serve(async (req) => {
         team: player.team,
         prop_type: propType,
         line,
-        over_odds: -120, // PrizePicks doesn't have traditional odds
+        over_odds: -120,
         under_odds: -120,
         source: 'prizepicks',
         entered_by: 'api',
+        game_date: matchingGame?.game_date
+          ? new Date(matchingGame.game_date).toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+          : new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }),
       });
       inserted++;
     }
