@@ -87,7 +87,7 @@ serve(async (req) => {
       const batch = propIds.slice(i, i + BATCH_SIZE)
       const { data: props, error: propErr } = await supabase
         .from('sbo_player_props')
-        .select('id, player_name, team, prop_type, line, sportsbook, source')
+        .select('id, player_name, team, prop_type, line, source')
         .in('id', batch)
       if (propErr) {
         console.error(`Prop batch ${i} error:`, propErr.message)
