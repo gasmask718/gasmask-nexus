@@ -257,6 +257,43 @@ Keep the playbook under 500 words. Be specific, not generic.`;
       }
     }
 
+    // Send SMS summary to David
+    const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
+    const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
+    const FROM_NUMBER = Deno.env.get("TWILIO_FROM_NUMBER");
+    const DAVID_NUMBER = Deno.env.get("DAVID_PHONE_NUMBER");
+
+    if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && FROM_NUMBER && DAVID_NUMBER) {
+      const agentsUpdated = results.filter((r: any) => r.status === "updated").length;
+      const smsBody = [
+        `Dynasty OS — ${today}`,
+        `Calls analyzed: ${callLogs.length} (${wins.length}W / ${losses.length}L)`,
+        `Agents updated: ${agentsUpdated}/4`,
+        `Insight: ${topInsight}`,
+      ].join("\n");
+
+      try {
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: "Basic " + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+              From: FROM_NUMBER,
+              To: DAVID_NUMBER,
+              Body: smsBody,
+            }).toString(),
+          }
+        );
+        console.log("[Self-Learn] SMS sent to David");
+      } catch (smsErr: any) {
+        console.error("[Self-Learn] SMS failed:", smsErr.message);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         status: "completed",
