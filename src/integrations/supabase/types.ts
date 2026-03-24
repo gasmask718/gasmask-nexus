@@ -49924,6 +49924,42 @@ export type Database = {
           },
         ]
       }
+      playbook_history: {
+        Row: {
+          agent_id: string
+          agent_name: string | null
+          calls_analyzed: number | null
+          created_at: string
+          id: string
+          losses_analyzed: number | null
+          top_insight: string | null
+          update_content: string
+          wins_analyzed: number | null
+        }
+        Insert: {
+          agent_id: string
+          agent_name?: string | null
+          calls_analyzed?: number | null
+          created_at?: string
+          id?: string
+          losses_analyzed?: number | null
+          top_insight?: string | null
+          update_content: string
+          wins_analyzed?: number | null
+        }
+        Update: {
+          agent_id?: string
+          agent_name?: string | null
+          calls_analyzed?: number | null
+          created_at?: string
+          id?: string
+          losses_analyzed?: number | null
+          top_insight?: string | null
+          update_content?: string
+          wins_analyzed?: number | null
+        }
+        Relationships: []
+      }
       playbook_usage_log: {
         Row: {
           business_id: string
