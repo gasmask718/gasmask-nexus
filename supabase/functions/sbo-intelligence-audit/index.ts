@@ -56,32 +56,38 @@ serve(async (req) => {
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    // QUERY 2 — Get prediction details separately
+    // QUERY 2 — Get prediction details in batches (avoid URL length limits)
     const predictionIds = verifications.map(v => v.prediction_id).filter(Boolean)
 
-    const { data: predictions, error: predError } = await supabase
-      .from('sbo_predictions')
-      .select(`
-        id, prediction_type, predicted_outcome, final_confidence,
-        confidence_tier, data_quality, stats_brain_score,
-        market_brain_score, context_brain_score, game_id, prop_id
-      `)
-      .in('id', predictionIds)
+    const BATCH_SIZE = 50
+    const allPredictions: any[] = []
+    for (let i = 0; i < predictionIds.length; i += BATCH_SIZE) {
+      const batch = predictionIds.slice(i, i + BATCH_SIZE)
+      const { data: batchPreds, error: batchErr } = await supabase
+        .from('sbo_predictions')
+        .select(`
+          id, prediction_type, predicted_outcome, final_confidence,
+          confidence_tier, data_quality, stats_brain_score,
+          market_brain_score, context_brain_score, game_id, prop_id
+        `)
+        .in('id', batch)
+      if (batchErr) throw new Error(`Predictions batch query failed: ${batchErr.message}`)
+      allPredictions.push(...(batchPreds || []))
+    }
+    const predictions = allPredictions
+    console.log(`Loaded ${predictions.length} predictions`)
 
-    if (predError) throw new Error(`Predictions query failed: ${predError.message}`)
-    console.log(`Loaded ${predictions?.length || 0} predictions`)
-
-    // QUERY 3 — Get prop details for prop predictions
-    const propPredictions = (predictions || []).filter(p => p.prediction_type === 'player_prop' && p.prop_id)
+    // QUERY 3 — Get prop details in batches
+    const propPredictions = predictions.filter(p => p.prediction_type === 'player_prop' && p.prop_id)
     const propIds = propPredictions.map(p => p.prop_id).filter(Boolean)
 
     const propsMap: Record<string, any> = {}
-    if (propIds.length > 0) {
+    for (let i = 0; i < propIds.length; i += BATCH_SIZE) {
+      const batch = propIds.slice(i, i + BATCH_SIZE)
       const { data: props } = await supabase
         .from('sbo_player_props')
         .select('id, player_name, team, prop_type, line, sportsbook, source')
-        .in('id', propIds)
-
+        .in('id', batch)
       for (const prop of (props || [])) {
         propsMap[prop.id] = prop
       }
