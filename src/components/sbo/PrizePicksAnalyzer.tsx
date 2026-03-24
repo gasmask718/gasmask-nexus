@@ -112,6 +112,8 @@ export function PrizePicksAnalyzer() {
 
   const loadSavedPPProps = async () => {
     const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const targetDate = viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0);
+    console.log('Loading PP props for date:', targetDate, 'viewDate:', viewDate);
     try {
       const { data, error } = await (supabase as any)
         .from('sbo_player_props')
@@ -124,12 +126,12 @@ export function PrizePicksAnalyzer() {
             data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning,
             was_correct, verified,
             sbo_results_verification(
-              verdict, was_correct, actual_result, actual_value, verdict_note, verified_at
+              verdict, actual_result, actual_value, verdict_note, verified_at
             )
           )
         `)
         .eq('source', 'prizepicks')
-        .eq('game_date', todayEST)
+        .eq('game_date', targetDate)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
