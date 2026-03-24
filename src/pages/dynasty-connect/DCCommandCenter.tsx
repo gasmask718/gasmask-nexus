@@ -9,7 +9,7 @@ export default function DCCommandCenter() {
     queryKey: ['dc-live-calls'],
     queryFn: async () => {
       const { count } = await supabase
-        .from('live_calls')
+        .from('live_calls' as any)
         .select('id', { count: 'exact', head: true })
         .eq('status', 'active');
       return count || 0;
