@@ -125,30 +125,26 @@ interface CallItem {
 
 // ElevenLabs agents are fetched from DB — see useQuery below
 
+// Script templates mapped to their corresponding ElevenLabs agent IDs
 const SCRIPT_TEMPLATES = [
   {
     id: "intro_sales",
-
     label: "Sales Introduction",
-
+    agentId: "agent_0301kmdmp16aevv8svr78pbr75n8",
     script:
       "Hi, this is {{agent_name}} calling from {{business_name}}. I'm reaching out because we have some exciting new products that I think would be a great fit for your store. Do you have a quick moment to chat?",
   },
-
   {
     id: "follow_up",
-
     label: "Follow-Up Call",
-
+    agentId: "agent_3101kmdn5q9tfh7r3padaq6j37r3",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. I'm following up on our previous conversation. I wanted to check in and see if you had any questions or if you're ready to place an order.",
   },
-
   {
     id: "reactivation",
-
     label: "Reactivation / Win-Back",
-
+    agentId: "agent_5901kmdnb01sfzs9hp76mz806813",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. We noticed it's been a while since your last order and wanted to reach out. We have some new offers and would love to get you back on board. Can I share what's new?",
   },
@@ -1017,6 +1013,18 @@ export default function CampaignWizardPage() {
                     Mode: {(activeCampaign as any)?.dial_mode === "manual" ? "Manual Cold Call" : "AI Agent"}
                   </Badge>
 
+                  {/* Connection Status Indicators */}
+                  <Badge variant="outline" className="gap-1.5 text-[10px] h-5 border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400">
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Twilio Connected
+                  </Badge>
+                  {(activeCampaign as any)?.dial_mode !== "manual" && (
+                    <Badge variant="outline" className="gap-1.5 text-[10px] h-5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
+                      ElevenLabs Connected
+                    </Badge>
+                  )}
+
                   {activeCampaign?.status === "active" && (
                     <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
                       <Activity className="h-3 w-3" /> Dialing Active
@@ -1729,7 +1737,11 @@ export default function CampaignWizardPage() {
                       <Label className="text-xs">Quick Templates</Label>
                       <div className="flex flex-wrap gap-2">
                         {SCRIPT_TEMPLATES.map((tpl) => (
-                          <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => update("initial_script", tpl.script)}>
+                          <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => {
+                            update("initial_script", tpl.script);
+                            // Auto-select the mapped ElevenLabs agent
+                            if (tpl.agentId) update("agent_id", tpl.agentId);
+                          }}>
                             {tpl.label}
                           </Button>
                         ))}
@@ -1854,10 +1866,19 @@ export default function CampaignWizardPage() {
                 </div>
 
                 {form.dial_mode === "ai" && (
-                  <div className="p-3 border rounded bg-muted/20">
-                    <p className="text-xs text-muted-foreground">Twilio TTS Script</p>
-                    <p className="truncate">{form.initial_script || "Missing"}</p>
-                  </div>
+                  <>
+                    <div className="p-3 border rounded bg-muted/20">
+                      <p className="text-xs text-muted-foreground">AI Agent</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Bot className="h-3 w-3" />
+                        {elAgents.find(a => a.elevenlabs_agent_id === form.agent_id)?.agent_name || form.agent_id || "Not selected"}
+                      </p>
+                    </div>
+                    <div className="p-3 border rounded bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Twilio TTS Script</p>
+                      <p className="truncate">{form.initial_script || "Missing"}</p>
+                    </div>
+                  </>
                 )}
                 {form.dial_mode === "manual" && form.initial_script && (
                   <div className="p-3 border rounded bg-muted/20">
