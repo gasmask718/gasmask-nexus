@@ -85,10 +85,10 @@ serve(async (req: Request) => {
     }
 
     const wins = callLogs.filter(
-      (c) => c.outcome === "answered" || c.outcome === "converted"
+      (c) => c.outcome === "reached" || c.outcome === "callback_requested"
     );
     const losses = callLogs.filter(
-      (c) => c.outcome === "no_answer" || c.outcome === "failed"
+      (c) => c.outcome === "no_answer" || c.outcome === "voicemail" || c.outcome === "busy" || c.outcome === "wrong_number"
     );
 
     // ── Step 2: Build analysis prompt for Claude ──
