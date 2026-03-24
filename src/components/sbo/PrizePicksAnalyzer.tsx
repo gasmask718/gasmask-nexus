@@ -94,6 +94,7 @@ export function PrizePicksAnalyzer() {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [verifyDate, setVerifyDate] = useState<'today' | 'yesterday'>('today');
+  const [viewDate, setViewDate] = useState<'today' | 'yesterday'>('today');
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [batchProcessProgress, setBatchProcessProgress] = useState({
     step: '', current: 0, total: 0,
@@ -101,10 +102,17 @@ export function PrizePicksAnalyzer() {
   });
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { loadSavedPPProps(); }, []);
+  const getDateEST = (offset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  };
+
+  useEffect(() => { loadSavedPPProps(); }, [viewDate]);
 
   const loadSavedPPProps = async () => {
-    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    const targetDate = viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0);
+    console.log('Loading PP props for date:', targetDate, 'viewDate:', viewDate);
     try {
       const { data, error } = await (supabase as any)
         .from('sbo_player_props')
@@ -117,12 +125,12 @@ export function PrizePicksAnalyzer() {
             data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning,
             was_correct, verified,
             sbo_results_verification(
-              verdict, was_correct, actual_result, actual_value, verdict_note, verified_at
+              verdict, actual_result, actual_value, verdict_note, verified_at
             )
           )
         `)
         .eq('source', 'prizepicks')
-        .eq('game_date', todayEST)
+        .eq('game_date', targetDate)
         .order('created_at', { ascending: false });
 
       if (!error && data) {
@@ -824,9 +832,22 @@ export function PrizePicksAnalyzer() {
         </div>
       ) : (
         <>
-          <div className="text-xs text-muted-foreground text-center py-1">
-            {savedProps.length} total | {analyzed.length} analyzed | {unanalyzed.length} need analysis | 🔥 {eliteCount} elite (85%+) | 💪 {strongCount} strong (70%+)
-            {verifiedTotal > 0 && <> | ✅ {wonCount}W-{lostCount}L ({verifiedAccuracy}%)</>}
+          {/* Date toggle for viewing props */}
+          <div className="flex items-center justify-between">
+            <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+              <button onClick={() => setViewDate('today')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  viewDate === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}>Today ({getDateEST(0)})</button>
+              <button onClick={() => setViewDate('yesterday')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  viewDate === 'yesterday' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}>Yesterday ({getDateEST(-1)})</button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {savedProps.length} total | {analyzed.length} analyzed | {unanalyzed.length} need analysis | 🔥 {eliteCount} elite | 💪 {strongCount} strong
+              {verifiedTotal > 0 && <> | ✅ {wonCount}W-{lostCount}L ({verifiedAccuracy}%)</>}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -916,9 +937,16 @@ export function PrizePicksAnalyzer() {
           ) : savedProps.length > 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">No props match the current filters.</p>
           ) : (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              No PrizePicks props saved today. Upload a screenshot or import JSON to get started.
-            </p>
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                No PrizePicks props for {viewDate === 'yesterday' ? 'yesterday' : 'today'} ({viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0)}).
+              </p>
+              {viewDate === 'today' && (
+                <Button variant="outline" size="sm" onClick={() => setViewDate('yesterday')}>
+                  View Yesterday's Props
+                </Button>
+              )}
+            </div>
           )}
         </>
       )}
