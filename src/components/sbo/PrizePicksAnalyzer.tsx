@@ -94,6 +94,7 @@ export function PrizePicksAnalyzer() {
   const [verifying, setVerifying] = useState(false);
   const [verifyResult, setVerifyResult] = useState<any>(null);
   const [verifyDate, setVerifyDate] = useState<'today' | 'yesterday'>('today');
+  const [viewDate, setViewDate] = useState<'today' | 'yesterday'>('today');
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [batchProcessProgress, setBatchProcessProgress] = useState({
     step: '', current: 0, total: 0,
@@ -101,7 +102,13 @@ export function PrizePicksAnalyzer() {
   });
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { loadSavedPPProps(); }, []);
+  const getDateEST = (offset = 0) => {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    return d.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  };
+
+  useEffect(() => { loadSavedPPProps(); }, [viewDate]);
 
   const loadSavedPPProps = async () => {
     const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
