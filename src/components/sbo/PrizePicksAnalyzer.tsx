@@ -111,7 +111,6 @@ export function PrizePicksAnalyzer() {
   useEffect(() => { loadSavedPPProps(); }, [viewDate]);
 
   const loadSavedPPProps = async () => {
-    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const targetDate = viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0);
     console.log('Loading PP props for date:', targetDate, 'viewDate:', viewDate);
     try {
