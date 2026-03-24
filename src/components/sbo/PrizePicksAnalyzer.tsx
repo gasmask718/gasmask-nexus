@@ -1,11 +1,11 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, Camera, Save, Send, RefreshCw, Flame, TrendingUp, X as XIcon, Zap, FileJson, Filter } from 'lucide-react';
+import { Loader2, Upload, Camera, Save, Send, RefreshCw, Zap, FileJson, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PROP_LABELS: Record<string, string> = {
@@ -23,6 +23,34 @@ const PROP_LABELS: Record<string, string> = {
 };
 const normalizePropType = (raw: string) => PROP_LABELS[raw?.toLowerCase()?.trim()] || raw;
 
+interface SavedProp {
+  id: string;
+  player_name: string;
+  team: string | null;
+  prop_type: string;
+  line: number;
+  over_odds: number | null;
+  under_odds: number | null;
+  game_date: string;
+  sportsbook: string;
+  game: string | null;
+  position: string | null;
+  created_at: string;
+  sbo_predictions: Array<{
+    id: string;
+    final_confidence: number | null;
+    predicted_outcome: string | null;
+    confidence_tier: string | null;
+    stats_brain_score: number | null;
+    market_brain_score: number | null;
+    context_brain_score: number | null;
+    data_quality: string | null;
+    stats_brain_reasoning: string | null;
+    market_brain_reasoning: string | null;
+    context_brain_reasoning: string | null;
+  }>;
+}
+
 interface ExtractedProp {
   player_name: string;
   team: string | null;
@@ -35,29 +63,14 @@ interface ExtractedProp {
   under_odds: number;
 }
 
-interface ComparedProp extends ExtractedProp {
-  dk_line: number | null;
-  line_diff: number | null;
-  line_edge: string;
-  edge_direction: string | null;
-  pp_advantage: string;
-  ai_pick: string | null;
-  ai_confidence: number | null;
-  signal: string;
-  signal_strength: number;
-  dk_prop_id: string | null;
-  db_prop_id?: string | null;
-  reasoning?: string | null;
-}
-
-type FilterType = 'all' | 'strong' | 'ai_signal' | 'line_edge' | 'over' | 'under' | 'high_conf';
+type FilterType = 'all' | 'strong' | 'needs_analysis' | 'over' | 'under' | 'high_conf';
 type PropTypeFilter = 'all' | string;
 
 export function PrizePicksAnalyzer() {
   const [analyzing, setAnalyzing] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
   const [extractedProps, setExtractedProps] = useState<ExtractedProp[]>([]);
-  const [comparedProps, setComparedProps] = useState<ComparedProp[]>([]);
+  const [savedProps, setSavedProps] = useState<SavedProp[]>([]);
   const [saving, setSaving] = useState(false);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -66,31 +79,113 @@ export function PrizePicksAnalyzer() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
   const [propTypeFilter, setPropTypeFilter] = useState<PropTypeFilter>('all');
   const [chingWorldQueue, setChingWorldQueue] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
   const jsonInputRef = useRef<HTMLInputElement>(null);
+
+  // Load saved PP props on mount
+  useEffect(() => {
+    loadSavedPPProps();
+  }, []);
+
+  const loadSavedPPProps = async () => {
+    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    try {
+      const { data, error } = await (supabase as any)
+        .from('sbo_player_props')
+        .select(`
+          id, player_name, team, prop_type, line, over_odds, under_odds,
+          game_date, sportsbook, game, position, created_at,
+          sbo_predictions(
+            id, final_confidence, predicted_outcome, confidence_tier,
+            stats_brain_score, market_brain_score, context_brain_score,
+            data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning
+          )
+        `)
+        .eq('sportsbook', 'prizepicks')
+        .eq('game_date', todayEST)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setSavedProps(data);
+        console.log(`Loaded ${data.length} saved PP props from DB`);
+      }
+    } catch (e) {
+      console.error('Failed to load saved props:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const savePropsToDB = async (props: ExtractedProp[]) => {
+    setSaving(true);
+    setStatusMsg('Saving props to database...');
+    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+    let saved = 0;
+    let skipped = 0;
+
+    for (const prop of props) {
+      if (!prop.player_name || !prop.prop_type || prop.line == null) {
+        skipped++;
+        continue;
+      }
+      const { error } = await (supabase as any)
+        .from('sbo_player_props')
+        .upsert({
+          player_name: prop.player_name,
+          team: prop.team || null,
+          prop_type: prop.prop_type?.toLowerCase().trim(),
+          line: Number(prop.line),
+          over_odds: -122,
+          under_odds: -122,
+          game_date: todayEST,
+          sportsbook: 'prizepicks',
+          game: prop.game || null,
+          position: prop.position || null,
+        }, { onConflict: 'player_name,prop_type,game_date,sportsbook', ignoreDuplicates: false });
+
+      if (!error) saved++;
+      else console.error(`Failed to save ${prop.player_name}:`, error);
+    }
+
+    setStatusMsg(`✅ Saved ${saved} props${skipped > 0 ? ` (${skipped} skipped)` : ''}`);
+    toast.success(`Saved ${saved} PrizePicks props`);
+
+    // Reload from DB to get IDs and any existing predictions
+    await loadSavedPPProps();
+    setExtractedProps([]);
+    setSaving(false);
+    return saved;
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []).slice(0, 5);
-    setImageFiles(files);
-    setPreviews(files.map(f => URL.createObjectURL(f)));
-    setExtractedProps([]);
-    setComparedProps([]);
+    setImageFiles(prev => [...prev, ...files].slice(0, 5));
+    setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 5));
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).slice(0, 5);
     if (files.length) {
-      setImageFiles(files);
-      setPreviews(files.map(f => URL.createObjectURL(f)));
-      setExtractedProps([]);
-      setComparedProps([]);
+      setImageFiles(prev => [...prev, ...files].slice(0, 5));
+      setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))].slice(0, 5));
     }
   }, []);
 
-  const analyzeImages = async () => {
+  const deduplicateProps = (props: ExtractedProp[]) => {
+    const seen = new Set<string>();
+    return props.filter(p => {
+      const key = `${p.player_name?.toLowerCase()}-${normalizePropType(p.prop_type)}-${p.line}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const analyzeAndSave = async () => {
     if (!imageFiles.length) return;
     setAnalyzing(true);
-    setStatusMsg('Reading PrizePicks slate...');
     const allProps: ExtractedProp[] = [];
 
     try {
@@ -109,31 +204,22 @@ export function PrizePicksAnalyzer() {
         });
 
         if (error) throw new Error(error.message);
-        if (data?.props?.length) {
-          allProps.push(...data.props);
-        }
+        if (data?.props?.length) allProps.push(...data.props);
       }
 
       const deduped = deduplicateProps(allProps);
-      setExtractedProps(deduped);
-      setStatusMsg(`✅ Extracted ${deduped.length} props from ${imageFiles.length} image(s)`);
-      await compareProps(deduped);
+      setStatusMsg(`Extracted ${deduped.length} props — saving to database...`);
+      await savePropsToDB(deduped);
+
+      // Clear files after successful save
+      setImageFiles([]);
+      setPreviews([]);
     } catch (e: any) {
       setStatusMsg(`❌ ${e.message}`);
       toast.error(e.message);
     } finally {
       setAnalyzing(false);
     }
-  };
-
-  const deduplicateProps = (props: ExtractedProp[]) => {
-    const seen = new Set<string>();
-    return props.filter(p => {
-      const key = `${p.player_name?.toLowerCase()}-${normalizePropType(p.prop_type)}-${p.line}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
   };
 
   const importFromJSON = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,25 +230,19 @@ export function PrizePicksAnalyzer() {
       const text = await file.text();
       const jsonData = JSON.parse(text);
 
-      // Support both flat arrays and nested slates structure
       let allProps: any[] = [];
       if (Array.isArray(jsonData)) {
         allProps = jsonData;
       } else if (jsonData.slates) {
         for (const slateKey of Object.keys(jsonData.slates)) {
           const slate = jsonData.slates[slateKey];
-          if (slate?.props && Array.isArray(slate.props)) {
-            allProps.push(...slate.props);
-          }
+          if (slate?.props && Array.isArray(slate.props)) allProps.push(...slate.props);
         }
       } else if (jsonData.props && Array.isArray(jsonData.props)) {
         allProps.push(...jsonData.props);
       }
 
-      if (!allProps.length) {
-        toast.error('No props found in JSON file');
-        return;
-      }
+      if (!allProps.length) { toast.error('No props found in JSON file'); return; }
 
       const mapped: ExtractedProp[] = allProps.map(p => ({
         player_name: p.player_name || p.playerName || '',
@@ -177,204 +257,68 @@ export function PrizePicksAnalyzer() {
       })).filter(p => p.player_name && p.line > 0);
 
       const deduped = deduplicateProps(mapped);
-      setExtractedProps(deduped);
-      setStatusMsg(`✅ Imported ${deduped.length} props from JSON`);
-      toast.success(`Imported ${deduped.length} props`);
-      await compareProps(deduped);
+      await savePropsToDB(deduped);
     } catch (e: any) {
       toast.error(`JSON import failed: ${e.message}`);
     }
-
     if (jsonInputRef.current) jsonInputRef.current.value = '';
   };
 
-  const compareProps = async (ppProps: ExtractedProp[]) => {
-    setStatusMsg('Comparing against DraftKings lines...');
-    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const runUnanalyzed = async () => {
+    const needsAnalysis = savedProps.filter(p => !p.sbo_predictions?.length);
+    if (!needsAnalysis.length) { toast.info('All props already analyzed'); return; }
 
-    const { data: dkPropsRaw } = await (supabase as any)
-      .from('sbo_player_props')
-      .select('*, sbo_predictions(final_confidence, predicted_outcome)')
-      .eq('sportsbook', 'draftkings')
-      .gte('game_date', todayEST);
-    const dkProps = dkPropsRaw as any[] | null;
-
-    const comparisons: ComparedProp[] = ppProps.map(pp => {
-      const dkMatch = (dkProps || []).find((dk: any) => {
-        const lastName = pp.player_name?.split(' ').pop()?.toLowerCase() || '';
-        const nameMatch = dk.player_name?.toLowerCase().includes(lastName);
-        const typeMatch = normalizePropType(dk.prop_type) === normalizePropType(pp.prop_type);
-        return nameMatch && typeMatch;
-      });
-
-      const dkLine = dkMatch?.line ?? null;
-      const lineDiff = dkLine !== null ? pp.line - dkLine : null;
-
-      let lineEdge = 'unknown';
-      let edgeDirection: string | null = null;
-      if (lineDiff !== null) {
-        if (Math.abs(lineDiff) >= 1.5) { lineEdge = 'significant'; edgeDirection = lineDiff > 0 ? 'PP_HIGHER' : 'PP_LOWER'; }
-        else if (Math.abs(lineDiff) >= 0.5) { lineEdge = 'moderate'; edgeDirection = lineDiff > 0 ? 'PP_HIGHER' : 'PP_LOWER'; }
-        else { lineEdge = 'same'; }
-      }
-
-      const ppAdvantage = edgeDirection === 'PP_LOWER'
-        ? `✅ PP line ${Math.abs(lineDiff || 0).toFixed(1)} LOWER — OVER easier on PP`
-        : edgeDirection === 'PP_HIGHER'
-        ? `✅ PP line ${Math.abs(lineDiff || 0).toFixed(1)} HIGHER — UNDER easier on PP`
-        : dkLine !== null ? '➡️ Lines similar' : '⚠️ No DK line found';
-
-      const aiPred = dkMatch?.sbo_predictions?.[0];
-      const aiConf = aiPred?.final_confidence ?? null;
-      const aiPick = aiPred?.predicted_outcome?.toUpperCase() ?? null;
-
-      let signal = 'NO_EDGE';
-      let signalStrength = 0;
-      if (aiConf !== null && aiConf >= 70 && lineEdge !== 'unknown') {
-        if (aiPick === 'OVER' && edgeDirection === 'PP_LOWER') {
-          signal = 'STRONG_PLAY'; signalStrength = aiConf + 15;
-        } else if (aiPick === 'UNDER' && edgeDirection === 'PP_HIGHER') {
-          signal = 'STRONG_PLAY'; signalStrength = aiConf + 15;
-        } else {
-          signal = 'AI_SIGNAL'; signalStrength = aiConf;
-        }
-      } else if (aiConf !== null && aiConf >= 70) {
-        signal = 'AI_SIGNAL'; signalStrength = aiConf;
-      } else if (lineEdge === 'significant' || lineEdge === 'moderate') {
-        signal = 'LINE_EDGE'; signalStrength = 50;
-      }
-
-      return {
-        ...pp,
-        dk_line: dkLine,
-        dk_prop_id: dkMatch?.id || null,
-        line_diff: lineDiff,
-        line_edge: lineEdge,
-        edge_direction: edgeDirection,
-        pp_advantage: ppAdvantage,
-        ai_pick: aiPick,
-        ai_confidence: aiConf,
-        signal,
-        signal_strength: Math.min(signalStrength, 100),
-      };
-    });
-
-    const sorted = comparisons.sort((a, b) => b.signal_strength - a.signal_strength);
-    setComparedProps(sorted);
-    setStatusMsg(`✅ ${sorted.length} props compared. ${sorted.filter(p => p.signal === 'STRONG_PLAY').length} strong plays found.`);
-  };
-
-  const saveAllProps = async () => {
-    setSaving(true);
-    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-    try {
-      for (const prop of extractedProps) {
-        await (supabase as any).from('sbo_player_props').upsert({
-          player_name: prop.player_name,
-          team: prop.team || null,
-          prop_type: prop.prop_type,
-          line: prop.line,
-          over_odds: -122,
-          under_odds: -122,
-          game_date: todayEST,
-          sportsbook: 'prizepicks',
-        }, { onConflict: 'player_name,prop_type,game_date,sportsbook' });
-      }
-      toast.success(`Saved ${extractedProps.length} PrizePicks props`);
-    } catch (e: any) {
-      toast.error(`Save failed: ${e.message}`);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const runBatchAnalysis = async () => {
-    if (!extractedProps.length) return;
     setBatchAnalyzing(true);
-
-    // First save all props to DB
-    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-    const savedIds: string[] = [];
+    const total = needsAnalysis.length;
+    setBatchProgress({ current: 0, total, currentPlayer: '' });
 
     try {
-      setStatusMsg('Saving props to database...');
-      for (const prop of extractedProps) {
-        const { data } = await (supabase as any).from('sbo_player_props').upsert({
-          player_name: prop.player_name,
-          team: prop.team || null,
-          prop_type: prop.prop_type,
-          line: prop.line,
-          over_odds: -122,
-          under_odds: -122,
-          game_date: todayEST,
-          sportsbook: 'prizepicks',
-        }, { onConflict: 'player_name,prop_type,game_date,sportsbook' }).select('id').single();
-        if (data?.id) savedIds.push(data.id);
-      }
-
-      // Now get the saved props with their IDs
-      const { data: dbProps } = await (supabase as any)
-        .from('sbo_player_props')
-        .select('id, player_name, prop_type, sbo_predictions(id)')
-        .eq('game_date', todayEST)
-        .eq('sportsbook', 'prizepicks');
-
-      const needsAnalysis = (dbProps || []).filter((p: any) => !p.sbo_predictions?.length);
-      const total = needsAnalysis.length;
-      setBatchProgress({ current: 0, total, currentPlayer: '' });
-
       for (let i = 0; i < needsAnalysis.length; i++) {
         const prop = needsAnalysis[i];
         setBatchProgress({ current: i + 1, total, currentPlayer: `${prop.player_name} ${normalizePropType(prop.prop_type)}` });
-        setStatusMsg(`Analyzing ${i + 1}/${total}: ${prop.player_name}...`);
 
         try {
           await supabase.functions.invoke('sbo-run-predictions', {
-            body: {
-              prop_id: prop.id,
-              prediction_type: 'player_prop',
-              predicted_outcome: null,
-              sportsbook: 'prizepicks',
-            }
+            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null, sportsbook: 'prizepicks' }
           });
         } catch (e) {
           console.error(`Analysis failed for ${prop.player_name}:`, e);
         }
+
+        // Reload every 5 props so cards update live
+        if ((i + 1) % 5 === 0) await loadSavedPPProps();
         await new Promise(r => setTimeout(r, 400));
       }
 
-      // Re-compare with updated predictions
-      await compareProps(extractedProps);
-
-      const strongCount = comparedProps.filter(p => p.signal === 'STRONG_PLAY' || (p.ai_confidence && p.ai_confidence >= 70)).length;
-      setStatusMsg(`✅ ${total} props analyzed — ${strongCount} strong plays found`);
-      setActiveFilter('strong');
+      await loadSavedPPProps();
       toast.success(`Analysis complete: ${total} props analyzed`);
     } catch (e: any) {
-      setStatusMsg(`❌ Batch analysis failed: ${e.message}`);
-      toast.error(e.message);
+      toast.error(`Batch analysis failed: ${e.message}`);
     } finally {
       setBatchAnalyzing(false);
+      setBatchProgress({ current: 0, total: 0, currentPlayer: '' });
     }
   };
 
-  const toggleChingWorld = (propKey: string) => {
+  const clearAllProps = async () => {
+    if (!confirm('Clear all PrizePicks props for today?')) return;
+    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    await (supabase as any)
+      .from('sbo_player_props')
+      .delete()
+      .eq('sportsbook', 'prizepicks')
+      .eq('game_date', todayEST);
+    setSavedProps([]);
+    toast.success('Cleared all PP props');
+  };
+
+  const toggleChingWorld = (propId: string) => {
     setChingWorldQueue(prev => {
       const next = new Set(prev);
-      if (next.has(propKey)) next.delete(propKey);
-      else next.add(propKey);
+      if (next.has(propId)) next.delete(propId);
+      else next.add(propId);
       return next;
     });
-  };
-
-  const getSignalBadge = (signal: string, strength: number) => {
-    switch (signal) {
-      case 'STRONG_PLAY': return <Badge className="bg-green-600 text-white text-[10px]">🔥 STRONG ({strength})</Badge>;
-      case 'AI_SIGNAL': return <Badge className="bg-blue-600 text-white text-[10px]">📊 AI ({strength})</Badge>;
-      case 'LINE_EDGE': return <Badge className="bg-yellow-600 text-white text-[10px]">✅ EDGE</Badge>;
-      case 'NO_EDGE': return <Badge variant="secondary" className="text-[10px]">➡️ NEUTRAL</Badge>;
-      default: return <Badge variant="outline" className="text-[10px]">—</Badge>;
-    }
   };
 
   const confidenceColor = (c: number | null) => {
@@ -385,75 +329,140 @@ export function PrizePicksAnalyzer() {
     return 'text-destructive';
   };
 
-  // Filters
-  const propTypes = [...new Set(comparedProps.map(p => normalizePropType(p.prop_type)))].sort();
+  const tierBadge = (tier: string | null, conf: number | null) => {
+    if (!tier || !conf) return null;
+    const colors: Record<string, string> = {
+      elite: 'bg-green-600 text-white', strong: 'bg-blue-600 text-white',
+      moderate: 'bg-yellow-600 text-white', weak: 'bg-red-500 text-white',
+    };
+    return <Badge className={`text-[10px] ${colors[tier] || 'bg-muted'}`}>{conf}% {tier.toUpperCase()}</Badge>;
+  };
 
-  const filteredProps = comparedProps.filter(p => {
+  // Compute stats from savedProps
+  const analyzed = savedProps.filter(p => p.sbo_predictions?.length > 0);
+  const unanalyzed = savedProps.filter(p => !p.sbo_predictions?.length);
+  const eliteCount = analyzed.filter(p => (p.sbo_predictions[0]?.final_confidence || 0) >= 85).length;
+  const strongCount = analyzed.filter(p => {
+    const c = p.sbo_predictions[0]?.final_confidence || 0;
+    return c >= 70 && c < 85;
+  }).length;
+
+  // Filters
+  const propTypes = [...new Set(savedProps.map(p => normalizePropType(p.prop_type)))].sort();
+
+  const filteredProps = savedProps.filter(p => {
     if (propTypeFilter !== 'all' && normalizePropType(p.prop_type) !== propTypeFilter) return false;
+    const pred = p.sbo_predictions?.[0];
+    const conf = pred?.final_confidence || 0;
+    const pick = pred?.predicted_outcome?.toUpperCase();
+
     switch (activeFilter) {
-      case 'strong': return p.signal === 'STRONG_PLAY' || (p.ai_confidence !== null && p.ai_confidence >= 70);
-      case 'ai_signal': return p.signal === 'AI_SIGNAL';
-      case 'line_edge': return p.signal === 'LINE_EDGE';
-      case 'over': return p.ai_pick === 'OVER';
-      case 'under': return p.ai_pick === 'UNDER';
-      case 'high_conf': return p.ai_confidence !== null && p.ai_confidence >= 90;
+      case 'strong': return conf >= 70;
+      case 'needs_analysis': return !pred;
+      case 'over': return pick === 'OVER';
+      case 'under': return pick === 'UNDER';
+      case 'high_conf': return conf >= 90;
       default: return true;
     }
+  }).sort((a, b) => {
+    const confA = a.sbo_predictions?.[0]?.final_confidence || 0;
+    const confB = b.sbo_predictions?.[0]?.final_confidence || 0;
+    return confB - confA;
   });
 
-  const strongPlays = comparedProps.filter(p => p.signal === 'STRONG_PLAY');
-  const aiSignals = comparedProps.filter(p => p.signal === 'AI_SIGNAL');
-  const overCount = comparedProps.filter(p => p.ai_pick === 'OVER').length;
-  const underCount = comparedProps.filter(p => p.ai_pick === 'UNDER').length;
-
-  const renderPropCard = (prop: ComparedProp) => {
-    const propKey = `${prop.player_name}-${prop.prop_type}-${prop.line}`;
-    const isQueued = chingWorldQueue.has(propKey);
+  const renderPropCard = (prop: SavedProp) => {
+    const pred = prop.sbo_predictions?.[0];
+    const conf = pred?.final_confidence || null;
+    const pick = pred?.predicted_outcome?.toUpperCase();
+    const isQueued = chingWorldQueue.has(prop.id);
+    const hasPrediction = !!pred;
 
     return (
-      <div key={propKey} className={`border rounded-lg p-3 space-y-2 ${
-        prop.signal === 'STRONG_PLAY' ? 'border-green-500/30 bg-green-500/5' :
-        prop.signal === 'AI_SIGNAL' ? 'border-blue-500/20 bg-blue-500/5' :
+      <div key={prop.id} className={`border rounded-lg p-3 space-y-2 ${
+        conf && conf >= 85 ? 'border-green-500/30 bg-green-500/5' :
+        conf && conf >= 70 ? 'border-blue-500/20 bg-blue-500/5' :
+        !hasPrediction ? 'border-orange-500/20 bg-orange-500/5' :
         'bg-card'
       }`}>
+        {/* Header */}
         <div className="flex items-center justify-between gap-2">
           <div>
             <span className="font-semibold text-sm">{prop.player_name}</span>
             {prop.team && <span className="text-xs text-muted-foreground ml-1">({prop.team})</span>}
+            {prop.position && <span className="text-[10px] text-muted-foreground ml-1">— {prop.position}</span>}
           </div>
-          {getSignalBadge(prop.signal, prop.signal_strength)}
+          {hasPrediction
+            ? tierBadge(pred.confidence_tier, conf)
+            : <Badge className="bg-orange-500 text-white text-[10px]">⚡ Needs Analysis</Badge>
+          }
         </div>
 
+        {/* Prop info */}
         <div className="text-xs space-y-1">
           <div className="flex items-center gap-2">
             <span className="text-muted-foreground">{normalizePropType(prop.prop_type)}</span>
             <span className="font-mono font-bold">PP: {prop.line}</span>
-            {prop.dk_line !== null && (
-              <span className="font-mono">
-                DK: {prop.dk_line}
-                {prop.line_diff !== null && Math.abs(prop.line_diff) >= 0.5 && (
-                  <span className={prop.edge_direction === 'PP_LOWER' ? 'text-green-500 ml-1' : 'text-orange-500 ml-1'}>
-                    ({prop.line_diff > 0 ? '+' : ''}{prop.line_diff.toFixed(1)})
-                  </span>
-                )}
-              </span>
-            )}
           </div>
-          <div>{prop.pp_advantage}</div>
-          {prop.ai_pick && prop.ai_confidence !== null && (
-            <div className={`font-medium ${confidenceColor(prop.ai_confidence)}`}>
-              AI: {prop.ai_pick} {prop.line} @ {prop.ai_confidence}%
-            </div>
-          )}
-          {prop.game && <div className="text-muted-foreground">{prop.game}</div>}
+          {prop.game && <div className="text-muted-foreground">🏀 {prop.game}</div>}
         </div>
 
-        <div className="flex gap-1">
+        {/* AI Analysis */}
+        {hasPrediction && (
+          <div className="border-t border-border pt-2 space-y-1.5">
+            <div className={`text-sm font-semibold ${confidenceColor(conf)}`}>
+              AI Pick: {pick} {prop.line} | {conf}%
+            </div>
+
+            {/* Brain Breakdown */}
+            <div className="grid grid-cols-3 gap-1 text-[10px]">
+              {pred.stats_brain_score != null && (
+                <div className="text-center p-1 rounded bg-muted/30">
+                  <div className="text-muted-foreground">📊 Stats</div>
+                  <div className={`font-bold ${confidenceColor(pred.stats_brain_score)}`}>{pred.stats_brain_score}</div>
+                </div>
+              )}
+              {pred.market_brain_score != null && (
+                <div className="text-center p-1 rounded bg-muted/30">
+                  <div className="text-muted-foreground">💰 Market</div>
+                  <div className={`font-bold ${confidenceColor(pred.market_brain_score)}`}>{pred.market_brain_score}</div>
+                </div>
+              )}
+              {pred.context_brain_score != null && (
+                <div className="text-center p-1 rounded bg-muted/30">
+                  <div className="text-muted-foreground">🧠 Context</div>
+                  <div className={`font-bold ${confidenceColor(pred.context_brain_score)}`}>{pred.context_brain_score}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Reasoning */}
+            {pred.stats_brain_reasoning && (
+              <p className="text-[10px] text-muted-foreground leading-tight line-clamp-2">
+                {pred.stats_brain_reasoning}
+              </p>
+            )}
+
+            {/* Data Quality */}
+            {pred.data_quality && (
+              <Badge variant="outline" className={`text-[8px] h-4 px-1 ${
+                pred.data_quality === 'full' ? 'text-green-500 border-green-500/40' :
+                pred.data_quality === 'partial' ? 'text-yellow-500 border-yellow-500/40' :
+                'text-destructive border-destructive/40'
+              }`}>
+                {pred.data_quality === 'full' ? '✅ Full Stats' :
+                 pred.data_quality === 'partial' ? '⚠️ Partial Stats' : '🔴 Odds Only'}
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-1 pt-1">
           <Button
             size="sm"
             variant={isQueued ? 'default' : 'outline'}
             className="text-[10px] h-7"
-            onClick={() => toggleChingWorld(propKey)}
+            onClick={() => toggleChingWorld(prop.id)}
           >
             <Send className="h-3 w-3 mr-1" />
             {isQueued ? 'Queued ✓' : 'ChingWorld'}
@@ -465,7 +474,7 @@ export function PrizePicksAnalyzer() {
 
   return (
     <div className="space-y-4">
-      {/* Upload & Import Section */}
+      {/* Upload Section */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -473,11 +482,10 @@ export function PrizePicksAnalyzer() {
             🎯 PrizePicks Scanner
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Upload your PP slate → AI reads the lines and compares against DraftKings + AI picks
+            Upload PP slates → AI reads lines → saves to DB → run AI analysis
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Upload area */}
           <div
             onDrop={handleDrop}
             onDragOver={e => e.preventDefault()}
@@ -497,7 +505,6 @@ export function PrizePicksAnalyzer() {
             <p className="text-xs text-muted-foreground">PNG, JPG, WEBP — up to 5 images</p>
           </div>
 
-          {/* Image previews */}
           {previews.length > 0 && (
             <div className="flex gap-2 overflow-x-auto">
               {previews.map((url, i) => (
@@ -518,32 +525,19 @@ export function PrizePicksAnalyzer() {
             </div>
           )}
 
-          {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
             {imageFiles.length > 0 && (
-              <Button onClick={analyzeImages} disabled={analyzing} className="flex-1">
+              <Button onClick={analyzeAndSave} disabled={analyzing} className="flex-1">
                 {analyzing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Camera className="h-4 w-4 mr-2" />}
-                {analyzing ? statusMsg : `Analyze ${imageFiles.length} Screenshot(s)`}
+                {analyzing ? statusMsg : `Extract & Save ${imageFiles.length} Screenshot(s)`}
               </Button>
             )}
-            <Input
-              ref={jsonInputRef}
-              type="file"
-              accept=".json"
-              onChange={importFromJSON}
-              className="hidden"
-            />
-            <Button
-              variant="outline"
-              onClick={() => jsonInputRef.current?.click()}
-              className="flex-shrink-0"
-            >
-              <FileJson className="h-4 w-4 mr-2" />
-              Import JSON
+            <Input ref={jsonInputRef} type="file" accept=".json" onChange={importFromJSON} className="hidden" />
+            <Button variant="outline" onClick={() => jsonInputRef.current?.click()} className="flex-shrink-0">
+              <FileJson className="h-4 w-4 mr-2" /> Import JSON
             </Button>
           </div>
 
-          {/* Status */}
           {statusMsg && !analyzing && (
             <p className="text-xs text-muted-foreground text-center">{statusMsg}</p>
           )}
@@ -566,22 +560,31 @@ export function PrizePicksAnalyzer() {
         </Card>
       )}
 
-      {/* Results */}
-      {(extractedProps.length > 0 || comparedProps.length > 0) && (
+      {/* Saved Props Section */}
+      {loading ? (
+        <div className="text-center py-8 text-muted-foreground text-sm">
+          <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" /> Loading saved props...
+        </div>
+      ) : (
         <>
-          {/* Summary KPIs */}
+          {/* Summary Stats Bar */}
+          <div className="text-xs text-muted-foreground text-center py-1">
+            {savedProps.length} total | {analyzed.length} analyzed | {unanalyzed.length} need analysis | 🔥 {eliteCount} elite (85%+) | 💪 {strongCount} strong (70%+)
+          </div>
+
+          {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Card className="p-2 text-center">
-              <p className="text-lg font-bold">{comparedProps.length}</p>
+              <p className="text-lg font-bold">{savedProps.length}</p>
               <p className="text-[10px] text-muted-foreground">Total Props</p>
             </Card>
             <Card className="p-2 text-center border-green-500/30">
-              <p className="text-lg font-bold text-green-500">{strongPlays.length}</p>
-              <p className="text-[10px] text-muted-foreground">🔥 Strong Plays</p>
+              <p className="text-lg font-bold text-green-500">{eliteCount}</p>
+              <p className="text-[10px] text-muted-foreground">🔥 Elite (85%+)</p>
             </Card>
-            <Card className="p-2 text-center border-blue-500/20">
-              <p className="text-lg font-bold text-blue-500">{aiSignals.length}</p>
-              <p className="text-[10px] text-muted-foreground">📊 AI Signals</p>
+            <Card className="p-2 text-center border-orange-500/20">
+              <p className="text-lg font-bold text-orange-500">{unanalyzed.length}</p>
+              <p className="text-[10px] text-muted-foreground">⚡ Need Analysis</p>
             </Card>
             <Card className="p-2 text-center">
               <p className="text-lg font-bold text-primary">{chingWorldQueue.size}</p>
@@ -589,77 +592,83 @@ export function PrizePicksAnalyzer() {
             </Card>
           </div>
 
-          {/* Action buttons */}
+          {/* Action Buttons */}
           <div className="flex flex-wrap gap-2">
-            <Button onClick={runBatchAnalysis} disabled={batchAnalyzing || !extractedProps.length} size="sm">
+            <Button onClick={runUnanalyzed} disabled={batchAnalyzing || !unanalyzed.length} size="sm">
               {batchAnalyzing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Zap className="h-3 w-3 mr-1" />}
-              ⚡ Run AI on All PP Props
+              ⚡ Run AI on {unanalyzed.length} Unanalyzed
             </Button>
-            <Button onClick={saveAllProps} disabled={saving} size="sm" variant="outline">
-              {saving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Save className="h-3 w-3 mr-1" />}
-              Save All
+            <Button onClick={loadSavedPPProps} size="sm" variant="outline">
+              <RefreshCw className="h-3 w-3 mr-1" /> Refresh
             </Button>
-            <Button onClick={() => compareProps(extractedProps)} size="sm" variant="outline">
-              <RefreshCw className="h-3 w-3 mr-1" /> Re-Compare
-            </Button>
-          </div>
-
-          {/* Filter pills */}
-          <div className="space-y-2">
-            <div className="flex flex-wrap gap-1">
-              {([
-                ['all', `All (${comparedProps.length})`],
-                ['strong', `Strong (${strongPlays.length + aiSignals.length})`],
-                ['over', `OVER (${overCount})`],
-                ['under', `UNDER (${underCount})`],
-                ['high_conf', `90%+ (${comparedProps.filter(p => p.ai_confidence !== null && p.ai_confidence >= 90).length})`],
-              ] as [FilterType, string][]).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => setActiveFilter(key)}
-                  className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
-                    activeFilter === key
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted/40 text-muted-foreground hover:bg-muted/70'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            {propTypes.length > 1 && (
-              <div className="flex flex-wrap gap-1">
-                <button
-                  onClick={() => setPropTypeFilter('all')}
-                  className={`px-2 py-1 rounded-md text-[10px] font-medium ${
-                    propTypeFilter === 'all' ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
-                  }`}
-                >
-                  All Types
-                </button>
-                {propTypes.map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setPropTypeFilter(t)}
-                    className={`px-2 py-1 rounded-md text-[10px] font-medium ${
-                      propTypeFilter === t ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
-                    }`}
-                  >
-                    {t} ({comparedProps.filter(p => normalizePropType(p.prop_type) === t).length})
-                  </button>
-                ))}
-              </div>
+            {savedProps.length > 0 && (
+              <Button onClick={clearAllProps} size="sm" variant="outline" className="text-destructive">
+                <Trash2 className="h-3 w-3 mr-1" /> Clear All
+              </Button>
             )}
           </div>
 
-          {/* Props list */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {filteredProps.map(renderPropCard)}
-          </div>
+          {/* Filters */}
+          {savedProps.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-1">
+                {([
+                  ['all', `All (${savedProps.length})`],
+                  ['strong', `70%+ (${savedProps.filter(p => (p.sbo_predictions?.[0]?.final_confidence || 0) >= 70).length})`],
+                  ['high_conf', `90%+ (${savedProps.filter(p => (p.sbo_predictions?.[0]?.final_confidence || 0) >= 90).length})`],
+                  ['needs_analysis', `Needs AI (${unanalyzed.length})`],
+                  ['over', `OVER (${analyzed.filter(p => p.sbo_predictions[0]?.predicted_outcome?.toUpperCase() === 'OVER').length})`],
+                  ['under', `UNDER (${analyzed.filter(p => p.sbo_predictions[0]?.predicted_outcome?.toUpperCase() === 'UNDER').length})`],
+                ] as [FilterType, string][]).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveFilter(key)}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium transition-all ${
+                      activeFilter === key ? 'bg-primary text-primary-foreground' : 'bg-muted/40 text-muted-foreground hover:bg-muted/70'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {propTypes.length > 1 && (
+                <div className="flex flex-wrap gap-1">
+                  <button
+                    onClick={() => setPropTypeFilter('all')}
+                    className={`px-2 py-1 rounded-md text-[10px] font-medium ${
+                      propTypeFilter === 'all' ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
+                    }`}
+                  >
+                    All Types
+                  </button>
+                  {propTypes.map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setPropTypeFilter(t)}
+                      className={`px-2 py-1 rounded-md text-[10px] font-medium ${
+                        propTypeFilter === t ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
+                      }`}
+                    >
+                      {t} ({savedProps.filter(p => normalizePropType(p.prop_type) === t).length})
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
-          {filteredProps.length === 0 && (
+          {/* Props Grid */}
+          {filteredProps.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {filteredProps.map(renderPropCard)}
+            </div>
+          ) : savedProps.length > 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">
-              No props match the current filters. Try adjusting your selection.
+              No props match the current filters.
+            </p>
+          ) : (
+            <p className="text-center text-sm text-muted-foreground py-8">
+              No PrizePicks props saved today. Upload a screenshot or import JSON to get started.
             </p>
           )}
         </>
