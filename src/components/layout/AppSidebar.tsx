@@ -29,6 +29,7 @@ export default function AppSidebar() {
   
   // Determine which floor section contains the active route
   const getActiveSection = (pathname: string): string | null => {
+    if (pathname.startsWith('/dynasty-connect')) return 'dynasty-connect';
     if (pathname.startsWith('/grabba/floor9') || pathname.startsWith('/gasmask/agent-center')) return 'floor-9';
     if (pathname.startsWith('/grabba/command-penthouse') || pathname === '/') return 'penthouse';
     if (pathname.startsWith('/communication')) return 'floor-2';
