@@ -346,7 +346,7 @@ export default function CampaignWizardPage() {
 
     initial_script: "",
 
-    agent_id: VOICE_OPTIONS[0].id,
+    agent_id: "",
   });
 
   const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
