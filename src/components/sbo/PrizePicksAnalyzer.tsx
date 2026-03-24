@@ -796,7 +796,215 @@ export function PrizePicksAnalyzer() {
         </Card>
       )}
 
-      {/* Upload Section */}
+      {/* 🧠 Intelligence Audit Section */}
+      <Card>
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-base">🧠 AI Intelligence Audit</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Deep analysis of all verified predictions — find your edge
+              </p>
+            </div>
+            <Button onClick={runIntelligenceAudit} disabled={auditRunning}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white">
+              {auditRunning ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+              {auditRunning ? 'Analyzing...' : '🔬 Run Full Audit'}
+            </Button>
+          </div>
+
+          {auditData && (
+            <div className="space-y-4">
+              {/* Overall Summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="rounded-lg bg-muted/20 border border-border p-3 text-center">
+                  <div className="text-2xl font-bold text-foreground">{auditData.summary.total}</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Total Verified</div>
+                </div>
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-center">
+                  <div className="text-2xl font-bold text-emerald-500">{auditData.summary.correct}W</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Correct</div>
+                </div>
+                <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-center">
+                  <div className="text-2xl font-bold text-red-500">{auditData.summary.incorrect}L</div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Incorrect</div>
+                </div>
+                <div className={`rounded-lg border p-3 text-center ${auditData.summary.accuracy >= 60 ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
+                  <div className={`text-2xl font-bold ${auditData.summary.accuracy >= 60 ? 'text-emerald-500' : 'text-amber-500'}`}>
+                    {auditData.summary.accuracy}%
+                  </div>
+                  <div className="text-[10px] text-muted-foreground mt-1">Overall Accuracy</div>
+                </div>
+              </div>
+
+              {/* Game vs Prop split */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-muted/10 border border-border p-3 text-center">
+                  <div className="text-lg font-bold">{auditData.game_accuracy?.correct}W-{auditData.game_accuracy?.incorrect}L</div>
+                  <div className="text-[10px] text-muted-foreground">Game Picks ({auditData.game_accuracy?.accuracy}%)</div>
+                </div>
+                <div className="rounded-lg bg-muted/10 border border-border p-3 text-center">
+                  <div className="text-lg font-bold">{auditData.prop_accuracy?.correct}W-{auditData.prop_accuracy?.incorrect}L</div>
+                  <div className="text-[10px] text-muted-foreground">Prop Picks ({auditData.prop_accuracy?.accuracy}%)</div>
+                </div>
+              </div>
+
+              {/* AI Recommendations */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-bold text-sm mb-3">🎯 AI Improvement Recommendations</h4>
+                <div className="space-y-2">
+                  {(auditData.recommendations || []).map((rec: string, i: number) => (
+                    <div key={i} className="p-2.5 rounded-lg bg-muted/20 text-xs leading-relaxed">
+                      {rec}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Accuracy by Confidence Range */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-bold text-sm mb-3">📊 Accuracy by Confidence Range</h4>
+                <div className="space-y-2">
+                  {Object.entries(auditData.by_confidence_range || {})
+                    .map(([range, stats]: [string, any]) => {
+                      const t = stats.correct + stats.incorrect;
+                      const acc = t > 0 ? Math.round(stats.correct / t * 100) : 0;
+                      return { range, ...stats, total: t, accuracy: acc };
+                    })
+                    .filter((s: any) => s.total > 0)
+                    .sort((a: any, b: any) => b.range.localeCompare(a.range))
+                    .map((s: any) => (
+                      <div key={s.range} className="flex items-center gap-3">
+                        <div className="w-16 text-xs font-mono font-medium">{s.range}%</div>
+                        <div className="flex-1 bg-muted rounded-full h-2.5">
+                          <div
+                            className={`h-2.5 rounded-full transition-all ${s.accuracy >= 65 ? 'bg-emerald-500' : s.accuracy >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
+                            style={{ width: `${s.accuracy}%` }}
+                          />
+                        </div>
+                        <div className={`text-xs font-bold w-10 text-right ${s.accuracy >= 65 ? 'text-emerald-500' : s.accuracy >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                          {s.accuracy}%
+                        </div>
+                        <div className="text-[10px] text-muted-foreground w-20 text-right">
+                          {s.correct}W-{s.incorrect}L ({s.total})
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Brain Correlation */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-bold text-sm mb-2">🧠 Brain Score Correlation</h4>
+                <p className="text-[10px] text-muted-foreground mb-3">Avg scores on correct vs incorrect — higher gap = more predictive</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { name: '📊 Stats', key: 'stats' },
+                    { name: '💰 Market', key: 'market' },
+                    { name: '🧠 Context', key: 'context' },
+                  ].map(brain => {
+                    const data = auditData.brain_correlation?.[brain.key] || { correct_avg: 0, incorrect_avg: 0 };
+                    const gap = data.correct_avg - data.incorrect_avg;
+                    return (
+                      <div key={brain.key} className="rounded-lg bg-muted/20 p-3">
+                        <div className="text-[10px] font-medium mb-2">{brain.name}</div>
+                        <div className="flex justify-between text-[10px] mb-1">
+                          <span className="text-muted-foreground">✅ Correct:</span>
+                          <span className="text-emerald-500 font-bold">{data.correct_avg}</span>
+                        </div>
+                        <div className="flex justify-between text-[10px] mb-2">
+                          <span className="text-muted-foreground">❌ Incorrect:</span>
+                          <span className="text-red-500 font-bold">{data.incorrect_avg}</span>
+                        </div>
+                        <div className={`text-center text-[10px] font-bold py-1 rounded ${gap > 0 ? 'bg-emerald-500/20 text-emerald-500' : 'bg-red-500/20 text-red-500'}`}>
+                          Gap: {gap > 0 ? '+' : ''}{gap}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Prop Type Performance */}
+              {auditData.best_prop_types?.length > 0 && (
+                <div className="rounded-lg border border-border p-4">
+                  <h4 className="font-bold text-sm mb-3">🎯 Prop Type Performance</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="text-[10px] text-emerald-500 font-bold mb-2">✅ BEST</div>
+                      {(auditData.best_prop_types || []).map((t: any) => (
+                        <div key={t.type} className="flex justify-between items-center py-1.5 border-b border-border/30">
+                          <span className="text-xs">{t.type}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground">{t.correct}W-{t.incorrect}L</span>
+                            <span className="text-xs font-bold text-emerald-500">{t.accuracy}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-red-500 font-bold mb-2">❌ WORST</div>
+                      {(auditData.worst_prop_types || []).map((t: any) => (
+                        <div key={t.type} className="flex justify-between items-center py-1.5 border-b border-border/30">
+                          <span className="text-xs">{t.type}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-muted-foreground">{t.correct}W-{t.incorrect}L</span>
+                            <span className="text-xs font-bold text-red-500">{t.accuracy}%</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Over/Under Bias */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-bold text-sm mb-3">📈 OVER vs UNDER</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {['over', 'under'].map(side => {
+                    const stats = auditData.over_under_accuracy?.[side] || { correct: 0, incorrect: 0 };
+                    const t = stats.correct + stats.incorrect;
+                    const acc = t > 0 ? Math.round(stats.correct / t * 100) : 0;
+                    return (
+                      <div key={side} className="rounded-lg bg-muted/20 p-3 text-center">
+                        <div className="text-sm font-bold mb-1">{side.toUpperCase()}</div>
+                        <div className={`text-2xl font-bold ${acc >= 60 ? 'text-emerald-500' : acc >= 50 ? 'text-amber-500' : 'text-red-500'}`}>
+                          {acc}%
+                        </div>
+                        <div className="text-[10px] text-muted-foreground mt-1">{stats.correct}W-{stats.incorrect}L ({t})</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Optimal Weights + Apply */}
+              <div className="rounded-lg border border-border p-4">
+                <h4 className="font-bold text-sm mb-2">⚙️ Optimal Brain Weights</h4>
+                <p className="text-[10px] text-muted-foreground mb-3">Based on {auditData.summary.total} predictions</p>
+                <div className="flex gap-4 mb-4">
+                  {[
+                    { label: 'Stats', val: auditData.optimal_weights?.stats },
+                    { label: 'Market', val: auditData.optimal_weights?.market },
+                    { label: 'Context', val: auditData.optimal_weights?.context },
+                  ].map(w => (
+                    <div key={w.label} className="text-center flex-1 rounded-lg bg-muted/20 p-3">
+                      <div className="text-xl font-bold">{Math.round((w.val || 0) * 100)}%</div>
+                      <div className="text-[10px] text-muted-foreground">{w.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={applyOptimalWeights} className="w-full" size="sm">
+                  ⚡ Apply These Weights to Live System
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg flex items-center gap-2">
