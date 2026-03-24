@@ -1080,6 +1080,7 @@ export default function AppRoutes() {
           <Route path="pipelines" element={<DCPipelines />} />
           <Route path="infrastructure" element={<DCInfrastructure />} />
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
+          <Route path="clients" element={<DCClients />} />
         </Route>
 
         {/* 📡 Communication Systems - New Unified Module */}
