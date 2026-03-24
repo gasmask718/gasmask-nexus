@@ -87,6 +87,9 @@ export function PrizePicksAnalyzer() {
   const [propTypeFilter, setPropTypeFilter] = useState<PropTypeFilter>('all');
   const [chingWorldQueue, setChingWorldQueue] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<any>(null);
+  const [verifyDate, setVerifyDate] = useState<'today' | 'yesterday'>('today');
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved PP props on mount
