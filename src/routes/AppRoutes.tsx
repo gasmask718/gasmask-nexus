@@ -356,7 +356,17 @@ const CallCenterAnalytics = lazy(() => import('@/pages/callcenter/CallCenterAnal
 const Messages = lazy(() => import('@/pages/callcenter/Messages'));
 const Emails = lazy(() => import('@/pages/callcenter/Emails'));
 
-// Communication Center
+// Dynasty Connect Hub
+const DCLayout = lazy(() => import('@/pages/dynasty-connect/DCLayout'));
+const DCCommandCenter = lazy(() => import('@/pages/dynasty-connect/DCCommandCenter'));
+const DCCampaigns = lazy(() => import('@/pages/dynasty-connect/DCCampaigns'));
+const DCCampaignBuilder = lazy(() => import('@/pages/dynasty-connect/DCCampaignBuilder'));
+const DCAgents = lazy(() => import('@/pages/dynasty-connect/DCAgents'));
+const DCIntelligence = lazy(() => import('@/pages/dynasty-connect/DCIntelligence'));
+const DCPipelines = lazy(() => import('@/pages/dynasty-connect/DCPipelines'));
+const DCInfrastructure = lazy(() => import('@/pages/dynasty-connect/DCInfrastructure'));
+const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
+
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
 const DialerPage = lazy(() => import('@/pages/communication/dialer/DialerPage'));
@@ -1055,6 +1065,21 @@ export default function AppRoutes() {
         <Route path="/callcenter/messages" element={<Messages />} />
         <Route path="/callcenter/emails" element={<Emails />} />
         <Route path="/callcenter/settings" element={<CallCenterSettings />} />
+
+        {/* 📞 Dynasty Connect Hub */}
+        <Route path="/dynasty-connect" element={<DCLayout />}>
+          <Route index element={<DCCommandCenter />} />
+          <Route path="live" element={<DCLiveCalls />} />
+          <Route path="campaigns" element={<DCCampaigns />} />
+          <Route path="campaigns/builder" element={<DCCampaignBuilder />} />
+          <Route path="agents" element={<DCAgents />} />
+          <Route path="agents/playbooks" element={<DCAgents />} />
+          <Route path="intelligence" element={<DCIntelligence />} />
+          <Route path="intelligence/self-learn" element={<DCAgents />} />
+          <Route path="pipelines" element={<DCPipelines />} />
+          <Route path="infrastructure" element={<DCInfrastructure />} />
+          <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
+        </Route>
 
         {/* 📡 Communication Systems - New Unified Module */}
         <Route path="/comm-systems" element={<CommSystemsDialerPage />} />
