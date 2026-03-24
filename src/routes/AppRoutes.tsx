@@ -366,6 +366,7 @@ const DCIntelligence = lazy(() => import('@/pages/dynasty-connect/DCIntelligence
 const DCPipelines = lazy(() => import('@/pages/dynasty-connect/DCPipelines'));
 const DCInfrastructure = lazy(() => import('@/pages/dynasty-connect/DCInfrastructure'));
 const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
+const DCClients = lazy(() => import('@/pages/dynasty-connect/DCClients'));
 
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
