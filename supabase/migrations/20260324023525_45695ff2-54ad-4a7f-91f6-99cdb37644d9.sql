@@ -1,0 +1,1 @@
+ALTER TABLE sbo_player_props ADD CONSTRAINT sbo_player_props_player_prop_date_source_unique UNIQUE (player_name, prop_type, game_date, source); CREATE INDEX IF NOT EXISTS idx_sbo_player_props_date_source ON sbo_player_props(game_date, source);

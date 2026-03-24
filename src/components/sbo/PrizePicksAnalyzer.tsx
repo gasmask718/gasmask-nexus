@@ -32,9 +32,7 @@ interface SavedProp {
   over_odds: number | null;
   under_odds: number | null;
   game_date: string;
-  sportsbook: string;
-  game: string | null;
-  position: string | null;
+  source: string;
   created_at: string;
   sbo_predictions: Array<{
     id: string;
@@ -56,9 +54,6 @@ interface ExtractedProp {
   team: string | null;
   prop_type: string;
   line: number;
-  game: string | null;
-  position: string | null;
-  sportsbook: string;
   over_odds: number;
   under_odds: number;
 }
@@ -94,14 +89,14 @@ export function PrizePicksAnalyzer() {
         .from('sbo_player_props')
         .select(`
           id, player_name, team, prop_type, line, over_odds, under_odds,
-          game_date, sportsbook, game, position, created_at,
+          game_date, source, created_at,
           sbo_predictions(
             id, final_confidence, predicted_outcome, confidence_tier,
             stats_brain_score, market_brain_score, context_brain_score,
             data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning
           )
         `)
-        .eq('sportsbook', 'prizepicks')
+        .eq('source', 'prizepicks')
         .eq('game_date', todayEST)
         .order('created_at', { ascending: false });
 
@@ -139,10 +134,8 @@ export function PrizePicksAnalyzer() {
           over_odds: -122,
           under_odds: -122,
           game_date: todayEST,
-          sportsbook: 'prizepicks',
-          game: prop.game || null,
-          position: prop.position || null,
-        }, { onConflict: 'player_name,prop_type,game_date,sportsbook', ignoreDuplicates: false });
+          source: 'prizepicks',
+        }, { onConflict: 'player_name,prop_type,game_date,source', ignoreDuplicates: false });
 
       if (!error) saved++;
       else console.error(`Failed to save ${prop.player_name}:`, error);
@@ -249,9 +242,6 @@ export function PrizePicksAnalyzer() {
         team: p.team || null,
         prop_type: p.prop_type || p.propType || p.stat_type || '',
         line: Number(p.line) || 0,
-        game: p.game || null,
-        position: p.position || null,
-        sportsbook: 'prizepicks',
         over_odds: -122,
         under_odds: -122,
       })).filter(p => p.player_name && p.line > 0);
@@ -279,7 +269,7 @@ export function PrizePicksAnalyzer() {
 
         try {
           await supabase.functions.invoke('sbo-run-predictions', {
-            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null, sportsbook: 'prizepicks' }
+            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null, source: 'prizepicks' }
           });
         } catch (e) {
           console.error(`Analysis failed for ${prop.player_name}:`, e);
@@ -306,7 +296,7 @@ export function PrizePicksAnalyzer() {
     await (supabase as any)
       .from('sbo_player_props')
       .delete()
-      .eq('sportsbook', 'prizepicks')
+      .eq('source', 'prizepicks')
       .eq('game_date', todayEST);
     setSavedProps([]);
     toast.success('Cleared all PP props');
@@ -389,7 +379,6 @@ export function PrizePicksAnalyzer() {
           <div>
             <span className="font-semibold text-sm">{prop.player_name}</span>
             {prop.team && <span className="text-xs text-muted-foreground ml-1">({prop.team})</span>}
-            {prop.position && <span className="text-[10px] text-muted-foreground ml-1">— {prop.position}</span>}
           </div>
           {hasPrediction
             ? tierBadge(pred.confidence_tier, conf)
@@ -403,7 +392,6 @@ export function PrizePicksAnalyzer() {
             <span className="text-muted-foreground">{normalizePropType(prop.prop_type)}</span>
             <span className="font-mono font-bold">PP: {prop.line}</span>
           </div>
-          {prop.game && <div className="text-muted-foreground">🏀 {prop.game}</div>}
         </div>
 
         {/* AI Analysis */}
