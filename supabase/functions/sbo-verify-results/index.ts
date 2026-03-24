@@ -217,8 +217,14 @@ serve(async (req) => {
           continue;
         }
 
-        // Write to sbo_results_verification
-        await supabase.from('sbo_results_verification').insert({
+        // Write to sbo_results_verification (upsert to handle re-runs)
+        const actualWinnerTeam = homeScore > awayScore ? game.home_team : game.away_team;
+        const loserTeam = homeScore > awayScore ? game.away_team : game.home_team;
+        const winScore = Math.max(homeScore, awayScore);
+        const loseScore = Math.min(homeScore, awayScore);
+        const verdictNote = `${actualWinnerTeam} won ${winScore}-${loseScore}. Predicted: ${pred.predicted_outcome === 'home' ? game.home_team : game.away_team}. ${verdict === 'correct' ? '✅ CORRECT' : '❌ INCORRECT'}`;
+
+        await supabase.from('sbo_results_verification').upsert({
           prediction_id: pred.id,
           game_id: game.id,
           pick_type: pred.prediction_type === 'moneyline' ? 'game' : 'prop',
@@ -227,9 +233,13 @@ serve(async (req) => {
           final_score_home: homeScore,
           final_score_away: awayScore,
           actual_result: `${game.home_team} ${homeScore} - ${game.away_team} ${awayScore}`,
+          actual_winner: homeScore > awayScore ? 'home' : 'away',
+          was_correct: verdict === 'correct',
           verdict,
+          verdict_note: verdictNote,
           profit_loss: verdict === 'correct' ? 100 : verdict === 'push' ? 0 : -100,
-        });
+          verified_at: new Date().toISOString(),
+        }, { onConflict: 'prediction_id' });
 
         // Update sbo_predictions
         await supabase
