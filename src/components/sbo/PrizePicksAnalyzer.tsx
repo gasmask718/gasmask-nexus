@@ -393,7 +393,6 @@ export function PrizePicksAnalyzer() {
           <div>
             <span className="font-semibold text-sm">{prop.player_name}</span>
             {prop.team && <span className="text-xs text-muted-foreground ml-1">({prop.team})</span>}
-            {prop.position && <span className="text-[10px] text-muted-foreground ml-1">— {prop.position}</span>}
           </div>
           {hasPrediction
             ? tierBadge(pred.confidence_tier, conf)
