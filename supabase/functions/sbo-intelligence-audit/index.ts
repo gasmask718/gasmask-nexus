@@ -79,15 +79,21 @@ serve(async (req) => {
 
     // QUERY 3 — Get prop details in batches
     const propPredictions = predictions.filter(p => p.prediction_type === 'player_prop' && p.prop_id)
-    const propIds = propPredictions.map(p => p.prop_id).filter(Boolean)
+    const propIds = [...new Set(propPredictions.map(p => p.prop_id).filter(Boolean))]
+    console.log(`Need prop details for ${propIds.length} unique props (from ${propPredictions.length} prop predictions)`)
 
     const propsMap: Record<string, any> = {}
     for (let i = 0; i < propIds.length; i += BATCH_SIZE) {
       const batch = propIds.slice(i, i + BATCH_SIZE)
-      const { data: props } = await supabase
+      const { data: props, error: propErr } = await supabase
         .from('sbo_player_props')
         .select('id, player_name, team, prop_type, line, sportsbook, source')
         .in('id', batch)
+      if (propErr) {
+        console.error(`Prop batch ${i} error:`, propErr.message)
+        continue
+      }
+      console.log(`Prop batch ${i}: got ${props?.length || 0} results`)
       for (const prop of (props || [])) {
         propsMap[prop.id] = prop
       }
