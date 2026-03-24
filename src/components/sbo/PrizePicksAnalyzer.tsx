@@ -256,9 +256,6 @@ export function PrizePicksAnalyzer() {
         team: p.team || null,
         prop_type: p.prop_type || p.propType || p.stat_type || '',
         line: Number(p.line) || 0,
-        game: p.game || null,
-        position: p.position || null,
-        sportsbook: 'prizepicks',
         over_odds: -122,
         under_odds: -122,
       })).filter(p => p.player_name && p.line > 0);
