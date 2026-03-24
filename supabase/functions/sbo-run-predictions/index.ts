@@ -474,7 +474,7 @@ serve(async (req) => {
       polymarket: activeConfig?.polymarket_weight || 0.00,
     };
 
-    const finalScore = polyResult.has_data
+    let finalScore = polyResult.has_data
       ? Math.round(
           stats.score * weights.stats +
           market.score * weights.market +
@@ -486,6 +486,35 @@ serve(async (req) => {
           market.score * (weights.market / (1 - weights.polymarket)) +
           context.score * (weights.context / (1 - weights.polymarket))
         );
+
+    // ═══ AUDIT-DRIVEN CALIBRATION ═══
+    if (prediction_type === 'player_prop') {
+      const pt = (ctx.prop_type || '').toLowerCase().replace(/[\s_\-+]/g, '');
+      // Combo prop penalty (Pts+Ast 45%, Pts+Reb 46% historically)
+      if (['ptsast', 'pointsassists', 'pa', 'ptsreb', 'pointsrebounds', 'pr'].includes(pt)) {
+        finalScore = Math.max(45, finalScore - 10);
+        console.log(`Combo prop penalty applied: ${ctx.prop_type} → ${finalScore}%`);
+      }
+      // UNDER bonus (68% hist. accuracy)
+      if (finalOutcome === 'under' && finalScore < 87) {
+        finalScore = Math.min(87, finalScore + 5);
+      }
+      // Cap at 87% to avoid overconfidence
+      if (finalScore > 87) {
+        finalScore = 87;
+        console.log('Confidence capped at 87% (audit calibration)');
+      }
+    }
+
+    // Don't save predictions below 50% — they add noise
+    if (finalScore < 50) {
+      console.log(`Prediction below 50% threshold (${finalScore}%) — not saving`);
+      return new Response(JSON.stringify({
+        success: false,
+        reason: `Confidence ${finalScore}% below 50% minimum — prediction not saved`,
+        confidence: finalScore,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     const tier = finalScore >= 85 ? 'elite' : finalScore >= 70 ? 'strong' : finalScore >= 55 ? 'moderate' : 'weak';
 
