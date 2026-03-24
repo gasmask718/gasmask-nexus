@@ -2,7 +2,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { 
   BarChart3, Brain, Phone, Building2, Settings, FileText, 
-  Users, Zap, Radio, BookOpen, Target, Headphones
+  Users, Zap, Radio, BookOpen, Target, Headphones, DollarSign
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +47,12 @@ const dcNavSections = [
     items: [
       { path: '/dynasty-connect/infrastructure', label: 'System Health', icon: Settings },
       { path: '/dynasty-connect/infrastructure/numbers', label: 'Phone Numbers', icon: Phone },
+    ],
+  },
+  {
+    title: '💰 Clients',
+    items: [
+      { path: '/dynasty-connect/clients', label: 'Client Management', icon: DollarSign },
     ],
   },
 ];

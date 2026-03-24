@@ -30256,37 +30256,52 @@ export type Database = {
       }
       dc_business_pipelines: {
         Row: {
+          billing_start_date: string | null
           business_name: string
           caller_id: string
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
           default_agent_id: string | null
           description: string | null
           id: string
           monthly_rate: number | null
           pipeline_type: string | null
+          plan_tier: string | null
           status: string | null
+          stripe_customer_id: string | null
         }
         Insert: {
+          billing_start_date?: string | null
           business_name: string
           caller_id: string
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           default_agent_id?: string | null
           description?: string | null
           id?: string
           monthly_rate?: number | null
           pipeline_type?: string | null
+          plan_tier?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
         }
         Update: {
+          billing_start_date?: string | null
           business_name?: string
           caller_id?: string
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           default_agent_id?: string | null
           description?: string | null
           id?: string
           monthly_rate?: number | null
           pipeline_type?: string | null
+          plan_tier?: string | null
           status?: string | null
+          stripe_customer_id?: string | null
         }
         Relationships: []
       }
