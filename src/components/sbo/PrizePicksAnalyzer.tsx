@@ -23,6 +23,15 @@ const PROP_LABELS: Record<string, string> = {
 };
 const normalizePropType = (raw: string) => PROP_LABELS[raw?.toLowerCase()?.trim()] || raw;
 
+interface VerificationResult {
+  verdict: string | null;
+  was_correct: boolean | null;
+  actual_result: string | null;
+  actual_value: number | null;
+  verdict_note: string | null;
+  verified_at: string | null;
+}
+
 interface SavedProp {
   id: string;
   player_name: string;
@@ -46,6 +55,9 @@ interface SavedProp {
     stats_brain_reasoning: string | null;
     market_brain_reasoning: string | null;
     context_brain_reasoning: string | null;
+    was_correct: boolean | null;
+    verified: boolean | null;
+    sbo_results_verification: VerificationResult[];
   }>;
 }
 
@@ -75,6 +87,9 @@ export function PrizePicksAnalyzer() {
   const [propTypeFilter, setPropTypeFilter] = useState<PropTypeFilter>('all');
   const [chingWorldQueue, setChingWorldQueue] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<any>(null);
+  const [verifyDate, setVerifyDate] = useState<'today' | 'yesterday'>('today');
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
   // Load saved PP props on mount
@@ -93,7 +108,11 @@ export function PrizePicksAnalyzer() {
           sbo_predictions(
             id, final_confidence, predicted_outcome, confidence_tier,
             stats_brain_score, market_brain_score, context_brain_score,
-            data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning
+            data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning,
+            was_correct, verified,
+            sbo_results_verification(
+              verdict, was_correct, actual_result, actual_value, verdict_note, verified_at
+            )
           )
         `)
         .eq('source', 'prizepicks')
@@ -108,6 +127,32 @@ export function PrizePicksAnalyzer() {
       console.error('Failed to load saved props:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runVerification = async (forceYesterday = false, forceRerun = false) => {
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-verify-results', {
+        body: {
+          force_yesterday: forceYesterday,
+          force_rerun: forceRerun,
+        }
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setVerifyResult(data);
+
+      const gameRecord = `${data.correct ?? 0}W-${data.incorrect ?? 0}L`;
+      const propRecord = `${data.props_correct ?? 0}W-${data.props_incorrect ?? 0}L`;
+      toast.success(`✅ Games: ${gameRecord} (${data.accuracy ?? 0}%) | Props: ${propRecord} (${data.props_accuracy ?? 0}%)`);
+
+      await loadSavedPPProps();
+    } catch (e: any) {
+      toast.error(`Verification failed: ${e.message}`);
+    } finally {
+      setVerifying(false);
     }
   };
 
@@ -360,12 +405,34 @@ export function PrizePicksAnalyzer() {
     return confB - confA;
   });
 
+  const getVerdictBadge = (prop: SavedProp) => {
+    const pred = prop.sbo_predictions?.[0];
+    const verification = pred?.sbo_results_verification?.[0];
+    const result = verification?.verdict;
+
+    if (!result) return null;
+
+    const configs: Record<string, { label: string; cls: string }> = {
+      correct: { label: '✅ WON', cls: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' },
+      incorrect: { label: '❌ LOST', cls: 'bg-red-500/15 text-red-500 border-red-500/30' },
+      push: { label: '➖ PUSH', cls: 'bg-amber-500/15 text-amber-500 border-amber-500/30' },
+    };
+    const config = configs[result] || { label: result.toUpperCase(), cls: 'bg-muted/30 text-muted-foreground' };
+
+    return (
+      <span className={`px-2 py-0.5 rounded border text-xs font-bold ${config.cls}`}>
+        {config.label}
+      </span>
+    );
+  };
+
   const renderPropCard = (prop: SavedProp) => {
     const pred = prop.sbo_predictions?.[0];
     const conf = pred?.final_confidence || null;
     const pick = pred?.predicted_outcome?.toUpperCase();
     const isQueued = chingWorldQueue.has(prop.id);
     const hasPrediction = !!pred;
+    const verification = pred?.sbo_results_verification?.[0];
 
     return (
       <div key={prop.id} className={`border rounded-lg p-3 space-y-2 ${
@@ -380,10 +447,13 @@ export function PrizePicksAnalyzer() {
             <span className="font-semibold text-sm">{prop.player_name}</span>
             {prop.team && <span className="text-xs text-muted-foreground ml-1">({prop.team})</span>}
           </div>
-          {hasPrediction
-            ? tierBadge(pred.confidence_tier, conf)
-            : <Badge className="bg-orange-500 text-white text-[10px]">⚡ Needs Analysis</Badge>
-          }
+          <div className="flex items-center gap-1">
+            {getVerdictBadge(prop)}
+            {hasPrediction
+              ? tierBadge(pred.confidence_tier, conf)
+              : <Badge className="bg-orange-500 text-white text-[10px]">⚡ Needs Analysis</Badge>
+            }
+          </div>
         </div>
 
         {/* Prop info */}
@@ -441,6 +511,13 @@ export function PrizePicksAnalyzer() {
                  pred.data_quality === 'partial' ? '⚠️ Partial Stats' : '🔴 Odds Only'}
               </Badge>
             )}
+
+            {/* Verdict Note */}
+            {verification?.verdict_note && (
+              <p className="text-[10px] text-muted-foreground italic border-t border-border pt-1">
+                {verification.verdict_note}
+              </p>
+            )}
           </div>
         )}
 
@@ -462,6 +539,82 @@ export function PrizePicksAnalyzer() {
 
   return (
     <div className="space-y-4">
+      {/* 🔍 Verify Results Section */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-base">🔍 Verify Results</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Check real scores and update WON/LOST on all picks
+              </p>
+            </div>
+            <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+              <button
+                onClick={() => setVerifyDate('today')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  verifyDate === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}
+              >Today</button>
+              <button
+                onClick={() => setVerifyDate('yesterday')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  verifyDate === 'yesterday' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}
+              >Yesterday</button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => runVerification(verifyDate === 'yesterday', false)}
+              disabled={verifying}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {verifying ? 'Verifying...' : `🔍 Verify ${verifyDate === 'yesterday' ? "Yesterday's" : "Today's"} Results`}
+            </Button>
+            <Button
+              onClick={() => runVerification(verifyDate === 'yesterday', true)}
+              disabled={verifying}
+              variant="outline"
+              size="sm"
+            >
+              🔄 Force Rerun
+            </Button>
+          </div>
+
+          {verifyResult && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-center">
+                <div className="text-xl font-bold text-emerald-500">
+                  {verifyResult.correct ?? 0}W - {verifyResult.incorrect ?? 0}L
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Game Picks</div>
+                <div className="text-sm font-semibold text-emerald-500 mt-1">{verifyResult.accuracy ?? 0}%</div>
+              </div>
+              <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-center">
+                <div className="text-xl font-bold text-blue-500">
+                  {verifyResult.props_correct ?? 0}W - {verifyResult.props_incorrect ?? 0}L
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Prop Picks</div>
+                <div className="text-sm font-semibold text-blue-500 mt-1">{verifyResult.props_accuracy ?? 0}%</div>
+              </div>
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-center">
+                <div className="text-xl font-bold text-amber-500">
+                  {(verifyResult.correct ?? 0) + (verifyResult.props_correct ?? 0)}W - {(verifyResult.incorrect ?? 0) + (verifyResult.props_incorrect ?? 0)}L
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Overall</div>
+              </div>
+              <div className="rounded-lg bg-muted/20 border border-border p-3 text-center">
+                <div className="text-xl font-bold text-foreground">{verifyResult.scores_updated ?? 0}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Scores Updated</div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Upload Section */}
       <Card>
         <CardHeader className="pb-3">
