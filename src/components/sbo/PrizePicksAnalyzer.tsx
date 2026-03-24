@@ -832,9 +832,22 @@ export function PrizePicksAnalyzer() {
         </div>
       ) : (
         <>
-          <div className="text-xs text-muted-foreground text-center py-1">
-            {savedProps.length} total | {analyzed.length} analyzed | {unanalyzed.length} need analysis | 🔥 {eliteCount} elite (85%+) | 💪 {strongCount} strong (70%+)
-            {verifiedTotal > 0 && <> | ✅ {wonCount}W-{lostCount}L ({verifiedAccuracy}%)</>}
+          {/* Date toggle for viewing props */}
+          <div className="flex items-center justify-between">
+            <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+              <button onClick={() => setViewDate('today')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  viewDate === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}>Today ({getDateEST(0)})</button>
+              <button onClick={() => setViewDate('yesterday')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  viewDate === 'yesterday' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}>Yesterday ({getDateEST(-1)})</button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {savedProps.length} total | {analyzed.length} analyzed | {unanalyzed.length} need analysis | 🔥 {eliteCount} elite | 💪 {strongCount} strong
+              {verifiedTotal > 0 && <> | ✅ {wonCount}W-{lostCount}L ({verifiedAccuracy}%)</>}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
