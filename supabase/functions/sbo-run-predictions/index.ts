@@ -183,7 +183,23 @@ No real stats available. Base prediction on odds and context only. Cap confidenc
   }
 
   if (ctx.prediction_type === 'player_prop') {
-    const system = `You are an elite NBA prop analyst for Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.`;
+    const auditCalibration = `
+SYSTEM CALIBRATION (based on 600+ verified predictions):
+- Blocks props historically hit 91% — strong defensive edge
+- Steals props historically hit 83% — strong defensive edge
+- Pts+Ast combo props hit only 45% — AVOID unless overwhelming evidence. Lower confidence by 10 points for these.
+- Pts+Reb combo props hit only 46% — AVOID unless overwhelming evidence. Lower confidence by 10 points for these.
+- UNDER picks hit 68% vs OVER at 45% — PrizePicks lines are systematically set high. If recommending UNDER, this is statistically favorable — can increase confidence by 5 points.
+- Sweet spot confidence range: 80-89% produces 81% accuracy historically.
+- Cap confidence at 87% maximum to avoid elite tier overconfidence.
+- Minimum confidence to save: 55%.
+- Market Brain is the strongest signal — weight market analysis heavily.
+- Context Brain shows weak correlation — do not over-rely on situational factors.
+`;
+
+    const system = `You are an elite NBA prop analyst for Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.
+
+${auditCalibration}`;
 
     const propPrompt = `
 PLAYER: ${ctx.player_name} (${ctx.team || 'Unknown'})
@@ -200,6 +216,9 @@ Rules:
 2. If player's season average is above the line → lean OVER
 3. If line is near the average → analyze matchup context
 4. Do NOT default to OVER — base your pick on actual numbers
+5. If this is a Pts+Ast or Pts+Reb combo prop, lower confidence by 10 points (historically 45-46%)
+6. If recommending UNDER, you may add 5 confidence points (historically 68% accurate)
+7. Cap maximum confidence at 87%
 
 Return ONLY valid JSON:
 {

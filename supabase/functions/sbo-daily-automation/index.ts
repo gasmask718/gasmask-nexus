@@ -116,47 +116,80 @@ serve(async (req) => {
         .select('*, sbo_predictions(final_confidence, predicted_outcome)')
         .eq('game_date', todayEST);
 
+      // Blocked combo prop types (45-46% accuracy — confirmed losers)
+      const COMBO_PROPS_BLOCKED = ['pts_ast', 'pts_reb', 'points_assists', 'points_rebounds', 'pa', 'pr'];
+      const isBlocked = (pt: string) => {
+        const clean = (pt || '').toLowerCase().replace(/[\s_\-+]/g, '');
+        return COMBO_PROPS_BLOCKED.some(b => b.replace(/[\s_\-+]/g, '') === clean);
+      };
+
       const getFiltered = (types: string[], minConf: number, max: number) =>
         (allProps || [])
           .filter((p: any) => {
             const t = (p.prop_type || '').toLowerCase();
             const c = p.sbo_predictions?.[0]?.final_confidence || 0;
-            return types.includes(t) && c >= minConf;
+            return types.includes(t) && c >= minConf && !isBlocked(t);
           })
-          .sort((a: any, b: any) =>
-            (b.sbo_predictions?.[0]?.final_confidence || 0) - (a.sbo_predictions?.[0]?.final_confidence || 0)
-          )
+          .sort((a: any, b: any) => {
+            // UNDER picks first (68% hist. accuracy vs 45% OVER)
+            const aUnder = (a.sbo_predictions?.[0]?.predicted_outcome || '').toLowerCase() === 'under';
+            const bUnder = (b.sbo_predictions?.[0]?.predicted_outcome || '').toLowerCase() === 'under';
+            if (aUnder && !bUnder) return -1;
+            if (!aUnder && bUnder) return 1;
+            return (b.sbo_predictions?.[0]?.final_confidence || 0) - (a.sbo_predictions?.[0]?.final_confidence || 0);
+          })
           .slice(0, max);
 
+      // Sweet Spot: 80-89% confidence range — 81% historical accuracy
+      const sweetSpotProps = (allProps || [])
+        .filter((p: any) => {
+          const c = p.sbo_predictions?.[0]?.final_confidence || 0;
+          return c >= 80 && c <= 89 && !isBlocked(p.prop_type);
+        })
+        .sort((a: any, b: any) => {
+          const aUnder = (a.sbo_predictions?.[0]?.predicted_outcome || '').toLowerCase() === 'under';
+          const bUnder = (b.sbo_predictions?.[0]?.predicted_outcome || '').toLowerCase() === 'under';
+          if (aUnder && !bUnder) return -1;
+          if (!aUnder && bUnder) return 1;
+          return 0;
+        })
+        .slice(0, 6);
+
       const topProps = (allProps || [])
-        .filter((p: any) => (p.sbo_predictions?.[0]?.final_confidence || 0) >= 90)
+        .filter((p: any) => (p.sbo_predictions?.[0]?.final_confidence || 0) >= 90 && !isBlocked(p.prop_type))
         .slice(0, 5);
-      const stealsProps = getFiltered(['steals', 'stl', 'player_steals'], 75, 5);
-      const blocksProps = getFiltered(['blocks', 'blk', 'player_blocks'], 80, 5);
+      const stealsProps = getFiltered(['steals', 'stl', 'player_steals'], 65, 6);
+      const blocksProps = getFiltered(['blocks', 'blk', 'player_blocks', 'blocked_shots'], 60, 6);
 
       const formatProp = (p: any, typeLabel: string) => {
         const pred = p.sbo_predictions?.[0];
         const pick = (pred?.predicted_outcome || 'OVER').toUpperCase();
         const odds = pick === 'OVER' ? p.over_odds : p.under_odds;
         const oddsStr = odds ? (odds > 0 ? `+${odds}` : `${odds}`) : '';
-        return `${p.player_name} (${p.team || 'NBA'})\n${typeLabel} ${pick} ${p.line} | ${pred?.final_confidence}% | ${oddsStr}\n\n`;
+        const underTag = pick === 'UNDER' ? ' 📊' : '';
+        return `${p.player_name} (${p.team || 'NBA'})\n${typeLabel} ${pick} ${p.line} | ${pred?.final_confidence}%${underTag} | ${oddsStr}\n\n`;
       };
 
       let msg = `🏆 CHINGWORLD PICKS 🏆\n📅 ${dateLabel}\n─────────────────────\n\n`;
 
+      if (sweetSpotProps.length > 0) {
+        msg += `🎯 SWEET SPOT (80-89% — 81% hist. acc)\n`;
+        sweetSpotProps.forEach((p: any) => { msg += formatProp(p, p.prop_type); });
+        msg += `─────────────────────\n\n`;
+      }
       if (topProps.length > 0) {
         msg += `🔥 TOP PROPS (90%+)\n`;
         topProps.forEach((p: any) => { msg += formatProp(p, p.prop_type); });
         msg += `─────────────────────\n\n`;
       }
-      if (stealsProps.length > 0) {
-        msg += `🤿 STEALS\n`;
-        stealsProps.forEach((p: any) => { msg += formatProp(p, 'Steals'); });
+      if (blocksProps.length > 0) {
+        msg += `🛡️ BLOCKS — 91% HIST. ACCURACY 🔥\n`;
+        blocksProps.forEach((p: any) => { msg += formatProp(p, 'Blocks'); });
         msg += `─────────────────────\n\n`;
       }
-      if (blocksProps.length > 0) {
-        msg += `🛡️ BLOCKS\n`;
-        blocksProps.forEach((p: any) => { msg += formatProp(p, 'Blocks'); });
+      if (stealsProps.length > 0) {
+        msg += `🤿 STEALS — 83% HIST. ACCURACY 💪\n`;
+        stealsProps.forEach((p: any) => { msg += formatProp(p, 'Steals'); });
         msg += `─────────────────────\n\n`;
       }
       if (gamePicks?.length) {
@@ -165,7 +198,7 @@ serve(async (req) => {
         msg += `\n─────────────────────\n\n`;
       }
 
-      if (topProps.length === 0 && stealsProps.length === 0 && blocksProps.length === 0 && (!gamePicks || gamePicks.length === 0)) {
+      if (topProps.length === 0 && stealsProps.length === 0 && blocksProps.length === 0 && sweetSpotProps.length === 0 && (!gamePicks || gamePicks.length === 0)) {
         msg += `Picks processing — check back soon.\n\n─────────────────────\n\n`;
       }
 
