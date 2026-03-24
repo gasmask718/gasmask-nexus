@@ -128,11 +128,12 @@ export function PrizePicksAnalyzer() {
     setStatusMsg('Comparing against DraftKings lines...');
     const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-    const { data: dkProps } = await supabase
+    const { data: dkPropsRaw } = await supabase
       .from('sbo_player_props')
       .select('*, sbo_predictions(final_confidence, predicted_outcome)')
       .eq('sportsbook', 'draftkings')
-      .gte('game_date', todayEST) as any;
+      .gte('game_date', todayEST);
+    const dkProps = dkPropsRaw as any[] | null;
 
     const comparisons: ComparedProp[] = ppProps.map(pp => {
       const dkMatch = (dkProps || []).find((dk: any) => {
