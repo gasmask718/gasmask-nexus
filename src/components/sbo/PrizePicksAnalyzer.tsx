@@ -128,7 +128,7 @@ export function PrizePicksAnalyzer() {
     setStatusMsg('Comparing against DraftKings lines...');
     const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-    const { data: dkPropsRaw } = await supabase
+    const { data: dkPropsRaw } = await (supabase as any)
       .from('sbo_player_props')
       .select('*, sbo_predictions(final_confidence, predicted_outcome)')
       .eq('sportsbook', 'draftkings')
