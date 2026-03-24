@@ -5,19 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const VOICE_MAP: Record<string, string> = {
-  JBFqnCBsd6RMkjVDRZzb: "Polly.Matthew",
-  "21m00Tcm4TlvDq8ikWAM": "Polly.Joanna",
-  EXAVITQu4vr4xnSDxMaL: "Polly.Amy",
-  ErXwobaYiN019PkySvjV: "Polly.Arthur",
-  MF3mGyEYCl7XYWbV9V6O: "Polly.Emma",
-  TxGEqnHWrfWFTfGW9XjX: "Polly.Joey",
-  VR6AewLTigWG4xSOukaG: "Polly.Justin",
-  pNInz6obpgDQGcFmaJgB: "Polly.Salli",
-  yoZ06aMxZJJ28mfd3POQ: "Polly.Kendra",
-  default: "Polly.Joanna",
-};
-
 function escapeXml(unsafe: string) {
   if (!unsafe) return "";
   return unsafe.replace(/[<>&'"]/g, (c) => {
@@ -79,6 +66,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
     const campaign = Array.isArray(item.dialer_campaigns) ? item.dialer_campaigns[0] : item.dialer_campaigns;
+    
+    // agent_id from campaign is an ElevenLabs Conversational Agent ID (e.g. agent_xxx)
     const agentId = campaign?.agent_id || "";
 
     const campaignScript = campaign?.initial_script || "";
@@ -86,21 +75,22 @@ Deno.serve(async (req) => {
       campaignScript ||
       `Hello ${item.contact_name || "there"}. Are you ready to speak with our AI assistant? Please press 1 on your keypad or say yes to connect.`;
     const safeScript = escapeXml(rawScript);
-    const voiceId = VOICE_MAP[agentId] || VOICE_MAP["default"];
 
     // Normalize phone to E.164
     const toNumber = toE164(item.phone_number);
 
     const statusCallbackUrl = `${supabaseUrl}/functions/v1/twilio-call-status?script=${encodeURIComponent(rawScript)}`;
     const humanNumber = Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
-    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${agentId}&amp;queue_item_id=${encodeURIComponent(queue_item_id)}&amp;campaign_id=${encodeURIComponent(item.campaign_id || "")}&amp;human_number=${encodeURIComponent(humanNumber)}`;
+    
+    // Pass agent_id (ElevenLabs Conversational Agent ID) to the gather webhook
+    const gatherActionUrl = `${supabaseUrl}/functions/v1/twilio-gather-webhook?agent_id=${encodeURIComponent(agentId)}&amp;queue_item_id=${encodeURIComponent(queue_item_id)}&amp;campaign_id=${encodeURIComponent(item.campaign_id || "")}&amp;human_number=${encodeURIComponent(humanNumber)}`;
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="dtmf speech" action="${gatherActionUrl}" numDigits="1" timeout="4" speechTimeout="2">
-    <Say voice="${voiceId}" language="en-US">${safeScript}</Say>
+    <Say voice="Polly.Matthew" language="en-US">${safeScript}</Say>
   </Gather>
-  <Say voice="${voiceId}" language="en-US">We did not receive a response. Goodbye.</Say>
+  <Say voice="Polly.Matthew" language="en-US">We did not receive a response. Goodbye.</Say>
   <Hangup/>
 </Response>`;
 
@@ -127,7 +117,7 @@ Deno.serve(async (req) => {
       params.append("MachineDetectionTimeout", "8");
     }
 
-    console.log(`📞 Calling ${toNumber} from ${FROM_NUMBER} for queue item ${queue_item_id}`);
+    console.log(`📞 Calling ${toNumber} from ${FROM_NUMBER} for queue item ${queue_item_id} | agent_id=${agentId}`);
 
     const twilioRes = await fetch(twilioUrl, {
       method: "POST",
@@ -157,7 +147,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", queue_item_id);
 
-    // Pre-create call_recordings row — use insert (not upsert) since this is the first creation
+    // Pre-create call_recordings row
     const { error: recordingError } = await supabase.from("call_recordings").insert({
       provider_call_sid: callSid,
       business_id: business_id,
