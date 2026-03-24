@@ -139,9 +139,7 @@ export function PrizePicksAnalyzer() {
           over_odds: -122,
           under_odds: -122,
           game_date: todayEST,
-          sportsbook: 'prizepicks',
-          game: prop.game || null,
-          position: prop.position || null,
+          source: 'prizepicks',
         }, { onConflict: 'player_name,prop_type,game_date,sportsbook', ignoreDuplicates: false });
 
       if (!error) saved++;
