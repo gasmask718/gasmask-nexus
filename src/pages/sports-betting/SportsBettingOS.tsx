@@ -4316,6 +4316,49 @@ export default function SportsBettingOS() {
         </div>
       )}
 
+      {/* Verification Results Panel */}
+      {verifyResult && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-bold text-foreground">✅ Verification Complete</div>
+            <Button variant="ghost" size="sm" onClick={() => setVerifyResult(null)} className="text-xs text-muted-foreground">✕ Close</Button>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-muted/30 p-3 text-center">
+              <div className="text-2xl font-bold text-emerald-500">
+                {verifyResult.correct || 0}W-{verifyResult.incorrect || 0}L
+              </div>
+              <div className="text-xs text-muted-foreground">Game Picks</div>
+              <div className="text-sm font-medium text-foreground mt-1">{verifyResult.accuracy || 0}%</div>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-3 text-center">
+              <div className="text-2xl font-bold text-blue-500">
+                {verifyResult.props_correct || 0}W-{verifyResult.props_incorrect || 0}L
+              </div>
+              <div className="text-xs text-muted-foreground">Prop Picks</div>
+              <div className="text-sm font-medium text-foreground mt-1">{verifyResult.props_accuracy || 0}%</div>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-3 text-center">
+              <div className="text-2xl font-bold text-amber-500">
+                {(verifyResult.correct || 0) + (verifyResult.props_correct || 0)}W-{(verifyResult.incorrect || 0) + (verifyResult.props_incorrect || 0)}L
+              </div>
+              <div className="text-xs text-muted-foreground">Overall</div>
+              <div className="text-sm font-medium text-foreground mt-1">
+                {(() => {
+                  const total = (verifyResult.correct || 0) + (verifyResult.incorrect || 0) + (verifyResult.props_correct || 0) + (verifyResult.props_incorrect || 0);
+                  return total > 0 ? Math.round(((verifyResult.correct || 0) + (verifyResult.props_correct || 0)) / total * 1000) / 10 : 0;
+                })()}%
+              </div>
+            </div>
+          </div>
+          {(verifyResult.scores_updated || 0) > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              🏀 {verifyResult.scores_updated} games updated with real final scores
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Today's Guarantee Widget */}
       <TodaysGuaranteeWidget />
 
