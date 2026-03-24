@@ -1737,7 +1737,11 @@ export default function CampaignWizardPage() {
                       <Label className="text-xs">Quick Templates</Label>
                       <div className="flex flex-wrap gap-2">
                         {SCRIPT_TEMPLATES.map((tpl) => (
-                          <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => update("initial_script", tpl.script)}>
+                          <Button key={tpl.id} variant="outline" size="sm" className="text-xs h-7" onClick={() => {
+                            update("initial_script", tpl.script);
+                            // Auto-select the mapped ElevenLabs agent
+                            if (tpl.agentId) update("agent_id", tpl.agentId);
+                          }}>
                             {tpl.label}
                           </Button>
                         ))}
