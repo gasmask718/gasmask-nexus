@@ -94,7 +94,7 @@ export function PrizePicksAnalyzer() {
         .from('sbo_player_props')
         .select(`
           id, player_name, team, prop_type, line, over_odds, under_odds,
-          game_date, sportsbook, game, position, created_at,
+          game_date, source, created_at,
           sbo_predictions(
             id, final_confidence, predicted_outcome, confidence_tier,
             stats_brain_score, market_brain_score, context_brain_score,
