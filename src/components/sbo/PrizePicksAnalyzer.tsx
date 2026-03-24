@@ -48,20 +48,6 @@ interface SavedProp {
     context_brain_reasoning: string | null;
   }>;
 }
-  sbo_predictions: Array<{
-    id: string;
-    final_confidence: number | null;
-    predicted_outcome: string | null;
-    confidence_tier: string | null;
-    stats_brain_score: number | null;
-    market_brain_score: number | null;
-    context_brain_score: number | null;
-    data_quality: string | null;
-    stats_brain_reasoning: string | null;
-    market_brain_reasoning: string | null;
-    context_brain_reasoning: string | null;
-  }>;
-}
 
 interface ExtractedProp {
   player_name: string;
