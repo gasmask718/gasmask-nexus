@@ -119,32 +119,31 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify(registerBody),
     });
 
-    // Read raw response for debugging
+    // Read raw response
     const rawText = await registerResponse.text();
 
     if (!registerResponse.ok) {
       console.error(`[Bridge] ElevenLabs returned ${registerResponse.status}: ${rawText.substring(0, 500)}`);
-      console.error(`[Bridge] Request body was: ${JSON.stringify(registerBody)}`);
-      throw new Error(`ElevenLabs API failed: ${registerResponse.status} - ${rawText.substring(0, 200)}`);
+      throw new Error(`ElevenLabs API failed: ${registerResponse.status}`);
     }
 
-    let responseData: any = {};
+    // ElevenLabs returns TwiML XML directly (not JSON)
+    // The conversation_id is embedded as: <Parameter name="conversation_id" value="conv_xxx" />
+    let twiml = rawText;
+    let conversationId: string | null = null;
+
+    // Try JSON first (legacy format)
     try {
-      responseData = JSON.parse(rawText);
+      const jsonData = JSON.parse(rawText);
+      twiml = jsonData.twiml || rawText;
+      conversationId = jsonData.conversation_id || jsonData.conversationId || null;
+      console.log("[Bridge] Parsed JSON response, conversation_id:", conversationId);
     } catch {
-      console.error("[Bridge] ElevenLabs returned non-JSON:", rawText.substring(0, 200));
+      // It's XML/TwiML — extract conversation_id from Parameter tag
+      const match = rawText.match(/name="conversation_id"\s+value="([^"]+)"/);
+      conversationId = match?.[1] || null;
+      console.log("[Bridge] Parsed TwiML XML, extracted conversation_id:", conversationId);
     }
-
-    console.log("[Bridge] ElevenLabs full response keys:", Object.keys(responseData));
-
-    const twiml = responseData.twiml;
-
-    // Try every possible field name for conversation_id
-    const conversationId =
-      responseData.conversation_id ||
-      responseData.conversationId ||
-      responseData.id ||
-      null;
 
     console.log(`[Bridge] Extracted conversationId=${conversationId} | callSid=${callSid}`);
 
