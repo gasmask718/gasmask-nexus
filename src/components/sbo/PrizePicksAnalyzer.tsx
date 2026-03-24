@@ -560,11 +560,19 @@ export function PrizePicksAnalyzer() {
       <div key={prop.id} className={`border rounded-lg p-3 space-y-2 ${
         verdict === 'correct' ? 'border-emerald-500/30 bg-emerald-500/5' :
         verdict === 'incorrect' ? 'border-red-500/20 bg-red-500/5' :
+        isBadPropType(prop.prop_type) ? 'border-red-500/20 bg-red-900/5' :
         conf && conf >= 85 ? 'border-green-500/30 bg-green-500/5' :
         conf && conf >= 70 ? 'border-blue-500/20 bg-blue-500/5' :
         !hasPrediction ? 'border-orange-500/20 bg-orange-500/5' :
         'bg-card'
       }`}>
+        {/* FADE BANNER for losing combo props */}
+        {isBadPropType(prop.prop_type) && (
+          <div className="w-full text-center py-1 rounded bg-red-500/20 text-red-500 text-xs font-bold border border-red-500/30">
+            ❌ SYSTEM FADE — {normalizePropType(prop.prop_type)} props hit {normalizePropType(prop.prop_type) === 'Pts+Ast' ? '45' : '46'}% historically. DO NOT PLAY.
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
           <div>
