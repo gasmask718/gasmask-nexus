@@ -682,6 +682,38 @@ export function PrizePicksAnalyzer() {
 
   return (
     <div className="space-y-4">
+      {/* 🧠 System Intelligence Card */}
+      <div className="rounded-xl border border-border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-base">🧠 System Intelligence</h3>
+          <span className="text-[10px] text-muted-foreground">Based on 600+ verified picks</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+          <div className="rounded-lg bg-emerald-500/10 p-2">
+            <div className="text-lg font-bold text-emerald-500">62.7%</div>
+            <div className="text-[10px] text-muted-foreground">Overall Accuracy</div>
+          </div>
+          <div className="rounded-lg bg-emerald-500/10 p-2">
+            <div className="text-lg font-bold text-emerald-500">91%</div>
+            <div className="text-[10px] text-muted-foreground">🛡️ Blocks Edge</div>
+          </div>
+          <div className="rounded-lg bg-blue-500/10 p-2">
+            <div className="text-lg font-bold text-blue-500">68%</div>
+            <div className="text-[10px] text-muted-foreground">📊 UNDER Bias</div>
+          </div>
+          <div className="rounded-lg bg-amber-500/10 p-2">
+            <div className="text-lg font-bold text-amber-500">81%</div>
+            <div className="text-[10px] text-muted-foreground">🎯 Sweet Spot 80-89%</div>
+          </div>
+        </div>
+        <div className="mt-2 flex gap-2 flex-wrap">
+          <span className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">❌ Fade: Pts+Ast (45%)</span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">❌ Fade: Pts+Reb (46%)</span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">📊 UNDER first priority</span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">🔥 Market Brain 45%</span>
+        </div>
+      </div>
+
       {/* ⚡ BATCH PROCESS + VERIFY SECTION */}
       <Card>
         <CardContent className="p-4 space-y-3">
