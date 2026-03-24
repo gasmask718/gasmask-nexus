@@ -1235,14 +1235,18 @@ export function PrizePicksAnalyzer() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium ${
                       propTypeFilter === 'all' ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
                     }`}>All Types</button>
-                  {propTypes.map(t => (
-                    <button key={t} onClick={() => setPropTypeFilter(t)}
-                      className={`px-2 py-1 rounded-md text-[10px] font-medium ${
-                        propTypeFilter === t ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
-                      }`}>
-                      {t} ({savedProps.filter(p => normalizePropType(p.prop_type) === t).length})
-                    </button>
-                  ))}
+                  {propTypes.map(t => {
+                    const badge = PROP_TYPE_AUDIT_BADGES[t];
+                    return (
+                      <button key={t} onClick={() => setPropTypeFilter(t)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-medium ${
+                          propTypeFilter === t ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
+                        }`}>
+                        {t} ({savedProps.filter(p => normalizePropType(p.prop_type) === t).length})
+                        {badge && <span className="ml-1">{badge}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
