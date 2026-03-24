@@ -23,6 +23,15 @@ const PROP_LABELS: Record<string, string> = {
 };
 const normalizePropType = (raw: string) => PROP_LABELS[raw?.toLowerCase()?.trim()] || raw;
 
+interface VerificationResult {
+  verdict: string | null;
+  was_correct: boolean | null;
+  actual_result: string | null;
+  actual_value: number | null;
+  verdict_note: string | null;
+  verified_at: string | null;
+}
+
 interface SavedProp {
   id: string;
   player_name: string;
@@ -46,6 +55,9 @@ interface SavedProp {
     stats_brain_reasoning: string | null;
     market_brain_reasoning: string | null;
     context_brain_reasoning: string | null;
+    was_correct: boolean | null;
+    verified: boolean | null;
+    sbo_results_verification: VerificationResult[];
   }>;
 }
 
