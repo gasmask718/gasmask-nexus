@@ -101,7 +101,7 @@ export function PrizePicksAnalyzer() {
             data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning
           )
         `)
-        .eq('sportsbook', 'prizepicks')
+        .eq('source', 'prizepicks')
         .eq('game_date', todayEST)
         .order('created_at', { ascending: false });
 
