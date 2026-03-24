@@ -4365,6 +4365,7 @@ export default function SportsBettingOS() {
           <PrizePicksAnalyzer />
         </TabsContent>
 
+        <TabsContent value="history" className="mt-4">
           <PredictionHistory />
         </TabsContent>
 
