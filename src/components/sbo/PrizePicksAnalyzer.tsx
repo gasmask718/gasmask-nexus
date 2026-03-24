@@ -392,7 +392,6 @@ export function PrizePicksAnalyzer() {
             <span className="text-muted-foreground">{normalizePropType(prop.prop_type)}</span>
             <span className="font-mono font-bold">PP: {prop.line}</span>
           </div>
-          </div>
         </div>
 
         {/* AI Analysis */}
