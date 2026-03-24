@@ -3893,6 +3893,7 @@ function TodaysGuaranteeWidget() {
 export default function SportsBettingOS() {
   const [runningAll, setRunningAll] = useState(false);
   const [verifyingResults, setVerifyingResults] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<any>(null);
   const [runAllPhase, setRunAllPhase] = useState('');
   const [activeTab, setActiveTab] = useState('games');
 
