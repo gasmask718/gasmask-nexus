@@ -125,30 +125,26 @@ interface CallItem {
 
 // ElevenLabs agents are fetched from DB — see useQuery below
 
+// Script templates mapped to their corresponding ElevenLabs agent IDs
 const SCRIPT_TEMPLATES = [
   {
     id: "intro_sales",
-
     label: "Sales Introduction",
-
+    agentId: "agent_0301kmdmp16aevv8svr78pbr75n8",
     script:
       "Hi, this is {{agent_name}} calling from {{business_name}}. I'm reaching out because we have some exciting new products that I think would be a great fit for your store. Do you have a quick moment to chat?",
   },
-
   {
     id: "follow_up",
-
     label: "Follow-Up Call",
-
+    agentId: "agent_3101kmdn5q9tfh7r3padaq6j37r3",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. I'm following up on our previous conversation. I wanted to check in and see if you had any questions or if you're ready to place an order.",
   },
-
   {
     id: "reactivation",
-
     label: "Reactivation / Win-Back",
-
+    agentId: "agent_5901kmdnb01sfzs9hp76mz806813",
     script:
       "Hi, this is {{agent_name}} from {{business_name}}. We noticed it's been a while since your last order and wanted to reach out. We have some new offers and would love to get you back on board. Can I share what's new?",
   },
