@@ -97,6 +97,20 @@ export function ManualCampaignCallModal({
   const [showTransferPanel, setShowTransferPanel] = useState(false);
   const [selectedTransferAgent, setSelectedTransferAgent] = useState<{ id: string; name: string } | null>(null);
 
+  // Fetch campaign's configured agent_id (ElevenLabs agent ID set during wizard)
+  const { data: campaignData } = useQuery({
+    queryKey: ["campaign-agent-config", campaignId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("dialer_campaigns")
+        .select("agent_id, initial_script, dial_mode")
+        .eq("id", campaignId)
+        .single();
+      return data as { agent_id: string | null; initial_script: string | null; dial_mode: string | null } | null;
+    },
+    enabled: open && !!campaignId,
+  });
+
   // Fetch available ElevenLabs agents for transfer
   const { data: transferAgents = [] } = useQuery({
     queryKey: ["elevenlabs-agents-transfer"],
@@ -117,6 +131,15 @@ export function ManualCampaignCallModal({
     },
     enabled: open,
   });
+
+  // Find the campaign's pre-configured agent from the agents list
+  const campaignAgent = useMemo(() => {
+    if (!campaignData?.agent_id) return null;
+    const match = transferAgents.find(a => a.elevenlabs_agent_id === campaignData.agent_id);
+    if (match) return { id: match.elevenlabs_agent_id!, name: match.agent_name };
+    // If agent_id is a raw ElevenLabs ID not in the table, use it directly
+    return { id: campaignData.agent_id, name: "Campaign Agent" };
+  }, [campaignData?.agent_id, transferAgents]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
   const currentCallSidRef = useRef<string | null>(null);
