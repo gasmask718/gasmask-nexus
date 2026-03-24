@@ -140,7 +140,7 @@ export function PrizePicksAnalyzer() {
           under_odds: -122,
           game_date: todayEST,
           source: 'prizepicks',
-        }, { onConflict: 'player_name,prop_type,game_date,sportsbook', ignoreDuplicates: false });
+        }, { onConflict: 'player_name,prop_type,game_date,source', ignoreDuplicates: false });
 
       if (!error) saved++;
       else console.error(`Failed to save ${prop.player_name}:`, error);
