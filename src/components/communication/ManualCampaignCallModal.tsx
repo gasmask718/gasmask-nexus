@@ -685,6 +685,7 @@ export function ManualCampaignCallModal({
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       const agentLabel = transferType === "elevenlabs" 
         ? `AI Agent (${agent?.name || "Default"})` 
@@ -694,12 +695,21 @@ export function ManualCampaignCallModal({
       // Show the transfer panel so user can monitor
       setShowTransferPanel(true);
 
-      // Disconnect local call leg
+      // Disconnect local call leg — the edge function already created a
+      // new outbound call to the recipient for ElevenLabs transfers,
+      // so we just need to clean up the browser side.
       stopSpeechRecognition();
       stopRemoteAudioCapture();
       if (device.activeCall) device.hangUp();
 
-      currentCallSidRef.current = null;
+      // Track the new AI call SID if returned (for transcript monitoring)
+      if (data?.new_call_sid) {
+        setActiveCallSid(data.new_call_sid);
+        currentCallSidRef.current = data.new_call_sid;
+      } else {
+        currentCallSidRef.current = null;
+        setActiveCallSid(null);
+      }
       setCallStartedAt(null);
       setIsDialing(false);
       setIsTransferring(false);
