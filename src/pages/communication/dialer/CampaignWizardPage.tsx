@@ -1013,6 +1013,18 @@ export default function CampaignWizardPage() {
                     Mode: {(activeCampaign as any)?.dial_mode === "manual" ? "Manual Cold Call" : "AI Agent"}
                   </Badge>
 
+                  {/* Connection Status Indicators */}
+                  <Badge variant="outline" className="gap-1.5 text-[10px] h-5 border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400">
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                    Twilio Connected
+                  </Badge>
+                  {(activeCampaign as any)?.dial_mode !== "manual" && (
+                    <Badge variant="outline" className="gap-1.5 text-[10px] h-5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      <div className="h-1.5 w-1.5 rounded-full bg-purple-500 animate-pulse" />
+                      ElevenLabs Connected
+                    </Badge>
+                  )}
+
                   {activeCampaign?.status === "active" && (
                     <span className="flex items-center gap-1 text-green-600 dark:text-green-400 animate-pulse text-xs font-medium">
                       <Activity className="h-3 w-3" /> Dialing Active
