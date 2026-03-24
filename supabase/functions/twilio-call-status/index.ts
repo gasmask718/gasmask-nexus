@@ -135,10 +135,10 @@ const handler = async (req: Request): Promise<Response> => {
                   .map((m: any) => `${m.role === "agent" ? "AI" : "Caller"}: ${m.text || m.message || ""}`)
                   .join("\n");
 
-                // Detect outcome from analysis or transcript
-                const outcomeRaw = analysis?.call_successful === true ? "answered"
+                // Detect outcome — must match CHECK constraint on ai_call_logs
+                const outcomeRaw = analysis?.call_successful === true ? "reached"
                   : analysis?.call_successful === false ? "no_answer"
-                  : dbStatus === "completed" ? "answered" : "no_answer";
+                  : dbStatus === "completed" ? "reached" : "no_answer";
 
                 // Look up queue item for context
                 const { data: queueItem } = await supabase
