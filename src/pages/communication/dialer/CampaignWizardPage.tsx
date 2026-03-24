@@ -1755,15 +1755,34 @@ export default function CampaignWizardPage() {
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
-                      <h4 className="font-semibold">AI Voice Settings</h4>
-                      <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+                      <h4 className="font-semibold">ElevenLabs AI Agent</h4>
+                      <p className="text-xs text-muted-foreground">Select which AI agent handles the conversation after the TTS opener.</p>
                     </div>
                     <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select Agent..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select AI Agent..." /></SelectTrigger>
                       <SelectContent>
-                        {VOICE_OPTIONS.map((a) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
+                        {elAgents.map((a) => (
+                          <SelectItem
+                            key={a.id}
+                            value={a.elevenlabs_agent_id || a.id}
+                            disabled={!a.elevenlabs_agent_id}
+                          >
+                            <div className="flex flex-col">
+                              <span>{a.agent_name}</span>
+                              <span className="text-xs text-muted-foreground">{a.script_label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        {elAgents.length === 0 && (
+                          <SelectItem value="__none" disabled>No agents configured</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
+                    {form.agent_id && (
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Agent ID: {form.agent_id}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
