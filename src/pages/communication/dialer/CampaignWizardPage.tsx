@@ -123,25 +123,7 @@ interface CallItem {
   updated_at: string;
 }
 
-const VOICE_OPTIONS = [
-  { id: "JBFqnCBsd6RMkjVDRZzb", name: "Adam (Male, Deep)" },
-
-  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel (Female, Warm)" },
-
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella (Female, Soft)" },
-
-  { id: "ErXwobaYiN019PkySvjV", name: "Antoni (Male, Calm)" },
-
-  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli (Female, Young)" },
-
-  { id: "TxGEqnHWrfWFTfGW9XjX", name: "Josh (Male, Deep)" },
-
-  { id: "VR6AewLTigWG4xSOukaG", name: "Arnold (Male, Strong)" },
-
-  { id: "pNInz6obpgDQGcFmaJgB", name: "Sam (Male, Raspy)" },
-
-  { id: "yoZ06aMxZJJ28mfd3POQ", name: "Sam (Female, Raspy)" },
-];
+// ElevenLabs agents are fetched from DB — see useQuery below
 
 const SCRIPT_TEMPLATES = [
   {
