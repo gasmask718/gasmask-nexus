@@ -283,7 +283,7 @@ export function PrizePicksAnalyzer() {
 
         try {
           await supabase.functions.invoke('sbo-run-predictions', {
-            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null, sportsbook: 'prizepicks' }
+            body: { prop_id: prop.id, prediction_type: 'player_prop', predicted_outcome: null, source: 'prizepicks' }
           });
         } catch (e) {
           console.error(`Analysis failed for ${prop.player_name}:`, e);
