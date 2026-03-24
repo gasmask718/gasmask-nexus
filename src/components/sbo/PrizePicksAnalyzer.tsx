@@ -108,7 +108,11 @@ export function PrizePicksAnalyzer() {
           sbo_predictions(
             id, final_confidence, predicted_outcome, confidence_tier,
             stats_brain_score, market_brain_score, context_brain_score,
-            data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning
+            data_quality, stats_brain_reasoning, market_brain_reasoning, context_brain_reasoning,
+            was_correct, verified,
+            sbo_results_verification(
+              verdict, was_correct, actual_result, actual_value, verdict_note, verified_at
+            )
           )
         `)
         .eq('source', 'prizepicks')
@@ -123,6 +127,32 @@ export function PrizePicksAnalyzer() {
       console.error('Failed to load saved props:', e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runVerification = async (forceYesterday = false, forceRerun = false) => {
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-verify-results', {
+        body: {
+          force_yesterday: forceYesterday,
+          force_rerun: forceRerun,
+        }
+      });
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setVerifyResult(data);
+
+      const gameRecord = `${data.correct ?? 0}W-${data.incorrect ?? 0}L`;
+      const propRecord = `${data.props_correct ?? 0}W-${data.props_incorrect ?? 0}L`;
+      toast.success(`✅ Games: ${gameRecord} (${data.accuracy ?? 0}%) | Props: ${propRecord} (${data.props_accuracy ?? 0}%)`);
+
+      await loadSavedPPProps();
+    } catch (e: any) {
+      toast.error(`Verification failed: ${e.message}`);
+    } finally {
+      setVerifying(false);
     }
   };
 
