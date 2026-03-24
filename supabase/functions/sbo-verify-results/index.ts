@@ -193,8 +193,11 @@ serve(async (req) => {
       let predQuery = supabase
         .from('sbo_predictions')
         .select('*')
-        .eq('game_id', game.id)
-        .eq('verified', false);
+        .eq('game_id', game.id);
+
+      if (!force_rerun) {
+        predQuery = predQuery.eq('verified', false);
+      }
 
       if (prediction_id) {
         predQuery = predQuery.eq('id', prediction_id);
