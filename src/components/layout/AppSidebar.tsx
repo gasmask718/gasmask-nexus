@@ -565,6 +565,27 @@ export default function AppSidebar() {
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 📞 DYNASTY CONNECT — Standalone AI Call Center Hub */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-orange-400/80 tracking-wider">
+                📞 Dynasty Connect
+              </div>
+              {renderSection('dynasty-connect', 'Dynasty Connect Hub', '📞', [
+                { path: '/dynasty-connect', label: 'Command Center', emoji: '🎯' },
+                { path: '/dynasty-connect/live', label: 'Live Calls', emoji: '📡' },
+                { path: '/dynasty-connect/campaigns', label: 'Campaigns', emoji: '📋' },
+                { path: '/dynasty-connect/campaigns/builder', label: 'Campaign Builder', emoji: '⚡' },
+                { path: '/dynasty-connect/agents', label: 'AI Agents', emoji: '🤖' },
+                { path: '/dynasty-connect/intelligence', label: 'Call Intelligence', emoji: '🧠' },
+                { path: '/dynasty-connect/pipelines', label: 'Business Pipelines', emoji: '🏢' },
+                { path: '/dynasty-connect/infrastructure', label: 'Infrastructure', emoji: '⚙️' },
+              ], "bg-gradient-to-r from-orange-500/20 to-amber-500/10 text-orange-300 hover:from-orange-500/30")}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 📡 COMMUNICATION SYSTEMS */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (

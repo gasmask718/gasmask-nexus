@@ -1066,6 +1066,21 @@ export default function AppRoutes() {
         <Route path="/callcenter/emails" element={<Emails />} />
         <Route path="/callcenter/settings" element={<CallCenterSettings />} />
 
+        {/* 📞 Dynasty Connect Hub */}
+        <Route path="/dynasty-connect" element={<DCLayout />}>
+          <Route index element={<DCCommandCenter />} />
+          <Route path="live" element={<DCLiveCalls />} />
+          <Route path="campaigns" element={<DCCampaigns />} />
+          <Route path="campaigns/builder" element={<DCCampaignBuilder />} />
+          <Route path="agents" element={<DCAgents />} />
+          <Route path="agents/playbooks" element={<DCAgents />} />
+          <Route path="intelligence" element={<DCIntelligence />} />
+          <Route path="intelligence/self-learn" element={<DCAgents />} />
+          <Route path="pipelines" element={<DCPipelines />} />
+          <Route path="infrastructure" element={<DCInfrastructure />} />
+          <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
+        </Route>
+
         {/* 📡 Communication Systems - New Unified Module */}
         <Route path="/comm-systems" element={<CommSystemsDialerPage />} />
         <Route path="/comm-systems/dialer" element={<CommSystemsDialerPage />} />
