@@ -539,6 +539,82 @@ export function PrizePicksAnalyzer() {
 
   return (
     <div className="space-y-4">
+      {/* 🔍 Verify Results Section */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-base">🔍 Verify Results</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Check real scores and update WON/LOST on all picks
+              </p>
+            </div>
+            <div className="flex rounded-lg overflow-hidden border border-border text-xs">
+              <button
+                onClick={() => setVerifyDate('today')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  verifyDate === 'today' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}
+              >Today</button>
+              <button
+                onClick={() => setVerifyDate('yesterday')}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  verifyDate === 'yesterday' ? 'bg-primary text-primary-foreground' : 'bg-muted/30 text-muted-foreground hover:bg-muted/60'
+                }`}
+              >Yesterday</button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => runVerification(verifyDate === 'yesterday', false)}
+              disabled={verifying}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {verifying ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {verifying ? 'Verifying...' : `🔍 Verify ${verifyDate === 'yesterday' ? "Yesterday's" : "Today's"} Results`}
+            </Button>
+            <Button
+              onClick={() => runVerification(verifyDate === 'yesterday', true)}
+              disabled={verifying}
+              variant="outline"
+              size="sm"
+            >
+              🔄 Force Rerun
+            </Button>
+          </div>
+
+          {verifyResult && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-2">
+              <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3 text-center">
+                <div className="text-xl font-bold text-emerald-500">
+                  {verifyResult.correct ?? 0}W - {verifyResult.incorrect ?? 0}L
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Game Picks</div>
+                <div className="text-sm font-semibold text-emerald-500 mt-1">{verifyResult.accuracy ?? 0}%</div>
+              </div>
+              <div className="rounded-lg bg-blue-500/10 border border-blue-500/20 p-3 text-center">
+                <div className="text-xl font-bold text-blue-500">
+                  {verifyResult.props_correct ?? 0}W - {verifyResult.props_incorrect ?? 0}L
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Prop Picks</div>
+                <div className="text-sm font-semibold text-blue-500 mt-1">{verifyResult.props_accuracy ?? 0}%</div>
+              </div>
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3 text-center">
+                <div className="text-xl font-bold text-amber-500">
+                  {(verifyResult.correct ?? 0) + (verifyResult.props_correct ?? 0)}W - {(verifyResult.incorrect ?? 0) + (verifyResult.props_incorrect ?? 0)}L
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">Overall</div>
+              </div>
+              <div className="rounded-lg bg-muted/20 border border-border p-3 text-center">
+                <div className="text-xl font-bold text-foreground">{verifyResult.scores_updated ?? 0}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Scores Updated</div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Upload Section */}
       <Card>
         <CardHeader className="pb-3">
