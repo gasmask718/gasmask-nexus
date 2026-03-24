@@ -1746,11 +1746,13 @@ export type Database = {
           flow_id: string | null
           flow_path: Json | null
           follow_up_created: boolean | null
+          full_transcript: string | null
           id: string
           language: string | null
           outcome: string | null
           persona_id: string | null
           phone_number: string | null
+          platform: string | null
           script_id: string | null
           store_id: string | null
           tone_used: string | null
@@ -1767,11 +1769,13 @@ export type Database = {
           flow_id?: string | null
           flow_path?: Json | null
           follow_up_created?: boolean | null
+          full_transcript?: string | null
           id?: string
           language?: string | null
           outcome?: string | null
           persona_id?: string | null
           phone_number?: string | null
+          platform?: string | null
           script_id?: string | null
           store_id?: string | null
           tone_used?: string | null
@@ -1788,11 +1792,13 @@ export type Database = {
           flow_id?: string | null
           flow_path?: Json | null
           follow_up_created?: boolean | null
+          full_transcript?: string | null
           id?: string
           language?: string | null
           outcome?: string | null
           persona_id?: string | null
           phone_number?: string | null
+          platform?: string | null
           script_id?: string | null
           store_id?: string | null
           tone_used?: string | null
@@ -30248,6 +30254,42 @@ export type Database = {
           },
         ]
       }
+      dc_business_pipelines: {
+        Row: {
+          business_name: string
+          caller_id: string
+          created_at: string | null
+          default_agent_id: string | null
+          description: string | null
+          id: string
+          monthly_rate: number | null
+          pipeline_type: string | null
+          status: string | null
+        }
+        Insert: {
+          business_name: string
+          caller_id: string
+          created_at?: string | null
+          default_agent_id?: string | null
+          description?: string | null
+          id?: string
+          monthly_rate?: number | null
+          pipeline_type?: string | null
+          status?: string | null
+        }
+        Update: {
+          business_name?: string
+          caller_id?: string
+          created_at?: string | null
+          default_agent_id?: string | null
+          description?: string | null
+          id?: string
+          monthly_rate?: number | null
+          pipeline_type?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null
@@ -49778,6 +49820,30 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          platform_desc: string | null
+          platform_name: string
+          version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          platform_desc?: string | null
+          platform_name?: string
+          version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          platform_desc?: string | null
+          platform_name?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       platforms: {
         Row: {
           is_active: boolean
@@ -49930,8 +49996,10 @@ export type Database = {
           agent_name: string | null
           calls_analyzed: number | null
           created_at: string
+          date: string | null
           id: string
           losses_analyzed: number | null
+          platform: string | null
           top_insight: string | null
           update_content: string
           wins_analyzed: number | null
@@ -49941,8 +50009,10 @@ export type Database = {
           agent_name?: string | null
           calls_analyzed?: number | null
           created_at?: string
+          date?: string | null
           id?: string
           losses_analyzed?: number | null
+          platform?: string | null
           top_insight?: string | null
           update_content: string
           wins_analyzed?: number | null
@@ -49952,8 +50022,10 @@ export type Database = {
           agent_name?: string | null
           calls_analyzed?: number | null
           created_at?: string
+          date?: string | null
           id?: string
           losses_analyzed?: number | null
+          platform?: string | null
           top_insight?: string | null
           update_content?: string
           wins_analyzed?: number | null
