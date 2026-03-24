@@ -22,10 +22,39 @@ serve(async (req) => {
     const callSid = formData.get("CallSid")?.toString() || "";
 
     const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id");
+    let agentId = url.searchParams.get("agent_id") || "";
     const queueItemId = url.searchParams.get("queue_item_id") || "";
     const campaignId = url.searchParams.get("campaign_id") || "";
     const humanNumber = url.searchParams.get("human_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
+
+    // Fallback: if no agent_id in URL but we have a campaign, look it up
+    if (!agentId && campaignId) {
+      const { data: camp } = await supabase
+        .from("dialer_campaigns")
+        .select("agent_id")
+        .eq("id", campaignId)
+        .maybeSingle();
+      if (camp?.agent_id) {
+        agentId = camp.agent_id;
+        console.log(`Resolved agent_id from campaign: ${agentId}`);
+      }
+    }
+
+    // Final fallback: use default Sales Introduction agent
+    if (!agentId) {
+      const { data: defaultAgent } = await supabase
+        .from("elevenlabs_agents")
+        .select("elevenlabs_agent_id")
+        .not("elevenlabs_agent_id", "is", null)
+        .eq("is_active", true)
+        .order("sort_order")
+        .limit(1)
+        .maybeSingle();
+      if (defaultAgent?.elevenlabs_agent_id) {
+        agentId = defaultAgent.elevenlabs_agent_id;
+        console.log(`Using default agent: ${agentId}`);
+      }
+    }
 
     console.log(`Gather Input - Digits: ${digits}, Speech: ${speechResult}, Agent: ${agentId}`);
 
