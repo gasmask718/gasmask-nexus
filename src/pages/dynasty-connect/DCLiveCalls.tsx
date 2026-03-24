@@ -9,7 +9,7 @@ export default function DCLiveCalls() {
     queryKey: ['dc-live-calls-list'],
     queryFn: async () => {
       const { data } = await supabase
-        .from('live_calls')
+        .from('live_calls' as any)
         .select('*')
         .order('started_at', { ascending: false })
         .limit(50);
