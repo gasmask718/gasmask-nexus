@@ -25,6 +25,23 @@ const PROP_LABELS: Record<string, string> = {
 };
 const normalizePropType = (raw: string) => PROP_LABELS[raw?.toLowerCase()?.trim()] || raw;
 
+// ═══ AUDIT-DRIVEN INTELLIGENCE CONSTANTS ═══
+const BLOCKED_PROP_TYPES = [
+  'pts_ast', 'points_assists', 'pts+ast', 'pa',
+  'pts_reb', 'points_rebounds', 'pts+reb', 'pr',
+];
+const isBadPropType = (propType: string): boolean => {
+  const pt = (propType || '').toLowerCase().trim().replace(/[\s_\-+]/g, '');
+  return BLOCKED_PROP_TYPES.some(b => b.replace(/[\s_\-+]/g, '') === pt);
+};
+
+const PROP_TYPE_AUDIT_BADGES: Record<string, string> = {
+  'Blocks': '🔥 91%',
+  'Steals': '💪 83%',
+  'Pts+Ast': '❌ 45%',
+  'Pts+Reb': '❌ 46%',
+};
+
 interface VerificationResult {
   verdict: string | null;
   was_correct: boolean | null;
@@ -543,11 +560,19 @@ export function PrizePicksAnalyzer() {
       <div key={prop.id} className={`border rounded-lg p-3 space-y-2 ${
         verdict === 'correct' ? 'border-emerald-500/30 bg-emerald-500/5' :
         verdict === 'incorrect' ? 'border-red-500/20 bg-red-500/5' :
+        isBadPropType(prop.prop_type) ? 'border-red-500/20 bg-red-900/5' :
         conf && conf >= 85 ? 'border-green-500/30 bg-green-500/5' :
         conf && conf >= 70 ? 'border-blue-500/20 bg-blue-500/5' :
         !hasPrediction ? 'border-orange-500/20 bg-orange-500/5' :
         'bg-card'
       }`}>
+        {/* FADE BANNER for losing combo props */}
+        {isBadPropType(prop.prop_type) && (
+          <div className="w-full text-center py-1 rounded bg-red-500/20 text-red-500 text-xs font-bold border border-red-500/30">
+            ❌ SYSTEM FADE — {normalizePropType(prop.prop_type)} props hit {normalizePropType(prop.prop_type) === 'Pts+Ast' ? '45' : '46'}% historically. DO NOT PLAY.
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -580,6 +605,20 @@ export function PrizePicksAnalyzer() {
             <div className={`text-sm font-semibold ${confidenceColor(conf)}`}>
               AI Pick: {pick} {prop.line} | {conf}%
             </div>
+
+            {/* UNDER EDGE indicator */}
+            {pred?.predicted_outcome?.toLowerCase() === 'under' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-medium border border-blue-500/30">
+                📊 UNDER EDGE — 68% hist. accuracy
+              </span>
+            )}
+
+            {/* Sweet Spot indicator */}
+            {conf && conf >= 80 && conf <= 89 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-medium border border-amber-500/30">
+                🎯 SWEET SPOT — 81% hist. accuracy in 80-89% range
+              </span>
+            )}
 
             {/* Brain Breakdown */}
             <div className="grid grid-cols-3 gap-1 text-[10px]">
@@ -643,6 +682,38 @@ export function PrizePicksAnalyzer() {
 
   return (
     <div className="space-y-4">
+      {/* 🧠 System Intelligence Card */}
+      <div className="rounded-xl border border-border p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-base">🧠 System Intelligence</h3>
+          <span className="text-[10px] text-muted-foreground">Based on 600+ verified picks</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
+          <div className="rounded-lg bg-emerald-500/10 p-2">
+            <div className="text-lg font-bold text-emerald-500">62.7%</div>
+            <div className="text-[10px] text-muted-foreground">Overall Accuracy</div>
+          </div>
+          <div className="rounded-lg bg-emerald-500/10 p-2">
+            <div className="text-lg font-bold text-emerald-500">91%</div>
+            <div className="text-[10px] text-muted-foreground">🛡️ Blocks Edge</div>
+          </div>
+          <div className="rounded-lg bg-blue-500/10 p-2">
+            <div className="text-lg font-bold text-blue-500">68%</div>
+            <div className="text-[10px] text-muted-foreground">📊 UNDER Bias</div>
+          </div>
+          <div className="rounded-lg bg-amber-500/10 p-2">
+            <div className="text-lg font-bold text-amber-500">81%</div>
+            <div className="text-[10px] text-muted-foreground">🎯 Sweet Spot 80-89%</div>
+          </div>
+        </div>
+        <div className="mt-2 flex gap-2 flex-wrap">
+          <span className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">❌ Fade: Pts+Ast (45%)</span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-500 border border-red-500/20">❌ Fade: Pts+Reb (46%)</span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">📊 UNDER first priority</span>
+          <span className="text-[10px] px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">🔥 Market Brain 45%</span>
+        </div>
+      </div>
+
       {/* ⚡ BATCH PROCESS + VERIFY SECTION */}
       <Card>
         <CardContent className="p-4 space-y-3">
@@ -1164,14 +1235,18 @@ export function PrizePicksAnalyzer() {
                     className={`px-2 py-1 rounded-md text-[10px] font-medium ${
                       propTypeFilter === 'all' ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
                     }`}>All Types</button>
-                  {propTypes.map(t => (
-                    <button key={t} onClick={() => setPropTypeFilter(t)}
-                      className={`px-2 py-1 rounded-md text-[10px] font-medium ${
-                        propTypeFilter === t ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
-                      }`}>
-                      {t} ({savedProps.filter(p => normalizePropType(p.prop_type) === t).length})
-                    </button>
-                  ))}
+                  {propTypes.map(t => {
+                    const badge = PROP_TYPE_AUDIT_BADGES[t];
+                    return (
+                      <button key={t} onClick={() => setPropTypeFilter(t)}
+                        className={`px-2 py-1 rounded-md text-[10px] font-medium ${
+                          propTypeFilter === t ? 'bg-primary/20 text-primary' : 'bg-muted/20 text-muted-foreground'
+                        }`}>
+                        {t} ({savedProps.filter(p => normalizePropType(p.prop_type) === t).length})
+                        {badge && <span className="ml-1">{badge}</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
