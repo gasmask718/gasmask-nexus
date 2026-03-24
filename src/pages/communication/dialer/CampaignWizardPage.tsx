@@ -1866,10 +1866,19 @@ export default function CampaignWizardPage() {
                 </div>
 
                 {form.dial_mode === "ai" && (
-                  <div className="p-3 border rounded bg-muted/20">
-                    <p className="text-xs text-muted-foreground">Twilio TTS Script</p>
-                    <p className="truncate">{form.initial_script || "Missing"}</p>
-                  </div>
+                  <>
+                    <div className="p-3 border rounded bg-muted/20">
+                      <p className="text-xs text-muted-foreground">AI Agent</p>
+                      <p className="font-medium flex items-center gap-1">
+                        <Bot className="h-3 w-3" />
+                        {elAgents.find(a => a.elevenlabs_agent_id === form.agent_id)?.agent_name || form.agent_id || "Not selected"}
+                      </p>
+                    </div>
+                    <div className="p-3 border rounded bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Twilio TTS Script</p>
+                      <p className="truncate">{form.initial_script || "Missing"}</p>
+                    </div>
+                  </>
                 )}
                 {form.dial_mode === "manual" && form.initial_script && (
                   <div className="p-3 border rounded bg-muted/20">
