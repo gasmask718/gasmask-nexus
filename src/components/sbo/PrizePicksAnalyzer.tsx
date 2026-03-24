@@ -937,9 +937,16 @@ export function PrizePicksAnalyzer() {
           ) : savedProps.length > 0 ? (
             <p className="text-center text-sm text-muted-foreground py-8">No props match the current filters.</p>
           ) : (
-            <p className="text-center text-sm text-muted-foreground py-8">
-              No PrizePicks props saved today. Upload a screenshot or import JSON to get started.
-            </p>
+            <div className="text-center py-8 space-y-2">
+              <p className="text-sm text-muted-foreground">
+                No PrizePicks props for {viewDate === 'yesterday' ? 'yesterday' : 'today'} ({viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0)}).
+              </p>
+              {viewDate === 'today' && (
+                <Button variant="outline" size="sm" onClick={() => setViewDate('yesterday')}>
+                  View Yesterday's Props
+                </Button>
+              )}
+            </div>
           )}
         </>
       )}
