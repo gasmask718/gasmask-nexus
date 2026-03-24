@@ -3893,6 +3893,7 @@ function TodaysGuaranteeWidget() {
 export default function SportsBettingOS() {
   const [runningAll, setRunningAll] = useState(false);
   const [verifyingResults, setVerifyingResults] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<any>(null);
   const [runAllPhase, setRunAllPhase] = useState('');
   const [activeTab, setActiveTab] = useState('games');
 
@@ -4216,16 +4217,20 @@ export default function SportsBettingOS() {
               {strongCount} strong picks
             </Badge>
           )}
-          <Button
+           <Button
             variant="outline"
             size="sm"
             disabled={verifyingResults}
             onClick={async () => {
               setVerifyingResults(true);
+              setVerifyResult(null);
               try {
                 const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
                 if (error) throw error;
-                toast.success(`${data.verified} verified — ${data.accuracy}% accuracy`);
+                setVerifyResult(data);
+                const gameRecord = `${data.correct || 0}W-${data.incorrect || 0}L`;
+                const propRecord = `${data.props_correct || 0}W-${data.props_incorrect || 0}L`;
+                toast.success(`Games: ${gameRecord} (${data.accuracy || 0}%) | Props: ${propRecord} (${data.props_accuracy || 0}%)`);
               } catch (e: any) {
                 toast.error(e.message || 'Verification failed');
               } finally {
@@ -4235,8 +4240,29 @@ export default function SportsBettingOS() {
           >
             {verifyingResults
               ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
-              : <><Check className="h-3 w-3 mr-1" /> Verify Results</>
+              : <><Check className="h-3 w-3 mr-1" /> 🔍 Verify Results</>
             }
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={verifyingResults}
+            onClick={async () => {
+              setVerifyingResults(true);
+              setVerifyResult(null);
+              try {
+                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
+                if (error) throw error;
+                setVerifyResult(data);
+                toast.success(`Yesterday verified: ${data.correct || 0}W-${data.incorrect || 0}L`);
+              } catch (e: any) {
+                toast.error(e.message || 'Verification failed');
+              } finally {
+                setVerifyingResults(false);
+              }
+            }}
+          >
+            📋 Yesterday
           </Button>
           <Button onClick={runAllEngines} disabled={runningAll} size="sm">
             {runningAll
@@ -4287,6 +4313,49 @@ export default function SportsBettingOS() {
       ) : (
         <div className="text-xs text-amber-500 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
           ⚠️ Engine has not been run today — press Run All Engines to load today's slate
+        </div>
+      )}
+
+      {/* Verification Results Panel */}
+      {verifyResult && (
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-bold text-foreground">✅ Verification Complete</div>
+            <Button variant="ghost" size="sm" onClick={() => setVerifyResult(null)} className="text-xs text-muted-foreground">✕ Close</Button>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-lg bg-muted/30 p-3 text-center">
+              <div className="text-2xl font-bold text-emerald-500">
+                {verifyResult.correct || 0}W-{verifyResult.incorrect || 0}L
+              </div>
+              <div className="text-xs text-muted-foreground">Game Picks</div>
+              <div className="text-sm font-medium text-foreground mt-1">{verifyResult.accuracy || 0}%</div>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-3 text-center">
+              <div className="text-2xl font-bold text-blue-500">
+                {verifyResult.props_correct || 0}W-{verifyResult.props_incorrect || 0}L
+              </div>
+              <div className="text-xs text-muted-foreground">Prop Picks</div>
+              <div className="text-sm font-medium text-foreground mt-1">{verifyResult.props_accuracy || 0}%</div>
+            </div>
+            <div className="rounded-lg bg-muted/30 p-3 text-center">
+              <div className="text-2xl font-bold text-amber-500">
+                {(verifyResult.correct || 0) + (verifyResult.props_correct || 0)}W-{(verifyResult.incorrect || 0) + (verifyResult.props_incorrect || 0)}L
+              </div>
+              <div className="text-xs text-muted-foreground">Overall</div>
+              <div className="text-sm font-medium text-foreground mt-1">
+                {(() => {
+                  const total = (verifyResult.correct || 0) + (verifyResult.incorrect || 0) + (verifyResult.props_correct || 0) + (verifyResult.props_incorrect || 0);
+                  return total > 0 ? Math.round(((verifyResult.correct || 0) + (verifyResult.props_correct || 0)) / total * 1000) / 10 : 0;
+                })()}%
+              </div>
+            </div>
+          </div>
+          {(verifyResult.scores_updated || 0) > 0 && (
+            <div className="mt-3 text-xs text-muted-foreground">
+              🏀 {verifyResult.scores_updated} games updated with real final scores
+            </div>
+          )}
         </div>
       )}
 

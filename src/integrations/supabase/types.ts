@@ -59943,7 +59943,7 @@ export type Database = {
           {
             foreignKeyName: "sbo_results_verification_prediction_id_fkey"
             columns: ["prediction_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "sbo_predictions"
             referencedColumns: ["id"]
           },

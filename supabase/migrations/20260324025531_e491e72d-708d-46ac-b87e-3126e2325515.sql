@@ -1,0 +1,3 @@
+
+ALTER TABLE sbo_results_verification
+ADD CONSTRAINT sbo_results_verification_prediction_id_unique UNIQUE (prediction_id);

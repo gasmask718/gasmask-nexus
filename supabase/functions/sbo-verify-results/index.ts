@@ -65,7 +65,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { game_id, prediction_id, force_yesterday } = body;
+    const { game_id, prediction_id, force_yesterday, force_rerun = false, specific_date = null } = body;
 
     const now = new Date();
     const yesterday = new Date(now);
@@ -193,8 +193,11 @@ serve(async (req) => {
       let predQuery = supabase
         .from('sbo_predictions')
         .select('*')
-        .eq('game_id', game.id)
-        .eq('verified', false);
+        .eq('game_id', game.id);
+
+      if (!force_rerun) {
+        predQuery = predQuery.eq('verified', false);
+      }
 
       if (prediction_id) {
         predQuery = predQuery.eq('id', prediction_id);
@@ -217,8 +220,14 @@ serve(async (req) => {
           continue;
         }
 
-        // Write to sbo_results_verification
-        await supabase.from('sbo_results_verification').insert({
+        // Write to sbo_results_verification (upsert to handle re-runs)
+        const actualWinnerTeam = homeScore > awayScore ? game.home_team : game.away_team;
+        const loserTeam = homeScore > awayScore ? game.away_team : game.home_team;
+        const winScore = Math.max(homeScore, awayScore);
+        const loseScore = Math.min(homeScore, awayScore);
+        const verdictNote = `${actualWinnerTeam} won ${winScore}-${loseScore}. Predicted: ${pred.predicted_outcome === 'home' ? game.home_team : game.away_team}. ${verdict === 'correct' ? '✅ CORRECT' : '❌ INCORRECT'}`;
+
+        await supabase.from('sbo_results_verification').upsert({
           prediction_id: pred.id,
           game_id: game.id,
           pick_type: pred.prediction_type === 'moneyline' ? 'game' : 'prop',
@@ -227,9 +236,13 @@ serve(async (req) => {
           final_score_home: homeScore,
           final_score_away: awayScore,
           actual_result: `${game.home_team} ${homeScore} - ${game.away_team} ${awayScore}`,
+          actual_winner: homeScore > awayScore ? 'home' : 'away',
+          was_correct: verdict === 'correct',
           verdict,
+          verdict_note: verdictNote,
           profit_loss: verdict === 'correct' ? 100 : verdict === 'push' ? 0 : -100,
-        });
+          verified_at: new Date().toISOString(),
+        }, { onConflict: 'prediction_id' });
 
         // Update sbo_predictions
         await supabase
@@ -404,20 +417,27 @@ serve(async (req) => {
                 .eq('id', prop.sbo_predictions[0].id);
             }
 
-            // Insert into sbo_results_verification
-            await supabase
-              .from('sbo_results_verification')
-              .insert({
-                prediction_id: prop.sbo_predictions?.[0]?.id || null,
-                game_id: prop.game_id || null,
-                pick_type: 'prop',
-                our_pick: aiPick || 'unknown',
-                our_confidence: prop.sbo_predictions?.[0]?.final_confidence || null,
-                actual_result: `${prop.player_name} ${prop.prop_type}: ${actualValue} (line was ${line})`,
-                verdict: predictionVerdict,
-                profit_loss: predictionVerdict === 'correct' ? 100 : predictionVerdict === 'push' ? 0 : -100,
-                verified_at: new Date().toISOString(),
-              });
+            // Upsert into sbo_results_verification
+            const propVerdictNote = `${prop.player_name} had ${actualValue} ${prop.prop_type} (line: ${line}). Pick: ${(aiPick || 'N/A').toUpperCase()}. ${predictionVerdict === 'correct' ? '✅ CORRECT' : predictionVerdict === 'push' ? '➖ PUSH' : '❌ INCORRECT'}`;
+
+            if (prop.sbo_predictions?.[0]?.id) {
+              await supabase
+                .from('sbo_results_verification')
+                .upsert({
+                  prediction_id: prop.sbo_predictions[0].id,
+                  game_id: prop.game_id || null,
+                  pick_type: 'prop',
+                  our_pick: aiPick || 'unknown',
+                  our_confidence: prop.sbo_predictions?.[0]?.final_confidence || null,
+                  actual_result: `${prop.player_name} ${prop.prop_type}: ${actualValue} (line was ${line})`,
+                  actual_value: actualValue,
+                  was_correct: predictionVerdict === 'correct',
+                  verdict: predictionVerdict,
+                  verdict_note: propVerdictNote,
+                  profit_loss: predictionVerdict === 'correct' ? 100 : predictionVerdict === 'push' ? 0 : -100,
+                  verified_at: new Date().toISOString(),
+                }, { onConflict: 'prediction_id' });
+            }
 
             // Update saved picks
             if (prop.sbo_predictions?.[0]?.id) {
