@@ -117,6 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
             if (res.ok) {
               const json = await res.json();
               const messages = json?.messages || [];
+              const analysis = json?.analysis || {};
 
               if (messages.length > 0) {
                 // Batch insert all transcripts in ONE go instead of a loop
@@ -128,6 +129,33 @@ const handler = async (req: Request): Promise<Response> => {
                   created_at: new Date().toISOString(),
                 }));
                 await supabase.from("live_call_transcripts").insert(rows);
+
+                // Build full transcript text for ai_call_logs
+                const fullTranscript = messages
+                  .map((m: any) => `${m.role === "agent" ? "AI" : "Caller"}: ${m.text || m.message || ""}`)
+                  .join("\n");
+
+                // Detect outcome from analysis or transcript
+                const outcomeRaw = analysis?.call_successful === true ? "answered"
+                  : analysis?.call_successful === false ? "no_answer"
+                  : dbStatus === "completed" ? "answered" : "no_answer";
+
+                // Look up queue item for context
+                const { data: queueItem } = await supabase
+                  .from("outbound_call_queue")
+                  .select("business_id, contact_phone, campaign_id")
+                  .eq("twilio_call_sid", effectiveSid)
+                  .maybeSingle();
+
+                await supabase.from("ai_call_logs").insert({
+                  business_id: queueItem?.business_id || null,
+                  phone_number: queueItem?.contact_phone || null,
+                  duration_seconds: parseInt(duration, 10) || 0,
+                  transcription: fullTranscript,
+                  outcome: outcomeRaw,
+                  ai_summary: analysis?.summary || null,
+                  language: json?.metadata?.language || "en",
+                });
               }
             }
           }
