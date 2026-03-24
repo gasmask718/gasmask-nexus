@@ -3894,6 +3894,7 @@ export default function SportsBettingOS() {
   const [runningAll, setRunningAll] = useState(false);
   const [verifyingResults, setVerifyingResults] = useState(false);
   const [runAllPhase, setRunAllPhase] = useState('');
+  const [activeTab, setActiveTab] = useState('games');
 
   const { data: strongCount, refetch: refetchStrong } = useQuery({
     queryKey: ['strong-count'],
@@ -4293,90 +4294,90 @@ export default function SportsBettingOS() {
       <TodaysGuaranteeWidget />
 
 
-      <Tabs defaultValue="games" className="w-full">
-        <TabsList className="flex w-full overflow-x-auto">
-          <TabsTrigger value="games" className="text-xs">🏀 Tonight</TabsTrigger>
-          <TabsTrigger value="props" className="text-xs">
-            Props
-            {(strongCount || 0) > 0 && (
-              <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 h-4">{strongCount}</Badge>
+      {/* ═══ CUSTOM TAB NAVIGATION ═══ */}
+      {(() => {
+        const primaryTabs = [
+          { id: 'games', label: '🏀 Tonight', shortLabel: 'Tonight' },
+          { id: 'props', label: '📊 Props', shortLabel: 'Props', badge: strongCount },
+          { id: 'prizepicks', label: '🎯 PrizePicks', shortLabel: 'PP' },
+          { id: 'sms', label: '📱 ChingWorld', shortLabel: 'SMS' },
+          { id: 'hedge', label: '🛡️ Hedge', shortLabel: 'Hedge' },
+          { id: 'parlay', label: '🎰 Parlay', shortLabel: 'Parlay' },
+        ];
+        const secondaryTabs = [
+          { id: 'value', label: '💎 Value', shortLabel: 'Value', badge: valueCount },
+          { id: 'accuracy', label: '📊 Accuracy', shortLabel: 'Accuracy' },
+          { id: 'model', label: '🧬 Model', shortLabel: 'Model' },
+          { id: 'mybets', label: '📱 My Bets', shortLabel: 'Bets' },
+          { id: 'history', label: '📜 History', shortLabel: 'History' },
+          { id: 'sim', label: '⚡ Sim', shortLabel: 'Sim' },
+          { id: 'entry', label: '📋 VA Entry', shortLabel: 'Entry' },
+          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
+        ];
+        const allTabs = [...primaryTabs, ...secondaryTabs];
+        const renderBtn = (tab: { id: string; label: string; shortLabel: string; badge?: number }, isPrimary: boolean) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`${isPrimary ? 'px-3 py-2 text-sm' : 'px-3 py-1.5 text-xs'} rounded-lg font-medium whitespace-nowrap transition-all ${
+              activeTab === tab.id
+                ? isPrimary
+                  ? 'bg-primary text-primary-foreground shadow-md'
+                  : 'bg-primary/20 text-primary border border-primary/30'
+                : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
+            }`}
+          >
+            {isPrimary ? tab.label : tab.label}
+            {(tab.badge || 0) > 0 && (
+              <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-primary/30 text-[9px] px-1">{tab.badge}</span>
             )}
-          </TabsTrigger>
-          <TabsTrigger value="value" className="text-xs">
-            💎 Value
-            {(valueCount || 0) > 0 && (
-              <Badge variant="secondary" className="ml-1 text-[9px] px-1 py-0 h-4">{valueCount}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="parlay" className="text-xs">🎯 Parlay</TabsTrigger>
-          <TabsTrigger value="hedge" className="text-xs">🔒 Hedge</TabsTrigger>
-          <TabsTrigger value="sim" className="text-xs">⚡ Sim</TabsTrigger>
-          <TabsTrigger value="accuracy" className="text-xs">📊 Accuracy</TabsTrigger>
-          <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
-          <TabsTrigger value="mybets" className="text-xs">📱 My Bets</TabsTrigger>
-          <TabsTrigger value="sms" className="text-xs">📱 ChingWorld</TabsTrigger>
-          <TabsTrigger value="prizepicks" className="text-xs">📸 PrizePicks</TabsTrigger>
-          <TabsTrigger value="history" className="text-xs">📜 History</TabsTrigger>
-          <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
-          <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="games" className="mt-4">
-          <TonightGamesTab />
-        </TabsContent>
-
-        <TabsContent value="props" className="mt-4">
-          <PlayerPropsTab />
-        </TabsContent>
-
-        <TabsContent value="value" className="mt-4">
-          <ValueSpotsTab />
-        </TabsContent>
-
-        <TabsContent value="parlay" className="mt-4">
-          <ParlayBuilderTab />
-        </TabsContent>
-
-        <TabsContent value="hedge" className="mt-4">
-          <HedgeCenter />
-        </TabsContent>
-
-        <TabsContent value="sim" className="mt-4">
-          <SimulationTab />
-        </TabsContent>
-
-        <TabsContent value="accuracy" className="mt-4">
-          <AccuracyTab />
-        </TabsContent>
-
-        <TabsContent value="model" className="mt-4">
-          <ModelIntelligenceTab />
-        </TabsContent>
-
-        <TabsContent value="mybets" className="mt-4">
-          <MyBetsTab />
-        </TabsContent>
-
-        <TabsContent value="sms" className="mt-4">
-          <ChingWorldPicksSMS />
-        </TabsContent>
-
-        <TabsContent value="prizepicks" className="mt-4">
-          <PrizePicksAnalyzer />
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          <PredictionHistory />
-        </TabsContent>
-
-        <TabsContent value="entry" className="mt-4">
-          <VAPropEntryTab />
-        </TabsContent>
-
-        <TabsContent value="sync" className="mt-4">
-          <SyncDashboard />
-        </TabsContent>
-      </Tabs>
+          </button>
+        );
+        return (
+          <>
+            {/* Desktop: Two rows */}
+            <div className="hidden md:flex flex-col gap-1 mb-4">
+              <div className="flex flex-wrap gap-1">{primaryTabs.map(t => renderBtn(t, true))}</div>
+              <div className="flex flex-wrap gap-1">{secondaryTabs.map(t => renderBtn(t, false))}</div>
+            </div>
+            {/* Mobile: Horizontal scroll */}
+            <div className="md:hidden overflow-x-auto pb-1 mb-4 scrollbar-hide">
+              <div className="flex gap-1 w-max">
+                {allTabs.map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setActiveTab(t.id)}
+                    className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap ${
+                      activeTab === t.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/40 text-muted-foreground'
+                    }`}
+                  >
+                    {t.shortLabel}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Tab content */}
+            <div className="mt-4">
+              {activeTab === 'games' && <TonightGamesTab />}
+              {activeTab === 'props' && <PlayerPropsTab />}
+              {activeTab === 'value' && <ValueSpotsTab />}
+              {activeTab === 'parlay' && <ParlayBuilderTab />}
+              {activeTab === 'hedge' && <HedgeCenter />}
+              {activeTab === 'sim' && <SimulationTab />}
+              {activeTab === 'accuracy' && <AccuracyTab />}
+              {activeTab === 'model' && <ModelIntelligenceTab />}
+              {activeTab === 'mybets' && <MyBetsTab />}
+              {activeTab === 'sms' && <ChingWorldPicksSMS />}
+              {activeTab === 'prizepicks' && <PrizePicksAnalyzer />}
+              {activeTab === 'history' && <PredictionHistory />}
+              {activeTab === 'entry' && <VAPropEntryTab />}
+              {activeTab === 'sync' && <SyncDashboard />}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
