@@ -175,7 +175,45 @@ export function PrizePicksAnalyzer() {
   };
 
   // ═══════════════════════════════════════
-  // BATCH PROCESS ALL — AI + VERIFY
+  // INTELLIGENCE AUDIT
+  // ═══════════════════════════════════════
+  const runIntelligenceAudit = async () => {
+    setAuditRunning(true);
+    setAuditData(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-intelligence-audit');
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      setAuditData(data);
+      toast.success(`Audit complete: ${data.summary?.total || 0} predictions analyzed`);
+    } catch (e: any) {
+      toast.error(`Audit failed: ${e.message}`);
+    } finally {
+      setAuditRunning(false);
+    }
+  };
+
+  const applyOptimalWeights = async () => {
+    if (!auditData?.optimal_weights) return;
+    try {
+      const { error } = await (supabase as any)
+        .from('sbo_model_performance')
+        .update({
+          stats_weight: auditData.optimal_weights.stats,
+          market_weight: auditData.optimal_weights.market,
+          context_weight: auditData.optimal_weights.context,
+          updated_at: new Date().toISOString(),
+          update_reason: `Auto-optimized from ${auditData.summary.total} verified predictions`
+        })
+        .eq('is_active', true);
+      if (error) throw error;
+      toast.success(`✅ Weights updated: Stats ${Math.round(auditData.optimal_weights.stats*100)}% / Market ${Math.round(auditData.optimal_weights.market*100)}% / Context ${Math.round(auditData.optimal_weights.context*100)}%`);
+    } catch (e: any) {
+      toast.error(`Failed to apply weights: ${e.message}`);
+    }
+  };
+
+
   // ═══════════════════════════════════════
   const batchProcessAllProps = async () => {
     setBatchProcessing(true);
