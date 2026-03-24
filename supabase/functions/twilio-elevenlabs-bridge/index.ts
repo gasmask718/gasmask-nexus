@@ -29,7 +29,6 @@ const handler = async (req: Request): Promise<Response> => {
     let agentId = agentIdParam;
     let personaId: string | null = null;
 
-    // Only hit the DB if we don't have an agentId or if brandKey is specifically provided
     if (brandKey && !agentId) {
       const { data: persona } = await supabase
         .from("voice_matrix")
@@ -51,6 +50,8 @@ const handler = async (req: Request): Promise<Response> => {
     const fromNumber = formData.get("From")?.toString() || "";
     const toNumber = formData.get("To")?.toString() || "";
     const callSid = formData.get("CallSid")?.toString() || "";
+
+    console.log(`[Bridge] Starting | agent=${agentId} | callSid=${callSid} | from=${fromNumber} | to=${toNumber}`);
 
     // Build handoff URL
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
@@ -103,10 +104,11 @@ const handler = async (req: Request): Promise<Response> => {
       },
     };
 
-    // Inject Brandaro conversation override if available
     if (conversationOverride) {
       registerBody.conversation_config_override = conversationOverride;
     }
+
+    console.log(`[Bridge] Calling ElevenLabs register-call with agent_id=${agentId}`);
 
     const registerResponse = await fetch("https://api.elevenlabs.io/v1/convai/twilio/register-call", {
       method: "POST",
@@ -117,28 +119,75 @@ const handler = async (req: Request): Promise<Response> => {
       body: JSON.stringify(registerBody),
     });
 
+    // Read raw response
+    const rawText = await registerResponse.text();
+
     if (!registerResponse.ok) {
+      console.error(`[Bridge] ElevenLabs returned ${registerResponse.status}: ${rawText.substring(0, 500)}`);
       throw new Error(`ElevenLabs API failed: ${registerResponse.status}`);
     }
 
-    const responseData = await registerResponse.json();
-    const { twiml, conversation_id } = responseData;
+    // ElevenLabs returns TwiML XML directly (not JSON)
+    // The conversation_id is embedded as: <Parameter name="conversation_id" value="conv_xxx" />
+    let twiml = rawText;
+    let conversationId: string | null = null;
 
-    // 🔴 LATENCY FIX: Persist data to DB in the background.
-    // We return the TwiML to Twilio IMMEDIATELY without waiting for Supabase.
-    if (conversation_id && callSid) {
-      const updatePromise = supabase
+    // Try JSON first (legacy format)
+    try {
+      const jsonData = JSON.parse(rawText);
+      twiml = jsonData.twiml || rawText;
+      conversationId = jsonData.conversation_id || jsonData.conversationId || null;
+      console.log("[Bridge] Parsed JSON response, conversation_id:", conversationId);
+    } catch {
+      // It's XML/TwiML — extract conversation_id from Parameter tag
+      const match = rawText.match(/name="conversation_id"\s+value="([^"]+)"/);
+      conversationId = match?.[1] || null;
+      console.log("[Bridge] Parsed TwiML XML, extracted conversation_id:", conversationId);
+    }
+
+    console.log(`[Bridge] Extracted conversationId=${conversationId} | callSid=${callSid}`);
+
+    // Persist conversation_id to call_recordings
+    if (conversationId && callSid) {
+      // Try UPDATE first (row may already exist from outbound-call-trigger)
+      const { data: updated, error: updateErr } = await supabase
         .from("call_recordings")
-        .update({ elevenlabs_conversation_id: conversation_id })
-        .eq("provider_call_sid", callSid);
+        .update({ elevenlabs_conversation_id: conversationId })
+        .eq("provider_call_sid", callSid)
+        .select("id");
 
-      // Use EdgeRuntime.waitUntil if available, otherwise just don't await
-      // @ts-ignore
-      if (typeof EdgeRuntime !== "undefined") {
-        EdgeRuntime.waitUntil(updatePromise);
-      } else {
-        updatePromise.then(() => console.log("Background DB update done"));
+      if (updateErr) {
+        console.error("[Bridge] UPDATE failed:", JSON.stringify(updateErr));
       }
+
+      if (!updated || updated.length === 0) {
+        // No existing row — INSERT a new one
+        console.log("[Bridge] No existing row found, inserting new call_recordings row");
+        const { error: insertErr } = await supabase
+          .from("call_recordings")
+          .insert({
+            provider_call_sid: callSid,
+            elevenlabs_conversation_id: conversationId,
+            provider: "elevenlabs",
+            status: "in-progress",
+            direction: "outbound",
+            from_number: fromNumber,
+            to_number: toNumber,
+            has_transcript: false,
+            started_at: new Date().toISOString(),
+            created_at: new Date().toISOString(),
+          });
+
+        if (insertErr) {
+          console.error("[Bridge] INSERT also failed:", JSON.stringify(insertErr));
+        } else {
+          console.log("[Bridge] ✅ conversation_id stored via INSERT");
+        }
+      } else {
+        console.log("[Bridge] ✅ conversation_id stored via UPDATE");
+      }
+    } else {
+      console.warn(`[Bridge] Missing data — conversationId=${conversationId}, callSid=${callSid}`);
     }
 
     return new Response(twiml, {
