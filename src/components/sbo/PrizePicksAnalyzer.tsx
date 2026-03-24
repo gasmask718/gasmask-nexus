@@ -98,11 +98,10 @@ export function PrizePicksAnalyzer() {
   const [batchProcessing, setBatchProcessing] = useState(false);
   const [batchProcessProgress, setBatchProcessProgress] = useState({
     step: '', current: 0, total: 0,
-  // Intelligence Audit state
-  const [auditRunning, setAuditRunning] = useState(false);
-  const [auditData, setAuditData] = useState<any>(null);
     results: { correct: 0, incorrect: 0, push: 0, pending: 0 }
   });
+  const [auditRunning, setAuditRunning] = useState(false);
+  const [auditData, setAuditData] = useState<any>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
   const getDateEST = (offset = 0) => {
