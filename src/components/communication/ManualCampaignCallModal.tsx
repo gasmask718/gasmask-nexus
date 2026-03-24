@@ -964,31 +964,56 @@ export function ManualCampaignCallModal({
             <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
               <p className="text-sm font-semibold text-foreground">Transfer call to:</p>
               
-              {/* AI Agent Selection */}
+              {/* Quick Transfer: Campaign's configured agent */}
+              {campaignAgent && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Campaign Agent (Script-Mapped)</p>
+                  <Button
+                    variant="default"
+                    className="w-full h-auto flex items-center gap-2 py-2.5 px-3 justify-start"
+                    onClick={() => handleTransfer("elevenlabs", campaignAgent)}
+                    disabled={isTransferring}
+                  >
+                    <Bot className="h-4 w-4 shrink-0" />
+                    <div className="min-w-0 text-left">
+                      <span className="text-xs font-semibold block truncate">{campaignAgent.name}</span>
+                      <span className="text-[10px] opacity-80 block truncate">⚡ Auto-selected from campaign script</span>
+                    </div>
+                  </Button>
+                </div>
+              )}
+
+              {/* All AI Agents */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">AI Agents</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">All AI Agents</p>
                 <div className="grid grid-cols-1 gap-1.5 max-h-48 overflow-y-auto">
-                  {transferAgents.length > 0 ? transferAgents.map((agent) => (
-                    <Button
-                      key={agent.id}
-                      variant="outline"
-                      className="h-auto flex items-start gap-2 py-2 px-3 hover:border-primary text-left justify-start"
-                      onClick={() => handleTransfer("elevenlabs", {
-                        id: agent.elevenlabs_agent_id || "",
-                        name: agent.agent_name,
-                      })}
-                      disabled={isTransferring || !agent.elevenlabs_agent_id}
-                    >
-                      <Bot className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="text-xs font-semibold block truncate">{agent.agent_name}</span>
-                        <span className="text-[10px] text-muted-foreground block truncate">{agent.script_label}</span>
-                        {!agent.elevenlabs_agent_id && (
-                          <span className="text-[10px] text-destructive block">⚠ No Agent ID configured</span>
-                        )}
-                      </div>
-                    </Button>
-                  )) : (
+                  {transferAgents.length > 0 ? transferAgents.map((agent) => {
+                    const isCampaignAgent = campaignAgent?.id === agent.elevenlabs_agent_id;
+                    return (
+                      <Button
+                        key={agent.id}
+                        variant="outline"
+                        className={`h-auto flex items-start gap-2 py-2 px-3 hover:border-primary text-left justify-start ${isCampaignAgent ? "border-primary bg-primary/5" : ""}`}
+                        onClick={() => handleTransfer("elevenlabs", {
+                          id: agent.elevenlabs_agent_id || "",
+                          name: agent.agent_name,
+                        })}
+                        disabled={isTransferring || !agent.elevenlabs_agent_id}
+                      >
+                        <Bot className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-xs font-semibold block truncate">
+                            {agent.agent_name}
+                            {isCampaignAgent && <Badge variant="outline" className="ml-1.5 text-[9px] py-0">Script</Badge>}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground block truncate">{agent.script_label}</span>
+                          {!agent.elevenlabs_agent_id && (
+                            <span className="text-[10px] text-destructive block">⚠ No Agent ID configured</span>
+                          )}
+                        </div>
+                      </Button>
+                    );
+                  }) : (
                     <p className="text-xs text-muted-foreground italic px-2">No AI agents configured</p>
                   )}
                 </div>
