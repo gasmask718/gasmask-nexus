@@ -3894,6 +3894,7 @@ export default function SportsBettingOS() {
   const [runningAll, setRunningAll] = useState(false);
   const [verifyingResults, setVerifyingResults] = useState(false);
   const [runAllPhase, setRunAllPhase] = useState('');
+  const [activeTab, setActiveTab] = useState('games');
 
   const { data: strongCount, refetch: refetchStrong } = useQuery({
     queryKey: ['strong-count'],
