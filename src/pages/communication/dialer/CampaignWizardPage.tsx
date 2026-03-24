@@ -123,25 +123,7 @@ interface CallItem {
   updated_at: string;
 }
 
-const VOICE_OPTIONS = [
-  { id: "JBFqnCBsd6RMkjVDRZzb", name: "Adam (Male, Deep)" },
-
-  { id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel (Female, Warm)" },
-
-  { id: "EXAVITQu4vr4xnSDxMaL", name: "Bella (Female, Soft)" },
-
-  { id: "ErXwobaYiN019PkySvjV", name: "Antoni (Male, Calm)" },
-
-  { id: "MF3mGyEYCl7XYWbV9V6O", name: "Elli (Female, Young)" },
-
-  { id: "TxGEqnHWrfWFTfGW9XjX", name: "Josh (Male, Deep)" },
-
-  { id: "VR6AewLTigWG4xSOukaG", name: "Arnold (Male, Strong)" },
-
-  { id: "pNInz6obpgDQGcFmaJgB", name: "Sam (Male, Raspy)" },
-
-  { id: "yoZ06aMxZJJ28mfd3POQ", name: "Sam (Female, Raspy)" },
-];
+// ElevenLabs agents are fetched from DB — see useQuery below
 
 const SCRIPT_TEMPLATES = [
   {
@@ -300,6 +282,26 @@ export default function CampaignWizardPage() {
     enabled: !contextBizId,
   });
 
+  // Fetch ElevenLabs agents from DB for AI agent picker
+  const { data: elAgents = [] } = useQuery({
+    queryKey: ["elevenlabs-agents-campaign"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("elevenlabs_agents")
+        .select("id, agent_name, elevenlabs_agent_id, script_label, agent_description, is_active")
+        .eq("is_active", true)
+        .order("sort_order");
+      return (data || []) as Array<{
+        id: string;
+        agent_name: string;
+        elevenlabs_agent_id: string | null;
+        script_label: string;
+        agent_description: string | null;
+        is_active: boolean;
+      }>;
+    },
+  });
+
   const effectiveBizId = contextBizId || fallbackBiz?.id;
 
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
@@ -344,7 +346,7 @@ export default function CampaignWizardPage() {
 
     initial_script: "",
 
-    agent_id: VOICE_OPTIONS[0].id,
+    agent_id: "",
   });
 
   const dispatchIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -1753,15 +1755,34 @@ export default function CampaignWizardPage() {
                   </div>
                   <div className="flex-1 space-y-3">
                     <div>
-                      <h4 className="font-semibold">AI Voice Settings</h4>
-                      <p className="text-xs text-muted-foreground">Choose the voice persona for the AI.</p>
+                      <h4 className="font-semibold">ElevenLabs AI Agent</h4>
+                      <p className="text-xs text-muted-foreground">Select which AI agent handles the conversation after the TTS opener.</p>
                     </div>
                     <Select value={form.agent_id} onValueChange={(v) => update("agent_id", v)}>
-                      <SelectTrigger><SelectValue placeholder="Select Agent..." /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder="Select AI Agent..." /></SelectTrigger>
                       <SelectContent>
-                        {VOICE_OPTIONS.map((a) => (<SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>))}
+                        {elAgents.map((a) => (
+                          <SelectItem
+                            key={a.id}
+                            value={a.elevenlabs_agent_id || a.id}
+                            disabled={!a.elevenlabs_agent_id}
+                          >
+                            <div className="flex flex-col">
+                              <span>{a.agent_name}</span>
+                              <span className="text-xs text-muted-foreground">{a.script_label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                        {elAgents.length === 0 && (
+                          <SelectItem value="__none" disabled>No agents configured</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
+                    {form.agent_id && (
+                      <p className="text-xs text-muted-foreground font-mono">
+                        Agent ID: {form.agent_id}
+                      </p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
