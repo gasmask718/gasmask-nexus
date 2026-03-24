@@ -25,6 +25,23 @@ const PROP_LABELS: Record<string, string> = {
 };
 const normalizePropType = (raw: string) => PROP_LABELS[raw?.toLowerCase()?.trim()] || raw;
 
+// ═══ AUDIT-DRIVEN INTELLIGENCE CONSTANTS ═══
+const BLOCKED_PROP_TYPES = [
+  'pts_ast', 'points_assists', 'pts+ast', 'pa',
+  'pts_reb', 'points_rebounds', 'pts+reb', 'pr',
+];
+const isBadPropType = (propType: string): boolean => {
+  const pt = (propType || '').toLowerCase().trim().replace(/[\s_\-+]/g, '');
+  return BLOCKED_PROP_TYPES.some(b => b.replace(/[\s_\-+]/g, '') === pt);
+};
+
+const PROP_TYPE_AUDIT_BADGES: Record<string, string> = {
+  'Blocks': '🔥 91%',
+  'Steals': '💪 83%',
+  'Pts+Ast': '❌ 45%',
+  'Pts+Reb': '❌ 46%',
+};
+
 interface VerificationResult {
   verdict: string | null;
   was_correct: boolean | null;
