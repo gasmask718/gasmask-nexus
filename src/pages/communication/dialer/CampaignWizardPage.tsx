@@ -282,6 +282,26 @@ export default function CampaignWizardPage() {
     enabled: !contextBizId,
   });
 
+  // Fetch ElevenLabs agents from DB for AI agent picker
+  const { data: elAgents = [] } = useQuery({
+    queryKey: ["elevenlabs-agents-campaign"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("elevenlabs_agents")
+        .select("id, agent_name, elevenlabs_agent_id, script_label, agent_description, is_active")
+        .eq("is_active", true)
+        .order("sort_order");
+      return (data || []) as Array<{
+        id: string;
+        agent_name: string;
+        elevenlabs_agent_id: string | null;
+        script_label: string;
+        agent_description: string | null;
+        is_active: boolean;
+      }>;
+    },
+  });
+
   const effectiveBizId = contextBizId || fallbackBiz?.id;
 
   const [viewMode, setViewMode] = useState<"wizard" | "console">("wizard");
