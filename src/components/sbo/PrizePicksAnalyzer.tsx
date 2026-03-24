@@ -606,6 +606,20 @@ export function PrizePicksAnalyzer() {
               AI Pick: {pick} {prop.line} | {conf}%
             </div>
 
+            {/* UNDER EDGE indicator */}
+            {pred?.predicted_outcome?.toLowerCase() === 'under' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-medium border border-blue-500/30">
+                📊 UNDER EDGE — 68% hist. accuracy
+              </span>
+            )}
+
+            {/* Sweet Spot indicator */}
+            {conf && conf >= 80 && conf <= 89 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-medium border border-amber-500/30">
+                🎯 SWEET SPOT — 81% hist. accuracy in 80-89% range
+              </span>
+            )}
+
             {/* Brain Breakdown */}
             <div className="grid grid-cols-3 gap-1 text-[10px]">
               {pred.stats_brain_score != null && (
