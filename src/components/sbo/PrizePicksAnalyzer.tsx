@@ -68,9 +68,6 @@ interface ExtractedProp {
   team: string | null;
   prop_type: string;
   line: number;
-  game: string | null;
-  position: string | null;
-  sportsbook: string;
   over_odds: number;
   under_odds: number;
 }
