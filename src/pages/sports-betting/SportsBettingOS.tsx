@@ -21,6 +21,7 @@ import PredictionHistory from '@/components/sbo/PredictionHistory';
 import ParlayResultsSection from '@/components/sbo/ParlayResultsSection';
 import HistoryView from '@/components/sbo/HistoryView';
 import { ChingWorldPicksSMS } from '@/components/sbo/ChingWorldPicksSMS';
+import { PrizePicksAnalyzer } from '@/components/sbo/PrizePicksAnalyzer';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
