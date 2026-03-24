@@ -65,7 +65,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const { game_id, prediction_id, force_yesterday } = body;
+    const { game_id, prediction_id, force_yesterday, force_rerun = false, specific_date = null } = body;
 
     const now = new Date();
     const yesterday = new Date(now);
