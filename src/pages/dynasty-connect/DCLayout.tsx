@@ -49,6 +49,12 @@ const dcNavSections = [
       { path: '/dynasty-connect/infrastructure/numbers', label: 'Phone Numbers', icon: Phone },
     ],
   },
+  {
+    title: '💰 Clients',
+    items: [
+      { path: '/dynasty-connect/clients', label: 'Client Management', icon: DollarSign },
+    ],
+  },
 ];
 
 export default function DCLayout() {
