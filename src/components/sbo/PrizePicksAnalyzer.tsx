@@ -310,7 +310,7 @@ export function PrizePicksAnalyzer() {
     await (supabase as any)
       .from('sbo_player_props')
       .delete()
-      .eq('sportsbook', 'prizepicks')
+      .eq('source', 'prizepicks')
       .eq('game_date', todayEST);
     setSavedProps([]);
     toast.success('Cleared all PP props');
