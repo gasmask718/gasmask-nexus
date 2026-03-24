@@ -59893,6 +59893,8 @@ export type Database = {
       sbo_results_verification: {
         Row: {
           actual_result: string | null
+          actual_value: number | null
+          actual_winner: string | null
           created_at: string | null
           final_score_away: number | null
           final_score_home: number | null
@@ -59905,10 +59907,14 @@ export type Database = {
           profit_loss: number | null
           stake: number | null
           verdict: string | null
+          verdict_note: string | null
           verified_at: string | null
+          was_correct: boolean | null
         }
         Insert: {
           actual_result?: string | null
+          actual_value?: number | null
+          actual_winner?: string | null
           created_at?: string | null
           final_score_away?: number | null
           final_score_home?: number | null
@@ -59921,10 +59927,14 @@ export type Database = {
           profit_loss?: number | null
           stake?: number | null
           verdict?: string | null
+          verdict_note?: string | null
           verified_at?: string | null
+          was_correct?: boolean | null
         }
         Update: {
           actual_result?: string | null
+          actual_value?: number | null
+          actual_winner?: string | null
           created_at?: string | null
           final_score_away?: number | null
           final_score_home?: number | null
@@ -59937,7 +59947,9 @@ export type Database = {
           profit_loss?: number | null
           stake?: number | null
           verdict?: string | null
+          verdict_note?: string | null
           verified_at?: string | null
+          was_correct?: boolean | null
         }
         Relationships: [
           {
