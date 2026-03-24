@@ -4315,6 +4315,7 @@ export default function SportsBettingOS() {
           <TabsTrigger value="model" className="text-xs">🧬 Model</TabsTrigger>
           <TabsTrigger value="mybets" className="text-xs">📱 My Bets</TabsTrigger>
           <TabsTrigger value="sms" className="text-xs">📱 ChingWorld</TabsTrigger>
+          <TabsTrigger value="prizepicks" className="text-xs">📸 PrizePicks</TabsTrigger>
           <TabsTrigger value="history" className="text-xs">📜 History</TabsTrigger>
           <TabsTrigger value="entry" className="text-xs">📋 VA Entry</TabsTrigger>
           <TabsTrigger value="sync" className="text-xs">⚙️ Sync</TabsTrigger>
