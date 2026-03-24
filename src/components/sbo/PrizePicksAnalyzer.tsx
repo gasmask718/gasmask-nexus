@@ -405,12 +405,34 @@ export function PrizePicksAnalyzer() {
     return confB - confA;
   });
 
+  const getVerdictBadge = (prop: SavedProp) => {
+    const pred = prop.sbo_predictions?.[0];
+    const verification = pred?.sbo_results_verification?.[0];
+    const result = verification?.verdict;
+
+    if (!result) return null;
+
+    const configs: Record<string, { label: string; cls: string }> = {
+      correct: { label: '✅ WON', cls: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30' },
+      incorrect: { label: '❌ LOST', cls: 'bg-red-500/15 text-red-500 border-red-500/30' },
+      push: { label: '➖ PUSH', cls: 'bg-amber-500/15 text-amber-500 border-amber-500/30' },
+    };
+    const config = configs[result] || { label: result.toUpperCase(), cls: 'bg-muted/30 text-muted-foreground' };
+
+    return (
+      <span className={`px-2 py-0.5 rounded border text-xs font-bold ${config.cls}`}>
+        {config.label}
+      </span>
+    );
+  };
+
   const renderPropCard = (prop: SavedProp) => {
     const pred = prop.sbo_predictions?.[0];
     const conf = pred?.final_confidence || null;
     const pick = pred?.predicted_outcome?.toUpperCase();
     const isQueued = chingWorldQueue.has(prop.id);
     const hasPrediction = !!pred;
+    const verification = pred?.sbo_results_verification?.[0];
 
     return (
       <div key={prop.id} className={`border rounded-lg p-3 space-y-2 ${
@@ -425,10 +447,13 @@ export function PrizePicksAnalyzer() {
             <span className="font-semibold text-sm">{prop.player_name}</span>
             {prop.team && <span className="text-xs text-muted-foreground ml-1">({prop.team})</span>}
           </div>
-          {hasPrediction
-            ? tierBadge(pred.confidence_tier, conf)
-            : <Badge className="bg-orange-500 text-white text-[10px]">⚡ Needs Analysis</Badge>
-          }
+          <div className="flex items-center gap-1">
+            {getVerdictBadge(prop)}
+            {hasPrediction
+              ? tierBadge(pred.confidence_tier, conf)
+              : <Badge className="bg-orange-500 text-white text-[10px]">⚡ Needs Analysis</Badge>
+            }
+          </div>
         </div>
 
         {/* Prop info */}
@@ -485,6 +510,13 @@ export function PrizePicksAnalyzer() {
                 {pred.data_quality === 'full' ? '✅ Full Stats' :
                  pred.data_quality === 'partial' ? '⚠️ Partial Stats' : '🔴 Odds Only'}
               </Badge>
+            )}
+
+            {/* Verdict Note */}
+            {verification?.verdict_note && (
+              <p className="text-[10px] text-muted-foreground italic border-t border-border pt-1">
+                {verification.verdict_note}
+              </p>
             )}
           </div>
         )}
