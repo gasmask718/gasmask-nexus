@@ -173,6 +173,39 @@ export default function BackupControlPage() {
         </CardContent>
       </Card>
 
+      {/* Auto-Backup Schedule */}
+      <Card className="border-emerald-500/20 bg-emerald-500/5">
+        <CardContent className="pt-4 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <RefreshCw className="h-5 w-5 text-emerald-500" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-sm flex items-center gap-2">
+                🔄 Auto-Backup Active
+                <Badge className="bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 text-[10px]">
+                  SCHEDULED
+                </Badge>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Runs automatically on the last day of every month at 11:59 PM EST → backs up all floors to Google Drive
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-medium text-muted-foreground">Next run</p>
+              <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                {(() => {
+                  const now = new Date();
+                  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+                  return lastDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                })()}{' '}
+                11:59 PM
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Full backup results */}
       {allResults && (
         <Card>
