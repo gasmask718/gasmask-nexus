@@ -134,6 +134,7 @@ const BillingInvoiceNew = () => {
           status: formData.status,
           notes: formData.notes || null,
           is_historical: invoiceMode === 'historical',
+          entry_mode: invoiceMode === 'historical' ? 'backfill' : 'live',
         })
         .select('id')
         .single();
