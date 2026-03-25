@@ -58,7 +58,10 @@ import {
   UserPlus,
   Trash2,
   ArrowRightLeft,
+  Zap,
 } from "lucide-react";
+
+import BatchDialerPanel from "@/components/dialer/BatchDialerPanel";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
