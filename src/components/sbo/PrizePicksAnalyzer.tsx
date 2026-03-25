@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, Camera, Save, Send, RefreshCw, Zap, FileJson, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Camera, Save, Send, RefreshCw, Zap, FileJson, Trash2, Database } from 'lucide-react';
 import { toast } from 'sonner';
+import { PropStatContextCard } from './PropStatContextCard';
 
 const PROP_LABELS: Record<string, string> = {
   points: 'Points', pts: 'Points', player_points: 'Points',
