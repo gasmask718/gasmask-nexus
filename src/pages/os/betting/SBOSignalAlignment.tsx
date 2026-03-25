@@ -1,27 +1,83 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Wallet, Users, Zap, Shield, AlertTriangle } from 'lucide-react';
+import { Brain, Wallet, Users, Zap, Shield, Crown, Flame, AlertTriangle, Filter } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-interface AlignedSignal {
+// === WEIGHTING CONFIG ===
+const WEIGHTS = { ai: 0.4, wallet: 0.4, capper: 0.2 };
+const CONFLICT_PENALTY = 10;
+
+function calcWalletScore(alignCount: number, eliteCount: number) {
+  return Math.min(100, alignCount * 10 + eliteCount * 15);
+}
+function calcCapperScore(alignCount: number, topCount: number) {
+  return Math.min(100, alignCount * 5 + topCount * 10);
+}
+
+interface WeightedPick {
   key: string;
   playerOrMarket: string;
   propType?: string;
   direction?: string;
-  aiConfidence?: number;
-  walletMatch: boolean;
+  aiConfidence: number;
+  walletAlignCount: number;
+  eliteWalletCount: number;
+  capperAlignCount: number;
+  topCapperCount: number;
+  conflictCount: number;
   walletTier?: string;
-  capperMatch: boolean;
   capperName?: string;
-  capperTier?: string;
-  alignmentScore: number;
   sources: string[];
+  // Weighted outputs
+  walletScore: number;
+  capperScore: number;
+  sboComponent: number;
+  walletComponent: number;
+  capperComponent: number;
+  penalty: number;
+  finalScore: number;
+  pickTier: string;
+  isGrandmaster: boolean;
+  reasoning: string;
 }
+
+function getTier(score: number): string {
+  if (score >= 85) return 'grandmaster';
+  if (score >= 70) return 'elite';
+  if (score >= 50) return 'solid';
+  return 'low';
+}
+
+function isGrandmaster(score: number, eliteWallets: number, aiConf: number): boolean {
+  return score >= 85 && eliteWallets >= 1 && aiConf >= 75;
+}
+
+function buildReasoning(p: Omit<WeightedPick, 'reasoning'>): string {
+  const parts: string[] = [];
+  parts.push(`SBO AI ${p.aiConfidence}% confidence (×${WEIGHTS.ai} = ${p.sboComponent.toFixed(1)})`);
+  if (p.walletAlignCount > 0) parts.push(`${p.walletAlignCount} wallet${p.walletAlignCount > 1 ? 's' : ''} aligned${p.eliteWalletCount > 0 ? ` (${p.eliteWalletCount} elite)` : ''} → wallet score ${p.walletScore} (×${WEIGHTS.wallet} = ${p.walletComponent.toFixed(1)})`);
+  if (p.capperAlignCount > 0) parts.push(`${p.capperAlignCount} capper${p.capperAlignCount > 1 ? 's' : ''} aligned${p.topCapperCount > 0 ? ` (${p.topCapperCount} top)` : ''} → capper score ${p.capperScore} (×${WEIGHTS.capper} = ${p.capperComponent.toFixed(1)})`);
+  if (p.conflictCount > 0) parts.push(`${p.conflictCount} conflict${p.conflictCount > 1 ? 's' : ''} → -${p.penalty} penalty`);
+  if (p.isGrandmaster) parts.push('→ 👑 GRANDMASTER PICK (SUPER CHOICE)');
+  else if (p.pickTier === 'elite') parts.push('→ 🔥 ELITE PICK');
+  else if (p.pickTier === 'solid') parts.push('→ ⚠️ SOLID PLAY');
+  return parts.join(' · ');
+}
+
+const TIER_CONFIG: Record<string, { icon: React.ReactNode; label: string; color: string; bg: string; border: string }> = {
+  grandmaster: { icon: <Crown className="h-3.5 w-3.5" />, label: '👑 GRANDMASTER', color: 'text-amber-400', bg: 'bg-amber-500/15', border: 'border-amber-500/40' },
+  elite: { icon: <Flame className="h-3.5 w-3.5" />, label: '🔥 ELITE', color: 'text-orange-500', bg: 'bg-orange-500/15', border: 'border-orange-500/40' },
+  solid: { icon: <Shield className="h-3.5 w-3.5" />, label: '⚠️ SOLID', color: 'text-amber-500', bg: 'bg-amber-500/10', border: 'border-amber-500/30' },
+  low: { icon: <AlertTriangle className="h-3.5 w-3.5" />, label: '❌ LOW', color: 'text-muted-foreground', bg: 'bg-muted/30', border: 'border-border' },
+};
 
 export default function SBOSignalAlignment() {
   const today = new Date().toISOString().split('T')[0];
+  const [tierFilter, setTierFilter] = useState<string>('all');
 
   const { data: predictions = [] } = useQuery({
     queryKey: ['signal-predictions', today],
@@ -35,181 +91,274 @@ export default function SBOSignalAlignment() {
     },
   });
 
-  const { data: walletActivity = [] } = useQuery({
-    queryKey: ['signal-wallet-activity'],
+  const { data: walletEvents = [] } = useQuery({
+    queryKey: ['signal-wallet-events', today],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('sbo_wallet_activity')
-        .select('*, sbo_tracked_wallets(label, tier)')
-        .gte('detected_at', `${today}T00:00:00`)
-        .eq('result', 'pending');
+        .from('sbo_pm_wallet_events')
+        .select('*, sbo_pm_tracked_wallets(label, priority_level)')
+        .gte('event_time', `${today}T00:00:00`);
       return data || [];
     },
   });
 
   const { data: capperPicks = [] } = useQuery({
-    queryKey: ['signal-capper-picks'],
+    queryKey: ['signal-capper-picks', today],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('sbo_capper_picks')
-        .select('*, sbo_cappers(name, tier)')
-        .eq('game_date', today)
+        .select('*, sbo_cappers(name)')
+        .gte('created_at', `${today}T00:00:00`)
         .eq('result', 'pending');
       return data || [];
     },
   });
 
-  const signals = useMemo<AlignedSignal[]>(() => {
+  const weightedPicks = useMemo<WeightedPick[]>(() => {
     if (!predictions.length) return [];
 
     return predictions.map((pred: any) => {
       const playerLower = (pred.player_name || '').toLowerCase();
       const teamLower = (pred.home_team || '').toLowerCase();
-      const propLower = (pred.prop_type || '').toLowerCase();
 
-      // Match wallet activity by market text
-      const walletHit = walletActivity.find((w: any) => {
-        const marketLower = (w.market || '').toLowerCase();
-        return marketLower.includes(playerLower) || marketLower.includes(teamLower);
+      // Count wallet alignments
+      const matchedWallets = walletEvents.filter((w: any) => {
+        const q = (w.market_question || '').toLowerCase();
+        return q.includes(playerLower) || q.includes(teamLower);
       });
+      const walletAlignCount = matchedWallets.length;
+      const eliteWalletCount = matchedWallets.filter((w: any) => w.sbo_pm_tracked_wallets?.priority_level === 'elite').length;
 
-      // Match capper picks
-      const capperHit = capperPicks.find((c: any) => {
-        const pickLower = (c.player_name || c.pick_text || '').toLowerCase();
+      // Count capper alignments
+      const matchedCappers = capperPicks.filter((c: any) => {
+        const pickLower = (c.pick_text || c.parsed_pick || '').toLowerCase();
         return pickLower.includes(playerLower) || (playerLower && pickLower.includes(playerLower));
       });
+      const capperAlignCount = matchedCappers.length;
+      const topCapperCount = 0; // Could be expanded with capper tier logic
+
+      // Conflict detection: wallet or capper on opposite side
+      let conflictCount = 0;
+      const predDirection = (pred.pick_direction || '').toLowerCase();
+      matchedWallets.forEach((w: any) => {
+        if (w.side && predDirection && w.side.toLowerCase() !== predDirection) conflictCount++;
+      });
+
+      const aiConf = pred.confidence_score || 50;
+      const walletScore = calcWalletScore(walletAlignCount, eliteWalletCount);
+      const capperScore = calcCapperScore(capperAlignCount, topCapperCount);
+
+      const sboComponent = aiConf * WEIGHTS.ai;
+      const walletComponent = walletScore * WEIGHTS.wallet;
+      const capperComponent = capperScore * WEIGHTS.capper;
+      const penalty = conflictCount * CONFLICT_PENALTY;
+
+      const rawScore = sboComponent + walletComponent + capperComponent - penalty;
+      const finalScore = Math.round(Math.max(0, Math.min(100, rawScore)));
+
+      const pickTier = getTier(finalScore);
+      const gm = isGrandmaster(finalScore, eliteWalletCount, aiConf);
 
       const sources: string[] = ['AI'];
-      if (walletHit) sources.push('Wallet');
-      if (capperHit) sources.push('Capper');
+      if (walletAlignCount > 0) sources.push('Wallet');
+      if (capperAlignCount > 0) sources.push('Capper');
 
-      let alignmentScore = pred.confidence_score || 50;
-      if (walletHit) {
-        alignmentScore += walletHit.sbo_tracked_wallets?.tier === 'elite' ? 10 : 5;
-      }
-      if (capperHit) {
-        alignmentScore += capperHit.sbo_cappers?.tier === 'elite' ? 8 : 3;
-      }
-      alignmentScore = Math.min(alignmentScore, 99);
-
-      return {
+      const base: Omit<WeightedPick, 'reasoning'> = {
         key: pred.id,
         playerOrMarket: pred.player_name || `${pred.home_team} vs ${pred.away_team}`,
         propType: pred.prop_type || pred.market_type,
         direction: pred.pick_direction,
-        aiConfidence: pred.confidence_score,
-        walletMatch: !!walletHit,
-        walletTier: walletHit?.sbo_tracked_wallets?.tier,
-        capperMatch: !!capperHit,
-        capperName: capperHit?.sbo_cappers?.name,
-        capperTier: capperHit?.sbo_cappers?.tier,
-        alignmentScore,
+        aiConfidence: aiConf,
+        walletAlignCount,
+        eliteWalletCount,
+        capperAlignCount,
+        topCapperCount,
+        conflictCount,
+        walletTier: eliteWalletCount > 0 ? 'elite' : walletAlignCount > 0 ? 'active' : undefined,
+        capperName: matchedCappers[0]?.sbo_cappers?.name,
         sources,
+        walletScore,
+        capperScore,
+        sboComponent,
+        walletComponent,
+        capperComponent,
+        penalty,
+        finalScore,
+        pickTier: gm ? 'grandmaster' : pickTier,
+        isGrandmaster: gm,
       };
-    }).sort((a: AlignedSignal, b: AlignedSignal) => b.sources.length - a.sources.length || b.alignmentScore - a.alignmentScore);
-  }, [predictions, walletActivity, capperPicks]);
 
-  const tripleAligned = signals.filter(s => s.sources.length === 3);
-  const doubleAligned = signals.filter(s => s.sources.length === 2);
+      return { ...base, reasoning: buildReasoning(base) };
+    }).sort((a: WeightedPick, b: WeightedPick) => b.finalScore - a.finalScore);
+  }, [predictions, walletEvents, capperPicks]);
+
+  const filtered = tierFilter === 'all'
+    ? weightedPicks
+    : weightedPicks.filter(p => p.pickTier === tierFilter);
+
+  const grandmasterCount = weightedPicks.filter(p => p.isGrandmaster).length;
+  const eliteCount = weightedPicks.filter(p => p.pickTier === 'elite').length;
+  const solidCount = weightedPicks.filter(p => p.pickTier === 'solid').length;
 
   return (
     <div className="p-4 space-y-4 max-w-5xl mx-auto">
-      <div className="flex items-center gap-3">
-        <Zap className="h-6 w-6 text-amber-500" />
-        <div>
-          <h1 className="text-xl font-bold">Signal Alignment</h1>
-          <p className="text-xs text-muted-foreground">Cross-reference AI + Wallets + Cappers</p>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
+            <Crown className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">Signal Weighting Engine</h1>
+            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}%</p>
+          </div>
         </div>
+        <Select value={tierFilter} onValueChange={setTierFilter}>
+          <SelectTrigger className="w-40 h-8 text-xs">
+            <Filter className="h-3 w-3 mr-1" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Picks</SelectItem>
+            <SelectItem value="grandmaster">👑 Grandmaster</SelectItem>
+            <SelectItem value="elite">🔥 Elite</SelectItem>
+            <SelectItem value="solid">⚠️ Solid</SelectItem>
+            <SelectItem value="low">❌ Low</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{predictions.length}</p><p className="text-[10px] text-muted-foreground">AI Predictions</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{walletActivity.length}</p><p className="text-[10px] text-muted-foreground">Wallet Moves</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-foreground">{capperPicks.length}</p><p className="text-[10px] text-muted-foreground">Capper Picks</p></CardContent></Card>
-        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-500">{tripleAligned.length}</p><p className="text-[10px] text-muted-foreground">Triple Aligned 🔥</p></CardContent></Card>
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold">{weightedPicks.length}</p><p className="text-[10px] text-muted-foreground">Total Picks</p></CardContent></Card>
+        <Card className="border-amber-500/30"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-400">{grandmasterCount}</p><p className="text-[10px] text-muted-foreground">👑 Grandmaster</p></CardContent></Card>
+        <Card className="border-orange-500/30"><CardContent className="p-3 text-center"><p className="text-lg font-bold text-orange-500">{eliteCount}</p><p className="text-[10px] text-muted-foreground">🔥 Elite</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-amber-500">{solidCount}</p><p className="text-[10px] text-muted-foreground">⚠️ Solid</p></CardContent></Card>
+        <Card><CardContent className="p-3 text-center"><p className="text-lg font-bold text-muted-foreground">{weightedPicks.filter(p => p.pickTier === 'low').length}</p><p className="text-[10px] text-muted-foreground">❌ Low</p></CardContent></Card>
       </div>
 
-      {/* Triple alignment alert */}
-      {tripleAligned.length > 0 && (
-        <Card className="border-amber-500/30 bg-amber-500/5">
+      {/* Grandmaster Alert */}
+      {grandmasterCount > 0 && tierFilter === 'all' && (
+        <Card className="border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-orange-500/5">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Zap className="h-4 w-4 text-amber-500" />
-              🔥 Triple Alignment — AI + Wallet + Capper Agree
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-400">
+              <Crown className="h-4 w-4" />
+              👑 GRANDMASTER PICKS — SUPER CHOICE ({grandmasterCount})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {tripleAligned.map(s => (
-              <SignalCard key={s.key} signal={s} highlight />
+            {weightedPicks.filter(p => p.isGrandmaster).map(p => (
+              <WeightedPickCard key={p.key} pick={p} />
             ))}
           </CardContent>
         </Card>
       )}
 
-      {/* Double alignment */}
-      {doubleAligned.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Shield className="h-4 w-4 text-emerald-500" />
-              Double Alignment — 2 Sources Agree
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {doubleAligned.map(s => (
-              <SignalCard key={s.key} signal={s} />
-            ))}
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabs: Ranked / Breakdown */}
+      <Tabs defaultValue="ranked">
+        <TabsList className="h-8">
+          <TabsTrigger value="ranked" className="text-xs">Ranked Picks</TabsTrigger>
+          <TabsTrigger value="breakdown" className="text-xs">Score Breakdown</TabsTrigger>
+        </TabsList>
 
-      {/* All signals */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">All Today's Signals ({signals.length})</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 max-h-96 overflow-y-auto">
-          {signals.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">Run AI predictions and log wallet/capper activity to see alignment.</p>
-          ) : signals.map(s => (
-            <SignalCard key={s.key} signal={s} />
+        <TabsContent value="ranked" className="space-y-2 mt-3">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No picks found. Run AI predictions to generate weighted scores.</p>
+          ) : filtered.map(p => (
+            <WeightedPickCard key={p.key} pick={p} />
           ))}
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        <TabsContent value="breakdown" className="space-y-2 mt-3">
+          {filtered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No data to break down.</p>
+          ) : filtered.map(p => (
+            <BreakdownCard key={p.key} pick={p} />
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
 
-function SignalCard({ signal, highlight }: { signal: AlignedSignal; highlight?: boolean }) {
+function WeightedPickCard({ pick }: { pick: WeightedPick }) {
+  const tier = TIER_CONFIG[pick.pickTier] || TIER_CONFIG.low;
+
   return (
-    <div className={`flex items-center justify-between p-3 rounded-lg border ${highlight ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-muted/30'}`}>
+    <div className={`flex items-center justify-between p-3 rounded-lg border ${tier.border} ${tier.bg}`}>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-sm">{signal.playerOrMarket}</span>
-          {signal.propType && <Badge variant="outline" className="text-[10px]">{signal.propType}</Badge>}
-          {signal.direction && <Badge variant="outline" className="text-[10px]">{signal.direction}</Badge>}
+          <span className="font-semibold text-sm">{pick.playerOrMarket}</span>
+          {pick.propType && <Badge variant="outline" className="text-[10px] h-4">{pick.propType}</Badge>}
+          {pick.direction && <Badge variant="outline" className="text-[10px] h-4">{pick.direction}</Badge>}
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          {signal.sources.map(src => {
-            const icon = src === 'AI' ? <Brain className="h-3 w-3" /> : src === 'Wallet' ? <Wallet className="h-3 w-3" /> : <Users className="h-3 w-3" />;
-            const color = src === 'AI' ? 'text-blue-500' : src === 'Wallet' ? 'text-emerald-500' : 'text-purple-500';
-            return (
-              <span key={src} className={`flex items-center gap-0.5 text-[10px] ${color}`}>
-                {icon} {src}
-              </span>
-            );
-          })}
-          {signal.walletTier && <Badge variant="outline" className="text-[9px]">🟢 {signal.walletTier} wallet</Badge>}
-          {signal.capperName && <Badge variant="outline" className="text-[9px]">🔵 {signal.capperName}</Badge>}
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <span className="flex items-center gap-0.5 text-[10px] text-blue-500"><Brain className="h-3 w-3" /> AI {pick.aiConfidence}%</span>
+          {pick.walletAlignCount > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-emerald-500">
+              <Wallet className="h-3 w-3" /> {pick.walletAlignCount} wallet{pick.walletAlignCount > 1 ? 's' : ''}
+              {pick.eliteWalletCount > 0 && <span className="text-amber-400 ml-0.5">({pick.eliteWalletCount} elite)</span>}
+            </span>
+          )}
+          {pick.capperAlignCount > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-purple-500">
+              <Users className="h-3 w-3" /> {pick.capperAlignCount} capper{pick.capperAlignCount > 1 ? 's' : ''}
+            </span>
+          )}
+          {pick.conflictCount > 0 && (
+            <span className="flex items-center gap-0.5 text-[10px] text-destructive">
+              <AlertTriangle className="h-3 w-3" /> {pick.conflictCount} conflict{pick.conflictCount > 1 ? 's' : ''}
+            </span>
+          )}
         </div>
       </div>
-      <div className="text-right shrink-0">
-        <Badge className={`text-[10px] ${signal.sources.length >= 3 ? 'bg-amber-500' : signal.sources.length >= 2 ? 'bg-emerald-500' : ''}`}>
-          {signal.alignmentScore}%
+      <div className="text-right shrink-0 space-y-0.5">
+        <Badge className={`text-xs font-bold ${tier.color} ${tier.bg} ${tier.border}`}>
+          {tier.label}
         </Badge>
-        <p className="text-[9px] text-muted-foreground mt-0.5">{signal.sources.length} source{signal.sources.length > 1 ? 's' : ''}</p>
+        <p className={`text-lg font-black ${pick.finalScore >= 85 ? 'text-amber-400' : pick.finalScore >= 70 ? 'text-orange-500' : pick.finalScore >= 50 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+          {pick.finalScore}
+        </p>
       </div>
+    </div>
+  );
+}
+
+function BreakdownCard({ pick }: { pick: WeightedPick }) {
+  const tier = TIER_CONFIG[pick.pickTier] || TIER_CONFIG.low;
+  const barMax = 50; // max component value for visual bar
+
+  return (
+    <div className={`p-3 rounded-lg border ${tier.border} ${tier.bg} space-y-2`}>
+      <div className="flex items-center justify-between">
+        <span className="font-semibold text-sm">{pick.playerOrMarket}</span>
+        <Badge className={`text-xs ${tier.color} ${tier.bg}`}>{pick.finalScore} — {tier.label}</Badge>
+      </div>
+
+      {/* Component bars */}
+      <div className="space-y-1.5">
+        <ComponentBar label="🧠 AI" value={pick.sboComponent} max={barMax} color="bg-blue-500" />
+        <ComponentBar label="💰 Wallet" value={pick.walletComponent} max={barMax} color="bg-emerald-500" />
+        <ComponentBar label="🎯 Capper" value={pick.capperComponent} max={barMax} color="bg-purple-500" />
+        {pick.penalty > 0 && (
+          <ComponentBar label="⚠️ Conflict" value={-pick.penalty} max={barMax} color="bg-destructive" />
+        )}
+      </div>
+
+      <p className="text-[10px] text-muted-foreground leading-tight">{pick.reasoning}</p>
+    </div>
+  );
+}
+
+function ComponentBar({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const width = Math.min(100, Math.abs(value) / max * 100);
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] w-16 shrink-0">{label}</span>
+      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${width}%` }} />
+      </div>
+      <span className="text-[10px] w-8 text-right font-mono">{value > 0 ? '+' : ''}{value.toFixed(0)}</span>
     </div>
   );
 }

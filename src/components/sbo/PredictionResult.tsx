@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { Crown, Flame, Shield, AlertTriangle } from 'lucide-react';
 
 interface Brain {
   score: number;
