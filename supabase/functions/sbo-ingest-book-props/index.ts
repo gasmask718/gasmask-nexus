@@ -181,21 +181,15 @@ serve(async (req) => {
 
     console.log(`Collected ${allRows.length} props from ${Object.keys(bookStats).length} books`);
 
-    // Batch upsert — delete today's API props then bulk insert
+    // Batch upsert
     let inserted = 0;
     if (allRows.length > 0) {
-      // Remove existing API-sourced props for today to avoid duplicates
-      await supabase
-        .from('sbo_player_props')
-        .delete()
-        .eq('game_date', todayEST)
-        .eq('entered_by', 'api')
-        .in('source', [...new Set(allRows.map(r => r.source))]);
-
-      // Batch insert in chunks of 200
+      // Batch upsert in chunks of 200 — uses unique constraint to update on conflict
       for (let i = 0; i < allRows.length; i += 200) {
         const chunk = allRows.slice(i, i + 200);
-        const { error: insertErr } = await supabase.from('sbo_player_props').insert(chunk);
+        const { error: insertErr } = await supabase
+          .from('sbo_player_props')
+          .upsert(chunk, { onConflict: 'player_name,prop_type,game_date,source', ignoreDuplicates: false });
         if (insertErr) {
           errors.push(`Insert batch ${i}: ${insertErr.message}`);
         } else {
