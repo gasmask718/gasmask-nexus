@@ -62730,60 +62730,270 @@ export type Database = {
         }
         Relationships: []
       }
+      solar_partner_deals: {
+        Row: {
+          commission_amount: number | null
+          created_at: string | null
+          deal_status: string | null
+          deal_value: number | null
+          id: string
+          lead_id: string | null
+          partner_id: string
+          payout_status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commission_amount?: number | null
+          created_at?: string | null
+          deal_status?: string | null
+          deal_value?: number | null
+          id?: string
+          lead_id?: string | null
+          partner_id: string
+          payout_status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commission_amount?: number | null
+          created_at?: string | null
+          deal_status?: string | null
+          deal_value?: number | null
+          id?: string
+          lead_id?: string | null
+          partner_id?: string
+          payout_status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_partner_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solar_partner_deals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_partner_outreach: {
+        Row: {
+          created_at: string | null
+          follow_up_date: string | null
+          id: string
+          message_sent: string | null
+          outreach_type: string
+          partner_id: string
+          response: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          follow_up_date?: string | null
+          id?: string
+          message_sent?: string | null
+          outreach_type?: string
+          partner_id: string
+          response?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          follow_up_date?: string | null
+          id?: string
+          message_sent?: string | null
+          outreach_type?: string
+          partner_id?: string
+          response?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_partner_outreach_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_partner_performance: {
+        Row: {
+          appointments_set: number | null
+          avg_deal_value: number | null
+          avg_response_time_minutes: number | null
+          close_rate: number | null
+          deals_closed: number | null
+          deals_lost: number | null
+          id: string
+          last_updated: string | null
+          leads_contacted: number | null
+          leads_received: number | null
+          partner_id: string
+          revenue_generated: number | null
+        }
+        Insert: {
+          appointments_set?: number | null
+          avg_deal_value?: number | null
+          avg_response_time_minutes?: number | null
+          close_rate?: number | null
+          deals_closed?: number | null
+          deals_lost?: number | null
+          id?: string
+          last_updated?: string | null
+          leads_contacted?: number | null
+          leads_received?: number | null
+          partner_id: string
+          revenue_generated?: number | null
+        }
+        Update: {
+          appointments_set?: number | null
+          avg_deal_value?: number | null
+          avg_response_time_minutes?: number | null
+          close_rate?: number | null
+          deals_closed?: number | null
+          deals_lost?: number | null
+          id?: string
+          last_updated?: string | null
+          leads_contacted?: number | null
+          leads_received?: number | null
+          partner_id?: string
+          revenue_generated?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_partner_performance_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_partner_rankings: {
+        Row: {
+          id: string
+          partner_id: string
+          priority_level: number | null
+          ranking_score: number | null
+          state_performance: Json | null
+          tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          partner_id: string
+          priority_level?: number | null
+          ranking_score?: number | null
+          state_performance?: Json | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          partner_id?: string
+          priority_level?: number | null
+          ranking_score?: number | null
+          state_performance?: Json | null
+          tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_partner_rankings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solar_partners: {
         Row: {
           avg_close_rate: number | null
           avg_deal_size: number | null
           commission_percentage: number | null
+          commission_type: string | null
           company_name: string
           contact_email: string | null
           contact_name: string | null
           contact_phone: string | null
+          contract_status: string | null
           created_at: string | null
+          email: string | null
+          financing_options: boolean | null
           id: string
+          installer_type: string | null
           notes: string | null
+          onboarding_stage: string | null
+          phone: string | null
           ranking_score: number | null
           response_time_hours: number | null
+          service_areas: string[] | null
           states_served: string[] | null
           status: string | null
           updated_at: string | null
           webhook_endpoint: string | null
+          website: string | null
         }
         Insert: {
           avg_close_rate?: number | null
           avg_deal_size?: number | null
           commission_percentage?: number | null
+          commission_type?: string | null
           company_name: string
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          contract_status?: string | null
           created_at?: string | null
+          email?: string | null
+          financing_options?: boolean | null
           id?: string
+          installer_type?: string | null
           notes?: string | null
+          onboarding_stage?: string | null
+          phone?: string | null
           ranking_score?: number | null
           response_time_hours?: number | null
+          service_areas?: string[] | null
           states_served?: string[] | null
           status?: string | null
           updated_at?: string | null
           webhook_endpoint?: string | null
+          website?: string | null
         }
         Update: {
           avg_close_rate?: number | null
           avg_deal_size?: number | null
           commission_percentage?: number | null
+          commission_type?: string | null
           company_name?: string
           contact_email?: string | null
           contact_name?: string | null
           contact_phone?: string | null
+          contract_status?: string | null
           created_at?: string | null
+          email?: string | null
+          financing_options?: boolean | null
           id?: string
+          installer_type?: string | null
           notes?: string | null
+          onboarding_stage?: string | null
+          phone?: string | null
           ranking_score?: number | null
           response_time_hours?: number | null
+          service_areas?: string[] | null
           states_served?: string[] | null
           status?: string | null
           updated_at?: string | null
           webhook_endpoint?: string | null
+          website?: string | null
         }
         Relationships: []
       }
