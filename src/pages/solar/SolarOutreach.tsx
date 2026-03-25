@@ -147,14 +147,13 @@ export default function SolarOutreach() {
   // Convert outreach contact → solar_leads
   const convertToLead = useMutation({
     mutationFn: async (contact: any) => {
-      const { error: leadErr } = await supabase.from('solar_master_leads').insert({
-        name: contact.name,
+      const { error: leadErr } = await supabase.from('solar_leads').insert({
+        full_name: contact.name,
         phone: contact.phone,
         address: contact.address,
         state: contact.state,
-        source: 'outreach_cold_call',
+        lead_source: 'outreach_cold_call',
         status: 'new',
-        monthly_bill: contact.estimated_bill || null,
       });
       if (leadErr) throw leadErr;
       await supabase.from('solar_outreach_contacts')
