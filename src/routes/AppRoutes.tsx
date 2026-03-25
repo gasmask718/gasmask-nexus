@@ -387,6 +387,12 @@ const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
 
+// BrightSun Solar OS
+const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
+const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
+const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
+const SolarPlaceholder = lazy(() => import('@/pages/solar/SolarPlaceholder'));
+
 // Real Estate OS
 const RELayout = lazy(() => import('@/pages/real-estate/RELayout'));
 const RECommandCenter = lazy(() => import('@/pages/real-estate/RECommandCenter'));
