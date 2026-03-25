@@ -69,6 +69,18 @@ export default function InvoiceForensicsConsole() {
         .select('*', { count: 'exact', head: true })
         .is('payment_status', null);
 
+      // Check for status mismatches (draft + paid/partial)
+      const { count: statusMismatchCount } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'draft')
+        .in('payment_status', ['paid', 'partial']);
+
+      // Get repair log count
+      const { count: repairCount } = await supabase
+        .from('invoice_repair_log')
+        .select('*', { count: 'exact', head: true });
+
       // Status distribution
       const { data: statusDist } = await supabase
         .from('invoices')
@@ -81,6 +93,18 @@ export default function InvoiceForensicsConsole() {
         statusCounts[s] = (statusCounts[s] || 0) + 1;
       });
 
+      // Invoice status (not payment_status) distribution
+      const { data: invStatusDist } = await supabase
+        .from('invoices')
+        .select('status')
+        .limit(5000);
+
+      const invStatusCounts: Record<string, number> = {};
+      (invStatusDist || []).forEach((r: any) => {
+        const s = r.status || 'NULL';
+        invStatusCounts[s] = (invStatusCounts[s] || 0) + 1;
+      });
+
       return {
         invoicesTotal: invoicesTotal || 0,
         crmTotal: crmTotal || 0,
@@ -90,7 +114,10 @@ export default function InvoiceForensicsConsole() {
         wholesalerEntityCount: wholesalerEntityCount || 0,
         noStoreCount: noStoreCount || 0,
         noStatusCount: noStatusCount || 0,
+        statusMismatchCount: statusMismatchCount || 0,
+        repairCount: repairCount || 0,
         statusCounts,
+        invStatusCounts,
         feedExpected: (invoicesTotal || 0) + (crmTotal || 0) + (wholesaleTotal || 0),
       };
     },
