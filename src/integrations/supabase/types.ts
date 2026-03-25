@@ -66444,6 +66444,230 @@ export type Database = {
           },
         ]
       }
+      surplus_funds_attorneys: {
+        Row: {
+          cases_total: number | null
+          cases_won: number | null
+          created_at: string | null
+          email: string | null
+          fee_split: number | null
+          firm: string | null
+          id: string
+          name: string
+          notes: string | null
+          phone: string | null
+          states: string[] | null
+          status: string | null
+        }
+        Insert: {
+          cases_total?: number | null
+          cases_won?: number | null
+          created_at?: string | null
+          email?: string | null
+          fee_split?: number | null
+          firm?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          phone?: string | null
+          states?: string[] | null
+          status?: string | null
+        }
+        Update: {
+          cases_total?: number | null
+          cases_won?: number | null
+          created_at?: string | null
+          email?: string | null
+          fee_split?: number | null
+          firm?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          states?: string[] | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      surplus_funds_cases: {
+        Row: {
+          agreement_signed_at: string | null
+          amount_received: number | null
+          approved_at: string | null
+          attorney_id: string | null
+          attorney_name: string | null
+          client_email: string | null
+          client_name: string
+          client_phone: string | null
+          county: string | null
+          court_case_number: string | null
+          created_at: string | null
+          documents: Json | null
+          filed_at: string | null
+          funds_released_at: string | null
+          hearing_date: string | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          our_expected_fee: number | null
+          our_percentage: number | null
+          property_address: string | null
+          state: string | null
+          status: string | null
+          surplus_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          agreement_signed_at?: string | null
+          amount_received?: number | null
+          approved_at?: string | null
+          attorney_id?: string | null
+          attorney_name?: string | null
+          client_email?: string | null
+          client_name: string
+          client_phone?: string | null
+          county?: string | null
+          court_case_number?: string | null
+          created_at?: string | null
+          documents?: Json | null
+          filed_at?: string | null
+          funds_released_at?: string | null
+          hearing_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          our_expected_fee?: number | null
+          our_percentage?: number | null
+          property_address?: string | null
+          state?: string | null
+          status?: string | null
+          surplus_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          agreement_signed_at?: string | null
+          amount_received?: number | null
+          approved_at?: string | null
+          attorney_id?: string | null
+          attorney_name?: string | null
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string | null
+          county?: string | null
+          court_case_number?: string | null
+          created_at?: string | null
+          documents?: Json | null
+          filed_at?: string | null
+          funds_released_at?: string | null
+          hearing_date?: string | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          our_expected_fee?: number | null
+          our_percentage?: number | null
+          property_address?: string | null
+          state?: string | null
+          status?: string | null
+          surplus_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surplus_funds_cases_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "surplus_funds_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surplus_funds_leads: {
+        Row: {
+          address: string | null
+          amount_owed: number | null
+          assigned_attorney_id: string | null
+          call_count: number | null
+          call_outcome: string | null
+          city: string | null
+          county: string
+          court_case_number: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          foreclosure_date: string | null
+          id: string
+          last_called_at: string | null
+          last_name: string | null
+          lead_source: string | null
+          notes: string | null
+          phone: string | null
+          property_address: string | null
+          sale_price: number | null
+          skip_traced: boolean | null
+          state: string | null
+          status: string | null
+          surplus_amount: number | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          amount_owed?: number | null
+          assigned_attorney_id?: string | null
+          call_count?: number | null
+          call_outcome?: string | null
+          city?: string | null
+          county: string
+          court_case_number?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          foreclosure_date?: string | null
+          id?: string
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          notes?: string | null
+          phone?: string | null
+          property_address?: string | null
+          sale_price?: number | null
+          skip_traced?: boolean | null
+          state?: string | null
+          status?: string | null
+          surplus_amount?: number | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          amount_owed?: number | null
+          assigned_attorney_id?: string | null
+          call_count?: number | null
+          call_outcome?: string | null
+          city?: string | null
+          county?: string
+          court_case_number?: string | null
+          created_at?: string | null
+          email?: string | null
+          first_name?: string | null
+          foreclosure_date?: string | null
+          id?: string
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          notes?: string | null
+          phone?: string | null
+          property_address?: string | null
+          sale_price?: number | null
+          skip_traced?: boolean | null
+          state?: string | null
+          status?: string | null
+          surplus_amount?: number | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       system_alerts: {
         Row: {
           alert_date: string
