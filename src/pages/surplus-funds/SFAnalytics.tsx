@@ -48,7 +48,7 @@ export default function SFAnalytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-amber-500">Analytics</h1>
+        <h1 className="text-2xl font-bold text-amber-500">📊 Floor 7 — Analytics & Revenue</h1>
         <p className="text-sm text-muted-foreground">Surplus Funds performance intelligence</p>
       </div>
 

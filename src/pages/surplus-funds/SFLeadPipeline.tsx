@@ -115,8 +115,8 @@ export default function SFLeadPipeline() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-amber-500">Lead Pipeline</h1>
-          <p className="text-sm text-muted-foreground">{leads.length} total leads</p>
+          <h1 className="text-2xl font-bold text-amber-500">🎯 Floor 1 — Lead Intelligence</h1>
+          <p className="text-sm text-muted-foreground">{leads.length} total leads in pipeline</p>
         </div>
         <div className="flex gap-2">
           <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={handleCSVUpload} />
