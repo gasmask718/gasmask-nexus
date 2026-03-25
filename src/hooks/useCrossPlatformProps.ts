@@ -76,6 +76,7 @@ export function useCrossPlatformProps(date?: string) {
           prop_type: props[0].prop_type,
           game_date: props[0].game_date,
           game_id: props[0].game_id,
+          prop_id: props[0].id,
           sources,
           best_over: bestOver,
           best_under: bestUnder,
