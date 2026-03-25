@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Phone, Target, TrendingUp, Brain, Clock, Activity, Zap, BarChart3, Loader2 } from 'lucide-react';
+import { Phone, Target, TrendingUp, Brain, Clock, Activity, Zap, BarChart3, Loader2, Building2, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 const outcomeStyle = (o: string) => {
   switch (o) {
