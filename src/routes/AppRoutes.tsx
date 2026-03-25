@@ -387,6 +387,12 @@ const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
 const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
 
+// BrightSun Solar OS
+const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
+const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
+const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
+const SolarPlaceholder = lazy(() => import('@/pages/solar/SolarPlaceholder'));
+
 // Real Estate OS
 const RELayout = lazy(() => import('@/pages/real-estate/RELayout'));
 const RECommandCenter = lazy(() => import('@/pages/real-estate/RECommandCenter'));
@@ -2800,6 +2806,25 @@ export default function AppRoutes() {
           <Route path="documents" element={<SFDocuments />} />
           <Route path="automation" element={<SFAutomation />} />
           <Route path="analytics" element={<SFAnalytics />} />
+        </Route>
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* BRIGHTSUN SOLAR OS                                                         */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/solar" element={<SolarLayout />}>
+          <Route index element={<SolarCommandCenter />} />
+          <Route path="leads" element={<SolarLeadIntelligence />} />
+          <Route path="outreach" element={<SolarPlaceholder />} />
+          <Route path="qualification" element={<SolarPlaceholder />} />
+          <Route path="appointments" element={<SolarPlaceholder />} />
+          <Route path="live-calls" element={<SolarPlaceholder />} />
+          <Route path="deals" element={<SolarPlaceholder />} />
+          <Route path="partners" element={<SolarPlaceholder />} />
+          <Route path="agents" element={<SolarPlaceholder />} />
+          <Route path="ai-brain" element={<SolarPlaceholder />} />
+          <Route path="analytics" element={<SolarPlaceholder />} />
         </Route>
       </Route>
 
