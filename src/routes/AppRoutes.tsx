@@ -383,6 +383,8 @@ const SFDiscovery = lazy(() => import('@/pages/surplus-funds/SFDiscovery'));
 const SFCampaigns = lazy(() => import('@/pages/surplus-funds/SFCampaigns'));
 const SFCases = lazy(() => import('@/pages/surplus-funds/SFCases'));
 const SFAttorneys = lazy(() => import('@/pages/surplus-funds/SFAttorneys'));
+const SFDocuments = lazy(() => import('@/pages/surplus-funds/SFDocuments'));
+const SFAutomation = lazy(() => import('@/pages/surplus-funds/SFAutomation'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
 
 // Real Estate OS
