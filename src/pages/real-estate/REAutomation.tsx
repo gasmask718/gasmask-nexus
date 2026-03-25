@@ -66,7 +66,7 @@ export default function REAutomation() {
     }
   };
 
-  const getLastLog = (jobKey: string) => logs.find(l => l.job_name === jobKey);
+  const getLastLog = (jobKey: string) => logs.find(l => l.automation_type === jobKey);
 
   const statusDot = (log: any) => {
     if (!log) return <Clock className="h-4 w-4 text-muted-foreground" />;
