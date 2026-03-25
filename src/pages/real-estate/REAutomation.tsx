@@ -232,10 +232,10 @@ export default function REAutomation() {
                 <div key={log.id} className="flex items-center justify-between p-2 rounded border border-border/50 text-sm">
                   <div className="flex items-center gap-2">
                     {statusDot(log)}
-                    <span className="font-medium">{log.job_name}</span>
+                    <span className="font-medium">{log.automation_type}</span>
                   </div>
                   <div className="flex items-center gap-4 text-muted-foreground">
-                    <span>{log.records_processed || 0} records</span>
+                    <span>{log.leads_processed || 0} records</span>
                     <span>{new Date(log.created_at).toLocaleString()}</span>
                   </div>
                 </div>
