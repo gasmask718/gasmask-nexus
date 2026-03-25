@@ -30305,6 +30305,81 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_leads: {
+        Row: {
+          address: string | null
+          business_name: string
+          call_count: number | null
+          campaign_id: string | null
+          city: string | null
+          created_at: string | null
+          email: string | null
+          external_ref_id: string | null
+          first_name: string | null
+          id: string
+          last_called_at: string | null
+          last_name: string | null
+          lead_source: string | null
+          lead_type: string | null
+          metadata: Json | null
+          notes: string | null
+          outcome: string | null
+          phone: string
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          business_name: string
+          call_count?: number | null
+          campaign_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          external_ref_id?: string | null
+          first_name?: string | null
+          id?: string
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          lead_type?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          outcome?: string | null
+          phone: string
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          business_name?: string
+          call_count?: number | null
+          campaign_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          email?: string | null
+          external_ref_id?: string | null
+          first_name?: string | null
+          id?: string
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          lead_type?: string | null
+          metadata?: Json | null
+          notes?: string | null
+          outcome?: string | null
+          phone?: string
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null
