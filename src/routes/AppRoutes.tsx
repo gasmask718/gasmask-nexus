@@ -1587,6 +1587,11 @@ export default function AppRoutes() {
             <ModuleDiagnosticsPage />
           </RequireRole>
         } />
+        <Route path="/system/invoice-forensics" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <InvoiceForensicsConsole />
+          </RequireRole>
+        } />
 
         {/* Owner Dashboard - Admin Only */}
         <Route path="/owner" element={
