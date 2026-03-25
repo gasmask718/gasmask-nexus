@@ -20,6 +20,8 @@ serve(async (req) => {
     const digits = formData.get("Digits")?.toString() || "";
     const speechResult = formData.get("SpeechResult")?.toString().toLowerCase() || "";
     const callSid = formData.get("CallSid")?.toString() || "";
+    const twilioFrom = formData.get("From")?.toString() || "";
+    const twilioTo = formData.get("To")?.toString() || "";
 
     const url = new URL(req.url);
     let agentId = url.searchParams.get("agent_id") || "";
@@ -56,7 +58,39 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Gather Input - Digits: ${digits}, Speech: ${speechResult}, Agent: ${agentId}`);
+    // ═══ Resolve actual prospect phone number ═══
+    // Twilio's <Redirect> may report our own number as both From and To.
+    // Look up the real prospect number from the outbound_call_queue.
+    let prospectNumber = "";
+    let ourNumber = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER") || "";
+
+    if (queueItemId) {
+      const { data: queueItem } = await supabase
+        .from("outbound_call_queue")
+        .select("phone_number")
+        .eq("id", queueItemId)
+        .maybeSingle();
+      if (queueItem?.phone_number) {
+        prospectNumber = queueItem.phone_number;
+        console.log(`Resolved prospect number from queue: ${prospectNumber}`);
+      }
+    }
+
+    // Fallback: use Twilio's reported To if different from our number
+    if (!prospectNumber) {
+      if (twilioTo && twilioTo !== ourNumber) {
+        prospectNumber = twilioTo;
+      } else if (twilioFrom && twilioFrom !== ourNumber) {
+        prospectNumber = twilioFrom;
+      }
+    }
+
+    // Ensure our number is set
+    if (!ourNumber) {
+      ourNumber = twilioFrom || "+18776818621";
+    }
+
+    console.log(`Gather Input - Digits: ${digits}, Speech: ${speechResult}, Agent: ${agentId}, Prospect: ${prospectNumber}`);
 
     // Check for affirmation
     const isConfirmed =
@@ -92,8 +126,7 @@ serve(async (req) => {
 
     if (isConfirmed && agentId) {
       // ═══ FAST TRANSFER: Immediately redirect to ElevenLabs bridge ═══
-      // No extra menu — user confirmed, connect them to the AI agent NOW
-      console.log(`🚀 Fast transfer to ElevenLabs agent: ${agentId} | callSid: ${callSid}`);
+      console.log(`🚀 Fast transfer to ElevenLabs agent: ${agentId} | callSid: ${callSid} | prospect: ${prospectNumber}`);
 
       // Log the transfer event
       supabase
@@ -119,8 +152,14 @@ serve(async (req) => {
           .then(() => {});
       }
 
-      // Direct redirect to ElevenLabs bridge — no extra TTS, no menu
-      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?agent_id=${encodeURIComponent(agentId)}`;
+      // Pass phone numbers and call_sid explicitly to the bridge
+      const bridgeParams = new URLSearchParams({
+        agent_id: agentId,
+        from_number: ourNumber,
+        to_number: prospectNumber,
+        call_sid: callSid,
+      });
+      const bridgeUrl = `${supabaseUrl}/functions/v1/twilio-elevenlabs-bridge?${bridgeParams.toString()}`;
 
       twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>

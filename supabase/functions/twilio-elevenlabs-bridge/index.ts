@@ -50,42 +50,66 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!agentId) return twimlError("Agent configuration missing.");
 
-    // Parse Twilio body (form-encoded POST from Twilio)
-    let fromNumber = "";
-    let toNumber = "";
-    let callSid = "";
+    // ═══ PHONE NUMBER RESOLUTION ═══
+    // Priority: query params > form data > env fallback
+    // The gather webhook now passes these explicitly to avoid Twilio redirect issues.
+    let fromNumber = url.searchParams.get("from_number") || "";
+    let toNumber = url.searchParams.get("to_number") || "";
+    let callSid = url.searchParams.get("call_sid") || url.searchParams.get("CallSid") || "";
 
+    // Also try Twilio form data as secondary source
     const contentType = req.headers.get("content-type") || "";
     if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
       try {
         const formData = await req.formData();
-        fromNumber = formData.get("From")?.toString() || "";
-        toNumber = formData.get("To")?.toString() || "";
-        callSid = formData.get("CallSid")?.toString() || "";
+        if (!callSid) callSid = formData.get("CallSid")?.toString() || "";
+        if (!fromNumber) fromNumber = formData.get("From")?.toString() || "";
+        if (!toNumber) toNumber = formData.get("To")?.toString() || "";
       } catch (e) {
         console.warn("[Bridge] Could not parse form data:", e);
       }
     }
 
-    // Also check query params as fallback (some call paths pass these)
-    if (!callSid) callSid = url.searchParams.get("call_sid") || url.searchParams.get("CallSid") || "";
-    if (!fromNumber) fromNumber = url.searchParams.get("from_number") || url.searchParams.get("From") || "";
-    if (!toNumber) toNumber = url.searchParams.get("to_number") || url.searchParams.get("To") || "";
+    // Env fallback for our number
+    const ourTwilioNumber = Deno.env.get("TWILIO_FROM_NUMBER") || Deno.env.get("TWILIO_PHONE_NUMBER") || "+18776818621";
+    if (!fromNumber) fromNumber = ourTwilioNumber;
+
+    // ═══ CRITICAL: Ensure from and to are DISTINCT for ElevenLabs ═══
+    // ElevenLabs requires from_number (mandatory) and rejects identical from/to.
+    // If they're the same, look up the real prospect number from call_recordings.
+    if (fromNumber && toNumber && fromNumber === toNumber) {
+      console.warn(`[Bridge] ⚠️ From and To are identical (${fromNumber}). Looking up real prospect number...`);
+
+      // Try to find the actual prospect number from call_recordings
+      if (callSid) {
+        const { data: recording } = await supabase
+          .from("call_recordings")
+          .select("from_number, to_number")
+          .eq("provider_call_sid", callSid)
+          .maybeSingle();
+
+        if (recording) {
+          // For outbound calls: from_number = our number, to_number = prospect
+          if (recording.to_number && recording.to_number !== fromNumber) {
+            toNumber = recording.to_number;
+            console.log(`[Bridge] ✅ Resolved prospect number from call_recordings: ${toNumber}`);
+          } else if (recording.from_number && recording.from_number !== toNumber) {
+            fromNumber = recording.from_number;
+            console.log(`[Bridge] ✅ Resolved our number from call_recordings: ${fromNumber}`);
+          }
+        }
+      }
+
+      // If still identical after lookup, use our Twilio number as from and clear to
+      // but ElevenLabs requires both — use a placeholder approach
+      if (fromNumber === toNumber) {
+        console.warn(`[Bridge] Still identical after lookup. Using our number as from, keeping to as-is.`);
+        fromNumber = ourTwilioNumber;
+        // If to is also our number (self-test), we must still send it
+      }
+    }
 
     console.log(`[Bridge] Starting | agent=${agentId} | callSid=${callSid} | from=${fromNumber} | to=${toNumber}`);
-
-    // ═══ CRITICAL FIX: Ensure from_number and to_number are never identical ═══
-    // ElevenLabs rejects register-call if both numbers match.
-    // For outbound calls: Twilio From = our number, To = prospect
-    // We must send distinct values to ElevenLabs.
-    let elFromNumber = fromNumber;
-    let elToNumber = toNumber;
-
-    if (elFromNumber && elToNumber && elFromNumber === elToNumber) {
-      console.warn(`[Bridge] ⚠️ From and To are identical (${elFromNumber}). Clearing from_number to avoid ElevenLabs rejection.`);
-      // Don't send from_number — ElevenLabs will use its own default
-      elFromNumber = "";
-    }
 
     // Build handoff URL
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
@@ -118,8 +142,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // --- Build ElevenLabs register-call payload ---
+    // CRITICAL: from_number is REQUIRED by ElevenLabs API (422 if missing)
     const registerBody: any = {
       agent_id: agentId,
+      from_number: fromNumber,
+      to_number: toNumber || fromNumber,
       direction: "outbound",
       dynamic_variables: {
         call_sid: callSid,
@@ -130,15 +157,11 @@ const handler = async (req: Request): Promise<Response> => {
       },
     };
 
-    // Only include phone numbers if they're non-empty and distinct
-    if (elFromNumber) registerBody.from_number = elFromNumber;
-    if (elToNumber) registerBody.to_number = elToNumber;
-
     if (conversationOverride) {
       registerBody.conversation_config_override = conversationOverride;
     }
 
-    console.log(`[Bridge] Calling ElevenLabs register-call | agent_id=${agentId} | from=${elFromNumber || "(omitted)"} | to=${elToNumber || "(omitted)"}`);
+    console.log(`[Bridge] Calling ElevenLabs register-call | agent_id=${agentId} | from=${fromNumber} | to=${registerBody.to_number}`);
 
     // --- Call ElevenLabs API with retry ---
     let registerResponse: Response | null = null;
@@ -148,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+        const timeout = setTimeout(() => controller.abort(), 25000);
 
         registerResponse = await fetch("https://api.elevenlabs.io/v1/convai/twilio/register-call", {
           method: "POST",
@@ -170,15 +193,14 @@ const handler = async (req: Request): Promise<Response> => {
 
         console.error(`[Bridge] ElevenLabs returned ${registerResponse.status} (attempt ${attempt + 1}): ${rawText.substring(0, 500)}`);
 
-        // If it's a 400 validation error, don't retry
-        if (registerResponse.status === 400) break;
+        // If it's a 4xx validation error, don't retry
+        if (registerResponse.status >= 400 && registerResponse.status < 500) break;
 
       } catch (fetchErr: any) {
         console.error(`[Bridge] Fetch error (attempt ${attempt + 1}):`, fetchErr.message);
         if (attempt === maxRetries) {
           return twimlError("Voice agent connection timed out. Please try again.");
         }
-        // Wait briefly before retry
         await new Promise(r => setTimeout(r, 1000));
       }
     }
