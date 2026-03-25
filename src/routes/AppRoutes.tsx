@@ -375,6 +375,16 @@ const PlayBoxxxPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/P
 const BrightSunPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/BrightSunPipeline'));
 const GasMaskNewStoresPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/GasMaskNewStoresPipeline'));
 
+// Surplus Funds OS
+const SFLayout = lazy(() => import('@/pages/surplus-funds/SFLayout'));
+const SFCommandCenter = lazy(() => import('@/pages/surplus-funds/SFCommandCenter'));
+const SFLeadPipeline = lazy(() => import('@/pages/surplus-funds/SFLeadPipeline'));
+const SFDiscovery = lazy(() => import('@/pages/surplus-funds/SFDiscovery'));
+const SFCampaigns = lazy(() => import('@/pages/surplus-funds/SFCampaigns'));
+const SFCases = lazy(() => import('@/pages/surplus-funds/SFCases'));
+const SFAttorneys = lazy(() => import('@/pages/surplus-funds/SFAttorneys'));
+const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
+
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
 const DialerPage = lazy(() => import('@/pages/communication/dialer/DialerPage'));
@@ -2760,6 +2770,21 @@ export default function AppRoutes() {
           </RequireRole>
         </ProtectedRoute>
       } />
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* SURPLUS FUNDS OS                                                              */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/surplus-funds" element={<SFLayout />}>
+          <Route index element={<SFCommandCenter />} />
+          <Route path="leads" element={<SFLeadPipeline />} />
+          <Route path="discovery" element={<SFDiscovery />} />
+          <Route path="campaigns" element={<SFCampaigns />} />
+          <Route path="cases" element={<SFCases />} />
+          <Route path="attorneys" element={<SFAttorneys />} />
+          <Route path="analytics" element={<SFAnalytics />} />
+        </Route>
+      </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* BRANDARO DIGITAL HUB (THE SALES WAR ROOM)                                    */}

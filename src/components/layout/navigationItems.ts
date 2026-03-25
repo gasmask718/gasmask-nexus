@@ -1,7 +1,8 @@
 import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
   BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
-  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet
+  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet,
+  Scale, Search, Briefcase
 } from 'lucide-react';
 
 export const navigationItems = [
@@ -88,4 +89,13 @@ export const navigationItems = [
   { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
   { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
   { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
+
+  // 💰 Surplus Funds OS
+  { to: '/surplus-funds', icon: Scale, label: '💰 Surplus Funds OS', roles: ['admin', 'ceo'] },
+  { to: '/surplus-funds/leads', icon: FileText, label: 'Lead Pipeline', roles: ['admin', 'ceo'] },
+  { to: '/surplus-funds/discovery', icon: Search, label: 'Lead Discovery', roles: ['admin'] },
+  { to: '/surplus-funds/campaigns', icon: Phone, label: 'SF Campaigns', roles: ['admin'] },
+  { to: '/surplus-funds/cases', icon: Briefcase, label: 'Cases', roles: ['admin', 'ceo'] },
+  { to: '/surplus-funds/attorneys', icon: Scale, label: 'Attorney Network', roles: ['admin'] },
+  { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'SF Analytics', roles: ['admin', 'ceo'] },
 ];
