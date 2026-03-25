@@ -97,11 +97,17 @@ serve(async (req) => {
     const todayEvents = events.filter((e: any) => e.commence_time?.startsWith(todayEST));
     console.log(`Found ${todayEvents.length} today events out of ${events.length} total`);
 
-    // Process events — limit to 6 to stay within timeout
-    const eventsToProcess = todayEvents.slice(0, 6);
+    // Process ALL events in batches of 4 with timeout safety
+    console.log(`Processing ALL ${todayEvents.length} events in batches`);
+    const BATCH_SIZE = 4;
+    const marketsParam = PROP_MARKETS.slice(0, 4).join(','); // points, rebounds, assists, threes
 
-    for (const event of eventsToProcess) {
-      const marketsParam = PROP_MARKETS.slice(0, 4).join(','); // points, rebounds, assists, threes
+    for (let batchIdx = 0; batchIdx < todayEvents.length; batchIdx += BATCH_SIZE) {
+      const batch = todayEvents.slice(batchIdx, batchIdx + BATCH_SIZE);
+      console.log(`Batch ${Math.floor(batchIdx / BATCH_SIZE) + 1}: events ${batchIdx + 1}-${batchIdx + batch.length}`);
+
+      // Process batch concurrently
+      const batchPromises = batch.map(async (event: any) => {
       const propsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${event.id}/odds?apiKey=${ODDS_API_KEY}&regions=us&markets=${marketsParam}&bookmakers=${targetBooks}&oddsFormat=american`;
 
       try {
