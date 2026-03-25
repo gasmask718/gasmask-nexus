@@ -4463,6 +4463,7 @@ export default function SportsBettingOS() {
               {activeTab === 'bovada' && <BookPropsComparison />}
               {activeTab === 'history' && <PredictionHistory />}
               {activeTab === 'entry' && <VAPropEntryTab />}
+              {activeTab === 'health' && <SBOHealthDashboard />}
               {activeTab === 'sync' && <SyncDashboard />}
             </div>
           </>
