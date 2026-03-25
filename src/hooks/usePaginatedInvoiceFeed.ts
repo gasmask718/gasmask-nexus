@@ -266,6 +266,7 @@ export function usePaginatedInvoiceFeed(filters: PaginatedFilters = {}) {
             receipt_status: inv.receipt_status,
             receipt_sent_at: inv.receipt_sent_at,
             is_historical: inv.is_historical || false,
+            entry_mode: inv.entry_mode || (inv.is_historical ? 'backfill' : 'live'),
             created_by: inv.created_by,
           });
         });
