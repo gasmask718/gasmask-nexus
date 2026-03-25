@@ -441,3 +441,9 @@ verify_jwt = false
 
 [functions.solar-followup-sender]
 verify_jwt = false
+
+[functions.solar-call-initiate]
+verify_jwt = false
+
+[functions.solar-call-logger]
+verify_jwt = false

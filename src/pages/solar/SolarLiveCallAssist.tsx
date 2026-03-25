@@ -1,50 +1,122 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import {
-  Phone, Mic, AlertTriangle, CheckCircle2, Brain, MessageSquare,
-  ThumbsUp, ThumbsDown, Zap, Sun, Volume2, User
+  Phone, Mic, AlertTriangle, Brain, Zap, Sun, Volume2, User,
+  PhoneCall, PhoneOff, BarChart3, Clock, Target, CheckCircle2, Loader2
 } from 'lucide-react';
 
 const AMBER = '#E8A317';
 
-// Mock live call data for UI demonstration
-const MOCK_SUGGESTIONS = [
-  { type: 'opener', text: '"I\'m not here to sell you anything today — just want to see if you\'d even qualify for the savings program."' },
-  { type: 'qualifying', text: 'Ask about their current monthly electric bill — key qualifier.' },
-  { type: 'objection', text: '"I totally understand. Most of our happiest customers felt the same way initially. Can I ask what specifically concerns you?"' },
-];
-
-const MOCK_OBJECTIONS = [
+const OBJECTION_LIBRARY = [
   { keyword: 'too expensive', response: '"Actually, most homeowners go solar with $0 down. Your monthly payment is typically less than your current electric bill."' },
   { keyword: 'not interested', response: '"I hear you. Before you go — did you know homeowners in your area are saving $150-300/month? It literally costs nothing to find out your number."' },
-  { keyword: 'need to think', response: '"Absolutely, take your time. Just so you know, the federal tax credit drops from 30% to 26% next quarter. Can I send you the details?"' },
-  { keyword: 'renting', response: '"Got it — unfortunately the program is only for homeowners. Do you own any other property? If not, totally understand."' },
-  { keyword: 'already have solar', response: '"Great! How\'s it working for you? We actually help existing solar owners optimize and expand their systems for even more savings."' },
+  { keyword: 'need to think', response: '"Absolutely, take your time. Just so you know, the federal tax credit drops next quarter. Can I send you the details?"' },
+  { keyword: 'renting', response: '"Got it — the program is only for homeowners. Do you own any other property?"' },
+  { keyword: 'already have solar', response: '"Great! We help existing solar owners optimize and expand their systems for even more savings."' },
 ];
 
 export default function SolarLiveCallAssist() {
-  const [activeCall, setActiveCall] = useState<any>(null);
-  const [sentiment, setSentiment] = useState<'positive' | 'neutral' | 'negative'>('neutral');
+  const queryClient = useQueryClient();
+  const [callingLeadId, setCallingLeadId] = useState<string | null>(null);
 
-  // Recent calls
-  const { data: recentCalls = [] } = useQuery({
-    queryKey: ['solar-live-calls'],
+  // Ready-to-call leads
+  const { data: callQueue = [] } = useQuery({
+    queryKey: ['solar-call-queue'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('solar_interactions')
-        .select('*, solar_leads(full_name, phone, city, state, monthly_bill_range, lead_score)')
-        .eq('interaction_type', 'call')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      if (error) throw error;
+      const { data } = await supabase
+        .from('solar_leads')
+        .select('id, full_name, phone, city, state, monthly_bill_range, lead_score, status')
+        .in('status', ['new', 'contacted'])
+        .not('phone', 'is', null)
+        .order('lead_score', { ascending: false })
+        .limit(30);
+      return data || [];
+    },
+    refetchInterval: 10000,
+  });
+
+  // Active/recent calls from live_calls
+  const { data: liveCalls = [] } = useQuery({
+    queryKey: ['solar-live-calls-monitor'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('live_calls' as any)
+        .select('*')
+        .order('started_at', { ascending: false })
+        .limit(20);
       return data || [];
     },
     refetchInterval: 5000,
+  });
+
+  // Recent call results
+  const { data: recentCalls = [] } = useQuery({
+    queryKey: ['solar-recent-calls'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('solar_interactions')
+        .select('*, solar_leads(full_name, phone, lead_score)')
+        .in('interaction_type', ['call', 'call_result'])
+        .order('created_at', { ascending: false })
+        .limit(20);
+      return data || [];
+    },
+    refetchInterval: 5000,
+  });
+
+  // Call stats
+  const { data: stats } = useQuery({
+    queryKey: ['solar-call-stats'],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const [totalRes, answeredRes, interestedRes] = await Promise.all([
+        supabase.from('solar_interactions').select('id', { count: 'exact', head: true })
+          .eq('interaction_type', 'call').gte('created_at', today),
+        supabase.from('solar_interactions').select('id', { count: 'exact', head: true })
+          .eq('interaction_type', 'call_result').gte('created_at', today),
+        supabase.from('solar_leads').select('id', { count: 'exact', head: true })
+          .eq('status', 'qualified'),
+      ]);
+      return {
+        callsToday: totalRes.count || 0,
+        answered: answeredRes.count || 0,
+        interested: interestedRes.count || 0,
+      };
+    },
+    refetchInterval: 15000,
+  });
+
+  const activeCalls = liveCalls.filter((c: any) => c.status === 'active' || c.status === 'initiated' || c.status === 'ringing');
+
+  // Initiate call mutation
+  const initCall = useMutation({
+    mutationFn: async (leadId: string) => {
+      setCallingLeadId(leadId);
+      const { data, error } = await supabase.functions.invoke('solar-call-initiate', {
+        body: { lead_id: leadId },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Call failed');
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`📞 Call initiated to ${data.lead_name}`, { description: `SID: ${data.call_sid?.slice(-8)}` });
+      queryClient.invalidateQueries({ queryKey: ['solar-call-queue'] });
+      queryClient.invalidateQueries({ queryKey: ['solar-live-calls-monitor'] });
+      setCallingLeadId(null);
+    },
+    onError: (err: any) => {
+      toast.error('Call failed', { description: err.message });
+      setCallingLeadId(null);
+    },
   });
 
   return (
@@ -54,200 +126,196 @@ export default function SolarLiveCallAssist() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Phone className="h-6 w-6" style={{ color: AMBER }} />
-            Floor 5 — Live Call Assist
+            Floor 5 — AI Call Center
           </h1>
-          <p className="text-sm text-muted-foreground">Real-time transcript, AI coaching, and objection handling</p>
+          <p className="text-sm text-muted-foreground">Live AI calling engine — Twilio + ElevenLabs</p>
         </div>
         <Badge variant="outline" className="text-green-400 border-green-400 animate-pulse">
           <span className="w-2 h-2 rounded-full bg-green-400 inline-block mr-1.5" />
-          SYSTEM READY
+          ENGINE LIVE
         </Badge>
       </div>
 
-      {/* Active Call Panel */}
-      <Card className="border-2" style={{ borderColor: `${AMBER}40` }}>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Mic className="h-5 w-5" style={{ color: AMBER }} />
-              <span>Active Call Monitor</span>
-            </div>
-            {!activeCall && (
-              <Badge variant="outline" className="text-muted-foreground">No active call</Badge>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!activeCall ? (
-            <div className="py-12 text-center">
-              <Phone className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
-              <h3 className="text-lg font-semibold mb-2">Waiting for active call...</h3>
-              <p className="text-sm text-muted-foreground mb-4">Start a call from the Outreach Engine or Campaign Manager</p>
-              <Button
-                style={{ backgroundColor: AMBER }}
-                onClick={() => setActiveCall({ name: 'Demo Call', phone: '+1 (555) 123-4567' })}
-              >
-                <Phone className="h-4 w-4 mr-1" /> Start Demo Call
-              </Button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Left — Live Transcript */}
-              <div className="lg:col-span-2 space-y-4">
-                {/* Sentiment Bar */}
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
-                  <span className="text-sm font-medium">Sentiment:</span>
-                  <div className="flex gap-2">
-                    {(['positive', 'neutral', 'negative'] as const).map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => setSentiment(s)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                          sentiment === s
-                            ? s === 'positive' ? 'bg-green-500/20 text-green-400 ring-1 ring-green-500'
-                            : s === 'neutral' ? 'bg-amber-500/20 text-amber-400 ring-1 ring-amber-500'
-                            : 'bg-red-500/20 text-red-400 ring-1 ring-red-500'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {s === 'positive' ? '😊 Positive' : s === 'neutral' ? '😐 Neutral' : '😟 Negative'}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex-1" />
-                  <Badge variant="outline" className="text-red-400 border-red-400 animate-pulse">
-                    <span className="w-2 h-2 rounded-full bg-red-400 inline-block mr-1" />
-                    LIVE
-                  </Badge>
-                </div>
-
-                {/* Transcript */}
-                <div className="bg-muted/20 rounded-lg p-4 h-72 overflow-auto space-y-3">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: `${AMBER}30`, color: AMBER }}>AI</div>
-                    <div className="bg-muted/40 rounded-lg p-3 flex-1">
-                      <p className="text-sm">"Hey there! This is Sarah from BrightSun Energy. I'm calling about a savings program for homeowners in your area. Got 60 seconds?"</p>
-                      <p className="text-xs text-muted-foreground mt-1">0:03</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 justify-end">
-                    <div className="bg-muted/20 rounded-lg p-3 max-w-[80%]">
-                      <p className="text-sm">"Yeah, what is it about?"</p>
-                      <p className="text-xs text-muted-foreground mt-1">0:08</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                      <User className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0" style={{ backgroundColor: `${AMBER}30`, color: AMBER }}>AI</div>
-                    <div className="bg-muted/40 rounded-lg p-3 flex-1">
-                      <p className="text-sm">"Great question. We've been helping homeowners in your area eliminate their electric bill completely through solar. Are you the homeowner?"</p>
-                      <p className="text-xs text-muted-foreground mt-1">0:15</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 justify-center py-2">
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: AMBER }} />
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: AMBER, animationDelay: '0.2s' }} />
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: AMBER, animationDelay: '0.4s' }} />
-                    <span className="text-xs text-muted-foreground ml-1">Listening...</span>
-                  </div>
-                </div>
-
-                {/* Quick Actions */}
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm"><Volume2 className="h-3 w-3 mr-1" /> Whisper</Button>
-                  <Button variant="outline" size="sm"><Zap className="h-3 w-3 mr-1" /> Transfer</Button>
-                  <Button variant="destructive" size="sm" onClick={() => setActiveCall(null)}>End Call</Button>
-                </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {[
+          { label: 'Active Now', value: activeCalls.length, icon: PhoneCall, color: 'text-green-500', pulse: activeCalls.length > 0 },
+          { label: 'Queue', value: callQueue.length, icon: Target, color: 'text-blue-500' },
+          { label: 'Calls Today', value: stats?.callsToday || 0, icon: Phone, color: 'text-foreground' },
+          { label: 'Answered', value: stats?.answered || 0, icon: CheckCircle2, color: 'text-amber-500' },
+          { label: 'Interested', value: stats?.interested || 0, icon: Zap, color: 'text-green-500' },
+        ].map((s) => (
+          <Card key={s.label}>
+            <CardContent className="p-3 text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                {s.pulse && <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />}
+                <s.icon className={`h-3.5 w-3.5 ${s.color}`} />
               </div>
+              <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
-              {/* Right — AI Assist Panel */}
-              <div className="space-y-4">
-                {/* AI Suggestions */}
-                <Card className="border" style={{ borderColor: `${AMBER}30` }}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Brain className="h-4 w-4" style={{ color: AMBER }} />
-                      AI Suggestions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {MOCK_SUGGESTIONS.map((s, i) => (
-                      <div key={i} className="p-2 rounded border border-border/30 bg-muted/20">
-                        <Badge variant="outline" className="text-[10px] mb-1" style={{ color: AMBER, borderColor: AMBER }}>
-                          {s.type}
-                        </Badge>
-                        <p className="text-xs italic">{s.text}</p>
+      <Tabs defaultValue="queue">
+        <TabsList className="grid grid-cols-4 w-full max-w-lg">
+          <TabsTrigger value="queue">📋 Call Queue</TabsTrigger>
+          <TabsTrigger value="active">🔴 Active</TabsTrigger>
+          <TabsTrigger value="history">📜 History</TabsTrigger>
+          <TabsTrigger value="objections">🧠 Objections</TabsTrigger>
+        </TabsList>
+
+        {/* Call Queue */}
+        <TabsContent value="queue">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center justify-between">
+                <span>Leads Ready for AI Call</span>
+                <Badge variant="secondary">{callQueue.length}</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2">
+                  {callQueue.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No leads in queue</p>
+                  ) : callQueue.map((lead) => (
+                    <div key={lead.id} className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{lead.full_name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {lead.phone} · {lead.city}{lead.state ? `, ${lead.state}` : ''}
+                          {lead.monthly_bill_range ? ` · $${lead.monthly_bill_range}/mo` : ''}
+                        </p>
                       </div>
-                    ))}
-                  </CardContent>
-                </Card>
-
-                {/* Close Signal */}
-                <Card className="border-green-500/30 bg-green-500/5">
-                  <CardContent className="p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="h-4 w-4 text-green-400" />
-                      <span className="text-sm font-bold text-green-400">CLOSE NOW</span>
+                      {lead.lead_score != null && (
+                        <Badge variant="outline" className={`mr-2 text-xs ${
+                          lead.lead_score >= 70 ? 'text-green-500 border-green-500/30' :
+                          lead.lead_score >= 40 ? 'text-amber-500 border-amber-500/30' :
+                          'text-muted-foreground'
+                        }`}>
+                          {lead.lead_score}
+                        </Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        style={{ backgroundColor: AMBER }}
+                        disabled={callingLeadId === lead.id || initCall.isPending}
+                        onClick={() => initCall.mutate(lead.id)}
+                      >
+                        {callingLeadId === lead.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Phone className="h-3 w-3" />
+                        )}
+                        Call
+                      </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      "Prospect confirmed homeowner + $200/mo bill. High buying signal detected. Push for appointment."
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Objection Library */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" style={{ color: AMBER }} />
-            Objection Response Library
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {MOCK_OBJECTIONS.map((obj, i) => (
-            <div key={i} className="p-3 rounded-lg border border-border/50">
-              <div className="flex items-center gap-2 mb-2">
-                <Badge variant="outline" className="text-red-400 border-red-400 text-xs">"{obj.keyword}"</Badge>
-              </div>
-              <p className="text-sm text-muted-foreground italic">{obj.response}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+        {/* Active Calls */}
+        <TabsContent value="active">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <PhoneCall className="h-4 w-4 text-green-500" />
+                Active Calls ({activeCalls.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {activeCalls.length === 0 ? (
+                <div className="py-12 text-center">
+                  <Phone className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+                  <p className="text-muted-foreground">No active calls</p>
+                  <p className="text-xs text-muted-foreground">Start a call from the queue tab</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeCalls.map((call: any) => (
+                    <div key={call.id} className="p-4 rounded-lg border-2 border-green-500/30 bg-green-500/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded-full bg-green-500 animate-pulse" />
+                          <span className="font-medium text-sm">LIVE — {call.to_number || 'Unknown'}</span>
+                        </div>
+                        <Badge className="bg-green-500/20 text-green-500 border-green-500">Active</Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>From: {call.from_number}</span>
+                        <span>SID: {(call.provider_call_sid || '').slice(-8)}</span>
+                        <span>Started: {new Date(call.started_at).toLocaleTimeString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Recent Calls */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Recent Calls</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {recentCalls.length === 0 ? (
-            <p className="text-center text-muted-foreground py-6">No calls recorded yet</p>
-          ) : (
-            <div className="space-y-2">
-              {recentCalls.map((call: any) => (
-                <div key={call.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30">
-                  <Phone className="h-4 w-4 text-green-400" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">{call.solar_leads?.full_name || 'Unknown'}</p>
-                    <p className="text-xs text-muted-foreground">{call.summary || 'Call completed'}</p>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(call.created_at), { addSuffix: true })}
-                  </span>
+        {/* History */}
+        <TabsContent value="history">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Recent Call Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                <div className="space-y-2">
+                  {recentCalls.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No calls recorded yet</p>
+                  ) : recentCalls.map((call: any) => (
+                    <div key={call.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/30">
+                      <Phone className="h-4 w-4 flex-shrink-0" style={{ color: AMBER }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{call.solar_leads?.full_name || 'Unknown'}</p>
+                        <p className="text-xs text-muted-foreground truncate">{call.summary || 'Call completed'}</p>
+                      </div>
+                      {call.metadata?.intent_score != null && (
+                        <Badge variant="outline" className="text-xs">
+                          Intent: {call.metadata.intent_score}
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(new Date(call.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Objection Library */}
+        <TabsContent value="objections">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Brain className="h-4 w-4" style={{ color: AMBER }} />
+                AI Objection Handling Library
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {OBJECTION_LIBRARY.map((obj, i) => (
+                <div key={i} className="p-3 rounded-lg border border-border/50">
+                  <Badge variant="outline" className="text-red-400 border-red-400 text-xs mb-2">
+                    "{obj.keyword}"
+                  </Badge>
+                  <p className="text-sm text-muted-foreground italic">{obj.response}</p>
                 </div>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
