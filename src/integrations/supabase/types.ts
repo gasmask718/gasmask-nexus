@@ -58925,6 +58925,116 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_capper_picks: {
+        Row: {
+          capper_id: string
+          created_at: string
+          direction: string | null
+          game_date: string | null
+          id: string
+          line: number | null
+          odds: number | null
+          parsed_by_ai: boolean | null
+          pick_text: string
+          player_name: string | null
+          profit_loss: number | null
+          prop_type: string | null
+          raw_message: string | null
+          result: string | null
+          stake: number | null
+          team: string | null
+        }
+        Insert: {
+          capper_id: string
+          created_at?: string
+          direction?: string | null
+          game_date?: string | null
+          id?: string
+          line?: number | null
+          odds?: number | null
+          parsed_by_ai?: boolean | null
+          pick_text: string
+          player_name?: string | null
+          profit_loss?: number | null
+          prop_type?: string | null
+          raw_message?: string | null
+          result?: string | null
+          stake?: number | null
+          team?: string | null
+        }
+        Update: {
+          capper_id?: string
+          created_at?: string
+          direction?: string | null
+          game_date?: string | null
+          id?: string
+          line?: number | null
+          odds?: number | null
+          parsed_by_ai?: boolean | null
+          pick_text?: string
+          player_name?: string | null
+          profit_loss?: number | null
+          prop_type?: string | null
+          raw_message?: string | null
+          result?: string | null
+          stake?: number | null
+          team?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_capper_picks_capper_id_fkey"
+            columns: ["capper_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_cappers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_cappers: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          roi_pct: number | null
+          source: string
+          source_handle: string | null
+          tier: string
+          total_picks: number | null
+          updated_at: string
+          win_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          roi_pct?: number | null
+          source?: string
+          source_handle?: string | null
+          tier?: string
+          total_picks?: number | null
+          updated_at?: string
+          win_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          roi_pct?: number | null
+          source?: string
+          source_handle?: string | null
+          tier?: string
+          total_picks?: number | null
+          updated_at?: string
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       sbo_clv_tracker: {
         Row: {
           closing_odds: string | null
@@ -61350,6 +61460,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_tracked_wallets: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          label: string | null
+          last_activity: string | null
+          notes: string | null
+          profit_estimate: number | null
+          roi_pct: number | null
+          tier: string
+          total_bets: number | null
+          updated_at: string
+          wallet_address: string
+          win_rate: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          last_activity?: string | null
+          notes?: string | null
+          profit_estimate?: number | null
+          roi_pct?: number | null
+          tier?: string
+          total_bets?: number | null
+          updated_at?: string
+          wallet_address: string
+          win_rate?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          last_activity?: string | null
+          notes?: string | null
+          profit_estimate?: number | null
+          roi_pct?: number | null
+          tier?: string
+          total_bets?: number | null
+          updated_at?: string
+          wallet_address?: string
+          win_rate?: number | null
+        }
+        Relationships: []
+      }
       sbo_unit_log: {
         Row: {
           actual_stake: number | null
@@ -61445,6 +61603,56 @@ export type Database = {
           session_date?: string
         }
         Relationships: []
+      }
+      sbo_wallet_activity: {
+        Row: {
+          created_at: string
+          detected_at: string
+          id: string
+          market: string
+          odds: number | null
+          position: string
+          profit_loss: number | null
+          result: string | null
+          size: number | null
+          tx_hash: string | null
+          wallet_id: string
+        }
+        Insert: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          market: string
+          odds?: number | null
+          position: string
+          profit_loss?: number | null
+          result?: string | null
+          size?: number | null
+          tx_hash?: string | null
+          wallet_id: string
+        }
+        Update: {
+          created_at?: string
+          detected_at?: string
+          id?: string
+          market?: string
+          odds?: number | null
+          position?: string
+          profit_loss?: number | null
+          result?: string | null
+          size?: number | null
+          tx_hash?: string | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_wallet_activity_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_tracked_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sbo_wealth_sync: {
         Row: {
