@@ -28,7 +28,8 @@ export function useCrossPlatformProps(date?: string) {
       const { data, error } = await (supabase as any)
         .from('sbo_player_props')
         .select('id, player_name, team, prop_type, line, over_odds, under_odds, source, game_id, game_date')
-        .eq('game_date', todayEST)
+        .gte('game_date', todayEST)
+        .lte('game_date', todayEST + 'T23:59:59')
         .order('player_name');
 
       if (error) throw error;
