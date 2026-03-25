@@ -92,12 +92,13 @@ export const navigationItems = [
 
   // 💰 Surplus Funds OS
   { to: '/surplus-funds', icon: Scale, label: '💰 Surplus Funds OS', roles: ['admin', 'ceo'] },
-  { to: '/surplus-funds/leads', icon: FileText, label: 'Lead Pipeline', roles: ['admin', 'ceo'] },
-  { to: '/surplus-funds/discovery', icon: Search, label: 'Lead Discovery', roles: ['admin'] },
-  { to: '/surplus-funds/campaigns', icon: Phone, label: 'SF Campaigns', roles: ['admin'] },
-  { to: '/surplus-funds/cases', icon: Briefcase, label: 'Cases', roles: ['admin', 'ceo'] },
-  { to: '/surplus-funds/attorneys', icon: Scale, label: 'Attorney Network', roles: ['admin'] },
-   { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'SF Analytics', roles: ['admin', 'ceo'] },
+  { to: '/surplus-funds/leads', icon: FileText, label: 'Floor 1 — Lead Intelligence', roles: ['admin', 'ceo'] },
+  { to: '/surplus-funds/campaigns', icon: Phone, label: 'Floor 2 — DC Campaigns', roles: ['admin'] },
+  { to: '/surplus-funds/cases', icon: Briefcase, label: 'Floor 3 — Case Management', roles: ['admin', 'ceo'] },
+  { to: '/surplus-funds/attorneys', icon: Scale, label: 'Floor 4 — Attorney Network', roles: ['admin'] },
+  { to: '/surplus-funds/documents', icon: FileText, label: 'Floor 5 — Documents', roles: ['admin'] },
+  { to: '/surplus-funds/automation', icon: Settings, label: 'Floor 6 — AI & Automation', roles: ['admin'] },
+  { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'Floor 7 — Analytics', roles: ['admin', 'ceo'] },
 
   // 🏠 Real Estate OS
   { to: '/real-estate', icon: Building2, label: '🏠 Real Estate OS', roles: ['admin', 'ceo', 'va'] },

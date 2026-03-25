@@ -48,7 +48,7 @@ export default function SFCampaigns() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-amber-500">Call Campaigns</h1>
+          <h1 className="text-2xl font-bold text-amber-500">📞 Floor 2 — Dynasty Connect Campaigns</h1>
           <p className="text-sm text-muted-foreground">Surplus Funds outbound campaigns via Dynasty Connect</p>
         </div>
         <Button onClick={() => navigate('/dynasty-connect/campaigns/builder')} className="bg-amber-600 hover:bg-amber-700">

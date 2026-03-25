@@ -1,41 +1,38 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  BarChart3, FileText, Search, Phone, Briefcase, Scale, TrendingUp
+  BarChart3, FileText, Search, Phone, Briefcase, Scale, TrendingUp,
+  DollarSign, Bot, FileCheck
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const sfNavSections = [
   {
-    title: '💰 Command',
+    title: '💰 Penthouse',
     items: [
-      { path: '/surplus-funds', label: 'Command Center', icon: BarChart3 },
+      { path: '/surplus-funds', label: 'Command Center', icon: DollarSign },
     ],
   },
   {
-    title: '📋 Leads',
+    title: '🏢 Acquisition',
     items: [
-      { path: '/surplus-funds/leads', label: 'Lead Pipeline', icon: FileText },
-      { path: '/surplus-funds/discovery', label: 'Lead Discovery', icon: Search },
+      { path: '/surplus-funds/leads', label: 'Floor 1 — Lead Intelligence', icon: FileText },
+      { path: '/surplus-funds/campaigns', label: 'Floor 2 — DC Campaigns', icon: Phone },
     ],
   },
   {
-    title: '📞 Outreach',
+    title: '📋 Operations',
     items: [
-      { path: '/surplus-funds/campaigns', label: 'Call Campaigns', icon: Phone },
+      { path: '/surplus-funds/cases', label: 'Floor 3 — Case Management', icon: Briefcase },
+      { path: '/surplus-funds/attorneys', label: 'Floor 4 — Attorney Network', icon: Scale },
+      { path: '/surplus-funds/documents', label: 'Floor 5 — Documents', icon: FileCheck },
     ],
   },
   {
-    title: '📄 Operations',
+    title: '🤖 Intelligence',
     items: [
-      { path: '/surplus-funds/cases', label: 'Cases', icon: Briefcase },
-      { path: '/surplus-funds/attorneys', label: 'Attorney Network', icon: Scale },
-    ],
-  },
-  {
-    title: '📊 Intelligence',
-    items: [
-      { path: '/surplus-funds/analytics', label: 'Analytics', icon: TrendingUp },
+      { path: '/surplus-funds/automation', label: 'Floor 6 — AI & Automation', icon: Bot },
+      { path: '/surplus-funds/analytics', label: 'Floor 7 — Analytics', icon: TrendingUp },
     ],
   },
 ];
@@ -53,7 +50,7 @@ export default function SFLayout() {
         <ScrollArea className="h-full">
           <div className="p-4">
             <div className="flex items-center gap-2 mb-6">
-              <Scale className="h-6 w-6 text-amber-500" />
+              <DollarSign className="h-6 w-6 text-amber-500" />
               <div>
                 <h2 className="font-bold text-lg text-amber-500">Surplus Funds OS</h2>
                 <p className="text-xs text-muted-foreground">Recovery Pipeline</p>

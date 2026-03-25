@@ -59,7 +59,7 @@ export default function SFCases() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-amber-500">Cases</h1>
+        <h1 className="text-2xl font-bold text-amber-500">📋 Floor 3 — Case Management</h1>
         <p className="text-sm text-muted-foreground">{cases.length} total cases</p>
       </div>
 

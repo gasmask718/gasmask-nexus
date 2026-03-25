@@ -34,7 +34,7 @@ export default function SFAttorneys() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-amber-500">Attorney Network</h1>
+          <h1 className="text-2xl font-bold text-amber-500">⚖️ Floor 4 — Attorney Network</h1>
           <p className="text-sm text-muted-foreground">{attorneys.length} attorney partners</p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
