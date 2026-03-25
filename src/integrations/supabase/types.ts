@@ -30326,6 +30326,7 @@ export type Database = {
           notes: string | null
           outcome: string | null
           phone: string
+          re_lead_id: string | null
           state: string | null
           status: string | null
           updated_at: string | null
@@ -30351,6 +30352,7 @@ export type Database = {
           notes?: string | null
           outcome?: string | null
           phone: string
+          re_lead_id?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string | null
@@ -30376,6 +30378,7 @@ export type Database = {
           notes?: string | null
           outcome?: string | null
           phone?: string
+          re_lead_id?: string | null
           state?: string | null
           status?: string | null
           updated_at?: string | null
@@ -55799,6 +55802,99 @@ export type Database = {
           },
         ]
       }
+      re_automation_log: {
+        Row: {
+          automation_type: string
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          leads_imported: number | null
+          leads_processed: number | null
+          leads_skipped: number | null
+          metadata: Json | null
+          source: string | null
+          started_at: string | null
+          states: string[] | null
+          status: string | null
+        }
+        Insert: {
+          automation_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          leads_imported?: number | null
+          leads_processed?: number | null
+          leads_skipped?: number | null
+          metadata?: Json | null
+          source?: string | null
+          started_at?: string | null
+          states?: string[] | null
+          status?: string | null
+        }
+        Update: {
+          automation_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          leads_imported?: number | null
+          leads_processed?: number | null
+          leads_skipped?: number | null
+          metadata?: Json | null
+          source?: string | null
+          started_at?: string | null
+          states?: string[] | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      re_buyer_blast_log: {
+        Row: {
+          buyer_id: string | null
+          channel: string | null
+          deal_id: string | null
+          id: string
+          metadata: Json | null
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          buyer_id?: string | null
+          channel?: string | null
+          deal_id?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          buyer_id?: string | null
+          channel?: string | null
+          deal_id?: string | null
+          id?: string
+          metadata?: Json | null
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_buyer_blast_log_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "re_buyers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "re_buyer_blast_log_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "re_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       re_buyers: {
         Row: {
           arv_percentage: number | null
@@ -55877,7 +55973,9 @@ export type Database = {
           contract_date: string | null
           created_at: string | null
           deal_score: string | null
+          deal_sheet_url: string | null
           documents: Json | null
+          docusign_envelope_id: string | null
           earnest_money: number | null
           estimated_repairs: number | null
           id: string
@@ -55909,7 +56007,9 @@ export type Database = {
           contract_date?: string | null
           created_at?: string | null
           deal_score?: string | null
+          deal_sheet_url?: string | null
           documents?: Json | null
+          docusign_envelope_id?: string | null
           earnest_money?: number | null
           estimated_repairs?: number | null
           id?: string
@@ -55941,7 +56041,9 @@ export type Database = {
           contract_date?: string | null
           created_at?: string | null
           deal_score?: string | null
+          deal_sheet_url?: string | null
           documents?: Json | null
+          docusign_envelope_id?: string | null
           earnest_money?: number | null
           estimated_repairs?: number | null
           id?: string
@@ -55980,9 +56082,12 @@ export type Database = {
           call_outcome: string | null
           city: string | null
           condition: string | null
+          contract_sent_at: string | null
+          contract_signed_at: string | null
           county: string | null
           created_at: string | null
           deal_score: string | null
+          docusign_envelope_id: string | null
           email: string | null
           equity_percentage: number | null
           estimated_repairs: number | null
@@ -56020,9 +56125,12 @@ export type Database = {
           call_outcome?: string | null
           city?: string | null
           condition?: string | null
+          contract_sent_at?: string | null
+          contract_signed_at?: string | null
           county?: string | null
           created_at?: string | null
           deal_score?: string | null
+          docusign_envelope_id?: string | null
           email?: string | null
           equity_percentage?: number | null
           estimated_repairs?: number | null
@@ -56060,9 +56168,12 @@ export type Database = {
           call_outcome?: string | null
           city?: string | null
           condition?: string | null
+          contract_sent_at?: string | null
+          contract_signed_at?: string | null
           county?: string | null
           created_at?: string | null
           deal_score?: string | null
+          docusign_envelope_id?: string | null
           email?: string | null
           equity_percentage?: number | null
           estimated_repairs?: number | null
