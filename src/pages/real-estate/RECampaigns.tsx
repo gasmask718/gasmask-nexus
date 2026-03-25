@@ -23,7 +23,7 @@ export default function RECampaigns() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Campaigns</h1>
+          <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 2 — Dynasty Connect Campaigns</h1>
           <p className="text-muted-foreground">Outbound calling campaigns for seller acquisition</p>
         </div>
         <Button onClick={() => navigate('/dynasty-connect/campaign-builder')} style={{ backgroundColor: '#3B6D11' }}>

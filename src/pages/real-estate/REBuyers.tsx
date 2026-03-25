@@ -46,8 +46,8 @@ export default function REBuyers() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Buyer Network</h1>
-          <p className="text-muted-foreground">Institutional & cash buyer directory</p>
+          <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 4 — Hedge Fund Buyer Network</h1>
+          <p className="text-muted-foreground">Institutional & cash buyer directory — the money side</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>

@@ -85,8 +85,8 @@ export default function RELeadPipeline() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Lead Pipeline</h1>
-          <p className="text-muted-foreground">Distressed seller acquisition leads</p>
+          <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 1 — Lead Intelligence</h1>
+          <p className="text-muted-foreground">All distressed seller leads — full pipeline control</p>
         </div>
         <div className="flex gap-2">
           <label>

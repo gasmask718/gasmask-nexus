@@ -29,8 +29,8 @@ export default function REMarkets() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Market Intelligence</h1>
-        <p className="text-muted-foreground">State-by-state acquisition strategy</p>
+        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 8 — Market Intelligence</h1>
+        <p className="text-muted-foreground">Your 50-state attack map</p>
       </div>
 
       {Object.entries(TIERS).map(([tier, { states, label, color }]) => (

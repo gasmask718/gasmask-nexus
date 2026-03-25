@@ -31,8 +31,8 @@ export default function REAnalyzer() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Deal Analyzer</h1>
-        <p className="text-muted-foreground">Evaluate any property in seconds</p>
+        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 6 — Deal Analyzer & Contracts</h1>
+        <p className="text-muted-foreground">Evaluate any property in seconds — 70% ARV rule</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

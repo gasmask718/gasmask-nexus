@@ -37,8 +37,8 @@ export default function REAnalytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Analytics</h1>
-        <p className="text-muted-foreground">Performance metrics and revenue tracking</p>
+        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 9 — Analytics & Revenue</h1>
+        <p className="text-muted-foreground">The scoreboard for $1M/month</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
