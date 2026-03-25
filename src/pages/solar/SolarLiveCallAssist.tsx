@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { formatDistanceToNow } from 'date-fns';
 import {
   Phone, Mic, AlertTriangle, CheckCircle2, Brain, MessageSquare,
   ThumbsUp, ThumbsDown, Zap, Sun, Volume2, User
