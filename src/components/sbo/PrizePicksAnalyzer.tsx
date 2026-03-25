@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Upload, Camera, Save, Send, RefreshCw, Zap, FileJson, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Camera, Save, Send, RefreshCw, Zap, FileJson, Trash2, Database } from 'lucide-react';
 import { toast } from 'sonner';
+import { PropStatContextCard } from './PropStatContextCard';
 
 const PROP_LABELS: Record<string, string> = {
   points: 'Points', pts: 'Points', player_points: 'Points',
@@ -668,6 +669,15 @@ export function PrizePicksAnalyzer() {
           </div>
         )}
 
+        {/* Stat Intelligence Context */}
+        <PropStatContextCard
+          propId={prop.id}
+          playerName={prop.player_name}
+          propType={prop.prop_type}
+          line={prop.line}
+          compact={!hasPrediction}
+        />
+
         {/* Actions */}
         <div className="flex gap-1 pt-1">
           <Button size="sm" variant={isQueued ? 'default' : 'outline'} className="text-[10px] h-7"
@@ -1196,6 +1206,20 @@ export function PrizePicksAnalyzer() {
             <Button onClick={runUnanalyzed} disabled={batchAnalyzing || !unanalyzed.length} size="sm">
               {batchAnalyzing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Zap className="h-3 w-3 mr-1" />}
               ⚡ Run AI on {unanalyzed.length} Unanalyzed
+            </Button>
+            <Button onClick={async () => {
+              toast.info('Building stat context for all props...');
+              try {
+                const { data, error } = await supabase.functions.invoke('sbo-build-prop-context', {
+                  body: { game_date: viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0) }
+                });
+                if (error) throw new Error(error.message);
+                toast.success(`Stats built: ${data?.enriched || 0} full, ${data?.partial || 0} partial out of ${data?.total_props || 0}`);
+              } catch (e: any) {
+                toast.error(`Failed: ${e.message}`);
+              }
+            }} size="sm" variant="outline">
+              <Database className="h-3 w-3 mr-1" /> Build Stats
             </Button>
             <Button onClick={loadSavedPPProps} size="sm" variant="outline">
               <RefreshCw className="h-3 w-3 mr-1" /> Refresh
