@@ -62530,6 +62530,60 @@ export type Database = {
         }
         Relationships: []
       }
+      solar_appointments: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          meeting_link: string | null
+          notes: string | null
+          partner_id: string | null
+          reminder_sent: boolean | null
+          scheduled_time: string
+          status: string
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          meeting_link?: string | null
+          notes?: string | null
+          partner_id?: string | null
+          reminder_sent?: boolean | null
+          scheduled_time: string
+          status?: string
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          meeting_link?: string | null
+          notes?: string | null
+          partner_id?: string | null
+          reminder_sent?: boolean | null
+          scheduled_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_appointments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solar_appointments_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solar_closing_sessions: {
         Row: {
           ai_recommendations: Json | null
@@ -62633,6 +62687,47 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_followups: {
+        Row: {
+          attempt_number: number
+          channel: string
+          created_at: string
+          id: string
+          lead_id: string
+          message: string
+          send_time: string
+          status: string
+        }
+        Insert: {
+          attempt_number?: number
+          channel?: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          message: string
+          send_time: string
+          status?: string
+        }
+        Update: {
+          attempt_number?: number
+          channel?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          message?: string
+          send_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_followups_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
             referencedColumns: ["id"]
           },
         ]
@@ -62776,6 +62871,41 @@ export type Database = {
           zip?: string | null
         }
         Relationships: []
+      }
+      solar_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          lead_id: string | null
+          message: string
+          seen: boolean | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message: string
+          seen?: boolean | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          message?: string
+          seen?: boolean | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_notifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       solar_objection_library: {
         Row: {
