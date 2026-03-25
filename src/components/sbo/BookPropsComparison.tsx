@@ -202,8 +202,15 @@ export default function BookPropsComparison() {
         </div>
       ) : filtered.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            <p className="text-sm">No props found. Click "Sync Book Props" to ingest from sportsbooks.</p>
+          <CardContent className="p-8 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">No props found for today.</p>
+            {syncError && (
+              <p className="text-xs text-destructive">Last sync error: {syncError}</p>
+            )}
+            <Button size="sm" onClick={handleSync} disabled={syncing}>
+              {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+              Sync Book Props Now
+            </Button>
           </CardContent>
         </Card>
       ) : (
