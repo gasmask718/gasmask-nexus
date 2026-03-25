@@ -80,7 +80,7 @@ function StatsAvailabilityBadge({ intel, dataQuality }: { intel: any; dataQualit
   return null;
 }
 
-export function PredictionResult({ prediction, homeTeam, awayTeam, intel }: PredictionResultProps) {
+export function PredictionResult({ prediction, homeTeam, awayTeam, intel, weightedScore, pickTier, isGrandmaster }: PredictionResultProps) {
   const tier = prediction.confidence_tier || 'moderate';
   const finalConf = prediction.final_confidence || 50;
   const hasPolymarket = prediction.polymarket_brain_score != null;
