@@ -438,3 +438,6 @@ verify_jwt = false
 
 [functions.sbo-inbound-sms]
 verify_jwt = false
+
+[functions.solar-followup-sender]
+verify_jwt = false
