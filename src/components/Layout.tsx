@@ -548,6 +548,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
+    'surplus-funds-os', 'real-estate-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'global-dashboard', 'portals'
@@ -775,6 +776,30 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.dynastyConnect.id,
           DYNASTY_NAVIGATION.dynastyConnect.name,
           DYNASTY_NAVIGATION.dynastyConnect.items
+        )}
+      </div>
+
+      {/* 💰 SURPLUS FUNDS OS — STANDALONE HUB */}
+      <div className="pt-2 border-t border-amber-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-500/80 tracking-wider">
+          💰 Surplus Funds OS
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.surplusFundsOs.id,
+          DYNASTY_NAVIGATION.surplusFundsOs.name,
+          DYNASTY_NAVIGATION.surplusFundsOs.items
+        )}
+      </div>
+
+      {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
+      <div className="pt-2 border-t border-green-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
+          🏠 Real Estate OS
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.realEstateOs.id,
+          DYNASTY_NAVIGATION.realEstateOs.name,
+          DYNASTY_NAVIGATION.realEstateOs.items
         )}
       </div>
 
