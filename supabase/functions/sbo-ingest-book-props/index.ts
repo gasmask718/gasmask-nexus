@@ -97,96 +97,113 @@ serve(async (req) => {
     const todayEvents = events.filter((e: any) => e.commence_time?.startsWith(todayEST));
     console.log(`Found ${todayEvents.length} today events out of ${events.length} total`);
 
-    // Process events — limit to 6 to stay within timeout
-    const eventsToProcess = todayEvents.slice(0, 6);
+    // Process ALL events in batches of 4 with timeout safety
+    console.log(`Processing ALL ${todayEvents.length} events in batches`);
+    const BATCH_SIZE = 4;
+    const marketsParam = PROP_MARKETS.slice(0, 4).join(','); // points, rebounds, assists, threes
 
-    for (const event of eventsToProcess) {
-      const marketsParam = PROP_MARKETS.slice(0, 4).join(','); // points, rebounds, assists, threes
-      const propsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${event.id}/odds?apiKey=${ODDS_API_KEY}&regions=us&markets=${marketsParam}&bookmakers=${targetBooks}&oddsFormat=american`;
+    for (let batchIdx = 0; batchIdx < todayEvents.length; batchIdx += BATCH_SIZE) {
+      const batch = todayEvents.slice(batchIdx, batchIdx + BATCH_SIZE);
+      console.log(`Batch ${Math.floor(batchIdx / BATCH_SIZE) + 1}: events ${batchIdx + 1}-${batchIdx + batch.length}`);
 
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        const propsRes = await fetch(propsUrl, { signal: controller.signal });
-        clearTimeout(timeout);
+      // Process batch concurrently
+      const batchPromises = batch.map(async (event: any) => {
+        const propsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${event.id}/odds?apiKey=${ODDS_API_KEY}&regions=us&markets=${marketsParam}&bookmakers=${targetBooks}&oddsFormat=american`;
 
-        if (!propsRes.ok) {
-          errors.push(`Event ${event.id}: HTTP ${propsRes.status}`);
-          continue;
-        }
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          const propsRes = await fetch(propsUrl, { signal: controller.signal });
+          clearTimeout(timeout);
 
-        const propsData = await propsRes.json();
+          if (!propsRes.ok) {
+            errors.push(`Event ${event.id}: HTTP ${propsRes.status}`);
+            return;
+          }
 
-        // Match to SBO game
-        const matchingGame = todayGames?.find(g => {
-          const homeMatch = g.home_team?.toLowerCase().includes(event.home_team?.split(' ').pop()?.toLowerCase()) ||
-            event.home_team?.toLowerCase().includes(g.home_team?.split(' ').pop()?.toLowerCase());
-          const awayMatch = g.away_team?.toLowerCase().includes(event.away_team?.split(' ').pop()?.toLowerCase()) ||
-            event.away_team?.toLowerCase().includes(g.away_team?.split(' ').pop()?.toLowerCase());
-          return homeMatch && awayMatch;
-        });
+          const propsData = await propsRes.json();
 
-        for (const bookmaker of propsData.bookmakers || []) {
-          const sourceLabel = BOOKMAKER_SOURCE[bookmaker.key] || bookmaker.key;
+          const matchingGame = todayGames?.find(g => {
+            const homeMatch = g.home_team?.toLowerCase().includes(event.home_team?.split(' ').pop()?.toLowerCase()) ||
+              event.home_team?.toLowerCase().includes(g.home_team?.split(' ').pop()?.toLowerCase());
+            const awayMatch = g.away_team?.toLowerCase().includes(event.away_team?.split(' ').pop()?.toLowerCase()) ||
+              event.away_team?.toLowerCase().includes(g.away_team?.split(' ').pop()?.toLowerCase());
+            return homeMatch && awayMatch;
+          });
 
-          for (const market of bookmaker.markets || []) {
-            const propType = MARKET_TO_PROP_TYPE[market.key];
-            if (!propType) continue;
+          for (const bookmaker of propsData.bookmakers || []) {
+            const sourceLabel = BOOKMAKER_SOURCE[bookmaker.key] || bookmaker.key;
 
-            // Group by player
-            const players: Record<string, { over?: any; under?: any; line?: number }> = {};
-            for (const outcome of market.outcomes || []) {
-              const name = outcome.description;
-              if (!name) continue;
-              if (!players[name]) players[name] = {};
-              if (outcome.name === 'Over') {
-                players[name].over = outcome;
-                players[name].line = outcome.point;
-              } else if (outcome.name === 'Under') {
-                players[name].under = outcome;
-                if (!players[name].line) players[name].line = outcome.point;
+            for (const market of bookmaker.markets || []) {
+              const propType = MARKET_TO_PROP_TYPE[market.key];
+              if (!propType) continue;
+
+              const players: Record<string, { over?: any; under?: any; line?: number }> = {};
+              for (const outcome of market.outcomes || []) {
+                const name = outcome.description;
+                if (!name) continue;
+                if (!players[name]) players[name] = {};
+                if (outcome.name === 'Over') {
+                  players[name].over = outcome;
+                  players[name].line = outcome.point;
+                } else if (outcome.name === 'Under') {
+                  players[name].under = outcome;
+                  if (!players[name].line) players[name].line = outcome.point;
+                }
+              }
+
+              for (const [playerName, data] of Object.entries(players)) {
+                if (!data.line) continue;
+                const team = findTeamAbbrev(event.home_team) || findTeamAbbrev(event.away_team) || '';
+                bookStats[sourceLabel] = (bookStats[sourceLabel] || 0) + 1;
+
+                allRows.push({
+                  game_id: matchingGame?.id || null,
+                  player_name: playerName,
+                  team,
+                  prop_type: propType,
+                  line: data.line,
+                  over_odds: data.over?.price || null,
+                  under_odds: data.under?.price || null,
+                  source: sourceLabel,
+                  entered_by: 'api',
+                  game_date: todayEST,
+                });
               }
             }
-
-            for (const [playerName, data] of Object.entries(players)) {
-              if (!data.line) continue;
-              const team = findTeamAbbrev(event.home_team) || findTeamAbbrev(event.away_team) || '';
-              bookStats[sourceLabel] = (bookStats[sourceLabel] || 0) + 1;
-
-              allRows.push({
-                game_id: matchingGame?.id || null,
-                player_name: playerName,
-                team,
-                prop_type: propType,
-                line: data.line,
-                over_odds: data.over?.price || null,
-                under_odds: data.under?.price || null,
-                source: sourceLabel,
-                entered_by: 'api',
-                game_date: todayEST,
-              });
-            }
+          }
+        } catch (eventErr: any) {
+          if (eventErr.name === 'AbortError') {
+            errors.push(`Event ${event.id}: timeout`);
+          } else {
+            errors.push(`Event ${event.id}: ${eventErr.message || 'Unknown'}`);
           }
         }
+      });
 
-        await new Promise(r => setTimeout(r, 100));
-      } catch (eventErr: any) {
-        if (eventErr.name === 'AbortError') {
-          errors.push(`Event ${event.id}: timeout`);
-        } else {
-          errors.push(`Event ${event.id}: ${eventErr.message || 'Unknown'}`);
-        }
+      await Promise.allSettled(batchPromises);
+      // Small delay between batches to avoid rate limiting
+      if (batchIdx + BATCH_SIZE < todayEvents.length) {
+        await new Promise(r => setTimeout(r, 200));
       }
     }
 
     console.log(`Collected ${allRows.length} props from ${Object.keys(bookStats).length} books`);
 
     // Batch upsert
+    // Deduplicate rows — keep last occurrence (freshest odds) per unique key
+    const deduped = new Map<string, any>();
+    for (const row of allRows) {
+      const key = `${row.player_name}::${row.prop_type}::${row.game_date}::${row.source}`;
+      deduped.set(key, row);
+    }
+    const uniqueRows = Array.from(deduped.values());
+    console.log(`Deduped: ${allRows.length} → ${uniqueRows.length} unique props`);
+
     let inserted = 0;
-    if (allRows.length > 0) {
-      // Batch upsert in chunks of 200 — uses unique constraint to update on conflict
-      for (let i = 0; i < allRows.length; i += 200) {
-        const chunk = allRows.slice(i, i + 200);
+    if (uniqueRows.length > 0) {
+      for (let i = 0; i < uniqueRows.length; i += 200) {
+        const chunk = uniqueRows.slice(i, i + 200);
         const { error: insertErr } = await supabase
           .from('sbo_player_props')
           .upsert(chunk, { onConflict: 'player_name,prop_type,game_date,source', ignoreDuplicates: false });
@@ -217,7 +234,7 @@ serve(async (req) => {
       skipped: 0,
       book_stats: bookStats,
       errors: errors.slice(0, 10),
-      events_checked: eventsToProcess.length,
+      events_checked: todayEvents.length,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
