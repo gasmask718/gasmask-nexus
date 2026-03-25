@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, RefreshCw, TrendingUp, AlertTriangle, Zap, BarChart3, Target, ArrowRightLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import BookPropsComparison from '@/components/sbo/BookPropsComparison';
 
 const SPORT_OPTIONS = [
   { value: 'basketball_nba', label: 'NBA' },
