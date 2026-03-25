@@ -520,7 +520,8 @@ export default function AppSidebar() {
                 { path: '/solar/analytics', label: 'Floor 10 — Analytics', emoji: '📊' },
               ], "text-amber-400 hover:bg-amber-500/10")}
             </div>
-          )
+          )}
+
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🌐 DYNASTY BUSINESS UNITS */}
