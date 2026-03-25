@@ -353,6 +353,18 @@ export default function InvoiceForensicsConsole() {
                     ok={true}
                     detail="Excluded from invoices_unified store section (by design)"
                   />
+                  <HealthCheck
+                    label="Status mismatches (draft+paid/partial)"
+                    value={auditData.statusMismatchCount}
+                    ok={auditData.statusMismatchCount === 0}
+                    detail="Draft invoices with paid/partial payment — auto-prevented by trigger"
+                  />
+                  <HealthCheck
+                    label="Repaired invoices (logged)"
+                    value={auditData.repairCount}
+                    ok={true}
+                    detail="Records normalized by system_repair_v1 — immutable audit trail"
+                  />
                 </div>
               </div>
 
