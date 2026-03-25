@@ -2797,6 +2797,8 @@ export default function AppRoutes() {
           <Route path="campaigns" element={<SFCampaigns />} />
           <Route path="cases" element={<SFCases />} />
           <Route path="attorneys" element={<SFAttorneys />} />
+          <Route path="documents" element={<SFDocuments />} />
+          <Route path="automation" element={<SFAutomation />} />
           <Route path="analytics" element={<SFAnalytics />} />
         </Route>
       </Route>
