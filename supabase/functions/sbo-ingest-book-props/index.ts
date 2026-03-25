@@ -108,80 +108,83 @@ serve(async (req) => {
 
       // Process batch concurrently
       const batchPromises = batch.map(async (event: any) => {
-      const propsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${event.id}/odds?apiKey=${ODDS_API_KEY}&regions=us&markets=${marketsParam}&bookmakers=${targetBooks}&oddsFormat=american`;
+        const propsUrl = `https://api.the-odds-api.com/v4/sports/${sport}/events/${event.id}/odds?apiKey=${ODDS_API_KEY}&regions=us&markets=${marketsParam}&bookmakers=${targetBooks}&oddsFormat=american`;
 
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        const propsRes = await fetch(propsUrl, { signal: controller.signal });
-        clearTimeout(timeout);
+        try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 15000);
+          const propsRes = await fetch(propsUrl, { signal: controller.signal });
+          clearTimeout(timeout);
 
-        if (!propsRes.ok) {
-          errors.push(`Event ${event.id}: HTTP ${propsRes.status}`);
-          continue;
-        }
+          if (!propsRes.ok) {
+            errors.push(`Event ${event.id}: HTTP ${propsRes.status}`);
+            return;
+          }
 
-        const propsData = await propsRes.json();
+          const propsData = await propsRes.json();
 
-        // Match to SBO game
-        const matchingGame = todayGames?.find(g => {
-          const homeMatch = g.home_team?.toLowerCase().includes(event.home_team?.split(' ').pop()?.toLowerCase()) ||
-            event.home_team?.toLowerCase().includes(g.home_team?.split(' ').pop()?.toLowerCase());
-          const awayMatch = g.away_team?.toLowerCase().includes(event.away_team?.split(' ').pop()?.toLowerCase()) ||
-            event.away_team?.toLowerCase().includes(g.away_team?.split(' ').pop()?.toLowerCase());
-          return homeMatch && awayMatch;
-        });
+          const matchingGame = todayGames?.find(g => {
+            const homeMatch = g.home_team?.toLowerCase().includes(event.home_team?.split(' ').pop()?.toLowerCase()) ||
+              event.home_team?.toLowerCase().includes(g.home_team?.split(' ').pop()?.toLowerCase());
+            const awayMatch = g.away_team?.toLowerCase().includes(event.away_team?.split(' ').pop()?.toLowerCase()) ||
+              event.away_team?.toLowerCase().includes(g.away_team?.split(' ').pop()?.toLowerCase());
+            return homeMatch && awayMatch;
+          });
 
-        for (const bookmaker of propsData.bookmakers || []) {
-          const sourceLabel = BOOKMAKER_SOURCE[bookmaker.key] || bookmaker.key;
+          for (const bookmaker of propsData.bookmakers || []) {
+            const sourceLabel = BOOKMAKER_SOURCE[bookmaker.key] || bookmaker.key;
 
-          for (const market of bookmaker.markets || []) {
-            const propType = MARKET_TO_PROP_TYPE[market.key];
-            if (!propType) continue;
+            for (const market of bookmaker.markets || []) {
+              const propType = MARKET_TO_PROP_TYPE[market.key];
+              if (!propType) continue;
 
-            // Group by player
-            const players: Record<string, { over?: any; under?: any; line?: number }> = {};
-            for (const outcome of market.outcomes || []) {
-              const name = outcome.description;
-              if (!name) continue;
-              if (!players[name]) players[name] = {};
-              if (outcome.name === 'Over') {
-                players[name].over = outcome;
-                players[name].line = outcome.point;
-              } else if (outcome.name === 'Under') {
-                players[name].under = outcome;
-                if (!players[name].line) players[name].line = outcome.point;
+              const players: Record<string, { over?: any; under?: any; line?: number }> = {};
+              for (const outcome of market.outcomes || []) {
+                const name = outcome.description;
+                if (!name) continue;
+                if (!players[name]) players[name] = {};
+                if (outcome.name === 'Over') {
+                  players[name].over = outcome;
+                  players[name].line = outcome.point;
+                } else if (outcome.name === 'Under') {
+                  players[name].under = outcome;
+                  if (!players[name].line) players[name].line = outcome.point;
+                }
+              }
+
+              for (const [playerName, data] of Object.entries(players)) {
+                if (!data.line) continue;
+                const team = findTeamAbbrev(event.home_team) || findTeamAbbrev(event.away_team) || '';
+                bookStats[sourceLabel] = (bookStats[sourceLabel] || 0) + 1;
+
+                allRows.push({
+                  game_id: matchingGame?.id || null,
+                  player_name: playerName,
+                  team,
+                  prop_type: propType,
+                  line: data.line,
+                  over_odds: data.over?.price || null,
+                  under_odds: data.under?.price || null,
+                  source: sourceLabel,
+                  entered_by: 'api',
+                  game_date: todayEST,
+                });
               }
             }
-
-            for (const [playerName, data] of Object.entries(players)) {
-              if (!data.line) continue;
-              const team = findTeamAbbrev(event.home_team) || findTeamAbbrev(event.away_team) || '';
-              bookStats[sourceLabel] = (bookStats[sourceLabel] || 0) + 1;
-
-              allRows.push({
-                game_id: matchingGame?.id || null,
-                player_name: playerName,
-                team,
-                prop_type: propType,
-                line: data.line,
-                over_odds: data.over?.price || null,
-                under_odds: data.under?.price || null,
-                source: sourceLabel,
-                entered_by: 'api',
-                game_date: todayEST,
-              });
-            }
+          }
+        } catch (eventErr: any) {
+          if (eventErr.name === 'AbortError') {
+            errors.push(`Event ${event.id}: timeout`);
+          } else {
+            errors.push(`Event ${event.id}: ${eventErr.message || 'Unknown'}`);
           }
         }
+      });
 
-        await new Promise(r => setTimeout(r, 100));
-      } catch (eventErr: any) {
-        if (eventErr.name === 'AbortError') {
-          errors.push(`Event ${event.id}: timeout`);
-        } else {
-          errors.push(`Event ${event.id}: ${eventErr.message || 'Unknown'}`);
-        }
+      await Promise.allSettled(batchPromises);
+      // Small delay between batches to avoid rate limiting
+      if (batchIdx + BATCH_SIZE < todayEvents.length) {
+        await new Promise(r => setTimeout(r, 200));
       }
     }
 
