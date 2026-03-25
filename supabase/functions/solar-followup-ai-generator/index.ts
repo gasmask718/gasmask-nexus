@@ -66,10 +66,9 @@ serve(async (req) => {
 
     // 4. Build context for AI
     const contextParts: string[] = [];
-    if (lead.name) contextParts.push(`Lead name: ${lead.name}`);
-    if (lead.monthly_bill) contextParts.push(`Monthly electric bill: $${lead.monthly_bill}`);
+    if (lead.full_name) contextParts.push(`Lead name: ${lead.full_name}`);
+    if (lead.monthly_bill_range) contextParts.push(`Monthly electric bill range: ${lead.monthly_bill_range}`);
     if (lead.state) contextParts.push(`State: ${lead.state}`);
-    if (lead.objections_detected) contextParts.push(`Known objections: ${JSON.stringify(lead.objections_detected)}`);
     if (lastSession?.objection_log) contextParts.push(`Recent objections from conversation: ${JSON.stringify(lastSession.objection_log)}`);
     if (lastSession?.transcript) {
       const transcript = typeof lastSession.transcript === 'string' 
