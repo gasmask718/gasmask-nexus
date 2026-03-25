@@ -148,21 +148,12 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // =====================================================
-    // STEP 1.5: Check Business Hours
+    // STEP 1.5: 24/7 Operation — No business hours check
     // =====================================================
-    let isOpen = true; // Default to open if no hours configured
-    let localTimeStr = "";
-    let dayOfWeek = "";
-
-    if (businessTimezone && businessHours) {
-      const { isOpen: open, localTime, dayName } = checkBusinessHours(businessTimezone, businessHours);
-      isOpen = open;
-      localTimeStr = localTime;
-      dayOfWeek = dayName;
-      console.log(`🕒 Business hours check: ${dayName} ${localTime} - ${isOpen ? "OPEN" : "CLOSED"}`);
-    } else {
-      console.log(`🕒 No business hours configured - assuming OPEN`);
-    }
+    const isOpen = true; // System operates 24/7 — always open
+    const localTimeStr = "";
+    const dayOfWeek = "";
+    console.log(`🕒 24/7 mode: All calls accepted regardless of time`);
 
     // =====================================================
     // STEP 2: Look up inbound routing rules
