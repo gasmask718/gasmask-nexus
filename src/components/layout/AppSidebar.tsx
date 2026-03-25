@@ -546,16 +546,6 @@ export default function AppSidebar() {
                 { path: '/finance/revenue-brain', label: 'Revenue Brain', emoji: '🧠' },
               ], "text-amber-400 hover:bg-amber-500/10")}
 
-              {renderSection('realestate-os', 'Real Estate OS', '🏠', [
-                { path: '/realestate', label: 'Real Estate HQ', emoji: '🏢' },
-                { path: '/realestate/leads', label: 'Lead Intelligence', emoji: '🎯' },
-                { path: '/realestate/pipeline', label: 'Acquisition Pipeline', emoji: '📈' },
-                { path: '/realestate/investors', label: 'Investor Marketplace', emoji: '💼' },
-                { path: '/realestate/closings', label: 'Deal Closings', emoji: '✅' },
-                { path: '/realestate/partners', label: 'Closing Partners', emoji: '🤝' },
-                { path: '/holdings/overview', label: 'Holdings Overview', emoji: '🏘️' },
-                { path: '/holdings/airbnb', label: 'Airbnb Properties', emoji: '🛏️' },
-              ], "text-teal-400 hover:bg-teal-500/10")}
 
               {renderSection('accounting-os', 'Accounting OS', '💳', [
                 { path: '/grabba/finance', label: 'Business Ledger', emoji: '📒' },
