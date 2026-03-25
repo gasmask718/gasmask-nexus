@@ -400,6 +400,8 @@ const SolarPartnersAdvanced = lazy(() => import('@/pages/solar/SolarPartnersAdva
 const SolarAgents = lazy(() => import('@/pages/solar/SolarAgents'));
 const SolarAIBrain = lazy(() => import('@/pages/solar/SolarAIBrain'));
 const SolarAnalytics = lazy(() => import('@/pages/solar/SolarAnalytics'));
+const SolarEstimator = lazy(() => import('@/pages/solar/SolarEstimator'));
+const SolarClosingDashboard = lazy(() => import('@/pages/solar/SolarClosingDashboard'));
 
 // Real Estate OS
 const RELayout = lazy(() => import('@/pages/real-estate/RELayout'));
