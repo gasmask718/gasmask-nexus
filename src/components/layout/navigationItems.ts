@@ -2,7 +2,7 @@ import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
   BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
   Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet,
-  Scale, Search, Briefcase
+  Scale, Search, Briefcase, Building2, Calculator
 } from 'lucide-react';
 
 export const navigationItems = [
