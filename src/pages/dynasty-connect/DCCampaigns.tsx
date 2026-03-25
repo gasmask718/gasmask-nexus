@@ -66,9 +66,10 @@ export default function DCCampaigns() {
     return campaigns.filter((c: any) => {
       const matchesSearch = !search || (c.name || '').toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesBusiness = businessFilter === 'all' || (c.target_segment || '').toLowerCase().includes(businessFilter.toLowerCase());
+      return matchesSearch && matchesStatus && matchesBusiness;
     });
-  }, [campaigns, search, statusFilter]);
+  }, [campaigns, search, statusFilter, businessFilter]);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
