@@ -501,6 +501,7 @@ export function CreateStoreInvoiceModal({
             created_by: user?.id || 'manual',
             created_at: invoiceDateToUse,
             is_historical: invoiceMode === 'historical',
+            entry_mode: invoiceMode === 'historical' ? 'backfill' : 'live',
             status: 'draft',
           })
           .select('id')
