@@ -97,5 +97,16 @@ export const navigationItems = [
   { to: '/surplus-funds/campaigns', icon: Phone, label: 'SF Campaigns', roles: ['admin'] },
   { to: '/surplus-funds/cases', icon: Briefcase, label: 'Cases', roles: ['admin', 'ceo'] },
   { to: '/surplus-funds/attorneys', icon: Scale, label: 'Attorney Network', roles: ['admin'] },
-  { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'SF Analytics', roles: ['admin', 'ceo'] },
+   { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'SF Analytics', roles: ['admin', 'ceo'] },
+
+  // 🏠 Real Estate OS
+  { to: '/real-estate', icon: Building2, label: '🏠 Real Estate OS', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/leads', icon: Target, label: 'RE Lead Pipeline', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/campaigns', icon: Phone, label: 'RE Campaigns', roles: ['admin'] },
+  { to: '/real-estate/deals', icon: FileText, label: 'Active Deals', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/buyers', icon: Building2, label: 'Buyer Network', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/va-desk', icon: Users, label: 'VA Desk', roles: ['admin', 'va'] },
+  { to: '/real-estate/analyzer', icon: Calculator, label: 'Deal Analyzer', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/markets', icon: Map, label: 'Market Intelligence', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/analytics', icon: TrendingUp, label: 'RE Analytics', roles: ['admin', 'ceo'] },
 ];
