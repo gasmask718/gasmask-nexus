@@ -61367,6 +61367,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_signal_inputs: {
+        Row: {
+          capper_alignment_count: number
+          conflict_count: number
+          created_at: string
+          elite_wallets_count: number
+          id: string
+          prediction_id: string
+          sbo_confidence: number
+          top_cappers_count: number
+          wallet_alignment_count: number
+        }
+        Insert: {
+          capper_alignment_count?: number
+          conflict_count?: number
+          created_at?: string
+          elite_wallets_count?: number
+          id?: string
+          prediction_id: string
+          sbo_confidence?: number
+          top_cappers_count?: number
+          wallet_alignment_count?: number
+        }
+        Update: {
+          capper_alignment_count?: number
+          conflict_count?: number
+          created_at?: string
+          elite_wallets_count?: number
+          id?: string
+          prediction_id?: string
+          sbo_confidence?: number
+          top_cappers_count?: number
+          wallet_alignment_count?: number
+        }
+        Relationships: []
+      }
       sbo_simulations: {
         Row: {
           created_at: string | null
@@ -61938,6 +61974,48 @@ export type Database = {
           reason?: string
           stats_weight_after?: number | null
           stats_weight_before?: number | null
+        }
+        Relationships: []
+      }
+      sbo_weighted_picks: {
+        Row: {
+          capper_component: number
+          conflict_penalty: number
+          created_at: string
+          final_score: number
+          id: string
+          is_grandmaster: boolean
+          pick_tier: string
+          prediction_id: string
+          reasoning: string | null
+          sbo_component: number
+          wallet_component: number
+        }
+        Insert: {
+          capper_component?: number
+          conflict_penalty?: number
+          created_at?: string
+          final_score?: number
+          id?: string
+          is_grandmaster?: boolean
+          pick_tier?: string
+          prediction_id: string
+          reasoning?: string | null
+          sbo_component?: number
+          wallet_component?: number
+        }
+        Update: {
+          capper_component?: number
+          conflict_penalty?: number
+          created_at?: string
+          final_score?: number
+          id?: string
+          is_grandmaster?: boolean
+          pick_tier?: string
+          prediction_id?: string
+          reasoning?: string | null
+          sbo_component?: number
+          wallet_component?: number
         }
         Relationships: []
       }
