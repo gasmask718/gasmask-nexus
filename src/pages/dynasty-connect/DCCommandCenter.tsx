@@ -95,6 +95,28 @@ export default function DCCommandCenter() {
     },
   });
 
+  // ── Business Pipelines Overview ──
+  const { data: pipelines = [] } = useQuery({
+    queryKey: ['dc-pipelines-overview'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('dc_business_pipelines').select('*');
+      return data || [];
+    },
+  });
+
+  // ── Live Calls Detail ──
+  const { data: liveCalls = [] } = useQuery({
+    queryKey: ['dc-live-calls-detail'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('live_calls')
+        .select('*')
+        .eq('status', 'active');
+      return data || [];
+    },
+    refetchInterval: 5000,
+  });
+
   // ── Recent 10 Calls ──
   const { data: recentCalls = [] } = useQuery({
     queryKey: ['dc-recent-calls'],
