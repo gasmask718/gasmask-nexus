@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Target, FileText, DollarSign, TrendingUp, Building2, Phone } from 'lucide-react';
+import { Target, FileText, DollarSign, TrendingUp, Building2, Phone, Zap, Play, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 const GREEN = '#3B6D11';
 
@@ -16,6 +18,14 @@ const PIPELINE_STAGES = [
   { key: 'closed', label: 'Closed' },
 ];
 
+const AUTOMATION_JOBS = [
+  { key: 'lead_import', label: 'Lead Import', desc: 'PropStream + Zillow + BatchLeads', schedule: 'Monday 6am', fn: 're-lead-import' },
+  { key: 'skip_trace', label: 'Skip Trace', desc: 'BatchSkipTracing API', schedule: 'Daily 7am + on insert', fn: 're-skip-trace' },
+  { key: 'queue_dc_campaign', label: 'Queue DC Campaign', desc: 'Auto-queue leads for Dynasty Connect', schedule: 'Weekdays 9am', fn: 're-queue-dc-campaign' },
+  { key: 'generate_deal_sheet', label: 'Deal Sheet Gen', desc: 'Auto on contract signed', schedule: 'On event', fn: 're-generate-deal-sheet' },
+  { key: 'buyer_blast', label: 'Buyer Blast', desc: 'Email + SMS matching buyers', schedule: 'On event', fn: 're-buyer-blast' },
+];
+
 export default function RECommandCenter() {
   const [stats, setStats] = useState({
     totalLeads: 0, dealsUnderContract: 0, feesMTD: 0,
@@ -24,9 +34,14 @@ export default function RECommandCenter() {
   const [pipeline, setPipeline] = useState<Record<string, number>>({});
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [urgentDeals, setUrgentDeals] = useState<any[]>([]);
+  const [automationLogs, setAutomationLogs] = useState<any[]>([]);
+  const [runningJob, setRunningJob] = useState<string | null>(null);
+  const [sourceStats, setSourceStats] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
+    fetchAutomationLogs();
+    fetchSourceStats();
   }, []);
 
   const fetchData = async () => {
@@ -56,13 +71,54 @@ export default function RECommandCenter() {
       vaCalls: totalCalls,
     });
 
-    // Urgent deals (under contract, no buyer)
     const urgent = (dealsRes.data || []).filter(d => !d.buyer_name && ['under_contract', 'buyer_searching'].includes(d.status));
     setUrgentDeals(urgent.slice(0, 5));
 
-    // Recent activity
     const { data: recentLeads } = await supabase.from('re_leads').select('property_address, status, updated_at, state').order('updated_at', { ascending: false }).limit(10);
     setRecentActivity(recentLeads || []);
+  };
+
+  const fetchAutomationLogs = async () => {
+    const { data } = await supabase.from('re_automation_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setAutomationLogs(data || []);
+  };
+
+  const fetchSourceStats = async () => {
+    const { data: leads } = await supabase.from('re_leads').select('lead_source, status, skip_traced');
+    if (!leads) return;
+    const sources: Record<string, { total: number; traced: number; interested: number; contracts: number }> = {};
+    leads.forEach(l => {
+      const src = l.lead_source || 'unknown';
+      if (!sources[src]) sources[src] = { total: 0, traced: 0, interested: 0, contracts: 0 };
+      sources[src].total++;
+      if (l.skip_traced) sources[src].traced++;
+      if (l.status === 'interested') sources[src].interested++;
+      if (l.status === 'under_contract') sources[src].contracts++;
+    });
+    setSourceStats(Object.entries(sources).map(([name, s]) => ({ name, ...s })));
+  };
+
+  const triggerAutomation = async (fnName: string, jobKey: string) => {
+    setRunningJob(jobKey);
+    toast.info(`Running ${jobKey}...`);
+    try {
+      const { error } = await supabase.functions.invoke(fnName, { body: {} });
+      if (error) throw error;
+      toast.success(`${jobKey} completed`);
+      fetchAutomationLogs();
+      fetchData();
+    } catch (e: any) {
+      toast.error(`${jobKey} failed: ${e.message}`);
+    } finally {
+      setRunningJob(null);
+    }
+  };
+
+  const getLastRun = (type: string) => {
+    return automationLogs.find(l => l.automation_type === type);
   };
 
   const metricCards = [
@@ -119,6 +175,115 @@ export default function RECommandCenter() {
         </CardContent>
       </Card>
 
+      {/* Automation Control Panel */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" style={{ color: GREEN }} />
+            Automation Control Panel
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {AUTOMATION_JOBS.map(job => {
+              const lastRun = getLastRun(job.key);
+              const isRunning = runningJob === job.key;
+              return (
+                <div key={job.key} className="flex items-center justify-between border border-border rounded-lg p-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-3 w-3 rounded-full ${lastRun?.status === 'completed' ? 'bg-green-500' : lastRun?.status === 'failed' ? 'bg-red-500' : lastRun?.status === 'running' ? 'bg-yellow-500 animate-pulse' : 'bg-gray-500'}`} />
+                    <div>
+                      <div className="font-medium text-sm">{job.label}</div>
+                      <div className="text-xs text-muted-foreground">{job.desc}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {job.schedule}
+                      </div>
+                      {lastRun && (
+                        <div className="text-xs text-muted-foreground">
+                          Last: {new Date(lastRun.created_at).toLocaleDateString()} — {lastRun.leads_processed || 0} processed
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isRunning}
+                      onClick={() => triggerAutomation(job.fn, job.key)}
+                      className="min-w-[80px]"
+                    >
+                      {isRunning ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                      <span className="ml-1">{isRunning ? 'Running' : 'Run'}</span>
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lead Source Performance */}
+      {sourceStats.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Lead Source Performance</CardTitle></CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-muted-foreground text-xs uppercase">Source</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground text-xs uppercase">Imported</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground text-xs uppercase">Skip Traced %</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground text-xs uppercase">Interested %</th>
+                    <th className="text-right py-2 px-3 text-muted-foreground text-xs uppercase">Contracts %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sourceStats.map(s => (
+                    <tr key={s.name} className="border-b border-border/50">
+                      <td className="py-2 px-3 font-medium capitalize">{s.name}</td>
+                      <td className="text-right py-2 px-3">{s.total}</td>
+                      <td className="text-right py-2 px-3">{s.total > 0 ? ((s.traced / s.total) * 100).toFixed(0) : 0}%</td>
+                      <td className="text-right py-2 px-3">{s.total > 0 ? ((s.interested / s.total) * 100).toFixed(1) : 0}%</td>
+                      <td className="text-right py-2 px-3" style={{ color: GREEN }}>{s.total > 0 ? ((s.contracts / s.total) * 100).toFixed(1) : 0}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Automation Run History */}
+      {automationLogs.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Recent Automation Runs</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {automationLogs.slice(0, 8).map(log => (
+              <div key={log.id} className="flex items-center justify-between text-sm border-b border-border/50 pb-2">
+                <div className="flex items-center gap-2">
+                  {log.status === 'completed' ? <CheckCircle className="h-4 w-4 text-green-500" /> :
+                   log.status === 'failed' ? <XCircle className="h-4 w-4 text-red-500" /> :
+                   <RefreshCw className="h-4 w-4 text-yellow-500 animate-spin" />}
+                  <span className="font-medium capitalize">{log.automation_type?.replace(/_/g, ' ')}</span>
+                </div>
+                <div className="flex items-center gap-4 text-muted-foreground">
+                  <span>{log.leads_processed || 0} processed</span>
+                  <span>{log.leads_imported || 0} new</span>
+                  <span>{new Date(log.created_at).toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Urgent Deals */}
         <Card>
@@ -132,7 +297,12 @@ export default function RECommandCenter() {
                   <div className="font-medium text-sm">{d.property_address}</div>
                   <div className="text-xs text-muted-foreground">{d.state} | ARV: ${(d.arv || 0).toLocaleString()}</div>
                 </div>
-                <Badge variant="destructive">NEEDS BUYER</Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="destructive">NEEDS BUYER</Badge>
+                  <Button size="sm" variant="outline" onClick={() => triggerAutomation('re-buyer-blast', 'buyer_blast')}>
+                    Blast
+                  </Button>
+                </div>
               </div>
             ))}
           </CardContent>
