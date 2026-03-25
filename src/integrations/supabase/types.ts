@@ -57868,6 +57868,174 @@ export type Database = {
           },
         ]
       }
+      sales_mastery_call_scores: {
+        Row: {
+          call_sid: string | null
+          close_score: number | null
+          created_at: string | null
+          hub: string
+          id: string
+          is_training_call: boolean | null
+          lead_id: string | null
+          objection_score: number | null
+          opening_score: number | null
+          overall_score: number | null
+          qualifying_score: number | null
+          transcript: string | null
+          va_id: string | null
+          what_to_improve: string | null
+          what_went_well: string | null
+        }
+        Insert: {
+          call_sid?: string | null
+          close_score?: number | null
+          created_at?: string | null
+          hub: string
+          id?: string
+          is_training_call?: boolean | null
+          lead_id?: string | null
+          objection_score?: number | null
+          opening_score?: number | null
+          overall_score?: number | null
+          qualifying_score?: number | null
+          transcript?: string | null
+          va_id?: string | null
+          what_to_improve?: string | null
+          what_went_well?: string | null
+        }
+        Update: {
+          call_sid?: string | null
+          close_score?: number | null
+          created_at?: string | null
+          hub?: string
+          id?: string
+          is_training_call?: boolean | null
+          lead_id?: string | null
+          objection_score?: number | null
+          opening_score?: number | null
+          overall_score?: number | null
+          qualifying_score?: number | null
+          transcript?: string | null
+          va_id?: string | null
+          what_to_improve?: string | null
+          what_went_well?: string | null
+        }
+        Relationships: []
+      }
+      sales_mastery_coaching_triggers: {
+        Row: {
+          coaching_card_body: string
+          coaching_card_title: string
+          created_at: string | null
+          hub: string
+          id: string
+          is_active: boolean | null
+          priority: number | null
+          trigger_keyword: string
+        }
+        Insert: {
+          coaching_card_body: string
+          coaching_card_title: string
+          created_at?: string | null
+          hub: string
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          trigger_keyword: string
+        }
+        Update: {
+          coaching_card_body?: string
+          coaching_card_title?: string
+          created_at?: string | null
+          hub?: string
+          id?: string
+          is_active?: boolean | null
+          priority?: number | null
+          trigger_keyword?: string
+        }
+        Relationships: []
+      }
+      sales_mastery_leaderboard: {
+        Row: {
+          calls_made: number | null
+          contacts_reached: number | null
+          contracts_signed: number | null
+          created_at: string | null
+          hub: string
+          id: string
+          offers_submitted: number | null
+          period_end: string
+          period_start: string
+          revenue_generated: number | null
+          va_id: string | null
+          va_name: string
+        }
+        Insert: {
+          calls_made?: number | null
+          contacts_reached?: number | null
+          contracts_signed?: number | null
+          created_at?: string | null
+          hub: string
+          id?: string
+          offers_submitted?: number | null
+          period_end: string
+          period_start: string
+          revenue_generated?: number | null
+          va_id?: string | null
+          va_name: string
+        }
+        Update: {
+          calls_made?: number | null
+          contacts_reached?: number | null
+          contracts_signed?: number | null
+          created_at?: string | null
+          hub?: string
+          id?: string
+          offers_submitted?: number | null
+          period_end?: string
+          period_start?: string
+          revenue_generated?: number | null
+          va_id?: string | null
+          va_name?: string
+        }
+        Relationships: []
+      }
+      sales_mastery_objections: {
+        Row: {
+          best_response: string
+          category: string | null
+          created_at: string | null
+          hub: string
+          id: string
+          objection_text: string
+          source_call_id: string | null
+          updated_at: string | null
+          win_count: number | null
+        }
+        Insert: {
+          best_response: string
+          category?: string | null
+          created_at?: string | null
+          hub: string
+          id?: string
+          objection_text: string
+          source_call_id?: string | null
+          updated_at?: string | null
+          win_count?: number | null
+        }
+        Update: {
+          best_response?: string
+          category?: string | null
+          created_at?: string | null
+          hub?: string
+          id?: string
+          objection_text?: string
+          source_call_id?: string | null
+          updated_at?: string | null
+          win_count?: number | null
+        }
+        Relationships: []
+      }
       sales_playbooks: {
         Row: {
           allowed_tactics: string[]

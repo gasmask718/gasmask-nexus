@@ -1,45 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bot, Play, Clock, MessageSquare } from 'lucide-react';
+import { Bot, Play, Clock } from 'lucide-react';
+import { SalesMasteryEngine } from '@/components/sales-mastery';
+
+const SF_ACCENT = '#BA7517';
 
 const automationJobs = [
-  {
-    name: 'Lead Import Cron',
-    description: 'Imports leads from county records and public sources',
-    schedule: 'Monday 6am',
-    lastRun: null,
-    status: 'ready',
-  },
-  {
-    name: 'Skip Trace Cron',
-    description: 'Finds phone numbers for leads via BatchSkipTracing',
-    schedule: 'Daily 7am',
-    lastRun: null,
-    status: 'ready',
-  },
-  {
-    name: 'DC Campaign Queue',
-    description: 'Queues qualified leads for Dynasty Connect calling',
-    schedule: 'Weekdays 9am',
-    lastRun: null,
-    status: 'ready',
-  },
-  {
-    name: 'Agent Self-Learn',
-    description: 'AI analyzes call outcomes and updates scripts',
-    schedule: '2am nightly',
-    lastRun: null,
-    status: 'ready',
-  },
-];
-
-const objections = [
-  { objection: '"This sounds like a scam"', response: '"I totally understand your concern. We\'re a licensed recovery firm that works with attorneys to file legitimate court claims. You can verify us at [website]. We don\'t get paid unless you get paid — that\'s our guarantee."' },
-  { objection: '"I already claimed my funds"', response: '"That\'s great! Just to confirm — are you sure there isn\'t an additional surplus from a separate sale or judgment? We often find people have more than one claim. Can I verify that for you at no cost?"' },
-  { objection: '"How much do you take?"', response: '"Our standard is 35% of recovered funds. But here\'s the thing — without us, most people never find out this money exists. We handle everything: the legal work, the court filings, the attorney coordination. You don\'t pay a dime unless we recover your money."' },
-  { objection: '"I need to talk to my lawyer"', response: '"Absolutely, please do! In fact, we work with attorneys ourselves. If your lawyer wants to handle it directly, that\'s fine. But most attorneys don\'t specialize in surplus recovery — we do. Happy to speak with your attorney directly."' },
-  { objection: '"How long does this take?"', response: '"Typically 60-90 days depending on the county and court schedule. Some states move faster. We\'ll keep you updated every step of the way — you\'ll always know exactly where your case stands."' },
+  { name: 'Lead Import Cron', description: 'Imports leads from county records and public sources', schedule: 'Monday 6am', lastRun: null, status: 'ready' },
+  { name: 'Skip Trace Cron', description: 'Finds phone numbers for leads via BatchSkipTracing', schedule: 'Daily 7am', lastRun: null, status: 'ready' },
+  { name: 'DC Campaign Queue', description: 'Queues qualified leads for Dynasty Connect calling', schedule: 'Weekdays 9am', lastRun: null, status: 'ready' },
+  { name: 'Agent Self-Learn', description: 'AI analyzes call outcomes and updates scripts', schedule: '2am nightly', lastRun: null, status: 'ready' },
 ];
 
 export default function SFAutomation() {
@@ -72,9 +43,6 @@ export default function SFAutomation() {
                   <Play className="h-3 w-3 mr-1" />Run Now
                 </Button>
               </div>
-              {job.lastRun && (
-                <p className="text-xs text-muted-foreground mt-2">Last run: {job.lastRun}</p>
-              )}
             </CardContent>
           </Card>
         ))}
@@ -95,23 +63,8 @@ export default function SFAutomation() {
         </CardContent>
       </Card>
 
-      {/* Objection Library */}
-      <Card className="border-amber-500/20">
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-amber-500" />
-            Sales Mastery — Objection Library
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {objections.map((o, i) => (
-            <div key={i} className="border-b border-border/50 pb-3 last:border-0 last:pb-0">
-              <p className="text-sm font-medium text-red-400 mb-1">🗣️ {o.objection}</p>
-              <p className="text-sm text-green-400 pl-4">✅ {o.response}</p>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+      {/* Sales Mastery Engine — Full Integration */}
+      <SalesMasteryEngine hub="surplus_funds" accentColor={SF_ACCENT} />
     </div>
   );
 }

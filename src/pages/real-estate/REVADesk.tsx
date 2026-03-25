@@ -2,18 +2,12 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { Phone, User, Target } from 'lucide-react';
+import { Phone, User } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SalesMasteryEngine } from '@/components/sales-mastery';
 
-const SCRIPTS = {
-  opening: `"Hey [seller name], this is [VA name] calling from Dynasty Property Group. I was reaching out about your property over at [address] — are you the owner?"`,
-  qualifying: `"Perfect. I'm not going to waste your time — what would you need to walk away happy from this property?"`,
-  offer: `"Okay, based on the condition and what we're seeing in that area — I can come in around [MAO]. We close all cash, no fees, no repairs. Would that work?"`,
-  objection: `"I totally hear you. Our offer accounts for [repairs/market/timeline]. What's more important: highest price or getting this done fast and clean?"`,
-  close: `"Let me get a simple agreement over to you today, and we'll get your cash within [close date]. Does that work?"`,
-};
+const RE_ACCENT = '#3B6D11';
 
 export default function REVADesk() {
   const [vas, setVas] = useState<any[]>([]);
@@ -33,7 +27,7 @@ export default function REVADesk() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 5 — VA Desk + Sales Mastery</h1>
+        <h1 className="text-3xl font-bold" style={{ color: RE_ACCENT }}>Floor 5 — VA Desk + Sales Mastery</h1>
         <p className="text-muted-foreground">The #1 closer system — focused call interface</p>
       </div>
 
@@ -43,7 +37,7 @@ export default function REVADesk() {
           <Card key={v.id}>
             <CardContent className="pt-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(59,109,17,0.15)' }}>
-                <User className="h-5 w-5" style={{ color: '#3B6D11' }} />
+                <User className="h-5 w-5" style={{ color: RE_ACCENT }} />
               </div>
               <div className="flex-1">
                 <div className="font-semibold">{v.name}</div>
@@ -61,7 +55,7 @@ export default function REVADesk() {
       <Tabs defaultValue="queue">
         <TabsList>
           <TabsTrigger value="queue">My Queue</TabsTrigger>
-          <TabsTrigger value="scripts">Sales Mastery Engine</TabsTrigger>
+          <TabsTrigger value="mastery">Sales Mastery Engine</TabsTrigger>
         </TabsList>
 
         <TabsContent value="queue" className="mt-4">
@@ -81,30 +75,23 @@ export default function REVADesk() {
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{l.status?.replace(/_/g, ' ')}</Badge>
                       {l.phone && (
-                        <Button size="sm" style={{ backgroundColor: '#3B6D11' }}>
+                        <Button size="sm" style={{ backgroundColor: RE_ACCENT }}>
                           <Phone className="h-4 w-4 mr-1" />Call
                         </Button>
                       )}
                     </div>
                   </div>
                 ))}
+                {myLeads.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">No leads in queue</p>
+                )}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="scripts" className="mt-4">
-          <Card>
-            <CardHeader><CardTitle>Sales Mastery Engine</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              {Object.entries(SCRIPTS).map(([stage, script]) => (
-                <div key={stage} className="p-4 rounded-lg border border-border">
-                  <div className="font-semibold capitalize mb-2" style={{ color: '#3B6D11' }}>{stage}</div>
-                  <p className="text-sm italic text-muted-foreground">{script}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+        <TabsContent value="mastery" className="mt-4">
+          <SalesMasteryEngine hub="real_estate" accentColor={RE_ACCENT} />
         </TabsContent>
       </Tabs>
     </div>
