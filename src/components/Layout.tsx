@@ -347,11 +347,6 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/funding', label: '💳 Funding Company OS', icon: CreditCard },
       { path: '/os/grants', label: '🏆 Grant Company OS', icon: Trophy },
       { path: '/os/wealth-engine', label: '📈 Wealth Engine OS', icon: TrendingUp },
-      { path: '/real-estate', label: '🏠 Real Estate OS', icon: Building },
-      { path: '/real-estate/leads', label: 'RE Leads', icon: Target },
-      { path: '/real-estate/pipeline', label: 'RE Pipeline', icon: Activity },
-      { path: '/real-estate/investors', label: 'RE Investors', icon: Users },
-      { path: '/real-estate/closings', label: 'RE Closings', icon: Check },
     ],
   },
   communicationSystems: {
@@ -475,6 +470,36 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-connect/clients', label: '💼 Client Management', icon: Briefcase },
     ],
   },
+  surplusFundsOs: {
+    id: 'surplus-funds-os',
+    name: '💰 Surplus Funds OS',
+    items: [
+      { path: '/surplus-funds', label: '💰 Penthouse — Command Center', icon: DollarSign },
+      { path: '/surplus-funds/leads', label: '🎯 Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/surplus-funds/campaigns', label: '📞 Floor 2 — Dynasty Connect', icon: Phone },
+      { path: '/surplus-funds/cases', label: '📋 Floor 3 — Case Management', icon: Briefcase },
+      { path: '/surplus-funds/attorneys', label: '⚖️ Floor 4 — Attorney Network', icon: UserCog },
+      { path: '/surplus-funds/documents', label: '📄 Floor 5 — Documents', icon: FileText },
+      { path: '/surplus-funds/automation', label: '🤖 Floor 6 — AI & Automation', icon: Bot },
+      { path: '/surplus-funds/analytics', label: '📊 Floor 7 — Analytics', icon: BarChart3 },
+    ],
+  },
+  realEstateOs: {
+    id: 'real-estate-os',
+    name: '🏠 Real Estate OS',
+    items: [
+      { path: '/real-estate', label: '🏠 Penthouse — Command Center', icon: Building },
+      { path: '/real-estate/leads', label: '🎯 Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/real-estate/campaigns', label: '📞 Floor 2 — DC Campaigns', icon: Phone },
+      { path: '/real-estate/deals', label: '📋 Floor 3 — Active Deals', icon: Briefcase },
+      { path: '/real-estate/buyers', label: '🏦 Floor 4 — Buyer Network', icon: Building2 },
+      { path: '/real-estate/va-desk', label: '👥 Floor 5 — VA Desk + Mastery', icon: Users },
+      { path: '/real-estate/analyzer', label: '🔢 Floor 6 — Deal Analyzer', icon: Calculator },
+      { path: '/real-estate/automation', label: '🤖 Floor 7 — AI & Automation', icon: Bot },
+      { path: '/real-estate/markets', label: '🗺️ Floor 8 — Market Intelligence', icon: Map },
+      { path: '/real-estate/analytics', label: '📊 Floor 9 — Analytics', icon: BarChart3 },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
@@ -523,6 +548,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
+    'surplus-funds-os', 'real-estate-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'global-dashboard', 'portals'
@@ -750,6 +776,30 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.dynastyConnect.id,
           DYNASTY_NAVIGATION.dynastyConnect.name,
           DYNASTY_NAVIGATION.dynastyConnect.items
+        )}
+      </div>
+
+      {/* 💰 SURPLUS FUNDS OS — STANDALONE HUB */}
+      <div className="pt-2 border-t border-amber-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-500/80 tracking-wider">
+          💰 Surplus Funds OS
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.surplusFundsOs.id,
+          DYNASTY_NAVIGATION.surplusFundsOs.name,
+          DYNASTY_NAVIGATION.surplusFundsOs.items
+        )}
+      </div>
+
+      {/* 🏠 REAL ESTATE OS — STANDALONE HUB */}
+      <div className="pt-2 border-t border-green-600/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-green-600/80 tracking-wider">
+          🏠 Real Estate OS
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.realEstateOs.id,
+          DYNASTY_NAVIGATION.realEstateOs.name,
+          DYNASTY_NAVIGATION.realEstateOs.items
         )}
       </div>
 
