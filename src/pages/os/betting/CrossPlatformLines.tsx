@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, RefreshCw, TrendingUp, AlertTriangle, Zap, BarChart3, Target, ArrowRightLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import BookPropsComparison from '@/components/sbo/BookPropsComparison';
 
 const SPORT_OPTIONS = [
   { value: 'basketball_nba', label: 'NBA' },
@@ -190,10 +191,18 @@ export default function CrossPlatformLines() {
           <TabsTrigger value="moneyline">Moneyline</TabsTrigger>
           <TabsTrigger value="spread">Spreads</TabsTrigger>
           <TabsTrigger value="total">Totals</TabsTrigger>
+          <TabsTrigger value="props" className="flex items-center gap-1">
+            <Target className="h-3 w-3" /> Player Props
+          </TabsTrigger>
           <TabsTrigger value="platforms" className="flex items-center gap-1">
             <BarChart3 className="h-3 w-3" /> Platforms
           </TabsTrigger>
         </TabsList>
+
+        {/* PLAYER PROPS TAB */}
+        <TabsContent value="props">
+          <BookPropsComparison />
+        </TabsContent>
 
         {/* EDGES TAB */}
         <TabsContent value="edges" className="space-y-4">
