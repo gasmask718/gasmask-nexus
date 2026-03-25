@@ -791,6 +791,9 @@ export default function AppSidebar() {
               {renderSection('sbo-ai-engine', 'SBO AI Engine', '🧠', [
                 { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
                 { path: '/os/sports-betting/profit-center', label: 'Profit Center', emoji: '💰' },
+                { path: '/os/sports-betting/signal-alignment', label: 'Signal Alignment', emoji: '⚡' },
+                { path: '/os/sports-betting/wallet-tracker', label: 'Wallet Tracker', emoji: '🟢' },
+                { path: '/os/sports-betting/capper-tracker', label: 'Capper Tracker', emoji: '🔵' },
                 { path: '/os/sports-betting/dashboard', label: 'Dashboard', emoji: '📊' },
                 { path: '/os/sports-betting/nba', label: 'NBA Board', emoji: '🏀' },
                 { path: '/os/sports-betting/parlay-lab', label: 'Parlay Lab', emoji: '🧪' },
