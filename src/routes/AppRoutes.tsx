@@ -2772,6 +2772,21 @@ export default function AppRoutes() {
       } />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* SURPLUS FUNDS OS                                                              */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/surplus-funds" element={<SFLayout />}>
+          <Route index element={<SFCommandCenter />} />
+          <Route path="leads" element={<SFLeadPipeline />} />
+          <Route path="discovery" element={<SFDiscovery />} />
+          <Route path="campaigns" element={<SFCampaigns />} />
+          <Route path="cases" element={<SFCases />} />
+          <Route path="attorneys" element={<SFAttorneys />} />
+          <Route path="analytics" element={<SFAnalytics />} />
+        </Route>
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* BRANDARO DIGITAL HUB (THE SALES WAR ROOM)                                    */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
