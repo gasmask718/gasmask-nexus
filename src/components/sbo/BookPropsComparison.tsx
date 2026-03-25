@@ -86,6 +86,18 @@ function PropComparisonCard({ prop }: { prop: CrossPlatformProp }) {
             )}
           </div>
         )}
+
+        {/* Stat intelligence panel */}
+        {prop.prop_id && (
+          <div className="pt-2 border-t border-border/50">
+            <PropStatContextCard
+              propId={prop.prop_id}
+              playerName={prop.player_name}
+              propType={prop.prop_type}
+              line={prop.sources[0]?.line || 0}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
