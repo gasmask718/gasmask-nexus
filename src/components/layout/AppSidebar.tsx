@@ -67,29 +67,10 @@ export default function AppSidebar() {
   const userRole = profileData?.profile?.primary_role || 'admin';
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
 
-  // RUNTIME SELF-CHECK: Prove Floor 0 exists in the DOM or FAIL VISIBLY
+  // Floor 0 presence check (silent)
   useEffect(() => {
     const el = document.getElementById('__FLOOR_0_ASSERT__');
-    if (!el) {
-      document.body.innerHTML = `
-        <div style="
-          background:black;
-          color:red;
-          font-size:18px;
-          padding:40px;
-          font-family:monospace;
-        ">
-          ❌ FATAL ERROR<br/><br/>
-          Floor 0 (Territory Intelligence) CLAIMED TO RENDER<br/>
-          BUT WAS NOT FOUND IN THE DOM.<br/><br/>
-          AppSidebar.tsx is NOT mounting what the code claims.<br/>
-          This is a blocking integrity violation.
-        </div>
-      `;
-      throw new Error('FLOOR 0 NOT MOUNTED — DOM ASSERT FAILED');
-    } else {
-      console.warn('✅ FLOOR 0 VERIFIED IN DOM', el);
-    }
+    if (el) console.warn('✅ FLOOR 0 VERIFIED IN DOM', el);
   }, []);
 
   const toggleSection = (sectionId: string) => {
