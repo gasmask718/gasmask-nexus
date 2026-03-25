@@ -60467,6 +60467,194 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_pm_tracked_wallets: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          last_polled_at: string | null
+          priority_level: string
+          status: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_polled_at?: string | null
+          priority_level?: string
+          status?: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          last_polled_at?: string | null
+          priority_level?: string
+          status?: string
+          wallet_address?: string
+        }
+        Relationships: []
+      }
+      sbo_pm_wallet_events: {
+        Row: {
+          delta: number | null
+          event_time: string
+          event_type: string
+          explanation: string | null
+          id: string
+          market_question: string
+          new_size: number | null
+          old_size: number | null
+          side: string | null
+          wallet_id: string
+        }
+        Insert: {
+          delta?: number | null
+          event_time?: string
+          event_type: string
+          explanation?: string | null
+          id?: string
+          market_question: string
+          new_size?: number | null
+          old_size?: number | null
+          side?: string | null
+          wallet_id: string
+        }
+        Update: {
+          delta?: number | null
+          event_time?: string
+          event_type?: string
+          explanation?: string | null
+          id?: string
+          market_question?: string
+          new_size?: number | null
+          old_size?: number | null
+          side?: string | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_pm_wallet_events_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_pm_tracked_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_pm_wallet_positions: {
+        Row: {
+          condition_id: string | null
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          market_question: string
+          side: string
+          size: number | null
+          wallet_id: string
+        }
+        Insert: {
+          condition_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          market_question: string
+          side: string
+          size?: number | null
+          wallet_id: string
+        }
+        Update: {
+          condition_id?: string | null
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          market_question?: string
+          side?: string
+          size?: number | null
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_pm_wallet_positions_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_pm_tracked_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_pm_wallet_scores: {
+        Row: {
+          id: string
+          last_activity: string | null
+          score: number
+          tier: string
+          total_events: number
+          wallet_id: string
+        }
+        Insert: {
+          id?: string
+          last_activity?: string | null
+          score?: number
+          tier?: string
+          total_events?: number
+          wallet_id: string
+        }
+        Update: {
+          id?: string
+          last_activity?: string | null
+          score?: number
+          tier?: string
+          total_events?: number
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_pm_wallet_scores_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: true
+            referencedRelation: "sbo_pm_tracked_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sbo_pm_wallet_snapshots: {
+        Row: {
+          id: string
+          raw_activity_json: Json | null
+          raw_positions_json: Json | null
+          snapshot_hash: string | null
+          snapshot_time: string
+          wallet_id: string
+        }
+        Insert: {
+          id?: string
+          raw_activity_json?: Json | null
+          raw_positions_json?: Json | null
+          snapshot_hash?: string | null
+          snapshot_time?: string
+          wallet_id: string
+        }
+        Update: {
+          id?: string
+          raw_activity_json?: Json | null
+          raw_positions_json?: Json | null
+          snapshot_hash?: string | null
+          snapshot_time?: string
+          wallet_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_pm_wallet_snapshots_wallet_id_fkey"
+            columns: ["wallet_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_pm_tracked_wallets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_polymarket: {
         Row: {
           away_team_price: number | null
