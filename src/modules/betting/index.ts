@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Trophy, Target, BarChart3, Shield, LayoutDashboard, Search, FileInput, Settings, Building2, ClipboardList, Activity, Calculator, Layers, Monitor, CheckCircle, Lock } from 'lucide-react';
+import { Trophy, Target, BarChart3, Shield, LayoutDashboard, Search, FileInput, Settings, Building2, ClipboardList, Activity, Calculator, Layers, Monitor, CheckCircle, Lock, ArrowRightLeft } from 'lucide-react';
 import BettingDashboard from '@/pages/os/betting/BettingDashboard';
 import StatsInspector from '@/pages/os/betting/StatsInspector';
 import LineIntake from '@/pages/os/betting/LineIntake';
@@ -16,6 +16,7 @@ import NBADailyBoard from '@/pages/os/betting/NBADailyBoard';
 import ResultsPage from '@/pages/os/betting/ResultsPage';
 import SimulationPage from '@/pages/os/betting/SimulationPage';
 import OwnerInternal from '@/pages/os/betting/OwnerInternal';
+import CrossPlatformLines from '@/pages/os/betting/CrossPlatformLines';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/sports-betting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -28,6 +29,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/sports-betting/simulation', label: 'Simulation', icon: Target },
   { path: '/os/sports-betting/results', label: 'Results', icon: CheckCircle },
   { path: '/os/sports-betting/platforms', label: 'Platforms', icon: Building2 },
+  { path: '/os/sports-betting/cross-platform', label: 'Cross-Platform', icon: ArrowRightLeft },
   { path: '/os/sports-betting/line-intake', label: 'Line Intake', icon: FileInput },
   { path: '/os/sports-betting/line-shopping', label: 'Line Shopping', icon: Search },
   { path: '/os/sports-betting/settings', label: 'Settings', icon: Settings },
@@ -59,6 +61,7 @@ export const BettingModule: DynastyModule = {
     { path: '/platforms', component: PlatformsDashboard, label: 'Platforms', icon: Building2, requiresAuth: true },
     { path: '/line-intake', component: LineIntake, label: 'Line Intake', icon: FileInput, requiresAuth: true },
     { path: '/line-shopping', component: LineShopping, label: 'Line Shopping', icon: Search, requiresAuth: true },
+    { path: '/cross-platform', component: CrossPlatformLines, label: 'Cross-Platform', icon: ArrowRightLeft, requiresAuth: true },
     { path: '/settings', component: BettingSettings, label: 'Settings', icon: Settings, requiresAuth: true },
     { path: '/stats-inspector', component: StatsInspector, label: 'Stats Inspector', icon: Search, requiresAuth: true },
     { path: '/owner-internal', component: OwnerInternal, label: 'Internal', icon: Lock, requiresAuth: true },
