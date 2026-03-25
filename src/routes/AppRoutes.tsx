@@ -394,6 +394,7 @@ const REDeals = lazy(() => import('@/pages/real-estate/REDeals'));
 const REBuyers = lazy(() => import('@/pages/real-estate/REBuyers'));
 const REVADesk = lazy(() => import('@/pages/real-estate/REVADesk'));
 const REAnalyzer = lazy(() => import('@/pages/real-estate/REAnalyzer'));
+const REAutomation = lazy(() => import('@/pages/real-estate/REAutomation'));
 const REMarkets = lazy(() => import('@/pages/real-estate/REMarkets'));
 const REAnalytics = lazy(() => import('@/pages/real-estate/REAnalytics'));
 
