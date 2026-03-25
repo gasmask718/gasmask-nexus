@@ -408,6 +408,20 @@ export default function InvoiceForensicsConsole() {
                   ))}
                 </div>
               </div>
+
+              {/* Entry Mode Distribution */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+                  Entry Mode Distribution
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(auditData.entryModeCounts).sort((a, b) => b[1] - a[1]).map(([mode, count]) => (
+                    <Badge key={mode} variant="outline" className="text-sm py-1 px-3">
+                      {mode}: {count}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : null}
         </CardContent>
