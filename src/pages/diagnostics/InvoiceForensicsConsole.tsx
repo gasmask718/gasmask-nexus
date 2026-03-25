@@ -69,6 +69,18 @@ export default function InvoiceForensicsConsole() {
         .select('*', { count: 'exact', head: true })
         .is('payment_status', null);
 
+      // Check for status mismatches (draft + paid/partial)
+      const { count: statusMismatchCount } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'draft')
+        .in('payment_status', ['paid', 'partial']);
+
+      // Get repair log count
+      const { count: repairCount } = await supabase
+        .from('invoice_repair_log')
+        .select('*', { count: 'exact', head: true });
+
       // Status distribution
       const { data: statusDist } = await supabase
         .from('invoices')
@@ -81,6 +93,18 @@ export default function InvoiceForensicsConsole() {
         statusCounts[s] = (statusCounts[s] || 0) + 1;
       });
 
+      // Invoice status (not payment_status) distribution
+      const { data: invStatusDist } = await supabase
+        .from('invoices')
+        .select('status')
+        .limit(5000);
+
+      const invStatusCounts: Record<string, number> = {};
+      (invStatusDist || []).forEach((r: any) => {
+        const s = r.status || 'NULL';
+        invStatusCounts[s] = (invStatusCounts[s] || 0) + 1;
+      });
+
       return {
         invoicesTotal: invoicesTotal || 0,
         crmTotal: crmTotal || 0,
@@ -90,7 +114,10 @@ export default function InvoiceForensicsConsole() {
         wholesalerEntityCount: wholesalerEntityCount || 0,
         noStoreCount: noStoreCount || 0,
         noStatusCount: noStatusCount || 0,
+        statusMismatchCount: statusMismatchCount || 0,
+        repairCount: repairCount || 0,
         statusCounts,
+        invStatusCounts,
         feedExpected: (invoicesTotal || 0) + (crmTotal || 0) + (wholesaleTotal || 0),
       };
     },
@@ -326,6 +353,18 @@ export default function InvoiceForensicsConsole() {
                     ok={true}
                     detail="Excluded from invoices_unified store section (by design)"
                   />
+                  <HealthCheck
+                    label="Status mismatches (draft+paid/partial)"
+                    value={auditData.statusMismatchCount}
+                    ok={auditData.statusMismatchCount === 0}
+                    detail="Draft invoices with paid/partial payment — auto-prevented by trigger"
+                  />
+                  <HealthCheck
+                    label="Repaired invoices (logged)"
+                    value={auditData.repairCount}
+                    ok={true}
+                    detail="Records normalized by system_repair_v1 — immutable audit trail"
+                  />
                 </div>
               </div>
 
@@ -336,6 +375,20 @@ export default function InvoiceForensicsConsole() {
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(auditData.statusCounts).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
+                    <Badge key={status} variant="outline" className="text-sm py-1 px-3">
+                      {status}: {count}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Invoice Status Distribution */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+                  Invoice Status Distribution (status column)
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(auditData.invStatusCounts).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
                     <Badge key={status} variant="outline" className="text-sm py-1 px-3">
                       {status}: {count}
                     </Badge>
@@ -542,8 +595,11 @@ function KnownInvoiceCheck() {
         issues: [
           inv.deleted_at ? '❌ Invoice is soft-deleted' : '✅ Not deleted',
           inv.store_id ? '✅ Has store_id linkage' : '⚠️ Missing store_id',
-          inv.payment_status ? `✅ Status: ${inv.payment_status}` : '⚠️ NULL payment_status',
-          inv.status === 'draft' && inv.payment_status === 'paid' ? '⚠️ status=draft but payment_status=paid (mismatch)' : '✅ Status consistent',
+          inv.payment_status ? `✅ Payment: ${inv.payment_status}` : '⚠️ NULL payment_status',
+          inv.status === 'finalized' ? '✅ Status: finalized (normalized)' : 
+            inv.status === 'draft' && inv.payment_status === 'paid' ? '⚠️ status=draft but payment_status=paid (mismatch)' : 
+            `✅ Status: ${inv.status || 'unknown'}`,
+          inv.is_historical ? '✅ Tagged as historical invoice' : '✅ Current invoice',
           '✅ In unified feed (queryable by search)',
         ],
       };
