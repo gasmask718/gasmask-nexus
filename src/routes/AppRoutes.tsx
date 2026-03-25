@@ -1531,9 +1531,9 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/entries/new" element={<PickEntryWizard />} />
         <Route path="/os/sports-betting/results" element={<BettingResultsPage />} />
         <Route path="/os/sports-betting/profit-center" element={<SBOProfitCenter />} />
-        <Route path="/os/sports-betting/wallet-tracker" element={<SBOWalletTracker />} />
-        <Route path="/os/sports-betting/capper-tracker" element={<SBOCapperTracker />} />
-        <Route path="/os/sports-betting/signal-alignment" element={<SBOSignalAlignment />} />
+        <Route path="/sbo-ai-engine/wallet-intelligence" element={<SBOWalletTracker />} />
+        <Route path="/sbo-ai-engine/capper-intelligence" element={<SBOCapperTracker />} />
+        <Route path="/sbo-ai-engine/signal-alignment" element={<SBOSignalAlignment />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
