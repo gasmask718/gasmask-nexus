@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  BarChart3, Target, Phone, FileText, Users, Calculator, MapPin, TrendingUp, Bot, Sun, Handshake, DollarSign, Brain
+  BarChart3, Target, Phone, FileText, Users, Calculator, MapPin, TrendingUp, Bot, Sun, Handshake, DollarSign, Brain, Zap, MessageSquare
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
@@ -12,6 +12,13 @@ const solarNavSections = [
     title: 'Penthouse',
     items: [
       { path: '/solar', label: 'Command Center', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'AI Closing Engine',
+    items: [
+      { path: '/solar/estimator', label: '☀️ Solar Estimator + AI Chat', icon: Zap },
+      { path: '/solar/closing', label: '📊 Closing Dashboard', icon: Target },
     ],
   },
   {
