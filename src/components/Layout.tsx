@@ -347,11 +347,6 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/funding', label: '💳 Funding Company OS', icon: CreditCard },
       { path: '/os/grants', label: '🏆 Grant Company OS', icon: Trophy },
       { path: '/os/wealth-engine', label: '📈 Wealth Engine OS', icon: TrendingUp },
-      { path: '/real-estate', label: '🏠 Real Estate OS', icon: Building },
-      { path: '/real-estate/leads', label: 'RE Leads', icon: Target },
-      { path: '/real-estate/pipeline', label: 'RE Pipeline', icon: Activity },
-      { path: '/real-estate/investors', label: 'RE Investors', icon: Users },
-      { path: '/real-estate/closings', label: 'RE Closings', icon: Check },
     ],
   },
   communicationSystems: {
