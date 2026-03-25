@@ -1086,7 +1086,7 @@ export default function AppRoutes() {
           <Route path="intelligence/self-learn" element={<DCAgents />} />
           <Route path="pipelines" element={<DCPipelines />} />
           <Route path="pipelines/surplus-funds" element={<SurplusFundsPipeline />} />
-          <Route path="pipelines/real-estate" element={<RealEstatePipeline />} />
+          <Route path="pipelines/real-estate" element={<DCRealEstatePipeline />} />
           <Route path="pipelines/unforgettable-times" element={<UnforgettableTimesPipeline />} />
           <Route path="pipelines/playboxxx" element={<PlayBoxxxPipeline />} />
           <Route path="pipelines/brightsun-energy" element={<BrightSunPipeline />} />
