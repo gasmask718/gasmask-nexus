@@ -191,10 +191,18 @@ export default function CrossPlatformLines() {
           <TabsTrigger value="moneyline">Moneyline</TabsTrigger>
           <TabsTrigger value="spread">Spreads</TabsTrigger>
           <TabsTrigger value="total">Totals</TabsTrigger>
+          <TabsTrigger value="props" className="flex items-center gap-1">
+            <Target className="h-3 w-3" /> Player Props
+          </TabsTrigger>
           <TabsTrigger value="platforms" className="flex items-center gap-1">
             <BarChart3 className="h-3 w-3" /> Platforms
           </TabsTrigger>
         </TabsList>
+
+        {/* PLAYER PROPS TAB */}
+        <TabsContent value="props">
+          <BookPropsComparison />
+        </TabsContent>
 
         {/* EDGES TAB */}
         <TabsContent value="edges" className="space-y-4">
