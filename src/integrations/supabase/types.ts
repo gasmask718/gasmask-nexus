@@ -62530,6 +62530,53 @@ export type Database = {
         }
         Relationships: []
       }
+      solar_closing_sessions: {
+        Row: {
+          ai_recommendations: Json | null
+          closing_stage: string | null
+          created_at: string
+          id: string
+          intent_score: number | null
+          lead_id: string | null
+          objections_detected: Json | null
+          outcome: string | null
+          session_type: string
+          transcript: string | null
+        }
+        Insert: {
+          ai_recommendations?: Json | null
+          closing_stage?: string | null
+          created_at?: string
+          id?: string
+          intent_score?: number | null
+          lead_id?: string | null
+          objections_detected?: Json | null
+          outcome?: string | null
+          session_type?: string
+          transcript?: string | null
+        }
+        Update: {
+          ai_recommendations?: Json | null
+          closing_stage?: string | null
+          created_at?: string
+          id?: string
+          intent_score?: number | null
+          lead_id?: string | null
+          objections_detected?: Json | null
+          outcome?: string | null
+          session_type?: string
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_closing_sessions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solar_deals: {
         Row: {
           closed_at: string | null
@@ -62727,6 +62774,33 @@ export type Database = {
           status?: string | null
           updated_at?: string | null
           zip?: string | null
+        }
+        Relationships: []
+      }
+      solar_objection_library: {
+        Row: {
+          id: string
+          last_updated: string | null
+          objection_type: string
+          recommended_responses: Json | null
+          success_rate: number | null
+          trigger_keywords: string[] | null
+        }
+        Insert: {
+          id?: string
+          last_updated?: string | null
+          objection_type: string
+          recommended_responses?: Json | null
+          success_rate?: number | null
+          trigger_keywords?: string[] | null
+        }
+        Update: {
+          id?: string
+          last_updated?: string | null
+          objection_type?: string
+          recommended_responses?: Json | null
+          success_rate?: number | null
+          trigger_keywords?: string[] | null
         }
         Relationships: []
       }
@@ -62996,6 +63070,59 @@ export type Database = {
           website?: string | null
         }
         Relationships: []
+      }
+      solar_property_intelligence: {
+        Row: {
+          address: string
+          confidence_score: number | null
+          created_at: string
+          data_source: string | null
+          estimated_monthly_savings: number | null
+          estimated_panel_count: number | null
+          estimated_system_kw: number | null
+          id: string
+          lead_id: string | null
+          roof_complexity_score: number | null
+          roof_estimated_sqft: number | null
+          sunlight_score: number | null
+        }
+        Insert: {
+          address: string
+          confidence_score?: number | null
+          created_at?: string
+          data_source?: string | null
+          estimated_monthly_savings?: number | null
+          estimated_panel_count?: number | null
+          estimated_system_kw?: number | null
+          id?: string
+          lead_id?: string | null
+          roof_complexity_score?: number | null
+          roof_estimated_sqft?: number | null
+          sunlight_score?: number | null
+        }
+        Update: {
+          address?: string
+          confidence_score?: number | null
+          created_at?: string
+          data_source?: string | null
+          estimated_monthly_savings?: number | null
+          estimated_panel_count?: number | null
+          estimated_system_kw?: number | null
+          id?: string
+          lead_id?: string | null
+          roof_complexity_score?: number | null
+          roof_estimated_sqft?: number | null
+          sunlight_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_property_intelligence_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       speaker_style_profiles: {
         Row: {
