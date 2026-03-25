@@ -109,8 +109,24 @@ export function PredictionResult({ prediction, homeTeam, awayTeam, intel, weight
     });
   }
 
+  const pickTierBadge = pickTier ? {
+    grandmaster: { label: '👑 GRANDMASTER', className: 'text-amber-400 bg-amber-500/15 border-amber-500/40 animate-pulse' },
+    elite: { label: '🔥 ELITE', className: 'text-orange-500 bg-orange-500/15 border-orange-500/40' },
+    solid: { label: '⚠️ SOLID', className: 'text-amber-500 bg-amber-500/10 border-amber-500/30' },
+    low: { label: '❌ LOW', className: 'text-muted-foreground bg-muted/30 border-border' },
+  }[pickTier] : null;
+
   return (
-    <div className="mt-3 rounded-lg border border-border bg-muted/30 p-3 space-y-3">
+    <div className={`mt-3 rounded-lg border p-3 space-y-3 ${isGrandmaster ? 'border-amber-500/40 bg-gradient-to-r from-amber-500/10 to-orange-500/5' : 'border-border bg-muted/30'}`}>
+      {/* Grandmaster banner */}
+      {isGrandmaster && (
+        <div className="flex items-center gap-2 p-2 rounded-md bg-amber-500/10 border border-amber-500/30">
+          <Crown className="h-4 w-4 text-amber-400" />
+          <span className="text-xs font-bold text-amber-400">GRANDMASTER PICK — SUPER CHOICE</span>
+          {weightedScore != null && <span className="ml-auto text-sm font-black text-amber-400">{weightedScore}</span>}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-foreground">
           AI Pick: <span className="font-bold">{predictedTeamLabel}</span>
@@ -125,6 +141,11 @@ export function PredictionResult({ prediction, homeTeam, awayTeam, intel, weight
             }`}>
               {prediction.data_quality === 'full' ? '📊 Full Stats' :
                prediction.data_quality === 'partial' ? '⚠️ Partial Stats' : '🔴 Odds Only'}
+            </Badge>
+          )}
+          {pickTierBadge && !isGrandmaster && (
+            <Badge variant="outline" className={`ml-1.5 text-[8px] h-3.5 px-1 ${pickTierBadge.className}`}>
+              {pickTierBadge.label}{weightedScore != null ? ` ${weightedScore}` : ''}
             </Badge>
           )}
         </span>
