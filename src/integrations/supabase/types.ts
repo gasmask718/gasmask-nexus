@@ -63648,6 +63648,176 @@ export type Database = {
           },
         ]
       }
+      sportsbook_edge_analysis: {
+        Row: {
+          ai_confidence: number | null
+          ai_projected_value: number | null
+          away_team: string
+          best_line: number | null
+          best_platform: string | null
+          created_at: string | null
+          edge_score: number | null
+          game_date: string
+          home_team: string
+          id: string
+          line_spread: number | null
+          market_type: string
+          platforms_compared: Json | null
+          player_name: string | null
+          reasoning: string | null
+          recommendation: string | null
+          sport: string
+          stat_type: string | null
+          worst_line: number | null
+          worst_platform: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_projected_value?: number | null
+          away_team: string
+          best_line?: number | null
+          best_platform?: string | null
+          created_at?: string | null
+          edge_score?: number | null
+          game_date: string
+          home_team: string
+          id?: string
+          line_spread?: number | null
+          market_type: string
+          platforms_compared?: Json | null
+          player_name?: string | null
+          reasoning?: string | null
+          recommendation?: string | null
+          sport: string
+          stat_type?: string | null
+          worst_line?: number | null
+          worst_platform?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_projected_value?: number | null
+          away_team?: string
+          best_line?: number | null
+          best_platform?: string | null
+          created_at?: string | null
+          edge_score?: number | null
+          game_date?: string
+          home_team?: string
+          id?: string
+          line_spread?: number | null
+          market_type?: string
+          platforms_compared?: Json | null
+          player_name?: string | null
+          reasoning?: string | null
+          recommendation?: string | null
+          sport?: string
+          stat_type?: string | null
+          worst_line?: number | null
+          worst_platform?: string | null
+        }
+        Relationships: []
+      }
+      sportsbook_line_events: {
+        Row: {
+          away_odds: number | null
+          away_team: string
+          commence_time: string | null
+          draw_odds: number | null
+          external_event_id: string | null
+          fetched_at: string | null
+          game_date: string
+          home_odds: number | null
+          home_team: string
+          id: string
+          is_live: boolean | null
+          line_value: number | null
+          market_type: string
+          over_odds: number | null
+          platform_id: string | null
+          platform_slug: string
+          player_name: string | null
+          raw_data: Json | null
+          sport: string
+          spread_away: number | null
+          spread_away_odds: number | null
+          spread_home: number | null
+          spread_home_odds: number | null
+          stat_type: string | null
+          total: number | null
+          total_over_odds: number | null
+          total_under_odds: number | null
+          under_odds: number | null
+        }
+        Insert: {
+          away_odds?: number | null
+          away_team: string
+          commence_time?: string | null
+          draw_odds?: number | null
+          external_event_id?: string | null
+          fetched_at?: string | null
+          game_date: string
+          home_odds?: number | null
+          home_team: string
+          id?: string
+          is_live?: boolean | null
+          line_value?: number | null
+          market_type: string
+          over_odds?: number | null
+          platform_id?: string | null
+          platform_slug: string
+          player_name?: string | null
+          raw_data?: Json | null
+          sport?: string
+          spread_away?: number | null
+          spread_away_odds?: number | null
+          spread_home?: number | null
+          spread_home_odds?: number | null
+          stat_type?: string | null
+          total?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          under_odds?: number | null
+        }
+        Update: {
+          away_odds?: number | null
+          away_team?: string
+          commence_time?: string | null
+          draw_odds?: number | null
+          external_event_id?: string | null
+          fetched_at?: string | null
+          game_date?: string
+          home_odds?: number | null
+          home_team?: string
+          id?: string
+          is_live?: boolean | null
+          line_value?: number | null
+          market_type?: string
+          over_odds?: number | null
+          platform_id?: string | null
+          platform_slug?: string
+          player_name?: string | null
+          raw_data?: Json | null
+          sport?: string
+          spread_away?: number | null
+          spread_away_odds?: number | null
+          spread_home?: number | null
+          spread_home_odds?: number | null
+          stat_type?: string | null
+          total?: number | null
+          total_over_odds?: number | null
+          total_under_odds?: number | null
+          under_odds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sportsbook_line_events_platform_id_fkey"
+            columns: ["platform_id"]
+            isOneToOne: false
+            referencedRelation: "sportsbook_platforms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sportsbook_lines: {
         Row: {
           game_date: string
@@ -63702,6 +63872,39 @@ export type Database = {
           uploaded_at?: string
           uploaded_by?: string | null
           validation_notes?: string | null
+        }
+        Relationships: []
+      }
+      sportsbook_platforms: {
+        Row: {
+          api_source: string | null
+          created_at: string | null
+          has_api: boolean | null
+          id: string
+          is_active: boolean | null
+          name: string
+          platform_type: string
+          slug: string
+        }
+        Insert: {
+          api_source?: string | null
+          created_at?: string | null
+          has_api?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          platform_type?: string
+          slug: string
+        }
+        Update: {
+          api_source?: string | null
+          created_at?: string | null
+          has_api?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          platform_type?: string
+          slug?: string
         }
         Relationships: []
       }
