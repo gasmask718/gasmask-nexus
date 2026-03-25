@@ -38,6 +38,7 @@ export interface UnifiedInvoice {
   receipt_status: string | null;
   receipt_sent_at: string | null;
   is_historical: boolean;
+  entry_mode: 'live' | 'backfill';
   // Audit fields
   created_by: string | null;
 }
@@ -106,6 +107,7 @@ export function useUnifiedInvoiceFeed(filters?: InvoiceFilters) {
             receipt_status,
             receipt_sent_at,
             is_historical,
+            entry_mode,
             created_by
           `)
           .order('created_at', { ascending: false });
@@ -179,6 +181,7 @@ export function useUnifiedInvoiceFeed(filters?: InvoiceFilters) {
             receipt_status: inv.receipt_status,
             receipt_sent_at: inv.receipt_sent_at,
             is_historical: inv.is_historical || false,
+            entry_mode: inv.entry_mode || (inv.is_historical ? 'backfill' : 'live'),
             created_by: inv.created_by,
           });
         });
@@ -256,6 +259,7 @@ export function useUnifiedInvoiceFeed(filters?: InvoiceFilters) {
             receipt_status: inv.receipt_status,
             receipt_sent_at: inv.receipt_sent_at,
             is_historical: inv.is_historical || false,
+            entry_mode: (inv as any).entry_mode || (inv.is_historical ? 'backfill' : 'live'),
             created_by: null,
           });
         });
@@ -303,6 +307,7 @@ export function useUnifiedInvoiceFeed(filters?: InvoiceFilters) {
             receipt_status: null,
             receipt_sent_at: null,
             is_historical: false,
+            entry_mode: 'live' as const,
             created_by: null,
           });
         });

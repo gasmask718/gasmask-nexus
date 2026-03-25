@@ -101,6 +101,7 @@ async function fetchStoreInvoices(
       receipt_status,
       receipt_sent_at,
       is_historical,
+      entry_mode,
       created_by
     `, { count: 'exact' })
     .order('created_at', { ascending: false });
@@ -265,6 +266,7 @@ export function usePaginatedInvoiceFeed(filters: PaginatedFilters = {}) {
             receipt_status: inv.receipt_status,
             receipt_sent_at: inv.receipt_sent_at,
             is_historical: inv.is_historical || false,
+            entry_mode: inv.entry_mode || (inv.is_historical ? 'backfill' : 'live'),
             created_by: inv.created_by,
           });
         });
@@ -311,6 +313,7 @@ export function usePaginatedInvoiceFeed(filters: PaginatedFilters = {}) {
             receipt_status: inv.receipt_status,
             receipt_sent_at: inv.receipt_sent_at,
             is_historical: inv.is_historical || false,
+            entry_mode: (inv as any).entry_mode || (inv.is_historical ? 'backfill' : 'live'),
             created_by: null,
           });
         });
@@ -357,6 +360,7 @@ export function usePaginatedInvoiceFeed(filters: PaginatedFilters = {}) {
             receipt_status: null,
             receipt_sent_at: null,
             is_historical: false,
+            entry_mode: 'live' as const,
             created_by: null,
           });
         });

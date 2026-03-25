@@ -105,6 +105,18 @@ export default function InvoiceForensicsConsole() {
         invStatusCounts[s] = (invStatusCounts[s] || 0) + 1;
       });
 
+      // Entry mode distribution
+      const { data: entryModeDist } = await supabase
+        .from('invoices')
+        .select('entry_mode')
+        .limit(5000);
+
+      const entryModeCounts: Record<string, number> = {};
+      (entryModeDist || []).forEach((r: any) => {
+        const s = (r as any).entry_mode || 'unknown';
+        entryModeCounts[s] = (entryModeCounts[s] || 0) + 1;
+      });
+
       return {
         invoicesTotal: invoicesTotal || 0,
         crmTotal: crmTotal || 0,
@@ -118,6 +130,7 @@ export default function InvoiceForensicsConsole() {
         repairCount: repairCount || 0,
         statusCounts,
         invStatusCounts,
+        entryModeCounts,
         feedExpected: (invoicesTotal || 0) + (crmTotal || 0) + (wholesaleTotal || 0),
       };
     },
@@ -391,6 +404,20 @@ export default function InvoiceForensicsConsole() {
                   {Object.entries(auditData.invStatusCounts).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
                     <Badge key={status} variant="outline" className="text-sm py-1 px-3">
                       {status}: {count}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+
+              {/* Entry Mode Distribution */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+                  Entry Mode Distribution
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(auditData.entryModeCounts).sort((a, b) => b[1] - a[1]).map(([mode, count]) => (
+                    <Badge key={mode} variant="outline" className="text-sm py-1 px-3">
+                      {mode}: {count}
                     </Badge>
                   ))}
                 </div>
