@@ -32,6 +32,7 @@ export default function AppSidebar() {
     if (pathname.startsWith('/surplus-funds')) return 'surplus-funds-os';
     if (pathname.startsWith('/real-estate')) return 'real-estate-os';
     if (pathname.startsWith('/dynasty-connect')) return 'dynasty-connect';
+    if (pathname.startsWith('/brandaro')) return 'brandaro-hub';
     if (pathname.startsWith('/grabba/floor9') || pathname.startsWith('/gasmask/agent-center')) return 'floor-9';
     if (pathname.startsWith('/grabba/command-penthouse') || pathname === '/') return 'penthouse';
     if (pathname.startsWith('/communication')) return 'floor-2';
