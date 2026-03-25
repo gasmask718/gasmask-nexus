@@ -95,18 +95,23 @@ export default function BookPropsComparison() {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [showEdgesOnly, setShowEdgesOnly] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const handleSync = async () => {
     setSyncing(true);
+    setSyncError(null);
     try {
       const { data, error } = await supabase.functions.invoke('sbo-ingest-book-props', {
         body: { bookmakers: 'bovada,betonlineag,draftkings,fanduel,betmgm' },
       });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
       toast.success(`Ingested: ${data.inserted} new, ${data.updated} updated from ${Object.keys(data.book_stats || {}).length} books`);
       refetch();
     } catch (e: any) {
-      toast.error(`Sync failed: ${e.message}`);
+      const msg = e.message || 'Unknown error';
+      setSyncError(msg);
+      toast.error(`Sync failed: ${msg}`);
     } finally {
       setSyncing(false);
     }
