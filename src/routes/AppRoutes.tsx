@@ -392,11 +392,14 @@ const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
 const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
 const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
 const SolarOutreach = lazy(() => import('@/pages/solar/SolarOutreach'));
+const SolarQualification = lazy(() => import('@/pages/solar/SolarQualification'));
+const SolarAppointments = lazy(() => import('@/pages/solar/SolarAppointments'));
 const SolarLiveCallAssist = lazy(() => import('@/pages/solar/SolarLiveCallAssist'));
 const SolarDeals = lazy(() => import('@/pages/solar/SolarDeals'));
-const SolarPartners = lazy(() => import('@/pages/solar/SolarPartners'));
+const SolarPartnersAdvanced = lazy(() => import('@/pages/solar/SolarPartnersAdvanced'));
+const SolarAgents = lazy(() => import('@/pages/solar/SolarAgents'));
+const SolarAIBrain = lazy(() => import('@/pages/solar/SolarAIBrain'));
 const SolarAnalytics = lazy(() => import('@/pages/solar/SolarAnalytics'));
-const SolarPlaceholder = lazy(() => import('@/pages/solar/SolarPlaceholder'));
 
 // Real Estate OS
 const RELayout = lazy(() => import('@/pages/real-estate/RELayout'));
@@ -2822,13 +2825,13 @@ export default function AppRoutes() {
           <Route index element={<SolarCommandCenter />} />
           <Route path="leads" element={<SolarLeadIntelligence />} />
           <Route path="outreach" element={<SolarOutreach />} />
-          <Route path="qualification" element={<SolarPlaceholder />} />
-          <Route path="appointments" element={<SolarPlaceholder />} />
+          <Route path="qualification" element={<SolarQualification />} />
+          <Route path="appointments" element={<SolarAppointments />} />
           <Route path="live-calls" element={<SolarLiveCallAssist />} />
           <Route path="deals" element={<SolarDeals />} />
-          <Route path="partners" element={<SolarPartners />} />
-          <Route path="agents" element={<SolarPlaceholder />} />
-          <Route path="ai-brain" element={<SolarPlaceholder />} />
+          <Route path="partners" element={<SolarPartnersAdvanced />} />
+          <Route path="agents" element={<SolarAgents />} />
+          <Route path="ai-brain" element={<SolarAIBrain />} />
           <Route path="analytics" element={<SolarAnalytics />} />
         </Route>
       </Route>
