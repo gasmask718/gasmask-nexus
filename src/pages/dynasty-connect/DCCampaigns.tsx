@@ -217,6 +217,9 @@ export default function DCCampaigns() {
                               <Archive className="h-3.5 w-3.5" />
                             </Button>
                           )}
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => duplicateCampaign.mutate(c)} title="Duplicate">
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
