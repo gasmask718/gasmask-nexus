@@ -38,6 +38,7 @@ export interface UnifiedInvoice {
   receipt_status: string | null;
   receipt_sent_at: string | null;
   is_historical: boolean;
+  entry_mode: 'live' | 'backfill';
   // Audit fields
   created_by: string | null;
 }
