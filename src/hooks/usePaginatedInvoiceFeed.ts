@@ -174,6 +174,11 @@ async function fetchCrmInvoices(
     query = query.eq('customer_id', filters.entityId);
   }
 
+  // SERVER-SIDE SEARCH: filter by invoice_number at the DB level
+  if (filters.search) {
+    query = query.ilike('invoice_number', `%${filters.search}%`);
+  }
+
   query = query.range(from, to);
 
   const { data, count, error } = await query;
