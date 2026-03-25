@@ -284,82 +284,10 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     // =====================================================
-    // STEP 5: Handle After-Hours Routing (if closed)
+    // STEP 5: 24/7 — After-hours routing DISABLED
     // =====================================================
-    if (!isOpen && afterHoursRouteType) {
-      console.log(`🌙 After-hours routing active: ${afterHoursRouteType}`);
-      
-      // Handle after-hours based on configuration
-      let afterHoursResult: RoutingResult | null = null;
-      
-      switch (afterHoursRouteType) {
-        case "voicemail":
-          console.log("🌙 After-hours: Sending to voicemail");
-          const voicemailMessage = afterHoursMessage || `Thank you for calling ${businessName}. We are currently closed. Please leave a message after the beep.`;
-          return generateTwiML(`
-            <Response>
-              <Say voice="alice">${escapeXml(voicemailMessage)}</Say>
-              <Record maxLength="120" transcribe="true" playBeep="true" action="${getStatusCallbackUrl()}"/>
-              <Say voice="alice">Thank you for your message. Goodbye.</Say>
-              <Hangup/>
-            </Response>
-          `);
-          
-        case "kiosk":
-          console.log("🌙 After-hours: Sending to kiosk fallback");
-          const kioskMessage = afterHoursMessage || `Thank you for calling ${businessName}. We are currently closed. Please call back during business hours.`;
-          return generateTwiML(`
-            <Response>
-              <Say voice="alice">${escapeXml(kioskMessage)}</Say>
-              <Hangup/>
-            </Response>
-          `);
-          
-        case "message":
-          console.log("🌙 After-hours: Playing custom message");
-          const customMessage = afterHoursMessage || `Thank you for calling ${businessName}. We are currently closed.`;
-          return generateTwiML(`
-            <Response>
-              <Say voice="alice">${escapeXml(customMessage)}</Say>
-              <Hangup/>
-            </Response>
-          `);
-          
-        case "user":
-          if (afterHoursRouteUserId) {
-            // Route to specific after-hours user
-            const fakeAfterHoursRoute: InboundRoute = {
-              id: "after-hours",
-              route_type: "user",
-              route_target_user_id: afterHoursRouteUserId,
-              route_target_role: null,
-              is_default: false,
-              is_active: true,
-            };
-            inboundRoute = fakeAfterHoursRoute;
-            routeSource = "after_hours_user";
-            console.log(`🌙 After-hours: Routing to user ${afterHoursRouteUserId}`);
-          }
-          break;
-          
-        case "role":
-          if (afterHoursRouteRole) {
-            // Route to after-hours role
-            const fakeAfterHoursRoute: InboundRoute = {
-              id: "after-hours",
-              route_type: "role",
-              route_target_user_id: null,
-              route_target_role: afterHoursRouteRole,
-              is_default: false,
-              is_active: true,
-            };
-            inboundRoute = fakeAfterHoursRoute;
-            routeSource = "after_hours_role";
-            console.log(`🌙 After-hours: Routing to role ${afterHoursRouteRole}`);
-          }
-          break;
-      }
-    }
+    // System operates 24/7. All calls proceed to normal routing.
+    console.log(`✅ 24/7 mode: Skipping after-hours routing, proceeding to normal call flow`);
 
     // =====================================================
     // STEP 6: Apply routing logic with DETAILED LOGGING
