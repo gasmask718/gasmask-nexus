@@ -1207,6 +1207,20 @@ export function PrizePicksAnalyzer() {
               {batchAnalyzing ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Zap className="h-3 w-3 mr-1" />}
               ⚡ Run AI on {unanalyzed.length} Unanalyzed
             </Button>
+            <Button onClick={async () => {
+              toast.info('Building stat context for all props...');
+              try {
+                const { data, error } = await supabase.functions.invoke('sbo-build-prop-context', {
+                  body: { game_date: viewDate === 'yesterday' ? getDateEST(-1) : getDateEST(0) }
+                });
+                if (error) throw new Error(error.message);
+                toast.success(`Stats built: ${data?.enriched || 0} full, ${data?.partial || 0} partial out of ${data?.total_props || 0}`);
+              } catch (e: any) {
+                toast.error(`Failed: ${e.message}`);
+              }
+            }} size="sm" variant="outline">
+              <Database className="h-3 w-3 mr-1" /> Build Stats
+            </Button>
             <Button onClick={loadSavedPPProps} size="sm" variant="outline">
               <RefreshCw className="h-3 w-3 mr-1" /> Refresh
             </Button>
