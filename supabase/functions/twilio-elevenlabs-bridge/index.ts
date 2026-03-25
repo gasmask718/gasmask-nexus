@@ -21,6 +21,11 @@ const handler = async (req: Request): Promise<Response> => {
     const businessType = url.searchParams.get("business_type") || "";
 
     const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!ELEVENLABS_API_KEY) {
+      console.error("[Bridge] ELEVENLABS_API_KEY not configured");
+      return twimlError("Voice agent not configured.");
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
@@ -45,13 +50,42 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!agentId) return twimlError("Agent configuration missing.");
 
-    // Parse Twilio body
-    const formData = await req.formData();
-    const fromNumber = formData.get("From")?.toString() || "";
-    const toNumber = formData.get("To")?.toString() || "";
-    const callSid = formData.get("CallSid")?.toString() || "";
+    // Parse Twilio body (form-encoded POST from Twilio)
+    let fromNumber = "";
+    let toNumber = "";
+    let callSid = "";
+
+    const contentType = req.headers.get("content-type") || "";
+    if (contentType.includes("application/x-www-form-urlencoded") || contentType.includes("multipart/form-data")) {
+      try {
+        const formData = await req.formData();
+        fromNumber = formData.get("From")?.toString() || "";
+        toNumber = formData.get("To")?.toString() || "";
+        callSid = formData.get("CallSid")?.toString() || "";
+      } catch (e) {
+        console.warn("[Bridge] Could not parse form data:", e);
+      }
+    }
+
+    // Also check query params as fallback (some call paths pass these)
+    if (!callSid) callSid = url.searchParams.get("call_sid") || url.searchParams.get("CallSid") || "";
+    if (!fromNumber) fromNumber = url.searchParams.get("from_number") || url.searchParams.get("From") || "";
+    if (!toNumber) toNumber = url.searchParams.get("to_number") || url.searchParams.get("To") || "";
 
     console.log(`[Bridge] Starting | agent=${agentId} | callSid=${callSid} | from=${fromNumber} | to=${toNumber}`);
+
+    // ═══ CRITICAL FIX: Ensure from_number and to_number are never identical ═══
+    // ElevenLabs rejects register-call if both numbers match.
+    // For outbound calls: Twilio From = our number, To = prospect
+    // We must send distinct values to ElevenLabs.
+    let elFromNumber = fromNumber;
+    let elToNumber = toNumber;
+
+    if (elFromNumber && elToNumber && elFromNumber === elToNumber) {
+      console.warn(`[Bridge] ⚠️ From and To are identical (${elFromNumber}). Clearing from_number to avoid ElevenLabs rejection.`);
+      // Don't send from_number — ElevenLabs will use its own default
+      elFromNumber = "";
+    }
 
     // Build handoff URL
     const projectId = supabaseUrl.replace("https://", "").split(".")[0];
@@ -61,39 +95,31 @@ const handler = async (req: Request): Promise<Response> => {
     let conversationOverride: any = undefined;
     if (brandароMode) {
       try {
-        const promptResp = await fetch(`${supabaseUrl}/functions/v1/brandaro-voice-agent`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${supabaseServiceRoleKey}`,
-          },
-          body: JSON.stringify({
+        const promptResp = await supabase.functions.invoke("brandaro-voice-agent", {
+          body: {
             action: "get_system_prompt",
             lead_name: decodeURIComponent(leadName),
             business_name: decodeURIComponent(businessName),
             business_type: decodeURIComponent(businessType),
-          }),
+          },
         });
-        if (promptResp.ok) {
-          const promptData = await promptResp.json();
+        if (promptResp.data) {
           conversationOverride = {
             agent: {
-              prompt: { prompt: promptData.system_prompt },
+              prompt: { prompt: promptResp.data.system_prompt },
               first_message: `Hey, is this the owner or manager at ${decodeURIComponent(businessName) || "the business"}?`,
             },
           };
-          console.log(`🧠 Brandaro voice agent prompt loaded (${promptData.system_prompt.length} chars)`);
+          console.log(`🧠 Brandaro voice agent prompt loaded (${promptResp.data.system_prompt.length} chars)`);
         }
       } catch (e) {
         console.warn("⚠️ Failed to load Brandaro prompt, using default agent config:", e);
       }
     }
 
-    // --- Call ElevenLabs API ---
+    // --- Build ElevenLabs register-call payload ---
     const registerBody: any = {
       agent_id: agentId,
-      from_number: fromNumber,
-      to_number: toNumber,
       direction: "outbound",
       dynamic_variables: {
         call_sid: callSid,
@@ -104,31 +130,65 @@ const handler = async (req: Request): Promise<Response> => {
       },
     };
 
+    // Only include phone numbers if they're non-empty and distinct
+    if (elFromNumber) registerBody.from_number = elFromNumber;
+    if (elToNumber) registerBody.to_number = elToNumber;
+
     if (conversationOverride) {
       registerBody.conversation_config_override = conversationOverride;
     }
 
-    console.log(`[Bridge] Calling ElevenLabs register-call with agent_id=${agentId}`);
+    console.log(`[Bridge] Calling ElevenLabs register-call | agent_id=${agentId} | from=${elFromNumber || "(omitted)"} | to=${elToNumber || "(omitted)"}`);
 
-    const registerResponse = await fetch("https://api.elevenlabs.io/v1/convai/twilio/register-call", {
-      method: "POST",
-      headers: {
-        "xi-api-key": ELEVENLABS_API_KEY!,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(registerBody),
-    });
+    // --- Call ElevenLabs API with retry ---
+    let registerResponse: Response | null = null;
+    let rawText = "";
+    const maxRetries = 2;
 
-    // Read raw response
-    const rawText = await registerResponse.text();
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
 
-    if (!registerResponse.ok) {
-      console.error(`[Bridge] ElevenLabs returned ${registerResponse.status}: ${rawText.substring(0, 500)}`);
-      throw new Error(`ElevenLabs API failed: ${registerResponse.status}`);
+        registerResponse = await fetch("https://api.elevenlabs.io/v1/convai/twilio/register-call", {
+          method: "POST",
+          headers: {
+            "xi-api-key": ELEVENLABS_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(registerBody),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+        rawText = await registerResponse.text();
+
+        if (registerResponse.ok) {
+          console.log(`[Bridge] ✅ ElevenLabs responded OK on attempt ${attempt + 1}`);
+          break;
+        }
+
+        console.error(`[Bridge] ElevenLabs returned ${registerResponse.status} (attempt ${attempt + 1}): ${rawText.substring(0, 500)}`);
+
+        // If it's a 400 validation error, don't retry
+        if (registerResponse.status === 400) break;
+
+      } catch (fetchErr: any) {
+        console.error(`[Bridge] Fetch error (attempt ${attempt + 1}):`, fetchErr.message);
+        if (attempt === maxRetries) {
+          return twimlError("Voice agent connection timed out. Please try again.");
+        }
+        // Wait briefly before retry
+        await new Promise(r => setTimeout(r, 1000));
+      }
+    }
+
+    if (!registerResponse || !registerResponse.ok) {
+      console.error(`[Bridge] ❌ All attempts failed. Last response: ${rawText.substring(0, 300)}`);
+      return twimlError("Could not connect to voice agent.");
     }
 
     // ElevenLabs returns TwiML XML directly (not JSON)
-    // The conversation_id is embedded as: <Parameter name="conversation_id" value="conv_xxx" />
     let twiml = rawText;
     let conversationId: string | null = null;
 
@@ -145,11 +205,10 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("[Bridge] Parsed TwiML XML, extracted conversation_id:", conversationId);
     }
 
-    console.log(`[Bridge] Extracted conversationId=${conversationId} | callSid=${callSid}`);
+    console.log(`[Bridge] ✅ conversationId=${conversationId} | callSid=${callSid}`);
 
     // Persist conversation_id to call_recordings
     if (conversationId && callSid) {
-      // Try UPDATE first (row may already exist from outbound-call-trigger)
       const { data: updated, error: updateErr } = await supabase
         .from("call_recordings")
         .update({ elevenlabs_conversation_id: conversationId })
@@ -161,7 +220,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       if (!updated || updated.length === 0) {
-        // No existing row — INSERT a new one
         console.log("[Bridge] No existing row found, inserting new call_recordings row");
         const { error: insertErr } = await supabase
           .from("call_recordings")
@@ -196,15 +254,18 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error: any) {
     console.error("❌ Bridge error:", error.message);
-    return twimlError("Connection error.");
+    return twimlError("Connection error. Please try again.");
   }
 };
 
 function twimlError(message: string): Response {
-  return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response><Say>${message}</Say><Hangup/></Response>`, {
-    status: 200,
-    headers: { "Content-Type": "text/xml", ...corsHeaders },
-  });
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Matthew">${message}</Say><Hangup/></Response>`,
+    {
+      status: 200,
+      headers: { "Content-Type": "text/xml", ...corsHeaders },
+    }
+  );
 }
 
 serve(handler);
