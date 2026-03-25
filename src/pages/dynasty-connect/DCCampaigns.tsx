@@ -82,6 +82,24 @@ export default function DCCampaigns() {
     },
   });
 
+  const duplicateCampaign = useMutation({
+    mutationFn: async (campaign: any) => {
+      const { error } = await supabase.from('ai_call_campaigns').insert({
+        name: `${campaign.name} (Copy)`,
+        description: campaign.description,
+        target_segment: campaign.target_segment,
+        flow_id: campaign.flow_id,
+        max_concurrent_calls: campaign.max_concurrent_calls,
+        max_calls_per_minute: campaign.max_calls_per_minute,
+        status: 'draft',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dc-campaigns'] });
+      toast.success('Campaign duplicated');
+    },
+  });
   const createCampaign = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('ai_call_campaigns').insert({
