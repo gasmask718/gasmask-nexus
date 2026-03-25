@@ -1341,9 +1341,9 @@ export default function AppRoutes() {
         <Route path="/driver-debt-collection" element={<DriverDebtCollection />} />
         <Route path="/brand/:brand" element={<BrandDashboard />} />
 
-        {/* Real Estate with Layout */}
-        <Route path="/real-estate" element={<RealEstateLayout><RealEstate /></RealEstateLayout>} />
-        <Route path="/real-estate/leads" element={<RealEstateLayout><RealEstateLeads /></RealEstateLayout>} />
+        {/* Legacy Real Estate routes (kept under legacy paths to avoid overriding new Real Estate OS hub) */}
+        <Route path="/real-estate-legacy" element={<RealEstateLayout><RealEstate /></RealEstateLayout>} />
+        <Route path="/real-estate-legacy/leads" element={<RealEstateLayout><RealEstateLeads /></RealEstateLayout>} />
         <Route path="/real-estate/pipeline" element={<RealEstateLayout><RealEstatePipeline /></RealEstateLayout>} />
         <Route path="/real-estate/investors" element={<RealEstateLayout><RealEstateInvestors /></RealEstateLayout>} />
         <Route path="/real-estate/investors/blast" element={<RealEstateLayout><InvestorBlastSystem /></RealEstateLayout>} />
