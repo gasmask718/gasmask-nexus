@@ -226,7 +226,7 @@ serve(async (req) => {
       skipped: 0,
       book_stats: bookStats,
       errors: errors.slice(0, 10),
-      events_checked: eventsToProcess.length,
+      events_checked: todayEvents.length,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
