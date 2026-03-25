@@ -191,11 +191,19 @@ serve(async (req) => {
     console.log(`Collected ${allRows.length} props from ${Object.keys(bookStats).length} books`);
 
     // Batch upsert
+    // Deduplicate rows — keep last occurrence (freshest odds) per unique key
+    const deduped = new Map<string, any>();
+    for (const row of allRows) {
+      const key = `${row.player_name}::${row.prop_type}::${row.game_date}::${row.source}`;
+      deduped.set(key, row);
+    }
+    const uniqueRows = Array.from(deduped.values());
+    console.log(`Deduped: ${allRows.length} → ${uniqueRows.length} unique props`);
+
     let inserted = 0;
-    if (allRows.length > 0) {
-      // Batch upsert in chunks of 200 — uses unique constraint to update on conflict
-      for (let i = 0; i < allRows.length; i += 200) {
-        const chunk = allRows.slice(i, i + 200);
+    if (uniqueRows.length > 0) {
+      for (let i = 0; i < uniqueRows.length; i += 200) {
+        const chunk = uniqueRows.slice(i, i + 200);
         const { error: insertErr } = await supabase
           .from('sbo_player_props')
           .upsert(chunk, { onConflict: 'player_name,prop_type,game_date,source', ignoreDuplicates: false });
