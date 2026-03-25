@@ -4399,6 +4399,8 @@ export default function SportsBettingOS() {
           { id: 'history', label: '📜 History', shortLabel: 'History' },
           { id: 'sim', label: '⚡ Sim', shortLabel: 'Sim' },
           { id: 'entry', label: '📋 VA Entry', shortLabel: 'Entry' },
+          { id: 'health', label: '🩺 Health', shortLabel: 'Health' },
+          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
           { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
         ];
         const allTabs = [...primaryTabs, ...secondaryTabs];
