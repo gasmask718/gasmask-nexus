@@ -107,6 +107,7 @@ export function useUnifiedInvoiceFeed(filters?: InvoiceFilters) {
             receipt_status,
             receipt_sent_at,
             is_historical,
+            entry_mode,
             created_by
           `)
           .order('created_at', { ascending: false });
