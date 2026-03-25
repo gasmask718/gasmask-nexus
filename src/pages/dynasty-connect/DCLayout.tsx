@@ -40,6 +40,12 @@ const dcNavSections = [
     title: '🏢 Business Pipelines',
     items: [
       { path: '/dynasty-connect/pipelines', label: 'All Pipelines', icon: Building2 },
+      { path: '/dynasty-connect/pipelines/surplus-funds', label: 'Surplus Funds', icon: DollarSign },
+      { path: '/dynasty-connect/pipelines/real-estate', label: 'Real Estate', icon: Building2 },
+      { path: '/dynasty-connect/pipelines/unforgettable-times', label: 'Unforgettable Times', icon: Users },
+      { path: '/dynasty-connect/pipelines/playboxxx', label: 'PlayBoxxx', icon: Users },
+      { path: '/dynasty-connect/pipelines/brightsun-energy', label: 'BrightSun Energy', icon: Zap },
+      { path: '/dynasty-connect/pipelines/gasmask-new-stores', label: 'GasMask New Stores', icon: Building2 },
     ],
   },
   {
