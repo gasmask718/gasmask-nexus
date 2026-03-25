@@ -132,7 +132,10 @@ export default function DCPipelines() {
                 stats={stats}
                 isGasMask={isGasMask(pipe.business_name)}
                 onViewCampaigns={() => navigate('/dynasty-connect/campaigns')}
-                onViewCalls={() => navigate('/dynasty-connect/intelligence')}
+                onLaunch={() => {
+                  const slug = getSlug(pipe.business_name);
+                  navigate(slug ? `/dynasty-connect/pipelines/${slug}` : '/dynasty-connect/campaigns');
+                }}
               />
             );
           })}
