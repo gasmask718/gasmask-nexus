@@ -505,7 +505,10 @@ export default function AppSidebar() {
 
           {/* ☀️ BRIGHTSUN SOLAR HUB — Independent Hub */}
           {canAccessSolarHub && (
-            <div className="space-y-1">
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-amber-400/80 tracking-wider">
+                ☀️ BrightSun Solar Hub
+              </div>
               {renderSection('solar-os', 'BrightSun Solar Hub', '☀️', [
                 { path: '/solar', label: 'Penthouse — Command Center', emoji: '☀️' },
                 { path: '/solar/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
