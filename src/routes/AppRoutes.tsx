@@ -1526,6 +1526,7 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/entries" element={<EntriesList />} />
         <Route path="/os/sports-betting/entries/new" element={<PickEntryWizard />} />
         <Route path="/os/sports-betting/results" element={<BettingResultsPage />} />
+        <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
