@@ -385,6 +385,18 @@ const SFCases = lazy(() => import('@/pages/surplus-funds/SFCases'));
 const SFAttorneys = lazy(() => import('@/pages/surplus-funds/SFAttorneys'));
 const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
 
+// Real Estate OS
+const RELayout = lazy(() => import('@/pages/real-estate/RELayout'));
+const RECommandCenter = lazy(() => import('@/pages/real-estate/RECommandCenter'));
+const RELeadPipeline = lazy(() => import('@/pages/real-estate/RELeadPipeline'));
+const RECampaigns = lazy(() => import('@/pages/real-estate/RECampaigns'));
+const REDeals = lazy(() => import('@/pages/real-estate/REDeals'));
+const REBuyers = lazy(() => import('@/pages/real-estate/REBuyers'));
+const REVADesk = lazy(() => import('@/pages/real-estate/REVADesk'));
+const REAnalyzer = lazy(() => import('@/pages/real-estate/REAnalyzer'));
+const REMarkets = lazy(() => import('@/pages/real-estate/REMarkets'));
+const REAnalytics = lazy(() => import('@/pages/real-estate/REAnalytics'));
+
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
 const DialerPage = lazy(() => import('@/pages/communication/dialer/DialerPage'));
