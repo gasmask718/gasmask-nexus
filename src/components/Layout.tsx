@@ -820,7 +820,18 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* ☀️ BRIGHTSUN SOLAR HUB — INDEPENDENT HUB */}
+      <div className="pt-2 border-t border-amber-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-400/80 tracking-wider">
+          ☀️ BrightSun Solar Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.solarOs.id,
+          DYNASTY_NAVIGATION.solarOs.name,
+          DYNASTY_NAVIGATION.solarOs.items
+        )}
+      </div>
+
       {/* 🔴 GRABBA PRODUCT BRANDS */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
