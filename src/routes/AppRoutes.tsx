@@ -742,6 +742,9 @@ const BettingResultsPage = lazy(() => import('@/pages/os/betting/ResultsPage'));
 const SportsBettingOS = lazy(() => import('@/pages/sports-betting/SportsBettingOS'));
 const SystemIntegrity = lazy(() => import('@/pages/admin/SystemIntegrity'));
 const SBOProfitCenter = lazy(() => import('@/pages/os/betting/SBOProfitCenter'));
+const SBOWalletTracker = lazy(() => import('@/pages/os/betting/SBOWalletTracker'));
+const SBOCapperTracker = lazy(() => import('@/pages/os/betting/SBOCapperTracker'));
+const SBOSignalAlignment = lazy(() => import('@/pages/os/betting/SBOSignalAlignment'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceForensicsConsole'));
@@ -1528,6 +1531,9 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/entries/new" element={<PickEntryWizard />} />
         <Route path="/os/sports-betting/results" element={<BettingResultsPage />} />
         <Route path="/os/sports-betting/profit-center" element={<SBOProfitCenter />} />
+        <Route path="/os/sports-betting/wallet-tracker" element={<SBOWalletTracker />} />
+        <Route path="/os/sports-betting/capper-tracker" element={<SBOCapperTracker />} />
+        <Route path="/os/sports-betting/signal-alignment" element={<SBOSignalAlignment />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
