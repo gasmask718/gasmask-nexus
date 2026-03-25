@@ -493,20 +493,11 @@ export default function AppSidebar() {
                 { path: '/real-estate/analyzer', label: 'Floor 6 — Deal Analyzer', emoji: '🔢' },
                 { path: '/real-estate/automation', label: 'Floor 7 — Automation Engine', emoji: '🤖' },
                 { path: '/real-estate/markets', label: 'Floor 8 — Market Intelligence', emoji: '🗺️' },
-                { path: '/real-estate/analytics', label: 'Floor 9 — Analytics', emoji: '📊' },
+              { path: '/real-estate/analytics', label: 'Floor 9 — Analytics', emoji: '📊' },
               ], "text-green-500 hover:bg-green-500/10")}
-            </div>
-          )}
 
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* ☀️ BRIGHTSUN SOLAR OS — Standalone Hub                             */}
-          {/* ═══════════════════════════════════════════════════════════════════ */}
-          {isAdmin && (
-            <div className="mb-4 pt-2 border-t border-sidebar-border">
-              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(232, 163, 23, 0.8)' }}>
-                ☀️ BrightSun Solar OS
-              </div>
-              {renderSection('solar-os', 'BrightSun Solar', '☀️', [
+              {/* ☀️ BrightSun Solar — Nested under Real Estate OS */}
+              {renderSection('solar-os', '☀️ BrightSun Solar', '☀️', [
                 { path: '/solar', label: 'Penthouse — Command Center', emoji: '☀️' },
                 { path: '/solar/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
                 { path: '/solar/outreach', label: 'Floor 2 — AI Outreach', emoji: '📞' },
