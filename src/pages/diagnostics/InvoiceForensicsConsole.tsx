@@ -381,6 +381,20 @@ export default function InvoiceForensicsConsole() {
                   ))}
                 </div>
               </div>
+
+              {/* Invoice Status Distribution */}
+              <div>
+                <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wider">
+                  Invoice Status Distribution (status column)
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(auditData.invStatusCounts).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
+                    <Badge key={status} variant="outline" className="text-sm py-1 px-3">
+                      {status}: {count}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : null}
         </CardContent>
