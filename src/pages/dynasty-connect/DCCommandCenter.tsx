@@ -309,6 +309,61 @@ export default function DCCommandCenter() {
         </CardContent>
       </Card>
 
+      {/* ── Business Pipeline Overview ── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Building2 className="h-5 w-5 text-[#0F6E56]" /> Business Pipelines
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={() => navigate('/dynasty-connect/pipelines')}>
+              View All
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {pipelines.slice(0, 6).map((p: any) => (
+              <div key={p.id} className="p-3 rounded-lg bg-muted/30 border border-border/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => navigate('/dynasty-connect/pipelines')}>
+                <p className="font-medium text-sm truncate">{p.business_name}</p>
+                <p className="text-xs text-muted-foreground mt-1">Calls as: {p.caller_id}</p>
+                <Badge variant="outline" className={cn('text-[10px] mt-2',
+                  p.pipeline_type === 'internal' ? 'bg-teal-500/10 text-teal-500 border-teal-500' : 'bg-amber-500/10 text-amber-500 border-amber-500'
+                )}>{p.pipeline_type}</Badge>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Live Call Monitor ── */}
+      {liveCalls.length > 0 && (
+        <Card className="border-green-500/30 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
+              Live Calls ({liveCalls.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {liveCalls.map((call: any) => (
+                <div key={call.id} className="flex items-center justify-between p-3 rounded-lg bg-green-500/5 border border-green-500/20">
+                  <div>
+                    <p className="text-sm font-medium">{call.contact_name || call.phone_number || 'Unknown'}</p>
+                    <p className="text-xs text-muted-foreground">{call.business_name || 'Dynasty Connect'}</p>
+                  </div>
+                  <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500">
+                    Active
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Recent Calls Feed ── */}
       <Card>
         <CardHeader>
