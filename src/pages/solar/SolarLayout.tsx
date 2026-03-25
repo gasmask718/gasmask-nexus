@@ -19,6 +19,8 @@ const solarNavSections = [
     items: [
       { path: '/solar/estimator', label: '☀️ Solar Estimator + AI Chat', icon: Zap },
       { path: '/solar/closing', label: '📊 Closing Dashboard', icon: Target },
+      { path: '/solar/followups', label: '📬 Follow-Up Engine', icon: MessageSquare },
+      { path: '/solar/bookings', label: '📅 Appointment Booking', icon: FileText },
     ],
   },
   {
