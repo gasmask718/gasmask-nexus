@@ -30308,6 +30308,7 @@ export type Database = {
       dc_leads: {
         Row: {
           address: string | null
+          business_id: string | null
           business_name: string
           call_count: number | null
           campaign_id: string | null
@@ -30332,6 +30333,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          business_id?: string | null
           business_name: string
           call_count?: number | null
           campaign_id?: string | null
@@ -30356,6 +30358,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          business_id?: string | null
           business_name?: string
           call_count?: number | null
           campaign_id?: string | null
