@@ -109,7 +109,7 @@ export default function REAutomation() {
                   <span className="text-muted-foreground">Schedule: {job.schedule}</span>
                   {lastLog && (
                     <span className="text-muted-foreground">
-                      Last: {new Date(lastLog.created_at).toLocaleDateString()} — {lastLog.records_processed || 0} processed
+                      Last: {new Date(lastLog.created_at).toLocaleDateString()} — {lastLog.leads_processed || 0} processed
                     </span>
                   )}
                 </div>
