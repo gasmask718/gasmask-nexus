@@ -109,6 +109,32 @@ serve(async (req) => {
       }
 
       try {
+        // Try AI-generated message if lead_id exists
+        let messageToSend = followup.message;
+        try {
+          const aiUrl = `${supabaseUrl}/functions/v1/solar-followup-ai-generator`;
+          const aiRes = await fetch(aiUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${supabaseKey}`,
+            },
+            body: JSON.stringify({
+              lead_id: followup.lead_id,
+              attempt_number: followup.attempt_number || 1,
+            }),
+          });
+          if (aiRes.ok) {
+            const aiData = await aiRes.json();
+            if (aiData.message) {
+              messageToSend = aiData.message;
+              console.log(`AI-generated message for lead ${followup.lead_id}: tone=${aiData.tone_type}`);
+            }
+          }
+        } catch (aiErr) {
+          console.warn("AI generator failed, using static message:", aiErr);
+        }
+
         // Send via Twilio REST API
         const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`;
         const authHeader = btoa(`${twilioSid}:${twilioAuth}`);
@@ -122,7 +148,7 @@ serve(async (req) => {
           body: new URLSearchParams({
             To: phone,
             From: twilioFrom,
-            Body: followup.message,
+            Body: messageToSend,
           }),
         });
 

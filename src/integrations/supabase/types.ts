@@ -62946,6 +62946,57 @@ export type Database = {
         }
         Relationships: []
       }
+      solar_outreach_contacts: {
+        Row: {
+          address: string | null
+          call_attempts: number | null
+          created_at: string | null
+          estimated_bill: number | null
+          id: string
+          last_call_outcome: string | null
+          last_contacted: string | null
+          name: string | null
+          notes: string | null
+          outreach_status: string | null
+          phone: string | null
+          source: string | null
+          state: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          call_attempts?: number | null
+          created_at?: string | null
+          estimated_bill?: number | null
+          id?: string
+          last_call_outcome?: string | null
+          last_contacted?: string | null
+          name?: string | null
+          notes?: string | null
+          outreach_status?: string | null
+          phone?: string | null
+          source?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          call_attempts?: number | null
+          created_at?: string | null
+          estimated_bill?: number | null
+          id?: string
+          last_call_outcome?: string | null
+          last_contacted?: string | null
+          name?: string | null
+          notes?: string | null
+          outreach_status?: string | null
+          phone?: string | null
+          source?: string | null
+          state?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       solar_partner_deals: {
         Row: {
           commission_amount: number | null
