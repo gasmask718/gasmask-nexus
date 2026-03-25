@@ -1,4 +1,5 @@
 import { DynastyModule, RegisteredModule, ModuleRoute, SidebarItem } from './types';
+import { validateModuleName, validateSportsRoute } from '@/config/sboIdentity';
 
 // Module Registry
 class DepartmentRegistry {
@@ -9,6 +10,19 @@ class DepartmentRegistry {
   register(module: DynastyModule): void {
     if (this.modules.has(module.config.id)) {
       console.warn(`Module ${module.config.id} is already registered`);
+      return;
+    }
+
+    // 🔐 SBO Identity Lock — block duplicate sports engines
+    const nameViolation = validateModuleName(module.config.name);
+    if (nameViolation) {
+      console.error(nameViolation);
+      return;
+    }
+
+    const routeViolation = validateSportsRoute(module.config.basePath);
+    if (routeViolation) {
+      console.error(routeViolation);
       return;
     }
 

@@ -740,6 +740,7 @@ const PickEntryWizard = lazy(() => import('@/pages/os/betting/PickEntryWizard'))
 const EntriesList = lazy(() => import('@/pages/os/betting/EntriesList'));
 const BettingResultsPage = lazy(() => import('@/pages/os/betting/ResultsPage'));
 const SportsBettingOS = lazy(() => import('@/pages/sports-betting/SportsBettingOS'));
+const SystemIntegrity = lazy(() => import('@/pages/admin/SystemIntegrity'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceForensicsConsole'));
@@ -1525,6 +1526,7 @@ export default function AppRoutes() {
         <Route path="/os/sports-betting/entries" element={<EntriesList />} />
         <Route path="/os/sports-betting/entries/new" element={<PickEntryWizard />} />
         <Route path="/os/sports-betting/results" element={<BettingResultsPage />} />
+        <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
         {/* Legacy payouts aliases (keep old links working) */}
