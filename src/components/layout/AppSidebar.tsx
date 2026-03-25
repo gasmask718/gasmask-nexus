@@ -340,6 +340,7 @@ export default function AppSidebar() {
             {renderSection('floor-5', 'Floor 5: Finance & Orders', '💰', [
               { path: '/floor5', label: 'Finance Dashboard', emoji: '📊' },
               { path: '/billing/invoices', label: 'Invoices', emoji: '🧾' },
+              { path: '/system/invoice-forensics', label: 'Invoice Forensics', emoji: '🔍' },
               { path: '/admin/legacy-invoice-repair', label: 'Legacy Invoice Repair ⚠️', emoji: '🔧' },
               { path: '/billing/center', label: 'Billing Center', emoji: '💳' },
               { path: '/unpaid-accounts', label: 'Unpaid Accounts', emoji: '⚠️' },

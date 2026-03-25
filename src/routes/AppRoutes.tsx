@@ -742,6 +742,7 @@ const BettingResultsPage = lazy(() => import('@/pages/os/betting/ResultsPage'));
 const SportsBettingOS = lazy(() => import('@/pages/sports-betting/SportsBettingOS'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
+const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceForensicsConsole'));
 
 // Delivery & Logistics
 const DeliveryDashboard = lazy(() => import('@/pages/delivery').then(m => ({ default: m.DeliveryDashboard })));
@@ -1584,6 +1585,11 @@ export default function AppRoutes() {
         <Route path="/system/modules" element={
           <RequireRole allowedRoles={['admin']} showLocked>
             <ModuleDiagnosticsPage />
+          </RequireRole>
+        } />
+        <Route path="/system/invoice-forensics" element={
+          <RequireRole allowedRoles={['admin']} showLocked>
+            <InvoiceForensicsConsole />
           </RequireRole>
         } />
 

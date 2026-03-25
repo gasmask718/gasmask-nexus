@@ -124,6 +124,11 @@ async function fetchStoreInvoices(
       .lte('created_at', filters.dateRange.end);
   }
 
+  // SERVER-SIDE SEARCH: filter by invoice_number at the DB level
+  if (filters.search) {
+    query = query.ilike('invoice_number', `%${filters.search}%`);
+  }
+
   // Apply pagination range
   query = query.range(from, to);
 
@@ -167,6 +172,11 @@ async function fetchCrmInvoices(
   }
   if (filters.entityId) {
     query = query.eq('customer_id', filters.entityId);
+  }
+
+  // SERVER-SIDE SEARCH: filter by invoice_number at the DB level
+  if (filters.search) {
+    query = query.ilike('invoice_number', `%${filters.search}%`);
   }
 
   query = query.range(from, to);
@@ -352,10 +362,13 @@ export function usePaginatedInvoiceFeed(filters: PaginatedFilters = {}) {
         });
       }
 
-      // Apply search filter client-side (after fetch)
+      // Search is now SERVER-SIDE (applied in fetchStoreInvoices/fetchCrmInvoices)
+      // Client-side filter only for entity_name (resolved after fetch)
       let filtered = invoices;
       if (filters.search) {
         const search = filters.search.toLowerCase();
+        // Only filter by entity_name client-side (invoice_number already filtered server-side)
+        // Keep all results since DB already filtered by invoice_number
         filtered = invoices.filter(inv =>
           inv.invoice_number.toLowerCase().includes(search) ||
           inv.entity_name.toLowerCase().includes(search) ||
