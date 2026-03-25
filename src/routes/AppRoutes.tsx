@@ -391,6 +391,11 @@ const SFAnalytics = lazy(() => import('@/pages/surplus-funds/SFAnalytics'));
 const SolarLayout = lazy(() => import('@/pages/solar/SolarLayout'));
 const SolarCommandCenter = lazy(() => import('@/pages/solar/SolarCommandCenter'));
 const SolarLeadIntelligence = lazy(() => import('@/pages/solar/SolarLeadIntelligence'));
+const SolarOutreach = lazy(() => import('@/pages/solar/SolarOutreach'));
+const SolarLiveCallAssist = lazy(() => import('@/pages/solar/SolarLiveCallAssist'));
+const SolarDeals = lazy(() => import('@/pages/solar/SolarDeals'));
+const SolarPartners = lazy(() => import('@/pages/solar/SolarPartners'));
+const SolarAnalytics = lazy(() => import('@/pages/solar/SolarAnalytics'));
 const SolarPlaceholder = lazy(() => import('@/pages/solar/SolarPlaceholder'));
 
 // Real Estate OS
