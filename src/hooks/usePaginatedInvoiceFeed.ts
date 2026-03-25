@@ -362,10 +362,13 @@ export function usePaginatedInvoiceFeed(filters: PaginatedFilters = {}) {
         });
       }
 
-      // Apply search filter client-side (after fetch)
+      // Search is now SERVER-SIDE (applied in fetchStoreInvoices/fetchCrmInvoices)
+      // Client-side filter only for entity_name (resolved after fetch)
       let filtered = invoices;
       if (filters.search) {
         const search = filters.search.toLowerCase();
+        // Only filter by entity_name client-side (invoice_number already filtered server-side)
+        // Keep all results since DB already filtered by invoice_number
         filtered = invoices.filter(inv =>
           inv.invoice_number.toLowerCase().includes(search) ||
           inv.entity_name.toLowerCase().includes(search) ||
