@@ -175,13 +175,13 @@ function PipelineCard({
   stats,
   isGasMask,
   onViewCampaigns,
-  onViewCalls,
+  onLaunch,
 }: {
   pipe: any;
   stats: { activeCampaigns: number; monthCalls: number; winRate: string; totalCampaigns: number };
   isGasMask: boolean;
   onViewCampaigns: () => void;
-  onViewCalls: () => void;
+  onLaunch: () => void;
 }) {
   return (
     <Card>
