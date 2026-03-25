@@ -974,6 +974,7 @@ async function importStores(
                 received_by: row.data.invoice_received_by || null,
                 paid_at: paidAt,
                 is_historical: true,
+                entry_mode: 'backfill',
                 ...(createdAt && { created_at: createdAt }),
               });
 

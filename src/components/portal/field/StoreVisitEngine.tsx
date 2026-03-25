@@ -541,7 +541,8 @@ export function StoreVisitEngine({ portalType }: StoreVisitEngineProps) {
               brand: order.brand_name,
               notes: order.notes || `Field order created by ${portalType} during store visit`,
               created_by: createdBy,
-              is_historical: invoiceMode === 'historical', // CRITICAL: Track invoice mode
+              is_historical: invoiceMode === 'historical',
+              entry_mode: invoiceMode === 'historical' ? 'backfill' : 'live',
             })
             .select('id')
             .single();
