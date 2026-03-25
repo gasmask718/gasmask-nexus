@@ -810,13 +810,43 @@ export default function CampaignWizardPage() {
       if (callSids.length === 0) return [];
       const { data } = await supabase
         .from("call_recordings")
-        .select("provider_call_sid, recording_url, recording_duration, status, has_transcript")
+        .select("provider_call_sid, recording_url, recording_duration, status, has_transcript, outcome, transcript, elevenlabs_conversation_id")
         .in("provider_call_sid", callSids);
       return data || [];
     },
     enabled: viewMode === "console" && !!activeCampaignId && callSids.length > 0,
+    refetchInterval: 5000,
+  });
+
+  // Fetch AI call logs for summaries
+  const campaignPhones = useMemo(() => {
+    if (!callItems) return [];
+    return callItems.map((i: any) => i.phone_number).filter(Boolean) as string[];
+  }, [callItems]);
+
+  const { data: aiCallLogs = [] } = useQuery({
+    queryKey: ["campaign-ai-logs", activeCampaignId, campaignPhones],
+    queryFn: async () => {
+      if (campaignPhones.length === 0) return [];
+      const { data } = await supabase
+        .from("ai_call_logs")
+        .select("phone_number, outcome, ai_summary, duration_seconds, created_at")
+        .in("phone_number", campaignPhones)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+    enabled: viewMode === "console" && !!activeCampaignId && campaignPhones.length > 0,
     refetchInterval: 10000,
   });
+
+  // Index AI logs by phone
+  const aiLogsByPhone = useMemo(() => {
+    const map: Record<string, any> = {};
+    (aiCallLogs as any[]).forEach((l: any) => {
+      if (l.phone_number && !map[l.phone_number]) map[l.phone_number] = l;
+    });
+    return map;
+  }, [aiCallLogs]);
 
   // Index recordings by call_sid
   const recordingsByCall = useMemo(() => {
