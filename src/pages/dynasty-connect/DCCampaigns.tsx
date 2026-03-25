@@ -34,6 +34,7 @@ export default function DCCampaigns() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [businessFilter, setBusinessFilter] = useState('all');
   const [showBuilder, setShowBuilder] = useState(false);
   const [form, setForm] = useState({
     name: '', description: '', pipeline: '', agentId: '',
