@@ -255,8 +255,8 @@ function PipelineCard({
           <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={onViewCampaigns}>
             <Eye className="h-3 w-3 mr-1" /> Campaigns
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={onViewCalls}>
-            <BarChart3 className="h-3 w-3 mr-1" /> Calls
+          <Button size="sm" className="flex-1 text-xs bg-[#0F6E56] hover:bg-[#0F6E56]/80" onClick={onLaunch}>
+            <BarChart3 className="h-3 w-3 mr-1" /> Launch
           </Button>
         </div>
       </CardContent>
