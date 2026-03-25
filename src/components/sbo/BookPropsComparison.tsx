@@ -8,6 +8,8 @@ import { Loader2, RefreshCw, ArrowRightLeft, TrendingUp, Zap } from 'lucide-reac
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCrossPlatformProps, type CrossPlatformProp } from '@/hooks/useCrossPlatformProps';
+import { PropStatContextCard } from '@/components/sbo/PropStatContextCard';
+import { ActionTooltip } from '@/components/sbo/ActionTooltip';
 
 const PROP_LABELS: Record<string, string> = {
   points: 'Points', rebounds: 'Rebounds', assists: 'Assists',
@@ -84,6 +86,18 @@ function PropComparisonCard({ prop }: { prop: CrossPlatformProp }) {
             )}
           </div>
         )}
+
+        {/* Stat intelligence panel */}
+        {prop.prop_id && (
+          <div className="pt-2 border-t border-border/50">
+            <PropStatContextCard
+              propId={prop.prop_id}
+              playerName={prop.player_name}
+              propType={prop.prop_type}
+              line={prop.sources[0]?.line || 0}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -140,10 +154,12 @@ export default function BookPropsComparison() {
               <ArrowRightLeft className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg">Cross-Platform Props</CardTitle>
             </div>
-            <Button size="sm" onClick={handleSync} disabled={syncing}>
-              {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-              Sync Book Props
-            </Button>
+            <ActionTooltip description="Fetches latest player props from Bovada, DraftKings, FanDuel, and BetMGM via The Odds API. Compares lines across books to find edge opportunities.">
+              <Button size="sm" onClick={handleSync} disabled={syncing}>
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Sync Book Props
+              </Button>
+            </ActionTooltip>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

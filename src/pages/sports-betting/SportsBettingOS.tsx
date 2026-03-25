@@ -23,6 +23,8 @@ import HistoryView from '@/components/sbo/HistoryView';
 import { ChingWorldPicksSMS } from '@/components/sbo/ChingWorldPicksSMS';
 import { PrizePicksAnalyzer } from '@/components/sbo/PrizePicksAnalyzer';
 import BookPropsComparison from '@/components/sbo/BookPropsComparison';
+import { SBOHealthDashboard } from '@/components/sbo/SBOHealthDashboard';
+import { ActionTooltip } from '@/components/sbo/ActionTooltip';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
@@ -448,21 +450,27 @@ function TonightGamesTab() {
 
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
-                {state.gamesLoading
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
-                  : '🏀 Load Tonight\'s Games'}
-              </Button>
-              <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
-                {state.analyzing
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
-                  : '⚡ Run AI Predictions'}
-              </Button>
-              <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
-                {state.refreshing
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
-                  : '🔄 Refresh'}
-              </Button>
+              <ActionTooltip description="Checks database for today's games first. If none found, fetches live data from The Odds API and persists to database.">
+                <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+                  {state.gamesLoading
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
+                    : '🏀 Load Tonight\'s Games'}
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip description="Runs 4-Brain AI analysis (Stats, Market, Context, Polymarket) on all loaded games. Generates confidence scores, picks, and Kelly stake recommendations.">
+                <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
+                  {state.analyzing
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
+                    : '⚡ Run AI Predictions'}
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip description="Reloads games and saved picks from the database without calling external APIs. Use to see latest predictions after a background run.">
+                <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+                  {state.refreshing
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
+                    : '🔄 Refresh'}
+                </Button>
+              </ActionTooltip>
             </div>
 
             {state.errorMsg ? (
@@ -4218,87 +4226,95 @@ export default function SportsBettingOS() {
               {strongCount} strong picks
             </Badge>
           )}
-           <Button
-            variant="outline"
-            size="sm"
-            disabled={verifyingResults}
-            onClick={async () => {
-              setVerifyingResults(true);
-              setVerifyResult(null);
-              try {
-                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
-                if (error) throw error;
-                setVerifyResult(data);
-                const gameRecord = `${data.correct || 0}W-${data.incorrect || 0}L`;
-                const propRecord = `${data.props_correct || 0}W-${data.props_incorrect || 0}L`;
-                toast.success(`Games: ${gameRecord} (${data.accuracy || 0}%) | Props: ${propRecord} (${data.props_accuracy || 0}%)`);
-              } catch (e: any) {
-                toast.error(e.message || 'Verification failed');
-              } finally {
-                setVerifyingResults(false);
+           <ActionTooltip description="Compares AI predictions against actual game results and box scores. Updates win/loss records and accuracy metrics.">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={verifyingResults}
+              onClick={async () => {
+                setVerifyingResults(true);
+                setVerifyResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                  if (error) throw error;
+                  setVerifyResult(data);
+                  const gameRecord = `${data.correct || 0}W-${data.incorrect || 0}L`;
+                  const propRecord = `${data.props_correct || 0}W-${data.props_incorrect || 0}L`;
+                  toast.success(`Games: ${gameRecord} (${data.accuracy || 0}%) | Props: ${propRecord} (${data.props_accuracy || 0}%)`);
+                } catch (e: any) {
+                  toast.error(e.message || 'Verification failed');
+                } finally {
+                  setVerifyingResults(false);
+                }
+              }}
+            >
+              {verifyingResults
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
+                : <><Check className="h-3 w-3 mr-1" /> 🔍 Verify Results</>
               }
-            }}
-          >
-            {verifyingResults
-              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
-              : <><Check className="h-3 w-3 mr-1" /> 🔍 Verify Results</>
-            }
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={verifyingResults}
-            onClick={async () => {
-              setVerifyingResults(true);
-              setVerifyResult(null);
-              try {
-                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
-                if (error) throw error;
-                setVerifyResult(data);
-                toast.success(`Yesterday verified: ${data.correct || 0}W-${data.incorrect || 0}L`);
-              } catch (e: any) {
-                toast.error(e.message || 'Verification failed');
-              } finally {
-                setVerifyingResults(false);
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip description="Verifies yesterday's predictions against final box scores for historical accuracy tracking.">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={verifyingResults}
+              onClick={async () => {
+                setVerifyingResults(true);
+                setVerifyResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
+                  if (error) throw error;
+                  setVerifyResult(data);
+                  toast.success(`Yesterday verified: ${data.correct || 0}W-${data.incorrect || 0}L`);
+                } catch (e: any) {
+                  toast.error(e.message || 'Verification failed');
+                } finally {
+                  setVerifyingResults(false);
+                }
+              }}
+            >
+              📋 Yesterday
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip description="Runs the full 6-phase pipeline: Load Games → Fetch Intelligence → Run Predictions → Analyze Props → Build Parlay → Calibrate Model. Takes ~60-90 seconds.">
+            <Button onClick={runAllEngines} disabled={runningAll} size="sm">
+              {runningAll
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
+                : <>🚀 Run All Engines</>
               }
-            }}
-          >
-            📋 Yesterday
-          </Button>
-          <Button onClick={runAllEngines} disabled={runningAll} size="sm">
-            {runningAll
-              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
-              : <>🚀 Run All Engines</>
-            }
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-            disabled={runningAll}
-            onClick={async () => {
-              if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
-              const { start: frStart, end: frEnd } = getTodayETBounds();
-              setRunningAll(true);
-              setRunAllPhase('Clearing cached data...');
-              try {
-                await supabase.from('sbo_predictions').delete().gte('created_at', frStart);
-                await supabase.from('sbo_game_intelligence').delete().gte('created_at', frStart);
-                await supabase.from('sbo_games').delete().gte('game_date', frStart).lte('game_date', frEnd);
-                localStorage.removeItem('sbo_games_loaded_today');
-                localStorage.removeItem('sbo_predictions_ran_today');
-                localStorage.removeItem('sbo_last_run_date');
-                toast.success('Cache cleared — running fresh...');
-                await runAllEngines();
-              } catch (e: any) {
-                toast.error('Force refresh failed: ' + e.message);
-                setRunningAll(false);
-                setRunAllPhase('');
-              }
-            }}
-          >
-            🔄 Force Refresh
-          </Button>
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip description="Clears all cached games, predictions, and intelligence for today, then re-runs the full pipeline from scratch. Use when data looks stale or corrupted.">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              disabled={runningAll}
+              onClick={async () => {
+                if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
+                const { start: frStart, end: frEnd } = getTodayETBounds();
+                setRunningAll(true);
+                setRunAllPhase('Clearing cached data...');
+                try {
+                  await supabase.from('sbo_predictions').delete().gte('created_at', frStart);
+                  await supabase.from('sbo_game_intelligence').delete().gte('created_at', frStart);
+                  await supabase.from('sbo_games').delete().gte('game_date', frStart).lte('game_date', frEnd);
+                  localStorage.removeItem('sbo_games_loaded_today');
+                  localStorage.removeItem('sbo_predictions_ran_today');
+                  localStorage.removeItem('sbo_last_run_date');
+                  toast.success('Cache cleared — running fresh...');
+                  await runAllEngines();
+                } catch (e: any) {
+                  toast.error('Force refresh failed: ' + e.message);
+                  setRunningAll(false);
+                  setRunAllPhase('');
+                }
+              }}
+            >
+              🔄 Force Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 
@@ -4383,6 +4399,8 @@ export default function SportsBettingOS() {
           { id: 'history', label: '📜 History', shortLabel: 'History' },
           { id: 'sim', label: '⚡ Sim', shortLabel: 'Sim' },
           { id: 'entry', label: '📋 VA Entry', shortLabel: 'Entry' },
+          { id: 'health', label: '🩺 Health', shortLabel: 'Health' },
+          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
           { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
         ];
         const allTabs = [...primaryTabs, ...secondaryTabs];
@@ -4445,6 +4463,7 @@ export default function SportsBettingOS() {
               {activeTab === 'bovada' && <BookPropsComparison />}
               {activeTab === 'history' && <PredictionHistory />}
               {activeTab === 'entry' && <VAPropEntryTab />}
+              {activeTab === 'health' && <SBOHealthDashboard />}
               {activeTab === 'sync' && <SyncDashboard />}
             </div>
           </>
