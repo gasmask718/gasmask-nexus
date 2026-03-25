@@ -4285,34 +4285,36 @@ export default function SportsBettingOS() {
               }
             </Button>
           </ActionTooltip>
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-destructive border-destructive/30 hover:bg-destructive/10"
-            disabled={runningAll}
-            onClick={async () => {
-              if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
-              const { start: frStart, end: frEnd } = getTodayETBounds();
-              setRunningAll(true);
-              setRunAllPhase('Clearing cached data...');
-              try {
-                await supabase.from('sbo_predictions').delete().gte('created_at', frStart);
-                await supabase.from('sbo_game_intelligence').delete().gte('created_at', frStart);
-                await supabase.from('sbo_games').delete().gte('game_date', frStart).lte('game_date', frEnd);
-                localStorage.removeItem('sbo_games_loaded_today');
-                localStorage.removeItem('sbo_predictions_ran_today');
-                localStorage.removeItem('sbo_last_run_date');
-                toast.success('Cache cleared — running fresh...');
-                await runAllEngines();
-              } catch (e: any) {
-                toast.error('Force refresh failed: ' + e.message);
-                setRunningAll(false);
-                setRunAllPhase('');
-              }
-            }}
-          >
-            🔄 Force Refresh
-          </Button>
+          <ActionTooltip description="Clears all cached games, predictions, and intelligence for today, then re-runs the full pipeline from scratch. Use when data looks stale or corrupted.">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              disabled={runningAll}
+              onClick={async () => {
+                if (!confirm('Clear today\'s data and re-fetch everything fresh?')) return;
+                const { start: frStart, end: frEnd } = getTodayETBounds();
+                setRunningAll(true);
+                setRunAllPhase('Clearing cached data...');
+                try {
+                  await supabase.from('sbo_predictions').delete().gte('created_at', frStart);
+                  await supabase.from('sbo_game_intelligence').delete().gte('created_at', frStart);
+                  await supabase.from('sbo_games').delete().gte('game_date', frStart).lte('game_date', frEnd);
+                  localStorage.removeItem('sbo_games_loaded_today');
+                  localStorage.removeItem('sbo_predictions_ran_today');
+                  localStorage.removeItem('sbo_last_run_date');
+                  toast.success('Cache cleared — running fresh...');
+                  await runAllEngines();
+                } catch (e: any) {
+                  toast.error('Force refresh failed: ' + e.message);
+                  setRunningAll(false);
+                  setRunAllPhase('');
+                }
+              }}
+            >
+              🔄 Force Refresh
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
 
