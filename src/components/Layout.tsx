@@ -500,6 +500,23 @@ const DYNASTY_NAVIGATION = {
       { path: '/real-estate/analytics', label: '📊 Floor 9 — Analytics', icon: BarChart3 },
     ],
   },
+  solarOs: {
+    id: 'solar-os',
+    name: '☀️ BrightSun Solar Hub',
+    items: [
+      { path: '/solar', label: '☀️ Penthouse — Command Center', icon: Building },
+      { path: '/solar/leads', label: '🎯 Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/solar/outreach', label: '📞 Floor 2 — AI Outreach', icon: Phone },
+      { path: '/solar/qualification', label: '🧠 Floor 3 — Qualification', icon: Brain },
+      { path: '/solar/appointments', label: '📅 Floor 4 — Appointments', icon: Calendar },
+      { path: '/solar/live-calls', label: '🔴 Floor 5 — Live Call Assist', icon: Phone },
+      { path: '/solar/deals', label: '💰 Floor 6 — Deals', icon: DollarSign },
+      { path: '/solar/partners', label: '🤝 Floor 7 — Partner Network', icon: Users },
+      { path: '/solar/agents', label: '👥 Floor 8 — Agents', icon: Users },
+      { path: '/solar/ai-brain', label: '🧠 Floor 9 — AI Brain', icon: Brain },
+      { path: '/solar/analytics', label: '📊 Floor 10 — Analytics', icon: BarChart3 },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
@@ -548,7 +565,7 @@ const Layout = ({ children }: LayoutProps) => {
   const [openSections, setOpenSections] = useState<string[]>([
     'penthouse', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
-    'surplus-funds-os', 'real-estate-os',
+    'surplus-funds-os', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
     'brandaro-hub', 'dynasty-connect', 'global-dashboard', 'portals'
@@ -803,7 +820,18 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* ☀️ BRIGHTSUN SOLAR HUB — INDEPENDENT HUB */}
+      <div className="pt-2 border-t border-amber-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-400/80 tracking-wider">
+          ☀️ BrightSun Solar Hub
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.solarOs.id,
+          DYNASTY_NAVIGATION.solarOs.name,
+          DYNASTY_NAVIGATION.solarOs.items
+        )}
+      </div>
+
       {/* 🔴 GRABBA PRODUCT BRANDS */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
