@@ -2810,6 +2810,25 @@ export default function AppRoutes() {
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* BRIGHTSUN SOLAR OS                                                         */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/solar" element={<SolarLayout />}>
+          <Route index element={<SolarCommandCenter />} />
+          <Route path="leads" element={<SolarLeadIntelligence />} />
+          <Route path="outreach" element={<SolarPlaceholder />} />
+          <Route path="qualification" element={<SolarPlaceholder />} />
+          <Route path="appointments" element={<SolarPlaceholder />} />
+          <Route path="live-calls" element={<SolarPlaceholder />} />
+          <Route path="deals" element={<SolarPlaceholder />} />
+          <Route path="partners" element={<SolarPlaceholder />} />
+          <Route path="agents" element={<SolarPlaceholder />} />
+          <Route path="ai-brain" element={<SolarPlaceholder />} />
+          <Route path="analytics" element={<SolarPlaceholder />} />
+        </Route>
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* REAL ESTATE OS                                                             */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
