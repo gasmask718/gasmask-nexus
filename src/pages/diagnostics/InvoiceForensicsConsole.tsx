@@ -595,8 +595,11 @@ function KnownInvoiceCheck() {
         issues: [
           inv.deleted_at ? '❌ Invoice is soft-deleted' : '✅ Not deleted',
           inv.store_id ? '✅ Has store_id linkage' : '⚠️ Missing store_id',
-          inv.payment_status ? `✅ Status: ${inv.payment_status}` : '⚠️ NULL payment_status',
-          inv.status === 'draft' && inv.payment_status === 'paid' ? '⚠️ status=draft but payment_status=paid (mismatch)' : '✅ Status consistent',
+          inv.payment_status ? `✅ Payment: ${inv.payment_status}` : '⚠️ NULL payment_status',
+          inv.status === 'finalized' ? '✅ Status: finalized (normalized)' : 
+            inv.status === 'draft' && inv.payment_status === 'paid' ? '⚠️ status=draft but payment_status=paid (mismatch)' : 
+            `✅ Status: ${inv.status || 'unknown'}`,
+          inv.is_historical ? '✅ Tagged as historical invoice' : '✅ Current invoice',
           '✅ In unified feed (queryable by search)',
         ],
       };
