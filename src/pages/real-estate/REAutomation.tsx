@@ -33,7 +33,7 @@ export default function REAutomation() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(30);
-    setLogs(data || []);
+    setLogs((data || []) as any[]);
   };
 
   const fetchSourceStats = async () => {

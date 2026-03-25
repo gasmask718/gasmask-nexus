@@ -88,11 +88,11 @@ export default function RECommandCenter() {
   };
 
   const fetchAutomationHealth = async () => {
-    const { data } = await supabase.from('re_automation_log').select('job_name, status').order('created_at', { ascending: false }).limit(20);
+    const { data } = await supabase.from('re_automation_log').select('automation_type, status').order('created_at', { ascending: false }).limit(20);
     const health: Record<string, string> = {};
     AUTOMATION_STATUS.forEach(a => {
-      const log = (data || []).find(l => l.job_name === a.key);
-      health[a.key] = log?.status === 'success' ? 'running' : log?.status === 'error' ? 'error' : 'ready';
+      const log = (data || []).find(l => l.automation_type === a.key);
+      health[a.key] = log?.status === 'completed' ? 'running' : log?.status === 'failed' ? 'error' : 'ready';
     });
     if (!health.docusign) health.docusign = 'ready';
     setAutomationHealth(health);
