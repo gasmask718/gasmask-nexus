@@ -500,6 +500,23 @@ const DYNASTY_NAVIGATION = {
       { path: '/real-estate/analytics', label: '📊 Floor 9 — Analytics', icon: BarChart3 },
     ],
   },
+  solarOs: {
+    id: 'solar-os',
+    name: '☀️ BrightSun Solar Hub',
+    items: [
+      { path: '/solar', label: '☀️ Penthouse — Command Center', icon: Building },
+      { path: '/solar/leads', label: '🎯 Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/solar/outreach', label: '📞 Floor 2 — AI Outreach', icon: Phone },
+      { path: '/solar/qualification', label: '🧠 Floor 3 — Qualification', icon: Brain },
+      { path: '/solar/appointments', label: '📅 Floor 4 — Appointments', icon: Calendar },
+      { path: '/solar/live-calls', label: '🔴 Floor 5 — Live Call Assist', icon: Phone },
+      { path: '/solar/deals', label: '💰 Floor 6 — Deals', icon: DollarSign },
+      { path: '/solar/partners', label: '🤝 Floor 7 — Partner Network', icon: Users },
+      { path: '/solar/agents', label: '👥 Floor 8 — Agents', icon: Users },
+      { path: '/solar/ai-brain', label: '🧠 Floor 9 — AI Brain', icon: Brain },
+      { path: '/solar/analytics', label: '📊 Floor 10 — Analytics', icon: BarChart3 },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
