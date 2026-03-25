@@ -1339,6 +1339,14 @@ export default function CampaignWizardPage() {
                   </div>
                 </ScrollArea>
               </TabsContent>
+
+              <TabsContent value="batch" className="flex-1 p-0 m-0 overflow-hidden bg-background">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  <div className="p-4">
+                    <BatchDialerPanel campaignId={activeCampaignId} />
+                  </div>
+                </ScrollArea>
+              </TabsContent>
             </Tabs>
           </Card>
         </div>
