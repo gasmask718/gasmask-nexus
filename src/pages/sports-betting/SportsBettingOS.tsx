@@ -22,6 +22,7 @@ import ParlayResultsSection from '@/components/sbo/ParlayResultsSection';
 import HistoryView from '@/components/sbo/HistoryView';
 import { ChingWorldPicksSMS } from '@/components/sbo/ChingWorldPicksSMS';
 import { PrizePicksAnalyzer } from '@/components/sbo/PrizePicksAnalyzer';
+import BookPropsComparison from '@/components/sbo/BookPropsComparison';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
@@ -4369,6 +4370,7 @@ export default function SportsBettingOS() {
           { id: 'games', label: '🏀 Tonight', shortLabel: 'Tonight' },
           { id: 'props', label: '📊 Props', shortLabel: 'Props', badge: strongCount },
           { id: 'prizepicks', label: '🎯 PrizePicks', shortLabel: 'PP' },
+          { id: 'bovada', label: '🐂 Bovada', shortLabel: 'Bovada' },
           { id: 'sms', label: '📱 ChingWorld', shortLabel: 'SMS' },
           { id: 'hedge', label: '🛡️ Hedge', shortLabel: 'Hedge' },
           { id: 'parlay', label: '🎰 Parlay', shortLabel: 'Parlay' },
@@ -4440,6 +4442,7 @@ export default function SportsBettingOS() {
               {activeTab === 'mybets' && <MyBetsTab />}
               {activeTab === 'sms' && <ChingWorldPicksSMS />}
               {activeTab === 'prizepicks' && <PrizePicksAnalyzer />}
+              {activeTab === 'bovada' && <BookPropsComparison />}
               {activeTab === 'history' && <PredictionHistory />}
               {activeTab === 'entry' && <VAPropEntryTab />}
               {activeTab === 'sync' && <SyncDashboard />}
