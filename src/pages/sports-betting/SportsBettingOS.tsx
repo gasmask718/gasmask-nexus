@@ -4226,59 +4226,65 @@ export default function SportsBettingOS() {
               {strongCount} strong picks
             </Badge>
           )}
-           <Button
-            variant="outline"
-            size="sm"
-            disabled={verifyingResults}
-            onClick={async () => {
-              setVerifyingResults(true);
-              setVerifyResult(null);
-              try {
-                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
-                if (error) throw error;
-                setVerifyResult(data);
-                const gameRecord = `${data.correct || 0}W-${data.incorrect || 0}L`;
-                const propRecord = `${data.props_correct || 0}W-${data.props_incorrect || 0}L`;
-                toast.success(`Games: ${gameRecord} (${data.accuracy || 0}%) | Props: ${propRecord} (${data.props_accuracy || 0}%)`);
-              } catch (e: any) {
-                toast.error(e.message || 'Verification failed');
-              } finally {
-                setVerifyingResults(false);
+           <ActionTooltip description="Compares AI predictions against actual game results and box scores. Updates win/loss records and accuracy metrics.">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={verifyingResults}
+              onClick={async () => {
+                setVerifyingResults(true);
+                setVerifyResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: {} });
+                  if (error) throw error;
+                  setVerifyResult(data);
+                  const gameRecord = `${data.correct || 0}W-${data.incorrect || 0}L`;
+                  const propRecord = `${data.props_correct || 0}W-${data.props_incorrect || 0}L`;
+                  toast.success(`Games: ${gameRecord} (${data.accuracy || 0}%) | Props: ${propRecord} (${data.props_accuracy || 0}%)`);
+                } catch (e: any) {
+                  toast.error(e.message || 'Verification failed');
+                } finally {
+                  setVerifyingResults(false);
+                }
+              }}
+            >
+              {verifyingResults
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
+                : <><Check className="h-3 w-3 mr-1" /> 🔍 Verify Results</>
               }
-            }}
-          >
-            {verifyingResults
-              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Verifying...</>
-              : <><Check className="h-3 w-3 mr-1" /> 🔍 Verify Results</>
-            }
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={verifyingResults}
-            onClick={async () => {
-              setVerifyingResults(true);
-              setVerifyResult(null);
-              try {
-                const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
-                if (error) throw error;
-                setVerifyResult(data);
-                toast.success(`Yesterday verified: ${data.correct || 0}W-${data.incorrect || 0}L`);
-              } catch (e: any) {
-                toast.error(e.message || 'Verification failed');
-              } finally {
-                setVerifyingResults(false);
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip description="Verifies yesterday's predictions against final box scores for historical accuracy tracking.">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={verifyingResults}
+              onClick={async () => {
+                setVerifyingResults(true);
+                setVerifyResult(null);
+                try {
+                  const { data, error } = await supabase.functions.invoke('sbo-verify-results', { body: { force_yesterday: true } });
+                  if (error) throw error;
+                  setVerifyResult(data);
+                  toast.success(`Yesterday verified: ${data.correct || 0}W-${data.incorrect || 0}L`);
+                } catch (e: any) {
+                  toast.error(e.message || 'Verification failed');
+                } finally {
+                  setVerifyingResults(false);
+                }
+              }}
+            >
+              📋 Yesterday
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip description="Runs the full 6-phase pipeline: Load Games → Fetch Intelligence → Run Predictions → Analyze Props → Build Parlay → Calibrate Model. Takes ~60-90 seconds.">
+            <Button onClick={runAllEngines} disabled={runningAll} size="sm">
+              {runningAll
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
+                : <>🚀 Run All Engines</>
               }
-            }}
-          >
-            📋 Yesterday
-          </Button>
-          <Button onClick={runAllEngines} disabled={runningAll} size="sm">
-            {runningAll
-              ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {runAllPhase || 'Running...'}</>
-              : <>🚀 Run All Engines</>
-            }
-          </Button>
+            </Button>
+          </ActionTooltip>
           <Button
             variant="outline"
             size="sm"
