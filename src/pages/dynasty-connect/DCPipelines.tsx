@@ -173,7 +173,7 @@ export default function DCPipelines() {
                     stats={stats}
                     isGasMask={false}
                     onViewCampaigns={() => navigate('/dynasty-connect/campaigns')}
-                    onViewCalls={() => navigate('/dynasty-connect/intelligence')}
+                    onLaunch={() => navigate('/dynasty-connect/campaigns')}
                   />
                 );
               })}
