@@ -30,6 +30,7 @@ export default function AppSidebar() {
   // Determine which floor section contains the active route
   const getActiveSection = (pathname: string): string | null => {
     if (pathname.startsWith('/surplus-funds')) return 'surplus-funds-os';
+    if (pathname.startsWith('/solar')) return 'solar-os';
     if (pathname.startsWith('/real-estate')) return 'real-estate-os';
     if (pathname.startsWith('/dynasty-connect')) return 'dynasty-connect';
     if (pathname.startsWith('/brandaro')) return 'brandaro-hub';
@@ -65,7 +66,10 @@ export default function AppSidebar() {
   }, [activeSection]);
 
   const userRole = profileData?.profile?.primary_role || 'admin';
-  const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
+  const normalizedRole = userRole.trim().toLowerCase();
+  const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(normalizedRole);
+  const canAccessRealEstateHub = ['owner', 'admin', 'ceo', 'va', 'realestate_worker'].includes(normalizedRole);
+  const canAccessSolarHub = canAccessRealEstateHub;
 
   // Floor 0 presence check (silent)
   useEffect(() => {
@@ -478,7 +482,7 @@ export default function AppSidebar() {
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🏠 REAL ESTATE OS — Standalone Hub                                */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {isAdmin && (
+          {canAccessRealEstateHub && (
             <div className="mb-4 pt-2 border-t border-sidebar-border">
               <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(59, 109, 17, 0.8)' }}>
                 🏠 Real Estate OS
@@ -496,20 +500,24 @@ export default function AppSidebar() {
               { path: '/real-estate/analytics', label: 'Floor 9 — Analytics', emoji: '📊' },
               ], "text-green-500 hover:bg-green-500/10")}
 
-              {/* ☀️ BrightSun Solar — Nested under Real Estate OS */}
-              {renderSection('solar-os', '☀️ BrightSun Solar', '☀️', [
-                { path: '/solar', label: 'Penthouse — Command Center', emoji: '☀️' },
-                { path: '/solar/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
-                { path: '/solar/outreach', label: 'Floor 2 — AI Outreach', emoji: '📞' },
-                { path: '/solar/qualification', label: 'Floor 3 — Qualification', emoji: '🧠' },
-                { path: '/solar/appointments', label: 'Floor 4 — Appointments', emoji: '📅' },
-                { path: '/solar/live-calls', label: 'Floor 5 — Live Call Assist', emoji: '🔴' },
-                { path: '/solar/deals', label: 'Floor 6 — Deals', emoji: '💰' },
-                { path: '/solar/partners', label: 'Floor 7 — Partner Network', emoji: '🤝' },
-                { path: '/solar/agents', label: 'Floor 8 — Agents', emoji: '👥' },
-                { path: '/solar/ai-brain', label: 'Floor 9 — AI Brain', emoji: '🧠' },
-                { path: '/solar/analytics', label: 'Floor 10 — Analytics', emoji: '📊' },
-              ], "text-amber-400 hover:bg-amber-500/10")}
+              {/* ☀️ BrightSun Solar — Own Hub nested under Real Estate OS */}
+              {canAccessSolarHub && (
+                <div className="ml-2 pl-2 border-l border-sidebar-border/60">
+                  {renderSection('solar-os', 'BrightSun Solar Hub', '☀️', [
+                    { path: '/solar', label: 'Penthouse — Command Center', emoji: '☀️' },
+                    { path: '/solar/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
+                    { path: '/solar/outreach', label: 'Floor 2 — AI Outreach', emoji: '📞' },
+                    { path: '/solar/qualification', label: 'Floor 3 — Qualification', emoji: '🧠' },
+                    { path: '/solar/appointments', label: 'Floor 4 — Appointments', emoji: '📅' },
+                    { path: '/solar/live-calls', label: 'Floor 5 — Live Call Assist', emoji: '🔴' },
+                    { path: '/solar/deals', label: 'Floor 6 — Deals', emoji: '💰' },
+                    { path: '/solar/partners', label: 'Floor 7 — Partner Network', emoji: '🤝' },
+                    { path: '/solar/agents', label: 'Floor 8 — Agents', emoji: '👥' },
+                    { path: '/solar/ai-brain', label: 'Floor 9 — AI Brain', emoji: '🧠' },
+                    { path: '/solar/analytics', label: 'Floor 10 — Analytics', emoji: '📊' },
+                  ], "text-sidebar-foreground/80 hover:bg-sidebar-accent/40")}
+                </div>
+              )}
             </div>
           )}
 
