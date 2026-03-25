@@ -55799,6 +55799,338 @@ export type Database = {
           },
         ]
       }
+      re_buyers: {
+        Row: {
+          arv_percentage: number | null
+          avg_close_days: number | null
+          buy_box_max: number | null
+          buy_box_min: number | null
+          buyer_type: string | null
+          company: string | null
+          created_at: string | null
+          deals_closed: number | null
+          deals_total: number | null
+          email: string | null
+          id: string
+          last_deal_date: string | null
+          name: string
+          notes: string | null
+          phone: string | null
+          property_types: string[] | null
+          states: string[] | null
+          status: string | null
+        }
+        Insert: {
+          arv_percentage?: number | null
+          avg_close_days?: number | null
+          buy_box_max?: number | null
+          buy_box_min?: number | null
+          buyer_type?: string | null
+          company?: string | null
+          created_at?: string | null
+          deals_closed?: number | null
+          deals_total?: number | null
+          email?: string | null
+          id?: string
+          last_deal_date?: string | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          property_types?: string[] | null
+          states?: string[] | null
+          status?: string | null
+        }
+        Update: {
+          arv_percentage?: number | null
+          avg_close_days?: number | null
+          buy_box_max?: number | null
+          buy_box_min?: number | null
+          buyer_type?: string | null
+          company?: string | null
+          created_at?: string | null
+          deals_closed?: number | null
+          deals_total?: number | null
+          email?: string | null
+          id?: string
+          last_deal_date?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          property_types?: string[] | null
+          states?: string[] | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      re_deals: {
+        Row: {
+          arv: number
+          assignment_fee_actual: number | null
+          assignment_fee_target: number | null
+          buyer_email: string | null
+          buyer_id: string | null
+          buyer_name: string | null
+          city: string | null
+          close_date_actual: string | null
+          close_date_target: string | null
+          comps: Json | null
+          contract_date: string | null
+          created_at: string | null
+          deal_score: string | null
+          documents: Json | null
+          earnest_money: number | null
+          estimated_repairs: number | null
+          id: string
+          lead_id: string | null
+          mao: number | null
+          notes: string | null
+          property_address: string
+          property_type: string | null
+          purchase_price: number
+          seller_name: string | null
+          seller_phone: string | null
+          state: string | null
+          status: string | null
+          title_company: string | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          arv: number
+          assignment_fee_actual?: number | null
+          assignment_fee_target?: number | null
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          city?: string | null
+          close_date_actual?: string | null
+          close_date_target?: string | null
+          comps?: Json | null
+          contract_date?: string | null
+          created_at?: string | null
+          deal_score?: string | null
+          documents?: Json | null
+          earnest_money?: number | null
+          estimated_repairs?: number | null
+          id?: string
+          lead_id?: string | null
+          mao?: number | null
+          notes?: string | null
+          property_address: string
+          property_type?: string | null
+          purchase_price: number
+          seller_name?: string | null
+          seller_phone?: string | null
+          state?: string | null
+          status?: string | null
+          title_company?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          arv?: number
+          assignment_fee_actual?: number | null
+          assignment_fee_target?: number | null
+          buyer_email?: string | null
+          buyer_id?: string | null
+          buyer_name?: string | null
+          city?: string | null
+          close_date_actual?: string | null
+          close_date_target?: string | null
+          comps?: Json | null
+          contract_date?: string | null
+          created_at?: string | null
+          deal_score?: string | null
+          documents?: Json | null
+          earnest_money?: number | null
+          estimated_repairs?: number | null
+          id?: string
+          lead_id?: string | null
+          mao?: number | null
+          notes?: string | null
+          property_address?: string
+          property_type?: string | null
+          purchase_price?: number
+          seller_name?: string | null
+          seller_phone?: string | null
+          state?: string | null
+          status?: string | null
+          title_company?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "re_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "re_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      re_leads: {
+        Row: {
+          arv: number | null
+          asking_price: number | null
+          assigned_va_id: string | null
+          bathrooms: number | null
+          bedrooms: number | null
+          call_count: number | null
+          call_outcome: string | null
+          city: string | null
+          condition: string | null
+          county: string | null
+          created_at: string | null
+          deal_score: string | null
+          email: string | null
+          equity_percentage: number | null
+          estimated_repairs: number | null
+          estimated_value: number | null
+          first_name: string | null
+          id: string
+          last_called_at: string | null
+          last_name: string | null
+          lead_source: string | null
+          lead_type: string | null
+          lot_size: string | null
+          market_zone: string | null
+          motivation: string | null
+          notes: string | null
+          phone: string | null
+          property_address: string
+          property_type: string | null
+          skip_traced: boolean | null
+          sqft: number | null
+          state: string | null
+          status: string | null
+          timeline: string | null
+          updated_at: string | null
+          year_built: number | null
+          zip: string | null
+        }
+        Insert: {
+          arv?: number | null
+          asking_price?: number | null
+          assigned_va_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          call_count?: number | null
+          call_outcome?: string | null
+          city?: string | null
+          condition?: string | null
+          county?: string | null
+          created_at?: string | null
+          deal_score?: string | null
+          email?: string | null
+          equity_percentage?: number | null
+          estimated_repairs?: number | null
+          estimated_value?: number | null
+          first_name?: string | null
+          id?: string
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          lead_type?: string | null
+          lot_size?: string | null
+          market_zone?: string | null
+          motivation?: string | null
+          notes?: string | null
+          phone?: string | null
+          property_address: string
+          property_type?: string | null
+          skip_traced?: boolean | null
+          sqft?: number | null
+          state?: string | null
+          status?: string | null
+          timeline?: string | null
+          updated_at?: string | null
+          year_built?: number | null
+          zip?: string | null
+        }
+        Update: {
+          arv?: number | null
+          asking_price?: number | null
+          assigned_va_id?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          call_count?: number | null
+          call_outcome?: string | null
+          city?: string | null
+          condition?: string | null
+          county?: string | null
+          created_at?: string | null
+          deal_score?: string | null
+          email?: string | null
+          equity_percentage?: number | null
+          estimated_repairs?: number | null
+          estimated_value?: number | null
+          first_name?: string | null
+          id?: string
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_source?: string | null
+          lead_type?: string | null
+          lot_size?: string | null
+          market_zone?: string | null
+          motivation?: string | null
+          notes?: string | null
+          phone?: string | null
+          property_address?: string
+          property_type?: string | null
+          skip_traced?: boolean | null
+          sqft?: number | null
+          state?: string | null
+          status?: string | null
+          timeline?: string | null
+          updated_at?: string | null
+          year_built?: number | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      re_va_profiles: {
+        Row: {
+          assigned_markets: string[] | null
+          calls_today: number | null
+          contracts_mtd: number | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          revenue_mtd: number | null
+          role: string | null
+        }
+        Insert: {
+          assigned_markets?: string[] | null
+          calls_today?: number | null
+          contracts_mtd?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          revenue_mtd?: number | null
+          role?: string | null
+        }
+        Update: {
+          assigned_markets?: string[] | null
+          calls_today?: number | null
+          contracts_mtd?: number | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          revenue_mtd?: number | null
+          role?: string | null
+        }
+        Relationships: []
+      }
       real_estate_notifications: {
         Row: {
           action_url: string | null
