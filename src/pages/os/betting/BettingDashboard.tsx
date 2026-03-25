@@ -73,7 +73,7 @@ export default function BettingDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
-            Sports Betting AI OS
+            SBO AI Engine
           </h1>
           <p className="text-muted-foreground mt-1">Simulation-First Analytics & Decision Support</p>
         </div>

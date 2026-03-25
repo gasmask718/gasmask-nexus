@@ -67,7 +67,7 @@ const alerts = [
 
 const activityFeed = [
   { title: 'Updated TopTier pricing matrix', detail: 'Adjusted weekend rates for NYC & ATL fleets', time: '2h ago' },
-  { title: 'Activated Sports Betting AI OS', detail: 'Enabled hedge calculator and AI picks dashboard', time: 'Yesterday' },
+  { title: 'Activated SBO AI Engine', detail: 'Enabled hedge calculator and AI picks dashboard', time: 'Yesterday' },
   { title: 'Added new wholesaler region', detail: 'Expanded GasMask coverage into new borough', time: '2 days ago' },
   { title: 'Approved grant applications batch', detail: '3 clients moved to Approved stage', time: '3 days ago' },
 ];

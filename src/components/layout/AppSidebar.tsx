@@ -788,11 +788,12 @@ export default function AppSidebar() {
                 { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
               ], "text-purple-400 hover:bg-purple-500/10")}
 
-              {renderSection('betting-ai-os', 'Sports Betting AI OS', '🎰', [
-                { path: '/betting/dashboard', label: 'Betting Dashboard', emoji: '📊' },
-                { path: '/betting/predictions', label: 'AI Predictions', emoji: '🤖' },
-                { path: '/betting/analytics', label: 'Betting Analytics', emoji: '📈' },
-                { path: '/betting/hedge', label: 'Hedge Fund AI', emoji: '💹' },
+              {renderSection('sbo-ai-engine', 'SBO AI Engine', '🧠', [
+                { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
+                { path: '/os/sports-betting/dashboard', label: 'Dashboard', emoji: '📊' },
+                { path: '/os/sports-betting/nba', label: 'NBA Board', emoji: '🏀' },
+                { path: '/os/sports-betting/parlay-lab', label: 'Parlay Lab', emoji: '🧪' },
+                { path: '/os/sports-betting/hedge-center', label: 'Hedge Center', emoji: '💹' },
               ], "text-lime-400 hover:bg-lime-500/10")}
             </div>
           )}

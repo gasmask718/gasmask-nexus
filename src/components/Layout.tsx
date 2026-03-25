@@ -416,7 +416,6 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-automations', label: 'Dynasty Automations', icon: Zap },
       { path: '/automation-settings', label: 'Automation Settings', icon: Settings },
       { path: '/meta-ai', label: 'Meta AI', icon: Brain },
-      { path: '/os/sports-betting', label: '🏆 Sports Betting AI OS', icon: Trophy },
       { path: '/os/sports-betting/ai-os', label: '🧠 SBO AI Engine', icon: TrendingUp },
     ],
   },

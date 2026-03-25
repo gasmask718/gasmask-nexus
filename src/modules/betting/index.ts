@@ -38,7 +38,7 @@ const sidebarItems: SidebarItem[] = [
 export const BettingModule: DynastyModule = {
   config: {
     id: 'betting',
-    name: 'Sports Betting AI OS',
+    name: 'SBO AI Engine',
     description: 'AI predictions, analytics, hedge calculations',
     basePath: '/os/sports-betting',
     icon: Trophy,
