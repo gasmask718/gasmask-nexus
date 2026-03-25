@@ -2811,6 +2811,7 @@ export default function AppRoutes() {
           <Route path="buyers" element={<REBuyers />} />
           <Route path="va-desk" element={<REVADesk />} />
           <Route path="analyzer" element={<REAnalyzer />} />
+          <Route path="automation" element={<REAutomation />} />
           <Route path="markets" element={<REMarkets />} />
           <Route path="analytics" element={<REAnalytics />} />
         </Route>

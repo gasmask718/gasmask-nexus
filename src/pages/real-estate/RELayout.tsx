@@ -1,43 +1,46 @@
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
-  BarChart3, Target, Phone, FileText, Building2, Users, Calculator, MapPin, TrendingUp
+  BarChart3, Target, Phone, FileText, Building2, Users, Calculator, MapPin, TrendingUp, Bot
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
+const GREEN = '#3B6D11';
+
 const reNavSections = [
   {
-    title: '🏠 Command',
+    title: 'Penthouse',
     items: [
       { path: '/real-estate', label: 'Command Center', icon: BarChart3 },
     ],
   },
   {
-    title: '🎯 Acquisition',
+    title: 'Acquisition',
     items: [
-      { path: '/real-estate/leads', label: 'Lead Pipeline', icon: Target },
-      { path: '/real-estate/campaigns', label: 'Campaigns', icon: Phone },
+      { path: '/real-estate/leads', label: 'Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/real-estate/campaigns', label: 'Floor 2 — DC Campaigns', icon: Phone },
     ],
   },
   {
-    title: '📋 Deals',
+    title: 'Deals',
     items: [
-      { path: '/real-estate/deals', label: 'Active Deals', icon: FileText },
-      { path: '/real-estate/buyers', label: 'Buyer Network', icon: Building2 },
+      { path: '/real-estate/deals', label: 'Floor 3 — Active Deals', icon: FileText },
+      { path: '/real-estate/buyers', label: 'Floor 4 — Buyer Network', icon: Building2 },
     ],
   },
   {
-    title: '👤 Operations',
+    title: 'Operations',
     items: [
-      { path: '/real-estate/va-desk', label: 'VA Desk', icon: Users },
-      { path: '/real-estate/analyzer', label: 'Deal Analyzer', icon: Calculator },
+      { path: '/real-estate/va-desk', label: 'Floor 5 — VA Desk', icon: Users },
+      { path: '/real-estate/analyzer', label: 'Floor 6 — Deal Analyzer', icon: Calculator },
     ],
   },
   {
-    title: '📊 Intelligence',
+    title: 'Intelligence',
     items: [
-      { path: '/real-estate/markets', label: 'Market Intelligence', icon: MapPin },
-      { path: '/real-estate/analytics', label: 'Analytics', icon: TrendingUp },
+      { path: '/real-estate/automation', label: 'Floor 7 — Automation', icon: Bot },
+      { path: '/real-estate/markets', label: 'Floor 8 — Markets', icon: MapPin },
+      { path: '/real-estate/analytics', label: 'Floor 9 — Analytics', icon: TrendingUp },
     ],
   },
 ];
@@ -55,10 +58,10 @@ export default function RELayout() {
         <ScrollArea className="h-full">
           <div className="p-4">
             <div className="flex items-center gap-2 mb-6">
-              <Building2 className="h-6 w-6" style={{ color: '#3B6D11' }} />
+              <Building2 className="h-6 w-6" style={{ color: GREEN }} />
               <div>
-                <h2 className="font-bold text-lg" style={{ color: '#3B6D11' }}>Real Estate OS</h2>
-                <p className="text-xs text-muted-foreground">Wholesale Acquisition Engine</p>
+                <h2 className="font-bold text-lg" style={{ color: GREEN }}>Real Estate OS</h2>
+                <p className="text-xs text-muted-foreground">$1M/month Acquisition Engine</p>
               </div>
             </div>
 
@@ -78,7 +81,7 @@ export default function RELayout() {
                           ? "font-medium"
                           : "text-muted-foreground hover:bg-accent hover:text-foreground"
                       )}
-                      style={isActive(item.path) ? { backgroundColor: 'rgba(59,109,17,0.1)', color: '#3B6D11' } : undefined}
+                      style={isActive(item.path) ? { backgroundColor: 'rgba(59,109,17,0.1)', color: GREEN } : undefined}
                     >
                       <item.icon className="h-4 w-4" />
                       {item.label}
