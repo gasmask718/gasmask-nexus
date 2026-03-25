@@ -60705,6 +60705,107 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_prop_stat_context: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          data_quality: string | null
+          edge_vs_line: number | null
+          game_date: string
+          id: string
+          injury_status: string | null
+          last_10_avg: number | null
+          last_10_values: Json | null
+          last_5_avg: number | null
+          last_5_values: Json | null
+          line_value: number
+          minutes_avg: number | null
+          opponent_def_rating: number | null
+          opponent_ppg_allowed: number | null
+          opponent_team: string | null
+          player_name: string
+          projection_value: number | null
+          prop_id: string | null
+          season_avg: number | null
+          stat_type: string
+          team_pace: number | null
+          updated_at: string | null
+          usage_rate: number | null
+          variance_score: number | null
+          vs_opponent_avg: number | null
+          vs_opponent_games: number | null
+          vs_opponent_values: Json | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          data_quality?: string | null
+          edge_vs_line?: number | null
+          game_date?: string
+          id?: string
+          injury_status?: string | null
+          last_10_avg?: number | null
+          last_10_values?: Json | null
+          last_5_avg?: number | null
+          last_5_values?: Json | null
+          line_value: number
+          minutes_avg?: number | null
+          opponent_def_rating?: number | null
+          opponent_ppg_allowed?: number | null
+          opponent_team?: string | null
+          player_name: string
+          projection_value?: number | null
+          prop_id?: string | null
+          season_avg?: number | null
+          stat_type: string
+          team_pace?: number | null
+          updated_at?: string | null
+          usage_rate?: number | null
+          variance_score?: number | null
+          vs_opponent_avg?: number | null
+          vs_opponent_games?: number | null
+          vs_opponent_values?: Json | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          data_quality?: string | null
+          edge_vs_line?: number | null
+          game_date?: string
+          id?: string
+          injury_status?: string | null
+          last_10_avg?: number | null
+          last_10_values?: Json | null
+          last_5_avg?: number | null
+          last_5_values?: Json | null
+          line_value?: number
+          minutes_avg?: number | null
+          opponent_def_rating?: number | null
+          opponent_ppg_allowed?: number | null
+          opponent_team?: string | null
+          player_name?: string
+          projection_value?: number | null
+          prop_id?: string | null
+          season_avg?: number | null
+          stat_type?: string
+          team_pace?: number | null
+          updated_at?: string | null
+          usage_rate?: number | null
+          variance_score?: number | null
+          vs_opponent_avg?: number | null
+          vs_opponent_games?: number | null
+          vs_opponent_values?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_prop_stat_context_prop_id_fkey"
+            columns: ["prop_id"]
+            isOneToOne: true
+            referencedRelation: "sbo_player_props"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_results_verification: {
         Row: {
           actual_result: string | null
