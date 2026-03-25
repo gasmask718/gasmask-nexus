@@ -48,6 +48,23 @@ serve(async (req) => {
 
   await new Promise(r => setTimeout(r, 3000));
 
+  // ── STEP 1.5: Ingest book props (Bovada, DK, FanDuel, etc.) ──
+  try {
+    console.log('Step 1.5: Ingesting sportsbook player props...');
+    const { data, error } = await supabase.functions.invoke('sbo-ingest-book-props', {
+      body: { bookmakers: 'bovada,betonlineag,draftkings,fanduel,betmgm' },
+    });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.ingest_book_props = { status: 'success', inserted: data?.inserted || 0, updated: data?.updated || 0, books: Object.keys(data?.book_stats || {}) };
+    console.log('Step 1.5 done:', data?.inserted, 'inserted,', data?.updated, 'updated');
+  } catch (e: any) {
+    log.steps.ingest_book_props = { status: 'failed', error: e.message };
+    log.errors.push('ingest_book_props: ' + e.message);
+    console.error('Step 1.5 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 3000));
+
   // ── STEP 2: Run AI predictions ──
   try {
     console.log('Step 2: Running predictions...');
