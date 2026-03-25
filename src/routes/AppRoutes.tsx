@@ -369,7 +369,7 @@ const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
 const DCClients = lazy(() => import('@/pages/dynasty-connect/DCClients'));
 // Pipeline sub-pages
 const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
-const RealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
+const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
 const UnforgettableTimesPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/UnforgettableTimesPipeline'));
 const PlayBoxxxPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/PlayBoxxxPipeline'));
 const BrightSunPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/BrightSunPipeline'));
