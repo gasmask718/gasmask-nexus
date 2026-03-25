@@ -311,7 +311,8 @@ export function ChingWorldPicksSMS() {
   const autoSendCount = recipients.filter((r: any) => r.active && r.auto_send).length;
 
   const lastRun = automationLogs[0] as any;
-  const lastRunSteps = lastRun?.steps || [];
+  const rawSteps = lastRun?.steps;
+  const lastRunSteps = Array.isArray(rawSteps) ? rawSteps : (typeof rawSteps === 'string' ? (() => { try { const p = JSON.parse(rawSteps); return Array.isArray(p) ? p : []; } catch { return []; } })() : []);
 
   const ThresholdSelect = ({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) => (
     <div className="flex items-center gap-2">
