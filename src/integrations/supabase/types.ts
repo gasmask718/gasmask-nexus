@@ -62696,30 +62696,42 @@ export type Database = {
           attempt_number: number
           channel: string
           created_at: string
+          delivery_status: string
+          error_message: string | null
           id: string
           lead_id: string
           message: string
+          retry_count: number
           send_time: string
+          sent_at: string | null
           status: string
         }
         Insert: {
           attempt_number?: number
           channel?: string
           created_at?: string
+          delivery_status?: string
+          error_message?: string | null
           id?: string
           lead_id: string
           message: string
+          retry_count?: number
           send_time: string
+          sent_at?: string | null
           status?: string
         }
         Update: {
           attempt_number?: number
           channel?: string
           created_at?: string
+          delivery_status?: string
+          error_message?: string | null
           id?: string
           lead_id?: string
           message?: string
+          retry_count?: number
           send_time?: string
+          sent_at?: string | null
           status?: string
         }
         Relationships: [
