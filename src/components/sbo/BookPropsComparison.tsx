@@ -8,6 +8,8 @@ import { Loader2, RefreshCw, ArrowRightLeft, TrendingUp, Zap } from 'lucide-reac
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useCrossPlatformProps, type CrossPlatformProp } from '@/hooks/useCrossPlatformProps';
+import { PropStatContextCard } from '@/components/sbo/PropStatContextCard';
+import { ActionTooltip } from '@/components/sbo/ActionTooltip';
 
 const PROP_LABELS: Record<string, string> = {
   points: 'Points', rebounds: 'Rebounds', assists: 'Assists',
