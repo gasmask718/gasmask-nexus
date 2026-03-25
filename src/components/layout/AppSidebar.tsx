@@ -589,6 +589,50 @@ export default function AppSidebar() {
           )}
 
           {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 💰 SURPLUS FUNDS OS — Standalone Hub                              */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-amber-500/80 tracking-wider">
+                💰 Surplus Funds OS
+              </div>
+              {renderSection('surplus-funds-os', 'Surplus Funds OS', '💰', [
+                { path: '/surplus-funds', label: 'Penthouse — Command Center', emoji: '💰' },
+                { path: '/surplus-funds/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
+                { path: '/surplus-funds/campaigns', label: 'Floor 2 — Dynasty Connect', emoji: '📞' },
+                { path: '/surplus-funds/cases', label: 'Floor 3 — Case Management', emoji: '📋' },
+                { path: '/surplus-funds/attorneys', label: 'Floor 4 — Attorney Network', emoji: '⚖️' },
+                { path: '/surplus-funds/documents', label: 'Floor 5 — Documents', emoji: '📄' },
+                { path: '/surplus-funds/automation', label: 'Floor 6 — AI & Automation', emoji: '🤖' },
+                { path: '/surplus-funds/analytics', label: 'Floor 7 — Analytics', emoji: '📊' },
+              ], "bg-gradient-to-r from-amber-600/20 to-yellow-600/10 text-amber-400 hover:from-amber-600/30")}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🏠 REAL ESTATE OS — Standalone Hub                                */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(59, 109, 17, 0.8)' }}>
+                🏠 Real Estate OS
+              </div>
+              {renderSection('real-estate-os', 'Real Estate OS', '🏠', [
+                { path: '/real-estate', label: 'Penthouse — Command Center', emoji: '🏠' },
+                { path: '/real-estate/leads', label: 'Floor 1 — Lead Intelligence', emoji: '🎯' },
+                { path: '/real-estate/campaigns', label: 'Floor 2 — DC Campaigns', emoji: '📞' },
+                { path: '/real-estate/deals', label: 'Floor 3 — Active Deals', emoji: '📋' },
+                { path: '/real-estate/buyers', label: 'Floor 4 — Buyer Network', emoji: '🏦' },
+                { path: '/real-estate/va-desk', label: 'Floor 5 — VA Desk', emoji: '👥' },
+                { path: '/real-estate/analyzer', label: 'Floor 6 — Deal Analyzer', emoji: '🔢' },
+                { path: '/real-estate/automation', label: 'Floor 7 — Automation Engine', emoji: '🤖' },
+                { path: '/real-estate/markets', label: 'Floor 8 — Market Intelligence', emoji: '🗺️' },
+                { path: '/real-estate/analytics', label: 'Floor 9 — Analytics', emoji: '📊' },
+              ], "text-green-500 hover:bg-green-500/10")}
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 📡 COMMUNICATION SYSTEMS */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {isAdmin && (
