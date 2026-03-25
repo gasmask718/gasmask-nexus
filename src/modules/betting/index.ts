@@ -29,6 +29,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/sports-betting/simulation', label: 'Simulation', icon: Target },
   { path: '/os/sports-betting/results', label: 'Results', icon: CheckCircle },
   { path: '/os/sports-betting/platforms', label: 'Platforms', icon: Building2 },
+  { path: '/os/sports-betting/cross-platform', label: 'Cross-Platform', icon: ArrowRightLeft },
   { path: '/os/sports-betting/line-intake', label: 'Line Intake', icon: FileInput },
   { path: '/os/sports-betting/line-shopping', label: 'Line Shopping', icon: Search },
   { path: '/os/sports-betting/settings', label: 'Settings', icon: Settings },
