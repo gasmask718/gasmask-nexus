@@ -79061,6 +79061,145 @@ export type Database = {
         }
         Relationships: []
       }
+      v_money_ar_aging: {
+        Row: {
+          aging_bucket: string | null
+          invoice_count: number | null
+          total_ar: number | null
+          total_billed: number | null
+        }
+        Relationships: []
+      }
+      v_money_brand_profitability: {
+        Row: {
+          brand_id: string | null
+          brand_name: string | null
+          gross_profit: number | null
+          invoice_count: number | null
+          margin_pct: number | null
+          total_cogs: number | null
+          total_revenue: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_money_cash_now: {
+        Row: {
+          cash_this_month: number | null
+          cash_this_week: number | null
+          cash_this_year: number | null
+          cash_today: number | null
+          due_next_14d: number | null
+          due_next_30d: number | null
+          due_next_7d: number | null
+          overdue_ar: number | null
+          overdue_count: number | null
+          total_ar: number | null
+          total_billed: number | null
+          total_collected: number | null
+          total_invoices: number | null
+        }
+        Relationships: []
+      }
+      v_money_costs: {
+        Row: {
+          amount: number | null
+          category: string | null
+          cost_type: string | null
+          created_at: string | null
+          invoice_id: string | null
+          labor_component: number | null
+          material_component: number | null
+          overhead_component: number | null
+          packaging_component: number | null
+          source_id: string | null
+          store_id: string | null
+        }
+        Relationships: []
+      }
+      v_money_health_check: {
+        Row: {
+          batch_cost_entries: number | null
+          cogs_entries: number | null
+          commission_entries: number | null
+          draft_paid_mismatches: number | null
+          has_batch_costs: boolean | null
+          has_cogs_data: boolean | null
+          has_labor_data: boolean | null
+          missing_due_dates: number | null
+          suspicious_cogs_entries: number | null
+          total_billed: number | null
+          total_collected: number | null
+          total_invoices: number | null
+          worker_payout_entries: number | null
+        }
+        Relationships: []
+      }
+      v_money_profit_summary: {
+        Row: {
+          ar_outstanding: number | null
+          cash_collected: number | null
+          cogs_allocated: number | null
+          commission_costs: number | null
+          gross_margin_pct: number | null
+          gross_profit: number | null
+          gross_revenue: number | null
+          invoice_count: number | null
+          labor_costs: number | null
+          period: string | null
+          production_costs: number | null
+          shipping_costs: number | null
+          total_costs: number | null
+        }
+        Relationships: []
+      }
+      v_money_revenue: {
+        Row: {
+          aging_bucket: string | null
+          amount_collected: number | null
+          ar_balance: number | null
+          collection_status: string | null
+          created_at: string | null
+          days_overdue: number | null
+          due_date: string | null
+          entity_id: string | null
+          entity_type: string | null
+          entry_mode: string | null
+          gross_amount: number | null
+          invoice_number: string | null
+          invoice_status: string | null
+          is_historical: boolean | null
+          paid_at: string | null
+          payment_status: string | null
+          source: string | null
+          source_id: string | null
+          store_id: string | null
+        }
+        Relationships: []
+      }
+      v_money_store_profitability: {
+        Row: {
+          avg_days_to_pay: number | null
+          avg_order_value: number | null
+          lifetime_collected: number | null
+          lifetime_revenue: number | null
+          open_balance: number | null
+          overdue_amount: number | null
+          overdue_count: number | null
+          store_class: string | null
+          store_id: string | null
+          store_name: string | null
+          total_invoices: number | null
+        }
+        Relationships: []
+      }
       v_negative_margin_alerts: {
         Row: {
           alert_type: string | null
