@@ -1139,6 +1139,10 @@ export default function CampaignWizardPage() {
                   <TabsTrigger value="transcripts" className="gap-2">
                     <MessageSquare className="h-4 w-4" /> Logs
                   </TabsTrigger>
+
+                  <TabsTrigger value="batch" className="gap-2">
+                    <Zap className="h-4 w-4" /> Batch Dialer
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
