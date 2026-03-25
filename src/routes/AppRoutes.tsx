@@ -394,6 +394,7 @@ const REDeals = lazy(() => import('@/pages/real-estate/REDeals'));
 const REBuyers = lazy(() => import('@/pages/real-estate/REBuyers'));
 const REVADesk = lazy(() => import('@/pages/real-estate/REVADesk'));
 const REAnalyzer = lazy(() => import('@/pages/real-estate/REAnalyzer'));
+const REAutomation = lazy(() => import('@/pages/real-estate/REAutomation'));
 const REMarkets = lazy(() => import('@/pages/real-estate/REMarkets'));
 const REAnalytics = lazy(() => import('@/pages/real-estate/REAnalytics'));
 
@@ -2810,6 +2811,7 @@ export default function AppRoutes() {
           <Route path="buyers" element={<REBuyers />} />
           <Route path="va-desk" element={<REVADesk />} />
           <Route path="analyzer" element={<REAnalyzer />} />
+          <Route path="automation" element={<REAutomation />} />
           <Route path="markets" element={<REMarkets />} />
           <Route path="analytics" element={<REAnalytics />} />
         </Route>

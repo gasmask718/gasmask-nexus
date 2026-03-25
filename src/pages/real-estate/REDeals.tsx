@@ -29,8 +29,8 @@ export default function REDeals() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Active Deals</h1>
-        <p className="text-muted-foreground">Properties under contract and disposition pipeline</p>
+        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 3 — Active Deals Pipeline</h1>
+        <p className="text-muted-foreground">Where money is made — every deal from contract to close</p>
       </div>
 
       <div className="flex gap-2 flex-wrap">

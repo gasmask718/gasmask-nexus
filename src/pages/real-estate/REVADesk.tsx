@@ -33,8 +33,8 @@ export default function REVADesk() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>VA Desk</h1>
-        <p className="text-muted-foreground">Acquisition call center — focused interface</p>
+        <h1 className="text-3xl font-bold" style={{ color: '#3B6D11' }}>Floor 5 — VA Desk + Sales Mastery</h1>
+        <p className="text-muted-foreground">The #1 closer system — focused call interface</p>
       </div>
 
       {/* VA Performance */}

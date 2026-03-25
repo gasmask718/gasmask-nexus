@@ -100,13 +100,14 @@ export const navigationItems = [
    { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'SF Analytics', roles: ['admin', 'ceo'] },
 
   // 🏠 Real Estate OS
-  { to: '/real-estate', icon: Building2, label: '🏠 Real Estate OS', roles: ['admin', 'ceo'] },
-  { to: '/real-estate/leads', icon: Target, label: 'RE Lead Pipeline', roles: ['admin', 'ceo'] },
-  { to: '/real-estate/campaigns', icon: Phone, label: 'RE Campaigns', roles: ['admin'] },
-  { to: '/real-estate/deals', icon: FileText, label: 'Active Deals', roles: ['admin', 'ceo'] },
-  { to: '/real-estate/buyers', icon: Building2, label: 'Buyer Network', roles: ['admin', 'ceo'] },
-  { to: '/real-estate/va-desk', icon: Users, label: 'VA Desk', roles: ['admin', 'va'] },
-  { to: '/real-estate/analyzer', icon: Calculator, label: 'Deal Analyzer', roles: ['admin', 'ceo'] },
-  { to: '/real-estate/markets', icon: Map, label: 'Market Intelligence', roles: ['admin', 'ceo'] },
-  { to: '/real-estate/analytics', icon: TrendingUp, label: 'RE Analytics', roles: ['admin', 'ceo'] },
+  { to: '/real-estate', icon: Building2, label: '🏠 Real Estate OS', roles: ['admin', 'ceo', 'va'] },
+  { to: '/real-estate/leads', icon: Target, label: 'Floor 1 — Lead Intelligence', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/campaigns', icon: Phone, label: 'Floor 2 — DC Campaigns', roles: ['admin'] },
+  { to: '/real-estate/deals', icon: FileText, label: 'Floor 3 — Active Deals', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/buyers', icon: Building2, label: 'Floor 4 — Buyer Network', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/va-desk', icon: Users, label: 'Floor 5 — VA Desk', roles: ['admin', 'va'] },
+  { to: '/real-estate/analyzer', icon: Calculator, label: 'Floor 6 — Deal Analyzer', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/automation', icon: Brain, label: 'Floor 7 — Automation Engine', roles: ['admin'] },
+  { to: '/real-estate/markets', icon: Map, label: 'Floor 8 — Market Intelligence', roles: ['admin', 'ceo'] },
+  { to: '/real-estate/analytics', icon: TrendingUp, label: 'Floor 9 — Analytics', roles: ['admin', 'ceo'] },
 ];
