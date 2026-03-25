@@ -55994,6 +55994,7 @@ export type Database = {
           lead_source: string | null
           lead_type: string | null
           lot_size: string | null
+          mao: number | null
           market_zone: string | null
           motivation: string | null
           notes: string | null
@@ -56033,6 +56034,7 @@ export type Database = {
           lead_source?: string | null
           lead_type?: string | null
           lot_size?: string | null
+          mao?: number | null
           market_zone?: string | null
           motivation?: string | null
           notes?: string | null
@@ -56072,6 +56074,7 @@ export type Database = {
           lead_source?: string | null
           lead_type?: string | null
           lot_size?: string | null
+          mao?: number | null
           market_zone?: string | null
           motivation?: string | null
           notes?: string | null
