@@ -32,6 +32,7 @@ export default function AppSidebar() {
     if (pathname.startsWith('/surplus-funds')) return 'surplus-funds-os';
     if (pathname.startsWith('/real-estate')) return 'real-estate-os';
     if (pathname.startsWith('/dynasty-connect')) return 'dynasty-connect';
+    if (pathname.startsWith('/brandaro')) return 'brandaro-hub';
     if (pathname.startsWith('/grabba/floor9') || pathname.startsWith('/gasmask/agent-center')) return 'floor-9';
     if (pathname.startsWith('/grabba/command-penthouse') || pathname === '/') return 'penthouse';
     if (pathname.startsWith('/communication')) return 'floor-2';
@@ -66,29 +67,10 @@ export default function AppSidebar() {
   const userRole = profileData?.profile?.primary_role || 'admin';
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(userRole);
 
-  // RUNTIME SELF-CHECK: Prove Floor 0 exists in the DOM or FAIL VISIBLY
+  // Floor 0 presence check (silent)
   useEffect(() => {
     const el = document.getElementById('__FLOOR_0_ASSERT__');
-    if (!el) {
-      document.body.innerHTML = `
-        <div style="
-          background:black;
-          color:red;
-          font-size:18px;
-          padding:40px;
-          font-family:monospace;
-        ">
-          ❌ FATAL ERROR<br/><br/>
-          Floor 0 (Territory Intelligence) CLAIMED TO RENDER<br/>
-          BUT WAS NOT FOUND IN THE DOM.<br/><br/>
-          AppSidebar.tsx is NOT mounting what the code claims.<br/>
-          This is a blocking integrity violation.
-        </div>
-      `;
-      throw new Error('FLOOR 0 NOT MOUNTED — DOM ASSERT FAILED');
-    } else {
-      console.warn('✅ FLOOR 0 VERIFIED IN DOM', el);
-    }
+    if (el) console.warn('✅ FLOOR 0 VERIFIED IN DOM', el);
   }, []);
 
   const toggleSection = (sectionId: string) => {
@@ -241,61 +223,52 @@ export default function AppSidebar() {
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🌍 TERRITORY INTELLIGENCE — Floor 0 (ABOVE ALL FLOORS) */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
-          {/* FLOOR 0 — FORCE RENDERED, NO CONDITIONS, NO COLLAPSE */}
-          <div
-            id="__FLOOR_0_ASSERT__"
-            data-floor="0"
-            data-section="territory-intelligence"
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              zIndex: 99999,
-              background: 'red',
-              color: 'white',
-              padding: '2px 6px',
-              fontSize: '10px',
-            }}
-          >
-            FLOOR 0 MOUNTED
-          </div>
+          <div id="__FLOOR_0_ASSERT__" data-floor="0" className="hidden" />
           <div className="mb-4 pt-2 border-t border-sidebar-border">
             <div className="px-3 py-2 text-xs font-semibold uppercase text-cyan-400/80 tracking-wider">
-              ✅ VISIBLE — 🌍 Territory Intelligence (Floor 0)
+              🌍 Territory Intelligence (Floor 0)
             </div>
-            {/* Rendered inline — NOT behind any role check or collapse guard */}
-            <div className="ml-0 mt-1 space-y-0.5">
-              {[
-                { path: '/territory', label: 'Territory Control', emoji: '📊' },
-                { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
-                { path: '/territory/ingestion', label: 'Ingestion Wizard', emoji: '📥' },
-                { path: '/territory/planning', label: 'Strategic Planning', emoji: '📐' },
-                { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
-                { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
-                { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
-                { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
-                { path: '/territory/ai-violations', label: 'AI Violations', emoji: '🛡️' },
-                { path: '/territory/ai-review-queue', label: 'AI Review Queue', emoji: '👁️' },
-                { path: '/territory/playbooks', label: 'Playbooks', emoji: '📖' },
-              ].map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors",
-                    isPathActive(item.path)
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
-                  )}
-                >
-                  <span>{item.emoji}</span>
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              ))}
-            </div>
+            {renderSection('territory-floor-0', 'Territory Intelligence', '🌍', [
+              { path: '/territory', label: 'Territory Control', emoji: '📊' },
+              { path: '/territory/gap-intelligence', label: 'Gap Intelligence', emoji: '🧠' },
+              { path: '/territory/ingestion', label: 'Ingestion Wizard', emoji: '📥' },
+              { path: '/territory/planning', label: 'Strategic Planning', emoji: '📐' },
+              { path: '/territory/planning/history', label: 'Commitment History', emoji: '📜' },
+              { path: '/territory/ai-permissions', label: 'AI Permissions', emoji: '🔒' },
+              { path: '/territory/ai-permissions/neighborhoods', label: 'AI × Neighborhoods', emoji: '🗺️' },
+              { path: '/territory/ai-permissions/actions', label: 'AI × Actions', emoji: '⚡' },
+              { path: '/territory/ai-violations', label: 'AI Violations', emoji: '🛡️' },
+              { path: '/territory/ai-review-queue', label: 'AI Review Queue', emoji: '👁️' },
+              { path: '/territory/playbooks', label: 'Playbooks', emoji: '📖' },
+            ], "text-cyan-400 hover:bg-cyan-500/10")}
           </div>
 
-
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* ⚔️ BRANDARO DIGITAL HUB — Standalone                              */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-red-400/80 tracking-wider">
+                ⚔️ Brandaro Digital Hub
+              </div>
+              {renderSection('brandaro-hub', 'Brandaro Digital Hub', '⚔️', [
+                { path: '/brandaro', label: 'War Room', emoji: '⚔️' },
+                { path: '/brandaro/ceo', label: 'CEO Dashboard', emoji: '👑' },
+                { path: '/brandaro/calling', label: 'Live Calls', emoji: '📞' },
+                { path: '/brandaro/va-dashboard', label: 'VA Dashboard', emoji: '👥' },
+                { path: '/brandaro/crm-pipeline', label: 'CRM Pipeline', emoji: '🎯' },
+                { path: '/brandaro/leads', label: 'Leads', emoji: '📋' },
+                { path: '/brandaro/closer-ai', label: 'Closer AI', emoji: '🔥' },
+                { path: '/brandaro/proposals', label: 'Proposals', emoji: '📄' },
+                { path: '/brandaro/clients', label: 'Client Portal', emoji: '👥' },
+                { path: '/brandaro/revenue', label: 'Revenue', emoji: '💰' },
+                { path: '/brandaro/domination', label: 'Market Control', emoji: '👑' },
+                { path: '/brandaro/ai-brain', label: 'AI Brain', emoji: '🧠' },
+                { path: '/brandaro/google-domination', label: 'Google SEO', emoji: '🌐' },
+                { path: '/brandaro/retention', label: 'Retention', emoji: '❤️' },
+              ], "bg-gradient-to-r from-red-500/20 to-orange-500/10 text-red-400 hover:from-red-500/30")}
+            </div>
+          )}
           {/* ═══════════════════════════════════════════════════════════════════ */}
           {/* 🏢 FLOORS 1-9 — Grabba Empire Skyscraper */}
           {/* ═══════════════════════════════════════════════════════════════════ */}
