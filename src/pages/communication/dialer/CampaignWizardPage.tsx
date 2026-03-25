@@ -1198,6 +1198,8 @@ export default function CampaignWizardPage() {
                           const sid = item.twilio_call_sid?.trim();
                           const msgs = sid ? (transcriptsByCall[sid] || []) : [];
                           const recording = sid ? recordingsByCall[sid] : null;
+                          const aiLog = aiLogsByPhone[item.phone_number];
+                          const hasElevenLabs = !!recording?.elevenlabs_conversation_id;
 
                           return (
                             <Card key={item.id} className="border bg-card">
@@ -1206,6 +1208,12 @@ export default function CampaignWizardPage() {
                                   <Phone className="h-4 w-4 text-muted-foreground" />
                                   <span className="font-medium text-sm">{item.contact_name || "Unknown"}</span>
                                   <span className="text-xs text-muted-foreground font-mono">{item.phone_number}</span>
+                                  {hasElevenLabs && (
+                                    <Badge variant="outline" className="gap-1 text-[10px] h-5 border-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-500/10">
+                                      <Bot className="h-3 w-3" />
+                                      ElevenLabs
+                                    </Badge>
+                                  )}
                                   {item.status === "transferred" && (
                                     <Badge variant="outline" className="gap-1 text-[10px] h-5 border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/10">
                                       <ArrowRightLeft className="h-3 w-3" />
@@ -1214,6 +1222,11 @@ export default function CampaignWizardPage() {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
+                                  {recording?.outcome && (
+                                    <Badge variant="outline" className="text-[10px] capitalize">
+                                      {recording.outcome}
+                                    </Badge>
+                                  )}
                                   {recording?.recording_duration && (
                                     <span className="text-[10px] text-muted-foreground">
                                       {Math.floor(recording.recording_duration / 60)}:{String(recording.recording_duration % 60).padStart(2, "0")}
@@ -1225,30 +1238,62 @@ export default function CampaignWizardPage() {
                                 </div>
                               </div>
 
-                              <div className="p-3 space-y-2 max-h-48 overflow-y-auto">
-                                {msgs.length === 0 ? (
-                                  <div>
-                                    <p className="text-xs text-muted-foreground italic">
-                                      {item.status === "completed" || item.status === "failed" || item.status === "no_answer"
-                                        ? "No live transcript captured for this call."
-                                        : "Waiting for transcript..."}
-                                    </p>
-                                    {recording?.recording_url && (
+                              {/* AI Summary Banner */}
+                              {aiLog?.ai_summary && (
+                                <div className="px-3 py-2 bg-primary/5 border-b text-xs">
+                                  <span className="font-semibold text-primary">AI Summary: </span>
+                                  <span className="text-foreground">{aiLog.ai_summary}</span>
+                                </div>
+                              )}
+
+                              {/* Call Flow Indicator */}
+                              {sid && (
+                                <div className="px-3 py-1.5 bg-muted/30 border-b flex items-center gap-2 text-[10px] text-muted-foreground">
+                                  <span className="flex items-center gap-1"><Phone className="h-3 w-3" /> Twilio TTS</span>
+                                  <ChevronRight className="h-3 w-3" />
+                                  <span className="flex items-center gap-1">
+                                    <MessageSquare className="h-3 w-3" /> Gather
+                                  </span>
+                                  {hasElevenLabs && (
+                                    <>
+                                      <ChevronRight className="h-3 w-3" />
+                                      <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400 font-medium">
+                                        <Bot className="h-3 w-3" /> AI Agent
+                                      </span>
+                                    </>
+                                  )}
+                                  {recording?.recording_url && (
+                                    <>
+                                      <span className="ml-auto" />
                                       <a
                                         href={recording.recording_url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-xs text-primary underline mt-1 inline-block"
+                                        className="text-primary underline"
                                       >
-                                        🎙️ Play Recording
+                                        🎙️ Recording
                                       </a>
-                                    )}
+                                    </>
+                                  )}
+                                </div>
+                              )}
+
+                              <div className="p-3 space-y-2 max-h-60 overflow-y-auto">
+                                {msgs.length === 0 ? (
+                                  <div>
+                                    <p className="text-xs text-muted-foreground italic">
+                                      {item.status === "completed" || item.status === "failed" || item.status === "no_answer"
+                                        ? "No transcript captured for this call."
+                                        : item.status === "dialing" || item.status === "connected" || item.status === "bridging"
+                                        ? "⏳ Call in progress — transcript will appear when complete..."
+                                        : "Waiting for transcript..."}
+                                    </p>
                                   </div>
                                 ) : (
                                   <>
                                     {msgs.map((msg: any, idx: number) => {
                                       const isSystem = msg.speaker === "system";
-                                      const isTransfer = isSystem && msg.text.includes("[TRANSFER") || msg.text.includes("transferring");
+                                      const isTransfer = isSystem && (msg.text.includes("[TRANSFER") || msg.text.includes("[FAST TRANSFER") || msg.text.includes("transferring"));
                                       
                                       if (isSystem) {
                                         return (
@@ -1277,16 +1322,6 @@ export default function CampaignWizardPage() {
                                         </div>
                                       );
                                     })}
-                                    {recording?.recording_url && (
-                                      <a
-                                        href={recording.recording_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-xs text-primary underline mt-2 inline-block"
-                                      >
-                                        🎙️ Play Recording
-                                      </a>
-                                    )}
                                   </>
                                 )}
                               </div>
