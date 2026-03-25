@@ -307,6 +307,7 @@ export function useUnifiedInvoiceFeed(filters?: InvoiceFilters) {
             receipt_status: null,
             receipt_sent_at: null,
             is_historical: false,
+            entry_mode: 'live' as const,
             created_by: null,
           });
         });
