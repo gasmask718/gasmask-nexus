@@ -22,6 +22,7 @@ const outcomeStyle = (o: string) => {
 
 export default function DCCommandCenter() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [triggeringSelfLearn, setTriggeringSelfLearn] = useState(false);
 
   // ── Calls Today ──
