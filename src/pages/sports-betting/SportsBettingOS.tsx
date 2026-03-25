@@ -450,21 +450,27 @@ function TonightGamesTab() {
 
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
-                {state.gamesLoading
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
-                  : '🏀 Load Tonight\'s Games'}
-              </Button>
-              <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
-                {state.analyzing
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
-                  : '⚡ Run AI Predictions'}
-              </Button>
-              <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
-                {state.refreshing
-                  ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
-                  : '🔄 Refresh'}
-              </Button>
+              <ActionTooltip description="Checks database for today's games first. If none found, fetches live data from The Odds API and persists to database.">
+                <Button onClick={loadGames} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+                  {state.gamesLoading
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Loading...</>
+                    : '🏀 Load Tonight\'s Games'}
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip description="Runs 4-Brain AI analysis (Stats, Market, Context, Polymarket) on all loaded games. Generates confidence scores, picks, and Kelly stake recommendations.">
+                <Button onClick={runPredictions} disabled={state.gamesLoading || state.analyzing || state.refreshing || !state.games.length}>
+                  {state.analyzing
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running...</>
+                    : '⚡ Run AI Predictions'}
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip description="Reloads games and saved picks from the database without calling external APIs. Use to see latest predictions after a background run.">
+                <Button variant="outline" onClick={refreshFromDb} disabled={state.gamesLoading || state.analyzing || state.refreshing}>
+                  {state.refreshing
+                    ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Refreshing...</>
+                    : '🔄 Refresh'}
+                </Button>
+              </ActionTooltip>
             </div>
 
             {state.errorMsg ? (
