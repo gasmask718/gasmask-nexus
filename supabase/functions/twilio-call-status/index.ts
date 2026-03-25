@@ -47,7 +47,9 @@ const handler = async (req: Request): Promise<Response> => {
     const isTerminal = ["completed", "busy", "no_answer", "failed", "canceled"].includes(dbStatus);
     const effectiveSid = parentCallSid || callSid;
 
-    // 🔴 1. Gather all required DB updates into a single task list
+    console.log(`📞 twilio-call-status | sid=${callSid} parent=${parentCallSid} effective=${effectiveSid} status=${callStatus} → ${dbStatus}`);
+
+    // 1. Gather all required DB updates
     const tasks: Promise<any>[] = [];
 
     // Queue status update
@@ -91,99 +93,129 @@ const handler = async (req: Request): Promise<Response> => {
       tasks.push(supabase.from("call_recordings").update(updateData).eq("provider_call_sid", effectiveSid));
     }
 
-    // 🔴 2. Execute primary updates immediately to free up the queue
+    // 2. Execute primary updates
     await Promise.allSettled(tasks);
 
-    // 🔴 3. Handle Heavy Transcript Batching if Terminal
+    // 3. Fetch ElevenLabs transcripts synchronously on terminal completed calls
     if (isTerminal && ELEVENLABS_API_KEY && dbStatus === "completed") {
-      // We do NOT 'await' this one globally to respond to Twilio fast,
-      // but we use a background worker pattern
-      (async () => {
-        try {
-          const { data: rec } = await supabase
-            .from("call_recordings")
-            .select("elevenlabs_conversation_id")
-            .eq("provider_call_sid", effectiveSid)
-            .single();
+      try {
+        // Look up conversation_id from call_recordings
+        const { data: rec } = await supabase
+          .from("call_recordings")
+          .select("elevenlabs_conversation_id")
+          .eq("provider_call_sid", effectiveSid)
+          .single();
 
-          if (rec?.elevenlabs_conversation_id) {
+        if (rec?.elevenlabs_conversation_id) {
+          console.log(`🔍 Fetching ElevenLabs transcript for conversation ${rec.elevenlabs_conversation_id}`);
+
+          // Retry up to 3 times with delay — ElevenLabs may not have transcript ready immediately
+          let transcriptData = null;
+          for (let attempt = 0; attempt < 3; attempt++) {
             const res = await fetch(
               `https://api.elevenlabs.io/v1/convai/conversations/${rec.elevenlabs_conversation_id}`,
-              {
-                headers: { "xi-api-key": ELEVENLABS_API_KEY },
-              },
+              { headers: { "xi-api-key": ELEVENLABS_API_KEY } },
             );
 
             if (res.ok) {
-              const json = await res.json();
-              const messages = json?.messages || [];
-              const analysis = json?.analysis || {};
-
+              transcriptData = await res.json();
+              const messages = transcriptData?.messages || transcriptData?.transcript || [];
               if (messages.length > 0) {
-                // Batch insert all transcripts in ONE go instead of a loop
-                const rows = messages.map((m: any) => ({
-                  call_sid: effectiveSid,
-                  speaker: m.role === "agent" ? "ai" : "caller",
-                  text: m.text || m.message || "",
-                  is_final: true,
-                  created_at: new Date().toISOString(),
-                }));
-                await supabase.from("live_call_transcripts").insert(rows);
-
-                // Build full transcript text for ai_call_logs
-                const fullTranscript = messages
-                  .map((m: any) => `${m.role === "agent" ? "AI" : "Caller"}: ${m.text || m.message || ""}`)
-                  .join("\n");
-
-                // Detect outcome — must match CHECK constraint on ai_call_logs
-                const outcomeRaw = analysis?.call_successful === true ? "reached"
-                  : analysis?.call_successful === false ? "no_answer"
-                  : dbStatus === "completed" ? "reached" : "no_answer";
-
-                // Look up queue item for context
-                const { data: queueItem } = await supabase
-                  .from("outbound_call_queue")
-                  .select("business_id, contact_phone, campaign_id")
-                  .eq("twilio_call_sid", effectiveSid)
-                  .maybeSingle();
-
-                await supabase.from("ai_call_logs").insert({
-                  business_id: queueItem?.business_id || null,
-                  phone_number: queueItem?.contact_phone || null,
-                  duration_seconds: parseInt(duration, 10) || 0,
-                  transcription: fullTranscript,
-                  outcome: outcomeRaw,
-                  ai_summary: analysis?.summary || null,
-                  language: json?.metadata?.language || "en",
-                });
-
-                // 🔴 Sync outcome back to dc_leads
-                if (queueItem?.contact_phone) {
-                  const leadStatus = outcomeRaw === "reached" ? "called"
-                    : ["booked", "interested", "not-interested", "callback"].includes(outcomeRaw) ? outcomeRaw
-                    : "called";
-                  await supabase
-                    .from("dc_leads")
-                    .update({
-                      status: leadStatus,
-                      outcome: outcomeRaw,
-                      last_called_at: new Date().toISOString(),
-                      call_count: supabase.rpc ? undefined : 1, // fallback
-                      updated_at: new Date().toISOString(),
-                    })
-                    .eq("phone", queueItem.contact_phone)
-                    .then(({ error }) => {
-                      if (error) console.error("dc_leads sync error:", error);
-                      else console.log(`✅ dc_leads synced for ${queueItem.contact_phone}`);
-                    });
-                }
+                console.log(`✅ Got ${messages.length} transcript messages on attempt ${attempt + 1}`);
+                break;
               }
             }
+
+            // Wait before retrying (1s, 2s, 3s)
+            if (attempt < 2) {
+              console.log(`⏳ No transcript yet, retrying in ${(attempt + 1)}s...`);
+              await new Promise(r => setTimeout(r, (attempt + 1) * 1000));
+            }
           }
-        } catch (e) {
-          console.error("Delayed transcript failed:", e);
+
+          if (transcriptData) {
+            const messages = transcriptData?.messages || transcriptData?.transcript || [];
+            const analysis = transcriptData?.analysis || {};
+
+            if (messages.length > 0) {
+              // Batch insert all transcripts
+              const rows = messages.map((m: any) => ({
+                call_sid: effectiveSid,
+                speaker: m.role === "agent" ? "ai" : "caller",
+                text: m.text || m.message || "",
+                is_final: true,
+                created_at: new Date().toISOString(),
+              }));
+              const { error: insertErr } = await supabase.from("live_call_transcripts").insert(rows);
+              if (insertErr) console.error("Transcript insert error:", insertErr);
+              else console.log(`✅ Inserted ${rows.length} transcript rows for ${effectiveSid}`);
+
+              // Build full transcript text
+              const fullTranscript = messages
+                .map((m: any) => `${m.role === "agent" ? "AI" : "Caller"}: ${m.text || m.message || ""}`)
+                .join("\n");
+
+              // Detect outcome
+              const outcomeRaw = analysis?.call_successful === true ? "reached"
+                : analysis?.call_successful === false ? "no_answer"
+                : "reached";
+
+              // Look up queue item for context
+              const { data: queueItem } = await supabase
+                .from("outbound_call_queue")
+                .select("business_id, contact_phone, campaign_id")
+                .eq("twilio_call_sid", effectiveSid)
+                .maybeSingle();
+
+              // Insert ai_call_logs for analytics
+              const { error: logErr } = await supabase.from("ai_call_logs").insert({
+                business_id: queueItem?.business_id || null,
+                phone_number: queueItem?.contact_phone || null,
+                duration_seconds: parseInt(duration, 10) || 0,
+                transcription: fullTranscript,
+                full_transcript: fullTranscript,
+                outcome: outcomeRaw,
+                ai_summary: analysis?.summary || null,
+                language: transcriptData?.metadata?.language || "en",
+              });
+              if (logErr) console.error("ai_call_logs insert error:", logErr);
+              else console.log(`✅ ai_call_logs created for ${effectiveSid}`);
+
+              // Update call_recordings with transcript flag
+              await supabase
+                .from("call_recordings")
+                .update({
+                  has_transcript: true,
+                  transcript: fullTranscript,
+                  outcome: outcomeRaw,
+                })
+                .eq("provider_call_sid", effectiveSid);
+
+              // Sync outcome to dc_leads
+              if (queueItem?.contact_phone) {
+                const leadStatus = outcomeRaw === "reached" ? "called"
+                  : ["booked", "interested", "not-interested", "callback"].includes(outcomeRaw) ? outcomeRaw
+                  : "called";
+                await supabase
+                  .from("dc_leads")
+                  .update({
+                    status: leadStatus,
+                    outcome: outcomeRaw,
+                    last_called_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("phone", queueItem.contact_phone);
+              }
+            } else {
+              console.warn(`⚠️ No transcript messages found for conversation ${rec.elevenlabs_conversation_id}`);
+            }
+          }
+        } else {
+          console.log(`ℹ️ No elevenlabs_conversation_id for ${effectiveSid} — skipping transcript fetch`);
         }
-      })();
+      } catch (e) {
+        console.error("Transcript fetch error:", e);
+      }
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders });
