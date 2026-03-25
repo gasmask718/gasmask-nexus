@@ -62485,6 +62485,308 @@ export type Database = {
         }
         Relationships: []
       }
+      solar_agents: {
+        Row: {
+          close_rate: number | null
+          created_at: string | null
+          id: string
+          name: string
+          performance_score: number | null
+          role: string | null
+          status: string | null
+          total_appointments: number | null
+          total_calls: number | null
+          total_revenue_generated: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          close_rate?: number | null
+          created_at?: string | null
+          id?: string
+          name: string
+          performance_score?: number | null
+          role?: string | null
+          status?: string | null
+          total_appointments?: number | null
+          total_calls?: number | null
+          total_revenue_generated?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          close_rate?: number | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          performance_score?: number | null
+          role?: string | null
+          status?: string | null
+          total_appointments?: number | null
+          total_calls?: number | null
+          total_revenue_generated?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      solar_deals: {
+        Row: {
+          closed_at: string | null
+          commission_amount: number | null
+          commission_percentage: number | null
+          created_at: string | null
+          deal_value: number | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          partner_id: string | null
+          payout_status: string | null
+          stage: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          deal_value?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          partner_id?: string | null
+          payout_status?: string | null
+          stage?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          commission_amount?: number | null
+          commission_percentage?: number | null
+          created_at?: string | null
+          deal_value?: number | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          partner_id?: string | null
+          payout_status?: string | null
+          stage?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_deals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "solar_deals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "solar_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_interactions: {
+        Row: {
+          agent_id: string | null
+          created_at: string | null
+          id: string
+          interaction_type: string
+          lead_id: string
+          next_action: string | null
+          objections_detected: Json | null
+          sentiment_score: number | null
+          summary: string | null
+          transcript: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string | null
+          id?: string
+          interaction_type: string
+          lead_id: string
+          next_action?: string | null
+          objections_detected?: Json | null
+          sentiment_score?: number | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string | null
+          id?: string
+          interaction_type?: string
+          lead_id?: string
+          next_action?: string | null
+          objections_detected?: Json | null
+          sentiment_score?: number | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_interactions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "solar_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_leads: {
+        Row: {
+          address: string | null
+          assigned_agent_id: string | null
+          assigned_partner_id: string | null
+          call_count: number | null
+          city: string | null
+          created_at: string | null
+          credit_range: string | null
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          homeowner_status: boolean | null
+          id: string
+          interest_level: number | null
+          last_called_at: string | null
+          last_name: string | null
+          lead_score: number | null
+          lead_source: string | null
+          metadata: Json | null
+          monthly_bill_range: string | null
+          notes: string | null
+          phone: string | null
+          roof_age_years: number | null
+          roof_type: string | null
+          skip_traced: boolean | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          assigned_agent_id?: string | null
+          assigned_partner_id?: string | null
+          call_count?: number | null
+          city?: string | null
+          created_at?: string | null
+          credit_range?: string | null
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          homeowner_status?: boolean | null
+          id?: string
+          interest_level?: number | null
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_score?: number | null
+          lead_source?: string | null
+          metadata?: Json | null
+          monthly_bill_range?: string | null
+          notes?: string | null
+          phone?: string | null
+          roof_age_years?: number | null
+          roof_type?: string | null
+          skip_traced?: boolean | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          assigned_agent_id?: string | null
+          assigned_partner_id?: string | null
+          call_count?: number | null
+          city?: string | null
+          created_at?: string | null
+          credit_range?: string | null
+          email?: string | null
+          first_name?: string | null
+          full_name?: string | null
+          homeowner_status?: boolean | null
+          id?: string
+          interest_level?: number | null
+          last_called_at?: string | null
+          last_name?: string | null
+          lead_score?: number | null
+          lead_source?: string | null
+          metadata?: Json | null
+          monthly_bill_range?: string | null
+          notes?: string | null
+          phone?: string | null
+          roof_age_years?: number | null
+          roof_type?: string | null
+          skip_traced?: boolean | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
+      solar_partners: {
+        Row: {
+          avg_close_rate: number | null
+          avg_deal_size: number | null
+          commission_percentage: number | null
+          company_name: string
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          ranking_score: number | null
+          response_time_hours: number | null
+          states_served: string[] | null
+          status: string | null
+          updated_at: string | null
+          webhook_endpoint: string | null
+        }
+        Insert: {
+          avg_close_rate?: number | null
+          avg_deal_size?: number | null
+          commission_percentage?: number | null
+          company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          ranking_score?: number | null
+          response_time_hours?: number | null
+          states_served?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          webhook_endpoint?: string | null
+        }
+        Update: {
+          avg_close_rate?: number | null
+          avg_deal_size?: number | null
+          commission_percentage?: number | null
+          company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          ranking_score?: number | null
+          response_time_hours?: number | null
+          states_served?: string[] | null
+          status?: string | null
+          updated_at?: string | null
+          webhook_endpoint?: string | null
+        }
+        Relationships: []
+      }
       speaker_style_profiles: {
         Row: {
           avg_caller_satisfaction: number | null
