@@ -49,7 +49,7 @@ serve(async (req) => {
     const lastSession = sessions?.[0] || null;
 
     // 3. Determine tone based on intent
-    const intentScore = lead.intent_score || lastSession?.intent_score || 0;
+    const intentScore = lead.lead_score || lastSession?.intent_score || 0;
     let toneDirective: string;
     let toneType: string;
 
