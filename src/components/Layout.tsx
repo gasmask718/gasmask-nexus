@@ -462,6 +462,19 @@ const DYNASTY_NAVIGATION = {
       { path: '/brandaro/canva-templates', label: 'Canva Templates', icon: Settings },
     ],
   },
+  dynastyConnect: {
+    id: 'dynasty-connect',
+    name: '📞 Dynasty Connect',
+    items: [
+      { path: '/dynasty-connect', label: '🎯 Command Center', icon: Headphones },
+      { path: '/dynasty-connect/campaigns', label: '📋 Campaign Management', icon: Target },
+      { path: '/dynasty-connect/agents', label: '🤖 AI Agents', icon: Brain },
+      { path: '/dynasty-connect/intelligence', label: '🧠 Call Intelligence', icon: FileText },
+      { path: '/dynasty-connect/pipelines', label: '🏢 Business Pipelines', icon: Building2 },
+      { path: '/dynasty-connect/infrastructure', label: '⚙️ Infrastructure', icon: Settings },
+      { path: '/dynasty-connect/clients', label: '💼 Client Management', icon: Briefcase },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
