@@ -2799,7 +2799,22 @@ export default function AppRoutes() {
       </Route>
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
-      {/* BRANDARO DIGITAL HUB (THE SALES WAR ROOM)                                    */}
+      {/* REAL ESTATE OS                                                             */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/real-estate" element={<RELayout />}>
+          <Route index element={<RECommandCenter />} />
+          <Route path="leads" element={<RELeadPipeline />} />
+          <Route path="campaigns" element={<RECampaigns />} />
+          <Route path="deals" element={<REDeals />} />
+          <Route path="buyers" element={<REBuyers />} />
+          <Route path="va-desk" element={<REVADesk />} />
+          <Route path="analyzer" element={<REAnalyzer />} />
+          <Route path="markets" element={<REMarkets />} />
+          <Route path="analytics" element={<REAnalytics />} />
+        </Route>
+      </Route>
+
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
         <Route path="/brandaro" element={<BrandaroHubLayout />}>
