@@ -669,6 +669,15 @@ export function PrizePicksAnalyzer() {
           </div>
         )}
 
+        {/* Stat Intelligence Context */}
+        <PropStatContextCard
+          propId={prop.id}
+          playerName={prop.player_name}
+          propType={prop.prop_type}
+          line={prop.line}
+          compact={!hasPrediction}
+        />
+
         {/* Actions */}
         <div className="flex gap-1 pt-1">
           <Button size="sm" variant={isQueued ? 'default' : 'outline'} className="text-[10px] h-7"
