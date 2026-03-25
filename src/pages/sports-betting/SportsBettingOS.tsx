@@ -4216,7 +4216,7 @@ export default function SportsBettingOS() {
         <div className="flex items-center gap-3">
           <Trophy className="h-6 w-6 text-orange-500" />
           <div>
-            <h1 className="text-xl font-bold text-foreground">🏀 Sports Betting AI OS</h1>
+            <h1 className="text-xl font-bold text-foreground">🧠 SBO AI Engine</h1>
             <p className="text-xs text-muted-foreground">NBA · 4-Brain AI Engine · Moneyline + Player Props</p>
           </div>
         </div>
