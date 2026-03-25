@@ -4370,6 +4370,7 @@ export default function SportsBettingOS() {
           { id: 'games', label: '🏀 Tonight', shortLabel: 'Tonight' },
           { id: 'props', label: '📊 Props', shortLabel: 'Props', badge: strongCount },
           { id: 'prizepicks', label: '🎯 PrizePicks', shortLabel: 'PP' },
+          { id: 'bovada', label: '🐂 Bovada', shortLabel: 'Bovada' },
           { id: 'sms', label: '📱 ChingWorld', shortLabel: 'SMS' },
           { id: 'hedge', label: '🛡️ Hedge', shortLabel: 'Hedge' },
           { id: 'parlay', label: '🎰 Parlay', shortLabel: 'Parlay' },
