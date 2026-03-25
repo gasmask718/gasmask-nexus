@@ -154,10 +154,12 @@ export default function BookPropsComparison() {
               <ArrowRightLeft className="h-5 w-5 text-primary" />
               <CardTitle className="text-lg">Cross-Platform Props</CardTitle>
             </div>
-            <Button size="sm" onClick={handleSync} disabled={syncing}>
-              {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
-              Sync Book Props
-            </Button>
+            <ActionTooltip description="Fetches latest player props from Bovada, DraftKings, FanDuel, and BetMGM via The Odds API. Compares lines across books to find edge opportunities.">
+              <Button size="sm" onClick={handleSync} disabled={syncing}>
+                {syncing ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <RefreshCw className="h-4 w-4 mr-1" />}
+                Sync Book Props
+              </Button>
+            </ActionTooltip>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
