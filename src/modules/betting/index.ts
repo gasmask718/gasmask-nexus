@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Trophy, Target, BarChart3, Shield, LayoutDashboard, Search, FileInput, Settings, Building2, ClipboardList, Activity, Calculator, Layers, Monitor, CheckCircle, Lock } from 'lucide-react';
+import { Trophy, Target, BarChart3, Shield, LayoutDashboard, Search, FileInput, Settings, Building2, ClipboardList, Activity, Calculator, Layers, Monitor, CheckCircle, Lock, ArrowRightLeft } from 'lucide-react';
 import BettingDashboard from '@/pages/os/betting/BettingDashboard';
 import StatsInspector from '@/pages/os/betting/StatsInspector';
 import LineIntake from '@/pages/os/betting/LineIntake';
@@ -16,6 +16,7 @@ import NBADailyBoard from '@/pages/os/betting/NBADailyBoard';
 import ResultsPage from '@/pages/os/betting/ResultsPage';
 import SimulationPage from '@/pages/os/betting/SimulationPage';
 import OwnerInternal from '@/pages/os/betting/OwnerInternal';
+import CrossPlatformLines from '@/pages/os/betting/CrossPlatformLines';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/sports-betting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
