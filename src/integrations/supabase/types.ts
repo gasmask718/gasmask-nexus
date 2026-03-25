@@ -41253,6 +41253,36 @@ export type Database = {
           },
         ]
       }
+      invoice_repair_log: {
+        Row: {
+          after_state: Json
+          before_state: Json
+          id: string
+          invoice_id: string
+          repair_reason: string
+          repaired_at: string
+          repaired_by: string | null
+        }
+        Insert: {
+          after_state: Json
+          before_state: Json
+          id?: string
+          invoice_id: string
+          repair_reason: string
+          repaired_at?: string
+          repaired_by?: string | null
+        }
+        Update: {
+          after_state?: Json
+          before_state?: Json
+          id?: string
+          invoice_id?: string
+          repair_reason?: string
+          repaired_at?: string
+          repaired_by?: string | null
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           amount_paid: number
