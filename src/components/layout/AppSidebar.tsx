@@ -69,7 +69,7 @@ export default function AppSidebar() {
   const normalizedRole = userRole.trim().toLowerCase();
   const isAdmin = ['owner', 'admin', 'ceo', 'va'].includes(normalizedRole);
   const canAccessRealEstateHub = ['owner', 'admin', 'ceo', 'va', 'realestate_worker'].includes(normalizedRole);
-  const canAccessSolarHub = canAccessRealEstateHub;
+  const canAccessSolarHub = ['owner', 'admin', 'ceo', 'va', 'solar_worker', 'solar_manager', 'solar_closer', 'solar_qa'].includes(normalizedRole);
 
   // Floor 0 presence check (silent)
   useEffect(() => {
