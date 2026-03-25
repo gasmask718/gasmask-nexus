@@ -1,7 +1,8 @@
 import {
   MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
   BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
-  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet
+  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet,
+  Scale, Search, Briefcase
 } from 'lucide-react';
 
 export const navigationItems = [
