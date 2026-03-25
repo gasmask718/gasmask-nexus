@@ -740,6 +740,19 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 📞 DYNASTY CONNECT — AI CALL CENTER HUB */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-teal-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-teal-400/80 tracking-wider">
+          📞 Dynasty Connect
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyConnect.id,
+          DYNASTY_NAVIGATION.dynastyConnect.name,
+          DYNASTY_NAVIGATION.dynastyConnect.items
+        )}
+      </div>
+
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🔴 GRABBA PRODUCT BRANDS */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
