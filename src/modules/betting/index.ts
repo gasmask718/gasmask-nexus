@@ -61,6 +61,7 @@ export const BettingModule: DynastyModule = {
     { path: '/platforms', component: PlatformsDashboard, label: 'Platforms', icon: Building2, requiresAuth: true },
     { path: '/line-intake', component: LineIntake, label: 'Line Intake', icon: FileInput, requiresAuth: true },
     { path: '/line-shopping', component: LineShopping, label: 'Line Shopping', icon: Search, requiresAuth: true },
+    { path: '/cross-platform', component: CrossPlatformLines, label: 'Cross-Platform', icon: ArrowRightLeft, requiresAuth: true },
     { path: '/settings', component: BettingSettings, label: 'Settings', icon: Settings, requiresAuth: true },
     { path: '/stats-inspector', component: StatsInspector, label: 'Stats Inspector', icon: Search, requiresAuth: true },
     { path: '/owner-internal', component: OwnerInternal, label: 'Internal', icon: Lock, requiresAuth: true },
