@@ -4442,6 +4442,7 @@ export default function SportsBettingOS() {
               {activeTab === 'mybets' && <MyBetsTab />}
               {activeTab === 'sms' && <ChingWorldPicksSMS />}
               {activeTab === 'prizepicks' && <PrizePicksAnalyzer />}
+              {activeTab === 'bovada' && <BookPropsComparison />}
               {activeTab === 'history' && <PredictionHistory />}
               {activeTab === 'entry' && <VAPropEntryTab />}
               {activeTab === 'sync' && <SyncDashboard />}
