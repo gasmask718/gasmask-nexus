@@ -29,10 +29,10 @@ serve(async (req) => {
     const { lead_id, attempt_number } = await req.json();
     if (!lead_id) throw new Error("lead_id required");
 
-    // 1. Fetch lead info
+    // 1. Fetch lead info — try solar_leads
     const { data: lead } = await supabase
-      .from("solar_master_leads")
-      .select("id, name, phone, email, address, state, monthly_bill, intent_score, status, objections_detected")
+      .from("solar_leads")
+      .select("id, full_name, phone, email, address, state, monthly_bill_range, lead_score, status")
       .eq("id", lead_id)
       .maybeSingle();
 
