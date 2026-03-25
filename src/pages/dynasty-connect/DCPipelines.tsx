@@ -93,6 +93,18 @@ export default function DCPipelines() {
 
   const isGasMask = (name: string) => name.toLowerCase().includes('gasmask') || name.toLowerCase().includes('gas mask');
 
+  const getSlug = (name: string) => {
+    const map: Record<string, string> = {
+      'surplus funds': 'surplus-funds',
+      'dynasty real estate': 'real-estate',
+      'unforgettable times': 'unforgettable-times',
+      'playboxxx': 'playboxxx',
+      'brightsun energy': 'brightsun-energy',
+      'gasmask new stores': 'gasmask-new-stores',
+    };
+    return map[name.toLowerCase()] || null;
+  };
+
   return (
     <div className="space-y-6">
       <div>
