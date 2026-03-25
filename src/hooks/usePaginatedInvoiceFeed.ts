@@ -124,6 +124,11 @@ async function fetchStoreInvoices(
       .lte('created_at', filters.dateRange.end);
   }
 
+  // SERVER-SIDE SEARCH: filter by invoice_number at the DB level
+  if (filters.search) {
+    query = query.ilike('invoice_number', `%${filters.search}%`);
+  }
+
   // Apply pagination range
   query = query.range(from, to);
 
