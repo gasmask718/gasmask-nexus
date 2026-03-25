@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Wallet, Users, Zap, Shield, Crown, Flame, AlertTriangle, Filter } from 'lucide-react';
+import { Brain, Wallet, Users, Shield, Crown, Flame, AlertTriangle, Filter, Clock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -11,11 +11,90 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 const WEIGHTS = { ai: 0.4, wallet: 0.4, capper: 0.2 };
 const CONFLICT_PENALTY = 10;
 
-function calcWalletScore(alignCount: number, eliteCount: number) {
-  return Math.min(100, alignCount * 10 + eliteCount * 15);
+// === UPGRADE #2: WALLET TIER WEIGHTING ===
+const WALLET_TIER_POINTS: Record<string, number> = {
+  elite: 25,
+  strong: 15,
+  normal: 5,
+};
+
+// === UPGRADE #3: CAPPER TIER WEIGHTING ===
+function getCapperTier(winRate: number): 'elite' | 'strong' | 'weak' {
+  if (winRate >= 0.70) return 'elite';
+  if (winRate >= 0.60) return 'strong';
+  return 'weak';
 }
-function calcCapperScore(alignCount: number, topCount: number) {
-  return Math.min(100, alignCount * 5 + topCount * 10);
+const CAPPER_TIER_POINTS: Record<string, number> = {
+  elite: 20,
+  strong: 10,
+  weak: 3,
+};
+
+// === UPGRADE #5: TIME DECAY ===
+function getTimeDecay(eventTime: string | null): number {
+  if (!eventTime) return 0.4;
+  const hoursAgo = (Date.now() - new Date(eventTime).getTime()) / 3_600_000;
+  if (hoursAgo < 1) return 1.0;
+  if (hoursAgo < 3) return 0.8;
+  if (hoursAgo < 6) return 0.6;
+  return 0.4;
+}
+
+// === UPGRADE #1: STRUCTURED MATCHING ===
+function normalizePlayerName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function structuredMatchScore(
+  pred: { player_name?: string; home_team?: string; away_team?: string; prop_type?: string },
+  target: { text: string; player?: string }
+): number {
+  const predPlayer = normalizePlayerName(pred.player_name || '');
+  if (!predPlayer) return 0;
+
+  // Try structured player field first (exact match)
+  if (target.player) {
+    const targetPlayer = normalizePlayerName(target.player);
+    if (predPlayer === targetPlayer) return 100;
+    // Last name match
+    const predLast = predPlayer.split(' ').pop() || '';
+    const targetLast = targetPlayer.split(' ').pop() || '';
+    if (predLast.length >= 3 && predLast === targetLast) return 80;
+  }
+
+  // Fallback: text search with full name
+  const textLower = (target.text || '').toLowerCase();
+  if (predPlayer.length >= 4 && textLower.includes(predPlayer)) return 90;
+
+  // Last name in text
+  const predLast = predPlayer.split(' ').pop() || '';
+  if (predLast.length >= 4 && textLower.includes(predLast)) return 60;
+
+  return 0;
+}
+
+const MATCH_THRESHOLD = 60; // minimum match score to count
+
+function calcWalletScoreTiered(wallets: { tier: string; decay: number }[]): number {
+  let score = 0;
+  for (const w of wallets) {
+    const tierPts = WALLET_TIER_POINTS[w.tier] || WALLET_TIER_POINTS.normal;
+    score += tierPts * w.decay;
+  }
+  return Math.min(100, Math.round(score));
+}
+
+function calcCapperScoreTiered(cappers: { tier: string; decay: number }[]): number {
+  let score = 0;
+  for (const c of cappers) {
+    const tierPts = CAPPER_TIER_POINTS[c.tier] || CAPPER_TIER_POINTS.weak;
+    score += tierPts * c.decay;
+  }
+  return Math.min(100, Math.round(score));
 }
 
 interface WeightedPick {
@@ -32,7 +111,6 @@ interface WeightedPick {
   walletTier?: string;
   capperName?: string;
   sources: string[];
-  // Weighted outputs
   walletScore: number;
   capperScore: number;
   sboComponent: number;
@@ -43,6 +121,7 @@ interface WeightedPick {
   pickTier: string;
   isGrandmaster: boolean;
   reasoning: string;
+  matchQuality: string;
 }
 
 function getTier(score: number): string {
@@ -52,19 +131,21 @@ function getTier(score: number): string {
   return 'low';
 }
 
-function isGrandmaster(score: number, eliteWallets: number, aiConf: number): boolean {
-  return score >= 85 && eliteWallets >= 1 && aiConf >= 75;
+// === UPGRADE #4: STRICT GRANDMASTER ===
+function isGrandmaster(score: number, eliteWallets: number, aiConf: number, conflicts: number): boolean {
+  return score >= 85 && eliteWallets >= 1 && aiConf >= 75 && conflicts === 0;
 }
 
 function buildReasoning(p: Omit<WeightedPick, 'reasoning'>): string {
   const parts: string[] = [];
-  parts.push(`SBO AI ${p.aiConfidence}% confidence (×${WEIGHTS.ai} = ${p.sboComponent.toFixed(1)})`);
-  if (p.walletAlignCount > 0) parts.push(`${p.walletAlignCount} wallet${p.walletAlignCount > 1 ? 's' : ''} aligned${p.eliteWalletCount > 0 ? ` (${p.eliteWalletCount} elite)` : ''} → wallet score ${p.walletScore} (×${WEIGHTS.wallet} = ${p.walletComponent.toFixed(1)})`);
-  if (p.capperAlignCount > 0) parts.push(`${p.capperAlignCount} capper${p.capperAlignCount > 1 ? 's' : ''} aligned${p.topCapperCount > 0 ? ` (${p.topCapperCount} top)` : ''} → capper score ${p.capperScore} (×${WEIGHTS.capper} = ${p.capperComponent.toFixed(1)})`);
-  if (p.conflictCount > 0) parts.push(`${p.conflictCount} conflict${p.conflictCount > 1 ? 's' : ''} → -${p.penalty} penalty`);
-  if (p.isGrandmaster) parts.push('→ 👑 GRANDMASTER PICK (SUPER CHOICE)');
-  else if (p.pickTier === 'elite') parts.push('→ 🔥 ELITE PICK');
-  else if (p.pickTier === 'solid') parts.push('→ ⚠️ SOLID PLAY');
+  parts.push(`SBO AI ${p.aiConfidence}% (×${WEIGHTS.ai} = ${p.sboComponent.toFixed(1)})`);
+  if (p.walletAlignCount > 0) parts.push(`${p.walletAlignCount} wallet${p.walletAlignCount > 1 ? 's' : ''}${p.eliteWalletCount > 0 ? ` (${p.eliteWalletCount} elite)` : ''} → ${p.walletScore} (×${WEIGHTS.wallet} = ${p.walletComponent.toFixed(1)})`);
+  if (p.capperAlignCount > 0) parts.push(`${p.capperAlignCount} capper${p.capperAlignCount > 1 ? 's' : ''}${p.topCapperCount > 0 ? ` (${p.topCapperCount} top)` : ''} → ${p.capperScore} (×${WEIGHTS.capper} = ${p.capperComponent.toFixed(1)})`);
+  if (p.conflictCount > 0) parts.push(`${p.conflictCount} conflict${p.conflictCount > 1 ? 's' : ''} → -${p.penalty}`);
+  parts.push(`Match: ${p.matchQuality}`);
+  if (p.isGrandmaster) parts.push('→ 👑 GRANDMASTER (SUPER CHOICE)');
+  else if (p.pickTier === 'elite') parts.push('→ 🔥 ELITE');
+  else if (p.pickTier === 'solid') parts.push('→ ⚠️ SOLID');
   return parts.join(' · ');
 }
 
@@ -107,7 +188,7 @@ export default function SBOSignalAlignment() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('sbo_capper_picks')
-        .select('*, sbo_cappers(name)')
+        .select('*, sbo_cappers(name, win_rate)')
         .gte('created_at', `${today}T00:00:00`)
         .eq('result', 'pending');
       return data || [];
@@ -118,35 +199,43 @@ export default function SBOSignalAlignment() {
     if (!predictions.length) return [];
 
     return predictions.map((pred: any) => {
-      const playerLower = (pred.player_name || '').toLowerCase();
-      const teamLower = (pred.home_team || '').toLowerCase();
+      // === STRUCTURED WALLET MATCHING ===
+      const matchedWallets: { tier: string; decay: number; matchScore: number }[] = [];
+      for (const w of walletEvents) {
+        const ms = structuredMatchScore(pred, { text: w.market_question || '', player: w.player_name });
+        if (ms < MATCH_THRESHOLD) continue;
+        const tier = (w as any).sbo_pm_tracked_wallets?.priority_level || 'normal';
+        const decay = getTimeDecay(w.event_time);
+        matchedWallets.push({ tier, decay, matchScore: ms });
+      }
 
-      // Count wallet alignments
-      const matchedWallets = walletEvents.filter((w: any) => {
-        const q = (w.market_question || '').toLowerCase();
-        return q.includes(playerLower) || q.includes(teamLower);
-      });
+      // === STRUCTURED CAPPER MATCHING ===
+      const matchedCappers: { tier: string; decay: number; matchScore: number; name?: string }[] = [];
+      for (const c of capperPicks) {
+        const ms = structuredMatchScore(pred, { text: c.pick_text || c.parsed_pick || '', player: c.player_name });
+        if (ms < MATCH_THRESHOLD) continue;
+        const winRate = (c as any).sbo_cappers?.win_rate ?? 0;
+        const tier = getCapperTier(winRate);
+        const decay = getTimeDecay(c.created_at);
+        matchedCappers.push({ tier, decay, matchScore: ms, name: (c as any).sbo_cappers?.name });
+      }
+
       const walletAlignCount = matchedWallets.length;
-      const eliteWalletCount = matchedWallets.filter((w: any) => w.sbo_pm_tracked_wallets?.priority_level === 'elite').length;
-
-      // Count capper alignments
-      const matchedCappers = capperPicks.filter((c: any) => {
-        const pickLower = (c.pick_text || c.parsed_pick || '').toLowerCase();
-        return pickLower.includes(playerLower) || (playerLower && pickLower.includes(playerLower));
-      });
+      const eliteWalletCount = matchedWallets.filter(w => w.tier === 'elite').length;
       const capperAlignCount = matchedCappers.length;
-      const topCapperCount = 0; // Could be expanded with capper tier logic
+      const topCapperCount = matchedCappers.filter(c => c.tier === 'elite').length;
 
-      // Conflict detection: wallet or capper on opposite side
+      // Conflict detection
       let conflictCount = 0;
       const predDirection = (pred.pick_direction || '').toLowerCase();
-      matchedWallets.forEach((w: any) => {
-        if (w.side && predDirection && w.side.toLowerCase() !== predDirection) conflictCount++;
+      walletEvents.forEach((w: any) => {
+        const ms = structuredMatchScore(pred, { text: w.market_question || '' });
+        if (ms >= MATCH_THRESHOLD && w.side && predDirection && w.side.toLowerCase() !== predDirection) conflictCount++;
       });
 
       const aiConf = pred.confidence_score || 50;
-      const walletScore = calcWalletScore(walletAlignCount, eliteWalletCount);
-      const capperScore = calcCapperScore(capperAlignCount, topCapperCount);
+      const walletScore = calcWalletScoreTiered(matchedWallets);
+      const capperScore = calcCapperScoreTiered(matchedCappers);
 
       const sboComponent = aiConf * WEIGHTS.ai;
       const walletComponent = walletScore * WEIGHTS.wallet;
@@ -157,7 +246,12 @@ export default function SBOSignalAlignment() {
       const finalScore = Math.round(Math.max(0, Math.min(100, rawScore)));
 
       const pickTier = getTier(finalScore);
-      const gm = isGrandmaster(finalScore, eliteWalletCount, aiConf);
+      const gm = isGrandmaster(finalScore, eliteWalletCount, aiConf, conflictCount);
+
+      // Best match quality label
+      const allScores = [...matchedWallets.map(w => w.matchScore), ...matchedCappers.map(c => c.matchScore)];
+      const bestMatch = allScores.length ? Math.max(...allScores) : 0;
+      const matchQuality = bestMatch >= 90 ? 'Exact' : bestMatch >= 60 ? 'Partial' : 'AI Only';
 
       const sources: string[] = ['AI'];
       if (walletAlignCount > 0) sources.push('Wallet');
@@ -175,7 +269,7 @@ export default function SBOSignalAlignment() {
         topCapperCount,
         conflictCount,
         walletTier: eliteWalletCount > 0 ? 'elite' : walletAlignCount > 0 ? 'active' : undefined,
-        capperName: matchedCappers[0]?.sbo_cappers?.name,
+        capperName: matchedCappers[0]?.name,
         sources,
         walletScore,
         capperScore,
@@ -186,6 +280,7 @@ export default function SBOSignalAlignment() {
         finalScore,
         pickTier: gm ? 'grandmaster' : pickTier,
         isGrandmaster: gm,
+        matchQuality,
       };
 
       return { ...base, reasoning: buildReasoning(base) };
@@ -209,8 +304,8 @@ export default function SBOSignalAlignment() {
             <Crown className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Signal Weighting Engine</h1>
-            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}%</p>
+            <h1 className="text-xl font-bold">Signal Weighting Engine v2</h1>
+            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}% · Time Decay Active</p>
           </div>
         </div>
         <Select value={tierFilter} onValueChange={setTierFilter}>
@@ -254,7 +349,7 @@ export default function SBOSignalAlignment() {
         </Card>
       )}
 
-      {/* Tabs: Ranked / Breakdown */}
+      {/* Tabs */}
       <Tabs defaultValue="ranked">
         <TabsList className="h-8">
           <TabsTrigger value="ranked" className="text-xs">Ranked Picks</TabsTrigger>
@@ -291,6 +386,9 @@ function WeightedPickCard({ pick }: { pick: WeightedPick }) {
           <span className="font-semibold text-sm">{pick.playerOrMarket}</span>
           {pick.propType && <Badge variant="outline" className="text-[10px] h-4">{pick.propType}</Badge>}
           {pick.direction && <Badge variant="outline" className="text-[10px] h-4">{pick.direction}</Badge>}
+          <Badge variant="outline" className="text-[10px] h-4 gap-0.5">
+            <Clock className="h-2.5 w-2.5" /> {pick.matchQuality}
+          </Badge>
         </div>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
           <span className="flex items-center gap-0.5 text-[10px] text-blue-500"><Brain className="h-3 w-3" /> AI {pick.aiConfidence}%</span>
@@ -303,6 +401,7 @@ function WeightedPickCard({ pick }: { pick: WeightedPick }) {
           {pick.capperAlignCount > 0 && (
             <span className="flex items-center gap-0.5 text-[10px] text-purple-500">
               <Users className="h-3 w-3" /> {pick.capperAlignCount} capper{pick.capperAlignCount > 1 ? 's' : ''}
+              {pick.topCapperCount > 0 && <span className="text-amber-400 ml-0.5">({pick.topCapperCount} elite)</span>}
             </span>
           )}
           {pick.conflictCount > 0 && (
@@ -326,7 +425,7 @@ function WeightedPickCard({ pick }: { pick: WeightedPick }) {
 
 function BreakdownCard({ pick }: { pick: WeightedPick }) {
   const tier = TIER_CONFIG[pick.pickTier] || TIER_CONFIG.low;
-  const barMax = 50; // max component value for visual bar
+  const barMax = 50;
 
   return (
     <div className={`p-3 rounded-lg border ${tier.border} ${tier.bg} space-y-2`}>
@@ -335,7 +434,6 @@ function BreakdownCard({ pick }: { pick: WeightedPick }) {
         <Badge className={`text-xs ${tier.color} ${tier.bg}`}>{pick.finalScore} — {tier.label}</Badge>
       </div>
 
-      {/* Component bars */}
       <div className="space-y-1.5">
         <ComponentBar label="🧠 AI" value={pick.sboComponent} max={barMax} color="bg-blue-500" />
         <ComponentBar label="💰 Wallet" value={pick.walletComponent} max={barMax} color="bg-emerald-500" />
