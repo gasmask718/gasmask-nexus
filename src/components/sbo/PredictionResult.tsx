@@ -26,6 +26,9 @@ interface PredictionResultProps {
   homeTeam?: string;
   awayTeam?: string;
   intel?: any;
+  weightedScore?: number;
+  pickTier?: 'grandmaster' | 'elite' | 'solid' | 'low';
+  isGrandmaster?: boolean;
 }
 
 const tierColors: Record<string, string> = {
