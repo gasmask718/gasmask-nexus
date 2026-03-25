@@ -2835,6 +2835,8 @@ export default function AppRoutes() {
           <Route path="agents" element={<SolarAgents />} />
           <Route path="ai-brain" element={<SolarAIBrain />} />
           <Route path="analytics" element={<SolarAnalytics />} />
+          <Route path="estimator" element={<SolarEstimator />} />
+          <Route path="closing" element={<SolarClosingDashboard />} />
         </Route>
       </Route>
 
