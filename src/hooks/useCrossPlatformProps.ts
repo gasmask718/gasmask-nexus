@@ -6,6 +6,7 @@ export interface CrossPlatformProp {
   prop_type: string;
   game_date: string;
   game_id: string | null;
+  prop_id: string | null;
   sources: {
     source: string;
     line: number;
