@@ -462,6 +462,19 @@ const DYNASTY_NAVIGATION = {
       { path: '/brandaro/canva-templates', label: 'Canva Templates', icon: Settings },
     ],
   },
+  dynastyConnect: {
+    id: 'dynasty-connect',
+    name: '📞 Dynasty Connect',
+    items: [
+      { path: '/dynasty-connect', label: '🎯 Command Center', icon: Headphones },
+      { path: '/dynasty-connect/campaigns', label: '📋 Campaign Management', icon: Target },
+      { path: '/dynasty-connect/agents', label: '🤖 AI Agents', icon: Brain },
+      { path: '/dynasty-connect/intelligence', label: '🧠 Call Intelligence', icon: FileText },
+      { path: '/dynasty-connect/pipelines', label: '🏢 Business Pipelines', icon: Building2 },
+      { path: '/dynasty-connect/infrastructure', label: '⚙️ Infrastructure', icon: Settings },
+      { path: '/dynasty-connect/clients', label: '💼 Client Management', icon: Briefcase },
+    ],
+  },
   globalDashboard: {
     id: 'global-dashboard',
     name: '🌍 Global Dynasty Dashboard',
@@ -512,7 +525,7 @@ const Layout = ({ children }: LayoutProps) => {
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'brandaro-hub', 'global-dashboard', 'portals'
+    'brandaro-hub', 'dynasty-connect', 'global-dashboard', 'portals'
   ]);
   
   const currentPath = location.pathname;
@@ -724,6 +737,19 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.brandaroHub.id,
           DYNASTY_NAVIGATION.brandaroHub.name,
           DYNASTY_NAVIGATION.brandaroHub.items
+        )}
+      </div>
+
+      {/* 📞 DYNASTY CONNECT — AI CALL CENTER HUB */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-teal-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-teal-400/80 tracking-wider">
+          📞 Dynasty Connect
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.dynastyConnect.id,
+          DYNASTY_NAVIGATION.dynastyConnect.name,
+          DYNASTY_NAVIGATION.dynastyConnect.items
         )}
       </div>
 
