@@ -2825,13 +2825,13 @@ export default function AppRoutes() {
           <Route index element={<SolarCommandCenter />} />
           <Route path="leads" element={<SolarLeadIntelligence />} />
           <Route path="outreach" element={<SolarOutreach />} />
-          <Route path="qualification" element={<SolarPlaceholder />} />
-          <Route path="appointments" element={<SolarPlaceholder />} />
+          <Route path="qualification" element={<SolarQualification />} />
+          <Route path="appointments" element={<SolarAppointments />} />
           <Route path="live-calls" element={<SolarLiveCallAssist />} />
           <Route path="deals" element={<SolarDeals />} />
-          <Route path="partners" element={<SolarPartners />} />
-          <Route path="agents" element={<SolarPlaceholder />} />
-          <Route path="ai-brain" element={<SolarPlaceholder />} />
+          <Route path="partners" element={<SolarPartnersAdvanced />} />
+          <Route path="agents" element={<SolarAgents />} />
+          <Route path="ai-brain" element={<SolarAIBrain />} />
           <Route path="analytics" element={<SolarAnalytics />} />
         </Route>
       </Route>
