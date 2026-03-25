@@ -58,7 +58,10 @@ import {
   UserPlus,
   Trash2,
   ArrowRightLeft,
+  Zap,
 } from "lucide-react";
+
+import BatchDialerPanel from "@/components/dialer/BatchDialerPanel";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -1136,6 +1139,10 @@ export default function CampaignWizardPage() {
                   <TabsTrigger value="transcripts" className="gap-2">
                     <MessageSquare className="h-4 w-4" /> Logs
                   </TabsTrigger>
+
+                  <TabsTrigger value="batch" className="gap-2">
+                    <Zap className="h-4 w-4" /> Batch Dialer
+                  </TabsTrigger>
                 </TabsList>
               </div>
 
@@ -1329,6 +1336,14 @@ export default function CampaignWizardPage() {
                           );
                         })
                     )}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+
+              <TabsContent value="batch" className="flex-1 p-0 m-0 overflow-hidden bg-background">
+                <ScrollArea className="h-[calc(100vh-22rem)]">
+                  <div className="p-4">
+                    <BatchDialerPanel campaignId={activeCampaignId} />
                   </div>
                 </ScrollArea>
               </TabsContent>

@@ -62584,6 +62584,136 @@ export type Database = {
           },
         ]
       }
+      solar_call_batches: {
+        Row: {
+          batch_name: string
+          business_id: string | null
+          calls_answered: number | null
+          calls_completed: number | null
+          calls_interested: number | null
+          calls_started: number | null
+          campaign_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          max_concurrent: number | null
+          pacing_delay_ms: number | null
+          started_at: string | null
+          status: string
+          total_contacts: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          batch_name: string
+          business_id?: string | null
+          calls_answered?: number | null
+          calls_completed?: number | null
+          calls_interested?: number | null
+          calls_started?: number | null
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          max_concurrent?: number | null
+          pacing_delay_ms?: number | null
+          started_at?: string | null
+          status?: string
+          total_contacts?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          batch_name?: string
+          business_id?: string | null
+          calls_answered?: number | null
+          calls_completed?: number | null
+          calls_interested?: number | null
+          calls_started?: number | null
+          campaign_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          max_concurrent?: number | null
+          pacing_delay_ms?: number | null
+          started_at?: string | null
+          status?: string
+          total_contacts?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_call_batches_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      solar_call_queue: {
+        Row: {
+          attempts: number | null
+          batch_id: string | null
+          call_sid: string | null
+          call_status: string
+          contact_id: string | null
+          contact_name: string | null
+          created_at: string | null
+          id: string
+          last_attempt_at: string | null
+          lead_id: string | null
+          max_attempts: number | null
+          next_retry_at: string | null
+          outcome: string | null
+          phone: string
+          priority_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          batch_id?: string | null
+          call_sid?: string | null
+          call_status?: string
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          lead_id?: string | null
+          max_attempts?: number | null
+          next_retry_at?: string | null
+          outcome?: string | null
+          phone: string
+          priority_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          batch_id?: string | null
+          call_sid?: string | null
+          call_status?: string
+          contact_id?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          lead_id?: string | null
+          max_attempts?: number | null
+          next_retry_at?: string | null
+          outcome?: string | null
+          phone?: string
+          priority_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solar_call_queue_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "solar_call_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       solar_closing_sessions: {
         Row: {
           ai_recommendations: Json | null
