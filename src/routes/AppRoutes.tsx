@@ -402,6 +402,8 @@ const SolarAIBrain = lazy(() => import('@/pages/solar/SolarAIBrain'));
 const SolarAnalytics = lazy(() => import('@/pages/solar/SolarAnalytics'));
 const SolarEstimator = lazy(() => import('@/pages/solar/SolarEstimator'));
 const SolarClosingDashboard = lazy(() => import('@/pages/solar/SolarClosingDashboard'));
+const SolarFollowUps = lazy(() => import('@/pages/solar/SolarFollowUps'));
+const SolarBookings = lazy(() => import('@/pages/solar/SolarBookings'));
 
 // Real Estate OS
 const RELayout = lazy(() => import('@/pages/real-estate/RELayout'));
@@ -2837,6 +2839,8 @@ export default function AppRoutes() {
           <Route path="analytics" element={<SolarAnalytics />} />
           <Route path="estimator" element={<SolarEstimator />} />
           <Route path="closing" element={<SolarClosingDashboard />} />
+          <Route path="followups" element={<SolarFollowUps />} />
+          <Route path="bookings" element={<SolarBookings />} />
         </Route>
       </Route>
 
