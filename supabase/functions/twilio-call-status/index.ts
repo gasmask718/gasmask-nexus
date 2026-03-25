@@ -156,6 +156,27 @@ const handler = async (req: Request): Promise<Response> => {
                   ai_summary: analysis?.summary || null,
                   language: json?.metadata?.language || "en",
                 });
+
+                // 🔴 Sync outcome back to dc_leads
+                if (queueItem?.contact_phone) {
+                  const leadStatus = outcomeRaw === "reached" ? "called"
+                    : ["booked", "interested", "not-interested", "callback"].includes(outcomeRaw) ? outcomeRaw
+                    : "called";
+                  await supabase
+                    .from("dc_leads")
+                    .update({
+                      status: leadStatus,
+                      outcome: outcomeRaw,
+                      last_called_at: new Date().toISOString(),
+                      call_count: supabase.rpc ? undefined : 1, // fallback
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("phone", queueItem.contact_phone)
+                    .then(({ error }) => {
+                      if (error) console.error("dc_leads sync error:", error);
+                      else console.log(`✅ dc_leads synced for ${queueItem.contact_phone}`);
+                    });
+                }
               }
             }
           }

@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Target, Play, Pause, Archive, Plus, Search } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Target, Play, Pause, Archive, Plus, Search, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useMemo } from 'react';
 
@@ -33,6 +34,7 @@ export default function DCCampaigns() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [businessFilter, setBusinessFilter] = useState('all');
   const [showBuilder, setShowBuilder] = useState(false);
   const [form, setForm] = useState({
     name: '', description: '', pipeline: '', agentId: '',
@@ -64,9 +66,10 @@ export default function DCCampaigns() {
     return campaigns.filter((c: any) => {
       const matchesSearch = !search || (c.name || '').toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesBusiness = businessFilter === 'all' || (c.target_segment || '').toLowerCase().includes(businessFilter.toLowerCase());
+      return matchesSearch && matchesStatus && matchesBusiness;
     });
-  }, [campaigns, search, statusFilter]);
+  }, [campaigns, search, statusFilter, businessFilter]);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -79,6 +82,24 @@ export default function DCCampaigns() {
     },
   });
 
+  const duplicateCampaign = useMutation({
+    mutationFn: async (campaign: any) => {
+      const { error } = await supabase.from('ai_call_campaigns').insert({
+        name: `${campaign.name} (Copy)`,
+        description: campaign.description,
+        target_segment: campaign.target_segment,
+        flow_id: campaign.flow_id,
+        max_concurrent_calls: campaign.max_concurrent_calls,
+        max_calls_per_minute: campaign.max_calls_per_minute,
+        status: 'draft',
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['dc-campaigns'] });
+      toast.success('Campaign duplicated');
+    },
+  });
   const createCampaign = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('ai_call_campaigns').insert({
@@ -129,7 +150,13 @@ export default function DCCampaigns() {
             <SelectItem value="paused">Paused</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={businessFilter} onValueChange={setBusinessFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue placeholder="All Businesses" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Businesses</SelectItem>
+            {pipelines.map((p: any) => <SelectItem key={p.id} value={p.business_name}>{p.business_name}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -190,6 +217,9 @@ export default function DCCampaigns() {
                               <Archive className="h-3.5 w-3.5" />
                             </Button>
                           )}
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => duplicateCampaign.mutate(c)} title="Duplicate">
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </td>
                     </tr>

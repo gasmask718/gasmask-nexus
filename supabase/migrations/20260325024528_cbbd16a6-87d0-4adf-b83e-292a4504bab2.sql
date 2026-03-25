@@ -1,0 +1,1 @@
+ALTER TABLE dc_leads ADD COLUMN IF NOT EXISTS business_id TEXT;

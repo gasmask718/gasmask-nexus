@@ -367,6 +367,13 @@ const DCPipelines = lazy(() => import('@/pages/dynasty-connect/DCPipelines'));
 const DCInfrastructure = lazy(() => import('@/pages/dynasty-connect/DCInfrastructure'));
 const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
 const DCClients = lazy(() => import('@/pages/dynasty-connect/DCClients'));
+// Pipeline sub-pages
+const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
+const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
+const UnforgettableTimesPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/UnforgettableTimesPipeline'));
+const PlayBoxxxPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/PlayBoxxxPipeline'));
+const BrightSunPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/BrightSunPipeline'));
+const GasMaskNewStoresPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/GasMaskNewStoresPipeline'));
 
 const CommunicationHubLayout = lazy(() => import('@/pages/communication/CommunicationHubLayout'));
 const InboxPage = lazy(() => import('@/pages/communication/inbox/InboxPage'));
@@ -1078,6 +1085,12 @@ export default function AppRoutes() {
           <Route path="intelligence" element={<DCIntelligence />} />
           <Route path="intelligence/self-learn" element={<DCAgents />} />
           <Route path="pipelines" element={<DCPipelines />} />
+          <Route path="pipelines/surplus-funds" element={<SurplusFundsPipeline />} />
+          <Route path="pipelines/real-estate" element={<DCRealEstatePipeline />} />
+          <Route path="pipelines/unforgettable-times" element={<UnforgettableTimesPipeline />} />
+          <Route path="pipelines/playboxxx" element={<PlayBoxxxPipeline />} />
+          <Route path="pipelines/brightsun-energy" element={<BrightSunPipeline />} />
+          <Route path="pipelines/gasmask-new-stores" element={<GasMaskNewStoresPipeline />} />
           <Route path="infrastructure" element={<DCInfrastructure />} />
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
           <Route path="clients" element={<DCClients />} />

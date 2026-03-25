@@ -93,6 +93,18 @@ export default function DCPipelines() {
 
   const isGasMask = (name: string) => name.toLowerCase().includes('gasmask') || name.toLowerCase().includes('gas mask');
 
+  const getSlug = (name: string) => {
+    const map: Record<string, string> = {
+      'surplus funds': 'surplus-funds',
+      'dynasty real estate': 'real-estate',
+      'unforgettable times': 'unforgettable-times',
+      'playboxxx': 'playboxxx',
+      'brightsun energy': 'brightsun-energy',
+      'gasmask new stores': 'gasmask-new-stores',
+    };
+    return map[name.toLowerCase()] || null;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -120,7 +132,10 @@ export default function DCPipelines() {
                 stats={stats}
                 isGasMask={isGasMask(pipe.business_name)}
                 onViewCampaigns={() => navigate('/dynasty-connect/campaigns')}
-                onViewCalls={() => navigate('/dynasty-connect/intelligence')}
+                onLaunch={() => {
+                  const slug = getSlug(pipe.business_name);
+                  navigate(slug ? `/dynasty-connect/pipelines/${slug}` : '/dynasty-connect/campaigns');
+                }}
               />
             );
           })}
@@ -158,7 +173,7 @@ export default function DCPipelines() {
                     stats={stats}
                     isGasMask={false}
                     onViewCampaigns={() => navigate('/dynasty-connect/campaigns')}
-                    onViewCalls={() => navigate('/dynasty-connect/intelligence')}
+                    onLaunch={() => navigate('/dynasty-connect/campaigns')}
                   />
                 );
               })}
@@ -175,13 +190,13 @@ function PipelineCard({
   stats,
   isGasMask,
   onViewCampaigns,
-  onViewCalls,
+  onLaunch,
 }: {
   pipe: any;
   stats: { activeCampaigns: number; monthCalls: number; winRate: string; totalCampaigns: number };
   isGasMask: boolean;
   onViewCampaigns: () => void;
-  onViewCalls: () => void;
+  onLaunch: () => void;
 }) {
   return (
     <Card>
@@ -255,8 +270,8 @@ function PipelineCard({
           <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={onViewCampaigns}>
             <Eye className="h-3 w-3 mr-1" /> Campaigns
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={onViewCalls}>
-            <BarChart3 className="h-3 w-3 mr-1" /> Calls
+          <Button size="sm" className="flex-1 text-xs bg-[#0F6E56] hover:bg-[#0F6E56]/80" onClick={onLaunch}>
+            <BarChart3 className="h-3 w-3 mr-1" /> Launch
           </Button>
         </div>
       </CardContent>
