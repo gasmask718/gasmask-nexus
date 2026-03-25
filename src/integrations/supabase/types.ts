@@ -29734,6 +29734,7 @@ export type Database = {
           created_at: string | null
           customer_id: string | null
           due_date: string | null
+          entry_mode: string | null
           id: string
           invoice_date: string | null
           invoice_number: string | null
@@ -29755,6 +29756,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           due_date?: string | null
+          entry_mode?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
@@ -29776,6 +29778,7 @@ export type Database = {
           created_at?: string | null
           customer_id?: string | null
           due_date?: string | null
+          entry_mode?: string | null
           id?: string
           invoice_date?: string | null
           invoice_number?: string | null
@@ -41298,6 +41301,7 @@ export type Database = {
           due_date: string | null
           entity_id: string | null
           entity_type: string | null
+          entry_mode: string | null
           finalized_at: string | null
           finalized_by: string | null
           id: string
@@ -41348,6 +41352,7 @@ export type Database = {
           due_date?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          entry_mode?: string | null
           finalized_at?: string | null
           finalized_by?: string | null
           id?: string
@@ -41398,6 +41403,7 @@ export type Database = {
           due_date?: string | null
           entity_id?: string | null
           entity_type?: string | null
+          entry_mode?: string | null
           finalized_at?: string | null
           finalized_by?: string | null
           id?: string
