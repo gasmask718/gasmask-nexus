@@ -709,6 +709,7 @@ const UnforgettableMedia = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UnforgettableMediaDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMediaDetail })));
 const UTOutreachCommand = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachCommand })));
 const UTTerritoryIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTTerritoryIntelligence })));
+const UTPlacesLeadFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlacesLeadFinder })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
