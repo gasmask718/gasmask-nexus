@@ -73494,6 +73494,310 @@ export type Database = {
           },
         ]
       }
+      ut_partner_rental_item_media: {
+        Row: {
+          ai_tags: Json | null
+          created_at: string | null
+          display_order: number | null
+          file_url: string
+          id: string
+          is_cover: boolean | null
+          quality_score: number | null
+          rental_item_id: string
+          thumbnail_url: string | null
+        }
+        Insert: {
+          ai_tags?: Json | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url: string
+          id?: string
+          is_cover?: boolean | null
+          quality_score?: number | null
+          rental_item_id: string
+          thumbnail_url?: string | null
+        }
+        Update: {
+          ai_tags?: Json | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url?: string
+          id?: string
+          is_cover?: boolean | null
+          quality_score?: number | null
+          rental_item_id?: string
+          thumbnail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_rental_item_media_rental_item_id_fkey"
+            columns: ["rental_item_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_rental_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_rental_items: {
+        Row: {
+          ai_tags: Json | null
+          category: string | null
+          cleaning_fee: number | null
+          color: string | null
+          cost_basis: number | null
+          created_at: string | null
+          delivery_fee: number | null
+          delivery_required: boolean | null
+          description: string | null
+          dimensions: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          item_name: string
+          material: string | null
+          partner_id: string
+          quantity_available: number | null
+          quantity_reserved: number | null
+          rental_price: number | null
+          replacement_value: number | null
+          setup_fee: number | null
+          setup_required: boolean | null
+          sku: string | null
+          style: string | null
+          subcategory: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_tags?: Json | null
+          category?: string | null
+          cleaning_fee?: number | null
+          color?: string | null
+          cost_basis?: number | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          delivery_required?: boolean | null
+          description?: string | null
+          dimensions?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          item_name: string
+          material?: string | null
+          partner_id: string
+          quantity_available?: number | null
+          quantity_reserved?: number | null
+          rental_price?: number | null
+          replacement_value?: number | null
+          setup_fee?: number | null
+          setup_required?: boolean | null
+          sku?: string | null
+          style?: string | null
+          subcategory?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_tags?: Json | null
+          category?: string | null
+          cleaning_fee?: number | null
+          color?: string | null
+          cost_basis?: number | null
+          created_at?: string | null
+          delivery_fee?: number | null
+          delivery_required?: boolean | null
+          description?: string | null
+          dimensions?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          item_name?: string
+          material?: string | null
+          partner_id?: string
+          quantity_available?: number | null
+          quantity_reserved?: number | null
+          rental_price?: number | null
+          replacement_value?: number | null
+          setup_fee?: number | null
+          setup_required?: boolean | null
+          sku?: string | null
+          style?: string | null
+          subcategory?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_rental_items_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_rental_packages: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          included_items: Json | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          optional_add_ons: Json | null
+          package_price: number | null
+          partner_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          optional_add_ons?: Json | null
+          package_price?: number | null
+          partner_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          optional_add_ons?: Json | null
+          package_price?: number | null
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_rental_packages_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_rental_profiles: {
+        Row: {
+          company_name: string
+          created_at: string | null
+          damage_policy: string | null
+          delivery_policy: string | null
+          deposit_policy: string | null
+          description: string | null
+          emergency_fee_rules: string | null
+          headline: string | null
+          id: string
+          is_published: boolean | null
+          minimum_order_amount: number | null
+          partner_id: string
+          pickup_policy: string | null
+          publish_readiness_reasons: Json | null
+          publish_readiness_score: number | null
+          service_radius: number | null
+          setup_policy: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          company_name?: string
+          created_at?: string | null
+          damage_policy?: string | null
+          delivery_policy?: string | null
+          deposit_policy?: string | null
+          description?: string | null
+          emergency_fee_rules?: string | null
+          headline?: string | null
+          id?: string
+          is_published?: boolean | null
+          minimum_order_amount?: number | null
+          partner_id: string
+          pickup_policy?: string | null
+          publish_readiness_reasons?: Json | null
+          publish_readiness_score?: number | null
+          service_radius?: number | null
+          setup_policy?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          company_name?: string
+          created_at?: string | null
+          damage_policy?: string | null
+          delivery_policy?: string | null
+          deposit_policy?: string | null
+          description?: string | null
+          emergency_fee_rules?: string | null
+          headline?: string | null
+          id?: string
+          is_published?: boolean | null
+          minimum_order_amount?: number | null
+          partner_id?: string
+          pickup_policy?: string | null
+          publish_readiness_reasons?: Json | null
+          publish_readiness_score?: number | null
+          service_radius?: number | null
+          setup_policy?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_rental_profiles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_rental_reservations: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          quantity_reserved: number | null
+          rental_item_id: string
+          reserved_from: string
+          reserved_to: string
+          status: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          quantity_reserved?: number | null
+          rental_item_id: string
+          reserved_from: string
+          reserved_to: string
+          status?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          quantity_reserved?: number | null
+          rental_item_id?: string
+          reserved_from?: string
+          reserved_to?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_rental_reservations_rental_item_id_fkey"
+            columns: ["rental_item_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_rental_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_partner_services: {
         Row: {
           add_ons: Json | null
@@ -73552,6 +73856,385 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_venue_availability: {
+        Row: {
+          available_date: string
+          created_at: string | null
+          end_time: string | null
+          id: string
+          note: string | null
+          space_id: string | null
+          start_time: string | null
+          status: string | null
+          venue_id: string
+        }
+        Insert: {
+          available_date: string
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          note?: string | null
+          space_id?: string | null
+          start_time?: string | null
+          status?: string | null
+          venue_id: string
+        }
+        Update: {
+          available_date?: string
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          note?: string | null
+          space_id?: string | null
+          start_time?: string | null
+          status?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_venue_availability_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_venue_availability_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_venue_media: {
+        Row: {
+          ai_tags: Json | null
+          caption: string | null
+          created_at: string | null
+          display_order: number | null
+          file_url: string
+          id: string
+          is_cover: boolean | null
+          media_type: string | null
+          quality_score: number | null
+          space_id: string | null
+          thumbnail_url: string | null
+          title: string | null
+          venue_id: string
+        }
+        Insert: {
+          ai_tags?: Json | null
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url: string
+          id?: string
+          is_cover?: boolean | null
+          media_type?: string | null
+          quality_score?: number | null
+          space_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          venue_id: string
+        }
+        Update: {
+          ai_tags?: Json | null
+          caption?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url?: string
+          id?: string
+          is_cover?: boolean | null
+          media_type?: string | null
+          quality_score?: number | null
+          space_id?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_venue_media_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_venue_media_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_venue_packages: {
+        Row: {
+          add_on_options: Json | null
+          created_at: string | null
+          description: string | null
+          id: string
+          included_items: Json | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          package_name: string
+          package_type: string | null
+          price: number | null
+          space_id: string | null
+          venue_id: string
+        }
+        Insert: {
+          add_on_options?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          package_name: string
+          package_type?: string | null
+          price?: number | null
+          space_id?: string | null
+          venue_id: string
+        }
+        Update: {
+          add_on_options?: Json | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          package_name?: string
+          package_type?: string | null
+          price?: number | null
+          space_id?: string | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_venue_packages_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_venue_packages_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_venue_profiles: {
+        Row: {
+          accessibility_features: Json | null
+          alcohol_policy: string | null
+          cancellation_policy: string | null
+          capacity_max: number | null
+          capacity_min: number | null
+          city: string | null
+          cleanup_policy: string | null
+          created_at: string | null
+          decoration_policy: string | null
+          email: string | null
+          featured_amenities: Json | null
+          full_address: string | null
+          full_description: string | null
+          geo_lat: number | null
+          geo_lng: number | null
+          headline: string | null
+          house_rules: string | null
+          id: string
+          indoor_outdoor: string | null
+          is_featured: boolean | null
+          is_published: boolean | null
+          minimum_hours: number | null
+          outside_catering_allowed: boolean | null
+          parking_info: string | null
+          partner_id: string
+          phone: string | null
+          price_range_max: number | null
+          price_range_min: number | null
+          publish_readiness_reasons: Json | null
+          publish_readiness_score: number | null
+          security_required: boolean | null
+          sound_policy: string | null
+          state: string | null
+          tour_embed_url: string | null
+          tour_preview_thumbnail: string | null
+          tour_type: string | null
+          updated_at: string | null
+          valet_available: boolean | null
+          venue_name: string
+          venue_type: string | null
+          website: string | null
+          zip: string | null
+        }
+        Insert: {
+          accessibility_features?: Json | null
+          alcohol_policy?: string | null
+          cancellation_policy?: string | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          city?: string | null
+          cleanup_policy?: string | null
+          created_at?: string | null
+          decoration_policy?: string | null
+          email?: string | null
+          featured_amenities?: Json | null
+          full_address?: string | null
+          full_description?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          headline?: string | null
+          house_rules?: string | null
+          id?: string
+          indoor_outdoor?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          minimum_hours?: number | null
+          outside_catering_allowed?: boolean | null
+          parking_info?: string | null
+          partner_id: string
+          phone?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          publish_readiness_reasons?: Json | null
+          publish_readiness_score?: number | null
+          security_required?: boolean | null
+          sound_policy?: string | null
+          state?: string | null
+          tour_embed_url?: string | null
+          tour_preview_thumbnail?: string | null
+          tour_type?: string | null
+          updated_at?: string | null
+          valet_available?: boolean | null
+          venue_name?: string
+          venue_type?: string | null
+          website?: string | null
+          zip?: string | null
+        }
+        Update: {
+          accessibility_features?: Json | null
+          alcohol_policy?: string | null
+          cancellation_policy?: string | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          city?: string | null
+          cleanup_policy?: string | null
+          created_at?: string | null
+          decoration_policy?: string | null
+          email?: string | null
+          featured_amenities?: Json | null
+          full_address?: string | null
+          full_description?: string | null
+          geo_lat?: number | null
+          geo_lng?: number | null
+          headline?: string | null
+          house_rules?: string | null
+          id?: string
+          indoor_outdoor?: string | null
+          is_featured?: boolean | null
+          is_published?: boolean | null
+          minimum_hours?: number | null
+          outside_catering_allowed?: boolean | null
+          parking_info?: string | null
+          partner_id?: string
+          phone?: string | null
+          price_range_max?: number | null
+          price_range_min?: number | null
+          publish_readiness_reasons?: Json | null
+          publish_readiness_score?: number | null
+          security_required?: boolean | null
+          sound_policy?: string | null
+          state?: string | null
+          tour_embed_url?: string | null
+          tour_preview_thumbnail?: string | null
+          tour_type?: string | null
+          updated_at?: string | null
+          valet_available?: boolean | null
+          venue_name?: string
+          venue_type?: string | null
+          website?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_venue_profiles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_venue_spaces: {
+        Row: {
+          amenities: Json | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          max_price: number | null
+          min_price: number | null
+          minimum_hours: number | null
+          name: string
+          seated_capacity: number | null
+          space_type: string | null
+          standing_capacity: number | null
+          venue_id: string
+        }
+        Insert: {
+          amenities?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          max_price?: number | null
+          min_price?: number | null
+          minimum_hours?: number | null
+          name: string
+          seated_capacity?: number | null
+          space_type?: string | null
+          standing_capacity?: number | null
+          venue_id: string
+        }
+        Update: {
+          amenities?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          max_price?: number | null
+          min_price?: number | null
+          minimum_hours?: number | null
+          name?: string
+          seated_capacity?: number | null
+          space_type?: string | null
+          standing_capacity?: number | null
+          venue_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_venue_spaces_venue_id_fkey"
+            columns: ["venue_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_venue_profiles"
             referencedColumns: ["id"]
           },
         ]
