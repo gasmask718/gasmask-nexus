@@ -13,7 +13,15 @@ import {
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
   CheckCircle, XCircle, Clock
 } from 'lucide-react';
-import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster } from '@/hooks/usePropsMaster';
+import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
+
+const TIME_RANGES: { value: TimeRange; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: '7d', label: '7D' },
+  { value: '30d', label: '30D' },
+  { value: 'all', label: 'All' },
+];
 
 const PLATFORMS = [
   { value: 'all', label: 'All Platforms' },
