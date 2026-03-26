@@ -3827,7 +3827,7 @@ export function MyBetsTab() {
 // TODAY'S GUARANTEE WIDGET
 // ═══════════════════════════════════════════════════════════════
 
-function TodaysGuaranteeWidget() {
+export function TodaysGuaranteeWidget() {
   const { data: plan } = useQuery({
     queryKey: ['guarantee-widget'],
     queryFn: async () => {
