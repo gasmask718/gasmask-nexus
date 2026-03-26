@@ -821,15 +821,18 @@ export default function UTOutreachCommand() {
                 <Card className="border-border/30">
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">TOP CITIES</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
-                    {stats?.byCity && Object.entries(stats.byCity)
-                      .sort((a, b) => b[1].total - a[1].total)
+                    {stats?.by_city && Object.entries(stats.by_city)
+                      .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                       .slice(0, 8)
-                      .map(([city, data]) => (
+                      .map(([city, d]) => {
+                        const cityData = d as { total: number; onboarded: number };
+                        return (
                         <div key={city} className="flex items-center justify-between text-[10px]">
                           <span className="truncate w-24">{city}</span>
-                          <span className="font-mono">{data.onboarded}/{data.total}</span>
+                          <span className="font-mono">{cityData.onboarded}/{cityData.total}</span>
                         </div>
-                      ))}
+                        );
+                      })}
                   </CardContent>
                 </Card>
               </div>
