@@ -759,16 +759,19 @@ export default function UTOutreachCommand() {
                 <Card className="border-border/30">
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">CATEGORY CONVERSION</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
-                    {stats?.byCategory && Object.entries(stats.byCategory)
-                      .sort((a, b) => b[1].total - a[1].total)
+                    {stats?.by_category && Object.entries(stats.by_category)
+                      .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                       .slice(0, 10)
-                      .map(([cat, data]) => (
+                      .map(([cat, d]) => {
+                        const catData = d as { total: number; onboarded: number };
+                        return (
                         <div key={cat} className="flex items-center justify-between text-[10px]">
                           <span className="truncate capitalize w-20">{cat.replace(/_/g, ' ')}</span>
-                          <span className="font-mono">{data.onboarded}/{data.total}</span>
-                          <span className="font-mono text-green-400 w-10 text-right">{data.total > 0 ? Math.round((data.onboarded / data.total) * 100) : 0}%</span>
+                          <span className="font-mono">{catData.onboarded}/{catData.total}</span>
+                          <span className="font-mono text-green-400 w-10 text-right">{catData.total > 0 ? Math.round((catData.onboarded / catData.total) * 100) : 0}%</span>
                         </div>
-                      ))}
+                        );
+                      })}
                   </CardContent>
                 </Card>
 
