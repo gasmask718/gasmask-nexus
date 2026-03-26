@@ -249,6 +249,9 @@ export default function UTOutreachCommand() {
             </div>
           </div>
           <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/territory')}>
+              <Target className="h-3.5 w-3.5" /> Territory
+            </Button>
             <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => setShowImporter(true)}>
               <FileSpreadsheet className="h-3.5 w-3.5" /> Import
             </Button>
