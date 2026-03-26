@@ -2288,7 +2288,7 @@ export function ParlayBuilderTab() {
 // SIMULATION TAB
 // ═══════════════════════════════════════════════════════════════
 
-function SimulationTab() {
+export function SimulationTab() {
   const [selectedPredictionIds, setSelectedPredictionIds] = useState<string[]>([]);
   const [stake, setStake] = useState(10);
   const [result, setResult] = useState<any>(null);
