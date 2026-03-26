@@ -268,11 +268,43 @@ export default function UTEventBuilder() {
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium">{ord.order_number}</p>
-                      <p className="text-xs text-muted-foreground">${ord.total_price?.toLocaleString()} • {ord.payment_status} • {ord.order_status}</p>
+                      <p className="text-xs text-muted-foreground">
+                        ${ord.total_price?.toLocaleString()} • {ord.payment_status} • {ord.order_status}
+                        {ord.paid_at && ` • Paid ${new Date(ord.paid_at).toLocaleDateString()}`}
+                      </p>
                     </div>
-                    <Badge className={cn('text-xs', ord.payment_status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400')}>
-                      {ord.order_status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {ord.payment_status === 'paid' ? (
+                        <Badge className="text-xs bg-green-500/20 text-green-400">
+                          <CheckCircle className="h-3 w-3 mr-1" /> Paid
+                        </Badge>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => initiateCheckout.mutate(ord.id)}
+                            disabled={initiateCheckout.isPending || ord.total_price <= 0}
+                          >
+                            {initiateCheckout.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
+                            Checkout
+                          </Button>
+                          {ord.stripe_checkout_session_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => verifyPayment.mutate(ord.id)}
+                              disabled={verifyPayment.isPending}
+                            >
+                              {verifyPayment.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                              Verify
+                            </Button>
+                          )}
+                          <Badge className="text-xs bg-yellow-500/20 text-yellow-400">
+                            {ord.payment_status || 'pending'}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
