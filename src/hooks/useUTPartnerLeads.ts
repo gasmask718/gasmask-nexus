@@ -191,14 +191,14 @@ export function useUTOutreachLogs(leadId?: string) {
   });
 }
 
-// ── Onboarding Record ──────────────────────────────────────────────
+// ── Onboarding Record (selective columns) ─────────────────────────
 export function useUTOnboarding(leadId?: string) {
   return useQuery({
     queryKey: ['ut-onboarding', leadId],
     enabled: !!leadId,
     queryFn: async () => {
       const { data, error } = await (supabase.from('ut_partner_onboarding') as any)
-        .select('*')
+        .select('id,onboarding_link,status,sent_at,completed_at,onboarding_token')
         .eq('source_lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(1)
