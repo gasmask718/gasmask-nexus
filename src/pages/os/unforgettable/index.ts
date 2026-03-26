@@ -26,3 +26,4 @@ export { default as UnforgettableOnboarding } from './UnforgettableOnboarding';
 export { default as UnforgettableCustomerService } from './UnforgettableCustomerService';
 export { default as UnforgettableMedia } from './UnforgettableMedia';
 export { default as UnforgettableMediaDetail } from './UnforgettableMediaDetail';
+export { default as UTOutreachCommand } from './UTOutreachCommand';
