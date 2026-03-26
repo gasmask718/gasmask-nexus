@@ -2988,7 +2988,7 @@ export function AccuracyTab() {
 // VALUE SPOTS TAB
 // ═══════════════════════════════════════════════════════════════
 
-function ValueSpotsTab() {
+export function ValueSpotsTab() {
   const [comparing, setComparing] = useState(false);
 
   const { data: valueSpots, refetch: refetchValue } = useQuery({
