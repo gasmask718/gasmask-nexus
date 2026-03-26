@@ -23,6 +23,7 @@ import UTPartnerAIStudio from './tabs/UTPartnerAIStudio';
 import UTVenueModule from './modules/UTVenueModule';
 import UTRentalModule from './modules/UTRentalModule';
 import UTCateringModule from './modules/UTCateringModule';
+import UTDecoratorModule from './modules/UTDecoratorModule';
 
 const CATEGORY_ICONS: Record<string, any> = {
   event_hall: Building2,
