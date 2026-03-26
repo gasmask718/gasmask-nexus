@@ -72367,11 +72367,17 @@ export type Database = {
           contact_name: string | null
           created_at: string
           email: string | null
+          external_place_id: string | null
+          external_source: string | null
           follow_up_at: string | null
+          full_address: string | null
+          google_rating: number | null
+          google_types: string[] | null
           id: string
           last_contacted_at: string | null
           last_outcome: string | null
           last_sms_template: string | null
+          maps_url: string | null
           next_step: string | null
           notes: string | null
           onboarded_at: string | null
@@ -72386,6 +72392,7 @@ export type Database = {
           state: string | null
           status: string
           updated_at: string
+          website: string | null
         }
         Insert: {
           ai_call_eligible?: boolean
@@ -72405,11 +72412,17 @@ export type Database = {
           contact_name?: string | null
           created_at?: string
           email?: string | null
+          external_place_id?: string | null
+          external_source?: string | null
           follow_up_at?: string | null
+          full_address?: string | null
+          google_rating?: number | null
+          google_types?: string[] | null
           id?: string
           last_contacted_at?: string | null
           last_outcome?: string | null
           last_sms_template?: string | null
+          maps_url?: string | null
           next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
@@ -72424,6 +72437,7 @@ export type Database = {
           state?: string | null
           status?: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
           ai_call_eligible?: boolean
@@ -72443,11 +72457,17 @@ export type Database = {
           contact_name?: string | null
           created_at?: string
           email?: string | null
+          external_place_id?: string | null
+          external_source?: string | null
           follow_up_at?: string | null
+          full_address?: string | null
+          google_rating?: number | null
+          google_types?: string[] | null
           id?: string
           last_contacted_at?: string | null
           last_outcome?: string | null
           last_sms_template?: string | null
+          maps_url?: string | null
           next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
@@ -72462,6 +72482,7 @@ export type Database = {
           state?: string | null
           status?: string
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
