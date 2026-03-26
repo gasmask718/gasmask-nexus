@@ -2482,7 +2482,7 @@ export function SimulationTab() {
 // ACCURACY HISTORY WIDGET
 // ═══════════════════════════════════════════════════════════════
 
-function AccuracyHistoryWidget() {
+export function AccuracyHistoryWidget() {
   const { data: history } = useQuery({
     queryKey: ['accuracy-history'],
     queryFn: async () => {
