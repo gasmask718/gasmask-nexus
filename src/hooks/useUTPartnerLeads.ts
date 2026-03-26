@@ -74,6 +74,9 @@ const LEADS_KEY = 'ut-partner-leads';
 const LOGS_KEY = 'ut-outreach-logs';
 const PAGE_SIZE = 50;
 
+// Selective columns for list view (no select('*'))
+const LEAD_LIST_COLUMNS = 'id,business_name,contact_name,category,phone,email,city,state,status,ai_score,callback_due_at,follow_up_at,last_outcome,last_contacted_at,outreach_count,next_step,created_at,sms_count,ai_call_eligible,priority_bucket';
+
 // ── Helper: apply queue filters to a query ─────────────────────────
 function applyQueueFilters(query: any, filters?: {
   status?: string;
@@ -98,7 +101,7 @@ function applyQueueFilters(query: any, filters?: {
   return query;
 }
 
-// ── Paginated Leads Query ──────────────────────────────────────────
+// ── Paginated Leads Query (selective columns) ─────────────────────
 export function useUTPartnerLeads(filters?: {
   status?: string;
   category?: string;
@@ -116,8 +119,7 @@ export function useUTPartnerLeads(filters?: {
       const to = from + PAGE_SIZE - 1;
 
       let query = (supabase.from('ut_partner_leads') as any)
-        .select('*', { count: 'exact' })
-        // Server-side priority sort: overdue callbacks first, then ai_score, then newest
+        .select(LEAD_LIST_COLUMNS, { count: 'exact' })
         .order('callback_due_at', { ascending: true, nullsFirst: false })
         .order('ai_score', { ascending: false })
         .order('created_at', { ascending: false })
@@ -134,6 +136,22 @@ export function useUTPartnerLeads(filters?: {
         pageSize: PAGE_SIZE,
         totalPages: Math.ceil((count || 0) / PAGE_SIZE),
       };
+    },
+  });
+}
+
+// ── Lead Detail Query (full record, on-demand) ────────────────────
+export function useUTLeadDetail(leadId?: string) {
+  return useQuery({
+    queryKey: ['ut-lead-detail', leadId],
+    enabled: !!leadId,
+    queryFn: async () => {
+      const { data, error } = await (supabase.from('ut_partner_leads') as any)
+        .select('*')
+        .eq('id', leadId)
+        .single();
+      if (error) throw error;
+      return data as UTPartnerLead;
     },
   });
 }
