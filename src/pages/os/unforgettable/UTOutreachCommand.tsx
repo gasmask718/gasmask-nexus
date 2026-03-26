@@ -71,6 +71,7 @@ export default function UTOutreachCommand() {
   const [selectedLead, setSelectedLead] = useState<UTPartnerLead | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [rightTab, setRightTab] = useState<'intel' | 'analytics'>('intel');
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Disposition state
   const [disposition, setDisposition] = useState<UTDispositionValue>('no_answer');
