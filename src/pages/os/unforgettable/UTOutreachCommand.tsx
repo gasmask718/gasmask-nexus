@@ -71,6 +71,7 @@ export default function UTOutreachCommand() {
   const [selectedLead, setSelectedLead] = useState<UTPartnerLead | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [rightTab, setRightTab] = useState<'intel' | 'analytics'>('intel');
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Disposition state
   const [disposition, setDisposition] = useState<UTDispositionValue>('no_answer');
@@ -88,14 +89,21 @@ export default function UTOutreachCommand() {
   });
 
   // Queries
-  const { data: leads = [], isLoading } = useUTPartnerLeads({
+  const { data: leadsResult, isLoading } = useUTPartnerLeads({
     queueMode: queueMode as any,
     category: categoryFilter !== 'all' ? categoryFilter : undefined,
     search: searchText || undefined,
+    page: currentPage,
   });
+  const leads = leadsResult?.leads || [];
+  const totalCount = leadsResult?.totalCount || 0;
+  const totalPages = leadsResult?.totalPages || 1;
+
   const { data: stats } = useUTLeadStats();
   const { data: vaPerf } = useUTVAPerformance();
-  const { data: outreachLogs = [] } = useUTOutreachLogs(selectedLead?.id);
+  const { data: logsData, fetchNextPage: fetchMoreLogs, hasNextPage: hasMoreLogs } = useUTOutreachLogs(selectedLead?.id);
+  const allLogs = useMemo(() => logsData?.pages?.flatMap(p => p.logs) || [], [logsData]);
+  const logsCount = logsData?.pages?.[0]?.totalCount || 0;
   const { data: onboarding } = useUTOnboarding(selectedLead?.id);
   const { data: outcomeDist } = useUTOutcomeDistribution();
   const {
@@ -113,17 +121,8 @@ export default function UTOutreachCommand() {
     setHasUnsavedNotes(callNotes.length > 0);
   }, [callNotes]);
 
-  // Sort leads with callbacks at top
-  const sortedLeads = useMemo(() => {
-    const now = new Date();
-    return [...leads].sort((a, b) => {
-      if (a.callback_due_at && isBefore(new Date(a.callback_due_at), now)) return -1;
-      if (b.callback_due_at && isBefore(new Date(b.callback_due_at), now)) return 1;
-      if (a.callback_due_at && isToday(new Date(a.callback_due_at))) return -1;
-      if (b.callback_due_at && isToday(new Date(b.callback_due_at))) return 1;
-      return (b.ai_score || 0) - (a.ai_score || 0);
-    });
-  }, [leads]);
+  // Server-side sorting handles priority; leads come pre-sorted
+  const sortedLeads = leads;
 
   const currentScript = UT_SCRIPTS[scriptCategory] || UT_SCRIPTS.other;
   const selectedDispo = UT_DISPOSITIONS.find(d => d.value === disposition);
@@ -225,7 +224,7 @@ export default function UTOutreachCommand() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-foreground">🎉 VA Call Console</h1>
-            <Badge variant="outline" className="text-[10px]">{leads.length} in queue</Badge>
+            <Badge variant="outline" className="text-[10px]">{totalCount} leads • p{currentPage + 1}/{totalPages}</Badge>
           </div>
           <div className="flex items-center gap-4 text-xs">
             {[
@@ -346,6 +345,18 @@ export default function UTOutreachCommand() {
               </div>
             )}
           </ScrollArea>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="border-t border-border/30 p-2 flex items-center justify-between">
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}>
+                ← Prev
+              </Button>
+              <span className="text-[10px] text-muted-foreground">{currentPage + 1} / {totalPages}</span>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)}>
+                Next →
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* ═══ CENTER PANEL — LIVE CALL CONSOLE ═══ */}
@@ -671,13 +682,13 @@ export default function UTOutreachCommand() {
 
                 {/* Outreach History */}
                 <Card className="border-border/30">
-                  <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">OUTREACH HISTORY ({outreachLogs.length})</CardTitle></CardHeader>
+                  <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">OUTREACH HISTORY ({logsCount})</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2">
-                    {outreachLogs.length === 0 ? (
+                    {allLogs.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground">No outreach yet</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {outreachLogs.slice(0, 15).map(log => (
+                        {allLogs.map(log => (
                           <div key={log.id} className="bg-muted/20 rounded p-1.5">
                             <div className="flex justify-between text-[10px]">
                               <Badge variant="outline" className="text-[9px] h-4">{log.channel}</Badge>
@@ -688,6 +699,11 @@ export default function UTOutreachCommand() {
                             <p className="text-[9px] text-muted-foreground/50 mt-0.5">{format(new Date(log.created_at), 'MMM d, h:mm a')}</p>
                           </div>
                         ))}
+                        {hasMoreLogs && (
+                          <Button variant="ghost" size="sm" className="w-full h-6 text-[10px]" onClick={() => fetchMoreLogs()}>
+                            Load More
+                          </Button>
+                        )}
                       </div>
                     )}
                   </CardContent>

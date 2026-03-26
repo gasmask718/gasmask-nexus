@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UT_DISPOSITIONS, UTDispositionValue, UT_SMS_TEMPLATES } from '@/config/utScripts';
@@ -72,59 +72,101 @@ export interface UTOnboardingRecord {
 
 const LEADS_KEY = 'ut-partner-leads';
 const LOGS_KEY = 'ut-outreach-logs';
+const PAGE_SIZE = 50;
 
-// ── Leads Query ────────────────────────────────────────────────────
+// ── Helper: apply queue filters to a query ─────────────────────────
+function applyQueueFilters(query: any, filters?: {
+  status?: string;
+  category?: string;
+  city?: string;
+  search?: string;
+  queueMode?: string;
+}) {
+  if (!filters) return query;
+  if (filters.status) query = query.eq('status', filters.status);
+  if (filters.category && filters.category !== 'all') query = query.eq('category', filters.category);
+  if (filters.city) query = query.ilike('city', `%${filters.city}%`);
+  if (filters.search) {
+    query = query.or(`business_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,city.ilike.%${filters.search}%`);
+  }
+  if (filters.queueMode === 'new') query = query.eq('status', 'new');
+  if (filters.queueMode === 'callback_due') query = query.eq('status', 'callback').not('callback_due_at', 'is', null);
+  if (filters.queueMode === 'interested') query = query.eq('status', 'interested');
+  if (filters.queueMode === 'no_answer') query = query.eq('last_outcome', 'no_answer');
+  if (filters.queueMode === 'high_score') query = query.gte('ai_score', 70);
+  if (filters.queueMode === 'missing_phone') query = query.is('phone', null);
+  return query;
+}
+
+// ── Paginated Leads Query ──────────────────────────────────────────
 export function useUTPartnerLeads(filters?: {
   status?: string;
   category?: string;
   city?: string;
   search?: string;
-  queueMode?: 'all' | 'new' | 'callback_due' | 'interested' | 'no_answer' | 'high_score' | 'missing_phone';
+  queueMode?: string;
+  page?: number;
 }) {
+  const page = filters?.page || 0;
+
   return useQuery({
     queryKey: [LEADS_KEY, filters],
     queryFn: async () => {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       let query = (supabase.from('ut_partner_leads') as any)
-        .select('*')
+        .select('*', { count: 'exact' })
+        // Server-side priority sort: overdue callbacks first, then ai_score, then newest
+        .order('callback_due_at', { ascending: true, nullsFirst: false })
         .order('ai_score', { ascending: false })
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-      if (filters?.status) query = query.eq('status', filters.status);
-      if (filters?.category && filters.category !== 'all') query = query.eq('category', filters.category);
-      if (filters?.city) query = query.ilike('city', `%${filters.city}%`);
-      if (filters?.search) {
-        query = query.or(`business_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,city.ilike.%${filters.search}%`);
-      }
+      query = applyQueueFilters(query, filters);
 
-      if (filters?.queueMode === 'new') query = query.eq('status', 'new');
-      if (filters?.queueMode === 'callback_due') {
-        query = query.eq('status', 'callback').not('callback_due_at', 'is', null);
-      }
-      if (filters?.queueMode === 'interested') query = query.eq('status', 'interested');
-      if (filters?.queueMode === 'no_answer') query = query.eq('last_outcome', 'no_answer');
-      if (filters?.queueMode === 'high_score') query = query.gte('ai_score', 70);
-      if (filters?.queueMode === 'missing_phone') query = query.is('phone', null);
-
-      const { data, error } = await query.limit(500);
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as UTPartnerLead[];
+      return {
+        leads: (data || []) as UTPartnerLead[],
+        totalCount: count as number,
+        page,
+        pageSize: PAGE_SIZE,
+        totalPages: Math.ceil((count || 0) / PAGE_SIZE),
+      };
     },
   });
 }
 
-// ── Outreach Logs ──────────────────────────────────────────────────
+// ── Outreach Logs (infinite scroll) ────────────────────────────────
 export function useUTOutreachLogs(leadId?: string) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: [LOGS_KEY, leadId],
-    queryFn: async () => {
+    enabled: !!leadId,
+    initialPageParam: 0,
+    queryFn: async ({ pageParam = 0 }) => {
+      const from = pageParam * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+
       let query = (supabase.from('ut_outreach_logs') as any)
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(from, to);
+
       if (leadId) query = query.eq('lead_id', leadId);
-      const { data, error } = await query;
+
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as UTOutreachLog[];
+      return {
+        logs: (data || []) as UTOutreachLog[],
+        totalCount: count as number,
+        page: pageParam,
+      };
+    },
+    getNextPageParam: (lastPage) => {
+      const nextPage = lastPage.page + 1;
+      if (nextPage * PAGE_SIZE >= lastPage.totalCount) return undefined;
+      return nextPage;
     },
   });
 }
@@ -160,26 +202,13 @@ export function useUTLeadMutations() {
 
   const createLead = useMutation({
     mutationFn: async (input: {
-      business_name: string;
-      contact_name?: string;
-      category: string;
-      phone?: string;
-      email?: string;
-      city?: string;
-      state?: string;
-      source?: string;
-      notes?: string;
+      business_name: string; contact_name?: string; category: string;
+      phone?: string; email?: string; city?: string; state?: string; source?: string; notes?: string;
     }) => {
       const { error } = await (supabase.from('ut_partner_leads') as any).insert({
-        business_name: input.business_name,
-        contact_name: input.contact_name || null,
-        category: input.category,
-        phone: input.phone || null,
-        email: input.email || null,
-        city: input.city || null,
-        state: input.state || null,
-        source: input.source || 'manual',
-        notes: input.notes || null,
+        business_name: input.business_name, contact_name: input.contact_name || null,
+        category: input.category, phone: input.phone || null, email: input.email || null,
+        city: input.city || null, state: input.state || null, source: input.source || 'manual', notes: input.notes || null,
       });
       if (error) throw error;
     },
@@ -191,8 +220,7 @@ export function useUTLeadMutations() {
     mutationFn: async (input: { id: string } & Partial<UTPartnerLead>) => {
       const { id, ...updates } = input;
       const { error } = await (supabase.from('ut_partner_leads') as any)
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id);
+        .update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => invalidateAll(),
@@ -201,65 +229,40 @@ export function useUTLeadMutations() {
 
   const saveCallDisposition = useMutation({
     mutationFn: async (input: {
-      lead_id: string;
-      channel: UTOutreachChannel;
-      disposition: UTDispositionValue;
-      notes?: string;
-      follow_up_at?: string;
-      callback_due_at?: string;
-      template_name?: string;
+      lead_id: string; channel: UTOutreachChannel; disposition: UTDispositionValue;
+      notes?: string; follow_up_at?: string; callback_due_at?: string; template_name?: string;
     }) => {
       const dispo = UT_DISPOSITIONS.find(d => d.value === input.disposition);
       if (!dispo) throw new Error('Invalid disposition');
 
-      // 1. Log outreach
       const { error: logErr } = await (supabase.from('ut_outreach_logs') as any).insert({
-        lead_id: input.lead_id,
-        channel: input.channel,
-        outcome: input.disposition,
-        notes: input.notes || null,
-        template_name: input.template_name || null,
+        lead_id: input.lead_id, channel: input.channel, outcome: input.disposition,
+        notes: input.notes || null, template_name: input.template_name || null,
       });
       if (logErr) throw logErr;
 
-      // 2. Update lead
       const { data: currentLead } = await (supabase.from('ut_partner_leads') as any)
-        .select('status, outreach_count')
-        .eq('id', input.lead_id)
-        .single();
+        .select('status, outreach_count').eq('id', input.lead_id).single();
 
-      const statusPriority: Record<string, number> = {
-        dead: 0, new: 1, contacted: 2, callback: 3, interested: 4, onboarded: 5
-      };
+      const statusPriority: Record<string, number> = { dead: 0, new: 1, contacted: 2, callback: 3, interested: 4, onboarded: 5 };
       const currentPriority = statusPriority[currentLead?.status || 'new'] || 0;
       const newStatusPriority = statusPriority[dispo.statusMap] || 0;
 
       const leadUpdate: any = {
-        last_contacted_at: new Date().toISOString(),
-        last_outcome: input.disposition,
-        updated_at: new Date().toISOString(),
-        outreach_count: (currentLead?.outreach_count || 0) + 1,
+        last_contacted_at: new Date().toISOString(), last_outcome: input.disposition,
+        updated_at: new Date().toISOString(), outreach_count: (currentLead?.outreach_count || 0) + 1,
       };
 
-      if (dispo.statusMap === 'dead' || newStatusPriority >= currentPriority) {
-        leadUpdate.status = dispo.statusMap;
-      }
-
+      if (dispo.statusMap === 'dead' || newStatusPriority >= currentPriority) leadUpdate.status = dispo.statusMap;
       if (input.follow_up_at) leadUpdate.follow_up_at = input.follow_up_at;
       if (input.callback_due_at) leadUpdate.callback_due_at = input.callback_due_at;
 
-      // Post-call automation: set next_step based on disposition
       if (input.disposition === 'interested') leadUpdate.next_step = 'onboarding';
       if (input.disposition === 'callback_requested') leadUpdate.next_step = 'callback';
       if (input.disposition === 'send_info') leadUpdate.next_step = 'send_info';
-      if (input.disposition === 'onboarded') {
-        leadUpdate.onboarded_at = new Date().toISOString();
-        leadUpdate.next_step = 'completed';
-      }
+      if (input.disposition === 'onboarded') { leadUpdate.onboarded_at = new Date().toISOString(); leadUpdate.next_step = 'completed'; }
 
-      const { error: updateErr } = await (supabase.from('ut_partner_leads') as any)
-        .update(leadUpdate)
-        .eq('id', input.lead_id);
+      const { error: updateErr } = await (supabase.from('ut_partner_leads') as any).update(leadUpdate).eq('id', input.lead_id);
       if (updateErr) throw updateErr;
 
       return { disposition: input.disposition, statusMap: dispo.statusMap, lead_id: input.lead_id };
@@ -273,11 +276,7 @@ export function useUTLeadMutations() {
   });
 
   const sendSmsTemplate = useMutation({
-    mutationFn: async (input: {
-      lead: UTPartnerLead;
-      templateKey: string;
-      vaName?: string;
-    }) => {
+    mutationFn: async (input: { lead: UTPartnerLead; templateKey: string; vaName?: string }) => {
       const tpl = UT_SMS_TEMPLATES.find(t => t.key === input.templateKey);
       if (!tpl) throw new Error('Template not found');
       if (!input.lead.phone) throw new Error('Lead has no phone number');
@@ -289,79 +288,47 @@ export function useUTLeadMutations() {
         .replace(/\[VA Name\]/g, input.vaName || 'Your Partner Rep')
         .replace(/\[LINK\]/g, 'https://unforgettabletimes.com/join');
 
-      // Send via Dynasty Connect SMS pathway
-      const { data, error: smsErr } = await supabase.functions.invoke('send-sms', {
-        body: {
-          to_number: input.lead.phone,
-          message_body: body,
-          idempotency_key: crypto.randomUUID(),
-          metadata: { brand: 'unforgettable_times', template: input.templateKey, lead_id: input.lead.id },
-        },
+      const { data } = await supabase.functions.invoke('send-sms', {
+        body: { to_number: input.lead.phone, message_body: body, idempotency_key: crypto.randomUUID(),
+          metadata: { brand: 'unforgettable_times', template: input.templateKey, lead_id: input.lead.id } },
       });
 
-      // Log to outreach
       await (supabase.from('ut_outreach_logs') as any).insert({
-        lead_id: input.lead.id,
-        channel: 'sms',
-        outcome: 'sms_sent',
-        notes: `Template: ${tpl.label}`,
-        template_name: input.templateKey,
+        lead_id: input.lead.id, channel: 'sms', outcome: 'sms_sent',
+        notes: `Template: ${tpl.label}`, template_name: input.templateKey,
       });
 
-      // Update lead SMS tracking
-      await (supabase.from('ut_partner_leads') as any)
-        .update({
-          last_sms_template: input.templateKey,
-          sms_count: (input.lead.sms_count || 0) + 1,
-          last_contacted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', input.lead.id);
+      await (supabase.from('ut_partner_leads') as any).update({
+        last_sms_template: input.templateKey, sms_count: (input.lead.sms_count || 0) + 1,
+        last_contacted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      }).eq('id', input.lead.id);
 
       return { success: data?.success ?? true, templateLabel: tpl.label };
     },
-    onSuccess: (result) => {
-      invalidateAll();
-      toast.success(`📱 ${result.templateLabel} SMS sent`);
-    },
+    onSuccess: (result) => { invalidateAll(); toast.success(`📱 ${result.templateLabel} SMS sent`); },
     onError: (e: Error) => toast.error(`SMS failed: ${e.message}`),
   });
 
   const handoffToPartnerProfile = useMutation({
     mutationFn: async (lead: UTPartnerLead) => {
-      // 1. Upsert partner profile
       const { data: profile, error: profileErr } = await (supabase.from('ut_partner_profiles') as any).upsert({
-        lead_id: lead.id,
-        source_lead_id: lead.id,
-        business_name: lead.business_name,
-        contact_name: lead.contact_name,
-        category: lead.category,
-        phone: lead.phone,
-        email: lead.email,
-        city: lead.city,
-        state: lead.state,
-        onboarding_status: 'pending',
+        lead_id: lead.id, source_lead_id: lead.id, business_name: lead.business_name,
+        contact_name: lead.contact_name, category: lead.category, phone: lead.phone,
+        email: lead.email, city: lead.city, state: lead.state, onboarding_status: 'pending',
       }, { onConflict: 'lead_id' }).select().single();
       if (profileErr) throw profileErr;
 
-      // 2. Create onboarding record
       const token = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
       const link = `https://unforgettabletimes.com/onboard/${token}`;
       const { data: onboarding, error: onbErr } = await (supabase.from('ut_partner_onboarding') as any).insert({
-        partner_profile_id: profile?.id || null,
-        source_lead_id: lead.id,
-        onboarding_token: token,
-        onboarding_link: link,
-        status: 'pending',
+        partner_profile_id: profile?.id || null, source_lead_id: lead.id,
+        onboarding_token: token, onboarding_link: link, status: 'pending',
       }).select().single();
       if (onbErr) throw onbErr;
 
       return { profile, onboarding };
     },
-    onSuccess: () => {
-      invalidateAll();
-      toast.success('🎉 Moved to Partner Profile + onboarding created');
-    },
+    onSuccess: () => { invalidateAll(); toast.success('🎉 Moved to Partner Profile + onboarding created'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -369,38 +336,18 @@ export function useUTLeadMutations() {
     mutationFn: async (input: { lead: UTPartnerLead; onboardingLink: string; onboardingId: string }) => {
       if (!input.lead.phone) throw new Error('No phone');
       const tpl = UT_SMS_TEMPLATES.find(t => t.key === 'onboarding_link_text')!;
-      const body = tpl.body
-        .replace(/\[LINK\]/g, input.onboardingLink)
-        .replace(/\[Contact Name\]/g, input.lead.contact_name || 'there');
+      const body = tpl.body.replace(/\[LINK\]/g, input.onboardingLink).replace(/\[Contact Name\]/g, input.lead.contact_name || 'there');
 
       await supabase.functions.invoke('send-sms', {
-        body: {
-          to_number: input.lead.phone,
-          message_body: body,
-          idempotency_key: crypto.randomUUID(),
-          metadata: { brand: 'unforgettable_times', template: 'onboarding_link_text', lead_id: input.lead.id },
-        },
+        body: { to_number: input.lead.phone, message_body: body, idempotency_key: crypto.randomUUID(),
+          metadata: { brand: 'unforgettable_times', template: 'onboarding_link_text', lead_id: input.lead.id } },
       });
 
-      await (supabase.from('ut_partner_onboarding') as any)
-        .update({ status: 'sent', sent_at: new Date().toISOString() })
-        .eq('id', input.onboardingId);
-
-      await (supabase.from('ut_partner_leads') as any)
-        .update({ onboarding_link_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-        .eq('id', input.lead.id);
-
-      await (supabase.from('ut_outreach_logs') as any).insert({
-        lead_id: input.lead.id,
-        channel: 'sms',
-        outcome: 'onboarding_link_sent',
-        template_name: 'onboarding_link_text',
-      });
+      await (supabase.from('ut_partner_onboarding') as any).update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', input.onboardingId);
+      await (supabase.from('ut_partner_leads') as any).update({ onboarding_link_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', input.lead.id);
+      await (supabase.from('ut_outreach_logs') as any).insert({ lead_id: input.lead.id, channel: 'sms', outcome: 'onboarding_link_sent', template_name: 'onboarding_link_text' });
     },
-    onSuccess: () => {
-      invalidateAll();
-      toast.success('📱 Onboarding link sent');
-    },
+    onSuccess: () => { invalidateAll(); toast.success('📱 Onboarding link sent'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -416,11 +363,12 @@ export function useUTLeadMutations() {
   return { createLead, updateLead, saveCallDisposition, sendSmsTemplate, handoffToPartnerProfile, sendOnboardingLink, deleteLead };
 }
 
-// ── Stats (funnel) ─────────────────────────────────────────────────
+// ── Stats (full dataset, no limits) ────────────────────────────────
 export function useUTLeadStats() {
   return useQuery({
     queryKey: ['ut-lead-stats'],
     queryFn: async () => {
+      // Fetch ALL leads but only the columns needed for stats
       const { data, error } = await (supabase.from('ut_partner_leads') as any)
         .select('status, category, ai_score, city, source, outreach_count');
       if (error) throw error;
@@ -430,39 +378,25 @@ export function useUTLeadStats() {
       const byCategory: Record<string, { total: number; onboarded: number }> = {};
       const byCity: Record<string, { total: number; onboarded: number }> = {};
       const bySource: Record<string, number> = {};
-      let totalScore = 0;
-      let totalTouches = 0;
-      let onboardedTouches = 0;
-      let onboardedCount = 0;
+      let totalScore = 0, onboardedTouches = 0, onboardedCount = 0;
 
       for (const l of leads) {
         byStatus[l.status] = (byStatus[l.status] || 0) + 1;
-
         if (!byCategory[l.category]) byCategory[l.category] = { total: 0, onboarded: 0 };
         byCategory[l.category].total++;
         if (l.status === 'onboarded') byCategory[l.category].onboarded++;
-
         if (l.city) {
           if (!byCity[l.city]) byCity[l.city] = { total: 0, onboarded: 0 };
           byCity[l.city].total++;
           if (l.status === 'onboarded') byCity[l.city].onboarded++;
         }
-
         if (l.source) bySource[l.source] = (bySource[l.source] || 0) + 1;
         totalScore += l.ai_score || 0;
-        totalTouches += l.outreach_count || 0;
-        if (l.status === 'onboarded') {
-          onboardedCount++;
-          onboardedTouches += l.outreach_count || 0;
-        }
+        if (l.status === 'onboarded') { onboardedCount++; onboardedTouches += l.outreach_count || 0; }
       }
 
       return {
-        total: leads.length,
-        byStatus,
-        byCategory,
-        byCity,
-        bySource,
+        total: leads.length, byStatus, byCategory, byCity, bySource,
         avgScore: leads.length ? Math.round(totalScore / leads.length) : 0,
         avgTouchesToOnboard: onboardedCount > 0 ? Math.round(onboardedTouches / onboardedCount * 10) / 10 : 0,
       };
@@ -489,16 +423,12 @@ export function useUTVAPerformance() {
       const connected = callLogs.filter((l: any) => !['no_answer', 'wrong_number'].includes(l.outcome));
       const interested = todayLogs.filter((l: any) => l.outcome === 'interested');
       const onboarded = todayLogs.filter((l: any) => l.outcome === 'onboarded');
-      const followUps = todayLogs.filter((l: any) => ['callback_requested', 'follow_up_required', 'voicemail_left'].includes(l.outcome));
       const noAnswer = callLogs.filter((l: any) => l.outcome === 'no_answer');
 
       return {
-        callsMade: callLogs.length,
-        connected: connected.length,
-        interested: interested.length,
-        onboarded: onboarded.length,
-        smsSent: smsLogs.length,
-        followUpsSet: followUps.length,
+        callsMade: callLogs.length, connected: connected.length, interested: interested.length,
+        onboarded: onboarded.length, smsSent: smsLogs.length,
+        followUpsSet: todayLogs.filter((l: any) => ['callback_requested', 'follow_up_required', 'voicemail_left'].includes(l.outcome)).length,
         noAnswerRate: callLogs.length > 0 ? Math.round((noAnswer.length / callLogs.length) * 100) : 0,
         conversionRate: connected.length > 0 ? Math.round((interested.length / connected.length) * 100) : 0,
       };
@@ -507,18 +437,15 @@ export function useUTVAPerformance() {
   });
 }
 
-// ── Outcome Distribution ───────────────────────────────────────────
+// ── Outcome Distribution (full dataset) ────────────────────────────
 export function useUTOutcomeDistribution() {
   return useQuery({
     queryKey: ['ut-outcome-distribution'],
     queryFn: async () => {
-      const { data, error } = await (supabase.from('ut_outreach_logs') as any)
-        .select('outcome');
+      const { data, error } = await (supabase.from('ut_outreach_logs') as any).select('outcome');
       if (error) throw error;
       const dist: Record<string, number> = {};
-      for (const row of data || []) {
-        dist[row.outcome] = (dist[row.outcome] || 0) + 1;
-      }
+      for (const row of data || []) dist[row.outcome] = (dist[row.outcome] || 0) + 1;
       return dist;
     },
   });
