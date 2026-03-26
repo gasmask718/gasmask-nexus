@@ -490,7 +490,7 @@ export default function SBOSignalAlignment() {
   );
 }
 
-function WeightedPickCard({ pick }: { pick: WeightedPick }) {
+function WeightedPickCard({ pick, onConfirmBet }: { pick: WeightedPick; onConfirmBet?: (pick: WeightedPick) => void }) {
   const tier = TIER_CONFIG[pick.pickTier] || TIER_CONFIG.low;
 
   return (
@@ -524,6 +524,29 @@ function WeightedPickCard({ pick }: { pick: WeightedPick }) {
             </span>
           )}
         </div>
+        {/* BET SIZING ROW */}
+        {pick.betUnits > 0 && (
+          <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-border/50">
+            <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400">
+              <DollarSign className="h-3 w-3" /> ${pick.betAmount.toFixed(0)} ({pick.betUnits}u)
+            </span>
+            <Badge variant="outline" className={`text-[9px] h-3.5 ${
+              pick.riskLevel === 'High' ? 'border-destructive/50 text-destructive' :
+              pick.riskLevel === 'Medium-High' ? 'border-orange-500/50 text-orange-500' :
+              'border-amber-500/50 text-amber-500'
+            }`}>
+              {pick.riskLevel}
+            </Badge>
+            {onConfirmBet && (
+              <button
+                onClick={() => onConfirmBet(pick)}
+                className="text-[9px] px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+              >
+                Confirm Bet
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="text-right shrink-0 space-y-0.5">
         <Badge className={`text-xs font-bold ${tier.color} ${tier.bg} ${tier.border}`}>
