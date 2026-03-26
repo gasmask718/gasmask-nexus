@@ -557,7 +557,7 @@ export function TonightGamesTab() {
   );
 }
 
-function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
+export function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
   const [running, setRunning] = useState(false);
   const [localPrediction, setLocalPrediction] = useState<any>(
     game.sbo_predictions?.[0] || null
