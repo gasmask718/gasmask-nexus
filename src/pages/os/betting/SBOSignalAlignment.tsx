@@ -410,7 +410,7 @@ export default function SBOSignalAlignment() {
       pick_tier: pick.isGrandmaster ? 'grandmaster' : pick.pickTier,
       signal_score: pick.finalScore,
       stake_usd: pick.betAmount,
-      description: `${pick.playerOrMarket} — ${pick.predDirection} (${pick.pickTier})`,
+      description: `${pick.playerOrMarket} — ${pick.direction} (${pick.pickTier})`,
       bet_type: pick.isGrandmaster ? 'grandmaster' : pick.pickTier,
       outcome: 'pending',
     });
