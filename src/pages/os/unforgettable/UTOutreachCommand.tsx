@@ -345,6 +345,18 @@ export default function UTOutreachCommand() {
               </div>
             )}
           </ScrollArea>
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="border-t border-border/30 p-2 flex items-center justify-between">
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" disabled={currentPage === 0} onClick={() => setCurrentPage(p => p - 1)}>
+                ← Prev
+              </Button>
+              <span className="text-[10px] text-muted-foreground">{currentPage + 1} / {totalPages}</span>
+              <Button variant="ghost" size="sm" className="h-6 text-[10px]" disabled={currentPage >= totalPages - 1} onClick={() => setCurrentPage(p => p + 1)}>
+                Next →
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* ═══ CENTER PANEL — LIVE CALL CONSOLE ═══ */}
