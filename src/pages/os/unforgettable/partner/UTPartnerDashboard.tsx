@@ -20,6 +20,7 @@ import UTPartnerBookings from './tabs/UTPartnerBookings';
 import UTPartnerAvailability from './tabs/UTPartnerAvailability';
 import UTPartnerAnalytics from './tabs/UTPartnerAnalytics';
 import UTPartnerAIStudio from './tabs/UTPartnerAIStudio';
+import UTAIBusinessBuilder from './tabs/UTAIBusinessBuilder';
 import UTVenueModule from './modules/UTVenueModule';
 import UTRentalModule from './modules/UTRentalModule';
 import UTCateringModule from './modules/UTCateringModule';
