@@ -118,7 +118,7 @@ export function SavePickButton({
 // ═══════════════════════════════════════════════════════════════
 
 
-function TonightGamesTab() {
+export function TonightGamesTab() {
   const [viewMode, setViewMode] = useState<'today' | 'history'>('today');
   const [state, setState] = useState({
     games: [] as any[],
