@@ -1510,6 +1510,7 @@ export default function AppRoutes() {
         <Route path="/os/unforgettable/performance" element={<UnforgettablePerformance />} />
         <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
         <Route path="/os/unforgettable/outreach" element={<UTOutreachCommand />} />
+        <Route path="/os/unforgettable/territory" element={<UTTerritoryIntelligence />} />
         <Route path="/os/unforgettable/ai-calling/:callId" element={<UnforgettableAICallDetail />} />
         <Route path="/os/unforgettable/onboarding" element={<UnforgettableOnboarding />} />
         <Route path="/os/unforgettable/customer-service" element={<UnforgettableCustomerService />} />
