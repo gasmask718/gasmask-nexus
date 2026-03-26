@@ -383,90 +383,58 @@ export function useUTLeadMutations() {
   return { createLead, updateLead, saveCallDisposition, sendSmsTemplate, handoffToPartnerProfile, sendOnboardingLink, deleteLead };
 }
 
-// ── Stats (full dataset, no limits) ────────────────────────────────
+// ── Stats (database-computed via RPC) ──────────────────────────────
 export function useUTLeadStats() {
   return useQuery({
     queryKey: ['ut-lead-stats'],
     queryFn: async () => {
-      // Fetch ALL leads but only the columns needed for stats
-      const { data, error } = await (supabase.from('ut_partner_leads') as any)
-        .select('status, category, ai_score, city, source, outreach_count');
+      const { data, error } = await supabase.rpc('ut_get_lead_stats' as any);
       if (error) throw error;
-      const leads = data || [];
-
-      const byStatus: Record<string, number> = {};
-      const byCategory: Record<string, { total: number; onboarded: number }> = {};
-      const byCity: Record<string, { total: number; onboarded: number }> = {};
-      const bySource: Record<string, number> = {};
-      let totalScore = 0, onboardedTouches = 0, onboardedCount = 0;
-
-      for (const l of leads) {
-        byStatus[l.status] = (byStatus[l.status] || 0) + 1;
-        if (!byCategory[l.category]) byCategory[l.category] = { total: 0, onboarded: 0 };
-        byCategory[l.category].total++;
-        if (l.status === 'onboarded') byCategory[l.category].onboarded++;
-        if (l.city) {
-          if (!byCity[l.city]) byCity[l.city] = { total: 0, onboarded: 0 };
-          byCity[l.city].total++;
-          if (l.status === 'onboarded') byCity[l.city].onboarded++;
-        }
-        if (l.source) bySource[l.source] = (bySource[l.source] || 0) + 1;
-        totalScore += l.ai_score || 0;
-        if (l.status === 'onboarded') { onboardedCount++; onboardedTouches += l.outreach_count || 0; }
-      }
-
-      return {
-        total: leads.length, byStatus, byCategory, byCity, bySource,
-        avgScore: leads.length ? Math.round(totalScore / leads.length) : 0,
-        avgTouchesToOnboard: onboardedCount > 0 ? Math.round(onboardedTouches / onboardedCount * 10) / 10 : 0,
+      return data as {
+        total: number;
+        by_status: Record<string, number>;
+        by_category: Record<string, { total: number; onboarded: number }>;
+        by_city: Record<string, { total: number; onboarded: number }>;
+        by_source: Record<string, number>;
+        avg_score: number;
+        avg_touches_to_onboard: number;
       };
     },
   });
 }
 
-// ── VA Performance (today) ─────────────────────────────────────────
+// ── VA Performance (database-computed via RPC) ─────────────────────
 export function useUTVAPerformance() {
   return useQuery({
     queryKey: ['ut-va-performance'],
     queryFn: async () => {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
-      const { data: logs, error } = await (supabase.from('ut_outreach_logs') as any)
-        .select('channel, outcome, created_at')
-        .gte('created_at', todayStart.toISOString());
+      const { data, error } = await supabase.rpc('ut_get_va_performance' as any);
       if (error) throw error;
-
-      const todayLogs = logs || [];
-      const callLogs = todayLogs.filter((l: any) => l.channel === 'call' || l.channel === 'ai_call');
-      const smsLogs = todayLogs.filter((l: any) => l.channel === 'sms');
-      const connected = callLogs.filter((l: any) => !['no_answer', 'wrong_number'].includes(l.outcome));
-      const interested = todayLogs.filter((l: any) => l.outcome === 'interested');
-      const onboarded = todayLogs.filter((l: any) => l.outcome === 'onboarded');
-      const noAnswer = callLogs.filter((l: any) => l.outcome === 'no_answer');
-
-      return {
-        callsMade: callLogs.length, connected: connected.length, interested: interested.length,
-        onboarded: onboarded.length, smsSent: smsLogs.length,
-        followUpsSet: todayLogs.filter((l: any) => ['callback_requested', 'follow_up_required', 'voicemail_left'].includes(l.outcome)).length,
-        noAnswerRate: callLogs.length > 0 ? Math.round((noAnswer.length / callLogs.length) * 100) : 0,
-        conversionRate: connected.length > 0 ? Math.round((interested.length / connected.length) * 100) : 0,
+      return data as {
+        calls_made: number;
+        connected: number;
+        interested: number;
+        onboarded: number;
+        sms_sent: number;
+        follow_ups_set: number;
+        no_answer_rate: number;
+        conversion_rate: number;
       };
     },
     refetchInterval: 30000,
   });
 }
 
-// ── Outcome Distribution (full dataset) ────────────────────────────
+// ── Outcome Distribution (database-computed via RPC) ───────────────
 export function useUTOutcomeDistribution() {
   return useQuery({
     queryKey: ['ut-outcome-distribution'],
     queryFn: async () => {
-      const { data, error } = await (supabase.from('ut_outreach_logs') as any).select('outcome');
+      const { data, error } = await supabase.rpc('ut_get_outcome_distribution' as any);
       if (error) throw error;
-      const dist: Record<string, number> = {};
-      for (const row of data || []) dist[row.outcome] = (dist[row.outcome] || 0) + 1;
-      return dist;
+      return (data || {}) as Record<string, number>;
     },
+  });
+}
   });
 }
