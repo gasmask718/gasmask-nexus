@@ -1686,7 +1686,7 @@ export function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: nu
 // PARLAY BUILDER TAB
 // ═══════════════════════════════════════════════════════════════
 
-function ParlayBuilderTab() {
+export function ParlayBuilderTab() {
   const [selectedLegs, setSelectedLegs] = useState<any[]>([]);
   const [stake, setStake] = useState<number>(10);
   const [parlayName, setParlayName] = useState('');
