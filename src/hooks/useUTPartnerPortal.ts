@@ -271,7 +271,7 @@ export function useUpsertVenueSpace() {
     mutationFn: async (space: Record<string, any>) => {
       const { data, error } = await supabase
         .from('ut_venue_spaces')
-        .upsert(space, { onConflict: 'id' })
+        .upsert(space as any, { onConflict: 'id' })
         .select()
         .single();
       if (error) throw error;
