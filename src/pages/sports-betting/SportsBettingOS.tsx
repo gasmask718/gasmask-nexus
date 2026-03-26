@@ -3152,7 +3152,7 @@ export function ValueSpotsTab() {
 // MODEL INTELLIGENCE TAB
 // ═══════════════════════════════════════════════════════════════
 
-function ModelIntelligenceTab() {
+export function ModelIntelligenceTab() {
   const [analyzing, setAnalyzing] = useState(false);
 
   const { data: activeConfig, refetch: refetchConfig } = useQuery({
