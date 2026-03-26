@@ -146,7 +146,7 @@ export function useUpsertService() {
     mutationFn: async (svc: Record<string, any>) => {
       const { data, error } = await supabase
         .from('ut_partner_services')
-        .upsert(svc, { onConflict: 'id' })
+        .upsert(svc as any, { onConflict: 'id' })
         .select()
         .single();
       if (error) throw error;
