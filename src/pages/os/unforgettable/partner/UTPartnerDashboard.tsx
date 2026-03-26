@@ -4,7 +4,7 @@ import {
   Building2, Package, Image, Calendar, BarChart3, Settings, 
   Sparkles, ListChecks, DollarSign, Users, ChevronRight,
   Star, Eye, MessageSquare, TrendingUp, CheckCircle2, Clock,
-  Layers, UtensilsCrossed, Palette, UserCog
+  Layers, UtensilsCrossed, Palette, UserCog, Brain
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
