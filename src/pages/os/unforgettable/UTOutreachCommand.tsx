@@ -16,7 +16,7 @@ import {
   Phone, MessageSquare, Mail, Bot, Plus, Search, TrendingUp, Users, Target,
   Zap, ChevronDown, ChevronRight, Clock, AlertTriangle, CheckCircle, X,
   ArrowRight, Send, Calendar, Star, Shield, RefreshCw, Copy, BarChart3,
-  Link as LinkIcon, ExternalLink, FileSpreadsheet, MapPin
+  Link as LinkIcon, ExternalLink, FileSpreadsheet, MapPin, Package
 } from 'lucide-react';
 import { format, isBefore, isToday, addHours } from 'date-fns';
 import {
@@ -255,6 +255,9 @@ export default function UTOutreachCommand() {
             </Button>
             <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/territory')}>
               <Target className="h-3.5 w-3.5" /> Territory
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/products')}>
+              <Package className="h-3.5 w-3.5" /> Products
             </Button>
             <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => setShowImporter(true)}>
               <FileSpreadsheet className="h-3.5 w-3.5" /> Import

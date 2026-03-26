@@ -72287,6 +72287,7 @@ export type Database = {
           created_at: string | null
           id: string
           is_optional: boolean | null
+          item_role: string | null
           item_type: string
           label: string
           package_id: string
@@ -72301,6 +72302,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_optional?: boolean | null
+          item_role?: string | null
           item_type: string
           label: string
           package_id: string
@@ -72315,6 +72317,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           is_optional?: boolean | null
+          item_role?: string | null
           item_type?: string
           label?: string
           package_id?: string
@@ -72344,6 +72347,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "ut_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_package_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_product_summary"
             referencedColumns: ["id"]
           },
         ]
@@ -72662,96 +72672,138 @@ export type Database = {
       }
       ut_products: {
         Row: {
+          auto_order_enabled: boolean | null
           category: string
           conversion_score: number | null
+          cost_price: number | null
           created_at: string | null
           description: string | null
+          entrepreneur_relevance_score: number | null
           estimated_roi_pct: number | null
           event_relevance_score: number | null
+          events_to_break_even: number | null
+          external_product_id: string | null
           fulfillment_model:
             | Database["public"]["Enums"]["ut_fulfillment_model"]
             | null
+          gift_relevance_score: number | null
           id: string
           image_urls: string[] | null
+          inventory_count: number | null
           is_active: boolean | null
           is_featured: boolean | null
+          is_listed: boolean | null
+          is_trending: boolean | null
           landed_cost: number | null
           margin_pct: number | null
+          monthly_income_estimate: number | null
           moq: number | null
           name: string
           overall_score: number | null
           product_type: Database["public"]["Enums"]["ut_product_type"]
+          recommendation_level: string | null
+          rental_price_estimate: number | null
           sell_price: number | null
           shipping_cost: number | null
           shipping_speed_days: number | null
           startup_guide_url: string | null
           subcategory: string | null
           supplier_id: string | null
+          supplier_product_url: string | null
           tags: string[] | null
           trend_score: number | null
           updated_at: string | null
+          vendor_owner_id: string | null
           visual_appeal_score: number | null
         }
         Insert: {
+          auto_order_enabled?: boolean | null
           category: string
           conversion_score?: number | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          entrepreneur_relevance_score?: number | null
           estimated_roi_pct?: number | null
           event_relevance_score?: number | null
+          events_to_break_even?: number | null
+          external_product_id?: string | null
           fulfillment_model?:
             | Database["public"]["Enums"]["ut_fulfillment_model"]
             | null
+          gift_relevance_score?: number | null
           id?: string
           image_urls?: string[] | null
+          inventory_count?: number | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_listed?: boolean | null
+          is_trending?: boolean | null
           landed_cost?: number | null
           margin_pct?: number | null
+          monthly_income_estimate?: number | null
           moq?: number | null
           name: string
           overall_score?: number | null
           product_type: Database["public"]["Enums"]["ut_product_type"]
+          recommendation_level?: string | null
+          rental_price_estimate?: number | null
           sell_price?: number | null
           shipping_cost?: number | null
           shipping_speed_days?: number | null
           startup_guide_url?: string | null
           subcategory?: string | null
           supplier_id?: string | null
+          supplier_product_url?: string | null
           tags?: string[] | null
           trend_score?: number | null
           updated_at?: string | null
+          vendor_owner_id?: string | null
           visual_appeal_score?: number | null
         }
         Update: {
+          auto_order_enabled?: boolean | null
           category?: string
           conversion_score?: number | null
+          cost_price?: number | null
           created_at?: string | null
           description?: string | null
+          entrepreneur_relevance_score?: number | null
           estimated_roi_pct?: number | null
           event_relevance_score?: number | null
+          events_to_break_even?: number | null
+          external_product_id?: string | null
           fulfillment_model?:
             | Database["public"]["Enums"]["ut_fulfillment_model"]
             | null
+          gift_relevance_score?: number | null
           id?: string
           image_urls?: string[] | null
+          inventory_count?: number | null
           is_active?: boolean | null
           is_featured?: boolean | null
+          is_listed?: boolean | null
+          is_trending?: boolean | null
           landed_cost?: number | null
           margin_pct?: number | null
+          monthly_income_estimate?: number | null
           moq?: number | null
           name?: string
           overall_score?: number | null
           product_type?: Database["public"]["Enums"]["ut_product_type"]
+          recommendation_level?: string | null
+          rental_price_estimate?: number | null
           sell_price?: number | null
           shipping_cost?: number | null
           shipping_speed_days?: number | null
           startup_guide_url?: string | null
           subcategory?: string | null
           supplier_id?: string | null
+          supplier_product_url?: string | null
           tags?: string[] | null
           trend_score?: number | null
           updated_at?: string | null
+          vendor_owner_id?: string | null
           visual_appeal_score?: number | null
         }
         Relationships: [
@@ -72760,6 +72812,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
             referencedColumns: ["id"]
           },
         ]
@@ -73211,6 +73270,8 @@ export type Database = {
       }
       ut_suppliers: {
         Row: {
+          api_enabled: boolean | null
+          avg_lead_time_days: number | null
           contact_name: string | null
           created_at: string | null
           email: string | null
@@ -73220,16 +73281,22 @@ export type Database = {
           min_order_qty: number | null
           name: string
           notes: string | null
+          payment_terms: string | null
           phone: string | null
+          platform_url: string | null
           quality_rating: number | null
           reliability_score: number | null
+          return_policy: string | null
           shipping_speed_days: number | null
           shipping_zones: string[] | null
           source_platform: string | null
+          supplier_type: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
+          api_enabled?: boolean | null
+          avg_lead_time_days?: number | null
           contact_name?: string | null
           created_at?: string | null
           email?: string | null
@@ -73239,16 +73306,22 @@ export type Database = {
           min_order_qty?: number | null
           name: string
           notes?: string | null
+          payment_terms?: string | null
           phone?: string | null
+          platform_url?: string | null
           quality_rating?: number | null
           reliability_score?: number | null
+          return_policy?: string | null
           shipping_speed_days?: number | null
           shipping_zones?: string[] | null
           source_platform?: string | null
+          supplier_type?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
+          api_enabled?: boolean | null
+          avg_lead_time_days?: number | null
           contact_name?: string | null
           created_at?: string | null
           email?: string | null
@@ -73258,12 +73331,16 @@ export type Database = {
           min_order_qty?: number | null
           name?: string
           notes?: string | null
+          payment_terms?: string | null
           phone?: string | null
+          platform_url?: string | null
           quality_rating?: number | null
           reliability_score?: number | null
+          return_policy?: string | null
           shipping_speed_days?: number | null
           shipping_zones?: string[] | null
           source_platform?: string | null
+          supplier_type?: string | null
           updated_at?: string | null
           website?: string | null
         }
@@ -82083,6 +82160,65 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ut_product_summary: {
+        Row: {
+          category: string | null
+          conversion_score: number | null
+          cost_price: number | null
+          created_at: string | null
+          entrepreneur_relevance_score: number | null
+          event_relevance_score: number | null
+          events_to_break_even: number | null
+          fulfillment_model: string | null
+          gift_relevance_score: number | null
+          id: string | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          is_listed: boolean | null
+          is_trending: boolean | null
+          landed_cost: number | null
+          margin_pct: number | null
+          monthly_income_estimate: number | null
+          name: string | null
+          overall_score: number | null
+          product_type: string | null
+          recommendation_level: string | null
+          rental_price_estimate: number | null
+          sell_price: number | null
+          shipping_speed_days: number | null
+          subcategory: string | null
+          supplier_name: string | null
+          supplier_platform: string | null
+          supplier_reliability: number | null
+          supplier_type: string | null
+          trend_score: number | null
+          updated_at: string | null
+          visual_appeal_score: number | null
+        }
+        Relationships: []
+      }
+      v_ut_supplier_scorecard: {
+        Row: {
+          api_enabled: boolean | null
+          asset_count: number | null
+          avg_margin: number | null
+          avg_product_score: number | null
+          fulfillment_model: string | null
+          gift_count: number | null
+          id: string | null
+          is_active: boolean | null
+          min_order_qty: number | null
+          name: string | null
+          product_count: number | null
+          quality_rating: number | null
+          reliability_score: number | null
+          shipping_speed_days: number | null
+          source_platform: string | null
+          supplier_type: string | null
+          trending_count: number | null
+        }
+        Relationships: []
+      }
       vendor_fulfillment_view: {
         Row: {
           carrier: string | null
@@ -83510,6 +83646,7 @@ export type Database = {
         }[]
       }
       ut_get_va_performance: { Args: never; Returns: Json }
+      ut_score_products: { Args: never; Returns: number }
       validate_agent_state_transition: {
         Args: { p_current_status: string; p_new_status: string }
         Returns: boolean
