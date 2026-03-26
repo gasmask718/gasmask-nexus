@@ -96,7 +96,7 @@ export default function UTPartnerDashboard() {
       case 'bartender':
         return [{ id: 'menus', label: 'Menus & Packages', icon: UtensilsCrossed }];
       case 'decorator':
-        return [{ id: 'portfolio', label: 'Portfolio', icon: Palette }];
+        return [{ id: 'portfolio', label: 'Creative Studio', icon: Palette }];
       case 'staff_provider':
         return [{ id: 'team', label: 'Team & Roles', icon: UserCog }];
       default:
