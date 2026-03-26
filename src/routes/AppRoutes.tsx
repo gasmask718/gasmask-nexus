@@ -1560,7 +1560,7 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/my-bets" element={<SBOMyBetsPage />} />
         <Route path="/sbo-ai-engine/simulation" element={<SBOSimulationPage />} />
         <Route path="/sbo-ai-engine/va-entry" element={<SBOVAEntryPage />} />
-        <Route path="/sbo-ai-engine/prizepicks" element={<SBOPrizePicksPage />} />
+        <Route path="/sbo-ai-engine/prizepicks" element={<Navigate to="/sbo-ai-engine/bovada" replace />} />
         <Route path="/sbo-ai-engine/bovada" element={<SBOBovadaPage />} />
         <Route path="/sbo-ai-engine/sms" element={<SBOSMSPage />} />
         <Route path="/sbo-ai-engine/history" element={<SBOHistoryPage />} />

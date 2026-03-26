@@ -145,10 +145,7 @@ const DYNASTY_NAVIGATION = {
     items: [
       { path: '/os/sports-betting/ai-os', label: '🎯 SBO Cockpit', icon: Target },
       { path: '/sbo-ai-engine/tonight', label: '🏀 Tonight', icon: Calendar },
-      { path: '/sbo-ai-engine/props', label: '📊 Props', icon: BarChart3 },
-      { path: '/sbo-ai-engine/parlay', label: '🎰 Parlay Builder', icon: Layers },
-      { path: '/sbo-ai-engine/prizepicks', label: '🎯 PrizePicks', icon: Target },
-      { path: '/sbo-ai-engine/bovada', label: '🐂 Bovada', icon: TrendingUp },
+      { path: '/sbo-ai-engine/bovada', label: '💰 Bovada Intelligence Hub', icon: TrendingUp },
       { path: '/sbo-ai-engine/value', label: '💎 Value Spots', icon: Star },
       { path: '/sbo-ai-engine/accuracy', label: '📈 Accuracy', icon: LineChart },
       { path: '/sbo-ai-engine/model', label: '🧬 Model Intel', icon: Brain },

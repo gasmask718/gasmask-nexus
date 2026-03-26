@@ -4391,8 +4391,6 @@ export default function SportsBettingOS() {
             { label: '📊 Accuracy', path: '/sbo-ai-engine/accuracy' },
             { label: '🧬 Model', path: '/sbo-ai-engine/model' },
             { label: '📱 My Bets', path: '/sbo-ai-engine/my-bets' },
-            { label: '🎯 PrizePicks', path: '/sbo-ai-engine/prizepicks' },
-            { label: '🐂 Bovada', path: '/sbo-ai-engine/bovada' },
             { label: '📱 ChingWorld', path: '/sbo-ai-engine/sms' },
             { label: '⚡ Simulation', path: '/sbo-ai-engine/simulation' },
             { label: '📜 History', path: '/sbo-ai-engine/history' },
