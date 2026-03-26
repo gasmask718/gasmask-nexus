@@ -16,7 +16,7 @@ import {
   Phone, MessageSquare, Mail, Bot, Plus, Search, TrendingUp, Users, Target,
   Zap, ChevronDown, ChevronRight, Clock, AlertTriangle, CheckCircle, X,
   ArrowRight, Send, Calendar, Star, Shield, RefreshCw, Copy, BarChart3,
-  Link as LinkIcon, ExternalLink, FileSpreadsheet
+  Link as LinkIcon, ExternalLink, FileSpreadsheet, MapPin
 } from 'lucide-react';
 import { format, isBefore, isToday, addHours } from 'date-fns';
 import {
@@ -250,6 +250,9 @@ export default function UTOutreachCommand() {
             </div>
           </div>
           <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/places')}>
+              <MapPin className="h-3.5 w-3.5" /> Places
+            </Button>
             <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/territory')}>
               <Target className="h-3.5 w-3.5" /> Territory
             </Button>

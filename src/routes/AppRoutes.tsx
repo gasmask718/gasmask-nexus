@@ -709,6 +709,7 @@ const UnforgettableMedia = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UnforgettableMediaDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMediaDetail })));
 const UTOutreachCommand = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachCommand })));
 const UTTerritoryIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTTerritoryIntelligence })));
+const UTPlacesLeadFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlacesLeadFinder })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
@@ -1511,6 +1512,7 @@ export default function AppRoutes() {
         <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
         <Route path="/os/unforgettable/outreach" element={<UTOutreachCommand />} />
         <Route path="/os/unforgettable/territory" element={<UTTerritoryIntelligence />} />
+        <Route path="/os/unforgettable/places" element={<UTPlacesLeadFinder />} />
         <Route path="/os/unforgettable/ai-calling/:callId" element={<UnforgettableAICallDetail />} />
         <Route path="/os/unforgettable/onboarding" element={<UnforgettableOnboarding />} />
         <Route path="/os/unforgettable/customer-service" element={<UnforgettableCustomerService />} />
