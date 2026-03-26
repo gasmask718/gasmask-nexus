@@ -4,17 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import {
   Search, Upload, RefreshCw, TrendingUp, Trophy, Target, Zap, BarChart3,
-  ChevronUp, ChevronDown, Filter, ImagePlus, Layers
+  ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
+  CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster } from '@/hooks/usePropsMaster';
-import { format } from 'date-fns';
 
 const PLATFORMS = [
   { value: 'all', label: 'All Platforms' },
@@ -22,6 +21,7 @@ const PLATFORMS = [
   { value: 'bovada', label: 'Bovada' },
   { value: 'draftkings', label: 'DraftKings' },
   { value: 'fanduel', label: 'FanDuel' },
+  { value: 'betmgm', label: 'BetMGM' },
   { value: 'underdog', label: 'Underdog' },
   { value: 'manual', label: 'Manual' },
 ];
@@ -32,32 +32,35 @@ function getTodayEST() {
 
 export default function PropIntelligenceHub() {
   const [platform, setPlatform] = useState('all');
-  const [gameDate, setGameDate] = useState(getTodayEST());
+  const [gameDate, setGameDate] = useState('');
   const [minConfidence, setMinConfidence] = useState(0);
   const [bestOnly, setBestOnly] = useState(false);
   const [searchPlayer, setSearchPlayer] = useState('');
   const [selectedProp, setSelectedProp] = useState<PropMaster | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [uploadPlatform, setUploadPlatform] = useState('prizepicks');
+  const [page, setPage] = useState(1);
+  const pageSize = 100;
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: props = [], isLoading, refetch } = usePropsMaster({
+  const { data, isLoading, refetch } = usePropsMaster({
     platform,
-    gameDate,
+    gameDate: gameDate || undefined,
     minConfidence: minConfidence || undefined,
+    searchPlayer: searchPlayer || undefined,
+    page,
+    pageSize,
   });
-  const { data: stats } = usePropsMasterStats(gameDate);
-  const { data: crossIntel = [] } = usePropCrossIntelligence(selectedProp?.player_name, selectedProp?.stat_type);
-  const { uploadImage } = usePropMutations();
+  const props = data?.props ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  // Filter client-side
-  let filtered = props;
-  if (searchPlayer) {
-    filtered = filtered.filter(p => p.player_name.toLowerCase().includes(searchPlayer.toLowerCase()));
-  }
-  if (bestOnly) {
-    filtered = filtered.filter(p => (p.confidence_score || 0) >= 70);
-  }
+  const { data: stats } = usePropsMasterStats(gameDate || undefined);
+  const { data: crossIntel = [] } = usePropCrossIntelligence(selectedProp?.player_name, selectedProp?.stat_type);
+  const { syncBooks, runAnalysis, uploadImage } = usePropMutations();
+
+  // Apply client-side best-only filter
+  let filtered = bestOnly ? props.filter(p => (p.confidence_score || 0) >= 70) : props;
 
   // Group by player+stat for cross-platform view
   const grouped = new Map<string, PropMaster[]>();
@@ -87,12 +90,15 @@ export default function PropIntelligenceHub() {
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             ⚡ Prop Intelligence Hub
           </h1>
-          <p className="text-sm text-muted-foreground">All props. All platforms. One engine.</p>
+          <p className="text-sm text-muted-foreground">
+            All props. All platforms. One engine.
+            {totalCount > 0 && <span className="ml-2 font-medium text-foreground">{totalCount.toLocaleString()} total props</span>}
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Dialog open={showUpload} onOpenChange={setShowUpload}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="gap-1.5">
+              <Button variant="outline" size="sm" className="gap-1.5">
                 <ImagePlus className="h-4 w-4" /> Upload Props
               </Button>
             </DialogTrigger>
@@ -122,22 +128,41 @@ export default function PropIntelligenceHub() {
               </div>
             </DialogContent>
           </Dialog>
-          <Button onClick={() => refetch()} variant="outline" className="gap-1.5">
-            <RefreshCw className="h-4 w-4" /> Sync
+
+          <Button 
+            onClick={() => runAnalysis.mutate()} 
+            disabled={runAnalysis.isPending}
+            variant="outline" 
+            size="sm" 
+            className="gap-1.5"
+          >
+            {runAnalysis.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            {runAnalysis.isPending ? 'Analyzing...' : 'Run Analysis'}
+          </Button>
+
+          <Button 
+            onClick={() => syncBooks.mutate()} 
+            disabled={syncBooks.isPending}
+            size="sm" 
+            className="gap-1.5"
+          >
+            {syncBooks.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            {syncBooks.isPending ? 'Syncing...' : 'Sync Books'}
           </Button>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
         {[
-          { label: 'Total Props', value: stats?.total || 0, icon: Layers, color: 'text-blue-500' },
-          { label: 'Avg Confidence', value: `${stats?.avgConfidence || 0}%`, icon: Target, color: 'text-purple-500' },
-          { label: 'Wins', value: stats?.wins || 0, icon: Trophy, color: 'text-green-500' },
-          { label: 'Losses', value: stats?.losses || 0, icon: TrendingUp, color: 'text-red-500' },
-          { label: 'Pending', value: stats?.pending || 0, icon: Zap, color: 'text-yellow-500' },
-          { label: 'Win Rate', value: `${stats?.winRate || 0}%`, icon: BarChart3, color: 'text-emerald-500' },
-          { label: 'Platforms', value: Object.keys(stats?.byPlatform || {}).length, icon: Filter, color: 'text-orange-500' },
+          { label: 'Total Props', value: stats?.total ?? 0, icon: Layers, color: 'text-blue-500' },
+          { label: 'Best Picks', value: stats?.bestPicks ?? 0, icon: Trophy, color: 'text-amber-500' },
+          { label: 'Analyzed', value: stats?.withPrediction ?? 0, icon: Brain, color: 'text-purple-500' },
+          { label: 'No Stats', value: stats?.noStats ?? 0, icon: Target, color: 'text-muted-foreground' },
+          { label: 'Wins', value: stats?.wins ?? 0, icon: CheckCircle, color: 'text-green-500' },
+          { label: 'Losses', value: stats?.losses ?? 0, icon: XCircle, color: 'text-red-500' },
+          { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: 'text-yellow-500' },
+          { label: 'Accuracy', value: `${stats?.winRate ?? 0}%`, icon: BarChart3, color: 'text-emerald-500' },
         ].map(s => (
           <Card key={s.label} className="border-border/40">
             <CardContent className="p-2.5">
@@ -151,33 +176,84 @@ export default function PropIntelligenceHub() {
         ))}
       </div>
 
+      {/* Platform Breakdown */}
+      {stats?.byPlatform && Object.keys(stats.byPlatform).length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {Object.entries(stats.byPlatform).map(([plat, count]) => (
+            <Badge key={plat} variant="outline" className="capitalize text-xs gap-1">
+              {plat}: <span className="font-bold">{count}</span>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Stat Type Breakdown */}
+      {stats?.byStatType && Object.keys(stats.byStatType).length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {Object.entries(stats.byStatType)
+            .sort((a, b) => b[1].total - a[1].total)
+            .slice(0, 12)
+            .map(([stat, info]) => (
+              <Badge key={stat} variant="secondary" className="text-[10px] capitalize gap-1">
+                {stat}: {info.total}
+                {info.wins + info.losses > 0 && (
+                  <span className="text-green-500 ml-0.5">
+                    {Math.round((info.wins / (info.wins + info.losses)) * 100)}%
+                  </span>
+                )}
+              </Badge>
+            ))}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Search player..." className="pl-8 w-44 h-9" value={searchPlayer} onChange={e => setSearchPlayer(e.target.value)} />
+          <Input 
+            placeholder="Search player..." 
+            className="pl-8 w-44 h-9" 
+            value={searchPlayer} 
+            onChange={e => { setSearchPlayer(e.target.value); setPage(1); }} 
+          />
         </div>
-        <Select value={platform} onValueChange={setPlatform}>
+        <Select value={platform} onValueChange={v => { setPlatform(v); setPage(1); }}>
           <SelectTrigger className="w-36 h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             {PLATFORMS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input type="date" className="w-36 h-9" value={gameDate} onChange={e => setGameDate(e.target.value)} />
+        <Input 
+          type="date" 
+          className="w-36 h-9" 
+          value={gameDate} 
+          onChange={e => { setGameDate(e.target.value); setPage(1); }} 
+        />
         <div className="flex items-center gap-1.5">
           <Switch checked={bestOnly} onCheckedChange={setBestOnly} id="best-only" />
           <Label htmlFor="best-only" className="text-xs cursor-pointer">Best Only (70%+)</Label>
         </div>
+        {gameDate && (
+          <Button variant="ghost" size="sm" onClick={() => { setGameDate(''); setPage(1); }}>
+            Clear Date
+          </Button>
+        )}
       </div>
 
       {/* Props Grid */}
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading props...</div>
+        <div className="text-center py-12 text-muted-foreground">
+          <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+          Loading props...
+        </div>
       ) : filtered.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No props found for this date.</p>
-            <p className="text-sm text-muted-foreground mt-1">Upload a screenshot or sync from API to get started.</p>
+            <p className="text-muted-foreground">
+              {totalCount === 0 
+                ? 'No props in system yet. Click "Sync Books" to ingest from all sportsbooks.'
+                : 'No props match your filters. Try adjusting filters or clearing the date.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
@@ -185,9 +261,6 @@ export default function PropIntelligenceHub() {
           {Array.from(grouped.entries()).map(([key, groupProps]) => {
             const primary = groupProps[0];
             const hasMultiple = groupProps.length > 1;
-            const bestPlatform = groupProps.reduce((a, b) =>
-              (a.confidence_score || 0) > (b.confidence_score || 0) ? a : b
-            );
 
             return (
               <Card
@@ -210,7 +283,7 @@ export default function PropIntelligenceHub() {
                     <div className="flex gap-1">
                       {primary.result === 'win' && <Badge className="bg-green-500/20 text-green-500 text-[10px]">WIN ✅</Badge>}
                       {primary.result === 'loss' && <Badge className="bg-red-500/20 text-red-500 text-[10px]">LOSS ❌</Badge>}
-                      {hasMultiple && <Badge variant="outline" className="text-[10px]">{groupProps.length} platforms</Badge>}
+                      {hasMultiple && <Badge variant="outline" className="text-[10px]">{groupProps.length} books</Badge>}
                     </div>
                   </div>
 
@@ -235,7 +308,7 @@ export default function PropIntelligenceHub() {
                           : <ChevronDown className="h-4 w-4 text-red-500" />}
                         <span className="text-sm font-semibold">{primary.prediction}</span>
                       </div>
-                      {primary.confidence_score && (
+                      {primary.confidence_score != null && (
                         <span className={`text-sm font-bold ${
                           primary.confidence_score >= 75 ? 'text-green-500' :
                           primary.confidence_score >= 60 ? 'text-yellow-500' : 'text-muted-foreground'
@@ -277,7 +350,7 @@ export default function PropIntelligenceHub() {
                   )}
 
                   {/* Result */}
-                  {primary.actual_result !== null && primary.actual_result !== undefined && (
+                  {primary.actual_result != null && (
                     <div className="text-xs text-muted-foreground border-t border-border/30 pt-1">
                       Actual: <span className="font-bold text-foreground">{primary.actual_result}</span>
                     </div>
@@ -286,6 +359,29 @@ export default function PropIntelligenceHub() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 pt-2">
+          <Button 
+            variant="outline" size="sm" 
+            onClick={() => setPage(p => Math.max(1, p - 1))} 
+            disabled={page <= 1}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {page} of {totalPages} ({totalCount.toLocaleString()} props)
+          </span>
+          <Button 
+            variant="outline" size="sm" 
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+            disabled={page >= totalPages}
+          >
+            <ArrowRight className="h-4 w-4" />
+          </Button>
         </div>
       )}
 
@@ -354,7 +450,7 @@ export default function PropIntelligenceHub() {
                           <div key={ci.id} className="flex justify-between items-center text-sm">
                             <Badge variant="outline" className="capitalize text-xs">{ci.platform}</Badge>
                             <span className="font-mono font-bold">{ci.line}</span>
-                            {ci.odds && <span className="text-muted-foreground text-xs">{ci.odds}</span>}
+                            {ci.odds && <span className="text-xs text-muted-foreground">{ci.odds}</span>}
                           </div>
                         ))}
                       </div>
@@ -363,21 +459,16 @@ export default function PropIntelligenceHub() {
                 )}
 
                 {/* Result */}
-                <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">🏁 Result</CardTitle></CardHeader>
-                  <CardContent>
-                    {selectedProp.result === 'pending' ? (
-                      <p className="text-muted-foreground text-sm">Pending — game has not finished</p>
-                    ) : (
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Actual: <span className="font-bold text-lg">{selectedProp.actual_result}</span></span>
-                        <Badge className={selectedProp.result === 'win' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}>
-                          {selectedProp.result === 'win' ? '✅ WIN' : '❌ LOSS'}
-                        </Badge>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                {selectedProp.result !== 'pending' && (
+                  <Card className={selectedProp.result === 'win' ? 'border-green-500/40' : 'border-red-500/40'}>
+                    <CardContent className="p-3 flex justify-between items-center">
+                      <span className="font-medium">Result</span>
+                      <Badge className={selectedProp.result === 'win' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}>
+                        {selectedProp.result === 'win' ? 'WIN ✅' : 'LOSS ❌'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </>
           )}
