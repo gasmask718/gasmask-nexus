@@ -253,9 +253,11 @@ export function ChingWorldPicksSMS() {
     try {
       const { data, error } = await supabase.functions.invoke("sbo-daily-automation", { body: {} });
       if (error) throw error;
-      const stepsDone = data?.steps?.filter((s: any) => s.status === "success")?.length || 0;
-      const stepsTotal = data?.steps?.length || 0;
-      const errs = data?.errors?.length || 0;
+      const safeSteps = Array.isArray(data?.steps) ? data.steps : [];
+      const safeErrors = Array.isArray(data?.errors) ? data.errors : [];
+      const stepsDone = safeSteps.filter((s: any) => s.status === "success").length;
+      const stepsTotal = safeSteps.length;
+      const errs = safeErrors.length;
       setAutomationProgress(`✅ Complete — ${stepsDone}/${stepsTotal} steps succeeded${errs > 0 ? `, ${errs} error(s)` : ""}`);
       toast.success(`Automation complete: ${stepsDone}/${stepsTotal} steps`);
       queryClient.invalidateQueries({ queryKey: ["sbo-automation-log"] });
