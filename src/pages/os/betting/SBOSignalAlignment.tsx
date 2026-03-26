@@ -473,7 +473,7 @@ export default function SBOSignalAlignment() {
           </CardHeader>
           <CardContent className="space-y-2">
             {weightedPicks.filter(p => p.isGrandmaster).map(p => (
-              <WeightedPickCard key={p.key} pick={p} />
+              <WeightedPickCard key={p.key} pick={p} onConfirmBet={handleConfirmBet} />
             ))}
           </CardContent>
         </Card>
