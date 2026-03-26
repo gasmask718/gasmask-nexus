@@ -15,7 +15,7 @@ import {
   Phone, MessageSquare, Mail, Bot, Plus, Search, TrendingUp, Users, Target,
   Zap, ChevronDown, ChevronRight, Clock, AlertTriangle, CheckCircle, X,
   ArrowRight, Send, Calendar, Star, Shield, RefreshCw, Copy, BarChart3,
-  Link as LinkIcon, ExternalLink
+  Link as LinkIcon, ExternalLink, FileSpreadsheet
 } from 'lucide-react';
 import { format, isBefore, isToday, addHours } from 'date-fns';
 import {
