@@ -1549,6 +1549,21 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/wallet-intelligence" element={<SBOWalletTracker />} />
         <Route path="/sbo-ai-engine/capper-intelligence" element={<SBOCapperTracker />} />
         <Route path="/sbo-ai-engine/signal-alignment" element={<SBOSignalAlignment />} />
+        <Route path="/sbo-ai-engine/tonight" element={<SBOTonightPage />} />
+        <Route path="/sbo-ai-engine/props" element={<SBOPropsPage />} />
+        <Route path="/sbo-ai-engine/parlay" element={<SBOParlayPage />} />
+        <Route path="/sbo-ai-engine/value" element={<SBOValuePage />} />
+        <Route path="/sbo-ai-engine/accuracy" element={<SBOAccuracyPage />} />
+        <Route path="/sbo-ai-engine/model" element={<SBOModelPage />} />
+        <Route path="/sbo-ai-engine/my-bets" element={<SBOMyBetsPage />} />
+        <Route path="/sbo-ai-engine/simulation" element={<SBOSimulationPage />} />
+        <Route path="/sbo-ai-engine/va-entry" element={<SBOVAEntryPage />} />
+        <Route path="/sbo-ai-engine/prizepicks" element={<SBOPrizePicksPage />} />
+        <Route path="/sbo-ai-engine/bovada" element={<SBOBovadaPage />} />
+        <Route path="/sbo-ai-engine/sms" element={<SBOSMSPage />} />
+        <Route path="/sbo-ai-engine/history" element={<SBOHistoryPage />} />
+        <Route path="/sbo-ai-engine/health" element={<SBOHealthPage />} />
+        <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
