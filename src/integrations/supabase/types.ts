@@ -73060,6 +73060,567 @@ export type Database = {
           },
         ]
       }
+      ut_partner_creative_collections: {
+        Row: {
+          base_price: number | null
+          color_palette: Json | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          event_type: string | null
+          id: string
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          partner_id: string
+          style_tags: string[] | null
+          theme_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          color_palette?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          partner_id: string
+          style_tags?: string[] | null
+          theme_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          color_palette?: Json | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_type?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          partner_id?: string
+          style_tags?: string[] | null
+          theme_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_creative_collections_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_creative_media: {
+        Row: {
+          ai_tags: Json | null
+          album: string | null
+          before_url: string | null
+          caption: string | null
+          collection_id: string | null
+          created_at: string | null
+          display_order: number | null
+          file_url: string
+          id: string
+          is_before_after: boolean | null
+          is_cover: boolean | null
+          media_type: string | null
+          partner_id: string
+          quality_score: number | null
+          thumbnail_url: string | null
+          title: string | null
+        }
+        Insert: {
+          ai_tags?: Json | null
+          album?: string | null
+          before_url?: string | null
+          caption?: string | null
+          collection_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url: string
+          id?: string
+          is_before_after?: boolean | null
+          is_cover?: boolean | null
+          media_type?: string | null
+          partner_id: string
+          quality_score?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+        }
+        Update: {
+          ai_tags?: Json | null
+          album?: string | null
+          before_url?: string | null
+          caption?: string | null
+          collection_id?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url?: string
+          id?: string
+          is_before_after?: boolean | null
+          is_cover?: boolean | null
+          media_type?: string | null
+          partner_id?: string
+          quality_score?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_creative_media_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_creative_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_creative_media_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_creative_offerings: {
+        Row: {
+          base_price: number | null
+          category: string | null
+          collection_id: string | null
+          created_at: string | null
+          customization_supported: boolean | null
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          material_notes: string | null
+          name: string
+          partner_id: string
+          price_type: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          category?: string | null
+          collection_id?: string | null
+          created_at?: string | null
+          customization_supported?: boolean | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          material_notes?: string | null
+          name: string
+          partner_id: string
+          price_type?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          category?: string | null
+          collection_id?: string | null
+          created_at?: string | null
+          customization_supported?: boolean | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          material_notes?: string | null
+          name?: string
+          partner_id?: string
+          price_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_creative_offerings_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_creative_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_creative_offerings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_creative_packages: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          event_type: string | null
+          id: string
+          included_items: Json | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          optional_upgrades: Json | null
+          package_price: number | null
+          partner_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_type?: string | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          optional_upgrades?: Json | null
+          package_price?: number | null
+          partner_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_type?: string | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          optional_upgrades?: Json | null
+          package_price?: number | null
+          partner_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_creative_packages_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_creative_profiles: {
+        Row: {
+          created_at: string | null
+          creative_type: string | null
+          customization_supported: boolean | null
+          event_types_supported: string[] | null
+          id: string
+          min_spend: number | null
+          partner_id: string
+          rush_fee_rules: string | null
+          service_radius: number | null
+          setup_time_required: string | null
+          specialties: string[] | null
+          style_tags: string[] | null
+          teardown_included: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creative_type?: string | null
+          customization_supported?: boolean | null
+          event_types_supported?: string[] | null
+          id?: string
+          min_spend?: number | null
+          partner_id: string
+          rush_fee_rules?: string | null
+          service_radius?: number | null
+          setup_time_required?: string | null
+          specialties?: string[] | null
+          style_tags?: string[] | null
+          teardown_included?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creative_type?: string | null
+          customization_supported?: boolean | null
+          event_types_supported?: string[] | null
+          id?: string
+          min_spend?: number | null
+          partner_id?: string
+          rush_fee_rules?: string | null
+          service_radius?: number | null
+          setup_time_required?: string | null
+          specialties?: string[] | null
+          style_tags?: string[] | null
+          teardown_included?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_creative_profiles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_custom_requests: {
+        Row: {
+          budget_range: string | null
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string | null
+          description: string
+          event_date: string | null
+          event_type: string | null
+          id: string
+          notes: string | null
+          partner_id: string
+          quoted_price: number | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget_range?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          description: string
+          event_date?: string | null
+          event_type?: string | null
+          id?: string
+          notes?: string | null
+          partner_id: string
+          quoted_price?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget_range?: string | null
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string | null
+          description?: string
+          event_date?: string | null
+          event_type?: string | null
+          id?: string
+          notes?: string | null
+          partner_id?: string
+          quoted_price?: number | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_custom_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_food_availability: {
+        Row: {
+          available_date: string
+          created_at: string | null
+          id: string
+          max_events: number | null
+          note: string | null
+          partner_id: string
+          peak_pricing: boolean | null
+          status: string | null
+        }
+        Insert: {
+          available_date: string
+          created_at?: string | null
+          id?: string
+          max_events?: number | null
+          note?: string | null
+          partner_id: string
+          peak_pricing?: boolean | null
+          status?: string | null
+        }
+        Update: {
+          available_date?: string
+          created_at?: string | null
+          id?: string
+          max_events?: number | null
+          note?: string | null
+          partner_id?: string
+          peak_pricing?: boolean | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_food_availability_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_food_media: {
+        Row: {
+          ai_tags: Json | null
+          caption: string | null
+          category: string | null
+          created_at: string | null
+          display_order: number | null
+          file_url: string
+          id: string
+          is_cover: boolean | null
+          media_type: string | null
+          menu_id: string | null
+          partner_id: string
+          quality_score: number | null
+          thumbnail_url: string | null
+          title: string | null
+        }
+        Insert: {
+          ai_tags?: Json | null
+          caption?: string | null
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url: string
+          id?: string
+          is_cover?: boolean | null
+          media_type?: string | null
+          menu_id?: string | null
+          partner_id: string
+          quality_score?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+        }
+        Update: {
+          ai_tags?: Json | null
+          caption?: string | null
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          file_url?: string
+          id?: string
+          is_cover?: boolean | null
+          media_type?: string | null
+          menu_id?: string | null
+          partner_id?: string
+          quality_score?: number | null
+          thumbnail_url?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_food_media_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_food_media_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_food_profiles: {
+        Row: {
+          alcohol_provided: boolean | null
+          alcohol_service_capability: boolean | null
+          cleanup_included: boolean | null
+          consultation_fee: number | null
+          consultation_required: boolean | null
+          created_at: string | null
+          cuisine_types: string[] | null
+          dietary_capabilities: string[] | null
+          id: string
+          licensing_info: string | null
+          max_guest_count: number | null
+          min_guest_count: number | null
+          min_spend: number | null
+          outside_alcohol_allowed: boolean | null
+          partner_id: string
+          service_radius: number | null
+          service_styles: string[] | null
+          service_type: string | null
+          setup_time_required: string | null
+          staffing_model: string | null
+          tasting_available: boolean | null
+          travel_fee_rules: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          alcohol_provided?: boolean | null
+          alcohol_service_capability?: boolean | null
+          cleanup_included?: boolean | null
+          consultation_fee?: number | null
+          consultation_required?: boolean | null
+          created_at?: string | null
+          cuisine_types?: string[] | null
+          dietary_capabilities?: string[] | null
+          id?: string
+          licensing_info?: string | null
+          max_guest_count?: number | null
+          min_guest_count?: number | null
+          min_spend?: number | null
+          outside_alcohol_allowed?: boolean | null
+          partner_id: string
+          service_radius?: number | null
+          service_styles?: string[] | null
+          service_type?: string | null
+          setup_time_required?: string | null
+          staffing_model?: string | null
+          tasting_available?: boolean | null
+          travel_fee_rules?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          alcohol_provided?: boolean | null
+          alcohol_service_capability?: boolean | null
+          cleanup_included?: boolean | null
+          consultation_fee?: number | null
+          consultation_required?: boolean | null
+          created_at?: string | null
+          cuisine_types?: string[] | null
+          dietary_capabilities?: string[] | null
+          id?: string
+          licensing_info?: string | null
+          max_guest_count?: number | null
+          min_guest_count?: number | null
+          min_spend?: number | null
+          outside_alcohol_allowed?: boolean | null
+          partner_id?: string
+          service_radius?: number | null
+          service_styles?: string[] | null
+          service_type?: string | null
+          setup_time_required?: string | null
+          staffing_model?: string | null
+          tasting_available?: boolean | null
+          travel_fee_rules?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_food_profiles_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: true
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_partner_leads: {
         Row: {
           ai_call_eligible: boolean
@@ -73268,6 +73829,127 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ut_partner_media_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_menu_items: {
+        Row: {
+          allergens: string[] | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          dietary_tags: string[] | null
+          display_order: number | null
+          id: string
+          is_signature: boolean | null
+          item_name: string
+          menu_id: string
+          spice_level: number | null
+          upgrade_price: number | null
+        }
+        Insert: {
+          allergens?: string[] | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          dietary_tags?: string[] | null
+          display_order?: number | null
+          id?: string
+          is_signature?: boolean | null
+          item_name: string
+          menu_id: string
+          spice_level?: number | null
+          upgrade_price?: number | null
+        }
+        Update: {
+          allergens?: string[] | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          dietary_tags?: string[] | null
+          display_order?: number | null
+          id?: string
+          is_signature?: boolean | null
+          item_name?: string
+          menu_id?: string
+          spice_level?: number | null
+          upgrade_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_menu_items_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_menus: {
+        Row: {
+          base_price: number | null
+          created_at: string | null
+          description: string | null
+          dietary_tags: string[] | null
+          display_order: number | null
+          guest_range_max: number | null
+          guest_range_min: number | null
+          id: string
+          includes: Json | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          menu_type: string | null
+          name: string
+          partner_id: string
+          price_type: string | null
+          service_style: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          dietary_tags?: string[] | null
+          display_order?: number | null
+          guest_range_max?: number | null
+          guest_range_min?: number | null
+          id?: string
+          includes?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          menu_type?: string | null
+          name: string
+          partner_id: string
+          price_type?: string | null
+          service_style?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          dietary_tags?: string[] | null
+          display_order?: number | null
+          guest_range_max?: number | null
+          guest_range_min?: number | null
+          id?: string
+          includes?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          menu_type?: string | null
+          name?: string
+          partner_id?: string
+          price_type?: string | null
+          service_style?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_menus_partner_id_fkey"
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "ut_partners"
@@ -73794,6 +74476,74 @@ export type Database = {
             columns: ["rental_item_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_rental_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_service_packages: {
+        Row: {
+          base_price: number | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          event_type: string | null
+          hours_included: number | null
+          id: string
+          included_items: Json | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          name: string
+          optional_add_ons: Json | null
+          partner_id: string
+          price_type: string | null
+          staffing_count: number | null
+          updated_at: string | null
+          upgrade_paths: Json | null
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_type?: string | null
+          hours_included?: number | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name: string
+          optional_add_ons?: Json | null
+          partner_id: string
+          price_type?: string | null
+          staffing_count?: number | null
+          updated_at?: string | null
+          upgrade_paths?: Json | null
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          event_type?: string | null
+          hours_included?: number | null
+          id?: string
+          included_items?: Json | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          name?: string
+          optional_add_ons?: Json | null
+          partner_id?: string
+          price_type?: string | null
+          staffing_count?: number | null
+          updated_at?: string | null
+          upgrade_paths?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_service_packages_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
             referencedColumns: ["id"]
           },
         ]

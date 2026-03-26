@@ -23,6 +23,7 @@ import UTPartnerAIStudio from './tabs/UTPartnerAIStudio';
 import UTVenueModule from './modules/UTVenueModule';
 import UTRentalModule from './modules/UTRentalModule';
 import UTCateringModule from './modules/UTCateringModule';
+import UTDecoratorModule from './modules/UTDecoratorModule';
 
 const CATEGORY_ICONS: Record<string, any> = {
   event_hall: Building2,
@@ -95,7 +96,7 @@ export default function UTPartnerDashboard() {
       case 'bartender':
         return [{ id: 'menus', label: 'Menus & Packages', icon: UtensilsCrossed }];
       case 'decorator':
-        return [{ id: 'portfolio', label: 'Portfolio', icon: Palette }];
+        return [{ id: 'portfolio', label: 'Creative Studio', icon: Palette }];
       case 'staff_provider':
         return [{ id: 'team', label: 'Team & Roles', icon: UserCog }];
       default:
@@ -310,6 +311,9 @@ export default function UTPartnerDashboard() {
         </TabsContent>
         <TabsContent value="menus">
           <UTCateringModule partnerId={selectedPartnerId!} />
+        </TabsContent>
+        <TabsContent value="portfolio">
+          <UTDecoratorModule partnerId={selectedPartnerId!} />
         </TabsContent>
       </Tabs>
     </div>
