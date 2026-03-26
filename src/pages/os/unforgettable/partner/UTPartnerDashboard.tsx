@@ -4,7 +4,7 @@ import {
   Building2, Package, Image, Calendar, BarChart3, Settings, 
   Sparkles, ListChecks, DollarSign, Users, ChevronRight,
   Star, Eye, MessageSquare, TrendingUp, CheckCircle2, Clock,
-  Layers, UtensilsCrossed, Palette, UserCog
+  Layers, UtensilsCrossed, Palette, UserCog, Brain
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import UTPartnerBookings from './tabs/UTPartnerBookings';
 import UTPartnerAvailability from './tabs/UTPartnerAvailability';
 import UTPartnerAnalytics from './tabs/UTPartnerAnalytics';
 import UTPartnerAIStudio from './tabs/UTPartnerAIStudio';
+import UTAIBusinessBuilder from './tabs/UTAIBusinessBuilder';
 import UTVenueModule from './modules/UTVenueModule';
 import UTRentalModule from './modules/UTRentalModule';
 import UTCateringModule from './modules/UTCateringModule';
@@ -114,6 +115,7 @@ export default function UTPartnerDashboard() {
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'ai-studio', label: 'AI Studio', icon: Sparkles },
+    { id: 'ai-builder', label: 'AI Builder', icon: Brain },
   ];
 
   const allTabs = [...coreTabs, ...getCategoryTabs()];
@@ -300,6 +302,9 @@ export default function UTPartnerDashboard() {
         </TabsContent>
         <TabsContent value="ai-studio">
           <UTPartnerAIStudio partnerId={selectedPartnerId!} category={partnerCategory} />
+        </TabsContent>
+        <TabsContent value="ai-builder">
+          <UTAIBusinessBuilder partnerId={selectedPartnerId!} category={partnerCategory} />
         </TabsContent>
 
         {/* Category-specific tabs */}
