@@ -758,6 +758,7 @@ const SBOSimulationPage = lazy(() => import('@/pages/sports-betting/pages/Simula
 const SBOVAEntryPage = lazy(() => import('@/pages/sports-betting/pages/VAEntryPage'));
 const SBOPrizePicksPage = lazy(() => import('@/pages/sports-betting/pages/PrizePicksPage'));
 const SBOBovadaPage = lazy(() => import('@/pages/sports-betting/pages/BovadaPage'));
+const PropIntelligenceHub = lazy(() => import('@/pages/sports-betting/pages/PropIntelligenceHub'));
 const SBOSMSPage = lazy(() => import('@/pages/sports-betting/pages/SMSPage'));
 const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPage'));
 const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
