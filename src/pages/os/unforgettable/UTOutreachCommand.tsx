@@ -121,17 +121,8 @@ export default function UTOutreachCommand() {
     setHasUnsavedNotes(callNotes.length > 0);
   }, [callNotes]);
 
-  // Sort leads with callbacks at top
-  const sortedLeads = useMemo(() => {
-    const now = new Date();
-    return [...leads].sort((a, b) => {
-      if (a.callback_due_at && isBefore(new Date(a.callback_due_at), now)) return -1;
-      if (b.callback_due_at && isBefore(new Date(b.callback_due_at), now)) return 1;
-      if (a.callback_due_at && isToday(new Date(a.callback_due_at))) return -1;
-      if (b.callback_due_at && isToday(new Date(b.callback_due_at))) return 1;
-      return (b.ai_score || 0) - (a.ai_score || 0);
-    });
-  }, [leads]);
+  // Server-side sorting handles priority; leads come pre-sorted
+  const sortedLeads = leads;
 
   const currentScript = UT_SCRIPTS[scriptCategory] || UT_SCRIPTS.other;
   const selectedDispo = UT_DISPOSITIONS.find(d => d.value === disposition);
