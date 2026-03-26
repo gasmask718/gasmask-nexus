@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useState, useMemo, useCallback } from 'react';
 
 export interface PropMaster {
   id: string;
@@ -36,21 +37,29 @@ export interface PropMaster {
 
 const KEY = 'props-master';
 
+// ── Paginated props query ────────────────────────────────────────────────────
 export function usePropsMaster(filters?: {
   platform?: string;
   gameDate?: string;
   minConfidence?: number;
   result?: string;
-  bestOnly?: boolean;
+  searchPlayer?: string;
+  page?: number;
+  pageSize?: number;
 }) {
+  const page = filters?.page ?? 1;
+  const pageSize = filters?.pageSize ?? 100;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   return useQuery({
     queryKey: [KEY, filters],
     queryFn: async () => {
       let query = (supabase.from('props_master') as any)
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('confidence_score', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false })
-        .limit(500);
+        .range(from, to);
 
       if (filters?.platform && filters.platform !== 'all') {
         query = query.eq('platform', filters.platform);
@@ -64,48 +73,90 @@ export function usePropsMaster(filters?: {
       if (filters?.result && filters.result !== 'all') {
         query = query.eq('result', filters.result);
       }
+      if (filters?.searchPlayer) {
+        query = query.ilike('player_name', `%${filters.searchPlayer}%`);
+      }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as PropMaster[];
+      return { 
+        props: (data || []) as PropMaster[], 
+        totalCount: count ?? 0 
+      };
     },
   });
 }
 
+// ── Full stats from DB (no row limit) ────────────────────────────────────────
 export function usePropsMasterStats(gameDate?: string) {
   return useQuery({
     queryKey: ['props-master-stats', gameDate],
     queryFn: async () => {
-      let query = (supabase.from('props_master') as any).select('platform, confidence_score, result, prediction');
-      if (gameDate) query = query.eq('game_date', gameDate);
+      // Use separate count queries to avoid row limits
+      const baseFilter = (q: any) => {
+        if (gameDate) return q.eq('game_date', gameDate);
+        return q;
+      };
 
-      const { data, error } = await query;
-      if (error) throw error;
-      const props = data || [];
+      const [totalRes, winsRes, lossesRes, pendingRes, withPredRes, bestRes] = await Promise.all([
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true })),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).eq('result', 'win')),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).eq('result', 'loss')),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).eq('result', 'pending')),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).not('prediction', 'is', null)),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).gte('confidence_score', 70)),
+      ]);
 
+      const total = totalRes.count ?? 0;
+      const wins = winsRes.count ?? 0;
+      const losses = lossesRes.count ?? 0;
+      const pending = pendingRes.count ?? 0;
+      const withPrediction = withPredRes.count ?? 0;
+      const bestPicks = bestRes.count ?? 0;
+
+      // Get platform breakdown (limited query but just need platform column)
+      const { data: platformData } = await baseFilter(
+        (supabase.from('props_master') as any).select('platform')
+      );
       const byPlatform: Record<string, number> = {};
-      let totalConfidence = 0;
-      let withConfidence = 0;
-      let wins = 0;
-      let losses = 0;
-      let pending = 0;
-
-      for (const p of props) {
+      for (const p of (Array.isArray(platformData) ? platformData : [])) {
         byPlatform[p.platform] = (byPlatform[p.platform] || 0) + 1;
-        if (p.confidence_score) { totalConfidence += p.confidence_score; withConfidence++; }
-        if (p.result === 'win') wins++;
-        else if (p.result === 'loss') losses++;
-        else pending++;
       }
 
+      // Get stat type breakdown
+      const { data: statData } = await baseFilter(
+        (supabase.from('props_master') as any).select('stat_type, result')
+      );
+      const byStatType: Record<string, { total: number; wins: number; losses: number }> = {};
+      for (const p of (Array.isArray(statData) ? statData : [])) {
+        if (!byStatType[p.stat_type]) byStatType[p.stat_type] = { total: 0, wins: 0, losses: 0 };
+        byStatType[p.stat_type].total++;
+        if (p.result === 'win') byStatType[p.stat_type].wins++;
+        if (p.result === 'loss') byStatType[p.stat_type].losses++;
+      }
+
+      // Get avg confidence
+      const { data: confData } = await baseFilter(
+        (supabase.from('props_master') as any).select('confidence_score').not('confidence_score', 'is', null).limit(1000)
+      );
+      const confArr = Array.isArray(confData) ? confData : [];
+      const avgConfidence = confArr.length > 0
+        ? Math.round(confArr.reduce((s: number, c: any) => s + (c.confidence_score || 0), 0) / confArr.length)
+        : 0;
+
       return {
-        total: props.length,
-        byPlatform,
-        avgConfidence: withConfidence ? Math.round(totalConfidence / withConfidence) : 0,
+        total,
         wins,
         losses,
         pending,
+        withPrediction,
+        bestPicks,
+        withStats: withPrediction, // props that have been analyzed
+        noStats: total - withPrediction,
+        avgConfidence,
         winRate: wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0,
+        byPlatform,
+        byStatType,
       };
     },
   });
@@ -128,38 +179,46 @@ export function usePropCrossIntelligence(playerName?: string, statType?: string)
   });
 }
 
+// ── Mutations ────────────────────────────────────────────────────────────────
 export function usePropMutations() {
   const qc = useQueryClient();
 
-  const addProp = useMutation({
-    mutationFn: async (input: Partial<PropMaster> & { player_name: string; stat_type: string; line: number }) => {
-      const { error } = await (supabase.from('props_master') as any).insert({
-        ...input,
-        source: input.source || 'manual',
-        platform: input.platform || 'manual',
-        result: 'pending',
+  const syncBooks = useMutation({
+    mutationFn: async () => {
+      // Step 1: Trigger API ingestion
+      const { data: ingestData, error: ingestErr } = await supabase.functions.invoke('sbo-ingest-book-props', {
+        body: { bookmakers: 'bovada,betonlineag,draftkings,fanduel,betmgm' },
       });
+      if (ingestErr) console.warn('Ingest warning:', ingestErr.message);
+
+      // Step 2: Sync to props_master
+      const { data, error } = await supabase.functions.invoke('sbo-sync-props-master');
       if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Sync failed');
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: [KEY] });
-      toast.success('Prop added');
+      qc.invalidateQueries({ queryKey: ['props-master-stats'] });
+      toast.success(`Synced ${data.synced || 0} props from all books`);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(`Sync failed: ${e.message}`),
   });
 
-  const updateProp = useMutation({
-    mutationFn: async (input: { id: string } & Partial<PropMaster>) => {
-      const { id, ...updates } = input;
-      const { error } = await (supabase.from('props_master') as any)
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', id);
+  const runAnalysis = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('sbo-run-analysis');
       if (error) throw error;
+      // After analysis, re-sync predictions to props_master
+      await supabase.functions.invoke('sbo-sync-props-master');
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [KEY] });
+      qc.invalidateQueries({ queryKey: ['props-master-stats'] });
+      toast.success('Analysis complete — predictions updated');
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(`Analysis failed: ${e.message}`),
   });
 
   const uploadImage = useMutation({
@@ -173,10 +232,11 @@ export function usePropMutations() {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: [KEY] });
+      qc.invalidateQueries({ queryKey: ['props-master-stats'] });
       toast.success(`Parsed ${data.count || 0} props from image`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { addProp, updateProp, uploadImage };
+  return { syncBooks, runAnalysis, uploadImage };
 }
