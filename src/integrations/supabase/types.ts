@@ -58533,9 +58533,12 @@ export type Database = {
           outcome: string | null
           parlay_legs_count: number | null
           parsed_by_ai: boolean | null
+          pick_tier: string | null
           potential_payout: number | null
+          prediction_id: string | null
           profit_loss: number | null
           raw_reply: string | null
+          signal_score: number | null
           stake_usd: number
           updated_at: string | null
         }
@@ -58553,9 +58556,12 @@ export type Database = {
           outcome?: string | null
           parlay_legs_count?: number | null
           parsed_by_ai?: boolean | null
+          pick_tier?: string | null
           potential_payout?: number | null
+          prediction_id?: string | null
           profit_loss?: number | null
           raw_reply?: string | null
+          signal_score?: number | null
           stake_usd: number
           updated_at?: string | null
         }
@@ -58573,9 +58579,12 @@ export type Database = {
           outcome?: string | null
           parlay_legs_count?: number | null
           parsed_by_ai?: boolean | null
+          pick_tier?: string | null
           potential_payout?: number | null
+          prediction_id?: string | null
           profit_loss?: number | null
           raw_reply?: string | null
+          signal_score?: number | null
           stake_usd?: number
           updated_at?: string | null
         }
@@ -58585,6 +58594,13 @@ export type Database = {
             columns: ["briefing_id"]
             isOneToOne: false
             referencedRelation: "sbo_daily_briefings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_actual_bets_prediction_id_fkey"
+            columns: ["prediction_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_predictions"
             referencedColumns: ["id"]
           },
         ]
