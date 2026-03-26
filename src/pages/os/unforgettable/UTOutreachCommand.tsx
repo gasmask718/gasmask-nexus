@@ -779,12 +779,12 @@ export default function UTOutreachCommand() {
                 <Card className="border-border/30">
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">SOURCE BREAKDOWN</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
-                    {stats?.bySource && Object.entries(stats.bySource)
-                      .sort((a, b) => b[1] - a[1])
+                    {stats?.by_source && Object.entries(stats.by_source)
+                      .sort((a, b) => (b[1] as number) - (a[1] as number))
                       .map(([src, count]) => (
                         <div key={src} className="flex items-center justify-between text-[10px]">
                           <span className="capitalize">{src}</span>
-                          <span className="font-mono">{count}</span>
+                          <span className="font-mono">{count as number}</span>
                         </div>
                       ))}
                   </CardContent>
