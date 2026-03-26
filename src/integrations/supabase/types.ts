@@ -72042,6 +72042,210 @@ export type Database = {
           },
         ]
       }
+      ut_ai_extracted_data: {
+        Row: {
+          applied_to_id: string | null
+          applied_to_table: string | null
+          confidence_score: number | null
+          created_at: string
+          data_type: string
+          extracted_data: Json
+          id: string
+          ingestion_job_id: string
+          partner_id: string
+          status: string
+        }
+        Insert: {
+          applied_to_id?: string | null
+          applied_to_table?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          data_type: string
+          extracted_data?: Json
+          id?: string
+          ingestion_job_id: string
+          partner_id: string
+          status?: string
+        }
+        Update: {
+          applied_to_id?: string | null
+          applied_to_table?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          data_type?: string
+          extracted_data?: Json
+          id?: string
+          ingestion_job_id?: string
+          partner_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ai_extracted_data_ingestion_job_id_fkey"
+            columns: ["ingestion_job_id"]
+            isOneToOne: false
+            referencedRelation: "ut_ai_ingestion_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_ai_extracted_data_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_ai_generated_listings: {
+        Row: {
+          ai_description: string | null
+          ai_highlights: Json | null
+          ai_seo_copy: string | null
+          ai_tags: Json | null
+          ai_title: string | null
+          created_at: string
+          estimated_event_value: number | null
+          id: string
+          listing_type: string
+          partner_id: string
+          profit_score: number | null
+          status: string
+          updated_at: string
+          upsell_score: number | null
+        }
+        Insert: {
+          ai_description?: string | null
+          ai_highlights?: Json | null
+          ai_seo_copy?: string | null
+          ai_tags?: Json | null
+          ai_title?: string | null
+          created_at?: string
+          estimated_event_value?: number | null
+          id?: string
+          listing_type?: string
+          partner_id: string
+          profit_score?: number | null
+          status?: string
+          updated_at?: string
+          upsell_score?: number | null
+        }
+        Update: {
+          ai_description?: string | null
+          ai_highlights?: Json | null
+          ai_seo_copy?: string | null
+          ai_tags?: Json | null
+          ai_title?: string | null
+          created_at?: string
+          estimated_event_value?: number | null
+          id?: string
+          listing_type?: string
+          partner_id?: string
+          profit_score?: number | null
+          status?: string
+          updated_at?: string
+          upsell_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ai_generated_listings_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_ai_ingestion_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          extracted_content: Json | null
+          file_url: string | null
+          id: string
+          input_type: string
+          partner_id: string
+          raw_content: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          extracted_content?: Json | null
+          file_url?: string | null
+          id?: string
+          input_type: string
+          partner_id: string
+          raw_content?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          extracted_content?: Json | null
+          file_url?: string | null
+          id?: string
+          input_type?: string
+          partner_id?: string
+          raw_content?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ai_ingestion_jobs_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_ai_suggestions: {
+        Row: {
+          action_data: Json | null
+          created_at: string
+          description: string | null
+          id: string
+          partner_id: string
+          priority: string
+          status: string
+          suggestion_type: string
+          title: string
+        }
+        Insert: {
+          action_data?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          partner_id: string
+          priority?: string
+          status?: string
+          suggestion_type: string
+          title: string
+        }
+        Update: {
+          action_data?: Json | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          partner_id?: string
+          priority?: string
+          status?: string
+          suggestion_type?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ai_suggestions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_catering_menus: {
         Row: {
           beverage_packages: Json | null
