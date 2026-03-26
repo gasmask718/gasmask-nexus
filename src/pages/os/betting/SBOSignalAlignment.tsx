@@ -272,7 +272,22 @@ export default function SBOSignalAlignment() {
     },
   });
 
-  const weightedPicks = useMemo<WeightedPick[]>(() => {
+  // Bankroll for bet sizing
+  const { data: bankroll } = useQuery({
+    queryKey: ['signal-bankroll'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_bankroll')
+        .select('*')
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const bankrollAmount = bankroll?.current_bankroll || 500;
+  const unitSize = bankroll?.unit_size || bankrollAmount * 0.02;
     if (!predictions.length) return [];
 
     return predictions.map((pred: any) => {
