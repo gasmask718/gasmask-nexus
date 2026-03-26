@@ -490,7 +490,7 @@ export default function SBOSignalAlignment() {
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No picks found. Run AI predictions to generate weighted scores.</p>
           ) : filtered.map(p => (
-            <WeightedPickCard key={p.key} pick={p} />
+            <WeightedPickCard key={p.key} pick={p} onConfirmBet={handleConfirmBet} />
           ))}
         </TabsContent>
 
