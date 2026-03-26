@@ -403,14 +403,16 @@ export default function SBOSignalAlignment() {
   const eliteCount = weightedPicks.filter(p => p.pickTier === 'elite').length;
   const solidCount = weightedPicks.filter(p => p.pickTier === 'solid').length;
 
-  // CONFIRM BET → insert into sbo_actual_bets
+  // CONFIRM BET → insert into sbo_actual_bets with full tracking
   const handleConfirmBet = async (pick: WeightedPick) => {
     const { error } = await (supabase as any).from('sbo_actual_bets').insert({
       prediction_id: pick.predictionId,
-      bet_amount: pick.betAmount,
-      odds: pick.aiConfidence,
-      bet_type: pick.pickTier === 'grandmaster' ? 'grandmaster' : pick.pickTier,
-      status: 'pending',
+      pick_tier: pick.isGrandmaster ? 'grandmaster' : pick.pickTier,
+      signal_score: pick.finalScore,
+      stake_usd: pick.betAmount,
+      description: `${pick.playerOrMarket} — ${pick.direction} (${pick.pickTier})`,
+      bet_type: pick.isGrandmaster ? 'grandmaster' : pick.pickTier,
+      outcome: 'pending',
     });
     if (error) {
       toast.error('Failed to log bet: ' + error.message);

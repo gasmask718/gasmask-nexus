@@ -280,6 +280,144 @@ serve(async (req) => {
     console.error('Step 4 failed:', e.message);
   }
 
+  await new Promise(r => setTimeout(r, 2000));
+
+  // ── STEP 5: Auto-settle bets from verified results ──
+  try {
+    console.log('Step 5: Auto-settling bets...');
+    
+    // Get all pending bets that have a prediction_id
+    const { data: pendingBets } = await supabase
+      .from('sbo_actual_bets')
+      .select('id, prediction_id, stake_usd, odds_american')
+      .eq('outcome', 'pending')
+      .not('prediction_id', 'is', null);
+
+    if (!pendingBets?.length) {
+      log.steps.settle_bets = { status: 'skipped', reason: 'No pending bets with prediction_id' };
+      console.log('Step 5 skipped: no pending bets');
+    } else {
+      const predIds = pendingBets.map((b: any) => b.prediction_id);
+      
+      // Get verified predictions
+      const { data: verifiedPreds } = await supabase
+        .from('sbo_predictions')
+        .select('id, verdict, verified')
+        .in('id', predIds)
+        .eq('verified', true)
+        .not('verdict', 'is', null);
+
+      let settled = 0;
+      for (const pred of (verifiedPreds || [])) {
+        const bet = pendingBets.find((b: any) => b.prediction_id === pred.id);
+        if (!bet) continue;
+
+        const isWin = pred.verdict === 'correct';
+        const stake = bet.stake_usd || 0;
+        const oddsAmerican = bet.odds_american || -110;
+        
+        // Calculate payout
+        let payout = 0;
+        if (isWin) {
+          if (oddsAmerican > 0) {
+            payout = stake + (stake * oddsAmerican / 100);
+          } else {
+            payout = stake + (stake * 100 / Math.abs(oddsAmerican));
+          }
+        }
+        const profitLoss = isWin ? (payout - stake) : -stake;
+
+        await supabase
+          .from('sbo_actual_bets')
+          .update({
+            outcome: isWin ? 'win' : 'loss',
+            profit_loss: profitLoss,
+            actual_payout: payout,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', bet.id);
+        
+        settled++;
+      }
+
+      log.steps.settle_bets = { status: 'success', settled, total_pending: pendingBets.length };
+      console.log(`Step 5 done: ${settled} bets settled`);
+    }
+  } catch (e: any) {
+    log.steps.settle_bets = { status: 'failed', error: e.message };
+    log.errors.push('settle_bets: ' + e.message);
+    console.error('Step 5 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  // ── STEP 6: Update bankroll from settled bets ──
+  try {
+    console.log('Step 6: Updating bankroll...');
+    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+    // Get today's settled bets
+    const { data: settledBets } = await supabase
+      .from('sbo_actual_bets')
+      .select('profit_loss, outcome')
+      .in('outcome', ['win', 'loss'])
+      .gte('updated_at', `${todayEST}T00:00:00`);
+
+    const dailyPnl = (settledBets || []).reduce((sum: number, b: any) => sum + (b.profit_loss || 0), 0);
+    const wins = (settledBets || []).filter((b: any) => b.outcome === 'win').length;
+    const losses = (settledBets || []).filter((b: any) => b.outcome === 'loss').length;
+
+    // Get latest bankroll
+    const { data: latestBankroll } = await supabase
+      .from('sbo_bankroll')
+      .select('*')
+      .order('snapshot_date', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (latestBankroll) {
+      const prevBalance = latestBankroll.current_balance || latestBankroll.starting_balance || 0;
+      const newBalance = prevBalance + dailyPnl;
+      const totalPnl = (latestBankroll.total_pnl || 0) + dailyPnl;
+
+      await supabase.from('sbo_bankroll').upsert({
+        snapshot_date: todayEST,
+        starting_balance: latestBankroll.starting_balance || prevBalance,
+        current_balance: newBalance,
+        daily_pnl: dailyPnl,
+        total_pnl: totalPnl,
+        wins_today: wins,
+        losses_today: losses,
+        biggest_win: Math.max(latestBankroll.biggest_win || 0, ...((settledBets || []).filter((b: any) => b.profit_loss > 0).map((b: any) => b.profit_loss))),
+        biggest_loss: Math.min(latestBankroll.biggest_loss || 0, ...((settledBets || []).filter((b: any) => b.profit_loss < 0).map((b: any) => b.profit_loss))),
+      }, { onConflict: 'snapshot_date' });
+
+      log.steps.bankroll = { status: 'success', daily_pnl: dailyPnl, new_balance: newBalance, wins, losses };
+      console.log(`Step 6 done: P&L $${dailyPnl.toFixed(2)}, Balance $${newBalance.toFixed(2)}`);
+    } else {
+      log.steps.bankroll = { status: 'skipped', reason: 'No bankroll record found' };
+    }
+  } catch (e: any) {
+    log.steps.bankroll = { status: 'failed', error: e.message };
+    log.errors.push('bankroll: ' + e.message);
+    console.error('Step 6 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  // ── STEP 7: Auto-recalibrate model ──
+  try {
+    console.log('Step 7: Recalibrating model...');
+    const { data, error } = await supabase.functions.invoke('sbo-recalibrate', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.recalibrate = { status: 'success', buckets: data?.results?.length || 0 };
+    console.log('Step 7 done:', log.steps.recalibrate.buckets, 'buckets updated');
+  } catch (e: any) {
+    log.steps.recalibrate = { status: 'failed', error: e.message };
+    log.errors.push('recalibrate: ' + e.message);
+    console.error('Step 7 failed:', e.message);
+  }
+
   log.completed_at = new Date().toISOString();
   log.status = log.errors.length === 0 ? 'success' : log.errors.length < 4 ? 'partial' : 'failed';
 
