@@ -758,6 +758,7 @@ const SBOSimulationPage = lazy(() => import('@/pages/sports-betting/pages/Simula
 const SBOVAEntryPage = lazy(() => import('@/pages/sports-betting/pages/VAEntryPage'));
 const SBOPrizePicksPage = lazy(() => import('@/pages/sports-betting/pages/PrizePicksPage'));
 const SBOBovadaPage = lazy(() => import('@/pages/sports-betting/pages/BovadaPage'));
+const PropIntelligenceHub = lazy(() => import('@/pages/sports-betting/pages/PropIntelligenceHub'));
 const SBOSMSPage = lazy(() => import('@/pages/sports-betting/pages/SMSPage'));
 const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPage'));
 const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
@@ -1552,17 +1553,18 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/capper-intelligence" element={<SBOCapperTracker />} />
         <Route path="/sbo-ai-engine/signal-alignment" element={<SBOSignalAlignment />} />
         <Route path="/sbo-ai-engine/tonight" element={<SBOTonightPage />} />
-        <Route path="/sbo-ai-engine/props" element={<Navigate to="/sbo-ai-engine/bovada" replace />} />
-        <Route path="/sbo-ai-engine/props-intelligence" element={<Navigate to="/sbo-ai-engine/bovada" replace />} />
-        <Route path="/sbo-ai-engine/parlay" element={<Navigate to="/sbo-ai-engine/bovada" replace />} />
+        <Route path="/sbo-ai-engine/props" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
+        <Route path="/sbo-ai-engine/props-intelligence" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
+        <Route path="/sbo-ai-engine/parlay" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
         <Route path="/sbo-ai-engine/value" element={<SBOValuePage />} />
         <Route path="/sbo-ai-engine/accuracy" element={<SBOAccuracyPage />} />
         <Route path="/sbo-ai-engine/model" element={<SBOModelPage />} />
         <Route path="/sbo-ai-engine/my-bets" element={<SBOMyBetsPage />} />
         <Route path="/sbo-ai-engine/simulation" element={<SBOSimulationPage />} />
         <Route path="/sbo-ai-engine/va-entry" element={<SBOVAEntryPage />} />
-        <Route path="/sbo-ai-engine/prizepicks" element={<Navigate to="/sbo-ai-engine/bovada" replace />} />
-        <Route path="/sbo-ai-engine/bovada" element={<SBOBovadaPage />} />
+        <Route path="/sbo-ai-engine/prizepicks" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
+        <Route path="/sbo-ai-engine/bovada" element={<Navigate to="/sbo-ai-engine/prop-hub" replace />} />
+        <Route path="/sbo-ai-engine/prop-hub" element={<PropIntelligenceHub />} />
         <Route path="/sbo-ai-engine/sms" element={<SBOSMSPage />} />
         <Route path="/sbo-ai-engine/history" element={<SBOHistoryPage />} />
         <Route path="/sbo-ai-engine/health" element={<SBOHealthPage />} />

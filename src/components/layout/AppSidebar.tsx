@@ -538,7 +538,7 @@ export default function AppSidebar() {
               {renderSection('sbo-ai-engine', 'SBO AI Engine', '🧠', [
                 { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
                 { path: '/sbo-ai-engine/tonight', label: 'Tonight', emoji: '🏀' },
-                { path: '/sbo-ai-engine/bovada', label: 'Bovada Intelligence Hub', emoji: '💰' },
+                { path: '/sbo-ai-engine/prop-hub', label: 'Prop Intelligence Hub', emoji: '⚡' },
                 { path: '/sbo-ai-engine/value', label: 'Value Spots', emoji: '💎' },
                 { path: '/sbo-ai-engine/accuracy', label: 'Accuracy', emoji: '📈' },
                 { path: '/sbo-ai-engine/model', label: 'Model Intel', emoji: '🧬' },
