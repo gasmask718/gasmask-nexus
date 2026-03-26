@@ -824,7 +824,7 @@ export default function AppSidebar() {
                 { path: '/grabba/ai-insights', label: 'AI Insights', emoji: '💡' },
               ], "text-purple-400 hover:bg-purple-500/10")}
 
-              {/* SBO AI Engine moved to BrightSun Solar Hub */}
+              
             </div>
           )}
 
