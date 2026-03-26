@@ -55573,6 +55573,102 @@ export type Database = {
           },
         ]
       }
+      props_master: {
+        Row: {
+          actual_result: number | null
+          batch_id: string | null
+          confidence_score: number | null
+          created_at: string
+          edge_score: number | null
+          game_date: string | null
+          game_time: string | null
+          hit_rate: number | null
+          id: string
+          last_10_avg: number | null
+          last_5_avg: number | null
+          line: number
+          matchup_avg: number | null
+          odds: string | null
+          opponent: string | null
+          original_image_url: string | null
+          platform: string
+          player_name: string
+          prediction: string | null
+          reasoning_json: Json | null
+          result: string | null
+          season_avg: number | null
+          settled_at: string | null
+          source: string
+          sport: string | null
+          stat_type: string
+          team: string | null
+          updated_at: string
+          upload_group_id: string | null
+        }
+        Insert: {
+          actual_result?: number | null
+          batch_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          edge_score?: number | null
+          game_date?: string | null
+          game_time?: string | null
+          hit_rate?: number | null
+          id?: string
+          last_10_avg?: number | null
+          last_5_avg?: number | null
+          line: number
+          matchup_avg?: number | null
+          odds?: string | null
+          opponent?: string | null
+          original_image_url?: string | null
+          platform?: string
+          player_name: string
+          prediction?: string | null
+          reasoning_json?: Json | null
+          result?: string | null
+          season_avg?: number | null
+          settled_at?: string | null
+          source?: string
+          sport?: string | null
+          stat_type: string
+          team?: string | null
+          updated_at?: string
+          upload_group_id?: string | null
+        }
+        Update: {
+          actual_result?: number | null
+          batch_id?: string | null
+          confidence_score?: number | null
+          created_at?: string
+          edge_score?: number | null
+          game_date?: string | null
+          game_time?: string | null
+          hit_rate?: number | null
+          id?: string
+          last_10_avg?: number | null
+          last_5_avg?: number | null
+          line?: number
+          matchup_avg?: number | null
+          odds?: string | null
+          opponent?: string | null
+          original_image_url?: string | null
+          platform?: string
+          player_name?: string
+          prediction?: string | null
+          reasoning_json?: Json | null
+          result?: string | null
+          season_avg?: number | null
+          settled_at?: string | null
+          source?: string
+          sport?: string | null
+          stat_type?: string
+          team?: string | null
+          updated_at?: string
+          upload_group_id?: string | null
+        }
+        Relationships: []
+      }
       purchase_order_items: {
         Row: {
           computed_units_total: number | null
