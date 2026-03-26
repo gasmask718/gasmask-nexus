@@ -413,10 +413,14 @@ export default function SBOSignalAlignment() {
           </div>
           <div>
             <h1 className="text-xl font-bold">Signal Weighting Engine v2</h1>
-            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}% · Time Decay Active</p>
+            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}% · Bankroll ${bankrollAmount}</p>
           </div>
         </div>
-        <Select value={tierFilter} onValueChange={setTierFilter}>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground">Auto-Suggest</span>
+            <Switch checked={autoSuggest} onCheckedChange={setAutoSuggest} />
+          </div>
           <SelectTrigger className="w-40 h-8 text-xs">
             <Filter className="h-3 w-3 mr-1" />
             <SelectValue />
