@@ -707,6 +707,7 @@ const UnforgettableOnboarding = lazy(() => import('@/pages/os/unforgettable').th
 const UnforgettableCustomerService = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableCustomerService })));
 const UnforgettableMedia = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMedia })));
 const UnforgettableMediaDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMediaDetail })));
+const UTOutreachCommand = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachCommand })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
