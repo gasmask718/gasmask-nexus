@@ -784,7 +784,7 @@ export const PROP_TYPE_LABELS: Record<string, string> = {
 
 export const PROP_TYPE_ORDER = ['Points', 'Rebounds', 'Assists', '3-Pointers', 'Blocks', 'Steals', 'Turnovers', 'Pts+Reb+Ast', 'Pts+Reb', 'Pts+Ast', 'Reb+Ast', 'Fantasy Pts', 'Minutes', 'Double-Double', 'Triple-Double'];
 
-const normalizePropType = (raw: string): string => {
+export const normalizePropType = (raw: string): string => {
   if (!raw) return 'Other';
   return PROP_TYPE_LABELS[raw.toLowerCase().trim()] || raw;
 };
