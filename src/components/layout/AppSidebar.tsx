@@ -539,6 +539,7 @@ export default function AppSidebar() {
                 { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
                 { path: '/sbo-ai-engine/tonight', label: 'Tonight', emoji: '🏀' },
                 { path: '/sbo-ai-engine/props', label: 'Props', emoji: '📊' },
+                { path: '/sbo-ai-engine/props-intelligence', label: 'Props Intelligence', emoji: '🧠' },
                 { path: '/sbo-ai-engine/parlay', label: 'Parlay Builder', emoji: '🎰' },
                 { path: '/sbo-ai-engine/prizepicks', label: 'PrizePicks', emoji: '🎯' },
                 { path: '/sbo-ai-engine/bovada', label: 'Bovada', emoji: '🐂' },
