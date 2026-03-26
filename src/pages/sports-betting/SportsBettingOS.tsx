@@ -765,7 +765,7 @@ export function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }
 // ═══════════════════════════════════════════════════════════════
 // PLAYER PROPS TAB
 // ═══════════════════════════════════════════════════════════════
-const PROP_TYPE_LABELS: Record<string, string> = {
+export const PROP_TYPE_LABELS: Record<string, string> = {
   points: 'Points', pts: 'Points', player_points: 'Points', point: 'Points',
   rebounds: 'Rebounds', reb: 'Rebounds', player_rebounds: 'Rebounds', total_rebounds: 'Rebounds',
   assists: 'Assists', ast: 'Assists', player_assists: 'Assists',
