@@ -421,19 +421,21 @@ export default function SBOSignalAlignment() {
             <span className="text-[10px] text-muted-foreground">Auto-Suggest</span>
             <Switch checked={autoSuggest} onCheckedChange={setAutoSuggest} />
           </div>
-          <SelectTrigger className="w-40 h-8 text-xs">
-            <Filter className="h-3 w-3 mr-1" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Picks</SelectItem>
-            <SelectItem value="grandmaster">👑 Grandmaster</SelectItem>
-            <SelectItem value="elite">🔥 Elite</SelectItem>
-            <SelectItem value="solid">⚠️ Solid</SelectItem>
-            <SelectItem value="low">❌ Low</SelectItem>
-          </SelectContent>
-        </Select>
+          <Select value={tierFilter} onValueChange={setTierFilter}>
+            <SelectTrigger className="w-40 h-8 text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Picks</SelectItem>
+              <SelectItem value="grandmaster">👑 Grandmaster</SelectItem>
+              <SelectItem value="elite">🔥 Elite</SelectItem>
+              <SelectItem value="solid">⚠️ Solid</SelectItem>
+              <SelectItem value="low">❌ Low</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+      </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
