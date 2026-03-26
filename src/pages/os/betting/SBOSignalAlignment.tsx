@@ -319,12 +319,18 @@ export default function SBOSignalAlignment() {
       const capperAlignCount = matchedCappers.length;
       const topCapperCount = matchedCappers.filter(c => c.tier === 'elite').length;
 
-      // Conflict detection
+      // Conflict detection — NORMALIZED DIRECTION
       let conflictCount = 0;
-      const predDirection = (pred.pick_direction || '').toLowerCase();
+      const predDir = normalizeDirection(pred.pick_direction);
       walletEvents.forEach((w: any) => {
         const ms = structuredMatchScore(pred, { text: w.market_question || '' });
-        if (ms >= MATCH_THRESHOLD && w.side && predDirection && w.side.toLowerCase() !== predDirection) conflictCount++;
+        const walletDir = normalizeDirection(w.side);
+        if (ms >= MATCH_THRESHOLD && walletDir !== 'unknown' && predDir !== 'unknown' && walletDir !== predDir) conflictCount++;
+      });
+      capperPicks.forEach((c: any) => {
+        const ms = structuredMatchScore(pred, { text: c.pick_text || c.parsed_pick || '', player: c.player_name });
+        const capperDir = normalizeDirection(c.direction || c.pick_direction);
+        if (ms >= MATCH_THRESHOLD && capperDir !== 'unknown' && predDir !== 'unknown' && capperDir !== predDir) conflictCount++;
       });
 
       const aiConf = pred.confidence_score || 50;
@@ -339,8 +345,9 @@ export default function SBOSignalAlignment() {
       const rawScore = sboComponent + walletComponent + capperComponent - penalty;
       const finalScore = Math.round(Math.max(0, Math.min(100, rawScore)));
 
-      const pickTier = getTier(finalScore);
+      const tier = getTier(finalScore);
       const gm = isGrandmaster(finalScore, eliteWalletCount, aiConf, conflictCount);
+      const actualTier = gm ? 'grandmaster' : tier;
 
       // Best match quality label
       const allScores = [...matchedWallets.map(w => w.matchScore), ...matchedCappers.map(c => c.matchScore)];
@@ -351,8 +358,12 @@ export default function SBOSignalAlignment() {
       if (walletAlignCount > 0) sources.push('Wallet');
       if (capperAlignCount > 0) sources.push('Capper');
 
+      // BET SIZING
+      const bet = getRecommendedBet(actualTier, finalScore, aiConf, bankrollAmount, unitSize);
+
       const base: Omit<WeightedPick, 'reasoning'> = {
         key: pred.id,
+        predictionId: pred.id,
         playerOrMarket: pred.player_name || `${pred.home_team} vs ${pred.away_team}`,
         propType: pred.prop_type || pred.market_type,
         direction: pred.pick_direction,
@@ -372,9 +383,12 @@ export default function SBOSignalAlignment() {
         capperComponent,
         penalty,
         finalScore,
-        pickTier: gm ? 'grandmaster' : pickTier,
+        pickTier: actualTier,
         isGrandmaster: gm,
         matchQuality,
+        betUnits: bet.units,
+        betAmount: bet.amount,
+        riskLevel: bet.riskLevel,
       };
 
       return { ...base, reasoning: buildReasoning(base) };
