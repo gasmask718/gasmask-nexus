@@ -247,52 +247,65 @@ export default function UTOutreachCommand() {
               <span className="font-mono font-bold">{vaPerf?.conversion_rate || 0}%</span>
             </div>
           </div>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="gap-1.5 h-7"><Plus className="h-3.5 w-3.5" /> Add Lead</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Add Partner Lead</DialogTitle></DialogHeader>
-              <div className="grid gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Business Name *</Label><Input value={newLead.business_name} onChange={e => setNewLead(p => ({ ...p, business_name: e.target.value }))} /></div>
-                  <div><Label>Contact Name</Label><Input value={newLead.contact_name} onChange={e => setNewLead(p => ({ ...p, contact_name: e.target.value }))} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Category</Label>
-                    <Select value={newLead.category} onValueChange={v => setNewLead(p => ({ ...p, category: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
-                    </Select>
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => setShowImporter(true)}>
+              <FileSpreadsheet className="h-3.5 w-3.5" /> Import
+            </Button>
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-1.5 h-7"><Plus className="h-3.5 w-3.5" /> Add Lead</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle>Add Partner Lead</DialogTitle></DialogHeader>
+                <div className="grid gap-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Business Name *</Label><Input value={newLead.business_name} onChange={e => setNewLead(p => ({ ...p, business_name: e.target.value }))} /></div>
+                    <div><Label>Contact Name</Label><Input value={newLead.contact_name} onChange={e => setNewLead(p => ({ ...p, contact_name: e.target.value }))} /></div>
                   </div>
-                  <div><Label>Source</Label>
-                    <Select value={newLead.source} onValueChange={v => setNewLead(p => ({ ...p, source: v }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="manual">Manual</SelectItem>
-                        <SelectItem value="outscraper">Outscraper</SelectItem>
-                        <SelectItem value="inbound">Inbound</SelectItem>
-                        <SelectItem value="referral">Referral</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Category</Label>
+                      <Select value={newLead.category} onValueChange={v => setNewLead(p => ({ ...p, category: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>Source</Label>
+                      <Select value={newLead.source} onValueChange={v => setNewLead(p => ({ ...p, source: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="manual">Manual</SelectItem>
+                          <SelectItem value="outscraper">Outscraper</SelectItem>
+                          <SelectItem value="inbound">Inbound</SelectItem>
+                          <SelectItem value="referral">Referral</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Phone</Label><Input value={newLead.phone} onChange={e => setNewLead(p => ({ ...p, phone: e.target.value }))} /></div>
+                    <div><Label>Email</Label><Input value={newLead.email} onChange={e => setNewLead(p => ({ ...p, email: e.target.value }))} /></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>City</Label><Input value={newLead.city} onChange={e => setNewLead(p => ({ ...p, city: e.target.value }))} /></div>
+                    <div><Label>State</Label><Input value={newLead.state} onChange={e => setNewLead(p => ({ ...p, state: e.target.value }))} /></div>
+                  </div>
+                  <div><Label>Notes</Label><Textarea value={newLead.notes} onChange={e => setNewLead(p => ({ ...p, notes: e.target.value }))} /></div>
+                  <Button onClick={handleAddLead} disabled={createLead.isPending}>{createLead.isPending ? 'Adding...' : 'Add Lead'}</Button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>Phone</Label><Input value={newLead.phone} onChange={e => setNewLead(p => ({ ...p, phone: e.target.value }))} /></div>
-                  <div><Label>Email</Label><Input value={newLead.email} onChange={e => setNewLead(p => ({ ...p, email: e.target.value }))} /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><Label>City</Label><Input value={newLead.city} onChange={e => setNewLead(p => ({ ...p, city: e.target.value }))} /></div>
-                  <div><Label>State</Label><Input value={newLead.state} onChange={e => setNewLead(p => ({ ...p, state: e.target.value }))} /></div>
-                </div>
-                <div><Label>Notes</Label><Textarea value={newLead.notes} onChange={e => setNewLead(p => ({ ...p, notes: e.target.value }))} /></div>
-                <Button onClick={handleAddLead} disabled={createLead.isPending}>{createLead.isPending ? 'Adding...' : 'Add Lead'}</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
+      {/* Import overlay */}
+      {showImporter && (
+        <div className="absolute inset-0 z-50 bg-background/95 flex items-center justify-center p-8">
+          <div className="w-full max-w-lg">
+            <UTLeadImporter onClose={() => setShowImporter(false)} />
+          </div>
+        </div>
+      )}
       {/* ── 3-PANEL LAYOUT ──────────────────────────────────────── */}
       <div className="flex-1 flex overflow-hidden">
         {/* ═══ LEFT PANEL — CALL QUEUE ═══ */}
