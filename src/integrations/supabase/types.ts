@@ -72042,6 +72042,42 @@ export type Database = {
           },
         ]
       }
+      ut_customers: {
+        Row: {
+          city: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          preferences: Json | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          preferences?: Json | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          preferences?: Json | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ut_event_packages: {
         Row: {
           base_price: number | null
@@ -72098,6 +72134,83 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      ut_event_requests: {
+        Row: {
+          ai_recommendations: Json | null
+          budget_max: number | null
+          budget_min: number | null
+          budget_range: string | null
+          created_at: string
+          customer_email: string | null
+          customer_id: string | null
+          customer_name: string
+          customer_phone: string | null
+          event_date: string | null
+          event_type: string
+          guest_count: number | null
+          id: string
+          location_city: string | null
+          location_state: string | null
+          preferences: Json | null
+          special_requests: string | null
+          status: string
+          updated_at: string
+          venue_preference: string | null
+        }
+        Insert: {
+          ai_recommendations?: Json | null
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_range?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          event_date?: string | null
+          event_type: string
+          guest_count?: number | null
+          id?: string
+          location_city?: string | null
+          location_state?: string | null
+          preferences?: Json | null
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+          venue_preference?: string | null
+        }
+        Update: {
+          ai_recommendations?: Json | null
+          budget_max?: number | null
+          budget_min?: number | null
+          budget_range?: string | null
+          created_at?: string
+          customer_email?: string | null
+          customer_id?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          event_date?: string | null
+          event_type?: string
+          guest_count?: number | null
+          id?: string
+          location_city?: string | null
+          location_state?: string | null
+          preferences?: Json | null
+          special_requests?: string | null
+          status?: string
+          updated_at?: string
+          venue_preference?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_event_requests_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "ut_customers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_event_staff: {
         Row: {
@@ -72236,6 +72349,138 @@ export type Database = {
           venue_name?: string | null
         }
         Relationships: []
+      }
+      ut_generated_packages: {
+        Row: {
+          created_at: string
+          event_request_id: string | null
+          id: string
+          items: Json | null
+          margin_estimate: number | null
+          package_name: string
+          package_type: string | null
+          product_ids: string[] | null
+          recommendation_score: number | null
+          roi_summary: Json | null
+          status: string | null
+          total_estimated_cost: number | null
+          total_sell_price: number | null
+          upgrades: Json | null
+          vendor_ids: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          event_request_id?: string | null
+          id?: string
+          items?: Json | null
+          margin_estimate?: number | null
+          package_name: string
+          package_type?: string | null
+          product_ids?: string[] | null
+          recommendation_score?: number | null
+          roi_summary?: Json | null
+          status?: string | null
+          total_estimated_cost?: number | null
+          total_sell_price?: number | null
+          upgrades?: Json | null
+          vendor_ids?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          event_request_id?: string | null
+          id?: string
+          items?: Json | null
+          margin_estimate?: number | null
+          package_name?: string
+          package_type?: string | null
+          product_ids?: string[] | null
+          recommendation_score?: number | null
+          roi_summary?: Json | null
+          status?: string | null
+          total_estimated_cost?: number | null
+          total_sell_price?: number | null
+          upgrades?: Json | null
+          vendor_ids?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_generated_packages_event_request_id_fkey"
+            columns: ["event_request_id"]
+            isOneToOne: false
+            referencedRelation: "ut_event_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_orders: {
+        Row: {
+          balance_due: number | null
+          created_at: string
+          customer_id: string | null
+          deposit_amount: number | null
+          event_request_id: string | null
+          id: string
+          notes: string | null
+          order_number: string | null
+          order_status: string | null
+          package_id: string | null
+          payment_status: string | null
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          balance_due?: number | null
+          created_at?: string
+          customer_id?: string | null
+          deposit_amount?: number | null
+          event_request_id?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string | null
+          order_status?: string | null
+          package_id?: string | null
+          payment_status?: string | null
+          total_price?: number
+          updated_at?: string
+        }
+        Update: {
+          balance_due?: number | null
+          created_at?: string
+          customer_id?: string | null
+          deposit_amount?: number | null
+          event_request_id?: string | null
+          id?: string
+          notes?: string | null
+          order_number?: string | null
+          order_status?: string | null
+          package_id?: string | null
+          payment_status?: string | null
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_orders_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "ut_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_orders_event_request_id_fkey"
+            columns: ["event_request_id"]
+            isOneToOne: false
+            referencedRelation: "ut_event_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_orders_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ut_generated_packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_outreach_logs: {
         Row: {
@@ -83631,6 +83876,10 @@ export type Database = {
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
       ut_calculate_ai_scores: { Args: never; Returns: number }
+      ut_generate_recommendations: {
+        Args: { p_event_request_id: string }
+        Returns: Json
+      }
       ut_get_lead_stats: { Args: never; Returns: Json }
       ut_get_outcome_distribution: { Args: never; Returns: Json }
       ut_get_territory_heatmap: {
