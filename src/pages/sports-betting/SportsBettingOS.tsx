@@ -2546,7 +2546,7 @@ export function AccuracyHistoryWidget() {
 // ACCURACY TAB
 // ═══════════════════════════════════════════════════════════════
 
-function AccuracyTab() {
+export function AccuracyTab() {
   const [verifying, setVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState('');
   const queryClient = useQueryClient();
