@@ -717,17 +717,6 @@ const Layout = ({ children }: LayoutProps) => {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      {/* 🧠 SBO AI ENGINE — STANDALONE HUB */}
-      {/* ═══════════════════════════════════════════════════════════════════ */}
-      <div className="pt-2 border-t border-border/50">
-        {renderSection(
-          DYNASTY_NAVIGATION.sboAiEngine.id,
-          DYNASTY_NAVIGATION.sboAiEngine.name,
-          DYNASTY_NAVIGATION.sboAiEngine.items
-        )}
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🛡️ SECURITY & GOVERNANCE — Constitutional Layer (Owner/Admin/CEO Only) */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {['owner', 'admin', 'ceo'].includes(role || '') && (
@@ -865,6 +854,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.solarOs.id,
           DYNASTY_NAVIGATION.solarOs.name,
           DYNASTY_NAVIGATION.solarOs.items
+        )}
+      </div>
+
+      {/* 🧠 SBO AI ENGINE — OWN HUB (UNDER BRIGHTSUN SOLAR HUB) */}
+      <div className="pt-2 border-t border-lime-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-lime-400/80 tracking-wider">
+          🧠 SBO AI Engine
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.sboAiEngine.id,
+          DYNASTY_NAVIGATION.sboAiEngine.name,
+          DYNASTY_NAVIGATION.sboAiEngine.items
         )}
       </div>
 
