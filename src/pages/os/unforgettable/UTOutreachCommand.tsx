@@ -89,14 +89,21 @@ export default function UTOutreachCommand() {
   });
 
   // Queries
-  const { data: leads = [], isLoading } = useUTPartnerLeads({
+  const { data: leadsResult, isLoading } = useUTPartnerLeads({
     queueMode: queueMode as any,
     category: categoryFilter !== 'all' ? categoryFilter : undefined,
     search: searchText || undefined,
+    page: currentPage,
   });
+  const leads = leadsResult?.leads || [];
+  const totalCount = leadsResult?.totalCount || 0;
+  const totalPages = leadsResult?.totalPages || 1;
+
   const { data: stats } = useUTLeadStats();
   const { data: vaPerf } = useUTVAPerformance();
-  const { data: outreachLogs = [] } = useUTOutreachLogs(selectedLead?.id);
+  const { data: logsData, fetchNextPage: fetchMoreLogs, hasNextPage: hasMoreLogs } = useUTOutreachLogs(selectedLead?.id);
+  const allLogs = useMemo(() => logsData?.pages?.flatMap(p => p.logs) || [], [logsData]);
+  const logsCount = logsData?.pages?.[0]?.totalCount || 0;
   const { data: onboarding } = useUTOnboarding(selectedLead?.id);
   const { data: outcomeDist } = useUTOutcomeDistribution();
   const {
