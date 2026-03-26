@@ -393,7 +393,7 @@ export default function SBOSignalAlignment() {
 
       return { ...base, reasoning: buildReasoning(base) };
     }).sort((a: WeightedPick, b: WeightedPick) => b.finalScore - a.finalScore);
-  }, [predictions, walletEvents, capperPicks]);
+  }, [predictions, walletEvents, capperPicks, bankrollAmount, unitSize]);
 
   const filtered = tierFilter === 'all'
     ? weightedPicks
