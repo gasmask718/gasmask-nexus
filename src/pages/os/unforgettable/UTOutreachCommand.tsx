@@ -256,6 +256,9 @@ export default function UTOutreachCommand() {
             <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/territory')}>
               <Target className="h-3.5 w-3.5" /> Territory
             </Button>
+            <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => navigate('/os/unforgettable/products')}>
+              <Package className="h-3.5 w-3.5" /> Products
+            </Button>
             <Button size="sm" variant="outline" className="gap-1.5 h-7" onClick={() => setShowImporter(true)}>
               <FileSpreadsheet className="h-3.5 w-3.5" /> Import
             </Button>
