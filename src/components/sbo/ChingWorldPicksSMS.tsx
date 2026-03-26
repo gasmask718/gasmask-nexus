@@ -404,7 +404,7 @@ export function ChingWorldPicksSMS() {
             <ScrollArea className="h-40">
               <div className="space-y-1">
                 {automationLogs.map((log: any) => {
-                  const steps = log.steps || [];
+                  const steps = Array.isArray(log.steps) ? log.steps : [];
                   const successSteps = steps.filter((s: any) => s.status === "success").length;
                   const totalDuration = steps.reduce((a: number, s: any) => a + (s.duration_ms || 0), 0);
                   return (
