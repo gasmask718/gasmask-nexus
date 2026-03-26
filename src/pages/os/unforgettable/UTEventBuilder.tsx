@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,10 +11,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Sparkles, PartyPopper, Users, MapPin, Calendar, DollarSign, Package,
-  ShoppingCart, Star, TrendingUp, ArrowRight, Plus, Eye, CheckCircle, Loader2
+  ShoppingCart, Star, TrendingUp, ArrowRight, Plus, Eye, CheckCircle, Loader2,
+  CreditCard, RefreshCw
 } from 'lucide-react';
 import { useUTEventRequests, useUTCustomerMutations, useUTOrders } from '@/hooks/useUTCustomerEngine';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const EVENT_TYPES = [
   'birthday', 'wedding', 'corporate', 'baby_shower', 'graduation',
