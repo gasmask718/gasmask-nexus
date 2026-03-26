@@ -216,6 +216,23 @@ export default function PropIntelligenceHub() {
         </div>
       )}
 
+      {/* Time Range Selector */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex bg-muted/50 rounded-lg p-0.5 gap-0.5">
+          {TIME_RANGES.map(tr => (
+            <Button
+              key={tr.value}
+              variant={timeRange === tr.value && !gameDate ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 px-3 text-xs"
+              onClick={() => { setTimeRange(tr.value); setGameDate(''); setPage(1); }}
+            >
+              {tr.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
