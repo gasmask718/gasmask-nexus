@@ -288,6 +288,8 @@ export default function SBOSignalAlignment() {
 
   const bankrollAmount = bankroll?.current_bankroll || 500;
   const unitSize = bankroll?.unit_size || bankrollAmount * 0.02;
+
+  const weightedPicks = useMemo<WeightedPick[]>(() => {
     if (!predictions.length) return [];
 
     return predictions.map((pred: any) => {
