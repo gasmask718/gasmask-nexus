@@ -28,3 +28,4 @@ export { default as UnforgettableMedia } from './UnforgettableMedia';
 export { default as UnforgettableMediaDetail } from './UnforgettableMediaDetail';
 export { default as UTOutreachCommand } from './UTOutreachCommand';
 export { default as UTTerritoryIntelligence } from './UTTerritoryIntelligence';
+export { default as UTPlacesLeadFinder } from './UTPlacesLeadFinder';
