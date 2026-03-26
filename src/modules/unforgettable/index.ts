@@ -13,6 +13,7 @@ import UTOutreachCommand from '@/pages/os/unforgettable/UTOutreachCommand';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/unforgettable', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/os/unforgettable/outreach', label: 'Outreach Command', icon: Phone },
   { path: '/os/unforgettable/staff', label: 'Staff', icon: UserCog },
   { path: '/os/unforgettable/scheduling', label: 'Scheduling', icon: CalendarDays },
   { path: '/os/unforgettable/payroll', label: 'Payroll', icon: DollarSign },
