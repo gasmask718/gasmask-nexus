@@ -13,7 +13,15 @@ import {
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
   CheckCircle, XCircle, Clock
 } from 'lucide-react';
-import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster } from '@/hooks/usePropsMaster';
+import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
+
+const TIME_RANGES: { value: TimeRange; label: string }[] = [
+  { value: 'today', label: 'Today' },
+  { value: 'yesterday', label: 'Yesterday' },
+  { value: '7d', label: '7D' },
+  { value: '30d', label: '30D' },
+  { value: 'all', label: 'All' },
+];
 
 const PLATFORMS = [
   { value: 'all', label: 'All Platforms' },
@@ -32,6 +40,7 @@ function getTodayEST() {
 
 export default function PropIntelligenceHub() {
   const [platform, setPlatform] = useState('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const [gameDate, setGameDate] = useState('');
   const [minConfidence, setMinConfidence] = useState(0);
   const [bestOnly, setBestOnly] = useState(false);
@@ -46,6 +55,7 @@ export default function PropIntelligenceHub() {
   const { data, isLoading, refetch } = usePropsMaster({
     platform,
     gameDate: gameDate || undefined,
+    timeRange: gameDate ? undefined : timeRange,
     minConfidence: minConfidence || undefined,
     searchPlayer: searchPlayer || undefined,
     page,
@@ -55,7 +65,7 @@ export default function PropIntelligenceHub() {
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  const { data: stats } = usePropsMasterStats(gameDate || undefined);
+  const { data: stats } = usePropsMasterStats(gameDate || undefined, gameDate ? undefined : timeRange);
   const { data: crossIntel = [] } = usePropCrossIntelligence(selectedProp?.player_name, selectedProp?.stat_type);
   const { syncBooks, runAnalysis, uploadImage } = usePropMutations();
 
@@ -205,6 +215,23 @@ export default function PropIntelligenceHub() {
             ))}
         </div>
       )}
+
+      {/* Time Range Selector */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <div className="flex bg-muted/50 rounded-lg p-0.5 gap-0.5">
+          {TIME_RANGES.map(tr => (
+            <Button
+              key={tr.value}
+              variant={timeRange === tr.value && !gameDate ? 'default' : 'ghost'}
+              size="sm"
+              className="h-7 px-3 text-xs"
+              onClick={() => { setTimeRange(tr.value); setGameDate(''); setPage(1); }}
+            >
+              {tr.label}
+            </Button>
+          ))}
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 items-center">

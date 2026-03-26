@@ -38,9 +38,47 @@ export interface PropMaster {
 const KEY = 'props-master';
 
 // ── Paginated props query ────────────────────────────────────────────────────
+export type TimeRange = 'today' | 'yesterday' | '7d' | '30d' | 'all';
+
+export function getDateRangeForTimeRange(range: TimeRange): { start?: string; end?: string } {
+  const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const d = new Date(todayEST + 'T00:00:00');
+  switch (range) {
+    case 'today':
+      return { start: todayEST, end: todayEST };
+    case 'yesterday': {
+      const y = new Date(d);
+      y.setDate(y.getDate() - 1);
+      const ys = y.toISOString().slice(0, 10);
+      return { start: ys, end: ys };
+    }
+    case '7d': {
+      const s = new Date(d);
+      s.setDate(s.getDate() - 6);
+      return { start: s.toISOString().slice(0, 10), end: todayEST };
+    }
+    case '30d': {
+      const s = new Date(d);
+      s.setDate(s.getDate() - 29);
+      return { start: s.toISOString().slice(0, 10), end: todayEST };
+    }
+    default:
+      return {};
+  }
+}
+
+function applyDateRange(query: any, range?: TimeRange) {
+  if (!range || range === 'all') return query;
+  const { start, end } = getDateRangeForTimeRange(range);
+  if (start) query = query.gte('game_date', start);
+  if (end) query = query.lte('game_date', end);
+  return query;
+}
+
 export function usePropsMaster(filters?: {
   platform?: string;
   gameDate?: string;
+  timeRange?: TimeRange;
   minConfidence?: number;
   result?: string;
   searchPlayer?: string;
@@ -66,6 +104,8 @@ export function usePropsMaster(filters?: {
       }
       if (filters?.gameDate) {
         query = query.eq('game_date', filters.gameDate);
+      } else if (filters?.timeRange && filters.timeRange !== 'all') {
+        query = applyDateRange(query, filters.timeRange);
       }
       if (filters?.minConfidence) {
         query = query.gte('confidence_score', filters.minConfidence);
@@ -88,13 +128,14 @@ export function usePropsMaster(filters?: {
 }
 
 // ── Full stats from DB (no row limit) ────────────────────────────────────────
-export function usePropsMasterStats(gameDate?: string) {
+export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
   return useQuery({
-    queryKey: ['props-master-stats', gameDate],
+    queryKey: ['props-master-stats', gameDate, timeRange],
     queryFn: async () => {
       // Use separate count queries to avoid row limits
       const baseFilter = (q: any) => {
         if (gameDate) return q.eq('game_date', gameDate);
+        if (timeRange && timeRange !== 'all') return applyDateRange(q, timeRange);
         return q;
       };
 
