@@ -72190,6 +72190,7 @@ export type Database = {
           notes: string | null
           outcome: string
           performed_by: string | null
+          template_name: string | null
         }
         Insert: {
           channel?: string
@@ -72200,6 +72201,7 @@ export type Database = {
           notes?: string | null
           outcome?: string
           performed_by?: string | null
+          template_name?: string | null
         }
         Update: {
           channel?: string
@@ -72210,6 +72212,7 @@ export type Database = {
           notes?: string | null
           outcome?: string
           performed_by?: string | null
+          template_name?: string | null
         }
         Relationships: [
           {
@@ -72223,57 +72226,99 @@ export type Database = {
       }
       ut_partner_leads: {
         Row: {
+          ai_call_eligible: boolean
+          ai_call_last_attempt_at: string | null
+          ai_call_result: string | null
+          ai_handoff_reason: string | null
           ai_score: number | null
           ai_score_reasons: Json | null
           assigned_to: string | null
+          assigned_va: string | null
+          best_time_to_call: string | null
           business_name: string
+          callback_due_at: string | null
           category: string
           city: string | null
           contact_name: string | null
           created_at: string
           email: string | null
+          follow_up_at: string | null
           id: string
+          last_contacted_at: string | null
+          last_outcome: string | null
           notes: string | null
           onboarded_at: string | null
+          outreach_count: number
+          owner_verified: boolean
           phone: string | null
+          priority_bucket: string | null
+          recommended_ai_agent: string | null
           source: string | null
           state: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          ai_call_eligible?: boolean
+          ai_call_last_attempt_at?: string | null
+          ai_call_result?: string | null
+          ai_handoff_reason?: string | null
           ai_score?: number | null
           ai_score_reasons?: Json | null
           assigned_to?: string | null
+          assigned_va?: string | null
+          best_time_to_call?: string | null
           business_name: string
+          callback_due_at?: string | null
           category?: string
           city?: string | null
           contact_name?: string | null
           created_at?: string
           email?: string | null
+          follow_up_at?: string | null
           id?: string
+          last_contacted_at?: string | null
+          last_outcome?: string | null
           notes?: string | null
           onboarded_at?: string | null
+          outreach_count?: number
+          owner_verified?: boolean
           phone?: string | null
+          priority_bucket?: string | null
+          recommended_ai_agent?: string | null
           source?: string | null
           state?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          ai_call_eligible?: boolean
+          ai_call_last_attempt_at?: string | null
+          ai_call_result?: string | null
+          ai_handoff_reason?: string | null
           ai_score?: number | null
           ai_score_reasons?: Json | null
           assigned_to?: string | null
+          assigned_va?: string | null
+          best_time_to_call?: string | null
           business_name?: string
+          callback_due_at?: string | null
           category?: string
           city?: string | null
           contact_name?: string | null
           created_at?: string
           email?: string | null
+          follow_up_at?: string | null
           id?: string
+          last_contacted_at?: string | null
+          last_outcome?: string | null
           notes?: string | null
           onboarded_at?: string | null
+          outreach_count?: number
+          owner_verified?: boolean
           phone?: string | null
+          priority_bucket?: string | null
+          recommended_ai_agent?: string | null
           source?: string | null
           state?: string | null
           status?: string
@@ -72298,6 +72343,7 @@ export type Database = {
           rating: number | null
           services_offered: string[] | null
           social_links: Json | null
+          source_lead_id: string | null
           state: string | null
           updated_at: string
           website: string | null
@@ -72318,6 +72364,7 @@ export type Database = {
           rating?: number | null
           services_offered?: string[] | null
           social_links?: Json | null
+          source_lead_id?: string | null
           state?: string | null
           updated_at?: string
           website?: string | null
@@ -72338,6 +72385,7 @@ export type Database = {
           rating?: number | null
           services_offered?: string[] | null
           social_links?: Json | null
+          source_lead_id?: string | null
           state?: string | null
           updated_at?: string
           website?: string | null
@@ -72346,6 +72394,13 @@ export type Database = {
           {
             foreignKeyName: "ut_partner_profiles_lead_id_fkey"
             columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_profiles_source_lead_id_fkey"
+            columns: ["source_lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
             referencedColumns: ["id"]
