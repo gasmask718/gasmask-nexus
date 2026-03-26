@@ -1580,7 +1580,7 @@ export function VAPropEntryTab() {
 // PARLAY CARD COMPONENT (AI Builder)
 // ═══════════════════════════════════════════════════════════════
 
-function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: number; onSave: () => void }) {
+export function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: number; onSave: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [saved, setSaved] = useState(false);
 
