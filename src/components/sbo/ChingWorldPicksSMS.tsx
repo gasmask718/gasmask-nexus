@@ -253,9 +253,11 @@ export function ChingWorldPicksSMS() {
     try {
       const { data, error } = await supabase.functions.invoke("sbo-daily-automation", { body: {} });
       if (error) throw error;
-      const stepsDone = data?.steps?.filter((s: any) => s.status === "success")?.length || 0;
-      const stepsTotal = data?.steps?.length || 0;
-      const errs = data?.errors?.length || 0;
+      const safeSteps = Array.isArray(data?.steps) ? data.steps : [];
+      const safeErrors = Array.isArray(data?.errors) ? data.errors : [];
+      const stepsDone = safeSteps.filter((s: any) => s.status === "success").length;
+      const stepsTotal = safeSteps.length;
+      const errs = safeErrors.length;
       setAutomationProgress(`✅ Complete — ${stepsDone}/${stepsTotal} steps succeeded${errs > 0 ? `, ${errs} error(s)` : ""}`);
       toast.success(`Automation complete: ${stepsDone}/${stepsTotal} steps`);
       queryClient.invalidateQueries({ queryKey: ["sbo-automation-log"] });
@@ -404,7 +406,7 @@ export function ChingWorldPicksSMS() {
             <ScrollArea className="h-40">
               <div className="space-y-1">
                 {automationLogs.map((log: any) => {
-                  const steps = log.steps || [];
+                  const steps = Array.isArray(log.steps) ? log.steps : [];
                   const successSteps = steps.filter((s: any) => s.status === "success").length;
                   const totalDuration = steps.reduce((a: number, s: any) => a + (s.duration_ms || 0), 0);
                   return (
