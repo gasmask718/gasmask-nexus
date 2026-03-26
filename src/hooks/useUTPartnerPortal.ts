@@ -105,7 +105,7 @@ export function useUpsertListing() {
     mutationFn: async (listing: Record<string, any>) => {
       const { data, error } = await supabase
         .from('ut_listings')
-        .upsert({ ...listing, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+        .upsert({ ...listing, updated_at: new Date().toISOString() } as any, { onConflict: 'id' })
         .select()
         .single();
       if (error) throw error;
