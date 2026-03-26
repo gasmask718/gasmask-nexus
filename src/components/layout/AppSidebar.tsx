@@ -524,7 +524,17 @@ export default function AppSidebar() {
                 { path: '/solar/ai-brain', label: 'Floor 9 — AI Brain', emoji: '🧠' },
                 { path: '/solar/analytics', label: 'Floor 10 — Analytics', emoji: '📊' },
               ], "text-amber-400 hover:bg-amber-500/10")}
+            </div>
+          )}
 
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* 🧠 SBO AI ENGINE — STANDALONE HUB */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {isAdmin && (
+            <div className="mb-4 pt-2 border-t border-sidebar-border">
+              <div className="px-3 py-2 text-xs font-semibold uppercase text-lime-400/80 tracking-wider">
+                🧠 SBO AI Engine
+              </div>
               {renderSection('sbo-ai-engine', 'SBO AI Engine', '🧠', [
                 { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
                 { path: '/sbo-ai-engine/tonight', label: 'Tonight', emoji: '🏀' },
@@ -540,13 +550,14 @@ export default function AppSidebar() {
                 { path: '/sbo-ai-engine/capper-intelligence', label: 'Capper Intelligence', emoji: '📊' },
                 { path: '/sbo-ai-engine/signal-alignment', label: 'Signal Alignment', emoji: '⚡' },
                 { path: '/os/sports-betting/profit-center', label: 'Profit Center', emoji: '💰' },
+                { path: '/sbo-ai-engine/hedge-center', label: 'Hedge Center', emoji: '💹' },
                 { path: '/sbo-ai-engine/simulation', label: 'Simulation', emoji: '⚡' },
                 { path: '/sbo-ai-engine/history', label: 'History', emoji: '📜' },
                 { path: '/sbo-ai-engine/sms', label: 'ChingWorld SMS', emoji: '📱' },
                 { path: '/sbo-ai-engine/health', label: 'Health', emoji: '🩺' },
                 { path: '/sbo-ai-engine/sync', label: 'Sync', emoji: '⚙️' },
                 { path: '/sbo-ai-engine/va-entry', label: 'VA Entry', emoji: '📋' },
-              ], "text-amber-400 hover:bg-amber-500/10")}
+              ], "text-lime-400 hover:bg-lime-500/10")}
             </div>
           )}
 
