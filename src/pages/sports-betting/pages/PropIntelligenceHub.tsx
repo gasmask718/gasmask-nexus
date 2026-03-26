@@ -40,6 +40,7 @@ function getTodayEST() {
 
 export default function PropIntelligenceHub() {
   const [platform, setPlatform] = useState('all');
+  const [timeRange, setTimeRange] = useState<TimeRange>('today');
   const [gameDate, setGameDate] = useState('');
   const [minConfidence, setMinConfidence] = useState(0);
   const [bestOnly, setBestOnly] = useState(false);
