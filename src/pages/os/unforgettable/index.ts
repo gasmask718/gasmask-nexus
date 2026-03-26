@@ -27,3 +27,4 @@ export { default as UnforgettableCustomerService } from './UnforgettableCustomer
 export { default as UnforgettableMedia } from './UnforgettableMedia';
 export { default as UnforgettableMediaDetail } from './UnforgettableMediaDetail';
 export { default as UTOutreachCommand } from './UTOutreachCommand';
+export { default as UTTerritoryIntelligence } from './UTTerritoryIntelligence';
