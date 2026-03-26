@@ -31,6 +31,7 @@ export default function AppSidebar() {
   const getActiveSection = (pathname: string): string | null => {
     if (pathname.startsWith('/surplus-funds')) return 'surplus-funds-os';
     if (pathname.startsWith('/solar')) return 'solar-os';
+    if (pathname.startsWith('/sbo-ai-engine') || pathname.startsWith('/os/sports-betting')) return 'solar-os';
     if (pathname.startsWith('/real-estate')) return 'real-estate-os';
     if (pathname.startsWith('/dynasty-connect')) return 'dynasty-connect';
     if (pathname.startsWith('/brandaro')) return 'brandaro-hub';
