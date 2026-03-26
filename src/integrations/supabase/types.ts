@@ -83107,6 +83107,9 @@ export type Database = {
       }
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
+      ut_get_lead_stats: { Args: never; Returns: Json }
+      ut_get_outcome_distribution: { Args: never; Returns: Json }
+      ut_get_va_performance: { Args: never; Returns: Json }
       validate_agent_state_transition: {
         Args: { p_current_status: string; p_new_status: string }
         Returns: boolean
