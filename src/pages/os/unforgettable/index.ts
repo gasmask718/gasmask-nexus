@@ -32,3 +32,4 @@ export { default as UTPlacesLeadFinder } from './UTPlacesLeadFinder';
 export { default as UTProductEngine } from './UTProductEngine';
 export { default as UTSupplierConsole } from './UTSupplierConsole';
 export { default as UTEventBuilder } from './UTEventBuilder';
+export { default as UTPartnerDashboard } from './partner/UTPartnerDashboard';
