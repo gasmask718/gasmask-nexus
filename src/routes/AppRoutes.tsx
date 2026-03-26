@@ -747,6 +747,7 @@ const SBOCapperTracker = lazy(() => import('@/pages/os/betting/SBOCapperTracker'
 const SBOSignalAlignment = lazy(() => import('@/pages/os/betting/SBOSignalAlignment'));
 const SBOTonightPage = lazy(() => import('@/pages/sports-betting/pages/TonightPage'));
 const SBOPropsPage = lazy(() => import('@/pages/sports-betting/pages/PropsPage'));
+const SBOPropsIntelligencePage = lazy(() => import('@/pages/sports-betting/pages/PropsIntelligencePage'));
 const SBOParlayPage = lazy(() => import('@/pages/sports-betting/pages/ParlayPage'));
 const SBOValuePage = lazy(() => import('@/pages/sports-betting/pages/ValuePage'));
 const SBOAccuracyPage = lazy(() => import('@/pages/sports-betting/pages/AccuracyPage'));
@@ -1551,6 +1552,7 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/signal-alignment" element={<SBOSignalAlignment />} />
         <Route path="/sbo-ai-engine/tonight" element={<SBOTonightPage />} />
         <Route path="/sbo-ai-engine/props" element={<SBOPropsPage />} />
+        <Route path="/sbo-ai-engine/props-intelligence" element={<SBOPropsIntelligencePage />} />
         <Route path="/sbo-ai-engine/parlay" element={<SBOParlayPage />} />
         <Route path="/sbo-ai-engine/value" element={<SBOValuePage />} />
         <Route path="/sbo-ai-engine/accuracy" element={<SBOAccuracyPage />} />

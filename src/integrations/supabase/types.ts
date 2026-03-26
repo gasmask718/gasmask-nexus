@@ -58605,6 +58605,48 @@ export type Database = {
           },
         ]
       }
+      sbo_analysis_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          job_type: string
+          params: Json | null
+          progress: number | null
+          results: Json | null
+          started_at: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_type?: string
+          params?: Json | null
+          progress?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          job_type?: string
+          params?: Json | null
+          progress?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       sbo_api_budget: {
         Row: {
           alert_threshold_pct: number | null
@@ -61747,6 +61789,90 @@ export type Database = {
           win_rate?: number | null
         }
         Relationships: []
+      }
+      sbo_unified_props: {
+        Row: {
+          ai_confidence: number | null
+          ai_direction: string | null
+          analysis_job_id: string | null
+          best_platform: boolean | null
+          created_at: string
+          edge_vs_line: number | null
+          game_date: string
+          game_id: string | null
+          id: string
+          l10_avg: number | null
+          l5_avg: number | null
+          line: number
+          matchup_avg: number | null
+          over_odds: number | null
+          platform: string
+          player_name: string
+          season_avg: number | null
+          stat_type: string
+          team: string | null
+          under_odds: number | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_direction?: string | null
+          analysis_job_id?: string | null
+          best_platform?: boolean | null
+          created_at?: string
+          edge_vs_line?: number | null
+          game_date: string
+          game_id?: string | null
+          id?: string
+          l10_avg?: number | null
+          l5_avg?: number | null
+          line: number
+          matchup_avg?: number | null
+          over_odds?: number | null
+          platform: string
+          player_name: string
+          season_avg?: number | null
+          stat_type: string
+          team?: string | null
+          under_odds?: number | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_direction?: string | null
+          analysis_job_id?: string | null
+          best_platform?: boolean | null
+          created_at?: string
+          edge_vs_line?: number | null
+          game_date?: string
+          game_id?: string | null
+          id?: string
+          l10_avg?: number | null
+          l5_avg?: number | null
+          line?: number
+          matchup_avg?: number | null
+          over_odds?: number | null
+          platform?: string
+          player_name?: string
+          season_avg?: number | null
+          stat_type?: string
+          team?: string | null
+          under_odds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_unified_props_analysis_job_id_fkey"
+            columns: ["analysis_job_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_analysis_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_unified_props_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_games"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sbo_unit_log: {
         Row: {
