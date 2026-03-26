@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Wallet, Users, Shield, Crown, Flame, AlertTriangle, Filter, Clock } from 'lucide-react';
+import { Brain, Wallet, Users, Shield, Crown, Flame, AlertTriangle, Filter, Clock, DollarSign } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 
 // === WEIGHTING CONFIG ===
 const WEIGHTS = { ai: 0.4, wallet: 0.4, capper: 0.2 };
@@ -30,6 +32,18 @@ const CAPPER_TIER_POINTS: Record<string, number> = {
   weak: 3,
 };
 
+// === PART 1: DIRECTION NORMALIZATION ENGINE ===
+const DIRECTION_MAP: Record<string, 'positive' | 'negative'> = {
+  over: 'positive', yes: 'positive', more: 'positive', up: 'positive', high: 'positive',
+  under: 'negative', no: 'negative', less: 'negative', down: 'negative', low: 'negative',
+};
+
+function normalizeDirection(input: string | null | undefined): 'positive' | 'negative' | 'unknown' {
+  if (!input) return 'unknown';
+  const key = input.trim().toLowerCase();
+  return DIRECTION_MAP[key] || 'unknown';
+}
+
 // === UPGRADE #5: TIME DECAY ===
 function getTimeDecay(eventTime: string | null): number {
   if (!eventTime) return 0.4;
@@ -38,6 +52,63 @@ function getTimeDecay(eventTime: string | null): number {
   if (hoursAgo < 3) return 0.8;
   if (hoursAgo < 6) return 0.6;
   return 0.4;
+}
+
+// === PART 2: BET SIZING ENGINE ===
+interface BetRecommendation {
+  units: number;
+  amount: number;
+  riskLevel: 'Low' | 'Medium' | 'Medium-High' | 'High';
+  kellyFraction: number;
+}
+
+function getRecommendedBet(
+  pickTier: string,
+  finalScore: number,
+  aiConfidence: number,
+  bankrollAmount: number,
+  unitSize: number,
+): BetRecommendation {
+  let units = 0;
+  let kellyFraction = 0;
+  let riskLevel: BetRecommendation['riskLevel'] = 'Low';
+
+  if (pickTier === 'grandmaster') {
+    units = finalScore >= 95 ? 5 : 4;
+    kellyFraction = 0.75;
+    riskLevel = 'High';
+  } else if (pickTier === 'elite') {
+    units = finalScore >= 80 ? 3 : 2;
+    kellyFraction = 0.5;
+    riskLevel = 'Medium-High';
+  } else if (pickTier === 'solid') {
+    units = finalScore >= 60 ? 2 : 1;
+    kellyFraction = 0.25;
+    riskLevel = 'Medium';
+  } else {
+    // low — skip or minimal
+    units = 0;
+    kellyFraction = 0;
+    riskLevel = 'Low';
+  }
+
+  // Kelly-based sizing: kellyFraction * edge * bankroll
+  const edge = (aiConfidence - 50) / 100; // simplified edge
+  const kellyAmount = kellyFraction * Math.max(edge, 0) * bankrollAmount;
+  const unitAmount = units * unitSize;
+
+  // Use the more conservative of the two
+  const amount = Math.min(kellyAmount || unitAmount, unitAmount);
+  // Cap at 5% of bankroll per bet
+  const maxBet = bankrollAmount * 0.05;
+  const cappedAmount = Math.min(amount, maxBet);
+
+  return {
+    units,
+    amount: Math.round(cappedAmount * 100) / 100,
+    riskLevel,
+    kellyFraction,
+  };
 }
 
 // === UPGRADE #1: STRUCTURED MATCHING ===
@@ -122,6 +193,11 @@ interface WeightedPick {
   isGrandmaster: boolean;
   reasoning: string;
   matchQuality: string;
+  // BET EXECUTION FIELDS
+  betUnits: number;
+  betAmount: number;
+  riskLevel: string;
+  predictionId: string;
 }
 
 function getTier(score: number): string {
@@ -159,6 +235,7 @@ const TIER_CONFIG: Record<string, { icon: React.ReactNode; label: string; color:
 export default function SBOSignalAlignment() {
   const today = new Date().toISOString().split('T')[0];
   const [tierFilter, setTierFilter] = useState<string>('all');
+  const [autoSuggest, setAutoSuggest] = useState(true);
 
   const { data: predictions = [] } = useQuery({
     queryKey: ['signal-predictions', today],
@@ -195,6 +272,23 @@ export default function SBOSignalAlignment() {
     },
   });
 
+  // Bankroll for bet sizing
+  const { data: bankroll } = useQuery({
+    queryKey: ['signal-bankroll'],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('sbo_bankroll')
+        .select('*')
+        .order('snapshot_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const bankrollAmount = bankroll?.current_bankroll || 500;
+  const unitSize = bankroll?.unit_size || bankrollAmount * 0.02;
+
   const weightedPicks = useMemo<WeightedPick[]>(() => {
     if (!predictions.length) return [];
 
@@ -225,12 +319,18 @@ export default function SBOSignalAlignment() {
       const capperAlignCount = matchedCappers.length;
       const topCapperCount = matchedCappers.filter(c => c.tier === 'elite').length;
 
-      // Conflict detection
+      // Conflict detection — NORMALIZED DIRECTION
       let conflictCount = 0;
-      const predDirection = (pred.pick_direction || '').toLowerCase();
+      const predDir = normalizeDirection(pred.pick_direction);
       walletEvents.forEach((w: any) => {
         const ms = structuredMatchScore(pred, { text: w.market_question || '' });
-        if (ms >= MATCH_THRESHOLD && w.side && predDirection && w.side.toLowerCase() !== predDirection) conflictCount++;
+        const walletDir = normalizeDirection(w.side);
+        if (ms >= MATCH_THRESHOLD && walletDir !== 'unknown' && predDir !== 'unknown' && walletDir !== predDir) conflictCount++;
+      });
+      capperPicks.forEach((c: any) => {
+        const ms = structuredMatchScore(pred, { text: c.pick_text || c.parsed_pick || '', player: c.player_name });
+        const capperDir = normalizeDirection(c.direction || c.pick_direction);
+        if (ms >= MATCH_THRESHOLD && capperDir !== 'unknown' && predDir !== 'unknown' && capperDir !== predDir) conflictCount++;
       });
 
       const aiConf = pred.confidence_score || 50;
@@ -245,8 +345,9 @@ export default function SBOSignalAlignment() {
       const rawScore = sboComponent + walletComponent + capperComponent - penalty;
       const finalScore = Math.round(Math.max(0, Math.min(100, rawScore)));
 
-      const pickTier = getTier(finalScore);
+      const tier = getTier(finalScore);
       const gm = isGrandmaster(finalScore, eliteWalletCount, aiConf, conflictCount);
+      const actualTier = gm ? 'grandmaster' : tier;
 
       // Best match quality label
       const allScores = [...matchedWallets.map(w => w.matchScore), ...matchedCappers.map(c => c.matchScore)];
@@ -257,8 +358,12 @@ export default function SBOSignalAlignment() {
       if (walletAlignCount > 0) sources.push('Wallet');
       if (capperAlignCount > 0) sources.push('Capper');
 
+      // BET SIZING
+      const bet = getRecommendedBet(actualTier, finalScore, aiConf, bankrollAmount, unitSize);
+
       const base: Omit<WeightedPick, 'reasoning'> = {
         key: pred.id,
+        predictionId: pred.id,
         playerOrMarket: pred.player_name || `${pred.home_team} vs ${pred.away_team}`,
         propType: pred.prop_type || pred.market_type,
         direction: pred.pick_direction,
@@ -278,14 +383,17 @@ export default function SBOSignalAlignment() {
         capperComponent,
         penalty,
         finalScore,
-        pickTier: gm ? 'grandmaster' : pickTier,
+        pickTier: actualTier,
         isGrandmaster: gm,
         matchQuality,
+        betUnits: bet.units,
+        betAmount: bet.amount,
+        riskLevel: bet.riskLevel,
       };
 
       return { ...base, reasoning: buildReasoning(base) };
     }).sort((a: WeightedPick, b: WeightedPick) => b.finalScore - a.finalScore);
-  }, [predictions, walletEvents, capperPicks]);
+  }, [predictions, walletEvents, capperPicks, bankrollAmount, unitSize]);
 
   const filtered = tierFilter === 'all'
     ? weightedPicks
@@ -294,6 +402,22 @@ export default function SBOSignalAlignment() {
   const grandmasterCount = weightedPicks.filter(p => p.isGrandmaster).length;
   const eliteCount = weightedPicks.filter(p => p.pickTier === 'elite').length;
   const solidCount = weightedPicks.filter(p => p.pickTier === 'solid').length;
+
+  // CONFIRM BET → insert into sbo_actual_bets
+  const handleConfirmBet = async (pick: WeightedPick) => {
+    const { error } = await (supabase as any).from('sbo_actual_bets').insert({
+      prediction_id: pick.predictionId,
+      bet_amount: pick.betAmount,
+      odds: pick.aiConfidence,
+      bet_type: pick.pickTier === 'grandmaster' ? 'grandmaster' : pick.pickTier,
+      status: 'pending',
+    });
+    if (error) {
+      toast.error('Failed to log bet: ' + error.message);
+    } else {
+      toast.success(`Bet confirmed: $${pick.betAmount.toFixed(0)} (${pick.betUnits}u) on ${pick.playerOrMarket}`);
+    }
+  };
 
   return (
     <div className="p-4 space-y-4 max-w-5xl mx-auto">
@@ -305,22 +429,28 @@ export default function SBOSignalAlignment() {
           </div>
           <div>
             <h1 className="text-xl font-bold">Signal Weighting Engine v2</h1>
-            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}% · Time Decay Active</p>
+            <p className="text-xs text-muted-foreground">AI {(WEIGHTS.ai * 100)}% · Wallet {(WEIGHTS.wallet * 100)}% · Capper {(WEIGHTS.capper * 100)}% · Bankroll ${bankrollAmount}</p>
           </div>
         </div>
-        <Select value={tierFilter} onValueChange={setTierFilter}>
-          <SelectTrigger className="w-40 h-8 text-xs">
-            <Filter className="h-3 w-3 mr-1" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Picks</SelectItem>
-            <SelectItem value="grandmaster">👑 Grandmaster</SelectItem>
-            <SelectItem value="elite">🔥 Elite</SelectItem>
-            <SelectItem value="solid">⚠️ Solid</SelectItem>
-            <SelectItem value="low">❌ Low</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-muted-foreground">Auto-Suggest</span>
+            <Switch checked={autoSuggest} onCheckedChange={setAutoSuggest} />
+          </div>
+          <Select value={tierFilter} onValueChange={setTierFilter}>
+            <SelectTrigger className="w-40 h-8 text-xs">
+              <Filter className="h-3 w-3 mr-1" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Picks</SelectItem>
+              <SelectItem value="grandmaster">👑 Grandmaster</SelectItem>
+              <SelectItem value="elite">🔥 Elite</SelectItem>
+              <SelectItem value="solid">⚠️ Solid</SelectItem>
+              <SelectItem value="low">❌ Low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* KPI Row */}
@@ -343,7 +473,7 @@ export default function SBOSignalAlignment() {
           </CardHeader>
           <CardContent className="space-y-2">
             {weightedPicks.filter(p => p.isGrandmaster).map(p => (
-              <WeightedPickCard key={p.key} pick={p} />
+              <WeightedPickCard key={p.key} pick={p} onConfirmBet={handleConfirmBet} />
             ))}
           </CardContent>
         </Card>
@@ -360,7 +490,7 @@ export default function SBOSignalAlignment() {
           {filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No picks found. Run AI predictions to generate weighted scores.</p>
           ) : filtered.map(p => (
-            <WeightedPickCard key={p.key} pick={p} />
+            <WeightedPickCard key={p.key} pick={p} onConfirmBet={handleConfirmBet} />
           ))}
         </TabsContent>
 
@@ -376,7 +506,7 @@ export default function SBOSignalAlignment() {
   );
 }
 
-function WeightedPickCard({ pick }: { pick: WeightedPick }) {
+function WeightedPickCard({ pick, onConfirmBet }: { pick: WeightedPick; onConfirmBet?: (pick: WeightedPick) => void }) {
   const tier = TIER_CONFIG[pick.pickTier] || TIER_CONFIG.low;
 
   return (
@@ -410,6 +540,29 @@ function WeightedPickCard({ pick }: { pick: WeightedPick }) {
             </span>
           )}
         </div>
+        {/* BET SIZING ROW */}
+        {pick.betUnits > 0 && (
+          <div className="flex items-center gap-3 mt-1.5 pt-1.5 border-t border-border/50">
+            <span className="flex items-center gap-0.5 text-[10px] font-semibold text-emerald-400">
+              <DollarSign className="h-3 w-3" /> ${pick.betAmount.toFixed(0)} ({pick.betUnits}u)
+            </span>
+            <Badge variant="outline" className={`text-[9px] h-3.5 ${
+              pick.riskLevel === 'High' ? 'border-destructive/50 text-destructive' :
+              pick.riskLevel === 'Medium-High' ? 'border-orange-500/50 text-orange-500' :
+              'border-amber-500/50 text-amber-500'
+            }`}>
+              {pick.riskLevel}
+            </Badge>
+            {onConfirmBet && (
+              <button
+                onClick={() => onConfirmBet(pick)}
+                className="text-[9px] px-2 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors"
+              >
+                Confirm Bet
+              </button>
+            )}
+          </div>
+        )}
       </div>
       <div className="text-right shrink-0 space-y-0.5">
         <Badge className={`text-xs font-bold ${tier.color} ${tier.bg} ${tier.border}`}>
