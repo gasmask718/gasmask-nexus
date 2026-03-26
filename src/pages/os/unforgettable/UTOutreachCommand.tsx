@@ -224,7 +224,7 @@ export default function UTOutreachCommand() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-bold text-foreground">🎉 VA Call Console</h1>
-            <Badge variant="outline" className="text-[10px]">{leads.length} in queue</Badge>
+            <Badge variant="outline" className="text-[10px]">{totalCount} leads • p{currentPage + 1}/{totalPages}</Badge>
           </div>
           <div className="flex items-center gap-4 text-xs">
             {[
