@@ -35,11 +35,27 @@ const BUDGET_RANGES = [
 export default function UTEventBuilder() {
   const { data: events = [], isLoading } = useUTEventRequests();
   const { data: orders = [] } = useUTOrders();
-  const { createEventRequest, generateRecommendations, createOrder, updateEventStatus, saveGeneratedPackage } = useUTCustomerMutations();
+  const { createEventRequest, generateRecommendations, createOrder, updateEventStatus, saveGeneratedPackage, initiateCheckout, verifyPayment } = useUTCustomerMutations();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState('intake');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  // Handle payment return
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    const orderId = searchParams.get('order_id');
+    if (paymentStatus === 'success' && orderId) {
+      setActiveTab('orders');
+      toast.success('Processing payment verification...');
+      verifyPayment.mutate(orderId);
+      setSearchParams({});
+    } else if (paymentStatus === 'cancelled') {
+      toast.info('Payment was cancelled');
+      setSearchParams({});
+    }
+  }, [searchParams]);
 
   // Intake form state
   const [form, setForm] = useState({
