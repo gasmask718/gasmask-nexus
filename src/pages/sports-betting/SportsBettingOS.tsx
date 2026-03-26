@@ -28,7 +28,7 @@ import { ActionTooltip } from '@/components/sbo/ActionTooltip';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
-const getETDayBounds = (date: Date) => {
+export const getETDayBounds = (date: Date) => {
   const etDateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const [year, month, day] = etDateStr.split('-').map(Number);
   // ET day boundary at 05:00 UTC (midnight EST / 1am EDT — safely before any NBA game)
