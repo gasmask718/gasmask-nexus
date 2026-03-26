@@ -811,9 +811,9 @@ export default function UTOutreachCommand() {
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">KEY METRICS</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1 text-[10px]">
                     <div className="flex justify-between"><span className="text-muted-foreground">Total Leads</span><span className="font-mono">{stats?.total || 0}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Avg AI Score</span><span className="font-mono">{stats?.avgScore || 0}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Avg Touches to Onboard</span><span className="font-mono">{stats?.avgTouchesToOnboard || '—'}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Today No-Answer %</span><span className="font-mono">{vaPerf?.noAnswerRate || 0}%</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Avg AI Score</span><span className="font-mono">{stats?.avg_score || 0}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Avg Touches to Onboard</span><span className="font-mono">{stats?.avg_touches_to_onboard || '—'}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Today No-Answer %</span><span className="font-mono">{vaPerf?.no_answer_rate || 0}%</span></div>
                   </CardContent>
                 </Card>
 
