@@ -193,6 +193,11 @@ interface WeightedPick {
   isGrandmaster: boolean;
   reasoning: string;
   matchQuality: string;
+  // BET EXECUTION FIELDS
+  betUnits: number;
+  betAmount: number;
+  riskLevel: string;
+  predictionId: string;
 }
 
 function getTier(score: number): string {
