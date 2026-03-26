@@ -40,7 +40,7 @@ export const getETDayBounds = (date: Date) => {
   };
 };
 
-const getTodayETBounds = () => getETDayBounds(new Date());
+export const getTodayETBounds = () => getETDayBounds(new Date());
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
