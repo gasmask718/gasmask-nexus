@@ -228,11 +228,11 @@ export default function UTOutreachCommand() {
           </div>
           <div className="flex items-center gap-4 text-xs">
             {[
-              { label: 'Calls', val: vaPerf?.callsMade || 0, max: VA_DAILY_QUOTAS.calls, color: '' },
+              { label: 'Calls', val: vaPerf?.calls_made || 0, max: VA_DAILY_QUOTAS.calls, color: '' },
               { label: 'Connects', val: vaPerf?.connected || 0, max: VA_DAILY_QUOTAS.connects, color: '' },
               { label: 'Interested', val: vaPerf?.interested || 0, max: VA_DAILY_QUOTAS.interested, color: 'text-green-400' },
               { label: 'Onboarded', val: vaPerf?.onboarded || 0, max: VA_DAILY_QUOTAS.onboarded, color: 'text-emerald-400' },
-              { label: 'SMS', val: vaPerf?.smsSent || 0, max: 20, color: 'text-blue-400' },
+              { label: 'SMS', val: vaPerf?.sms_sent || 0, max: 20, color: 'text-blue-400' },
             ].map(q => (
               <div key={q.label} className="flex items-center gap-2">
                 <span className={`text-muted-foreground ${q.color}`}>{q.label}</span>
@@ -242,7 +242,7 @@ export default function UTOutreachCommand() {
             ))}
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Conv%</span>
-              <span className="font-mono font-bold">{vaPerf?.conversionRate || 0}%</span>
+              <span className="font-mono font-bold">{vaPerf?.conversion_rate || 0}%</span>
             </div>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
