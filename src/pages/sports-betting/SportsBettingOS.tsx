@@ -4385,15 +4385,12 @@ export default function SportsBettingOS() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
             { label: '🏀 Tonight', path: '/sbo-ai-engine/tonight' },
-            { label: '📊 Props', path: '/sbo-ai-engine/props' },
-            { label: '🎰 Parlay', path: '/sbo-ai-engine/parlay' },
+            { label: '💰 Bovada Hub', path: '/sbo-ai-engine/bovada' },
             { label: '🛡️ Hedge', path: '/sbo-ai-engine/hedge' },
             { label: '💎 Value', path: '/sbo-ai-engine/value' },
             { label: '📊 Accuracy', path: '/sbo-ai-engine/accuracy' },
             { label: '🧬 Model', path: '/sbo-ai-engine/model' },
             { label: '📱 My Bets', path: '/sbo-ai-engine/my-bets' },
-            { label: '🎯 PrizePicks', path: '/sbo-ai-engine/prizepicks' },
-            { label: '🐂 Bovada', path: '/sbo-ai-engine/bovada' },
             { label: '📱 ChingWorld', path: '/sbo-ai-engine/sms' },
             { label: '⚡ Simulation', path: '/sbo-ai-engine/simulation' },
             { label: '📜 History', path: '/sbo-ai-engine/history' },
