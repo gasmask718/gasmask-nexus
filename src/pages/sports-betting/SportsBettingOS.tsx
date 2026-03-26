@@ -3396,7 +3396,7 @@ export function ModelIntelligenceTab() {
 // MY BETS TAB — SMS Bet Tracking + P&L
 // ═══════════════════════════════════════════════════════════════
 
-function MyBetsTab() {
+export function MyBetsTab() {
   const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll' | 'saved'>('today');
   const [sendingBriefing, setSendingBriefing] = useState(false);
   const [selectedStake, setSelectedStake] = useState(10);
