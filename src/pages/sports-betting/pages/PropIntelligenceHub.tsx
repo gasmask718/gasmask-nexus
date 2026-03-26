@@ -55,6 +55,7 @@ export default function PropIntelligenceHub() {
   const { data, isLoading, refetch } = usePropsMaster({
     platform,
     gameDate: gameDate || undefined,
+    timeRange: gameDate ? undefined : timeRange,
     minConfidence: minConfidence || undefined,
     searchPlayer: searchPlayer || undefined,
     page,
@@ -64,7 +65,7 @@ export default function PropIntelligenceHub() {
   const totalCount = data?.totalCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  const { data: stats } = usePropsMasterStats(gameDate || undefined);
+  const { data: stats } = usePropsMasterStats(gameDate || undefined, gameDate ? undefined : timeRange);
   const { data: crossIntel = [] } = usePropCrossIntelligence(selectedProp?.player_name, selectedProp?.stat_type);
   const { syncBooks, runAnalysis, uploadImage } = usePropMutations();
 
