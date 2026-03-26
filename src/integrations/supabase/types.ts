@@ -72234,6 +72234,7 @@ export type Database = {
           ai_score_reasons: Json | null
           assigned_to: string | null
           assigned_va: string | null
+          automation_state: string | null
           best_time_to_call: string | null
           business_name: string
           callback_due_at: string | null
@@ -72246,13 +72247,17 @@ export type Database = {
           id: string
           last_contacted_at: string | null
           last_outcome: string | null
+          last_sms_template: string | null
+          next_step: string | null
           notes: string | null
           onboarded_at: string | null
+          onboarding_link_sent_at: string | null
           outreach_count: number
           owner_verified: boolean
           phone: string | null
           priority_bucket: string | null
           recommended_ai_agent: string | null
+          sms_count: number | null
           source: string | null
           state: string | null
           status: string
@@ -72267,6 +72272,7 @@ export type Database = {
           ai_score_reasons?: Json | null
           assigned_to?: string | null
           assigned_va?: string | null
+          automation_state?: string | null
           best_time_to_call?: string | null
           business_name: string
           callback_due_at?: string | null
@@ -72279,13 +72285,17 @@ export type Database = {
           id?: string
           last_contacted_at?: string | null
           last_outcome?: string | null
+          last_sms_template?: string | null
+          next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
+          onboarding_link_sent_at?: string | null
           outreach_count?: number
           owner_verified?: boolean
           phone?: string | null
           priority_bucket?: string | null
           recommended_ai_agent?: string | null
+          sms_count?: number | null
           source?: string | null
           state?: string | null
           status?: string
@@ -72300,6 +72310,7 @@ export type Database = {
           ai_score_reasons?: Json | null
           assigned_to?: string | null
           assigned_va?: string | null
+          automation_state?: string | null
           best_time_to_call?: string | null
           business_name?: string
           callback_due_at?: string | null
@@ -72312,19 +72323,74 @@ export type Database = {
           id?: string
           last_contacted_at?: string | null
           last_outcome?: string | null
+          last_sms_template?: string | null
+          next_step?: string | null
           notes?: string | null
           onboarded_at?: string | null
+          onboarding_link_sent_at?: string | null
           outreach_count?: number
           owner_verified?: boolean
           phone?: string | null
           priority_bucket?: string | null
           recommended_ai_agent?: string | null
+          sms_count?: number | null
           source?: string | null
           state?: string | null
           status?: string
           updated_at?: string
         }
         Relationships: []
+      }
+      ut_partner_onboarding: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          onboarding_link: string | null
+          onboarding_token: string
+          partner_profile_id: string | null
+          sent_at: string | null
+          source_lead_id: string | null
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          onboarding_link?: string | null
+          onboarding_token?: string
+          partner_profile_id?: string | null
+          sent_at?: string | null
+          source_lead_id?: string | null
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          onboarding_link?: string | null
+          onboarding_token?: string
+          partner_profile_id?: string | null
+          sent_at?: string | null
+          source_lead_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_onboarding_partner_profile_id_fkey"
+            columns: ["partner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_partner_onboarding_source_lead_id_fkey"
+            columns: ["source_lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_partner_profiles: {
         Row: {
