@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog, CalendarDays, DollarSign, Clock, Star, FileText, MessageSquare } from 'lucide-react';
+import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog, CalendarDays, DollarSign, Clock, Star, FileText, MessageSquare, Phone, Target, Brain } from 'lucide-react';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import UnforgettableStaff from '@/pages/os/unforgettable/UnforgettableStaff';
 import UnforgettableStaffProfile from '@/pages/os/unforgettable/UnforgettableStaffProfile';
@@ -9,6 +9,7 @@ import UnforgettableAvailability from '@/pages/os/unforgettable/UnforgettableAva
 import UnforgettablePerformance from '@/pages/os/unforgettable/UnforgettablePerformance';
 import UnforgettableDocuments from '@/pages/os/unforgettable/UnforgettableDocuments';
 import UnforgettableCommunications from '@/pages/os/unforgettable/UnforgettableCommunications';
+import UTOutreachCommand from '@/pages/os/unforgettable/UTOutreachCommand';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/unforgettable', label: 'Dashboard', icon: LayoutDashboard },
