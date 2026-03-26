@@ -433,7 +433,7 @@ export default function SBOSignalAlignment() {
             <SelectItem value="low">❌ Low</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+        </div>
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
