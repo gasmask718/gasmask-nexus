@@ -72042,6 +72042,63 @@ export type Database = {
           },
         ]
       }
+      ut_event_packages: {
+        Row: {
+          base_price: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          included_categories: string[] | null
+          includes_transport: boolean | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          margin_pct: number | null
+          name: string
+          package_type: string
+          popularity_score: number | null
+          premium_price: number | null
+          toptier_vehicle_class: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          included_categories?: string[] | null
+          includes_transport?: boolean | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          margin_pct?: number | null
+          name: string
+          package_type: string
+          popularity_score?: number | null
+          premium_price?: number | null
+          toptier_vehicle_class?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_price?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          included_categories?: string[] | null
+          includes_transport?: boolean | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          margin_pct?: number | null
+          name?: string
+          package_type?: string
+          popularity_score?: number | null
+          premium_price?: number | null
+          toptier_vehicle_class?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ut_event_staff: {
         Row: {
           actual_check_in: string | null
@@ -72220,6 +72277,73 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_package_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          is_optional: boolean | null
+          item_type: string
+          label: string
+          package_id: string
+          partner_profile_id: string | null
+          product_id: string | null
+          quantity: number | null
+          sort_order: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_optional?: boolean | null
+          item_type: string
+          label: string
+          package_id: string
+          partner_profile_id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sort_order?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          is_optional?: boolean | null
+          item_type?: string
+          label?: string
+          package_id?: string
+          partner_profile_id?: string | null
+          product_id?: string | null
+          quantity?: number | null
+          sort_order?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_package_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ut_event_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_package_items_partner_profile_id_fkey"
+            columns: ["partner_profile_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_package_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "ut_products"
             referencedColumns: ["id"]
           },
         ]
@@ -72403,10 +72527,14 @@ export type Database = {
           email: string | null
           id: string
           lead_id: string | null
+          location_coverage: string[] | null
           onboarding_status: string
+          package_eligible: boolean | null
           phone: string | null
+          platform_score: number | null
           pricing_range: string | null
           rating: number | null
+          service_categories: string[] | null
           services_offered: string[] | null
           social_links: Json | null
           source_lead_id: string | null
@@ -72424,10 +72552,14 @@ export type Database = {
           email?: string | null
           id?: string
           lead_id?: string | null
+          location_coverage?: string[] | null
           onboarding_status?: string
+          package_eligible?: boolean | null
           phone?: string | null
+          platform_score?: number | null
           pricing_range?: string | null
           rating?: number | null
+          service_categories?: string[] | null
           services_offered?: string[] | null
           social_links?: Json | null
           source_lead_id?: string | null
@@ -72445,10 +72577,14 @@ export type Database = {
           email?: string | null
           id?: string
           lead_id?: string | null
+          location_coverage?: string[] | null
           onboarding_status?: string
+          package_eligible?: boolean | null
           phone?: string | null
+          platform_score?: number | null
           pricing_range?: string | null
           rating?: number | null
+          service_categories?: string[] | null
           services_offered?: string[] | null
           social_links?: Json | null
           source_lead_id?: string | null
@@ -72469,6 +72605,140 @@ export type Database = {
             columns: ["source_lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_product_categories: {
+        Row: {
+          id: string
+          is_active: boolean | null
+          label: string
+          parent_slug: string | null
+          product_type: Database["public"]["Enums"]["ut_product_type"]
+          slug: string
+          sort_order: number | null
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean | null
+          label: string
+          parent_slug?: string | null
+          product_type: Database["public"]["Enums"]["ut_product_type"]
+          slug: string
+          sort_order?: number | null
+        }
+        Update: {
+          id?: string
+          is_active?: boolean | null
+          label?: string
+          parent_slug?: string | null
+          product_type?: Database["public"]["Enums"]["ut_product_type"]
+          slug?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      ut_products: {
+        Row: {
+          category: string
+          conversion_score: number | null
+          created_at: string | null
+          description: string | null
+          estimated_roi_pct: number | null
+          event_relevance_score: number | null
+          fulfillment_model:
+            | Database["public"]["Enums"]["ut_fulfillment_model"]
+            | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          landed_cost: number | null
+          margin_pct: number | null
+          moq: number | null
+          name: string
+          overall_score: number | null
+          product_type: Database["public"]["Enums"]["ut_product_type"]
+          sell_price: number | null
+          shipping_cost: number | null
+          shipping_speed_days: number | null
+          startup_guide_url: string | null
+          subcategory: string | null
+          supplier_id: string | null
+          tags: string[] | null
+          trend_score: number | null
+          updated_at: string | null
+          visual_appeal_score: number | null
+        }
+        Insert: {
+          category: string
+          conversion_score?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_roi_pct?: number | null
+          event_relevance_score?: number | null
+          fulfillment_model?:
+            | Database["public"]["Enums"]["ut_fulfillment_model"]
+            | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          landed_cost?: number | null
+          margin_pct?: number | null
+          moq?: number | null
+          name: string
+          overall_score?: number | null
+          product_type: Database["public"]["Enums"]["ut_product_type"]
+          sell_price?: number | null
+          shipping_cost?: number | null
+          shipping_speed_days?: number | null
+          startup_guide_url?: string | null
+          subcategory?: string | null
+          supplier_id?: string | null
+          tags?: string[] | null
+          trend_score?: number | null
+          updated_at?: string | null
+          visual_appeal_score?: number | null
+        }
+        Update: {
+          category?: string
+          conversion_score?: number | null
+          created_at?: string | null
+          description?: string | null
+          estimated_roi_pct?: number | null
+          event_relevance_score?: number | null
+          fulfillment_model?:
+            | Database["public"]["Enums"]["ut_fulfillment_model"]
+            | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          landed_cost?: number | null
+          margin_pct?: number | null
+          moq?: number | null
+          name?: string
+          overall_score?: number | null
+          product_type?: Database["public"]["Enums"]["ut_product_type"]
+          sell_price?: number | null
+          shipping_cost?: number | null
+          shipping_speed_days?: number | null
+          startup_guide_url?: string | null
+          subcategory?: string | null
+          supplier_id?: string | null
+          tags?: string[] | null
+          trend_score?: number | null
+          updated_at?: string | null
+          visual_appeal_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -72917,6 +73187,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ut_suppliers: {
+        Row: {
+          contact_name: string | null
+          created_at: string | null
+          email: string | null
+          fulfillment_model: Database["public"]["Enums"]["ut_fulfillment_model"]
+          id: string
+          is_active: boolean | null
+          min_order_qty: number | null
+          name: string
+          notes: string | null
+          phone: string | null
+          quality_rating: number | null
+          reliability_score: number | null
+          shipping_speed_days: number | null
+          shipping_zones: string[] | null
+          source_platform: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          fulfillment_model?: Database["public"]["Enums"]["ut_fulfillment_model"]
+          id?: string
+          is_active?: boolean | null
+          min_order_qty?: number | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          quality_rating?: number | null
+          reliability_score?: number | null
+          shipping_speed_days?: number | null
+          shipping_zones?: string[] | null
+          source_platform?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          contact_name?: string | null
+          created_at?: string | null
+          email?: string | null
+          fulfillment_model?: Database["public"]["Enums"]["ut_fulfillment_model"]
+          id?: string
+          is_active?: boolean | null
+          min_order_qty?: number | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          quality_rating?: number | null
+          reliability_score?: number | null
+          shipping_speed_days?: number | null
+          shipping_zones?: string[] | null
+          source_platform?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
       }
       va_attempts: {
         Row: {
@@ -78210,6 +78540,42 @@ export type Database = {
           },
         ]
       }
+      ut_category_demand: {
+        Row: {
+          category: string | null
+          conversion_rate: number | null
+          demand_pipeline: number | null
+          supply_count: number | null
+          supply_gap_level: string | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
+      ut_city_demand: {
+        Row: {
+          category_count: number | null
+          city: string | null
+          demand_pipeline: number | null
+          supply_count: number | null
+          supply_gap_level: string | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
+      ut_territory_intelligence: {
+        Row: {
+          active_pipeline: number | null
+          avg_ai_score: number | null
+          category: string | null
+          city: string | null
+          conversion_rate: number | null
+          dead_count: number | null
+          latest_lead_at: string | null
+          onboarded_count: number | null
+          total_leads: number | null
+        }
+        Relationships: []
+      }
       v_ai_denial_summary: {
         Row: {
           action_key: string | null
@@ -83107,8 +83473,21 @@ export type Database = {
       }
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
+      ut_calculate_ai_scores: { Args: never; Returns: number }
       ut_get_lead_stats: { Args: never; Returns: Json }
       ut_get_outcome_distribution: { Args: never; Returns: Json }
+      ut_get_territory_heatmap: {
+        Args: never
+        Returns: {
+          category: string
+          city: string
+          conversion_rate: number
+          demand_level: string
+          onboarded: number
+          supply_gap: string
+          total_leads: number
+        }[]
+      }
       ut_get_va_performance: { Args: never; Returns: Json }
       validate_agent_state_transition: {
         Args: { p_current_status: string; p_new_status: string }
@@ -83522,6 +83901,13 @@ export type Database = {
         | "contractor"
         | "1099_hourly"
         | "per_event"
+      ut_fulfillment_model:
+        | "dropship"
+        | "wholesale"
+        | "direct_manufacturer"
+        | "curated_seller"
+        | "platform_owned"
+      ut_product_type: "gift" | "business_asset"
       ut_staff_category: "internal_staff" | "event_staff" | "vendor" | "partner"
       ut_staff_role:
         | "owner_managing_director"
@@ -84145,6 +84531,14 @@ export const Constants = {
         "1099_hourly",
         "per_event",
       ],
+      ut_fulfillment_model: [
+        "dropship",
+        "wholesale",
+        "direct_manufacturer",
+        "curated_seller",
+        "platform_owned",
+      ],
+      ut_product_type: ["gift", "business_asset"],
       ut_staff_category: ["internal_staff", "event_staff", "vendor", "partner"],
       ut_staff_role: [
         "owner_managing_director",
