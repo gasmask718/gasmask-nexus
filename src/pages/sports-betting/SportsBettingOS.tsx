@@ -789,7 +789,7 @@ export const normalizePropType = (raw: string): string => {
   return PROP_TYPE_LABELS[raw.toLowerCase().trim()] || raw;
 };
 
-function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
+export function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
   const [props, setProps] = useState<any[]>([]);
   const [dateFilter, setDateFilter] = useState<string>('today');
   const [loadingProps, setLoadingProps] = useState(false);
