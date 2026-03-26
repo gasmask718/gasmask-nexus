@@ -712,6 +712,7 @@ const UTTerritoryIntelligence = lazy(() => import('@/pages/os/unforgettable').th
 const UTPlacesLeadFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlacesLeadFinder })));
 const UTProductEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTProductEngine })));
 const UTSupplierConsole = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTSupplierConsole })));
+const UTEventBuilder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTEventBuilder })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
