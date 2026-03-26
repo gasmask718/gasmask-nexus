@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,10 +11,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Sparkles, PartyPopper, Users, MapPin, Calendar, DollarSign, Package,
-  ShoppingCart, Star, TrendingUp, ArrowRight, Plus, Eye, CheckCircle, Loader2
+  ShoppingCart, Star, TrendingUp, ArrowRight, Plus, Eye, CheckCircle, Loader2,
+  CreditCard, RefreshCw
 } from 'lucide-react';
 import { useUTEventRequests, useUTCustomerMutations, useUTOrders } from '@/hooks/useUTCustomerEngine';
 import { cn } from '@/lib/utils';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const EVENT_TYPES = [
   'birthday', 'wedding', 'corporate', 'baby_shower', 'graduation',
@@ -32,11 +35,27 @@ const BUDGET_RANGES = [
 export default function UTEventBuilder() {
   const { data: events = [], isLoading } = useUTEventRequests();
   const { data: orders = [] } = useUTOrders();
-  const { createEventRequest, generateRecommendations, createOrder, updateEventStatus, saveGeneratedPackage } = useUTCustomerMutations();
+  const { createEventRequest, generateRecommendations, createOrder, updateEventStatus, saveGeneratedPackage, initiateCheckout, verifyPayment } = useUTCustomerMutations();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeTab, setActiveTab] = useState('intake');
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  // Handle payment return
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    const orderId = searchParams.get('order_id');
+    if (paymentStatus === 'success' && orderId) {
+      setActiveTab('orders');
+      toast.success('Processing payment verification...');
+      verifyPayment.mutate(orderId);
+      setSearchParams({});
+    } else if (paymentStatus === 'cancelled') {
+      toast.info('Payment was cancelled');
+      setSearchParams({});
+    }
+  }, [searchParams]);
 
   // Intake form state
   const [form, setForm] = useState({
@@ -249,11 +268,43 @@ export default function UTEventBuilder() {
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium">{ord.order_number}</p>
-                      <p className="text-xs text-muted-foreground">${ord.total_price?.toLocaleString()} • {ord.payment_status} • {ord.order_status}</p>
+                      <p className="text-xs text-muted-foreground">
+                        ${ord.total_price?.toLocaleString()} • {ord.payment_status} • {ord.order_status}
+                        {ord.paid_at && ` • Paid ${new Date(ord.paid_at).toLocaleDateString()}`}
+                      </p>
                     </div>
-                    <Badge className={cn('text-xs', ord.payment_status === 'paid' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400')}>
-                      {ord.order_status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {ord.payment_status === 'paid' ? (
+                        <Badge className="text-xs bg-green-500/20 text-green-400">
+                          <CheckCircle className="h-3 w-3 mr-1" /> Paid
+                        </Badge>
+                      ) : (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => initiateCheckout.mutate(ord.id)}
+                            disabled={initiateCheckout.isPending || ord.total_price <= 0}
+                          >
+                            {initiateCheckout.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CreditCard className="h-3 w-3 mr-1" />}
+                            Checkout
+                          </Button>
+                          {ord.stripe_checkout_session_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => verifyPayment.mutate(ord.id)}
+                              disabled={verifyPayment.isPending}
+                            >
+                              {verifyPayment.isPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                              Verify
+                            </Button>
+                          )}
+                          <Badge className="text-xs bg-yellow-500/20 text-yellow-400">
+                            {ord.payment_status || 'pending'}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               ))}

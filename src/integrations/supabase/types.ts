@@ -72424,9 +72424,14 @@ export type Database = {
           order_number: string | null
           order_status: string | null
           package_id: string | null
+          paid_at: string | null
           payment_status: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          supplier_payout_status: string | null
           total_price: number
           updated_at: string
+          vendor_payout_status: string | null
         }
         Insert: {
           balance_due?: number | null
@@ -72439,9 +72444,14 @@ export type Database = {
           order_number?: string | null
           order_status?: string | null
           package_id?: string | null
+          paid_at?: string | null
           payment_status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          supplier_payout_status?: string | null
           total_price?: number
           updated_at?: string
+          vendor_payout_status?: string | null
         }
         Update: {
           balance_due?: number | null
@@ -72454,9 +72464,14 @@ export type Database = {
           order_number?: string | null
           order_status?: string | null
           package_id?: string | null
+          paid_at?: string | null
           payment_status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          supplier_payout_status?: string | null
           total_price?: number
           updated_at?: string
+          vendor_payout_status?: string | null
         }
         Relationships: [
           {
@@ -72881,6 +72896,56 @@ export type Database = {
             columns: ["source_lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          metadata: Json | null
+          order_id: string | null
+          payment_method: string | null
+          status: string | null
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          metadata?: Json | null
+          order_id?: string | null
+          payment_method?: string | null
+          status?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "ut_orders"
             referencedColumns: ["id"]
           },
         ]
