@@ -28,7 +28,7 @@ import { ActionTooltip } from '@/components/sbo/ActionTooltip';
 
 // Helper: get start/end of an ET day as UTC ISO strings
 // Uses 05:00 UTC as the ET day boundary (covers both EDT and EST)
-const getETDayBounds = (date: Date) => {
+export const getETDayBounds = (date: Date) => {
   const etDateStr = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const [year, month, day] = etDateStr.split('-').map(Number);
   // ET day boundary at 05:00 UTC (midnight EST / 1am EDT — safely before any NBA game)
@@ -40,13 +40,13 @@ const getETDayBounds = (date: Date) => {
   };
 };
 
-const getTodayETBounds = () => getETDayBounds(new Date());
+export const getTodayETBounds = () => getETDayBounds(new Date());
 
 // ═══════════════════════════════════════════════════════════════
 // SAVE PICK BUTTON — Reusable across all tabs
 // ═══════════════════════════════════════════════════════════════
 
-function SavePickButton({
+export function SavePickButton({
   pickType,
   label,
   detail,
@@ -118,7 +118,7 @@ function SavePickButton({
 // ═══════════════════════════════════════════════════════════════
 
 
-function TonightGamesTab() {
+export function TonightGamesTab() {
   const [viewMode, setViewMode] = useState<'today' | 'history'>('today');
   const [state, setState] = useState({
     games: [] as any[],
@@ -557,7 +557,7 @@ function TonightGamesTab() {
   );
 }
 
-function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
+export function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
   const [running, setRunning] = useState(false);
   const [localPrediction, setLocalPrediction] = useState<any>(
     game.sbo_predictions?.[0] || null
@@ -765,7 +765,7 @@ function GameCard({ game, onUpdate }: { game: any; onUpdate: () => void }) {
 // ═══════════════════════════════════════════════════════════════
 // PLAYER PROPS TAB
 // ═══════════════════════════════════════════════════════════════
-const PROP_TYPE_LABELS: Record<string, string> = {
+export const PROP_TYPE_LABELS: Record<string, string> = {
   points: 'Points', pts: 'Points', player_points: 'Points', point: 'Points',
   rebounds: 'Rebounds', reb: 'Rebounds', player_rebounds: 'Rebounds', total_rebounds: 'Rebounds',
   assists: 'Assists', ast: 'Assists', player_assists: 'Assists',
@@ -782,14 +782,14 @@ const PROP_TYPE_LABELS: Record<string, string> = {
   double_double: 'Double-Double', triple_double: 'Triple-Double',
 };
 
-const PROP_TYPE_ORDER = ['Points', 'Rebounds', 'Assists', '3-Pointers', 'Blocks', 'Steals', 'Turnovers', 'Pts+Reb+Ast', 'Pts+Reb', 'Pts+Ast', 'Reb+Ast', 'Fantasy Pts', 'Minutes', 'Double-Double', 'Triple-Double'];
+export const PROP_TYPE_ORDER = ['Points', 'Rebounds', 'Assists', '3-Pointers', 'Blocks', 'Steals', 'Turnovers', 'Pts+Reb+Ast', 'Pts+Reb', 'Pts+Ast', 'Reb+Ast', 'Fantasy Pts', 'Minutes', 'Double-Double', 'Triple-Double'];
 
-const normalizePropType = (raw: string): string => {
+export const normalizePropType = (raw: string): string => {
   if (!raw) return 'Other';
   return PROP_TYPE_LABELS[raw.toLowerCase().trim()] || raw;
 };
 
-function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
+export function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: number) => void }) {
   const [props, setProps] = useState<any[]>([]);
   const [dateFilter, setDateFilter] = useState<string>('today');
   const [loadingProps, setLoadingProps] = useState(false);
@@ -1403,7 +1403,7 @@ function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, odds: n
 // VA PROP ENTRY TAB
 // ═══════════════════════════════════════════════════════════════
 
-function AutoPopulatedPropsNotice({ date }: { date: string }) {
+export function AutoPopulatedPropsNotice({ date }: { date: string }) {
   const { data: apiProps } = useQuery({
     queryKey: ['api-props-count', date],
     queryFn: async () => {
@@ -1434,7 +1434,7 @@ function AutoPopulatedPropsNotice({ date }: { date: string }) {
   );
 }
 
-function VAPropEntryTab() {
+export function VAPropEntryTab() {
   const [games, setGames] = useState<any[]>([]);
   const [gameId, setGameId] = useState('');
   const [entries, setEntries] = useState([
@@ -1580,7 +1580,7 @@ function VAPropEntryTab() {
 // PARLAY CARD COMPONENT (AI Builder)
 // ═══════════════════════════════════════════════════════════════
 
-function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: number; onSave: () => void }) {
+export function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: number; onSave: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -1686,7 +1686,7 @@ function AIParlayCard({ parlay, stake, onSave }: { parlay: any; stake: number; o
 // PARLAY BUILDER TAB
 // ═══════════════════════════════════════════════════════════════
 
-function ParlayBuilderTab() {
+export function ParlayBuilderTab() {
   const [selectedLegs, setSelectedLegs] = useState<any[]>([]);
   const [stake, setStake] = useState<number>(10);
   const [parlayName, setParlayName] = useState('');
@@ -2288,7 +2288,7 @@ function ParlayBuilderTab() {
 // SIMULATION TAB
 // ═══════════════════════════════════════════════════════════════
 
-function SimulationTab() {
+export function SimulationTab() {
   const [selectedPredictionIds, setSelectedPredictionIds] = useState<string[]>([]);
   const [stake, setStake] = useState(10);
   const [result, setResult] = useState<any>(null);
@@ -2482,7 +2482,7 @@ function SimulationTab() {
 // ACCURACY HISTORY WIDGET
 // ═══════════════════════════════════════════════════════════════
 
-function AccuracyHistoryWidget() {
+export function AccuracyHistoryWidget() {
   const { data: history } = useQuery({
     queryKey: ['accuracy-history'],
     queryFn: async () => {
@@ -2546,7 +2546,7 @@ function AccuracyHistoryWidget() {
 // ACCURACY TAB
 // ═══════════════════════════════════════════════════════════════
 
-function AccuracyTab() {
+export function AccuracyTab() {
   const [verifying, setVerifying] = useState(false);
   const [verifyProgress, setVerifyProgress] = useState('');
   const queryClient = useQueryClient();
@@ -2988,7 +2988,7 @@ function AccuracyTab() {
 // VALUE SPOTS TAB
 // ═══════════════════════════════════════════════════════════════
 
-function ValueSpotsTab() {
+export function ValueSpotsTab() {
   const [comparing, setComparing] = useState(false);
 
   const { data: valueSpots, refetch: refetchValue } = useQuery({
@@ -3152,7 +3152,7 @@ function ValueSpotsTab() {
 // MODEL INTELLIGENCE TAB
 // ═══════════════════════════════════════════════════════════════
 
-function ModelIntelligenceTab() {
+export function ModelIntelligenceTab() {
   const [analyzing, setAnalyzing] = useState(false);
 
   const { data: activeConfig, refetch: refetchConfig } = useQuery({
@@ -3396,7 +3396,7 @@ function ModelIntelligenceTab() {
 // MY BETS TAB — SMS Bet Tracking + P&L
 // ═══════════════════════════════════════════════════════════════
 
-function MyBetsTab() {
+export function MyBetsTab() {
   const [activeView, setActiveView] = useState<'today' | 'history' | 'bankroll' | 'saved'>('today');
   const [sendingBriefing, setSendingBriefing] = useState(false);
   const [selectedStake, setSelectedStake] = useState(10);
@@ -3827,7 +3827,7 @@ function MyBetsTab() {
 // TODAY'S GUARANTEE WIDGET
 // ═══════════════════════════════════════════════════════════════
 
-function TodaysGuaranteeWidget() {
+export function TodaysGuaranteeWidget() {
   const { data: plan } = useQuery({
     queryKey: ['guarantee-widget'],
     queryFn: async () => {
@@ -4379,96 +4379,39 @@ export default function SportsBettingOS() {
       {/* Today's Guarantee Widget */}
       <TodaysGuaranteeWidget />
 
-
-      {/* ═══ CUSTOM TAB NAVIGATION ═══ */}
-      {(() => {
-        const primaryTabs = [
-          { id: 'games', label: '🏀 Tonight', shortLabel: 'Tonight' },
-          { id: 'props', label: '📊 Props', shortLabel: 'Props', badge: strongCount },
-          { id: 'prizepicks', label: '🎯 PrizePicks', shortLabel: 'PP' },
-          { id: 'bovada', label: '🐂 Bovada', shortLabel: 'Bovada' },
-          { id: 'sms', label: '📱 ChingWorld', shortLabel: 'SMS' },
-          { id: 'hedge', label: '🛡️ Hedge', shortLabel: 'Hedge' },
-          { id: 'parlay', label: '🎰 Parlay', shortLabel: 'Parlay' },
-        ];
-        const secondaryTabs = [
-          { id: 'value', label: '💎 Value', shortLabel: 'Value', badge: valueCount },
-          { id: 'accuracy', label: '📊 Accuracy', shortLabel: 'Accuracy' },
-          { id: 'model', label: '🧬 Model', shortLabel: 'Model' },
-          { id: 'mybets', label: '📱 My Bets', shortLabel: 'Bets' },
-          { id: 'history', label: '📜 History', shortLabel: 'History' },
-          { id: 'sim', label: '⚡ Sim', shortLabel: 'Sim' },
-          { id: 'entry', label: '📋 VA Entry', shortLabel: 'Entry' },
-          { id: 'health', label: '🩺 Health', shortLabel: 'Health' },
-          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
-          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
-        ];
-        const allTabs = [...primaryTabs, ...secondaryTabs];
-        const renderBtn = (tab: { id: string; label: string; shortLabel: string; badge?: number }, isPrimary: boolean) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`${isPrimary ? 'px-3 py-2 text-sm' : 'px-3 py-1.5 text-xs'} rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? isPrimary
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-primary/20 text-primary border border-primary/30'
-                : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
-            }`}
-          >
-            {isPrimary ? tab.label : tab.label}
-            {(tab.badge || 0) > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-primary/30 text-[9px] px-1">{tab.badge}</span>
-            )}
-          </button>
-        );
-        return (
-          <>
-            {/* Desktop: Two rows */}
-            <div className="hidden md:flex flex-col gap-1 mb-4">
-              <div className="flex flex-wrap gap-1">{primaryTabs.map(t => renderBtn(t, true))}</div>
-              <div className="flex flex-wrap gap-1">{secondaryTabs.map(t => renderBtn(t, false))}</div>
-            </div>
-            {/* Mobile: Horizontal scroll */}
-            <div className="md:hidden overflow-x-auto pb-1 mb-4 scrollbar-hide">
-              <div className="flex gap-1 w-max">
-                {allTabs.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap ${
-                      activeTab === t.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/40 text-muted-foreground'
-                    }`}
-                  >
-                    {t.shortLabel}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Tab content */}
-            <div className="mt-4">
-              {activeTab === 'games' && <TonightGamesTab />}
-              {activeTab === 'props' && <PlayerPropsTab />}
-              {activeTab === 'value' && <ValueSpotsTab />}
-              {activeTab === 'parlay' && <ParlayBuilderTab />}
-              {activeTab === 'hedge' && <HedgeCenter />}
-              {activeTab === 'sim' && <SimulationTab />}
-              {activeTab === 'accuracy' && <AccuracyTab />}
-              {activeTab === 'model' && <ModelIntelligenceTab />}
-              {activeTab === 'mybets' && <MyBetsTab />}
-              {activeTab === 'sms' && <ChingWorldPicksSMS />}
-              {activeTab === 'prizepicks' && <PrizePicksAnalyzer />}
-              {activeTab === 'bovada' && <BookPropsComparison />}
-              {activeTab === 'history' && <PredictionHistory />}
-              {activeTab === 'entry' && <VAPropEntryTab />}
-              {activeTab === 'health' && <SBOHealthDashboard />}
-              {activeTab === 'sync' && <SyncDashboard />}
-            </div>
-          </>
-        );
-      })()}
+      {/* ═══ QUICK NAV GRID ═══ */}
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Quick Access</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: '🏀 Tonight', path: '/sbo-ai-engine/tonight' },
+            { label: '📊 Props', path: '/sbo-ai-engine/props' },
+            { label: '🎰 Parlay', path: '/sbo-ai-engine/parlay' },
+            { label: '🛡️ Hedge', path: '/sbo-ai-engine/hedge' },
+            { label: '💎 Value', path: '/sbo-ai-engine/value' },
+            { label: '📊 Accuracy', path: '/sbo-ai-engine/accuracy' },
+            { label: '🧬 Model', path: '/sbo-ai-engine/model' },
+            { label: '📱 My Bets', path: '/sbo-ai-engine/my-bets' },
+            { label: '🎯 PrizePicks', path: '/sbo-ai-engine/prizepicks' },
+            { label: '🐂 Bovada', path: '/sbo-ai-engine/bovada' },
+            { label: '📱 ChingWorld', path: '/sbo-ai-engine/sms' },
+            { label: '⚡ Simulation', path: '/sbo-ai-engine/simulation' },
+            { label: '📜 History', path: '/sbo-ai-engine/history' },
+            { label: '📋 VA Entry', path: '/sbo-ai-engine/va-entry' },
+            { label: '🩺 Health', path: '/sbo-ai-engine/health' },
+            { label: '⚙️ Sync', path: '/sbo-ai-engine/sync' },
+          ].map(item => (
+            <a
+              key={item.path}
+              href={item.path}
+              onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', item.path); window.dispatchEvent(new PopStateEvent('popstate')); }}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-all text-center border border-border/50"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

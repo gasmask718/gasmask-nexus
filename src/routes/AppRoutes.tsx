@@ -745,6 +745,21 @@ const SBOProfitCenter = lazy(() => import('@/pages/os/betting/SBOProfitCenter'))
 const SBOWalletTracker = lazy(() => import('@/pages/os/betting/SBOWalletTracker'));
 const SBOCapperTracker = lazy(() => import('@/pages/os/betting/SBOCapperTracker'));
 const SBOSignalAlignment = lazy(() => import('@/pages/os/betting/SBOSignalAlignment'));
+const SBOTonightPage = lazy(() => import('@/pages/sports-betting/pages/TonightPage'));
+const SBOPropsPage = lazy(() => import('@/pages/sports-betting/pages/PropsPage'));
+const SBOParlayPage = lazy(() => import('@/pages/sports-betting/pages/ParlayPage'));
+const SBOValuePage = lazy(() => import('@/pages/sports-betting/pages/ValuePage'));
+const SBOAccuracyPage = lazy(() => import('@/pages/sports-betting/pages/AccuracyPage'));
+const SBOModelPage = lazy(() => import('@/pages/sports-betting/pages/ModelPage'));
+const SBOMyBetsPage = lazy(() => import('@/pages/sports-betting/pages/MyBetsPage'));
+const SBOSimulationPage = lazy(() => import('@/pages/sports-betting/pages/SimulationSBOPage'));
+const SBOVAEntryPage = lazy(() => import('@/pages/sports-betting/pages/VAEntryPage'));
+const SBOPrizePicksPage = lazy(() => import('@/pages/sports-betting/pages/PrizePicksPage'));
+const SBOBovadaPage = lazy(() => import('@/pages/sports-betting/pages/BovadaPage'));
+const SBOSMSPage = lazy(() => import('@/pages/sports-betting/pages/SMSPage'));
+const SBOHistoryPage = lazy(() => import('@/pages/sports-betting/pages/HistoryPage'));
+const SBOHealthPage = lazy(() => import('@/pages/sports-betting/pages/HealthPage'));
+const SBOSyncPage = lazy(() => import('@/pages/sports-betting/pages/SyncPage'));
 const BikerDashboard = lazy(() => import('@/pages/os/biker/BikerDashboard'));
 const ModuleDiagnosticsPage = lazy(() => import('@/pages/ModuleDiagnosticsPage'));
 const InvoiceForensicsConsole = lazy(() => import('@/pages/diagnostics/InvoiceForensicsConsole'));
@@ -1534,6 +1549,21 @@ export default function AppRoutes() {
         <Route path="/sbo-ai-engine/wallet-intelligence" element={<SBOWalletTracker />} />
         <Route path="/sbo-ai-engine/capper-intelligence" element={<SBOCapperTracker />} />
         <Route path="/sbo-ai-engine/signal-alignment" element={<SBOSignalAlignment />} />
+        <Route path="/sbo-ai-engine/tonight" element={<SBOTonightPage />} />
+        <Route path="/sbo-ai-engine/props" element={<SBOPropsPage />} />
+        <Route path="/sbo-ai-engine/parlay" element={<SBOParlayPage />} />
+        <Route path="/sbo-ai-engine/value" element={<SBOValuePage />} />
+        <Route path="/sbo-ai-engine/accuracy" element={<SBOAccuracyPage />} />
+        <Route path="/sbo-ai-engine/model" element={<SBOModelPage />} />
+        <Route path="/sbo-ai-engine/my-bets" element={<SBOMyBetsPage />} />
+        <Route path="/sbo-ai-engine/simulation" element={<SBOSimulationPage />} />
+        <Route path="/sbo-ai-engine/va-entry" element={<SBOVAEntryPage />} />
+        <Route path="/sbo-ai-engine/prizepicks" element={<SBOPrizePicksPage />} />
+        <Route path="/sbo-ai-engine/bovada" element={<SBOBovadaPage />} />
+        <Route path="/sbo-ai-engine/sms" element={<SBOSMSPage />} />
+        <Route path="/sbo-ai-engine/history" element={<SBOHistoryPage />} />
+        <Route path="/sbo-ai-engine/health" element={<SBOHealthPage />} />
+        <Route path="/sbo-ai-engine/sync" element={<SBOSyncPage />} />
         <Route path="/admin/system-integrity" element={<SystemIntegrity />} />
         <Route path="/biker/home" element={<BikerDashboard />} />
 
