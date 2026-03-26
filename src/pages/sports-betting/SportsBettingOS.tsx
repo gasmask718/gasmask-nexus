@@ -1403,7 +1403,7 @@ export function PlayerPropsTab({ onAddToParlay }: { onAddToParlay?: (pred: any, 
 // VA PROP ENTRY TAB
 // ═══════════════════════════════════════════════════════════════
 
-function AutoPopulatedPropsNotice({ date }: { date: string }) {
+export function AutoPopulatedPropsNotice({ date }: { date: string }) {
   const { data: apiProps } = useQuery({
     queryKey: ['api-props-count', date],
     queryFn: async () => {
