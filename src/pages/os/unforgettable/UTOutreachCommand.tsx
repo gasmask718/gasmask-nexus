@@ -742,7 +742,7 @@ export default function UTOutreachCommand() {
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">LEAD FUNNEL</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
                     {['new', 'contacted', 'interested', 'callback', 'onboarded', 'dead'].map(status => {
-                      const count = stats?.byStatus?.[status] || 0;
+                      const count = stats?.by_status?.[status] || 0;
                       const pct = stats?.total ? Math.round((count / stats.total) * 100) : 0;
                       return (
                         <div key={status} className="flex items-center gap-2">
