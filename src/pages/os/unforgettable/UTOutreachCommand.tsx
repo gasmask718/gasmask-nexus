@@ -71,6 +71,7 @@ export default function UTOutreachCommand() {
   const [searchText, setSearchText] = useState('');
   const [selectedLead, setSelectedLead] = useState<UTPartnerLead | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showImporter, setShowImporter] = useState(false);
   const [rightTab, setRightTab] = useState<'intel' | 'analytics'>('intel');
   const [currentPage, setCurrentPage] = useState(0);
 
