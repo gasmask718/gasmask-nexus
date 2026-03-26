@@ -29,3 +29,5 @@ export { default as UnforgettableMediaDetail } from './UnforgettableMediaDetail'
 export { default as UTOutreachCommand } from './UTOutreachCommand';
 export { default as UTTerritoryIntelligence } from './UTTerritoryIntelligence';
 export { default as UTPlacesLeadFinder } from './UTPlacesLeadFinder';
+export { default as UTProductEngine } from './UTProductEngine';
+export { default as UTSupplierConsole } from './UTSupplierConsole';
