@@ -235,6 +235,7 @@ const TIER_CONFIG: Record<string, { icon: React.ReactNode; label: string; color:
 export default function SBOSignalAlignment() {
   const today = new Date().toISOString().split('T')[0];
   const [tierFilter, setTierFilter] = useState<string>('all');
+  const [autoSuggest, setAutoSuggest] = useState(true);
 
   const { data: predictions = [] } = useQuery({
     queryKey: ['signal-predictions', today],
