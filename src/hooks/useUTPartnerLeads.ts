@@ -156,7 +156,9 @@ export function useUTLeadDetail(leadId?: string) {
   });
 }
 
-// ── Outreach Logs (infinite scroll) ────────────────────────────────
+// ── Outreach Logs (infinite scroll, selective columns) ─────────────
+const LOG_COLUMNS = 'id,lead_id,channel,outcome,notes,template_name,created_at';
+
 export function useUTOutreachLogs(leadId?: string) {
   return useInfiniteQuery({
     queryKey: [LOGS_KEY, leadId],
@@ -167,7 +169,7 @@ export function useUTOutreachLogs(leadId?: string) {
       const to = from + PAGE_SIZE - 1;
 
       let query = (supabase.from('ut_outreach_logs') as any)
-        .select('*', { count: 'exact' })
+        .select(LOG_COLUMNS, { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
