@@ -228,11 +228,11 @@ export default function UTOutreachCommand() {
           </div>
           <div className="flex items-center gap-4 text-xs">
             {[
-              { label: 'Calls', val: vaPerf?.callsMade || 0, max: VA_DAILY_QUOTAS.calls, color: '' },
+              { label: 'Calls', val: vaPerf?.calls_made || 0, max: VA_DAILY_QUOTAS.calls, color: '' },
               { label: 'Connects', val: vaPerf?.connected || 0, max: VA_DAILY_QUOTAS.connects, color: '' },
               { label: 'Interested', val: vaPerf?.interested || 0, max: VA_DAILY_QUOTAS.interested, color: 'text-green-400' },
               { label: 'Onboarded', val: vaPerf?.onboarded || 0, max: VA_DAILY_QUOTAS.onboarded, color: 'text-emerald-400' },
-              { label: 'SMS', val: vaPerf?.smsSent || 0, max: 20, color: 'text-blue-400' },
+              { label: 'SMS', val: vaPerf?.sms_sent || 0, max: 20, color: 'text-blue-400' },
             ].map(q => (
               <div key={q.label} className="flex items-center gap-2">
                 <span className={`text-muted-foreground ${q.color}`}>{q.label}</span>
@@ -242,7 +242,7 @@ export default function UTOutreachCommand() {
             ))}
             <div className="flex items-center gap-1">
               <span className="text-muted-foreground">Conv%</span>
-              <span className="font-mono font-bold">{vaPerf?.conversionRate || 0}%</span>
+              <span className="font-mono font-bold">{vaPerf?.conversion_rate || 0}%</span>
             </div>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -742,7 +742,7 @@ export default function UTOutreachCommand() {
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">LEAD FUNNEL</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
                     {['new', 'contacted', 'interested', 'callback', 'onboarded', 'dead'].map(status => {
-                      const count = stats?.byStatus?.[status] || 0;
+                      const count = stats?.by_status?.[status] || 0;
                       const pct = stats?.total ? Math.round((count / stats.total) * 100) : 0;
                       return (
                         <div key={status} className="flex items-center gap-2">
@@ -759,16 +759,19 @@ export default function UTOutreachCommand() {
                 <Card className="border-border/30">
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">CATEGORY CONVERSION</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
-                    {stats?.byCategory && Object.entries(stats.byCategory)
-                      .sort((a, b) => b[1].total - a[1].total)
+                    {stats?.by_category && Object.entries(stats.by_category)
+                      .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                       .slice(0, 10)
-                      .map(([cat, data]) => (
+                      .map(([cat, d]) => {
+                        const catData = d as { total: number; onboarded: number };
+                        return (
                         <div key={cat} className="flex items-center justify-between text-[10px]">
                           <span className="truncate capitalize w-20">{cat.replace(/_/g, ' ')}</span>
-                          <span className="font-mono">{data.onboarded}/{data.total}</span>
-                          <span className="font-mono text-green-400 w-10 text-right">{data.total > 0 ? Math.round((data.onboarded / data.total) * 100) : 0}%</span>
+                          <span className="font-mono">{catData.onboarded}/{catData.total}</span>
+                          <span className="font-mono text-green-400 w-10 text-right">{catData.total > 0 ? Math.round((catData.onboarded / catData.total) * 100) : 0}%</span>
                         </div>
-                      ))}
+                        );
+                      })}
                   </CardContent>
                 </Card>
 
@@ -776,12 +779,12 @@ export default function UTOutreachCommand() {
                 <Card className="border-border/30">
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">SOURCE BREAKDOWN</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
-                    {stats?.bySource && Object.entries(stats.bySource)
-                      .sort((a, b) => b[1] - a[1])
+                    {stats?.by_source && Object.entries(stats.by_source)
+                      .sort((a, b) => (b[1] as number) - (a[1] as number))
                       .map(([src, count]) => (
                         <div key={src} className="flex items-center justify-between text-[10px]">
                           <span className="capitalize">{src}</span>
-                          <span className="font-mono">{count}</span>
+                          <span className="font-mono">{count as number}</span>
                         </div>
                       ))}
                   </CardContent>
@@ -808,9 +811,9 @@ export default function UTOutreachCommand() {
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">KEY METRICS</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1 text-[10px]">
                     <div className="flex justify-between"><span className="text-muted-foreground">Total Leads</span><span className="font-mono">{stats?.total || 0}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Avg AI Score</span><span className="font-mono">{stats?.avgScore || 0}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Avg Touches to Onboard</span><span className="font-mono">{stats?.avgTouchesToOnboard || '—'}</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Today No-Answer %</span><span className="font-mono">{vaPerf?.noAnswerRate || 0}%</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Avg AI Score</span><span className="font-mono">{stats?.avg_score || 0}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Avg Touches to Onboard</span><span className="font-mono">{stats?.avg_touches_to_onboard || '—'}</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Today No-Answer %</span><span className="font-mono">{vaPerf?.no_answer_rate || 0}%</span></div>
                   </CardContent>
                 </Card>
 
@@ -818,15 +821,18 @@ export default function UTOutreachCommand() {
                 <Card className="border-border/30">
                   <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">TOP CITIES</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2 space-y-1">
-                    {stats?.byCity && Object.entries(stats.byCity)
-                      .sort((a, b) => b[1].total - a[1].total)
+                    {stats?.by_city && Object.entries(stats.by_city)
+                      .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
                       .slice(0, 8)
-                      .map(([city, data]) => (
+                      .map(([city, d]) => {
+                        const cityData = d as { total: number; onboarded: number };
+                        return (
                         <div key={city} className="flex items-center justify-between text-[10px]">
                           <span className="truncate w-24">{city}</span>
-                          <span className="font-mono">{data.onboarded}/{data.total}</span>
+                          <span className="font-mono">{cityData.onboarded}/{cityData.total}</span>
                         </div>
-                      ))}
+                        );
+                      })}
                   </CardContent>
                 </Card>
               </div>
