@@ -146,6 +146,42 @@ export function useUTCustomerMutations() {
     onError: (e: any) => toast.error(e.message),
   });
 
+  const initiateCheckout = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { data, error } = await supabase.functions.invoke('ut-create-checkout', {
+        body: { order_id: orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const verifyPayment = useMutation({
+    mutationFn: async (orderId: string) => {
+      const { data, error } = await supabase.functions.invoke('ut-verify-payment', {
+        body: { order_id: orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['ut-orders'] });
+      qc.invalidateQueries({ queryKey: ['ut-event-requests'] });
+      if (data?.status === 'paid') {
+        toast.success('Payment confirmed! Order is now active.');
+      }
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
   return {
     createCustomer,
     createEventRequest,
@@ -153,5 +189,7 @@ export function useUTCustomerMutations() {
     createOrder,
     updateEventStatus,
     saveGeneratedPackage,
+    initiateCheckout,
+    verifyPayment,
   };
 }
