@@ -115,6 +115,7 @@ export default function UTPartnerDashboard() {
     { id: 'availability', label: 'Availability', icon: Clock },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
     { id: 'ai-studio', label: 'AI Studio', icon: Sparkles },
+    { id: 'ai-builder', label: 'AI Builder', icon: Brain },
   ];
 
   const allTabs = [...coreTabs, ...getCategoryTabs()];
