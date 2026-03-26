@@ -303,6 +303,10 @@ export default function UTPartnerDashboard() {
         <TabsContent value="ai-studio">
           <UTPartnerAIStudio partnerId={selectedPartnerId!} category={partnerCategory} />
         </TabsContent>
+        <TabsContent value="ai-builder">
+          <UTAIBusinessBuilder partnerId={selectedPartnerId!} category={partnerCategory} />
+        </TabsContent>
+        </TabsContent>
 
         {/* Category-specific tabs */}
         <TabsContent value="venue">
