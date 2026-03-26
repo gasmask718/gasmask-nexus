@@ -72084,6 +72084,178 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_outreach_logs: {
+        Row: {
+          channel: string
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          lead_id: string
+          notes: string | null
+          outcome: string
+          performed_by: string | null
+        }
+        Insert: {
+          channel?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id: string
+          notes?: string | null
+          outcome?: string
+          performed_by?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          outcome?: string
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_outreach_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_partner_leads: {
+        Row: {
+          ai_score: number | null
+          ai_score_reasons: Json | null
+          assigned_to: string | null
+          business_name: string
+          category: string
+          city: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          notes: string | null
+          onboarded_at: string | null
+          phone: string | null
+          source: string | null
+          state: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          ai_score?: number | null
+          ai_score_reasons?: Json | null
+          assigned_to?: string | null
+          business_name: string
+          category?: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          onboarded_at?: string | null
+          phone?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          ai_score?: number | null
+          ai_score_reasons?: Json | null
+          assigned_to?: string | null
+          business_name?: string
+          category?: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          onboarded_at?: string | null
+          phone?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ut_partner_profiles: {
+        Row: {
+          availability: Json | null
+          business_name: string
+          category: string
+          city: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          lead_id: string | null
+          onboarding_status: string
+          phone: string | null
+          pricing_range: string | null
+          rating: number | null
+          services_offered: string[] | null
+          social_links: Json | null
+          state: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          availability?: Json | null
+          business_name: string
+          category: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          onboarding_status?: string
+          phone?: string | null
+          pricing_range?: string | null
+          rating?: number | null
+          services_offered?: string[] | null
+          social_links?: Json | null
+          state?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          availability?: Json | null
+          business_name?: string
+          category?: string
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          onboarding_status?: string
+          phone?: string | null
+          pricing_range?: string | null
+          rating?: number | null
+          services_offered?: string[] | null
+          social_links?: Json | null
+          state?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_partner_profiles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_staff: {
         Row: {
           address_line_1: string | null

@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog, CalendarDays, DollarSign, Clock, Star, FileText, MessageSquare } from 'lucide-react';
+import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog, CalendarDays, DollarSign, Clock, Star, FileText, MessageSquare, Phone, Target, Brain } from 'lucide-react';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import UnforgettableStaff from '@/pages/os/unforgettable/UnforgettableStaff';
 import UnforgettableStaffProfile from '@/pages/os/unforgettable/UnforgettableStaffProfile';
@@ -9,9 +9,11 @@ import UnforgettableAvailability from '@/pages/os/unforgettable/UnforgettableAva
 import UnforgettablePerformance from '@/pages/os/unforgettable/UnforgettablePerformance';
 import UnforgettableDocuments from '@/pages/os/unforgettable/UnforgettableDocuments';
 import UnforgettableCommunications from '@/pages/os/unforgettable/UnforgettableCommunications';
+import UTOutreachCommand from '@/pages/os/unforgettable/UTOutreachCommand';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/unforgettable', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/os/unforgettable/outreach', label: 'Outreach Command', icon: Phone },
   { path: '/os/unforgettable/staff', label: 'Staff', icon: UserCog },
   { path: '/os/unforgettable/scheduling', label: 'Scheduling', icon: CalendarDays },
   { path: '/os/unforgettable/payroll', label: 'Payroll', icon: DollarSign },
@@ -40,6 +42,7 @@ export const UnforgettableModule: DynastyModule = {
   },
   routes: [
     { path: '', component: UnforgettableDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/outreach', component: UTOutreachCommand, label: 'Outreach Command', icon: Phone, requiresAuth: true },
     { path: '/staff', component: UnforgettableStaff, label: 'Staff', icon: UserCog, requiresAuth: true },
     { path: '/staff/:staffId', component: UnforgettableStaffProfile, label: 'Staff Profile', icon: UserCog, requiresAuth: true },
     { path: '/scheduling', component: UnforgettableScheduling, label: 'Scheduling', icon: CalendarDays, requiresAuth: true },
