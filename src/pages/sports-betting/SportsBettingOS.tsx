@@ -1434,7 +1434,7 @@ export function AutoPopulatedPropsNotice({ date }: { date: string }) {
   );
 }
 
-function VAPropEntryTab() {
+export function VAPropEntryTab() {
   const [games, setGames] = useState<any[]>([]);
   const [gameId, setGameId] = useState('');
   const [entries, setEntries] = useState([
