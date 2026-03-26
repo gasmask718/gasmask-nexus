@@ -670,13 +670,13 @@ export default function UTOutreachCommand() {
 
                 {/* Outreach History */}
                 <Card className="border-border/30">
-                  <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">OUTREACH HISTORY ({outreachLogs.length})</CardTitle></CardHeader>
+                  <CardHeader className="py-1.5 px-3"><CardTitle className="text-[10px] text-muted-foreground">OUTREACH HISTORY ({logsCount})</CardTitle></CardHeader>
                   <CardContent className="px-3 pb-2">
-                    {outreachLogs.length === 0 ? (
+                    {allLogs.length === 0 ? (
                       <p className="text-[10px] text-muted-foreground">No outreach yet</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {outreachLogs.slice(0, 15).map(log => (
+                        {allLogs.map(log => (
                           <div key={log.id} className="bg-muted/20 rounded p-1.5">
                             <div className="flex justify-between text-[10px]">
                               <Badge variant="outline" className="text-[9px] h-4">{log.channel}</Badge>
@@ -687,6 +687,11 @@ export default function UTOutreachCommand() {
                             <p className="text-[9px] text-muted-foreground/50 mt-0.5">{format(new Date(log.created_at), 'MMM d, h:mm a')}</p>
                           </div>
                         ))}
+                        {hasMoreLogs && (
+                          <Button variant="ghost" size="sm" className="w-full h-6 text-[10px]" onClick={() => fetchMoreLogs()}>
+                            Load More
+                          </Button>
+                        )}
                       </div>
                     )}
                   </CardContent>
