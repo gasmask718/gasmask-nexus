@@ -139,6 +139,33 @@ const DYNASTY_NAVIGATION = {
       { path: '/admin/dev/marketplace-connection', label: 'Marketplace Connection', icon: Link2 },
     ],
   },
+  sboAiEngine: {
+    id: 'sbo-ai-engine',
+    name: '🧠 SBO AI Engine',
+    items: [
+      { path: '/os/sports-betting/ai-os', label: '🎯 SBO Cockpit', icon: Target },
+      { path: '/sbo-ai-engine/tonight', label: '🏀 Tonight', icon: Calendar },
+      { path: '/sbo-ai-engine/props', label: '📊 Props', icon: BarChart3 },
+      { path: '/sbo-ai-engine/parlay', label: '🎰 Parlay Builder', icon: Layers },
+      { path: '/sbo-ai-engine/prizepicks', label: '🎯 PrizePicks', icon: Target },
+      { path: '/sbo-ai-engine/bovada', label: '🐂 Bovada', icon: TrendingUp },
+      { path: '/sbo-ai-engine/value', label: '💎 Value Spots', icon: Star },
+      { path: '/sbo-ai-engine/accuracy', label: '📈 Accuracy', icon: LineChart },
+      { path: '/sbo-ai-engine/model', label: '🧬 Model Intel', icon: Brain },
+      { path: '/sbo-ai-engine/my-bets', label: '📱 My Bets', icon: ClipboardList },
+      { path: '/sbo-ai-engine/wallet-intelligence', label: '🔮 Wallet Intelligence', icon: Wallet },
+      { path: '/sbo-ai-engine/capper-intelligence', label: '📊 Capper Intelligence', icon: BarChart3 },
+      { path: '/sbo-ai-engine/signal-alignment', label: '⚡ Signal Alignment', icon: Zap },
+      { path: '/os/sports-betting/profit-center', label: '💰 Profit Center', icon: DollarSign },
+      { path: '/os/sports-betting/hedge-center', label: '💹 Hedge Center', icon: Shield },
+      { path: '/sbo-ai-engine/simulation', label: '⚡ Simulation', icon: Activity },
+      { path: '/sbo-ai-engine/history', label: '📜 History', icon: FileText },
+      { path: '/sbo-ai-engine/sms', label: '📱 ChingWorld SMS', icon: MessageSquare },
+      { path: '/sbo-ai-engine/health', label: '🩺 Health', icon: Heart },
+      { path: '/sbo-ai-engine/sync', label: '⚙️ Sync', icon: Settings },
+      { path: '/sbo-ai-engine/va-entry', label: '📋 VA Entry', icon: ClipboardList },
+    ],
+  },
   securityGovernance: {
     id: 'security-governance',
     name: '🛡️ Security & Governance',
@@ -416,7 +443,6 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-automations', label: 'Dynasty Automations', icon: Zap },
       { path: '/automation-settings', label: 'Automation Settings', icon: Settings },
       { path: '/meta-ai', label: 'Meta AI', icon: Brain },
-      { path: '/os/sports-betting/ai-os', label: '🧠 SBO AI Engine', icon: TrendingUp },
     ],
   },
   systemsHR: {
@@ -562,7 +588,7 @@ const Layout = ({ children }: LayoutProps) => {
   
   // All sections open by default — brandaro-hub PERMANENTLY included
   const [openSections, setOpenSections] = useState<string[]>([
-    'penthouse', 'security-governance',
+    'penthouse', 'sbo-ai-engine', 'security-governance',
     'floor-1', 'floor-2', 'floor-3', 'floor-4', 'floor-5', 'floor-6', 'floor-7', 'floor-8', 'floor-9',
     'surplus-funds-os', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
@@ -689,6 +715,17 @@ const Layout = ({ children }: LayoutProps) => {
         DYNASTY_NAVIGATION.penthouse.name,
         DYNASTY_NAVIGATION.penthouse.items
       )}
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🧠 SBO AI ENGINE — STANDALONE HUB */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.sboAiEngine.id,
+          DYNASTY_NAVIGATION.sboAiEngine.name,
+          DYNASTY_NAVIGATION.sboAiEngine.items
+        )}
+      </div>
 
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🛡️ SECURITY & GOVERNANCE — Constitutional Layer (Owner/Admin/CEO Only) */}
