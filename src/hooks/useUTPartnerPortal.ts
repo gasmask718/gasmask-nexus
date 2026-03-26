@@ -63,7 +63,7 @@ export function useUpsertPartner() {
       const payload = { ...partner, user_id: user.id, updated_at: new Date().toISOString() };
       const { data, error } = await supabase
         .from('ut_partners')
-        .upsert(payload, { onConflict: 'id' })
+        .upsert(payload as any, { onConflict: 'id' })
         .select()
         .single();
       if (error) throw error;
