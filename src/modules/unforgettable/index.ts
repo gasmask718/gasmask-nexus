@@ -42,6 +42,7 @@ export const UnforgettableModule: DynastyModule = {
   },
   routes: [
     { path: '', component: UnforgettableDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/outreach', component: UTOutreachCommand, label: 'Outreach Command', icon: Phone, requiresAuth: true },
     { path: '/staff', component: UnforgettableStaff, label: 'Staff', icon: UserCog, requiresAuth: true },
     { path: '/staff/:staffId', component: UnforgettableStaffProfile, label: 'Staff Profile', icon: UserCog, requiresAuth: true },
     { path: '/scheduling', component: UnforgettableScheduling, label: 'Scheduling', icon: CalendarDays, requiresAuth: true },
