@@ -312,6 +312,9 @@ export default function UTPartnerDashboard() {
         <TabsContent value="menus">
           <UTCateringModule partnerId={selectedPartnerId!} />
         </TabsContent>
+        <TabsContent value="portfolio">
+          <UTDecoratorModule partnerId={selectedPartnerId!} />
+        </TabsContent>
       </Tabs>
     </div>
   );
