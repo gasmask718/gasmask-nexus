@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { UT_DISPOSITIONS, UTDispositionValue } from '@/config/utScripts';
+import { UT_DISPOSITIONS, UTDispositionValue, UT_SMS_TEMPLATES } from '@/config/utScripts';
 
 export type UTLeadStatus = 'new' | 'contacted' | 'interested' | 'callback' | 'onboarded' | 'dead';
 export type UTLeadCategory = 'event_hall' | 'decorator' | 'bartender' | 'caterer' | 'dj' | 'photographer' | 'rental_company' | 'florist' | 'entertainer' | 'staff' | 'security' | 'cleaner' | 'server' | 'other';
@@ -25,7 +25,6 @@ export interface UTPartnerLead {
   onboarded_at: string | null;
   created_at: string;
   updated_at: string;
-  // Production fields
   follow_up_at: string | null;
   callback_due_at: string | null;
   last_contacted_at: string | null;
@@ -40,6 +39,11 @@ export interface UTPartnerLead {
   ai_call_result: string | null;
   ai_handoff_reason: string | null;
   recommended_ai_agent: string | null;
+  next_step: string | null;
+  onboarding_link_sent_at: string | null;
+  last_sms_template: string | null;
+  sms_count: number;
+  automation_state: string | null;
 }
 
 export interface UTOutreachLog {
@@ -51,6 +55,18 @@ export interface UTOutreachLog {
   performed_by: string | null;
   duration_seconds: number | null;
   template_name: string | null;
+  created_at: string;
+}
+
+export interface UTOnboardingRecord {
+  id: string;
+  partner_profile_id: string | null;
+  source_lead_id: string | null;
+  onboarding_token: string;
+  onboarding_link: string | null;
+  status: string;
+  sent_at: string | null;
+  completed_at: string | null;
   created_at: string;
 }
 
@@ -80,7 +96,6 @@ export function useUTPartnerLeads(filters?: {
         query = query.or(`business_name.ilike.%${filters.search}%,contact_name.ilike.%${filters.search}%,phone.ilike.%${filters.search}%,city.ilike.%${filters.search}%`);
       }
 
-      // Queue mode filters
       if (filters?.queueMode === 'new') query = query.eq('status', 'new');
       if (filters?.queueMode === 'callback_due') {
         query = query.eq('status', 'callback').not('callback_due_at', 'is', null);
@@ -114,9 +129,34 @@ export function useUTOutreachLogs(leadId?: string) {
   });
 }
 
+// ── Onboarding Record ──────────────────────────────────────────────
+export function useUTOnboarding(leadId?: string) {
+  return useQuery({
+    queryKey: ['ut-onboarding', leadId],
+    enabled: !!leadId,
+    queryFn: async () => {
+      const { data, error } = await (supabase.from('ut_partner_onboarding') as any)
+        .select('*')
+        .eq('source_lead_id', leadId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as UTOnboardingRecord | null;
+    },
+  });
+}
+
 // ── Lead Mutations ─────────────────────────────────────────────────
 export function useUTLeadMutations() {
   const qc = useQueryClient();
+  const invalidateAll = () => {
+    qc.invalidateQueries({ queryKey: [LEADS_KEY] });
+    qc.invalidateQueries({ queryKey: [LOGS_KEY] });
+    qc.invalidateQueries({ queryKey: ['ut-lead-stats'] });
+    qc.invalidateQueries({ queryKey: ['ut-va-performance'] });
+    qc.invalidateQueries({ queryKey: ['ut-onboarding'] });
+  };
 
   const createLead = useMutation({
     mutationFn: async (input: {
@@ -143,10 +183,7 @@ export function useUTLeadMutations() {
       });
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
-      toast.success('Partner lead added');
-    },
+    onSuccess: () => { invalidateAll(); toast.success('Partner lead added'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -158,9 +195,7 @@ export function useUTLeadMutations() {
         .eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
-    },
+    onSuccess: () => invalidateAll(),
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -188,13 +223,6 @@ export function useUTLeadMutations() {
       if (logErr) throw logErr;
 
       // 2. Update lead
-      const leadUpdate: any = {
-        last_contacted_at: new Date().toISOString(),
-        last_outcome: input.disposition,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Get current lead to check status priority
       const { data: currentLead } = await (supabase.from('ut_partner_leads') as any)
         .select('status, outreach_count')
         .eq('id', input.lead_id)
@@ -206,19 +234,27 @@ export function useUTLeadMutations() {
       const currentPriority = statusPriority[currentLead?.status || 'new'] || 0;
       const newStatusPriority = statusPriority[dispo.statusMap] || 0;
 
-      // Only downgrade status for terminal dispositions, otherwise only upgrade
+      const leadUpdate: any = {
+        last_contacted_at: new Date().toISOString(),
+        last_outcome: input.disposition,
+        updated_at: new Date().toISOString(),
+        outreach_count: (currentLead?.outreach_count || 0) + 1,
+      };
+
       if (dispo.statusMap === 'dead' || newStatusPriority >= currentPriority) {
         leadUpdate.status = dispo.statusMap;
       }
 
-      // Increment outreach count
-      leadUpdate.outreach_count = (currentLead?.outreach_count || 0) + 1;
-
       if (input.follow_up_at) leadUpdate.follow_up_at = input.follow_up_at;
       if (input.callback_due_at) leadUpdate.callback_due_at = input.callback_due_at;
 
+      // Post-call automation: set next_step based on disposition
+      if (input.disposition === 'interested') leadUpdate.next_step = 'onboarding';
+      if (input.disposition === 'callback_requested') leadUpdate.next_step = 'callback';
+      if (input.disposition === 'send_info') leadUpdate.next_step = 'send_info';
       if (input.disposition === 'onboarded') {
         leadUpdate.onboarded_at = new Date().toISOString();
+        leadUpdate.next_step = 'completed';
       }
 
       const { error: updateErr } = await (supabase.from('ut_partner_leads') as any)
@@ -226,50 +262,75 @@ export function useUTLeadMutations() {
         .eq('id', input.lead_id);
       if (updateErr) throw updateErr;
 
-      return { disposition: input.disposition, statusMap: dispo.statusMap };
+      return { disposition: input.disposition, statusMap: dispo.statusMap, lead_id: input.lead_id };
     },
     onSuccess: (result) => {
-      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
-      qc.invalidateQueries({ queryKey: [LOGS_KEY] });
-      qc.invalidateQueries({ queryKey: ['ut-lead-stats'] });
-      qc.invalidateQueries({ queryKey: ['ut-va-performance'] });
+      invalidateAll();
       const emoji = result.disposition === 'onboarded' ? '🎉' : result.disposition === 'interested' ? '🔥' : '✅';
       toast.success(`${emoji} Disposition saved: ${result.disposition}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const logOutreach = useMutation({
+  const sendSmsTemplate = useMutation({
     mutationFn: async (input: {
-      lead_id: string;
-      channel: string;
-      outcome: string;
-      notes?: string;
-      duration_seconds?: number;
-      template_name?: string;
+      lead: UTPartnerLead;
+      templateKey: string;
+      vaName?: string;
     }) => {
-      const { error } = await (supabase.from('ut_outreach_logs') as any).insert({
-        lead_id: input.lead_id,
-        channel: input.channel,
-        outcome: input.outcome,
-        notes: input.notes || null,
-        duration_seconds: input.duration_seconds || null,
-        template_name: input.template_name || null,
+      const tpl = UT_SMS_TEMPLATES.find(t => t.key === input.templateKey);
+      if (!tpl) throw new Error('Template not found');
+      if (!input.lead.phone) throw new Error('Lead has no phone number');
+
+      const body = tpl.body
+        .replace(/\[Contact Name\]/g, input.lead.contact_name || 'there')
+        .replace(/\[Business Name\]/g, input.lead.business_name)
+        .replace(/\[City\]/g, input.lead.city || 'your area')
+        .replace(/\[VA Name\]/g, input.vaName || 'Your Partner Rep')
+        .replace(/\[LINK\]/g, 'https://unforgettabletimes.com/join');
+
+      // Send via Dynasty Connect SMS pathway
+      const { data, error: smsErr } = await supabase.functions.invoke('send-sms', {
+        body: {
+          to_number: input.lead.phone,
+          message_body: body,
+          idempotency_key: crypto.randomUUID(),
+          metadata: { brand: 'unforgettable_times', template: input.templateKey, lead_id: input.lead.id },
+        },
       });
-      if (error) throw error;
+
+      // Log to outreach
+      await (supabase.from('ut_outreach_logs') as any).insert({
+        lead_id: input.lead.id,
+        channel: 'sms',
+        outcome: 'sms_sent',
+        notes: `Template: ${tpl.label}`,
+        template_name: input.templateKey,
+      });
+
+      // Update lead SMS tracking
+      await (supabase.from('ut_partner_leads') as any)
+        .update({
+          last_sms_template: input.templateKey,
+          sms_count: (input.lead.sms_count || 0) + 1,
+          last_contacted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.lead.id);
+
+      return { success: data?.success ?? true, templateLabel: tpl.label };
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
-      qc.invalidateQueries({ queryKey: [LOGS_KEY] });
-      toast.success('Outreach logged');
+    onSuccess: (result) => {
+      invalidateAll();
+      toast.success(`📱 ${result.templateLabel} SMS sent`);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(`SMS failed: ${e.message}`),
   });
 
   const handoffToPartnerProfile = useMutation({
     mutationFn: async (lead: UTPartnerLead) => {
-      // Create or update partner profile
-      const { error } = await (supabase.from('ut_partner_profiles') as any).upsert({
+      // 1. Upsert partner profile
+      const { data: profile, error: profileErr } = await (supabase.from('ut_partner_profiles') as any).upsert({
         lead_id: lead.id,
         source_lead_id: lead.id,
         business_name: lead.business_name,
@@ -280,12 +341,65 @@ export function useUTLeadMutations() {
         city: lead.city,
         state: lead.state,
         onboarding_status: 'pending',
-      }, { onConflict: 'lead_id' });
-      if (error) throw error;
+      }, { onConflict: 'lead_id' }).select().single();
+      if (profileErr) throw profileErr;
+
+      // 2. Create onboarding record
+      const token = crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+      const link = `https://unforgettabletimes.com/onboard/${token}`;
+      const { data: onboarding, error: onbErr } = await (supabase.from('ut_partner_onboarding') as any).insert({
+        partner_profile_id: profile?.id || null,
+        source_lead_id: lead.id,
+        onboarding_token: token,
+        onboarding_link: link,
+        status: 'pending',
+      }).select().single();
+      if (onbErr) throw onbErr;
+
+      return { profile, onboarding };
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
-      toast.success('🎉 Moved to Partner Profile');
+      invalidateAll();
+      toast.success('🎉 Moved to Partner Profile + onboarding created');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const sendOnboardingLink = useMutation({
+    mutationFn: async (input: { lead: UTPartnerLead; onboardingLink: string; onboardingId: string }) => {
+      if (!input.lead.phone) throw new Error('No phone');
+      const tpl = UT_SMS_TEMPLATES.find(t => t.key === 'onboarding_link_text')!;
+      const body = tpl.body
+        .replace(/\[LINK\]/g, input.onboardingLink)
+        .replace(/\[Contact Name\]/g, input.lead.contact_name || 'there');
+
+      await supabase.functions.invoke('send-sms', {
+        body: {
+          to_number: input.lead.phone,
+          message_body: body,
+          idempotency_key: crypto.randomUUID(),
+          metadata: { brand: 'unforgettable_times', template: 'onboarding_link_text', lead_id: input.lead.id },
+        },
+      });
+
+      await (supabase.from('ut_partner_onboarding') as any)
+        .update({ status: 'sent', sent_at: new Date().toISOString() })
+        .eq('id', input.onboardingId);
+
+      await (supabase.from('ut_partner_leads') as any)
+        .update({ onboarding_link_sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', input.lead.id);
+
+      await (supabase.from('ut_outreach_logs') as any).insert({
+        lead_id: input.lead.id,
+        channel: 'sms',
+        outcome: 'onboarding_link_sent',
+        template_name: 'onboarding_link_text',
+      });
+    },
+    onSuccess: () => {
+      invalidateAll();
+      toast.success('📱 Onboarding link sent');
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -295,35 +409,52 @@ export function useUTLeadMutations() {
       const { error } = await (supabase.from('ut_partner_leads') as any).delete().eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
-      toast.success('Lead deleted');
-    },
+    onSuccess: () => { invalidateAll(); toast.success('Lead deleted'); },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  return { createLead, updateLead, saveCallDisposition, logOutreach, handoffToPartnerProfile, deleteLead };
+  return { createLead, updateLead, saveCallDisposition, sendSmsTemplate, handoffToPartnerProfile, sendOnboardingLink, deleteLead };
 }
 
-// ── Stats ──────────────────────────────────────────────────────────
+// ── Stats (funnel) ─────────────────────────────────────────────────
 export function useUTLeadStats() {
   return useQuery({
     queryKey: ['ut-lead-stats'],
     queryFn: async () => {
-      const { data, error } = await (supabase.from('ut_partner_leads') as any).select('status, category, ai_score, city');
+      const { data, error } = await (supabase.from('ut_partner_leads') as any)
+        .select('status, category, ai_score, city, source, outreach_count');
       if (error) throw error;
       const leads = data || [];
 
       const byStatus: Record<string, number> = {};
-      const byCategory: Record<string, number> = {};
-      const byCity: Record<string, number> = {};
+      const byCategory: Record<string, { total: number; onboarded: number }> = {};
+      const byCity: Record<string, { total: number; onboarded: number }> = {};
+      const bySource: Record<string, number> = {};
       let totalScore = 0;
+      let totalTouches = 0;
+      let onboardedTouches = 0;
+      let onboardedCount = 0;
 
       for (const l of leads) {
         byStatus[l.status] = (byStatus[l.status] || 0) + 1;
-        byCategory[l.category] = (byCategory[l.category] || 0) + 1;
-        if (l.city) byCity[l.city] = (byCity[l.city] || 0) + 1;
+
+        if (!byCategory[l.category]) byCategory[l.category] = { total: 0, onboarded: 0 };
+        byCategory[l.category].total++;
+        if (l.status === 'onboarded') byCategory[l.category].onboarded++;
+
+        if (l.city) {
+          if (!byCity[l.city]) byCity[l.city] = { total: 0, onboarded: 0 };
+          byCity[l.city].total++;
+          if (l.status === 'onboarded') byCity[l.city].onboarded++;
+        }
+
+        if (l.source) bySource[l.source] = (bySource[l.source] || 0) + 1;
         totalScore += l.ai_score || 0;
+        totalTouches += l.outreach_count || 0;
+        if (l.status === 'onboarded') {
+          onboardedCount++;
+          onboardedTouches += l.outreach_count || 0;
+        }
       }
 
       return {
@@ -331,7 +462,9 @@ export function useUTLeadStats() {
         byStatus,
         byCategory,
         byCity,
+        bySource,
         avgScore: leads.length ? Math.round(totalScore / leads.length) : 0,
+        avgTouchesToOnboard: onboardedCount > 0 ? Math.round(onboardedTouches / onboardedCount * 10) / 10 : 0,
       };
     },
   });
@@ -344,7 +477,7 @@ export function useUTVAPerformance() {
     queryFn: async () => {
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
-      
+
       const { data: logs, error } = await (supabase.from('ut_outreach_logs') as any)
         .select('channel, outcome, created_at')
         .gte('created_at', todayStart.toISOString());
@@ -370,6 +503,23 @@ export function useUTVAPerformance() {
         conversionRate: connected.length > 0 ? Math.round((interested.length / connected.length) * 100) : 0,
       };
     },
-    refetchInterval: 30000, // Refresh every 30s
+    refetchInterval: 30000,
+  });
+}
+
+// ── Outcome Distribution ───────────────────────────────────────────
+export function useUTOutcomeDistribution() {
+  return useQuery({
+    queryKey: ['ut-outcome-distribution'],
+    queryFn: async () => {
+      const { data, error } = await (supabase.from('ut_outreach_logs') as any)
+        .select('outcome');
+      if (error) throw error;
+      const dist: Record<string, number> = {};
+      for (const row of data || []) {
+        dist[row.outcome] = (dist[row.outcome] || 0) + 1;
+      }
+      return dist;
+    },
   });
 }
