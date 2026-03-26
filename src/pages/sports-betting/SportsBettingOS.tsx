@@ -4379,96 +4379,39 @@ export default function SportsBettingOS() {
       {/* Today's Guarantee Widget */}
       <TodaysGuaranteeWidget />
 
-
-      {/* ═══ CUSTOM TAB NAVIGATION ═══ */}
-      {(() => {
-        const primaryTabs = [
-          { id: 'games', label: '🏀 Tonight', shortLabel: 'Tonight' },
-          { id: 'props', label: '📊 Props', shortLabel: 'Props', badge: strongCount },
-          { id: 'prizepicks', label: '🎯 PrizePicks', shortLabel: 'PP' },
-          { id: 'bovada', label: '🐂 Bovada', shortLabel: 'Bovada' },
-          { id: 'sms', label: '📱 ChingWorld', shortLabel: 'SMS' },
-          { id: 'hedge', label: '🛡️ Hedge', shortLabel: 'Hedge' },
-          { id: 'parlay', label: '🎰 Parlay', shortLabel: 'Parlay' },
-        ];
-        const secondaryTabs = [
-          { id: 'value', label: '💎 Value', shortLabel: 'Value', badge: valueCount },
-          { id: 'accuracy', label: '📊 Accuracy', shortLabel: 'Accuracy' },
-          { id: 'model', label: '🧬 Model', shortLabel: 'Model' },
-          { id: 'mybets', label: '📱 My Bets', shortLabel: 'Bets' },
-          { id: 'history', label: '📜 History', shortLabel: 'History' },
-          { id: 'sim', label: '⚡ Sim', shortLabel: 'Sim' },
-          { id: 'entry', label: '📋 VA Entry', shortLabel: 'Entry' },
-          { id: 'health', label: '🩺 Health', shortLabel: 'Health' },
-          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
-          { id: 'sync', label: '⚙️ Sync', shortLabel: 'Sync' },
-        ];
-        const allTabs = [...primaryTabs, ...secondaryTabs];
-        const renderBtn = (tab: { id: string; label: string; shortLabel: string; badge?: number }, isPrimary: boolean) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`${isPrimary ? 'px-3 py-2 text-sm' : 'px-3 py-1.5 text-xs'} rounded-lg font-medium whitespace-nowrap transition-all ${
-              activeTab === tab.id
-                ? isPrimary
-                  ? 'bg-primary text-primary-foreground shadow-md'
-                  : 'bg-primary/20 text-primary border border-primary/30'
-                : 'bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground'
-            }`}
-          >
-            {isPrimary ? tab.label : tab.label}
-            {(tab.badge || 0) > 0 && (
-              <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-primary/30 text-[9px] px-1">{tab.badge}</span>
-            )}
-          </button>
-        );
-        return (
-          <>
-            {/* Desktop: Two rows */}
-            <div className="hidden md:flex flex-col gap-1 mb-4">
-              <div className="flex flex-wrap gap-1">{primaryTabs.map(t => renderBtn(t, true))}</div>
-              <div className="flex flex-wrap gap-1">{secondaryTabs.map(t => renderBtn(t, false))}</div>
-            </div>
-            {/* Mobile: Horizontal scroll */}
-            <div className="md:hidden overflow-x-auto pb-1 mb-4 scrollbar-hide">
-              <div className="flex gap-1 w-max">
-                {allTabs.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id)}
-                    className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap ${
-                      activeTab === t.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted/40 text-muted-foreground'
-                    }`}
-                  >
-                    {t.shortLabel}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {/* Tab content */}
-            <div className="mt-4">
-              {activeTab === 'games' && <TonightGamesTab />}
-              {activeTab === 'props' && <PlayerPropsTab />}
-              {activeTab === 'value' && <ValueSpotsTab />}
-              {activeTab === 'parlay' && <ParlayBuilderTab />}
-              {activeTab === 'hedge' && <HedgeCenter />}
-              {activeTab === 'sim' && <SimulationTab />}
-              {activeTab === 'accuracy' && <AccuracyTab />}
-              {activeTab === 'model' && <ModelIntelligenceTab />}
-              {activeTab === 'mybets' && <MyBetsTab />}
-              {activeTab === 'sms' && <ChingWorldPicksSMS />}
-              {activeTab === 'prizepicks' && <PrizePicksAnalyzer />}
-              {activeTab === 'bovada' && <BookPropsComparison />}
-              {activeTab === 'history' && <PredictionHistory />}
-              {activeTab === 'entry' && <VAPropEntryTab />}
-              {activeTab === 'health' && <SBOHealthDashboard />}
-              {activeTab === 'sync' && <SyncDashboard />}
-            </div>
-          </>
-        );
-      })()}
+      {/* ═══ QUICK NAV GRID ═══ */}
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Quick Access</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          {[
+            { label: '🏀 Tonight', path: '/sbo-ai-engine/tonight' },
+            { label: '📊 Props', path: '/sbo-ai-engine/props' },
+            { label: '🎰 Parlay', path: '/sbo-ai-engine/parlay' },
+            { label: '🛡️ Hedge', path: '/sbo-ai-engine/hedge' },
+            { label: '💎 Value', path: '/sbo-ai-engine/value' },
+            { label: '📊 Accuracy', path: '/sbo-ai-engine/accuracy' },
+            { label: '🧬 Model', path: '/sbo-ai-engine/model' },
+            { label: '📱 My Bets', path: '/sbo-ai-engine/my-bets' },
+            { label: '🎯 PrizePicks', path: '/sbo-ai-engine/prizepicks' },
+            { label: '🐂 Bovada', path: '/sbo-ai-engine/bovada' },
+            { label: '📱 ChingWorld', path: '/sbo-ai-engine/sms' },
+            { label: '⚡ Simulation', path: '/sbo-ai-engine/simulation' },
+            { label: '📜 History', path: '/sbo-ai-engine/history' },
+            { label: '📋 VA Entry', path: '/sbo-ai-engine/va-entry' },
+            { label: '🩺 Health', path: '/sbo-ai-engine/health' },
+            { label: '⚙️ Sync', path: '/sbo-ai-engine/sync' },
+          ].map(item => (
+            <a
+              key={item.path}
+              href={item.path}
+              onClick={(e) => { e.preventDefault(); window.history.pushState({}, '', item.path); window.dispatchEvent(new PopStateEvent('popstate')); }}
+              className="px-3 py-2.5 rounded-lg text-sm font-medium bg-muted/40 text-muted-foreground hover:bg-muted/70 hover:text-foreground transition-all text-center border border-border/50"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
