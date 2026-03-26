@@ -32,6 +32,18 @@ const CAPPER_TIER_POINTS: Record<string, number> = {
   weak: 3,
 };
 
+// === PART 1: DIRECTION NORMALIZATION ENGINE ===
+const DIRECTION_MAP: Record<string, 'positive' | 'negative'> = {
+  over: 'positive', yes: 'positive', more: 'positive', up: 'positive', high: 'positive',
+  under: 'negative', no: 'negative', less: 'negative', down: 'negative', low: 'negative',
+};
+
+function normalizeDirection(input: string | null | undefined): 'positive' | 'negative' | 'unknown' {
+  if (!input) return 'unknown';
+  const key = input.trim().toLowerCase();
+  return DIRECTION_MAP[key] || 'unknown';
+}
+
 // === UPGRADE #5: TIME DECAY ===
 function getTimeDecay(eventTime: string | null): number {
   if (!eventTime) return 0.4;
@@ -40,6 +52,63 @@ function getTimeDecay(eventTime: string | null): number {
   if (hoursAgo < 3) return 0.8;
   if (hoursAgo < 6) return 0.6;
   return 0.4;
+}
+
+// === PART 2: BET SIZING ENGINE ===
+interface BetRecommendation {
+  units: number;
+  amount: number;
+  riskLevel: 'Low' | 'Medium' | 'Medium-High' | 'High';
+  kellyFraction: number;
+}
+
+function getRecommendedBet(
+  pickTier: string,
+  finalScore: number,
+  aiConfidence: number,
+  bankrollAmount: number,
+  unitSize: number,
+): BetRecommendation {
+  let units = 0;
+  let kellyFraction = 0;
+  let riskLevel: BetRecommendation['riskLevel'] = 'Low';
+
+  if (pickTier === 'grandmaster') {
+    units = finalScore >= 95 ? 5 : 4;
+    kellyFraction = 0.75;
+    riskLevel = 'High';
+  } else if (pickTier === 'elite') {
+    units = finalScore >= 80 ? 3 : 2;
+    kellyFraction = 0.5;
+    riskLevel = 'Medium-High';
+  } else if (pickTier === 'solid') {
+    units = finalScore >= 60 ? 2 : 1;
+    kellyFraction = 0.25;
+    riskLevel = 'Medium';
+  } else {
+    // low — skip or minimal
+    units = 0;
+    kellyFraction = 0;
+    riskLevel = 'Low';
+  }
+
+  // Kelly-based sizing: kellyFraction * edge * bankroll
+  const edge = (aiConfidence - 50) / 100; // simplified edge
+  const kellyAmount = kellyFraction * Math.max(edge, 0) * bankrollAmount;
+  const unitAmount = units * unitSize;
+
+  // Use the more conservative of the two
+  const amount = Math.min(kellyAmount || unitAmount, unitAmount);
+  // Cap at 5% of bankroll per bet
+  const maxBet = bankrollAmount * 0.05;
+  const cappedAmount = Math.min(amount, maxBet);
+
+  return {
+    units,
+    amount: Math.round(cappedAmount * 100) / 100,
+    riskLevel,
+    kellyFraction,
+  };
 }
 
 // === UPGRADE #1: STRUCTURED MATCHING ===
