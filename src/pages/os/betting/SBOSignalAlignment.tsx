@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Brain, Wallet, Users, Shield, Crown, Flame, AlertTriangle, Filter, Clock } from 'lucide-react';
+import { Brain, Wallet, Users, Shield, Crown, Flame, AlertTriangle, Filter, Clock, DollarSign } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 
 // === WEIGHTING CONFIG ===
 const WEIGHTS = { ai: 0.4, wallet: 0.4, capper: 0.2 };
