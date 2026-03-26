@@ -46,7 +46,7 @@ export const getTodayETBounds = () => getETDayBounds(new Date());
 // SAVE PICK BUTTON — Reusable across all tabs
 // ═══════════════════════════════════════════════════════════════
 
-function SavePickButton({
+export function SavePickButton({
   pickType,
   label,
   detail,
