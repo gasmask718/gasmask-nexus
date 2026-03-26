@@ -524,6 +524,29 @@ export default function AppSidebar() {
                 { path: '/solar/ai-brain', label: 'Floor 9 — AI Brain', emoji: '🧠' },
                 { path: '/solar/analytics', label: 'Floor 10 — Analytics', emoji: '📊' },
               ], "text-amber-400 hover:bg-amber-500/10")}
+
+              {renderSection('sbo-ai-engine', 'SBO AI Engine', '🧠', [
+                { path: '/os/sports-betting/ai-os', label: 'SBO Cockpit', emoji: '🎯' },
+                { path: '/sbo-ai-engine/tonight', label: 'Tonight', emoji: '🏀' },
+                { path: '/sbo-ai-engine/props', label: 'Props', emoji: '📊' },
+                { path: '/sbo-ai-engine/parlay', label: 'Parlay Builder', emoji: '🎰' },
+                { path: '/sbo-ai-engine/prizepicks', label: 'PrizePicks', emoji: '🎯' },
+                { path: '/sbo-ai-engine/bovada', label: 'Bovada', emoji: '🐂' },
+                { path: '/sbo-ai-engine/value', label: 'Value Spots', emoji: '💎' },
+                { path: '/sbo-ai-engine/accuracy', label: 'Accuracy', emoji: '📈' },
+                { path: '/sbo-ai-engine/model', label: 'Model Intel', emoji: '🧬' },
+                { path: '/sbo-ai-engine/my-bets', label: 'My Bets', emoji: '📱' },
+                { path: '/sbo-ai-engine/wallet-intelligence', label: 'Wallet Intelligence', emoji: '🔮' },
+                { path: '/sbo-ai-engine/capper-intelligence', label: 'Capper Intelligence', emoji: '📊' },
+                { path: '/sbo-ai-engine/signal-alignment', label: 'Signal Alignment', emoji: '⚡' },
+                { path: '/os/sports-betting/profit-center', label: 'Profit Center', emoji: '💰' },
+                { path: '/sbo-ai-engine/simulation', label: 'Simulation', emoji: '⚡' },
+                { path: '/sbo-ai-engine/history', label: 'History', emoji: '📜' },
+                { path: '/sbo-ai-engine/sms', label: 'ChingWorld SMS', emoji: '📱' },
+                { path: '/sbo-ai-engine/health', label: 'Health', emoji: '🩺' },
+                { path: '/sbo-ai-engine/sync', label: 'Sync', emoji: '⚙️' },
+                { path: '/sbo-ai-engine/va-entry', label: 'VA Entry', emoji: '📋' },
+              ], "text-amber-400 hover:bg-amber-500/10")}
             </div>
           )}
 
