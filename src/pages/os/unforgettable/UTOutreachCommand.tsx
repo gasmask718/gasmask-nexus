@@ -27,6 +27,7 @@ import {
   UT_SCRIPTS, UT_OBJECTIONS, UT_SMS_TEMPLATES, VA_DAILY_QUOTAS
 } from '@/config/utScripts';
 import { toast } from 'sonner';
+import UTLeadImporter from '@/components/unforgettable/UTLeadImporter';
 
 const CATEGORIES = [
   { value: 'event_hall', label: 'Event Hall' },
