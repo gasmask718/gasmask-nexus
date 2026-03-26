@@ -128,13 +128,14 @@ export function usePropsMaster(filters?: {
 }
 
 // ── Full stats from DB (no row limit) ────────────────────────────────────────
-export function usePropsMasterStats(gameDate?: string) {
+export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
   return useQuery({
-    queryKey: ['props-master-stats', gameDate],
+    queryKey: ['props-master-stats', gameDate, timeRange],
     queryFn: async () => {
       // Use separate count queries to avoid row limits
       const baseFilter = (q: any) => {
         if (gameDate) return q.eq('game_date', gameDate);
+        if (timeRange && timeRange !== 'all') return applyDateRange(q, timeRange);
         return q;
       };
 
