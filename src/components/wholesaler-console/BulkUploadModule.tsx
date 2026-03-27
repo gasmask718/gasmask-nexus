@@ -11,9 +11,10 @@ import { toast } from 'sonner';
 import {
   Upload, FileSpreadsheet, Brain, CheckCircle, XCircle, AlertTriangle,
   Loader2, Eye, ChevronRight, Sparkles, ImageIcon, Package, ArrowLeft,
-  RotateCcw, Send, Filter, Check, X, Edit2, Zap
+  RotateCcw, Send, Filter, Check, X, Edit2, Zap, Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 // ─── Types ─────────────────────────────────────────────
 interface RawProduct {
