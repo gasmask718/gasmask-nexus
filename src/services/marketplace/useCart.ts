@@ -101,7 +101,7 @@ export function useCart() {
         productMap[p.id] = {
           id: p.id,
           product_name: p.product_name || '',
-          images: Array.isArray(p.images) ? p.images : [],
+          images: Array.isArray(p.images) ? (p.images as string[]) : [],
           retail_price: p.retail_price,
           store_price: p.store_price,
           wholesale_price: p.wholesale_price,
