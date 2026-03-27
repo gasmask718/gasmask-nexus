@@ -11,8 +11,7 @@ import {
   ChevronRight, Phone, Shield, Database
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useTerritoryStats, useTerritoryJobs } from "@/hooks/useUTTerritoryJobs";
-import { useStateCoverage } from "@/hooks/useUTTerritoryJobs";
+import { useTerritoryStats, useTerritoryJobs, useStateCoverage, TerritoryJob, StateCoverage } from "@/hooks/useUTTerritoryJobs";
 import { useTerritoryHeatmap, useRunAIScoring } from "@/hooks/useUTTerritoryIntelligence";
 import { toast } from "sonner";
 
