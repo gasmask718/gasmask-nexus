@@ -2972,8 +2972,9 @@ export default function AppRoutes() {
       <Route element={<ProtectedLayout />}>
         <Route path="/os/unforgettable" element={<UTHubLayout />}>
           <Route index element={<UTPenthouse />} />
-          <Route path="intelligence" element={<UTIntelligence />} />
-          <Route path="territory" element={<UTTerritoryIntelligence />} />
+          <Route path="intelligence" element={<UTIntelligenceCommandCenter />} />
+          <Route path="territory" element={<UTTerritoryControl />} />
+          <Route path="territory-heatmap" element={<UTTerritoryIntelligence />} />
           <Route path="places" element={<UTPlacesLeadFinder />} />
           <Route path="outreach" element={<UTOutreachCommand />} />
           <Route path="communications" element={<UnforgettableCommunications />} />
