@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import {
   ArrowLeft, Search, MapPin, Phone, Globe, Star, Download, Loader2,
-  CheckCircle, AlertTriangle, X, ChevronRight, Zap, ExternalLink
+  CheckCircle, AlertTriangle, X, ChevronRight, Zap, ExternalLink, RefreshCw
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -67,7 +68,6 @@ interface PlaceResult {
   maps_url: string | null;
   phone: string | null;
   website: string | null;
-  // enriched
   ut_category: string;
   category_confidence: number;
   duplicate_status: "new" | "probable_duplicate" | "exact_duplicate";
@@ -82,15 +82,17 @@ export default function UTPlacesLeadFinder() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("NJ");
   const [searching, setSearching] = useState(false);
+  const [searchProgress, setSearchProgress] = useState("");
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailTarget, setDetailTarget] = useState<PlaceResult | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState<any>(null);
   const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; failed: number } | null>(null);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState(0);
+  const [importResult, setImportResult] = useState<{ imported: number; skipped: number; failed: number; phonesEnriched: number } | null>(null);
 
-  // Recent searches
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Existing place_ids for dedup
@@ -134,6 +136,7 @@ export default function UTPlacesLeadFinder() {
     return "new";
   }, [existingPlaceIds, existingPhones, existingBizKeys]);
 
+  // ── SEARCH: uses search_all for auto-pagination (up to 60 results) ──
   const handleSearch = useCallback(async (overrideQuery?: string) => {
     const q = overrideQuery || keyword;
     if (!q.trim()) { toast.error("Enter a search query"); return; }
@@ -143,17 +146,20 @@ export default function UTPlacesLeadFinder() {
     setSelected(new Set());
     setDetailTarget(null);
     setImportResult(null);
+    setSearchProgress("Loading existing leads for dedup...");
 
     try {
       await loadExistingLeads();
+      setSearchProgress("Searching Google Places (up to 60 results)...");
+
       const { data, error } = await supabase.functions.invoke("ut-places-search", {
-        body: { action: "search", query: fullQuery },
+        body: { action: "search_all", query: fullQuery, max_pages: 3 },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      const enriched: PlaceResult[] = (data.places || []).map((p: any) => {
-        const { category, confidence } = normalizeGoogleType(p.types, p.name);
+      const enriched: PlaceResult[] = (Array.isArray(data.places) ? data.places : []).map((p: any) => {
+        const { category, confidence } = normalizeGoogleType(p.types || [], p.name || "");
         return {
           ...p,
           ut_category: category,
@@ -163,36 +169,70 @@ export default function UTPlacesLeadFinder() {
       });
       setResults(enriched);
       setRecentSearches(prev => [fullQuery, ...prev.filter(s => s !== fullQuery)].slice(0, 8));
-      toast.success(`Found ${enriched.length} results`);
+      const pagesMsg = data.pages_fetched ? ` (${data.pages_fetched} page${data.pages_fetched > 1 ? 's' : ''})` : '';
+      toast.success(`Found ${enriched.length} results${pagesMsg}`);
     } catch (err: any) {
       toast.error(err.message || "Search failed");
     } finally {
       setSearching(false);
+      setSearchProgress("");
     }
   }, [keyword, city, state, loadExistingLeads, getDupStatus]);
 
-  const handleDetail = useCallback(async (place: PlaceResult) => {
-    setDetailTarget(place);
-    setDetailLoading(true);
-    setDetailData(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("ut-places-search", {
-        body: { action: "details", place_id: place.place_id },
-      });
-      if (error) throw error;
-      setDetailData(data);
-    } catch {
-      toast.error("Failed to load details");
-    } finally {
-      setDetailLoading(false);
-    }
-  }, []);
+  // ── ENRICH: batch-fetch phone numbers for results missing them ──
+  const handleEnrichPhones = useCallback(async () => {
+    const needEnrich = results.filter(r => !r.phone && r.duplicate_status !== "exact_duplicate");
+    if (!needEnrich.length) { toast.info("All results already have phone numbers"); return; }
 
+    setEnriching(true);
+    setEnrichProgress(0);
+    let enrichedCount = 0;
+    const BATCH = 20;
+
+    for (let i = 0; i < needEnrich.length; i += BATCH) {
+      const batch = needEnrich.slice(i, i + BATCH);
+      const ids = batch.map(r => r.place_id);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("ut-places-search", {
+          body: { action: "enrich_batch", place_ids: ids },
+        });
+        if (error) throw error;
+
+        const enrichedMap = new Map<string, any>();
+        for (const e of (Array.isArray(data?.enriched) ? data.enriched : [])) {
+          enrichedMap.set(e.place_id, e);
+        }
+
+        setResults(prev => prev.map(r => {
+          const e = enrichedMap.get(r.place_id);
+          if (!e) return r;
+          return {
+            ...r,
+            phone: e.phone || r.phone,
+            website: e.website || r.website,
+            rating: e.rating || r.rating,
+          };
+        }));
+        enrichedCount += data?.enriched_count || 0;
+      } catch {
+        // continue with next batch
+      }
+      setEnrichProgress(Math.round(((i + batch.length) / needEnrich.length) * 100));
+    }
+
+    setEnriching(false);
+    setEnrichProgress(0);
+    toast.success(`Enriched ${enrichedCount} leads with phone/website data`);
+  }, [results]);
+
+  // ── IMPORT: with summary ──
   const handleImport = useCallback(async () => {
     const toImport = results.filter(r => selected.has(r.place_id) && r.duplicate_status !== "exact_duplicate");
     if (!toImport.length) { toast.error("No leads selected for import"); return; }
     setImporting(true);
     let imported = 0, skipped = 0, failed = 0;
+    const phonesEnriched = toImport.filter(r => r.phone).length;
 
     const BATCH = 50;
     for (let i = 0; i < toImport.length; i += BATCH) {
@@ -210,9 +250,9 @@ export default function UTPlacesLeadFinder() {
         google_rating: p.rating,
         google_types: p.types,
         maps_url: p.maps_url || null,
-        status: "new",
-        ai_score: 50,
-        notes: "Imported from Google Places",
+        status: p.phone ? "new" : "needs_enrichment",
+        ai_score: p.phone ? 50 : 30,
+        notes: p.phone ? "Imported from Google Places" : "Imported — needs phone enrichment",
       }));
       const { error } = await (supabase.from("ut_partner_leads") as any).insert(batch);
       if (error) {
@@ -222,7 +262,7 @@ export default function UTPlacesLeadFinder() {
       }
     }
     skipped = toImport.filter(r => r.duplicate_status === "exact_duplicate").length;
-    setImportResult({ imported, skipped, failed });
+    setImportResult({ imported, skipped, failed, phonesEnriched });
     setImporting(false);
     if (imported > 0) {
       qc.invalidateQueries({ queryKey: ["ut-partner-leads"] });
@@ -230,7 +270,6 @@ export default function UTPlacesLeadFinder() {
       qc.invalidateQueries({ queryKey: ["ut-territory-heatmap"] });
       toast.success(`Imported ${imported} leads`);
       await loadExistingLeads();
-      // Refresh dup status
       setResults(prev => prev.map(r => ({
         ...r,
         duplicate_status: existingPlaceIds.has(r.place_id) || selected.has(r.place_id) ? "exact_duplicate" : r.duplicate_status,
@@ -252,6 +291,7 @@ export default function UTPlacesLeadFinder() {
 
   const newCount = results.filter(r => r.duplicate_status === "new").length;
   const dupCount = results.filter(r => r.duplicate_status !== "new").length;
+  const noPhoneCount = results.filter(r => !r.phone && r.duplicate_status !== "exact_duplicate").length;
 
   const DUP_BADGE: Record<string, string> = {
     new: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
@@ -264,7 +304,7 @@ export default function UTPlacesLeadFinder() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/os/unforgettable/outreach")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/os/unforgettable/intelligence")}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
@@ -272,13 +312,20 @@ export default function UTPlacesLeadFinder() {
               <MapPin className="h-5 w-5 text-primary" />
               Google Places Lead Finder
             </h1>
-            <p className="text-xs text-muted-foreground">Discover & import event vendors from Google</p>
+            <p className="text-xs text-muted-foreground">Discover, enrich & import event vendors — up to 60 per search</p>
           </div>
         </div>
         {results.length > 0 && (
           <div className="flex items-center gap-2">
-            <Badge variant="outline">{newCount} new</Badge>
+            <Badge variant="outline">{results.length} found</Badge>
+            <Badge variant="outline" className="text-emerald-400">{newCount} new</Badge>
             {dupCount > 0 && <Badge variant="outline" className="text-yellow-400">{dupCount} dups</Badge>}
+            {noPhoneCount > 0 && (
+              <Button size="sm" variant="outline" onClick={handleEnrichPhones} disabled={enriching} className="gap-1.5 text-xs">
+                {enriching ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Enrich {noPhoneCount} phones
+              </Button>
+            )}
             <Button size="sm" variant="outline" onClick={selectAllNew}>Select All New</Button>
             <Button size="sm" onClick={handleImport} disabled={importing || selected.size === 0} className="gap-1.5">
               {importing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
@@ -287,6 +334,17 @@ export default function UTPlacesLeadFinder() {
           </div>
         )}
       </div>
+
+      {/* Enrich progress bar */}
+      {enriching && (
+        <div className="px-4 py-2 bg-blue-500/10 border-b border-blue-500/30 space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-blue-400">Enriching phone numbers via Place Details API...</span>
+            <span className="text-muted-foreground">{enrichProgress}%</span>
+          </div>
+          <Progress value={enrichProgress} className="h-1.5" />
+        </div>
+      )}
 
       {/* Search Bar */}
       <div className="px-4 py-3 border-b border-border/30 space-y-3">
@@ -302,7 +360,6 @@ export default function UTPlacesLeadFinder() {
             Search
           </Button>
         </div>
-        {/* Category chips */}
         <div className="flex flex-wrap gap-1.5">
           {CATEGORY_PRESETS.map(p => (
             <button key={p.label} onClick={() => { setKeyword(p.query); handleSearch(p.query); }}
@@ -311,7 +368,6 @@ export default function UTPlacesLeadFinder() {
             </button>
           ))}
         </div>
-        {/* Recent searches */}
         {recentSearches.length > 0 && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>Recent:</span>
@@ -325,30 +381,43 @@ export default function UTPlacesLeadFinder() {
 
       {/* Import result banner */}
       {importResult && (
-        <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/30 flex items-center justify-between">
-          <div className="flex items-center gap-4 text-sm">
-            <CheckCircle className="h-4 w-4 text-emerald-400" />
-            <span><strong>{importResult.imported}</strong> imported</span>
-            {importResult.skipped > 0 && <span className="text-yellow-400">{importResult.skipped} skipped</span>}
-            {importResult.failed > 0 && <span className="text-red-400">{importResult.failed} failed</span>}
+        <div className="px-4 py-2 bg-emerald-500/10 border-b border-emerald-500/30">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm">
+              <CheckCircle className="h-4 w-4 text-emerald-400" />
+              <span><strong>{importResult.imported}</strong> imported</span>
+              <span className="text-emerald-400">{importResult.phonesEnriched} with phone</span>
+              <span className="text-yellow-400">{importResult.imported - importResult.phonesEnriched} needs enrichment</span>
+              {importResult.skipped > 0 && <span className="text-muted-foreground">{importResult.skipped} skipped</span>}
+              {importResult.failed > 0 && <span className="text-red-400">{importResult.failed} failed</span>}
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setImportResult(null)}><X className="h-3.5 w-3.5" /></Button>
           </div>
-          <Button size="sm" variant="ghost" onClick={() => setImportResult(null)}><X className="h-3.5 w-3.5" /></Button>
+        </div>
+      )}
+
+      {/* Search progress */}
+      {searching && searchProgress && (
+        <div className="px-4 py-2 bg-primary/5 border-b border-primary/20 flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          {searchProgress}
         </div>
       )}
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Results table */}
         <div className="flex-1 overflow-auto">
           {results.length === 0 && !searching ? (
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
               <MapPin className="h-10 w-10 opacity-30" />
               <p className="text-sm">Search Google Places to discover event vendors</p>
-              <p className="text-xs">Click a category chip or type a query above</p>
+              <p className="text-xs">Auto-paginates up to 60 results per search</p>
+              <p className="text-xs">Use "Enrich phones" to fetch missing contact info</p>
             </div>
-          ) : searching ? (
-            <div className="flex items-center justify-center h-full">
+          ) : searching && !results.length ? (
+            <div className="flex flex-col items-center justify-center h-full gap-2">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-xs text-muted-foreground">{searchProgress || "Searching..."}</p>
             </div>
           ) : (
             <Table>
@@ -383,7 +452,7 @@ export default function UTPlacesLeadFinder() {
                     </TableCell>
                     <TableCell className="text-sm">{r.city || "—"}</TableCell>
                     <TableCell className="text-center">
-                      {r.phone ? <Phone className="h-3.5 w-3.5 text-emerald-400 mx-auto" /> : <span className="text-muted-foreground">—</span>}
+                      {r.phone ? <Phone className="h-3.5 w-3.5 text-emerald-400 mx-auto" /> : <span className="text-muted-foreground text-xs">—</span>}
                     </TableCell>
                     <TableCell className="text-center">
                       {r.website ? <Globe className="h-3.5 w-3.5 text-blue-400 mx-auto" /> : <span className="text-muted-foreground">—</span>}
@@ -452,6 +521,12 @@ export default function UTPlacesLeadFinder() {
                       {detailData?.phone || detailTarget.phone}
                     </div>
                   )}
+                  {!(detailData?.phone || detailTarget.phone) && (
+                    <div className="flex items-center gap-2 text-xs text-yellow-400">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      No phone — use "Enrich phones" to fetch
+                    </div>
+                  )}
                   {(detailData?.website || detailTarget.website) && (
                     <a href={detailData?.website || detailTarget.website} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 text-sm text-blue-400 hover:underline">
@@ -467,7 +542,6 @@ export default function UTPlacesLeadFinder() {
                     </a>
                   )}
 
-                  {/* Google types */}
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Google Types</div>
                     <div className="flex flex-wrap gap-1">
@@ -477,7 +551,6 @@ export default function UTPlacesLeadFinder() {
                     </div>
                   </div>
 
-                  {/* Import button */}
                   {detailTarget.duplicate_status !== "exact_duplicate" && (
                     <Button className="w-full gap-1.5" size="sm"
                       onClick={() => { toggleSelect(detailTarget.place_id); if (!selected.has(detailTarget.place_id)) toast.info("Added to import selection"); }}>
@@ -493,4 +566,24 @@ export default function UTPlacesLeadFinder() {
       </div>
     </div>
   );
+
+  // ── Detail panel handler ──
+  function handleDetail(place: PlaceResult) {
+    setDetailTarget(place);
+    setDetailLoading(true);
+    setDetailData(null);
+    supabase.functions.invoke("ut-places-search", {
+      body: { action: "details", place_id: place.place_id },
+    }).then(({ data, error }) => {
+      if (!error && data) {
+        setDetailData(data);
+        // Update the result in-place if we got a phone
+        if (data.phone && !place.phone) {
+          setResults(prev => prev.map(r => r.place_id === place.place_id ? { ...r, phone: data.phone, website: data.website || r.website } : r));
+        }
+      } else {
+        toast.error("Failed to load details");
+      }
+    }).finally(() => setDetailLoading(false));
+  }
 }
