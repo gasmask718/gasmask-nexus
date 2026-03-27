@@ -714,6 +714,11 @@ const UTProductEngine = lazy(() => import('@/pages/os/unforgettable').then(m => 
 const UTSupplierConsole = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTSupplierConsole })));
 const UTEventBuilder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTEventBuilder })));
 const UTPartnerDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPartnerDashboard })));
+const UTHubLayout = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTHubLayout })));
+const UTIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTIntelligence })));
+const UTMarketplaceControl = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTMarketplaceControl })));
+const UTAutomation = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomation })));
+const UTAnalytics = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAnalytics })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
