@@ -16,9 +16,10 @@ import {
   LiabilityBanner,
   DisputeView,
   RevenueAnalyticsSection,
+  BulkUploadModule,
 } from '@/components/wholesaler-console';
 
-type ConsoleTab = 'fulfillment' | 'settlement' | 'payouts' | 'disputes' | 'analytics';
+type ConsoleTab = 'fulfillment' | 'settlement' | 'payouts' | 'disputes' | 'analytics' | 'bulk-upload';
 
 export default function WholesalerPortalPage() {
   const { profile, isLoading: profileLoading } = useWholesalerProfile();
@@ -68,7 +69,7 @@ export default function WholesalerPortalPage() {
       {/* Main Console Tabs */}
       <div className="mt-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ConsoleTab)}>
-          <TabsList className="w-full grid grid-cols-5 mb-4">
+          <TabsList className="w-full grid grid-cols-6 mb-4">
             <TabsTrigger value="fulfillment" className="text-xs font-semibold">
               Orders
               {fulfillments.filter(f => f.status === 'pending').length > 0 && (
@@ -93,6 +94,9 @@ export default function WholesalerPortalPage() {
             </TabsTrigger>
             <TabsTrigger value="analytics" className="text-xs font-semibold">
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="bulk-upload" className="text-xs font-semibold">
+              Bulk Upload
             </TabsTrigger>
           </TabsList>
 
@@ -137,6 +141,11 @@ export default function WholesalerPortalPage() {
           {/* Analytics */}
           <TabsContent value="analytics">
             <RevenueAnalyticsSection revenueData={revenueData} disputeTrend={disputeTrend} />
+          </TabsContent>
+
+          {/* Bulk Upload */}
+          <TabsContent value="bulk-upload">
+            <BulkUploadModule wholesalerId={profile?.id} />
           </TabsContent>
         </Tabs>
       </div>

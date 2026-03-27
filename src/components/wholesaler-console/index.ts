@@ -7,3 +7,4 @@ export { PayoutLedgerAdvanced } from './PayoutLedgerAdvanced';
 export { PerformanceScorecard } from './PerformanceScorecard';
 export { LiabilityBanner } from './LiabilityBanner';
 export { DisputeView } from './DisputeView';
+export { BulkUploadModule } from './BulkUploadModule';
