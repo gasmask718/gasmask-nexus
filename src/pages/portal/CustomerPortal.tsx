@@ -6,6 +6,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/services/marketplace/useCart";
 import { supabase } from "@/integrations/supabase/client";
+import { enrichOrderItems } from "@/services/marketplace/enrichOrderItems";
 import PortalDashboard from "@/layouts/PortalDashboard";
 import { HudCard } from "@/components/portal/HudCard";
 import { HudButton } from "@/components/portal/HudButton";
@@ -80,15 +81,20 @@ export default function CustomerPortal() {
           id, created_at, order_type, payment_status, fulfillment_status,
           subtotal, shipping_cost, tax_amount, total, shipping_address, notes,
           items:marketplace_order_items(
-            id, qty, price_each,
-            product:products_all(id, product_name, images)
+            id, qty, price_each, product_id
           )
         `,
         )
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data || [];
+      
+      const results = [];
+      for (const order of (data || [])) {
+        const enrichedItems = await enrichOrderItems(order.items || []);
+        results.push({ ...order, items: enrichedItems });
+      }
+      return results;
     },
     enabled: !!user,
   });

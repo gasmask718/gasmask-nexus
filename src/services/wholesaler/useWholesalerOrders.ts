@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWholesalerProfile } from "./useWholesalerProfile";
+import { enrichOrderItems } from "@/services/marketplace/enrichOrderItems";
 
 export interface WholesalerOrder {
   id: string;
@@ -69,8 +70,7 @@ export function useWholesalerOrders(status?: OrderStatus) {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           routing:order_routing(*),
           shipping_label:shipping_labels(*)
@@ -86,18 +86,17 @@ export function useWholesalerOrders(status?: OrderStatus) {
 
       if (error) throw error;
       
-      return (data || []).map(order => ({
-        ...order,
-        items: (order.items || []).map((item: any) => ({
-          id: item.id,
-          product_id: item.product_id,
-          qty: item.qty,
-          price_each: item.price_each,
-          product: item.product,
-        })),
-        routing: Array.isArray(order.routing) ? order.routing[0] : order.routing,
-        shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
-      })) as WholesalerOrder[];
+      const results = [];
+      for (const order of (data || [])) {
+        const enrichedItems = await enrichOrderItems(order.items || []);
+        results.push({
+          ...order,
+          items: enrichedItems,
+          routing: Array.isArray(order.routing) ? order.routing[0] : order.routing,
+          shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
+        });
+      }
+      return results as WholesalerOrder[];
     },
     enabled: !!profile,
   });
@@ -179,8 +178,7 @@ export function useWholesalerOrder(orderId: string) {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           routing:order_routing(*),
           shipping_label:shipping_labels(*)
@@ -189,16 +187,12 @@ export function useWholesalerOrder(orderId: string) {
         .single();
 
       if (error) throw error;
+
+      const enrichedItems = await enrichOrderItems(data.items || []);
       
       return {
         ...data,
-        items: (data.items || []).map((item: any) => ({
-          id: item.id,
-          product_id: item.product_id,
-          qty: item.qty,
-          price_each: item.price_each,
-          product: item.product,
-        })),
+        items: enrichedItems,
         routing: Array.isArray(data.routing) ? data.routing[0] : data.routing,
         shipping_label: Array.isArray(data.shipping_label) ? data.shipping_label[0] : data.shipping_label,
       } as WholesalerOrder;

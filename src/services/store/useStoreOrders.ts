@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { enrichOrderItems } from "@/services/marketplace/enrichOrderItems";
 
 export interface StoreOrder {
   id: string;
@@ -50,8 +51,7 @@ export function useStoreOrders() {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           shipping_label:shipping_labels(tracking_number, carrier),
           linked_store_order:store_orders!marketplace_order_id(id, status, delivery_address)
@@ -61,25 +61,22 @@ export function useStoreOrders() {
 
       if (error) throw error;
 
-      return (data || []).map(order => {
+      const results = [];
+      for (const order of (data || [])) {
+        const enrichedItems = await enrichOrderItems(order.items || []);
         const linkedOrder = Array.isArray((order as any).linked_store_order) 
           ? (order as any).linked_store_order[0] 
           : (order as any).linked_store_order;
-        return {
+        results.push({
           ...order,
           shipping_address: order.shipping_address as Record<string, any> | null,
           billing_address: order.billing_address as Record<string, any> | null,
-          items: order.items?.map((item: any) => ({
-            ...item,
-            product: item.product ? {
-              ...item.product,
-              images: Array.isArray(item.product.images) ? item.product.images : [],
-            } : null,
-          })),
+          items: enrichedItems,
           shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
           store_order_status: linkedOrder?.status || null,
-        };
-      }) as StoreOrder[];
+        });
+      }
+      return results as StoreOrder[];
     },
     enabled: !!user,
   });
@@ -102,8 +99,7 @@ export function useStoreOrder(orderId: string) {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           shipping_label:shipping_labels(tracking_number, carrier, label_url)
         `)
@@ -113,17 +109,13 @@ export function useStoreOrder(orderId: string) {
 
       if (error) throw error;
 
+      const enrichedItems = await enrichOrderItems(data.items || []);
+
       return {
         ...data,
         shipping_address: data.shipping_address as Record<string, any> | null,
         billing_address: data.billing_address as Record<string, any> | null,
-        items: data.items?.map((item: any) => ({
-          ...item,
-          product: item.product ? {
-            ...item.product,
-            images: Array.isArray(item.product.images) ? item.product.images : [],
-          } : null,
-        })),
+        items: enrichedItems,
         shipping_label: Array.isArray(data.shipping_label) ? data.shipping_label[0] : data.shipping_label,
       } as StoreOrder;
     },
