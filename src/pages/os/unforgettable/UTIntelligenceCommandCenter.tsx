@@ -363,8 +363,6 @@ function QualityTab({ stats }: { stats: any }) {
 
 // ─── State Grid Tab ─────────────────────────────────────────────
 function StateGridTab({ states }: { states: StateCoverage[] }) {
-  type StateCoverage = { state: string; status: string; priority_tier: string; total_leads: number; cities_covered: number; categories_searched: number };
-
   const STATUS_BG: Record<string, string> = {
     not_started: "bg-muted/30 border-border/30",
     queued: "bg-yellow-500/5 border-yellow-500/20",
