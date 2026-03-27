@@ -54,6 +54,7 @@ export default function UTTerritoryControl() {
   const createJobs = useCreateTerritoryJobs();
   const updateJob = useUpdateJobStatus();
   const updateState = useUpdateStateCoverage();
+  const queue = useProcessQueue();
 
   const filtered = useMemo(() => {
     let list = states;
