@@ -43671,13 +43671,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "marketplace_order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_all"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "marketplace_order_items_wholesaler_id_fkey"
             columns: ["wholesaler_id"]
             isOneToOne: false
@@ -85184,13 +85177,6 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "marketplace_orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "marketplace_order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products_all"
             referencedColumns: ["id"]
           },
           {
