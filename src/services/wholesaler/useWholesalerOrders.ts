@@ -178,8 +178,7 @@ export function useWholesalerOrder(orderId: string) {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           routing:order_routing(*),
           shipping_label:shipping_labels(*)
@@ -188,16 +187,12 @@ export function useWholesalerOrder(orderId: string) {
         .single();
 
       if (error) throw error;
+
+      const enrichedItems = await enrichOrderItems(data.items || []);
       
       return {
         ...data,
-        items: (data.items || []).map((item: any) => ({
-          id: item.id,
-          product_id: item.product_id,
-          qty: item.qty,
-          price_each: item.price_each,
-          product: item.product,
-        })),
+        items: enrichedItems,
         routing: Array.isArray(data.routing) ? data.routing[0] : data.routing,
         shipping_label: Array.isArray(data.shipping_label) ? data.shipping_label[0] : data.shipping_label,
       } as WholesalerOrder;
