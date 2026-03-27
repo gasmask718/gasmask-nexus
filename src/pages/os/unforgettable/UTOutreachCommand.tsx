@@ -115,6 +115,7 @@ export default function UTOutreachCommand() {
     createLead, saveCallDisposition, handoffToPartnerProfile,
     deleteLead, updateLead, sendSmsTemplate, sendOnboardingLink
   } = useUTLeadMutations();
+  const { placeAICall } = useUTAIDialer();
 
   // Auto-set script category from lead
   useEffect(() => {
