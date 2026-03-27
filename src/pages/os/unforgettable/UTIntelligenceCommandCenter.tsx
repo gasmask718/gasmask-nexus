@@ -257,7 +257,6 @@ export default function UTIntelligenceCommandCenter() {
 
 // ─── Queue Tab ──────────────────────────────────────────────────
 function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolean }) {
-  type TerritoryJob = { id: string; state: string; city: string; category: string; source: string; status: string; leads_found: number; duplicates_skipped: number; enriched_count: number; started_at: string | null; finished_at: string | null; next_run_at: string | null };
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (jobs.length === 0) return (
