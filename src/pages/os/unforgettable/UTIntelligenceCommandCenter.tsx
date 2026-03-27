@@ -26,8 +26,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function UTIntelligenceCommandCenter() {
-  const [tab, setTab] = useState<"overview" | "queue" | "quality" | "territory">("overview");
+  const [tab, setTab] = useState<"overview" | "queue" | "quality" | "territory" | "leads">("overview");
   const { data: stats, isLoading: statsLoading } = useTerritoryStats();
+  const { data: leadStats } = useUTLeadStats();
   const { data: states = [] } = useStateCoverage();
   const { data: recentJobs = [], isLoading: jobsLoading } = useTerritoryJobs({});
   const { data: heatmap = [] } = useTerritoryHeatmap();
