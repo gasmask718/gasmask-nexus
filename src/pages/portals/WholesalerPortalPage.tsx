@@ -69,7 +69,7 @@ export default function WholesalerPortalPage() {
       {/* Main Console Tabs */}
       <div className="mt-6">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ConsoleTab)}>
-          <TabsList className="w-full grid grid-cols-5 mb-4">
+          <TabsList className="w-full grid grid-cols-6 mb-4">
             <TabsTrigger value="fulfillment" className="text-xs font-semibold">
               Orders
               {fulfillments.filter(f => f.status === 'pending').length > 0 && (
