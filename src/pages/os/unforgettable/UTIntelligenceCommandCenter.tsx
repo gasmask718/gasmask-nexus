@@ -320,9 +320,8 @@ function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolea
 }
 
 // ─── Quality Tab ────────────────────────────────────────────────
-function QualityTab({ stats }: { stats: any }) {
-  const withPhone = stats?.totalEnriched ?? 0;
-  const total = stats?.totalLeads ?? 1;
+function QualityTab({ stats, leadStats }: { stats: any; leadStats: any }) {
+  const total = leadStats?.total ?? stats?.totalLeads ?? 1;
   const phoneRate = total > 0 ? Math.round((withPhone / total) * 100) : 0;
 
   return (
