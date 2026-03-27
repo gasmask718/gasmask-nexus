@@ -893,6 +893,19 @@ const Layout = ({ children }: LayoutProps) => {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* 🌐 DYNASTY BUSINESS UNITS */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🎉 UNFORGETTABLE TIMES HUB */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      <div className="pt-2 border-t border-border/50">
+        {renderSection(
+          DYNASTY_NAVIGATION.unforgettableHub.id,
+          DYNASTY_NAVIGATION.unforgettableHub.name,
+          DYNASTY_NAVIGATION.unforgettableHub.items
+        )}
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════════════ */}
+      {/* 🌐 DYNASTY BUSINESS UNITS */}
+      {/* ═══════════════════════════════════════════════════════════════════ */}
       <div className="pt-2 border-t border-border/50">
         {renderSection(
           DYNASTY_NAVIGATION.dynastyBusiness.id,
