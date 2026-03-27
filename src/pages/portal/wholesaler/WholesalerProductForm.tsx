@@ -9,12 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Loader2, Package } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft, Save, Loader2, Package, Upload } from "lucide-react";
+import { useWholesalerProfile } from "@/services/wholesaler/useWholesalerProfile";
+import { BulkUploadModule } from "@/components/wholesaler-console";
 
 export default function WholesalerProductForm() {
   const { productId } = useParams();
   const navigate = useNavigate();
   const isEditing = !!productId;
+  const { profile } = useWholesalerProfile();
 
   const { createProduct, updateProduct, isCreating } = useWholesalerProducts();
   const { data: existingProduct, isLoading: productLoading } = useWholesalerProduct(productId || '');
