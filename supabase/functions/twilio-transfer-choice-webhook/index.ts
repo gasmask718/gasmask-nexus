@@ -21,7 +21,8 @@ const corsHeaders = {
  *         -> busy: TTS "You're in queue, position X" + <Enqueue> or hold music + poll
  */
 
-const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
+// Default agent resolved from DB or env — no hardcoded IDs
+const DEFAULT_ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID") || "";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -39,7 +40,7 @@ serve(async (req) => {
     const callSid = formData.get("CallSid")?.toString() || "";
 
     const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id") || ELEVENLABS_AGENT_ID;
+    const agentId = url.searchParams.get("agent_id") || DEFAULT_ELEVENLABS_AGENT_ID;
     const humanNumber = url.searchParams.get("human_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
     const queueItemId = url.searchParams.get("queue_item_id") || "";
     const campaignId = url.searchParams.get("campaign_id") || "";
