@@ -9,12 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   Target, MapPin, TrendingUp, Zap, Brain, RefreshCw, Loader2, Search, Play,
   Pause, RotateCcw, CheckCircle2, AlertTriangle, Globe, BarChart3, Users,
-  ChevronRight, Phone, Shield, Database, List, Filter
+  ChevronRight, Phone, Shield, Database, List, Filter, Rocket
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTerritoryStats, useTerritoryJobs, useStateCoverage, TerritoryJob, StateCoverage } from "@/hooks/useUTTerritoryJobs";
 import { useTerritoryHeatmap, useRunAIScoring } from "@/hooks/useUTTerritoryIntelligence";
 import { useUTPartnerLeads, useUTLeadStats, UTPartnerLead } from "@/hooks/useUTPartnerLeads";
+import { useRunSingleJob, useProcessQueue } from "@/hooks/useRunTerritoryJob";
 import { toast } from "sonner";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -33,6 +34,8 @@ export default function UTIntelligenceCommandCenter() {
   const { data: recentJobs = [], isLoading: jobsLoading } = useTerritoryJobs({});
   const { data: heatmap = [] } = useTerritoryHeatmap();
   const scoring = useRunAIScoring();
+  const runSingleJob = useRunSingleJob();
+  const queue = useProcessQueue();
 
   const handleRunScoring = async () => {
     try {
@@ -122,21 +125,56 @@ export default function UTIntelligenceCommandCenter() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Queue Progress */}
+              {queue.isRunning && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-blue-400 flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Running Queue
+                    </span>
+                    <span className="text-xs text-muted-foreground">{queue.progress.current}/{queue.progress.total}</span>
+                  </div>
+                  <Progress value={queue.progress.total > 0 ? (queue.progress.current / queue.progress.total) * 100 : 0} className="h-2" />
+                  {queue.progress.currentJob && (
+                    <p className="text-xs text-muted-foreground truncate">⚡ {queue.progress.currentJob}</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Link to="/os/unforgettable/territory">
-                  <Button variant="outline" className="w-full gap-1.5 h-10">
-                    <Play className="h-3.5 w-3.5 text-emerald-400" /> Run Single State
-                  </Button>
-                </Link>
-                <Link to="/os/unforgettable/territory">
-                  <Button variant="outline" className="w-full gap-1.5 h-10">
-                    <Globe className="h-3.5 w-3.5 text-blue-400" /> Multi-State Queue
-                  </Button>
-                </Link>
-                <Button variant="outline" className="w-full gap-1.5 h-10" disabled>
-                  <Pause className="h-3.5 w-3.5 text-yellow-400" /> Pause Automation
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-10"
+                  onClick={() => queue.start()}
+                  disabled={queue.isRunning}
+                >
+                  <Rocket className="h-3.5 w-3.5 text-emerald-400" /> Run All Queued
                 </Button>
-                <Button variant="outline" className="w-full gap-1.5 h-10" disabled>
+                <Link to="/os/unforgettable/territory">
+                  <Button variant="outline" className="w-full gap-1.5 h-10">
+                    <Globe className="h-3.5 w-3.5 text-blue-400" /> Territory Control
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-10"
+                  onClick={() => queue.pause()}
+                  disabled={!queue.isRunning}
+                >
+                  <Pause className="h-3.5 w-3.5 text-yellow-400" /> Pause Queue
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-10"
+                  disabled={queue.isRunning}
+                  onClick={async () => {
+                    const failedJobs = recentJobs.filter(j => j.status === "failed");
+                    if (failedJobs.length === 0) { toast.info("No failed jobs"); return; }
+                    for (const j of failedJobs) {
+                      try { await runSingleJob.mutateAsync(j.id); } catch { /* logged */ }
+                    }
+                  }}
+                >
                   <RotateCcw className="h-3.5 w-3.5 text-red-400" /> Retry Failed
                 </Button>
               </div>
@@ -269,6 +307,7 @@ export default function UTIntelligenceCommandCenter() {
 
 // ─── Queue Tab ──────────────────────────────────────────────────
 function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolean }) {
+  const runJob = useRunSingleJob();
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (jobs.length === 0) return (
@@ -295,6 +334,7 @@ function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolea
               <TableHead className="text-center">Leads</TableHead>
               <TableHead className="text-center">Dupes</TableHead>
               <TableHead className="text-center">Enriched</TableHead>
+              <TableHead className="text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -310,6 +350,37 @@ function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolea
                 <TableCell className="text-center">{job.leads_found}</TableCell>
                 <TableCell className="text-center">{job.duplicates_skipped}</TableCell>
                 <TableCell className="text-center">{job.enriched_count}</TableCell>
+                <TableCell className="text-center">
+                  {job.status === "queued" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => runJob.mutate(job.id)}
+                      disabled={runJob.isPending}
+                    >
+                      {runJob.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                      Run
+                    </Button>
+                  )}
+                  {job.status === "failed" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1 text-red-400"
+                      onClick={() => runJob.mutate(job.id)}
+                      disabled={runJob.isPending}
+                    >
+                      <RotateCcw className="h-3 w-3" /> Retry
+                    </Button>
+                  )}
+                  {job.status === "running" && (
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto text-blue-400" />
+                  )}
+                  {job.status === "completed" && (
+                    <CheckCircle2 className="h-4 w-4 mx-auto text-emerald-400" />
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
