@@ -709,6 +709,8 @@ const UnforgettableMedia = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UnforgettableMediaDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMediaDetail })));
 const UTOutreachCommand = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachCommand })));
 const UTTerritoryIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTTerritoryIntelligence })));
+const UTTerritoryControl = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTTerritoryControl })));
+const UTIntelligenceCommandCenter = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTIntelligenceCommandCenter })));
 const UTPlacesLeadFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlacesLeadFinder })));
 const UTProductEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTProductEngine })));
 const UTSupplierConsole = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTSupplierConsole })));
