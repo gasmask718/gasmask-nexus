@@ -38,3 +38,4 @@ export { default as UTIntelligence } from './UTIntelligence';
 export { default as UTMarketplaceControl } from './UTMarketplaceControl';
 export { default as UTAutomation } from './UTAutomation';
 export { default as UTAnalytics } from './UTAnalytics';
+export { default as UTPenthouse } from './UTPenthouse';

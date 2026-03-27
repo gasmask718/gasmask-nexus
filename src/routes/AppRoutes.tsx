@@ -719,6 +719,7 @@ const UTIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => (
 const UTMarketplaceControl = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTMarketplaceControl })));
 const UTAutomation = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomation })));
 const UTAnalytics = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAnalytics })));
+const UTPenthouse = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPenthouse })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
@@ -2968,7 +2969,7 @@ export default function AppRoutes() {
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       <Route element={<ProtectedLayout />}>
         <Route path="/os/unforgettable" element={<UTHubLayout />}>
-          <Route index element={<UnforgettableDashboard />} />
+          <Route index element={<UTPenthouse />} />
           <Route path="intelligence" element={<UTIntelligence />} />
           <Route path="territory" element={<UTTerritoryIntelligence />} />
           <Route path="places" element={<UTPlacesLeadFinder />} />
@@ -3002,7 +3003,9 @@ export default function AppRoutes() {
           <Route path="availability" element={<UnforgettableAvailability />} />
           <Route path="performance" element={<UnforgettablePerformance />} />
           <Route path="analytics" element={<UTAnalytics />} />
+          <Route path="ai-calling" element={<UnforgettableAICalling />} />
           <Route path="ai-calling/:callId" element={<UnforgettableAICallDetail />} />
+          <Route path="dashboard" element={<UnforgettableDashboard />} />
           <Route path="customer-service" element={<UnforgettableCustomerService />} />
           <Route path="media" element={<UnforgettableMedia />} />
           <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
