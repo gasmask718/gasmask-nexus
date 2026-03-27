@@ -11,9 +11,10 @@ import { toast } from 'sonner';
 import {
   Upload, FileSpreadsheet, Brain, CheckCircle, XCircle, AlertTriangle,
   Loader2, Eye, ChevronRight, Sparkles, ImageIcon, Package, ArrowLeft,
-  RotateCcw, Send, Filter, Check, X, Edit2, Zap
+  RotateCcw, Send, Filter, Check, X, Edit2, Zap, Download
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 // ─── Types ─────────────────────────────────────────────
 interface RawProduct {
@@ -74,6 +75,22 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Download Template ─────────────────────────────────
+  const downloadTemplate = () => {
+    const headers = ['product_name', 'description', 'category', 'subcategory', 'price', 'image_url'];
+    const sampleRows = [
+      ['Premium Cotton T-Shirt', 'High-quality 100% cotton crew neck tee', 'Apparel', 'Tops', '24.99', 'https://example.com/image1.jpg'],
+      ['Wireless Bluetooth Earbuds', 'Noise-cancelling earbuds with 24h battery', 'Electronics', 'Audio', '49.99', 'https://example.com/image2.jpg'],
+      ['Leather Crossbody Bag', 'Genuine leather bag with adjustable strap', 'Accessories', 'Bags', '89.99', ''],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+    ws['!cols'] = [{ wch: 28 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 40 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+    XLSX.writeFile(wb, 'bulk_upload_template.xlsx');
+    toast.success('Template downloaded');
+  };
 
   // ── Upload Handlers ──────────────────────────────────
   const parseCSV = (text: string): RawProduct[] => {
@@ -345,6 +362,13 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                   className="hidden"
                   onChange={(e) => e.target.files && handleFiles(e.target.files)}
                 />
+              </div>
+
+              <div className="mt-4 flex justify-center">
+                <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Excel Template
+                </Button>
               </div>
 
               {parseProgress > 0 && parseProgress < 100 && (
