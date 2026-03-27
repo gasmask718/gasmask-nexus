@@ -58,6 +58,7 @@ import {
   Trophy,
   UserCog,
   ClipboardList,
+  ClipboardCheck,
   Award,
   LayoutDashboard,
   Wallet,
