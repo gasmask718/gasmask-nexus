@@ -69,14 +69,14 @@ export default function UTIntelligenceCommandCenter() {
       {/* KPI Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
-          { label: "Total Leads", value: stats?.totalLeads ?? 0, icon: Database, color: "text-blue-400" },
-          { label: "New Today", value: "—", icon: Zap, color: "text-yellow-400" },
-          { label: "Ready for Outreach", value: stats?.totalEnriched ?? 0, icon: Phone, color: "text-emerald-400" },
-          { label: "Onboarded", value: states.reduce((s, st) => s + (st.total_onboarded || 0), 0), icon: CheckCircle2, color: "text-green-400" },
+          { label: "Total Leads", value: leadStats?.total ?? stats?.totalLeads ?? 0, icon: Database, color: "text-blue-400" },
+          { label: "New Today", value: leadStats?.by_status?.['new'] ?? "—", icon: Zap, color: "text-yellow-400" },
+          { label: "Contacted", value: leadStats?.by_status?.['contacted'] ?? 0, icon: Phone, color: "text-emerald-400" },
+          { label: "Interested", value: leadStats?.by_status?.['interested'] ?? 0, icon: TrendingUp, color: "text-green-400" },
+          { label: "Onboarded", value: leadStats?.by_status?.['onboarded'] ?? states.reduce((s, st) => s + (st.total_onboarded || 0), 0), icon: CheckCircle2, color: "text-green-400" },
           { label: "Duplicate Rate", value: `${stats?.dupeRate ?? 0}%`, icon: Shield, color: "text-orange-400" },
           { label: "States Covered", value: `${stats?.statesCovered ?? 0}/50`, icon: Globe, color: "text-purple-400" },
-          { label: "Categories", value: stats?.categoriesCovered ?? 0, icon: BarChart3, color: "text-pink-400" },
-          { label: "Jobs Queued", value: stats?.queuedJobs ?? 0, icon: Target, color: "text-cyan-400" },
+          { label: "Categories", value: leadStats ? Object.keys(leadStats.by_category || {}).length : (stats?.categoriesCovered ?? 0), icon: BarChart3, color: "text-pink-400" },
         ].map((kpi, i) => (
           <Card key={i} className="bg-card/50 border-border/50">
             <CardContent className="p-3 text-center">
