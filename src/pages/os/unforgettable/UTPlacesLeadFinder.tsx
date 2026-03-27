@@ -289,6 +289,25 @@ export default function UTPlacesLeadFinder() {
     setSelected(new Set(results.filter(r => r.duplicate_status === "new").map(r => r.place_id)));
   };
 
+  // ── Detail panel handler ──
+  const handleDetail = useCallback((place: PlaceResult) => {
+    setDetailTarget(place);
+    setDetailLoading(true);
+    setDetailData(null);
+    supabase.functions.invoke("ut-places-search", {
+      body: { action: "details", place_id: place.place_id },
+    }).then(({ data, error }) => {
+      if (!error && data) {
+        setDetailData(data);
+        if (data.phone && !place.phone) {
+          setResults(prev => prev.map(r => r.place_id === place.place_id ? { ...r, phone: data.phone, website: data.website || r.website } : r));
+        }
+      } else {
+        toast.error("Failed to load details");
+      }
+    }).finally(() => setDetailLoading(false));
+  }, []);
+
   const newCount = results.filter(r => r.duplicate_status === "new").length;
   const dupCount = results.filter(r => r.duplicate_status !== "new").length;
   const noPhoneCount = results.filter(r => !r.phone && r.duplicate_status !== "exact_duplicate").length;
