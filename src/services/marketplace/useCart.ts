@@ -76,30 +76,60 @@ export function useCart() {
 
       const { data: items, error } = await supabase
         .from('cart_items')
-        .select(`
-          *,
-          product:products_all(
-            id,
-            product_name,
-            images,
-            retail_price,
-            store_price,
-            wholesale_price,
-            wholesaler_id,
-            inventory_qty,
-            weight_oz
-          )
-        `)
+        .select('*')
         .eq('cart_id', cart.id);
 
       if (error) throw error;
-      
-      return (items || []).map(item => ({
+      if (!items || items.length === 0) return [];
+
+      const productIds = items.map(i => i.product_id).filter(Boolean) as string[];
+
+      // Try products_all first
+      const { data: productsAll } = await supabase
+        .from('products_all')
+        .select('id, product_name, images, retail_price, store_price, wholesale_price, wholesaler_id, inventory_qty, weight_oz')
+        .in('id', productIds);
+
+      // Also try products table for store products
+      const { data: productsLocal } = await supabase
+        .from('products')
+        .select('id, name, image_url, wholesale_price, suggested_retail_price, store_price, weight_per_unit')
+        .in('id', productIds);
+
+      const productMap: Record<string, CartItem['product']> = {};
+      (productsAll || []).forEach(p => {
+        productMap[p.id] = {
+          id: p.id,
+          product_name: p.product_name || '',
+          images: Array.isArray(p.images) ? p.images : [],
+          retail_price: p.retail_price,
+          store_price: p.store_price,
+          wholesale_price: p.wholesale_price,
+          wholesaler_id: p.wholesaler_id,
+          inventory_qty: p.inventory_qty,
+          weight_oz: p.weight_oz,
+        };
+      });
+      (productsLocal || []).forEach(p => {
+        if (!productMap[p.id]) {
+          productMap[p.id] = {
+            id: p.id,
+            product_name: p.name || '',
+            images: p.image_url ? [p.image_url] : [],
+            retail_price: p.suggested_retail_price,
+            store_price: p.store_price,
+            wholesale_price: p.wholesale_price,
+            wholesaler_id: null,
+            inventory_qty: null,
+            weight_oz: p.weight_per_unit,
+          };
+        }
+      });
+
+      return items.map(item => ({
         ...item,
-        product: item.product ? {
-          ...item.product,
-          images: Array.isArray(item.product.images) ? item.product.images : [],
-        } : undefined,
+        qty: item.qty || 1,
+        product: item.product_id ? productMap[item.product_id] : undefined,
       })) as CartItem[];
     },
     enabled: !!user,
