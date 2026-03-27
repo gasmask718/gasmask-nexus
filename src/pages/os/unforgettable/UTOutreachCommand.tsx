@@ -431,11 +431,10 @@ export default function UTOutreachCommand() {
                       <Button variant="outline" className="gap-1.5 flex-1" onClick={() => setShowSmsTemplates(!showSmsTemplates)}>
                         <MessageSquare className="h-4 w-4" /> SMS
                       </Button>
-                      <Button variant="outline" className="gap-1.5" onClick={() => {
-                        updateLead.mutate({ id: selectedLead.id, ai_call_eligible: true, ai_handoff_reason: 'Manual queue' } as any);
-                        toast.success('Queued for AI call');
+                      <Button variant="outline" className="gap-1.5" disabled={placeAICall.isPending} onClick={() => {
+                        placeAICall.mutate({ lead: selectedLead });
                       }}>
-                        <Bot className="h-4 w-4" /> AI Call
+                        <Bot className="h-4 w-4" /> {placeAICall.isPending ? 'Dialing...' : 'AI Call'}
                       </Button>
                     </>
                   ) : (
