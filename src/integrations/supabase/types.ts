@@ -86540,6 +86540,7 @@ export type Database = {
       user_has_store_access: { Args: { _store_id: string }; Returns: boolean }
       user_is_owner: { Args: { _user_id: string }; Returns: boolean }
       ut_calculate_ai_scores: { Args: never; Returns: number }
+      ut_can_partner_publish: { Args: { p_partner_id: string }; Returns: Json }
       ut_generate_recommendations: {
         Args: { p_event_request_id: string }
         Returns: Json
