@@ -89,18 +89,24 @@ export default function UTIntelligenceCommandCenter() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-1 border-b border-border/50">
-        {(["overview", "queue", "quality", "territory"] as const).map(t => (
+      <div className="flex gap-1 border-b border-border/50 overflow-x-auto">
+        {([
+          { key: "overview", label: "Overview" },
+          { key: "leads", label: "📋 Leads" },
+          { key: "queue", label: "Search Queue" },
+          { key: "quality", label: "Lead Quality" },
+          { key: "territory", label: "State Grid" },
+        ] as const).map(t => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-md ${
-              tab === t
+            key={t.key}
+            onClick={() => setTab(t.key as any)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-md whitespace-nowrap ${
+              tab === t.key
                 ? "bg-primary/10 text-primary border-b-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
           >
-            {t === "overview" ? "Overview" : t === "queue" ? "Search Queue" : t === "quality" ? "Lead Quality" : "State Grid"}
+            {t.label}
           </button>
         ))}
       </div>
