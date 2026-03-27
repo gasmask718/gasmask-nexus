@@ -585,24 +585,4 @@ export default function UTPlacesLeadFinder() {
       </div>
     </div>
   );
-
-  // ── Detail panel handler ──
-  function handleDetail(place: PlaceResult) {
-    setDetailTarget(place);
-    setDetailLoading(true);
-    setDetailData(null);
-    supabase.functions.invoke("ut-places-search", {
-      body: { action: "details", place_id: place.place_id },
-    }).then(({ data, error }) => {
-      if (!error && data) {
-        setDetailData(data);
-        // Update the result in-place if we got a phone
-        if (data.phone && !place.phone) {
-          setResults(prev => prev.map(r => r.place_id === place.place_id ? { ...r, phone: data.phone, website: data.website || r.website } : r));
-        }
-      } else {
-        toast.error("Failed to load details");
-      }
-    }).finally(() => setDetailLoading(false));
-  }
 }
