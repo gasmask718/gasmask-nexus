@@ -76,6 +76,22 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Download Template ─────────────────────────────────
+  const downloadTemplate = () => {
+    const headers = ['product_name', 'description', 'category', 'subcategory', 'price', 'image_url'];
+    const sampleRows = [
+      ['Premium Cotton T-Shirt', 'High-quality 100% cotton crew neck tee', 'Apparel', 'Tops', '24.99', 'https://example.com/image1.jpg'],
+      ['Wireless Bluetooth Earbuds', 'Noise-cancelling earbuds with 24h battery', 'Electronics', 'Audio', '49.99', 'https://example.com/image2.jpg'],
+      ['Leather Crossbody Bag', 'Genuine leather bag with adjustable strap', 'Accessories', 'Bags', '89.99', ''],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+    ws['!cols'] = [{ wch: 28 }, { wch: 45 }, { wch: 16 }, { wch: 16 }, { wch: 10 }, { wch: 40 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Products');
+    XLSX.writeFile(wb, 'bulk_upload_template.xlsx');
+    toast.success('Template downloaded');
+  };
+
   // ── Upload Handlers ──────────────────────────────────
   const parseCSV = (text: string): RawProduct[] => {
     const lines = text.trim().split('\n');
