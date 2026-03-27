@@ -33,3 +33,8 @@ export { default as UTProductEngine } from './UTProductEngine';
 export { default as UTSupplierConsole } from './UTSupplierConsole';
 export { default as UTEventBuilder } from './UTEventBuilder';
 export { default as UTPartnerDashboard } from './partner/UTPartnerDashboard';
+export { default as UTHubLayout } from './UTHubLayout';
+export { default as UTIntelligence } from './UTIntelligence';
+export { default as UTMarketplaceControl } from './UTMarketplaceControl';
+export { default as UTAutomation } from './UTAutomation';
+export { default as UTAnalytics } from './UTAnalytics';

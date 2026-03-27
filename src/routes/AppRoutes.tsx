@@ -714,6 +714,11 @@ const UTProductEngine = lazy(() => import('@/pages/os/unforgettable').then(m => 
 const UTSupplierConsole = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTSupplierConsole })));
 const UTEventBuilder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTEventBuilder })));
 const UTPartnerDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPartnerDashboard })));
+const UTHubLayout = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTHubLayout })));
+const UTIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTIntelligence })));
+const UTMarketplaceControl = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTMarketplaceControl })));
+const UTAutomation = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomation })));
+const UTAnalytics = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAnalytics })));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
@@ -1493,40 +1498,7 @@ export default function AppRoutes() {
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
-        <Route path="/os/unforgettable" element={<UnforgettableDashboard />} />
-        <Route path="/os/unforgettable/staff" element={<UnforgettableStaff />} />
-        <Route path="/os/unforgettable/staff/new" element={<UnforgettableStaffNew />} />
-        <Route path="/os/unforgettable/staff/categories" element={<UnforgettableStaffCategories />} />
-        <Route path="/os/unforgettable/staff/:staffId" element={<UnforgettableStaffProfile />} />
-        <Route path="/os/unforgettable/staff/:staffId/edit" element={<UnforgettableStaffEdit />} />
-        <Route path="/os/unforgettable/staff/:staffId/venues" element={<UnforgettableStaffVenues />} />
-        <Route path="/os/unforgettable/staff/:staffId/notes" element={<UnforgettableStaffNotes />} />
-        <Route path="/os/unforgettable/staff/:staffId/call" element={<UnforgettableStaffCall />} />
-        <Route path="/os/unforgettable/staff/:staffId/email" element={<UnforgettableStaffEmail />} />
-        <Route path="/os/unforgettable/scheduling" element={<UnforgettableScheduling />} />
-        <Route path="/os/unforgettable/scheduling/today" element={<UnforgettableSchedulingToday />} />
-        <Route path="/os/unforgettable/scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
-        <Route path="/os/unforgettable/scheduling/gaps" element={<UnforgettableSchedulingGaps />} />
-        <Route path="/os/unforgettable/payroll" element={<UnforgettablePayroll />} />
-        <Route path="/os/unforgettable/payroll/:staffId" element={<UnforgettablePayrollDetail />} />
-        <Route path="/os/unforgettable/documents" element={<UnforgettableDocuments />} />
-        <Route path="/os/unforgettable/documents/:documentId" element={<UnforgettableDocumentDetail />} />
-        <Route path="/os/unforgettable/availability" element={<UnforgettableAvailability />} />
-        <Route path="/os/unforgettable/performance" element={<UnforgettablePerformance />} />
-        <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
-        <Route path="/os/unforgettable/outreach" element={<UTOutreachCommand />} />
-        <Route path="/os/unforgettable/territory" element={<UTTerritoryIntelligence />} />
-        <Route path="/os/unforgettable/places" element={<UTPlacesLeadFinder />} />
-        <Route path="/os/unforgettable/products" element={<UTProductEngine />} />
-        <Route path="/os/unforgettable/suppliers" element={<UTSupplierConsole />} />
-        <Route path="/os/unforgettable/events" element={<UTEventBuilder />} />
-        <Route path="/os/unforgettable/partners" element={<UTPartnerDashboard />} />
-        <Route path="/os/unforgettable/ai-calling/:callId" element={<UnforgettableAICallDetail />} />
-        <Route path="/os/unforgettable/onboarding" element={<UnforgettableOnboarding />} />
-        <Route path="/os/unforgettable/customer-service" element={<UnforgettableCustomerService />} />
-        <Route path="/os/unforgettable/media" element={<UnforgettableMedia />} />
-        <Route path="/os/unforgettable/media/:mediaId" element={<UnforgettableMediaDetail />} />
-        <Route path="/os/unforgettable/staff/:staffId/performance" element={<UnforgettableStaffPerformance />} />
+        {/* Old UT flat routes removed — now uses UTHubLayout nested routes below */}
         
         {/* Unforgettable Times CRM Routes */}
         <Route path="/crm/unforgettable_times_usa/event-halls" element={<UnforgettableEventHalls />} />
@@ -2988,6 +2960,52 @@ export default function AppRoutes() {
           <Route path="phone-numbers" element={<BrandaroPhoneNumbersPage />} />
           <Route path="canva-assets" element={<CanvaAssetsPage />} />
           <Route path="canva-templates" element={<CanvaTemplatesPage />} />
+        </Route>
+      </Route>
+
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* UNFORGETTABLE TIMES HUB                                                    */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/os/unforgettable" element={<UTHubLayout />}>
+          <Route index element={<UnforgettableDashboard />} />
+          <Route path="intelligence" element={<UTIntelligence />} />
+          <Route path="territory" element={<UTTerritoryIntelligence />} />
+          <Route path="places" element={<UTPlacesLeadFinder />} />
+          <Route path="outreach" element={<UTOutreachCommand />} />
+          <Route path="communications" element={<UnforgettableCommunications />} />
+          <Route path="onboarding" element={<UnforgettableOnboarding />} />
+          <Route path="partners" element={<UTPartnerDashboard />} />
+          <Route path="marketplace" element={<UTMarketplaceControl />} />
+          <Route path="events" element={<UTEventBuilder />} />
+          <Route path="products" element={<UTProductEngine />} />
+          <Route path="suppliers" element={<UTSupplierConsole />} />
+          <Route path="automation" element={<UTAutomation />} />
+          <Route path="staff" element={<UnforgettableStaff />} />
+          <Route path="staff/new" element={<UnforgettableStaffNew />} />
+          <Route path="staff/categories" element={<UnforgettableStaffCategories />} />
+          <Route path="staff/:staffId" element={<UnforgettableStaffProfile />} />
+          <Route path="staff/:staffId/edit" element={<UnforgettableStaffEdit />} />
+          <Route path="staff/:staffId/venues" element={<UnforgettableStaffVenues />} />
+          <Route path="staff/:staffId/notes" element={<UnforgettableStaffNotes />} />
+          <Route path="staff/:staffId/call" element={<UnforgettableStaffCall />} />
+          <Route path="staff/:staffId/email" element={<UnforgettableStaffEmail />} />
+          <Route path="staff/:staffId/performance" element={<UnforgettableStaffPerformance />} />
+          <Route path="scheduling" element={<UnforgettableScheduling />} />
+          <Route path="scheduling/today" element={<UnforgettableSchedulingToday />} />
+          <Route path="scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
+          <Route path="scheduling/gaps" element={<UnforgettableSchedulingGaps />} />
+          <Route path="payroll" element={<UnforgettablePayroll />} />
+          <Route path="payroll/:staffId" element={<UnforgettablePayrollDetail />} />
+          <Route path="documents" element={<UnforgettableDocuments />} />
+          <Route path="documents/:documentId" element={<UnforgettableDocumentDetail />} />
+          <Route path="availability" element={<UnforgettableAvailability />} />
+          <Route path="performance" element={<UnforgettablePerformance />} />
+          <Route path="analytics" element={<UTAnalytics />} />
+          <Route path="ai-calling/:callId" element={<UnforgettableAICallDetail />} />
+          <Route path="customer-service" element={<UnforgettableCustomerService />} />
+          <Route path="media" element={<UnforgettableMedia />} />
+          <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
         </Route>
       </Route>
 
