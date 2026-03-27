@@ -1498,40 +1498,7 @@ export default function AppRoutes() {
 
         {/* Dynasty OS Business Units */}
         <Route path="/os/toptier" element={<TopTierDashboard />} />
-        <Route path="/os/unforgettable" element={<UnforgettableDashboard />} />
-        <Route path="/os/unforgettable/staff" element={<UnforgettableStaff />} />
-        <Route path="/os/unforgettable/staff/new" element={<UnforgettableStaffNew />} />
-        <Route path="/os/unforgettable/staff/categories" element={<UnforgettableStaffCategories />} />
-        <Route path="/os/unforgettable/staff/:staffId" element={<UnforgettableStaffProfile />} />
-        <Route path="/os/unforgettable/staff/:staffId/edit" element={<UnforgettableStaffEdit />} />
-        <Route path="/os/unforgettable/staff/:staffId/venues" element={<UnforgettableStaffVenues />} />
-        <Route path="/os/unforgettable/staff/:staffId/notes" element={<UnforgettableStaffNotes />} />
-        <Route path="/os/unforgettable/staff/:staffId/call" element={<UnforgettableStaffCall />} />
-        <Route path="/os/unforgettable/staff/:staffId/email" element={<UnforgettableStaffEmail />} />
-        <Route path="/os/unforgettable/scheduling" element={<UnforgettableScheduling />} />
-        <Route path="/os/unforgettable/scheduling/today" element={<UnforgettableSchedulingToday />} />
-        <Route path="/os/unforgettable/scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
-        <Route path="/os/unforgettable/scheduling/gaps" element={<UnforgettableSchedulingGaps />} />
-        <Route path="/os/unforgettable/payroll" element={<UnforgettablePayroll />} />
-        <Route path="/os/unforgettable/payroll/:staffId" element={<UnforgettablePayrollDetail />} />
-        <Route path="/os/unforgettable/documents" element={<UnforgettableDocuments />} />
-        <Route path="/os/unforgettable/documents/:documentId" element={<UnforgettableDocumentDetail />} />
-        <Route path="/os/unforgettable/availability" element={<UnforgettableAvailability />} />
-        <Route path="/os/unforgettable/performance" element={<UnforgettablePerformance />} />
-        <Route path="/os/unforgettable/communications" element={<UnforgettableCommunications />} />
-        <Route path="/os/unforgettable/outreach" element={<UTOutreachCommand />} />
-        <Route path="/os/unforgettable/territory" element={<UTTerritoryIntelligence />} />
-        <Route path="/os/unforgettable/places" element={<UTPlacesLeadFinder />} />
-        <Route path="/os/unforgettable/products" element={<UTProductEngine />} />
-        <Route path="/os/unforgettable/suppliers" element={<UTSupplierConsole />} />
-        <Route path="/os/unforgettable/events" element={<UTEventBuilder />} />
-        <Route path="/os/unforgettable/partners" element={<UTPartnerDashboard />} />
-        <Route path="/os/unforgettable/ai-calling/:callId" element={<UnforgettableAICallDetail />} />
-        <Route path="/os/unforgettable/onboarding" element={<UnforgettableOnboarding />} />
-        <Route path="/os/unforgettable/customer-service" element={<UnforgettableCustomerService />} />
-        <Route path="/os/unforgettable/media" element={<UnforgettableMedia />} />
-        <Route path="/os/unforgettable/media/:mediaId" element={<UnforgettableMediaDetail />} />
-        <Route path="/os/unforgettable/staff/:staffId/performance" element={<UnforgettableStaffPerformance />} />
+        {/* Old UT flat routes removed — now uses UTHubLayout nested routes below */}
         
         {/* Unforgettable Times CRM Routes */}
         <Route path="/crm/unforgettable_times_usa/event-halls" element={<UnforgettableEventHalls />} />
