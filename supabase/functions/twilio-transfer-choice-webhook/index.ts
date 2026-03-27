@@ -21,7 +21,8 @@ const corsHeaders = {
  *         -> busy: TTS "You're in queue, position X" + <Enqueue> or hold music + poll
  */
 
-const ELEVENLABS_AGENT_ID = "agent_8601khrh92krfgrrdj6gqcdpwate";
+// Default agent resolved from DB or env — no hardcoded IDs
+const DEFAULT_ELEVENLABS_AGENT_ID = Deno.env.get("ELEVENLABS_AGENT_ID") || "";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
