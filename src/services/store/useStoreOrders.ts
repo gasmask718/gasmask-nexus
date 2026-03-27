@@ -99,8 +99,7 @@ export function useStoreOrder(orderId: string) {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           shipping_label:shipping_labels(tracking_number, carrier, label_url)
         `)
@@ -110,17 +109,13 @@ export function useStoreOrder(orderId: string) {
 
       if (error) throw error;
 
+      const enrichedItems = await enrichOrderItems(data.items || []);
+
       return {
         ...data,
         shipping_address: data.shipping_address as Record<string, any> | null,
         billing_address: data.billing_address as Record<string, any> | null,
-        items: data.items?.map((item: any) => ({
-          ...item,
-          product: item.product ? {
-            ...item.product,
-            images: Array.isArray(item.product.images) ? item.product.images : [],
-          } : null,
-        })),
+        items: enrichedItems,
         shipping_label: Array.isArray(data.shipping_label) ? data.shipping_label[0] : data.shipping_label,
       } as StoreOrder;
     },
