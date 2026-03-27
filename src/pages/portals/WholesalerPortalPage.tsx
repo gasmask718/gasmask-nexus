@@ -95,6 +95,9 @@ export default function WholesalerPortalPage() {
             <TabsTrigger value="analytics" className="text-xs font-semibold">
               Analytics
             </TabsTrigger>
+            <TabsTrigger value="bulk-upload" className="text-xs font-semibold">
+              Bulk Upload
+            </TabsTrigger>
           </TabsList>
 
           {/* Fulfillment Queue */}
