@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Target, MapPin, TrendingUp, Zap, Brain, RefreshCw, Loader2, Search, Play,
   Pause, RotateCcw, CheckCircle2, AlertTriangle, Globe, BarChart3, Users,
-  ChevronRight, Phone, Shield, Database
+  ChevronRight, Phone, Shield, Database, List, Filter
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTerritoryStats, useTerritoryJobs, useStateCoverage, TerritoryJob, StateCoverage } from "@/hooks/useUTTerritoryJobs";
 import { useTerritoryHeatmap, useRunAIScoring } from "@/hooks/useUTTerritoryIntelligence";
+import { useUTPartnerLeads, useUTLeadStats, UTPartnerLead } from "@/hooks/useUTPartnerLeads";
 import { toast } from "sonner";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -24,8 +26,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function UTIntelligenceCommandCenter() {
-  const [tab, setTab] = useState<"overview" | "queue" | "quality" | "territory">("overview");
+  const [tab, setTab] = useState<"overview" | "queue" | "quality" | "territory" | "leads">("overview");
   const { data: stats, isLoading: statsLoading } = useTerritoryStats();
+  const { data: leadStats } = useUTLeadStats();
   const { data: states = [] } = useStateCoverage();
   const { data: recentJobs = [], isLoading: jobsLoading } = useTerritoryJobs({});
   const { data: heatmap = [] } = useTerritoryHeatmap();
@@ -66,14 +69,14 @@ export default function UTIntelligenceCommandCenter() {
       {/* KPI Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {[
-          { label: "Total Leads", value: stats?.totalLeads ?? 0, icon: Database, color: "text-blue-400" },
-          { label: "New Today", value: "—", icon: Zap, color: "text-yellow-400" },
-          { label: "Ready for Outreach", value: stats?.totalEnriched ?? 0, icon: Phone, color: "text-emerald-400" },
-          { label: "Onboarded", value: states.reduce((s, st) => s + (st.total_onboarded || 0), 0), icon: CheckCircle2, color: "text-green-400" },
+          { label: "Total Leads", value: leadStats?.total ?? stats?.totalLeads ?? 0, icon: Database, color: "text-blue-400" },
+          { label: "New Today", value: leadStats?.by_status?.['new'] ?? "—", icon: Zap, color: "text-yellow-400" },
+          { label: "Contacted", value: leadStats?.by_status?.['contacted'] ?? 0, icon: Phone, color: "text-emerald-400" },
+          { label: "Interested", value: leadStats?.by_status?.['interested'] ?? 0, icon: TrendingUp, color: "text-green-400" },
+          { label: "Onboarded", value: leadStats?.by_status?.['onboarded'] ?? states.reduce((s, st) => s + (st.total_onboarded || 0), 0), icon: CheckCircle2, color: "text-green-400" },
           { label: "Duplicate Rate", value: `${stats?.dupeRate ?? 0}%`, icon: Shield, color: "text-orange-400" },
           { label: "States Covered", value: `${stats?.statesCovered ?? 0}/50`, icon: Globe, color: "text-purple-400" },
-          { label: "Categories", value: stats?.categoriesCovered ?? 0, icon: BarChart3, color: "text-pink-400" },
-          { label: "Jobs Queued", value: stats?.queuedJobs ?? 0, icon: Target, color: "text-cyan-400" },
+          { label: "Categories", value: leadStats ? Object.keys(leadStats.by_category || {}).length : (stats?.categoriesCovered ?? 0), icon: BarChart3, color: "text-pink-400" },
         ].map((kpi, i) => (
           <Card key={i} className="bg-card/50 border-border/50">
             <CardContent className="p-3 text-center">
@@ -86,18 +89,24 @@ export default function UTIntelligenceCommandCenter() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex gap-1 border-b border-border/50">
-        {(["overview", "queue", "quality", "territory"] as const).map(t => (
+      <div className="flex gap-1 border-b border-border/50 overflow-x-auto">
+        {([
+          { key: "overview", label: "Overview" },
+          { key: "leads", label: "📋 Leads" },
+          { key: "queue", label: "Search Queue" },
+          { key: "quality", label: "Lead Quality" },
+          { key: "territory", label: "State Grid" },
+        ] as const).map(t => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-md ${
-              tab === t
+            key={t.key}
+            onClick={() => setTab(t.key as any)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors rounded-t-md whitespace-nowrap ${
+              tab === t.key
                 ? "bg-primary/10 text-primary border-b-2 border-primary"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
           >
-            {t === "overview" ? "Overview" : t === "queue" ? "Search Queue" : t === "quality" ? "Lead Quality" : "State Grid"}
+            {t.label}
           </button>
         ))}
       </div>
@@ -206,11 +215,14 @@ export default function UTIntelligenceCommandCenter() {
         </div>
       )}
 
+      {/* Leads Tab */}
+      {tab === "leads" && <LeadsTab />}
+
       {/* Queue Tab */}
       {tab === "queue" && <QueueTab jobs={recentJobs} isLoading={jobsLoading} />}
 
       {/* Quality Tab */}
-      {tab === "quality" && <QualityTab stats={stats} />}
+      {tab === "quality" && <QualityTab stats={stats} leadStats={leadStats} />}
 
       {/* Territory Tab */}
       {tab === "territory" && <StateGridTab states={states} />}
@@ -307,11 +319,147 @@ function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolea
   );
 }
 
+// ─── Leads Tab ──────────────────────────────────────────────────
+function LeadsTab() {
+  const [page, setPage] = useState(0);
+  const [stateFilter, setStateFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState("");
+
+  const filters: any = { page };
+  if (statusFilter) filters.status = statusFilter;
+  if (categoryFilter) filters.category = categoryFilter;
+  if (search) filters.search = search;
+
+  const { data: leadsResult, isLoading } = useUTPartnerLeads(filters);
+  const leads = leadsResult?.leads || [];
+  const totalPages = leadsResult?.totalPages || 1;
+
+  // Client-side state filter since the hook doesn't support it natively
+  const filteredLeads = stateFilter ? leads.filter((l: any) => l.state === stateFilter) : leads;
+
+  const LEAD_STATUS_STYLE: Record<string, string> = {
+    new: "bg-blue-500/10 text-blue-400 border-blue-500/30",
+    contacted: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+    interested: "bg-emerald-500/10 text-emerald-400 border-emerald-500/30",
+    callback: "bg-purple-500/10 text-purple-400 border-purple-500/30",
+    onboarded: "bg-green-500/10 text-green-400 border-green-500/30",
+    dead: "bg-red-500/10 text-red-400 border-red-500/30",
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search name, phone, city..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(0); }}
+            className="pl-9 h-9"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v === "all" ? "" : v); setPage(0); }}>
+          <SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="new">New</SelectItem>
+            <SelectItem value="contacted">Contacted</SelectItem>
+            <SelectItem value="interested">Interested</SelectItem>
+            <SelectItem value="callback">Callback</SelectItem>
+            <SelectItem value="onboarded">Onboarded</SelectItem>
+            <SelectItem value="dead">Dead</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={categoryFilter} onValueChange={v => { setCategoryFilter(v === "all" ? "" : v); setPage(0); }}>
+          <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Category" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {["event_hall","decorator","bartender","caterer","dj","photographer","rental_company","florist","entertainer","staff","security","cleaner","server"].map(c => (
+              <SelectItem key={c} value={c}>{c.replace(/_/g, " ")}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={stateFilter} onValueChange={v => { setStateFilter(v === "all" ? "" : v); setPage(0); }}>
+          <SelectTrigger className="w-[130px] h-9"><SelectValue placeholder="State" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All States</SelectItem>
+            {["New York","New Jersey","Florida","Texas","California","Georgia","Illinois","Pennsylvania"].map(s => (
+              <SelectItem key={s} value={s}>{s}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      {isLoading ? (
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      ) : filteredLeads.length === 0 ? (
+        <Card className="p-12 text-center">
+          <Database className="h-8 w-8 mx-auto mb-3 text-muted-foreground opacity-50" />
+          <p className="text-muted-foreground">No leads found matching your filters.</p>
+        </Card>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Business Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>City</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead className="text-center">Score</TableHead>
+                  <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLeads.map((lead: any) => (
+                  <TableRow key={lead.id}>
+                    <TableCell className="font-medium max-w-[200px] truncate">{lead.business_name}</TableCell>
+                    <TableCell className="capitalize text-xs">{(lead.category || "").replace(/_/g, " ")}</TableCell>
+                    <TableCell className="text-sm">{lead.city || "—"}</TableCell>
+                    <TableCell className="text-sm">{lead.state || "—"}</TableCell>
+                    <TableCell className="text-sm font-mono">{lead.phone || <span className="text-muted-foreground">missing</span>}</TableCell>
+                    <TableCell className="text-xs">{lead.source || "—"}</TableCell>
+                    <TableCell className="text-center">
+                      {lead.ai_score > 0 ? (
+                        <Badge variant="outline" className={lead.ai_score >= 70 ? "bg-emerald-500/10 text-emerald-400" : lead.ai_score >= 40 ? "bg-yellow-500/10 text-yellow-400" : "bg-muted text-muted-foreground"}>
+                          {lead.ai_score}
+                        </Badge>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={LEAD_STATUS_STYLE[lead.status] || ""}>{lead.status}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Previous</Button>
+          <span className="text-sm text-muted-foreground">Page {page + 1} of {totalPages}</span>
+          <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Quality Tab ────────────────────────────────────────────────
-function QualityTab({ stats }: { stats: any }) {
-  const withPhone = stats?.totalEnriched ?? 0;
-  const total = stats?.totalLeads ?? 1;
-  const phoneRate = total > 0 ? Math.round((withPhone / total) * 100) : 0;
+function QualityTab({ stats, leadStats }: { stats: any; leadStats: any }) {
+  const total = leadStats?.total ?? stats?.totalLeads ?? 1;
+  const withPhone = leadStats?.by_status ? Object.values(leadStats.by_status as Record<string, number>).reduce((a, b) => a + b, 0) : (stats?.totalEnriched ?? 0);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -343,10 +491,10 @@ function QualityTab({ stats }: { stats: any }) {
         <CardContent>
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "Ready for Outreach", value: stats?.totalEnriched ?? 0, icon: Phone, color: "text-emerald-400" },
-              { label: "Needs Enrichment", value: Math.max(0, (stats?.totalLeads ?? 0) - (stats?.totalEnriched ?? 0)), icon: Search, color: "text-yellow-400" },
-              { label: "Duplicates", value: stats?.totalDupes ?? 0, icon: Shield, color: "text-orange-400" },
-              { label: "Total Imported", value: stats?.totalLeads ?? 0, icon: Database, color: "text-blue-400" },
+              { label: "Contacted", value: leadStats?.by_status?.['contacted'] ?? 0, icon: Phone, color: "text-emerald-400" },
+              { label: "Interested", value: leadStats?.by_status?.['interested'] ?? 0, icon: TrendingUp, color: "text-green-400" },
+              { label: "New / Untouched", value: leadStats?.by_status?.['new'] ?? 0, icon: Search, color: "text-yellow-400" },
+              { label: "Total Leads", value: leadStats?.total ?? stats?.totalLeads ?? 0, icon: Database, color: "text-blue-400" },
             ].map((item, i) => (
               <div key={i} className="p-3 rounded-lg bg-muted/30 border border-border/30 text-center">
                 <item.icon className={`h-5 w-5 mx-auto mb-1 ${item.color}`} />
