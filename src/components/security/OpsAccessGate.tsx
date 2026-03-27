@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePortalDevice } from '@/hooks/usePortalDevice';
 import { useCurrentUserProfile } from '@/hooks/useCurrentUserProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -14,24 +15,32 @@ interface OpsAccessGateProps {
 /**
  * OpsAccessGate — Validates device trust + role for /portal/* access
  * Wraps portal content; blocks access if device is revoked or role is missing
+ * Checks BOTH user_profiles.primary_role AND user_roles table
  */
 export default function OpsAccessGate({ children }: OpsAccessGateProps) {
   const { user } = useAuth();
   const { data: profileData, isLoading: profileLoading } = useCurrentUserProfile();
+  const { roles: systemRoles, loading: rolesLoading } = useUserRole();
   const portalType = (profileData?.profile?.primary_role as 'driver' | 'biker') || 'driver';
   const { device, isLoading: deviceLoading, error: deviceError } = usePortalDevice(portalType);
   const [accessState, setAccessState] = useState<'loading' | 'granted' | 'no_role' | 'device_blocked'>('loading');
 
   useEffect(() => {
-    if (!user || profileLoading || deviceLoading) {
+    if (!user || profileLoading || deviceLoading || rolesLoading) {
       setAccessState('loading');
       return;
     }
 
-    const role = profileData?.profile?.primary_role;
+    // Collect all roles from both user_profiles AND user_roles table
+    const allRoles: string[] = [...systemRoles];
+    const profileRole = profileData?.profile?.primary_role;
+    if (profileRole && !allRoles.includes(profileRole)) {
+      allRoles.push(profileRole);
+    }
 
-    // Check if user has an ops role
-    if (!role || !OPS_ROLES.includes(role)) {
+    // Check if user has any ops role from either source
+    const hasOpsRole = allRoles.some(r => OPS_ROLES.includes(r));
+    if (!hasOpsRole) {
       setAccessState('no_role');
       return;
     }
@@ -43,7 +52,7 @@ export default function OpsAccessGate({ children }: OpsAccessGateProps) {
     }
 
     setAccessState('granted');
-  }, [user, profileData, profileLoading, device, deviceLoading]);
+  }, [user, profileData, profileLoading, systemRoles, rolesLoading, device, deviceLoading]);
 
   if (accessState === 'loading') {
     return (
