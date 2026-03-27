@@ -19,7 +19,7 @@ import {
   BulkUploadModule,
 } from '@/components/wholesaler-console';
 
-type ConsoleTab = 'fulfillment' | 'settlement' | 'payouts' | 'disputes' | 'analytics';
+type ConsoleTab = 'fulfillment' | 'settlement' | 'payouts' | 'disputes' | 'analytics' | 'bulk-upload';
 
 export default function WholesalerPortalPage() {
   const { profile, isLoading: profileLoading } = useWholesalerProfile();
