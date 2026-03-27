@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState } from "react";
 import { AIApprovalDrawer } from "@/components/brandaro/AIApprovalDrawer";
+import brandaroLogo from "@/assets/brandaro-logo.png";
 
 const hubNav = [
   { section: "Command", items: [
