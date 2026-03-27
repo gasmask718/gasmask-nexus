@@ -306,9 +306,9 @@ const handler = async (req: Request): Promise<Response> => {
     // 2. Build TwiML URL for connecting the call
     let twimlUrl: string;
     if (agent_id) {
-      // Route through ElevenLabs bridge so the AI agent handles the phone call
-      twimlUrl = `https://${projectId}.supabase.co/functions/v1/twilio-elevenlabs-bridge?agent_id=${encodeURIComponent(agent_id)}`;
-      console.log(`🤖 AI Agent mode: routing call to ElevenLabs bridge (agent=${agent_id})`);
+      // Route through the clean bridge webhook: TTS greeting → pause → ElevenLabs Stream
+      twimlUrl = `https://${projectId}.supabase.co/functions/v1/twilio-bridge?agent_id=${encodeURIComponent(agent_id)}`;
+      console.log(`🤖 AI Agent mode: routing call to twilio-bridge (agent=${agent_id})`);
     } else {
       twimlUrl = buildTwimlUrl(formattedPhone, statusCallbackUrl, callerIdNumber);
     }
