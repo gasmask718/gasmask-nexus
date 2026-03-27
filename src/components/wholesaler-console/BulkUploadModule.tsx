@@ -364,7 +364,12 @@ export function BulkUploadModule({ wholesalerId }: { wholesalerId?: string }) {
                 />
               </div>
 
-              {parseProgress > 0 && parseProgress < 100 && (
+              <div className="mt-4 flex justify-center">
+                <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Excel Template
+                </Button>
+              </div>
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between text-xs text-muted-foreground">
                     <span>Reading file…</span>
