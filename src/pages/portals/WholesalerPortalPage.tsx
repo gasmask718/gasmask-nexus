@@ -16,6 +16,7 @@ import {
   LiabilityBanner,
   DisputeView,
   RevenueAnalyticsSection,
+  BulkUploadModule,
 } from '@/components/wholesaler-console';
 
 type ConsoleTab = 'fulfillment' | 'settlement' | 'payouts' | 'disputes' | 'analytics';
