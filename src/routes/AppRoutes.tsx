@@ -2963,6 +2963,52 @@ export default function AppRoutes() {
         </Route>
       </Route>
 
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      {/* UNFORGETTABLE TIMES HUB                                                    */}
+      {/* ═══════════════════════════════════════════════════════════════════════════ */}
+      <Route element={<ProtectedLayout />}>
+        <Route path="/os/unforgettable" element={<UTHubLayout />}>
+          <Route index element={<UnforgettableDashboard />} />
+          <Route path="intelligence" element={<UTIntelligence />} />
+          <Route path="territory" element={<UTTerritoryIntelligence />} />
+          <Route path="places" element={<UTPlacesLeadFinder />} />
+          <Route path="outreach" element={<UTOutreachCommand />} />
+          <Route path="communications" element={<UnforgettableCommunications />} />
+          <Route path="onboarding" element={<UnforgettableOnboarding />} />
+          <Route path="partners" element={<UTPartnerDashboard />} />
+          <Route path="marketplace" element={<UTMarketplaceControl />} />
+          <Route path="events" element={<UTEventBuilder />} />
+          <Route path="products" element={<UTProductEngine />} />
+          <Route path="suppliers" element={<UTSupplierConsole />} />
+          <Route path="automation" element={<UTAutomation />} />
+          <Route path="staff" element={<UnforgettableStaff />} />
+          <Route path="staff/new" element={<UnforgettableStaffNew />} />
+          <Route path="staff/categories" element={<UnforgettableStaffCategories />} />
+          <Route path="staff/:staffId" element={<UnforgettableStaffProfile />} />
+          <Route path="staff/:staffId/edit" element={<UnforgettableStaffEdit />} />
+          <Route path="staff/:staffId/venues" element={<UnforgettableStaffVenues />} />
+          <Route path="staff/:staffId/notes" element={<UnforgettableStaffNotes />} />
+          <Route path="staff/:staffId/call" element={<UnforgettableStaffCall />} />
+          <Route path="staff/:staffId/email" element={<UnforgettableStaffEmail />} />
+          <Route path="staff/:staffId/performance" element={<UnforgettableStaffPerformance />} />
+          <Route path="scheduling" element={<UnforgettableScheduling />} />
+          <Route path="scheduling/today" element={<UnforgettableSchedulingToday />} />
+          <Route path="scheduling/upcoming" element={<UnforgettableSchedulingUpcoming />} />
+          <Route path="scheduling/gaps" element={<UnforgettableSchedulingGaps />} />
+          <Route path="payroll" element={<UnforgettablePayroll />} />
+          <Route path="payroll/:staffId" element={<UnforgettablePayrollDetail />} />
+          <Route path="documents" element={<UnforgettableDocuments />} />
+          <Route path="documents/:documentId" element={<UnforgettableDocumentDetail />} />
+          <Route path="availability" element={<UnforgettableAvailability />} />
+          <Route path="performance" element={<UnforgettablePerformance />} />
+          <Route path="analytics" element={<UTAnalytics />} />
+          <Route path="ai-calling/:callId" element={<UnforgettableAICallDetail />} />
+          <Route path="customer-service" element={<UnforgettableCustomerService />} />
+          <Route path="media" element={<UnforgettableMedia />} />
+          <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
+        </Route>
+      </Route>
+
       <Route path="*" element={<NotFound />} />
     </Routes>
     </Suspense>

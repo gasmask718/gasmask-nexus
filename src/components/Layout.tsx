@@ -353,12 +353,25 @@ const DYNASTY_NAVIGATION = {
       { path: '/brand-dashboard', label: 'Brand Dashboard', icon: LayoutDashboard },
     ],
   },
+  unforgettableHub: {
+    id: 'unforgettable-hub',
+    name: '🎉 Unforgettable Times HUB',
+    items: [
+      { path: '/os/unforgettable', label: '🎉 Penthouse — Command Center', icon: PartyPopper },
+      { path: '/os/unforgettable/intelligence', label: '🎯 Floor 1 — Lead Intelligence', icon: Target },
+      { path: '/os/unforgettable/outreach', label: '📞 Floor 2 — Outreach Command', icon: Phone },
+      { path: '/os/unforgettable/onboarding', label: '📋 Floor 3 — Partner Onboarding', icon: ClipboardCheck },
+      { path: '/os/unforgettable/marketplace', label: '🏪 Floor 4 — Marketplace Control', icon: Store },
+      { path: '/os/unforgettable/products', label: '📦 Floor 5 — Product Engine', icon: Package },
+      { path: '/os/unforgettable/automation', label: '🤖 Floor 6 — AI & Automation', icon: Bot },
+      { path: '/os/unforgettable/analytics', label: '📊 Floor 7 — Analytics', icon: BarChart3 },
+    ],
+  },
   dynastyBusiness: {
     id: 'dynasty-business',
     name: '🌐 Dynasty Business Units',
     items: [
       { path: '/os/toptier', label: '🚗 TopTier Experience OS', icon: Car },
-      { path: '/os/unforgettable', label: '🎉 Unforgettable Times USA OS', icon: PartyPopper },
       { path: '/os/iclean', label: '🧹 iClean WeClean OS', icon: Home },
       { path: '/os/playboxxx', label: '🎮 PlayBoxxx OS', icon: Sparkles },
       { path: '/os/special-needs', label: '♿ Special Needs App OS', icon: Accessibility },
