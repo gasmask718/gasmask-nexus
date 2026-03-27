@@ -34,6 +34,8 @@ export default function UTIntelligenceCommandCenter() {
   const { data: recentJobs = [], isLoading: jobsLoading } = useTerritoryJobs({});
   const { data: heatmap = [] } = useTerritoryHeatmap();
   const scoring = useRunAIScoring();
+  const runSingleJob = useRunSingleJob();
+  const queue = useProcessQueue();
 
   const handleRunScoring = async () => {
     try {
