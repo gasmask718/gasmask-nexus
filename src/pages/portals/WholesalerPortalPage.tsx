@@ -142,6 +142,11 @@ export default function WholesalerPortalPage() {
           <TabsContent value="analytics">
             <RevenueAnalyticsSection revenueData={revenueData} disputeTrend={disputeTrend} />
           </TabsContent>
+
+          {/* Bulk Upload */}
+          <TabsContent value="bulk-upload">
+            <BulkUploadModule wholesalerId={profile?.id} />
+          </TabsContent>
         </Tabs>
       </div>
     </EnhancedPortalLayout>
