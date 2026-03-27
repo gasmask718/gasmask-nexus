@@ -171,6 +171,38 @@ export default function UTPlacesLeadFinder() {
       setRecentSearches(prev => [fullQuery, ...prev.filter(s => s !== fullQuery)].slice(0, 8));
       const pagesMsg = data.pages_fetched ? ` (${data.pages_fetched} page${data.pages_fetched > 1 ? 's' : ''})` : '';
       toast.success(`Found ${enriched.length} results${pagesMsg}`);
+
+      // Auto-enrich phones for results missing them
+      const needEnrich = enriched.filter(r => !r.phone && r.duplicate_status !== "exact_duplicate");
+      if (needEnrich.length > 0) {
+        setSearchProgress(`Auto-enriching ${needEnrich.length} leads with phone numbers...`);
+        setEnriching(true);
+        setEnrichProgress(0);
+        const BATCH = 20;
+        let enrichedCount = 0;
+        for (let i = 0; i < needEnrich.length; i += BATCH) {
+          const batch = needEnrich.slice(i, i + BATCH);
+          try {
+            const { data: eData } = await supabase.functions.invoke("ut-places-search", {
+              body: { action: "enrich_batch", place_ids: batch.map(r => r.place_id) },
+            });
+            if (eData?.enriched) {
+              const enrichedMap = new Map<string, any>();
+              for (const e of eData.enriched) enrichedMap.set(e.place_id, e);
+              setResults(prev => prev.map(r => {
+                const e = enrichedMap.get(r.place_id);
+                if (!e) return r;
+                return { ...r, phone: e.phone || r.phone, website: e.website || r.website, rating: e.rating || r.rating };
+              }));
+              enrichedCount += eData.enriched_count || 0;
+            }
+          } catch { /* continue */ }
+          setEnrichProgress(Math.round(((i + batch.length) / needEnrich.length) * 100));
+        }
+        setEnriching(false);
+        setEnrichProgress(0);
+        if (enrichedCount > 0) toast.success(`Auto-enriched ${enrichedCount} leads with phone data`);
+      }
     } catch (err: any) {
       toast.error(err.message || "Search failed");
     } finally {
