@@ -140,25 +140,44 @@ export function useCart() {
     mutationFn: async ({ 
       productId, 
       qty, 
-      tier 
+      tier,
+      priceLocked,
     }: { 
       productId: string; 
       qty: number; 
-      tier?: PricingTier 
+      tier?: PricingTier;
+      priceLocked?: number;
     }) => {
       const cartId = await getOrCreateCart();
       const effectiveTier = tier || detectTierForUser();
 
-      // Get product price
-      const { data: product } = await supabase
-        .from('products_all')
-        .select('retail_price, store_price, wholesale_price')
-        .eq('id', productId)
-        .single();
+      let price = priceLocked;
+      if (price == null) {
+        // Try products_all first
+        const { data: productAll } = await supabase
+          .from('products_all')
+          .select('retail_price, store_price, wholesale_price')
+          .eq('id', productId)
+          .single();
 
-      if (!product) throw new Error('Product not found');
+        if (productAll) {
+          price = getProductPriceForDisplay(productAll, effectiveTier);
+        } else {
+          // Fallback to products table
+          const { data: productLocal } = await supabase
+            .from('products')
+            .select('wholesale_price, suggested_retail_price, store_price')
+            .eq('id', productId)
+            .single();
 
-      const price = getProductPriceForDisplay(product, effectiveTier);
+          if (!productLocal) throw new Error('Product not found');
+          price = getProductPriceForDisplay({
+            retail_price: productLocal.suggested_retail_price,
+            store_price: productLocal.store_price,
+            wholesale_price: productLocal.wholesale_price,
+          }, effectiveTier);
+        }
+      }
 
       // Check if item already in cart
       const { data: existingItem } = await supabase
