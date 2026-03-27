@@ -307,6 +307,7 @@ export default function UTIntelligenceCommandCenter() {
 
 // ─── Queue Tab ──────────────────────────────────────────────────
 function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolean }) {
+  const runJob = useRunSingleJob();
 
   if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (jobs.length === 0) return (
@@ -333,6 +334,7 @@ function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolea
               <TableHead className="text-center">Leads</TableHead>
               <TableHead className="text-center">Dupes</TableHead>
               <TableHead className="text-center">Enriched</TableHead>
+              <TableHead className="text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -348,6 +350,37 @@ function QueueTab({ jobs, isLoading }: { jobs: TerritoryJob[]; isLoading: boolea
                 <TableCell className="text-center">{job.leads_found}</TableCell>
                 <TableCell className="text-center">{job.duplicates_skipped}</TableCell>
                 <TableCell className="text-center">{job.enriched_count}</TableCell>
+                <TableCell className="text-center">
+                  {job.status === "queued" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => runJob.mutate(job.id)}
+                      disabled={runJob.isPending}
+                    >
+                      {runJob.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Play className="h-3 w-3" />}
+                      Run
+                    </Button>
+                  )}
+                  {job.status === "failed" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1 text-red-400"
+                      onClick={() => runJob.mutate(job.id)}
+                      disabled={runJob.isPending}
+                    >
+                      <RotateCcw className="h-3 w-3" /> Retry
+                    </Button>
+                  )}
+                  {job.status === "running" && (
+                    <Loader2 className="h-4 w-4 animate-spin mx-auto text-blue-400" />
+                  )}
+                  {job.status === "completed" && (
+                    <CheckCircle2 className="h-4 w-4 mx-auto text-emerald-400" />
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
