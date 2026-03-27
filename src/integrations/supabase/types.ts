@@ -76058,6 +76058,57 @@ export type Database = {
           },
         ]
       }
+      ut_state_coverage: {
+        Row: {
+          categories_searched: number | null
+          cities_covered: number | null
+          created_at: string
+          duplicate_count: number | null
+          id: string
+          last_run_at: string | null
+          next_run_at: string | null
+          notes: string | null
+          priority_tier: string
+          state: string
+          status: string
+          total_leads: number | null
+          total_onboarded: number | null
+          updated_at: string
+        }
+        Insert: {
+          categories_searched?: number | null
+          cities_covered?: number | null
+          created_at?: string
+          duplicate_count?: number | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          notes?: string | null
+          priority_tier?: string
+          state: string
+          status?: string
+          total_leads?: number | null
+          total_onboarded?: number | null
+          updated_at?: string
+        }
+        Update: {
+          categories_searched?: number | null
+          cities_covered?: number | null
+          created_at?: string
+          duplicate_count?: number | null
+          id?: string
+          last_run_at?: string | null
+          next_run_at?: string | null
+          notes?: string | null
+          priority_tier?: string
+          state?: string
+          status?: string
+          total_leads?: number | null
+          total_onboarded?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ut_suppliers: {
         Row: {
           api_enabled: boolean | null
@@ -76133,6 +76184,63 @@ export type Database = {
           supplier_type?: string | null
           updated_at?: string | null
           website?: string | null
+        }
+        Relationships: []
+      }
+      ut_territory_jobs: {
+        Row: {
+          category: string
+          city: string
+          created_at: string
+          duplicates_skipped: number | null
+          enriched_count: number | null
+          failed_reason: string | null
+          finished_at: string | null
+          id: string
+          leads_found: number | null
+          next_run_at: string | null
+          priority: number
+          source: string
+          started_at: string | null
+          state: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          city: string
+          created_at?: string
+          duplicates_skipped?: number | null
+          enriched_count?: number | null
+          failed_reason?: string | null
+          finished_at?: string | null
+          id?: string
+          leads_found?: number | null
+          next_run_at?: string | null
+          priority?: number
+          source?: string
+          started_at?: string | null
+          state: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          city?: string
+          created_at?: string
+          duplicates_skipped?: number | null
+          enriched_count?: number | null
+          failed_reason?: string | null
+          finished_at?: string | null
+          id?: string
+          leads_found?: number | null
+          next_run_at?: string | null
+          priority?: number
+          source?: string
+          started_at?: string | null
+          state?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
