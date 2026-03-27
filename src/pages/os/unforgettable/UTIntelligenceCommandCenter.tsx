@@ -4,15 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Target, MapPin, TrendingUp, Zap, Brain, RefreshCw, Loader2, Search, Play,
   Pause, RotateCcw, CheckCircle2, AlertTriangle, Globe, BarChart3, Users,
-  ChevronRight, Phone, Shield, Database
+  ChevronRight, Phone, Shield, Database, List, Filter
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTerritoryStats, useTerritoryJobs, useStateCoverage, TerritoryJob, StateCoverage } from "@/hooks/useUTTerritoryJobs";
 import { useTerritoryHeatmap, useRunAIScoring } from "@/hooks/useUTTerritoryIntelligence";
+import { useUTPartnerLeads, useUTLeadStats, UTPartnerLead } from "@/hooks/useUTPartnerLeads";
 import { toast } from "sonner";
 
 const STATUS_STYLE: Record<string, string> = {
