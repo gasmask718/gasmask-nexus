@@ -83,6 +83,205 @@ export default function WholesalerProductForm() {
     );
   }
 
+  const singleProductForm = (
+    <form onSubmit={handleSubmit}>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Main Info */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Product Information</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Product Name *</Label>
+                <Input
+                  value={formData.product_name}
+                  onChange={(e) => handleChange('product_name', e.target.value)}
+                  placeholder="Enter product name"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label>Description</Label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  placeholder="Describe your product..."
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <Label>Brand</Label>
+                <Select
+                  value={formData.brand_id || 'none'}
+                  onValueChange={(v) => handleChange('brand_id', v === 'none' ? '' : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No brand</SelectItem>
+                    {brands?.map((brand) => (
+                      <SelectItem key={brand.id} value={brand.id}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Pricing Tiers</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <Label>Retail Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.retail_price}
+                    onChange={(e) => handleChange('retail_price', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">For D2C customers</p>
+                </div>
+                <div>
+                  <Label>Store Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.store_price}
+                    onChange={(e) => handleChange('store_price', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">For B2B stores</p>
+                </div>
+                <div>
+                  <Label>Wholesale Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.wholesale_price}
+                    onChange={(e) => handleChange('wholesale_price', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">For bulk buyers</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Shipping</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Weight (oz)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    value={formData.weight_oz}
+                    onChange={(e) => handleChange('weight_oz', parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <Label>Processing Time</Label>
+                  <Select
+                    value={formData.processing_time}
+                    onValueChange={(v) => handleChange('processing_time', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Same day">Same day</SelectItem>
+                      <SelectItem value="1-3 days">1-3 days</SelectItem>
+                      <SelectItem value="3-5 days">3-5 days</SelectItem>
+                      <SelectItem value="1-2 weeks">1-2 weeks</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Separator />
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label>Ship From City</Label>
+                  <Input
+                    value={formData.shipping_from_city}
+                    onChange={(e) => handleChange('shipping_from_city', e.target.value)}
+                    placeholder="Miami"
+                  />
+                </div>
+                <div>
+                  <Label>Ship From State</Label>
+                  <Input
+                    value={formData.shipping_from_state}
+                    onChange={(e) => handleChange('shipping_from_state', e.target.value)}
+                    placeholder="FL"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div>
+                <Label>Stock Quantity</Label>
+                <Input
+                  type="number"
+                  value={formData.inventory_qty}
+                  onChange={(e) => handleChange('inventory_qty', parseInt(e.target.value) || 0)}
+                  placeholder="0"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Preview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="aspect-square bg-muted rounded-lg flex items-center justify-center mb-4">
+                <Package className="h-16 w-16 text-muted-foreground" />
+              </div>
+              <h3 className="font-semibold">{formData.product_name || 'Product Name'}</h3>
+              <p className="text-2xl font-bold text-primary mt-2">
+                ${(formData.retail_price || 0).toFixed(2)}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Button type="submit" className="w-full" disabled={isCreating}>
+            {isCreating ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            {isEditing ? 'Update Product' : 'Create Product'}
+          </Button>
+        </div>
+      </div>
+    </form>
+  );
+
   return (
     <div className="min-h-screen bg-background p-6">
       {/* Header */}
@@ -94,210 +293,38 @@ export default function WholesalerProductForm() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">
-            {isEditing ? 'Edit Product' : 'Add New Product'}
+            {isEditing ? 'Edit Product' : 'Add Products'}
           </h1>
           <p className="text-muted-foreground">
-            {isEditing ? 'Update product details' : 'Create a new product listing'}
+            {isEditing ? 'Update product details' : 'Add a single product or bulk upload your catalog'}
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit}>
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Product Information</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Product Name *</Label>
-                  <Input
-                    value={formData.product_name}
-                    onChange={(e) => handleChange('product_name', e.target.value)}
-                    placeholder="Enter product name"
-                    required
-                  />
-                </div>
+      {isEditing ? (
+        singleProductForm
+      ) : (
+        <Tabs defaultValue="single" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="single" className="gap-2">
+              <Package className="h-4 w-4" />
+              Single Product
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="gap-2">
+              <Upload className="h-4 w-4" />
+              Bulk Upload
+            </TabsTrigger>
+          </TabsList>
 
-                <div>
-                  <Label>Description</Label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => handleChange('description', e.target.value)}
-                    placeholder="Describe your product..."
-                    rows={4}
-                  />
-                </div>
+          <TabsContent value="single">
+            {singleProductForm}
+          </TabsContent>
 
-                <div>
-                  <Label>Brand</Label>
-                  <Select
-                    value={formData.brand_id || 'none'}
-                    onValueChange={(v) => handleChange('brand_id', v === 'none' ? '' : v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select brand" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No brand</SelectItem>
-                      {brands?.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id}>
-                          {brand.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Pricing Tiers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div>
-                    <Label>Retail Price ($)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.retail_price}
-                      onChange={(e) => handleChange('retail_price', parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">For D2C customers</p>
-                  </div>
-                  <div>
-                    <Label>Store Price ($)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.store_price}
-                      onChange={(e) => handleChange('store_price', parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">For B2B stores</p>
-                  </div>
-                  <div>
-                    <Label>Wholesale Price ($)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={formData.wholesale_price}
-                      onChange={(e) => handleChange('wholesale_price', parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">For bulk buyers</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Shipping</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Weight (oz)</Label>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={formData.weight_oz}
-                      onChange={(e) => handleChange('weight_oz', parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div>
-                    <Label>Processing Time</Label>
-                    <Select
-                      value={formData.processing_time}
-                      onValueChange={(v) => handleChange('processing_time', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Same day">Same day</SelectItem>
-                        <SelectItem value="1-3 days">1-3 days</SelectItem>
-                        <SelectItem value="3-5 days">3-5 days</SelectItem>
-                        <SelectItem value="1-2 weeks">1-2 weeks</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <Separator />
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Ship From City</Label>
-                    <Input
-                      value={formData.shipping_from_city}
-                      onChange={(e) => handleChange('shipping_from_city', e.target.value)}
-                      placeholder="Miami"
-                    />
-                  </div>
-                  <div>
-                    <Label>Ship From State</Label>
-                    <Input
-                      value={formData.shipping_from_state}
-                      onChange={(e) => handleChange('shipping_from_state', e.target.value)}
-                      placeholder="FL"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Inventory</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label>Stock Quantity</Label>
-                  <Input
-                    type="number"
-                    value={formData.inventory_qty}
-                    onChange={(e) => handleChange('inventory_qty', parseInt(e.target.value) || 0)}
-                    placeholder="0"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Preview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-square bg-muted rounded-lg flex items-center justify-center mb-4">
-                  <Package className="h-16 w-16 text-muted-foreground" />
-                </div>
-                <h3 className="font-semibold">{formData.product_name || 'Product Name'}</h3>
-                <p className="text-2xl font-bold text-primary mt-2">
-                  ${(formData.retail_price || 0).toFixed(2)}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Button type="submit" className="w-full" disabled={isCreating}>
-              {isCreating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              {isEditing ? 'Update Product' : 'Create Product'}
-            </Button>
-          </div>
-        </div>
-      </form>
+          <TabsContent value="bulk">
+            <BulkUploadModule wholesalerId={profile?.id} />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }
