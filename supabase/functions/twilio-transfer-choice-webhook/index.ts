@@ -40,7 +40,7 @@ serve(async (req) => {
     const callSid = formData.get("CallSid")?.toString() || "";
 
     const url = new URL(req.url);
-    const agentId = url.searchParams.get("agent_id") || ELEVENLABS_AGENT_ID;
+    const agentId = url.searchParams.get("agent_id") || DEFAULT_ELEVENLABS_AGENT_ID;
     const humanNumber = url.searchParams.get("human_number") || Deno.env.get("LIVE_HANDOFF_NUMBER") || "";
     const queueItemId = url.searchParams.get("queue_item_id") || "";
     const campaignId = url.searchParams.get("campaign_id") || "";
