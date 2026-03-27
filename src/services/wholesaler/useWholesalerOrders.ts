@@ -70,8 +70,7 @@ export function useWholesalerOrders(status?: OrderStatus) {
             id,
             product_id,
             qty,
-            price_each,
-            product:products_all(product_name, images)
+            price_each
           ),
           routing:order_routing(*),
           shipping_label:shipping_labels(*)
@@ -87,18 +86,17 @@ export function useWholesalerOrders(status?: OrderStatus) {
 
       if (error) throw error;
       
-      return (data || []).map(order => ({
-        ...order,
-        items: (order.items || []).map((item: any) => ({
-          id: item.id,
-          product_id: item.product_id,
-          qty: item.qty,
-          price_each: item.price_each,
-          product: item.product,
-        })),
-        routing: Array.isArray(order.routing) ? order.routing[0] : order.routing,
-        shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
-      })) as WholesalerOrder[];
+      const results = [];
+      for (const order of (data || [])) {
+        const enrichedItems = await enrichOrderItems(order.items || []);
+        results.push({
+          ...order,
+          items: enrichedItems,
+          routing: Array.isArray(order.routing) ? order.routing[0] : order.routing,
+          shipping_label: Array.isArray(order.shipping_label) ? order.shipping_label[0] : order.shipping_label,
+        });
+      }
+      return results as WholesalerOrder[];
     },
     enabled: !!profile,
   });
