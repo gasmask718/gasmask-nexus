@@ -3003,7 +3003,9 @@ export default function AppRoutes() {
           <Route path="availability" element={<UnforgettableAvailability />} />
           <Route path="performance" element={<UnforgettablePerformance />} />
           <Route path="analytics" element={<UTAnalytics />} />
+          <Route path="ai-calling" element={<UnforgettableAICalling />} />
           <Route path="ai-calling/:callId" element={<UnforgettableAICallDetail />} />
+          <Route path="dashboard" element={<UnforgettableDashboard />} />
           <Route path="customer-service" element={<UnforgettableCustomerService />} />
           <Route path="media" element={<UnforgettableMedia />} />
           <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
