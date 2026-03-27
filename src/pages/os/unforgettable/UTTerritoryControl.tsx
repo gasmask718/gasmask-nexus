@@ -94,10 +94,32 @@ export default function UTTerritoryControl() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline" size="sm"
+            onClick={() => queue.isRunning ? queue.pause() : queue.start()}
+            className="gap-1.5"
+          >
+            {queue.isRunning ? (
+              <><Pause className="h-3.5 w-3.5" /> Pause Queue</>
+            ) : (
+              <><Rocket className="h-3.5 w-3.5" /> Run All Queued</>
+            )}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setShowCreateModal(true)} className="gap-1.5">
             <Plus className="h-3.5 w-3.5" /> New Search Jobs
           </Button>
         </div>
+
+        {/* Queue Progress */}
+        {queue.isRunning && (
+          <div className="absolute top-full left-0 right-0 px-6 pt-2 z-10">
+            <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center gap-3">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-400 shrink-0" />
+              <Progress value={queue.progress.total > 0 ? (queue.progress.current / queue.progress.total) * 100 : 0} className="h-1.5 flex-1" />
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{queue.progress.current}/{queue.progress.total}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI Row */}
