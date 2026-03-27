@@ -215,11 +215,14 @@ export default function UTIntelligenceCommandCenter() {
         </div>
       )}
 
+      {/* Leads Tab */}
+      {tab === "leads" && <LeadsTab />}
+
       {/* Queue Tab */}
       {tab === "queue" && <QueueTab jobs={recentJobs} isLoading={jobsLoading} />}
 
       {/* Quality Tab */}
-      {tab === "quality" && <QualityTab stats={stats} />}
+      {tab === "quality" && <QualityTab stats={stats} leadStats={leadStats} />}
 
       {/* Territory Tab */}
       {tab === "territory" && <StateGridTab states={states} />}
