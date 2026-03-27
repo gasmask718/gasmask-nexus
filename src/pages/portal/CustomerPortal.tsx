@@ -6,6 +6,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/services/marketplace/useCart";
 import { supabase } from "@/integrations/supabase/client";
+import { enrichOrderItems } from "@/services/marketplace/enrichOrderItems";
 import PortalDashboard from "@/layouts/PortalDashboard";
 import { HudCard } from "@/components/portal/HudCard";
 import { HudButton } from "@/components/portal/HudButton";
