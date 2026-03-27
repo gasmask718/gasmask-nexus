@@ -709,6 +709,8 @@ const UnforgettableMedia = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UnforgettableMediaDetail = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableMediaDetail })));
 const UTOutreachCommand = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachCommand })));
 const UTTerritoryIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTTerritoryIntelligence })));
+const UTTerritoryControl = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTTerritoryControl })));
+const UTIntelligenceCommandCenter = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTIntelligenceCommandCenter })));
 const UTPlacesLeadFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlacesLeadFinder })));
 const UTProductEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTProductEngine })));
 const UTSupplierConsole = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTSupplierConsole })));
@@ -2970,8 +2972,9 @@ export default function AppRoutes() {
       <Route element={<ProtectedLayout />}>
         <Route path="/os/unforgettable" element={<UTHubLayout />}>
           <Route index element={<UTPenthouse />} />
-          <Route path="intelligence" element={<UTIntelligence />} />
-          <Route path="territory" element={<UTTerritoryIntelligence />} />
+          <Route path="intelligence" element={<UTIntelligenceCommandCenter />} />
+          <Route path="territory" element={<UTTerritoryControl />} />
+          <Route path="territory-heatmap" element={<UTTerritoryIntelligence />} />
           <Route path="places" element={<UTPlacesLeadFinder />} />
           <Route path="outreach" element={<UTOutreachCommand />} />
           <Route path="communications" element={<UnforgettableCommunications />} />
