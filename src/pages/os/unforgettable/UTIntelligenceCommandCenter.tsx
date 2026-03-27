@@ -125,21 +125,56 @@ export default function UTIntelligenceCommandCenter() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Queue Progress */}
+              {queue.isRunning && (
+                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-medium text-blue-400 flex items-center gap-1.5">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Running Queue
+                    </span>
+                    <span className="text-xs text-muted-foreground">{queue.progress.current}/{queue.progress.total}</span>
+                  </div>
+                  <Progress value={queue.progress.total > 0 ? (queue.progress.current / queue.progress.total) * 100 : 0} className="h-2" />
+                  {queue.progress.currentJob && (
+                    <p className="text-xs text-muted-foreground truncate">⚡ {queue.progress.currentJob}</p>
+                  )}
+                </div>
+              )}
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <Link to="/os/unforgettable/territory">
-                  <Button variant="outline" className="w-full gap-1.5 h-10">
-                    <Play className="h-3.5 w-3.5 text-emerald-400" /> Run Single State
-                  </Button>
-                </Link>
-                <Link to="/os/unforgettable/territory">
-                  <Button variant="outline" className="w-full gap-1.5 h-10">
-                    <Globe className="h-3.5 w-3.5 text-blue-400" /> Multi-State Queue
-                  </Button>
-                </Link>
-                <Button variant="outline" className="w-full gap-1.5 h-10" disabled>
-                  <Pause className="h-3.5 w-3.5 text-yellow-400" /> Pause Automation
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-10"
+                  onClick={() => queue.start()}
+                  disabled={queue.isRunning}
+                >
+                  <Rocket className="h-3.5 w-3.5 text-emerald-400" /> Run All Queued
                 </Button>
-                <Button variant="outline" className="w-full gap-1.5 h-10" disabled>
+                <Link to="/os/unforgettable/territory">
+                  <Button variant="outline" className="w-full gap-1.5 h-10">
+                    <Globe className="h-3.5 w-3.5 text-blue-400" /> Territory Control
+                  </Button>
+                </Link>
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-10"
+                  onClick={() => queue.pause()}
+                  disabled={!queue.isRunning}
+                >
+                  <Pause className="h-3.5 w-3.5 text-yellow-400" /> Pause Queue
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full gap-1.5 h-10"
+                  disabled={queue.isRunning}
+                  onClick={async () => {
+                    const failedJobs = recentJobs.filter(j => j.status === "failed");
+                    if (failedJobs.length === 0) { toast.info("No failed jobs"); return; }
+                    for (const j of failedJobs) {
+                      try { await runSingleJob.mutateAsync(j.id); } catch { /* logged */ }
+                    }
+                  }}
+                >
                   <RotateCcw className="h-3.5 w-3.5 text-red-400" /> Retry Failed
                 </Button>
               </div>
