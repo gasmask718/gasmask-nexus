@@ -59353,8 +59353,10 @@ export type Database = {
           capper_id: string
           confidence_score: number | null
           created_at: string
+          data_source: string | null
           direction: string | null
           edge_score: number | null
+          external_result_id: string | null
           extracted_capper_name: string | null
           game_date: string | null
           id: string
@@ -59387,8 +59389,10 @@ export type Database = {
           capper_id: string
           confidence_score?: number | null
           created_at?: string
+          data_source?: string | null
           direction?: string | null
           edge_score?: number | null
+          external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
           id?: string
@@ -59421,8 +59425,10 @@ export type Database = {
           capper_id?: string
           confidence_score?: number | null
           created_at?: string
+          data_source?: string | null
           direction?: string | null
           edge_score?: number | null
+          external_result_id?: string | null
           extracted_capper_name?: string | null
           game_date?: string | null
           id?: string
@@ -59454,6 +59460,13 @@ export type Database = {
             columns: ["capper_id"]
             isOneToOne: false
             referencedRelation: "sbo_cappers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_capper_picks_external_result_id_fkey"
+            columns: ["external_result_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_external_results"
             referencedColumns: ["id"]
           },
         ]
@@ -59832,6 +59845,60 @@ export type Database = {
           team_id?: number
           team_name?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sbo_external_results: {
+        Row: {
+          actual_value: number | null
+          api_provider: string | null
+          created_at: string | null
+          event_id: string | null
+          game_date: string
+          id: string
+          opponent: string | null
+          player_name: string
+          raw_data: Json | null
+          source: string
+          sport: string
+          stat_type: string
+          team: string | null
+          updated_at: string | null
+          verified: boolean | null
+        }
+        Insert: {
+          actual_value?: number | null
+          api_provider?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          game_date: string
+          id?: string
+          opponent?: string | null
+          player_name: string
+          raw_data?: Json | null
+          source?: string
+          sport?: string
+          stat_type: string
+          team?: string | null
+          updated_at?: string | null
+          verified?: boolean | null
+        }
+        Update: {
+          actual_value?: number | null
+          api_provider?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          game_date?: string
+          id?: string
+          opponent?: string | null
+          player_name?: string
+          raw_data?: Json | null
+          source?: string
+          sport?: string
+          stat_type?: string
+          team?: string | null
+          updated_at?: string | null
+          verified?: boolean | null
         }
         Relationships: []
       }
