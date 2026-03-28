@@ -27,6 +27,47 @@ BET TYPES:
 DIRECTION VALUES: OVER, UNDER, WIN, LOSE, YES, NO
 `;
 
+/**
+ * Normalize a capper name for identity matching.
+ */
+function normalizeName(name: string): string {
+  return name
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '')
+    .replace(/\b(vip|picks?|plays?|locks?|bets?|premium|free|official)\b/gi, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+/**
+ * Resolve a capper by normalized name, checking aliases too.
+ */
+async function resolveCapperByName(supabase: any, rawName: string): Promise<{ id: string; name: string } | null> {
+  const normalized = normalizeName(rawName);
+  if (!normalized) return null;
+
+  // Check normalized_name
+  const { data: byNorm } = await supabase
+    .from('sbo_cappers').select('id, name')
+    .eq('normalized_name', normalized).maybeSingle();
+  if (byNorm) return byNorm;
+
+  // Check aliases
+  const { data: alias } = await supabase
+    .from('sbo_capper_aliases').select('capper_id')
+    .eq('normalized_alias', normalized).maybeSingle();
+  if (alias) {
+    const { data: capper } = await supabase.from('sbo_cappers').select('id, name').eq('id', alias.capper_id).single();
+    return capper || null;
+  }
+
+  // Fallback ilike
+  const { data: byName } = await supabase
+    .from('sbo_cappers').select('id, name')
+    .ilike('name', rawName.trim()).maybeSingle();
+  return byName || null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -42,6 +83,7 @@ serve(async (req) => {
     const capper_name = body.capper_name as string | undefined;
     const platform = body.platform as string | undefined;
     const source_group = body.source_group as string | undefined;
+    const source_group_id = body.source_group_id as string | undefined;
     const posted_by = body.posted_by as string | undefined;
     const group_type = body.group_type as string || 'direct';
 
@@ -54,7 +96,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Use AI to parse the capper pick image — now also extracts capper_name
+    // Use AI to parse the capper pick image — extracts capper_name + picks
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -72,15 +114,17 @@ serve(async (req) => {
 CRITICAL: Also extract the CAPPER NAME (the person who made the picks) if visible.
 Look for capper identity in:
 - Screenshot headers/titles (e.g. "VegasKing 🔥", "@SharpPlays")
-- Watermarks or logos
+- Watermarks or logos with usernames
 - Username/handle displayed in the image
 - Account name at top of screenshot
 - Any attribution text (e.g. "Picks by...", "From: ...")
+- Consistent branding labels
 
 Return a JSON object with these EXACT fields:
 {
   "capper_name": "string or null — the name/handle of the person who made these picks",
   "capper_handle": "string or null — @username if visible",
+  "capper_detection_confidence": number 0-100 — how confident you are in the capper identification,
   "picks": [
     {
       "player_name": "string or null for game bets",
@@ -109,7 +153,8 @@ RULES:
 5. If confidence/conviction is indicated (🔒, 💰, "LOCK", "MAX PLAY"), note it
 6. If you can't parse something, still include it with what you can extract
 7. Return empty picks array [] if no picks found
-8. ALWAYS try to extract capper_name — this is critical for attribution`
+8. ALWAYS try to extract capper_name — this is critical for attribution
+9. Set capper_detection_confidence to 0 if no capper name visible`
           },
           {
             role: 'user',
@@ -145,6 +190,7 @@ RULES:
     let picks: any[];
     let extractedCapperName: string | null = null;
     let extractedCapperHandle: string | null = null;
+    let capperDetectionConfidence = 0;
 
     if (Array.isArray(parsed)) {
       picks = parsed;
@@ -152,6 +198,7 @@ RULES:
       picks = parsed.picks || [];
       extractedCapperName = parsed.capper_name || null;
       extractedCapperHandle = parsed.capper_handle || null;
+      capperDetectionConfidence = parsed.capper_detection_confidence ?? (extractedCapperName ? 80 : 0);
     }
 
     if (picks.length === 0) {
@@ -172,26 +219,24 @@ RULES:
     });
 
     // --- CAPPER RESOLUTION LOGIC ---
-    // For aggregator groups: use extracted capper name from image
-    // For direct groups: use the provided capper_id
     let resolvedCapperId = capper_id || null;
+    let resolvedCapperName = capper_name || null;
 
     if (group_type === 'aggregator' && extractedCapperName) {
-      // Try to find existing capper by name
-      const { data: existingCapper } = await supabase
-        .from('sbo_cappers')
-        .select('id, name')
-        .ilike('name', extractedCapperName.trim())
-        .maybeSingle();
+      // Use the normalization + alias system for lookup
+      const existing = await resolveCapperByName(supabase, extractedCapperName);
 
-      if (existingCapper) {
-        resolvedCapperId = existingCapper.id;
-      } else {
-        // Auto-create the capper
+      if (existing) {
+        resolvedCapperId = existing.id;
+        resolvedCapperName = existing.name;
+      } else if (capperDetectionConfidence >= 70) {
+        // Auto-create with normalized name
+        const normalized = normalizeName(extractedCapperName);
         const { data: newCapper, error: createErr } = await supabase
           .from('sbo_cappers')
           .insert({
             name: extractedCapperName.trim(),
+            normalized_name: normalized || null,
             source: 'image_extract',
             source_handle: extractedCapperHandle || null,
             tier: 'unproven',
@@ -204,18 +249,37 @@ RULES:
           .single();
 
         if (createErr) {
-          // Retry — possible race condition
-          const { data: retry } = await supabase
-            .from('sbo_cappers')
-            .select('id')
-            .ilike('name', extractedCapperName.trim())
-            .maybeSingle();
+          // Race condition retry
+          const retry = await resolveCapperByName(supabase, extractedCapperName);
           resolvedCapperId = retry?.id || capper_id || null;
         } else {
           resolvedCapperId = newCapper.id;
+          resolvedCapperName = extractedCapperName.trim();
         }
       }
+      // If confidence < 70 and no capper_id provided, assign to "unknown_capper"
+      if (!resolvedCapperId && !capper_id) {
+        const { data: unknown } = await supabase
+          .from('sbo_cappers').select('id')
+          .eq('normalized_name', 'unknowncapper').maybeSingle();
+        if (unknown) {
+          resolvedCapperId = unknown.id;
+        } else {
+          const { data: created } = await supabase
+            .from('sbo_cappers')
+            .insert({ name: 'Unknown Capper', normalized_name: 'unknowncapper', source: 'system', tier: 'unproven', confidence_grade: 'D', is_active: true, total_picks: 0 })
+            .select('id').single();
+          resolvedCapperId = created?.id || null;
+        }
+      }
+    } else if (group_type === 'direct' && !resolvedCapperId && extractedCapperName) {
+      // Even in direct groups, use extracted name if available
+      const existing = await resolveCapperByName(supabase, extractedCapperName);
+      if (existing) resolvedCapperId = existing.id;
     }
+
+    // Determine review status based on both parse and capper detection confidence
+    const needsCapperReview = group_type === 'aggregator' && capperDetectionConfidence < 70;
 
     // Insert picks
     if (resolvedCapperId) {
@@ -233,13 +297,15 @@ RULES:
         league: p.league || null,
         bet_type: p.bet_type || 'prop',
         parse_confidence: p.parse_confidence,
-        review_status: p.parse_confidence >= 70 ? 'verified' : 'needs_review',
+        review_status: (p.parse_confidence < 70 || needsCapperReview) ? 'needs_review' : 'verified',
         parsed_by_ai: true,
         game_date: p.game_date || today,
         result: 'pending',
         source_group: source_group || null,
+        source_group_id: source_group_id || null,
         posted_by: posted_by || null,
         extracted_capper_name: extractedCapperName || null,
+        capper_detection_confidence: capperDetectionConfidence,
       }));
 
       const { data: inserted, error: insertError } = await supabase.from('sbo_capper_picks').insert(rows).select('id, player_name, prop_type, line, game_date, sport');
@@ -264,7 +330,7 @@ RULES:
           const normName = pick.player_name.toLowerCase().trim();
           const normStat = (pick.prop_type || '').toLowerCase().trim();
           
-          const match = allProps.find(p => {
+          const match = allProps.find((p: any) => {
             const pName = p.player_name.toLowerCase().trim();
             const pStat = p.stat_type.toLowerCase().trim();
             if (!pName.includes(normName.split(' ').pop()!) && !normName.includes(pName.split(' ').pop()!)) return false;
@@ -296,9 +362,12 @@ RULES:
       picks: scoredPicks,
       extracted_capper_name: extractedCapperName,
       extracted_capper_handle: extractedCapperHandle,
+      capper_detection_confidence: capperDetectionConfidence,
       resolved_capper_id: resolvedCapperId,
+      resolved_capper_name: resolvedCapperName,
       group_type,
       needs_review: scoredPicks.filter((p: any) => p.parse_confidence < 70).length,
+      needs_capper_review: needsCapperReview,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
