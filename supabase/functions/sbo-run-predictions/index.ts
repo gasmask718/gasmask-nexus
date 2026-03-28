@@ -533,6 +533,31 @@ CRITICAL RULES FROM CALIBRATION DATA:
       }
     }
 
+    // ═══ LIVE CALIBRATION ADJUSTMENT ═══
+    // Apply calibration_score from historical accuracy data
+    if (calibrationData.length > 0) {
+      const bucket = calibrationData.find(b => {
+        const [low, high] = b.confidence_bucket.split('-').map(Number);
+        return finalScore >= low && finalScore < high;
+      });
+      if (bucket && bucket.total_picks >= 10) {
+        const cal = bucket.calibration_score;
+        if (cal < 0.85) {
+          // This bucket is overconfident — deflate
+          const penalty = Math.round((1 - cal) * 15);
+          const before = finalScore;
+          finalScore = Math.max(50, finalScore - penalty);
+          console.log(`Live calibration: ${bucket.confidence_bucket}% bucket overconfident (cal=${cal}), deflated ${before}→${finalScore}`);
+        } else if (cal > 1.1 && finalScore < 87) {
+          // This bucket is underconfident — slight boost
+          const bonus = Math.round((cal - 1) * 5);
+          const before = finalScore;
+          finalScore = Math.min(87, finalScore + bonus);
+          console.log(`Live calibration: ${bucket.confidence_bucket}% bucket strong (cal=${cal}), boosted ${before}→${finalScore}`);
+        }
+      }
+    }
+
     // Don't save predictions below 50% — they add noise
     if (finalScore < 50) {
       console.log(`Prediction below 50% threshold (${finalScore}%) — not saving`);
