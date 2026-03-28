@@ -1062,7 +1062,110 @@ export default function SBOCapperTracker() {
             )}
           </TabsContent>
 
-          {/* ── SIGNALS TAB ── */}
+          {/* ── MARKETS TAB ── */}
+          <TabsContent value="markets" className="mt-3 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold flex items-center gap-2">
+                <Layers className="h-4 w-4 text-blue-400" /> Market Performance by Sport
+              </h3>
+              <Button size="sm" variant="outline" onClick={recalcMarkets} disabled={recalcingMarkets} className="gap-1.5 text-xs">
+                {recalcingMarkets ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Recalculate
+              </Button>
+            </div>
+
+            {marketPerf.length > 0 ? (
+              <>
+                {/* Summary by market type */}
+                {(() => {
+                  const byType: Record<string, { wins: number; losses: number; bets: number; profit: number }> = {};
+                  for (const m of marketPerf as any[]) {
+                    const mt = m.market_type || 'prop';
+                    if (!byType[mt]) byType[mt] = { wins: 0, losses: 0, bets: 0, profit: 0 };
+                    byType[mt].wins += m.wins || 0;
+                    byType[mt].losses += m.losses || 0;
+                    byType[mt].bets += m.total_bets || 0;
+                    byType[mt].profit += (m.roi || 0) * (m.total_bets || 0);
+                  }
+                  return (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                      {Object.entries(byType).map(([mt, d]) => {
+                        const wr = d.wins + d.losses > 0 ? ((d.wins / (d.wins + d.losses)) * 100).toFixed(1) : '—';
+                        const isGood = parseFloat(wr) >= 55;
+                        const isBad = parseFloat(wr) < 48 && parseFloat(wr) > 0;
+                        return (
+                          <Card key={mt} className={isGood ? 'border-emerald-500/20' : isBad ? 'border-destructive/20' : ''}>
+                            <CardContent className="p-3 text-center">
+                              <Badge variant="outline" className="text-[10px] mb-1">{mt.toUpperCase()}</Badge>
+                              <p className={`text-xl font-black ${isGood ? 'text-emerald-400' : isBad ? 'text-destructive' : ''}`}>{wr}%</p>
+                              <p className="text-[10px] text-muted-foreground">{d.wins}W/{d.losses}L · {d.bets} bets</p>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Detailed breakdown */}
+                <div className="space-y-2">
+                  {(marketPerf as any[]).map((m: any) => {
+                    const isStrong = (m.win_rate || 0) >= 55;
+                    const isWeak = (m.win_rate || 0) < 48 && (m.total_bets || 0) >= 10;
+                    const weightLabel = m.current_weight >= 1.2 ? '🔥 Boosted' : m.current_weight <= 0.6 ? '⚠️ Reduced' : '○ Normal';
+                    return (
+                      <Card key={m.id} className={isStrong ? 'border-emerald-500/20' : isWeak ? 'border-destructive/20' : ''}>
+                        <CardContent className="p-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1">
+                            <Badge className={`text-[10px] ${sportColors[m.sport] || ''}`}>{m.sport}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{m.market_type}</Badge>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-bold ${isStrong ? 'text-emerald-400' : isWeak ? 'text-destructive' : ''}`}>
+                                  {m.win_rate}% WR
+                                </span>
+                                <span className={`text-xs ${(m.roi || 0) > 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+                                  {m.roi > 0 ? '+' : ''}{m.roi}% ROI
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">{m.wins}W/{m.losses}L</span>
+                              </div>
+                              <Progress value={Math.max(0, Math.min(100, m.win_rate || 0))} className="h-1 mt-1" />
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <Badge variant="outline" className={`text-[9px] ${
+                              m.current_weight >= 1.2 ? 'text-emerald-400 border-emerald-400/30' :
+                              m.current_weight <= 0.6 ? 'text-destructive border-destructive/30' : ''
+                            }`}>{weightLabel}</Badge>
+                            <p className="text-[9px] text-muted-foreground mt-0.5">Weight: {(m.current_weight * 100).toFixed(0)}%</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="text-xs font-semibold mb-2">How Market Weighting Works</h4>
+                    <div className="space-y-1.5 text-[11px] text-muted-foreground">
+                      <p>🔥 <strong>Boosted (130%)</strong> — Market wins ≥ 58% over 10+ bets → system prioritizes these plays</p>
+                      <p>📊 <strong>Normal (100%)</strong> — Market performing within expected range</p>
+                      <p>⚠️ <strong>Reduced (50-70%)</strong> — Market wins &lt; 50% → system deprioritizes these plays</p>
+                      <p className="pt-2 text-[10px]">Weights auto-adjust on recalculation and feed into the composite scoring engine.</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card className="border-dashed"><CardContent className="p-8 text-center">
+                <Layers className="h-8 w-8 mx-auto text-blue-400/30 mb-2" />
+                <p className="font-semibold">No market data yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Place and settle bets, then click Recalculate to see performance by market type</p>
+              </CardContent></Card>
+            )}
+          </TabsContent>
+
           <TabsContent value="signals" className="mt-3 space-y-4">
             {valuePlays.length > 0 && (
               <div className="space-y-2">
