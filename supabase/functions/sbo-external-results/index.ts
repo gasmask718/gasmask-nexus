@@ -598,7 +598,7 @@ serve(async (req) => {
       for (const capperId of capperIds) {
         const { data: allPicks } = await supabase
           .from('sbo_capper_picks')
-          .select('result, market_type, game_date, odds, stat_type')
+          .select('result, bet_type, game_date, odds, prop_type')
           .eq('capper_id', capperId)
           .not('result', 'is', null)
           .order('game_date', { ascending: true });
