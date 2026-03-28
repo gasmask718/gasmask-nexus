@@ -1,0 +1,1 @@
+ALTER TABLE sbo_external_results ADD CONSTRAINT sbo_external_results_event_id_key UNIQUE (event_id);
