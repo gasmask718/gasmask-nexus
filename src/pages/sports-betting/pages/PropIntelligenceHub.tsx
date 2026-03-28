@@ -615,9 +615,15 @@ export default function PropIntelligenceHub() {
                         {[primary.team, primary.opponent ? `vs ${primary.opponent}` : null].filter(Boolean).join(' ')}
                       </p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      {primary.season_avg != null ? (
+                        <Badge className="bg-green-500/10 text-green-600 text-[10px]">✅ Stats</Badge>
+                      ) : (
+                        <Badge className="bg-red-500/10 text-red-500 text-[10px]">❌ No Stats</Badge>
+                      )}
                       {primary.result === 'win' && <Badge className="bg-green-500/20 text-green-500 text-[10px]">WIN ✅</Badge>}
                       {primary.result === 'loss' && <Badge className="bg-red-500/20 text-red-500 text-[10px]">LOSS ❌</Badge>}
+                      {primary.result === 'pending' && <Badge className="bg-yellow-500/20 text-yellow-600 text-[10px]">PENDING ⏳</Badge>}
                       {hasMultiple && <Badge variant="outline" className="text-[10px]">{groupProps.length} books</Badge>}
                     </div>
                   </div>
