@@ -437,7 +437,7 @@ serve(async (req) => {
       }
 
       let resolved = 0, unmatched = 0, needsReview = 0;
-      const updates: Array<{ id: string; result: string; external_result_id: string; capper_id: string; market_type: string; odds: number | null }> = [];
+      const updates: Array<{ id: string; result: string; external_result_id: string; capper_id: string; bet_type: string; odds: number | null }> = [];
       const matchLogs: Array<Record<string, unknown>> = [];
 
       for (const pick of picks) {
