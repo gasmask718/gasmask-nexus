@@ -962,6 +962,25 @@ export default function SBOCapperTracker() {
   const [fetchingResults, setFetchingResults] = useState(false);
   const [resolvingPicks, setResolvingPicks] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState<{
+    active: boolean;
+    totalDays: number;
+    currentDay: number;
+    currentDate: string;
+    totalGames: number;
+    totalResolved: number;
+    totalUnmatched: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    errors: string[];
+    phase: 'fetching' | 'resolving' | 'done' | 'error';
+  } | null>(null);
+
+  const backfillPct = backfillProgress ? Math.round((backfillProgress.currentDay / backfillProgress.totalDays) * 100) : 0;
+  const backfillROI = backfillProgress && (backfillProgress.wins + backfillProgress.losses + backfillProgress.pushes) > 0
+    ? Math.round(((backfillProgress.wins * 0.909 - backfillProgress.losses) / (backfillProgress.wins + backfillProgress.losses + backfillProgress.pushes)) * 10000) / 100
+    : 0;
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
@@ -1112,26 +1131,84 @@ export default function SBOCapperTracker() {
 
   const runBackfill = async () => {
     setBackfilling(true);
+    const end = new Date(fetchingDate);
+    const start = new Date(end.getTime() - 7 * 86400000);
+    const dates: string[] = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    const progress = {
+      active: true, totalDays: dates.length, currentDay: 0, currentDate: '',
+      totalGames: 0, totalResolved: 0, totalUnmatched: 0,
+      wins: 0, losses: 0, pushes: 0, errors: [] as string[],
+      phase: 'fetching' as 'fetching' | 'resolving' | 'done' | 'error',
+    };
+    setBackfillProgress({ ...progress });
+
     try {
-      const end = fetchingDate;
-      const start = new Date(new Date(end).getTime() - 7 * 86400000).toISOString().split('T')[0];
-      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
-        body: { mode: 'backfill', sport: fetchingSport, start_date: start, end_date: end },
-      });
-      if (error) throw error;
-      const games = data?.total_games || 0;
-      const resolved = data?.resolved || 0;
-      const unmatched = data?.unmatched || 0;
-      const roi = data?.roi_summary || 0;
-      const days = data?.dates_processed || 7;
-      if (games === 0) {
-        toast.warning(`No ${fetchingSport} games found in the ${days}-day range (${start} → ${end}).`);
-      } else {
-        toast.success(`✅ Backfill: ${days} days, ${games} games, ${resolved} picks resolved, ${unmatched} unmatched. ROI: ${roi}%`);
+      // Phase 1: Fetch day by day
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        progress.currentDay = i + 1;
+        progress.currentDate = date;
+        progress.phase = 'fetching';
+        setBackfillProgress({ ...progress });
+
+        try {
+          const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+            body: { mode: 'fetch', sport: fetchingSport, game_date: date, no_fallback: true },
+          });
+          if (error) throw error;
+          progress.totalGames += data?.games || 0;
+        } catch (err: any) {
+          progress.errors.push(`fetch ${date}: ${err.message}`);
+        }
+        setBackfillProgress({ ...progress });
       }
+
+      // Phase 2: Resolve all
+      progress.phase = 'resolving';
+      setBackfillProgress({ ...progress });
+
+      const startDate = dates[0];
+      const endDate = dates[dates.length - 1];
+      try {
+        const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+          body: { mode: 'resolve', sport: fetchingSport, date_from: startDate, date_to: endDate },
+        });
+        if (error) throw error;
+        progress.totalResolved = data?.resolved || 0;
+        progress.totalUnmatched = data?.unmatched || 0;
+      } catch (err: any) {
+        progress.errors.push(`resolve: ${err.message}`);
+      }
+
+      // Count wins/losses
+      const { data: resolvedPicks } = await (supabase as any).from('sbo_capper_picks')
+        .select('result').gte('game_date', startDate).lte('game_date', endDate).not('result', 'is', null);
+      if (resolvedPicks) {
+        progress.wins = resolvedPicks.filter((p: any) => p.result === 'win' || p.result === 'won').length;
+        progress.losses = resolvedPicks.filter((p: any) => p.result === 'loss' || p.result === 'lost').length;
+        progress.pushes = resolvedPicks.filter((p: any) => p.result === 'push').length;
+      }
+
+      progress.phase = 'done';
+      progress.active = false;
+      setBackfillProgress({ ...progress });
+
+      const total = progress.wins + progress.losses + progress.pushes;
+      const roi = total > 0 ? Math.round(((progress.wins * 0.909 - progress.losses) / total) * 10000) / 100 : 0;
+      toast.success(`✅ Backfill Complete: ${dates.length} days, ${progress.totalGames} games, ${progress.totalResolved} resolved. ROI: ${roi}%`);
       refetchAll();
-    } catch (err: any) { toast.error(err.message || 'Backfill failed'); }
-    finally { setBackfilling(false); }
+    } catch (err: any) {
+      progress.phase = 'error';
+      progress.active = false;
+      setBackfillProgress({ ...progress });
+      toast.error(err.message || 'Backfill failed');
+    } finally {
+      setBackfilling(false);
+    }
   };
 
   const runTopPlaysEngine = async () => {
@@ -1249,6 +1326,74 @@ export default function SBOCapperTracker() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Live Backfill Progress Panel */}
+        {backfillProgress && (
+          <Card className={`border-amber-500/30 ${backfillProgress.phase === 'done' ? 'border-emerald-500/30 bg-emerald-500/5' : backfillProgress.phase === 'error' ? 'border-destructive/30 bg-destructive/5' : 'bg-amber-500/5'}`}>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {backfillProgress.active ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+                  ) : backfillProgress.phase === 'done' ? (
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="text-sm font-semibold">
+                    {backfillProgress.phase === 'fetching' ? `Fetching Day ${backfillProgress.currentDay}/${backfillProgress.totalDays}...` :
+                     backfillProgress.phase === 'resolving' ? 'Resolving picks...' :
+                     backfillProgress.phase === 'done' ? '✅ Backfill Complete' : '❌ Backfill Error'}
+                  </span>
+                </div>
+                {!backfillProgress.active && (
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setBackfillProgress(null)}>Dismiss</Button>
+                )}
+              </div>
+
+              <Progress value={backfillProgress.phase === 'resolving' ? 90 : backfillProgress.phase === 'done' ? 100 : backfillPct} className="h-2" />
+
+              <div className="text-xs font-mono text-muted-foreground">
+                {backfillProgress.currentDate && backfillProgress.active && (
+                  <p>📅 Processing: {backfillProgress.currentDate}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold">{backfillProgress.currentDay}/{backfillProgress.totalDays}</p>
+                  <p className="text-[10px] text-muted-foreground">Days</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold">{backfillProgress.totalGames}</p>
+                  <p className="text-[10px] text-muted-foreground">Games</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold text-emerald-400">{backfillProgress.totalResolved}</p>
+                  <p className="text-[10px] text-muted-foreground">Resolved</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold text-emerald-500">{backfillProgress.wins}W</p>
+                  <p className="text-[10px] text-muted-foreground">Wins</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold text-destructive">{backfillProgress.losses}L</p>
+                  <p className="text-[10px] text-muted-foreground">Losses</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className={`text-sm font-bold ${backfillROI >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>{backfillROI > 0 ? '+' : ''}{backfillROI}%</p>
+                  <p className="text-[10px] text-muted-foreground">ROI</p>
+                </div>
+              </div>
+
+              {backfillProgress.errors.length > 0 && (
+                <div className="text-[10px] text-destructive/80 space-y-0.5 max-h-16 overflow-y-auto">
+                  {backfillProgress.errors.map((e, i) => <p key={i}>⚠ {e}</p>)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Sport Filter */}
         <div className="flex gap-1.5 flex-wrap">
