@@ -369,16 +369,65 @@ export default function PropIntelligenceHub() {
         ))}
       </div>
 
-      {/* Platform Breakdown */}
+      {/* Platform Breakdown with Colors + Accuracy */}
       {stats?.byPlatform && Object.keys(stats.byPlatform).length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(stats.byPlatform).map(([plat, count]) => (
-            <Badge key={plat} variant="outline" className="capitalize text-xs gap-1">
-              {plat}: <span className="font-bold">{count as number}</span>
-            </Badge>
-          ))}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+          {Object.entries(stats.byPlatform).map(([plat, info]) => {
+            const platInfo = info as { total: number; wins: number; losses: number; pending: number };
+            const acc = platInfo.wins + platInfo.losses > 0 
+              ? Math.round((platInfo.wins / (platInfo.wins + platInfo.losses)) * 100) : null;
+            const colorMap: Record<string, string> = {
+              prizepicks: 'border-purple-500/40 bg-purple-500/10',
+              bovada: 'border-red-500/40 bg-red-500/10',
+              draftkings: 'border-green-500/40 bg-green-500/10',
+              fanduel: 'border-blue-500/40 bg-blue-500/10',
+              betmgm: 'border-amber-500/40 bg-amber-500/10',
+              underdog: 'border-orange-500/40 bg-orange-500/10',
+              manual: 'border-muted-foreground/40 bg-muted/30',
+            };
+            const dotColor: Record<string, string> = {
+              prizepicks: 'bg-purple-500',
+              bovada: 'bg-red-500',
+              draftkings: 'bg-green-500',
+              fanduel: 'bg-blue-500',
+              betmgm: 'bg-amber-500',
+              underdog: 'bg-orange-500',
+              manual: 'bg-muted-foreground',
+            };
+            return (
+              <Card key={plat} className={`border ${colorMap[plat] || 'border-border/40 bg-muted/20'}`}>
+                <CardContent className="p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className={`h-2 w-2 rounded-full ${dotColor[plat] || 'bg-muted-foreground'}`} />
+                    <span className="text-xs font-medium capitalize">{plat}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{platInfo.total}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-green-500">{platInfo.wins}W</span>
+                    <span className="text-red-500">{platInfo.losses}L</span>
+                    {acc !== null && <span className="font-bold ml-auto">{acc}%</span>}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
+
+      {/* Prediction Direction */}
+      {(stats?.overCount || stats?.underCount || stats?.holdCount) ? (
+        <div className="flex gap-3 text-xs">
+          <Badge variant="outline" className="gap-1 border-green-500/30 text-green-600">
+            <ChevronUp className="h-3 w-3" /> Over: {stats.overCount}
+          </Badge>
+          <Badge variant="outline" className="gap-1 border-red-500/30 text-red-600">
+            <ChevronDown className="h-3 w-3" /> Under: {stats.underCount}
+          </Badge>
+          <Badge variant="outline" className="gap-1 border-muted-foreground/30">
+            Hold: {stats.holdCount}
+          </Badge>
+        </div>
+      ) : null}
 
       {/* Stat Type Breakdown */}
       {stats?.byStatType && Object.keys(stats.byStatType).length > 0 && (
@@ -501,19 +550,28 @@ export default function PropIntelligenceHub() {
                       <Badge variant="secondary" className="text-xs capitalize">{primary.stat_type}</Badge>
                       <span className="text-lg font-bold">{primary.line}</span>
                     </div>
-                    <Badge variant="outline" className="text-[10px] capitalize">{primary.platform}</Badge>
+                    <Badge variant="outline" className={`text-[10px] capitalize ${
+                      ({
+                        prizepicks: 'border-purple-500/50 text-purple-600',
+                        bovada: 'border-red-500/50 text-red-600',
+                        draftkings: 'border-green-500/50 text-green-600',
+                        fanduel: 'border-blue-500/50 text-blue-600',
+                        betmgm: 'border-amber-500/50 text-amber-600',
+                        underdog: 'border-orange-500/50 text-orange-600',
+                      } as Record<string, string>)[primary.platform] || ''
+                    }`}>{primary.platform}</Badge>
                   </div>
 
-                  {primary.prediction && (
+                  {primary.prediction && primary.prediction !== 'hold' && (
                     <div className={`flex items-center justify-between p-2 rounded-md ${
-                      primary.prediction === 'MORE' || primary.prediction === 'OVER'
+                      ['more', 'over', 'MORE', 'OVER'].includes(primary.prediction)
                         ? 'bg-green-500/10' : 'bg-red-500/10'
                     }`}>
                       <div className="flex items-center gap-1.5">
-                        {primary.prediction === 'MORE' || primary.prediction === 'OVER'
+                        {['more', 'over', 'MORE', 'OVER'].includes(primary.prediction)
                           ? <ChevronUp className="h-4 w-4 text-green-500" />
                           : <ChevronDown className="h-4 w-4 text-red-500" />}
-                        <span className="text-sm font-semibold">{primary.prediction}</span>
+                        <span className="text-sm font-semibold uppercase">{primary.prediction}</span>
                       </div>
                       {primary.confidence_score != null && (
                         <span className={`text-sm font-bold ${

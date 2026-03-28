@@ -155,13 +155,25 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
       const withPrediction = withPredRes.count ?? 0;
       const bestPicks = bestRes.count ?? 0;
 
-      // Get platform breakdown (limited query but just need platform column)
+      // Get platform breakdown with results
       const { data: platformData } = await baseFilter(
-        (supabase.from('props_master') as any).select('platform')
+        (supabase.from('props_master') as any).select('platform, result, prediction')
       );
-      const byPlatform: Record<string, number> = {};
+      const byPlatform: Record<string, { total: number; wins: number; losses: number; pending: number }> = {};
       for (const p of (Array.isArray(platformData) ? platformData : [])) {
-        byPlatform[p.platform] = (byPlatform[p.platform] || 0) + 1;
+        if (!byPlatform[p.platform]) byPlatform[p.platform] = { total: 0, wins: 0, losses: 0, pending: 0 };
+        byPlatform[p.platform].total++;
+        if (p.result === 'win') byPlatform[p.platform].wins++;
+        if (p.result === 'loss') byPlatform[p.platform].losses++;
+        if (p.result === 'pending') byPlatform[p.platform].pending++;
+      }
+
+      // Get prediction direction counts
+      let overCount = 0, underCount = 0, holdCount = 0;
+      for (const p of (Array.isArray(platformData) ? platformData : [])) {
+        if (p.prediction === 'more' || p.prediction === 'over') overCount++;
+        else if (p.prediction === 'less' || p.prediction === 'under') underCount++;
+        else if (p.prediction === 'hold') holdCount++;
       }
 
       // Get stat type breakdown
@@ -192,12 +204,15 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         pending,
         withPrediction,
         bestPicks,
-        withStats: withPrediction, // props that have been analyzed
+        withStats: withPrediction,
         noStats: total - withPrediction,
         avgConfidence,
         winRate: wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0,
         byPlatform,
         byStatType,
+        overCount,
+        underCount,
+        holdCount,
       };
     },
   });
