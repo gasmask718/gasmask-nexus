@@ -15,6 +15,7 @@ import {
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
   CheckCircle, XCircle, Clock, Plus, FileSpreadsheet, Activity, ShieldCheck, AlertTriangle, Database
 } from 'lucide-react';
+import { SBOSystemStatusBar } from '@/pages/sports-betting/components/SBOSystemStatusBar';
 import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -307,7 +308,9 @@ export default function PropIntelligenceHub() {
 
   return (
     <div className="space-y-4 p-4 md:p-6">
-      {/* Header */}
+      {/* System Status Bar */}
+      <SBOSystemStatusBar />
+
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
