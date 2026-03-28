@@ -290,9 +290,54 @@ serve(async (req) => {
         }
       }
 
-      const allRows = [...gameRows, ...playerRows];
+      let allRows = [...gameRows, ...playerRows];
+      
+      // ── AUTO-FALLBACK: try adjacent days if no games found ──
+      if (!allRows.length && !body.no_fallback) {
+        const fallbackDates = [];
+        const d = new Date(gameDate);
+        const prev = new Date(d); prev.setDate(prev.getDate() - 1);
+        const next = new Date(d); next.setDate(next.getDate() + 1);
+        fallbackDates.push(prev.toISOString().split('T')[0], next.toISOString().split('T')[0]);
+        
+        for (const fbDate of fallbackDates) {
+          // Check if we already have data for this date
+          const { count } = await supabase.from('sbo_external_results')
+            .select('*', { count: 'exact', head: true })
+            .eq('game_date', fbDate).eq('sport', sport);
+          if ((count || 0) > 0) continue;
+          
+          // Try fetching via recursive call (with no_fallback to prevent infinite loop)
+          const fnUrl = Deno.env.get('SUPABASE_URL')! + '/functions/v1/sbo-external-results';
+          const fnAuth = `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+          try {
+            const fbResp = await fetch(fnUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': fnAuth },
+              body: JSON.stringify({ mode: 'fetch', sport, game_date: fbDate, no_fallback: true }),
+            });
+            const fbData = await fbResp.json();
+            if ((fbData.games || 0) > 0) {
+              return new Response(JSON.stringify({
+                success: true, sport, game_date: fbDate,
+                games: fbData.games, player_stats: fbData.player_stats, ingested: fbData.ingested,
+                fallback: true, original_date: gameDate,
+                message: `No games on ${gameDate}. Found ${fbData.games} games on ${fbDate} instead.`,
+                isolation: 'ACTIVE — does NOT affect props_master',
+              }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+            }
+          } catch { /* skip fallback date */ }
+        }
+        
+        return new Response(JSON.stringify({
+          success: true, games: 0, players: 0,
+          message: `No games found for ${sport} on ${gameDate} or adjacent days`,
+          dates_checked: [gameDate, ...fallbackDates],
+        }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
       if (!allRows.length) {
-        return new Response(JSON.stringify({ success: true, games: 0, players: 0, message: 'No results found' }), {
+        return new Response(JSON.stringify({ success: true, games: 0, players: 0, message: 'No results found for this date' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
       }
