@@ -59426,6 +59426,48 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_function_logs: {
+        Row: {
+          completed_at: string | null
+          duration_ms: number | null
+          error_message: string | null
+          function_name: string
+          id: string
+          metadata: Json | null
+          records_failed: number | null
+          records_processed: number | null
+          records_skipped: number | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          function_name: string
+          id?: string
+          metadata?: Json | null
+          records_failed?: number | null
+          records_processed?: number | null
+          records_skipped?: number | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          duration_ms?: number | null
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          metadata?: Json | null
+          records_failed?: number | null
+          records_processed?: number | null
+          records_skipped?: number | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       sbo_game_intelligence: {
         Row: {
           ats_record_away: string | null
