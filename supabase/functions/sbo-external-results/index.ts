@@ -624,7 +624,7 @@ serve(async (req) => {
         // Find best market
         const marketMap: Record<string, { w: number; t: number }> = {};
         for (const p of allPicks) {
-          const mt = p.market_type || 'player_prop';
+          const mt = p.bet_type || 'player_prop';
           if (!marketMap[mt]) marketMap[mt] = { w: 0, t: 0 };
           marketMap[mt].t++;
           if (p.result === 'win') marketMap[mt].w++;
