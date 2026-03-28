@@ -396,7 +396,7 @@ serve(async (req) => {
       let picksQuery = supabase
         .from('sbo_capper_picks')
         .select('id, player_name, team, prop_type, line, direction, game_date, capper_id, bet_type, odds')
-        .is('result', null);
+        .or('result.is.null,result.eq.pending');
       if (dateFrom) picksQuery = picksQuery.gte('game_date', dateFrom);
       if (dateTo) picksQuery = picksQuery.lte('game_date', dateTo);
 
