@@ -395,7 +395,7 @@ serve(async (req) => {
 
       let picksQuery = supabase
         .from('sbo_capper_picks')
-        .select('id, player_name, team, stat_type, line, direction, game_date, capper_id, market_type, odds')
+        .select('id, player_name, team, prop_type, line, direction, game_date, capper_id, bet_type, odds')
         .is('result', null);
       if (dateFrom) picksQuery = picksQuery.gte('game_date', dateFrom);
       if (dateTo) picksQuery = picksQuery.lte('game_date', dateTo);
@@ -437,11 +437,11 @@ serve(async (req) => {
       }
 
       let resolved = 0, unmatched = 0, needsReview = 0;
-      const updates: Array<{ id: string; result: string; external_result_id: string; capper_id: string; market_type: string; odds: number | null }> = [];
+      const updates: Array<{ id: string; result: string; external_result_id: string; capper_id: string; bet_type: string; odds: number | null }> = [];
       const matchLogs: Array<Record<string, unknown>> = [];
 
       for (const pick of picks) {
-        const marketType = (pick.market_type || 'player_prop').toLowerCase();
+        const marketType = (pick.bet_type || 'player_prop').toLowerCase();
         let result: string | null = null;
         let matchId: string | null = null;
         let matchType = 'unmatched';
@@ -490,7 +490,7 @@ serve(async (req) => {
         } else {
           // ── Player prop: 5-layer matching ──
           const playerNorm = normalizeName(pick.player_name || '');
-          const statNorm = normalizeStat(pick.stat_type || '');
+          const statNorm = normalizeStat(pick.prop_type || '');
 
           // LAYER 1: Exact match
           let match = extResults.find(r =>
@@ -550,7 +550,7 @@ serve(async (req) => {
             else if (['under', 'less', 'no'].includes(dir)) result = actual < line ? 'win' : 'loss';
             matchDetails = {
               pick_player: pick.player_name, matched_player: match.player_name,
-              pick_stat: pick.stat_type, matched_stat: match.stat_type,
+              pick_stat: pick.prop_type, matched_stat: match.stat_type,
               actual: match.actual_value, line: pick.line, similarity: matchConfidence,
             };
           } else if (matchType === 'needs_review') {
@@ -570,7 +570,7 @@ serve(async (req) => {
         });
 
         if (result && matchId && matchType !== 'needs_review') {
-          updates.push({ id: pick.id, result, external_result_id: matchId, capper_id: pick.capper_id, market_type: marketType, odds: pick.odds });
+          updates.push({ id: pick.id, result, external_result_id: matchId, capper_id: pick.capper_id, bet_type: marketType, odds: pick.odds });
           resolved++;
         } else if (matchType === 'needs_review') {
           needsReview++;
@@ -598,7 +598,7 @@ serve(async (req) => {
       for (const capperId of capperIds) {
         const { data: allPicks } = await supabase
           .from('sbo_capper_picks')
-          .select('result, market_type, game_date, odds, stat_type')
+          .select('result, bet_type, game_date, odds, prop_type')
           .eq('capper_id', capperId)
           .not('result', 'is', null)
           .order('game_date', { ascending: true });
@@ -624,7 +624,7 @@ serve(async (req) => {
         // Find best market
         const marketMap: Record<string, { w: number; t: number }> = {};
         for (const p of allPicks) {
-          const mt = p.market_type || 'player_prop';
+          const mt = p.bet_type || 'player_prop';
           if (!marketMap[mt]) marketMap[mt] = { w: 0, t: 0 };
           marketMap[mt].t++;
           if (p.result === 'win') marketMap[mt].w++;
@@ -645,8 +645,8 @@ serve(async (req) => {
 
         // ── ROI per market type ──
         for (const [mt, stats] of Object.entries(marketMap)) {
-          const mLosses = allPicks.filter(p => (p.market_type || 'player_prop') === mt && p.result === 'loss').length;
-          const mPushes = allPicks.filter(p => (p.market_type || 'player_prop') === mt && p.result === 'push').length;
+          const mLosses = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'loss').length;
+          const mPushes = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'push').length;
           const mROI = computeROI(stats.w, mLosses, mPushes, avgOdds);
           const mWR = stats.t > 0 ? Math.round((stats.w / stats.t) * 100) : 0;
 
