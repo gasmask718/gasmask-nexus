@@ -372,11 +372,12 @@ export default function PropIntelligenceHub() {
 
       {/* Data Health Panel */}
       <Card className="border-border/40">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
+        <CardContent className="p-3 space-y-3">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShieldCheck className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">Data Integrity</span>
+              <Badge variant="outline" className="text-[10px]">{stats?.healthPct ?? 0}% Complete</Badge>
             </div>
             <div className="flex gap-2">
               <Button
@@ -384,43 +385,88 @@ export default function PropIntelligenceHub() {
                 size="sm"
                 className="gap-1.5 text-xs h-7"
                 onClick={async () => {
-                  toast.info('Collecting missing stats...');
+                  const missing = stats?.noStats ?? 0;
+                  if (missing === 0) { toast.info('All props already have stats'); return; }
+                  toast.info(`Collecting stats for ${missing} props...`);
                   try {
                     const { data, error } = await supabase.functions.invoke('sbo-run-analysis', {
                       body: { mode: 'stats_only' },
                     });
                     if (error) throw error;
+                    const analyzed = data?.analyzed ?? 0;
+                    const failed = data?.failed ?? 0;
                     queryClient.invalidateQueries({ queryKey: ['props-master'] });
                     queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
-                    toast.success(`Stats collected for ${data?.analyzed ?? 0} props`);
+                    if (failed > 0) {
+                      toast.warning(`Stats collected: ${analyzed} ✅ | Failed: ${failed} ❌`);
+                    } else {
+                      toast.success(`Stats collected for ${analyzed} props ✅`);
+                    }
                   } catch (e: any) {
                     toast.error(`Stats collection failed: ${e.message}`);
                   }
                 }}
               >
-                <Database className="h-3 w-3" /> Collect Stats
+                <Database className="h-3 w-3" /> Collect Stats {(stats?.noStats ?? 0) > 0 && `(${stats?.noStats})`}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs h-7"
                 onClick={async () => {
-                  toast.info('Resolving pending results...');
+                  const pending = stats?.pending ?? 0;
+                  if (pending === 0) { toast.info('No pending results to resolve'); return; }
+                  toast.info(`Resolving ${pending} pending results...`);
                   try {
                     const { data, error } = await supabase.functions.invoke('sbo-settle-results');
                     if (error) throw error;
+                    const settled = data?.settled ?? 0;
+                    const failed = data?.failed ?? 0;
+                    const skipped = data?.skipped ?? 0;
                     queryClient.invalidateQueries({ queryKey: ['props-master'] });
                     queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
-                    toast.success(`Resolved ${data?.settled ?? 0} results`);
+                    toast.success(`Resolved: ${settled} ✅ | Skipped: ${skipped} | Failed: ${failed}`);
                   } catch (e: any) {
                     toast.error(`Result resolution failed: ${e.message}`);
                   }
                 }}
               >
-                <Target className="h-3 w-3" /> Resolve Results
+                <Target className="h-3 w-3" /> Resolve Results {(stats?.pending ?? 0) > 0 && `(${stats?.pending})`}
               </Button>
             </div>
           </div>
+
+          {/* Progress Bars */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px]">
+                <span className="text-muted-foreground">Stats Completion</span>
+                <span className="font-semibold">{stats?.total ? Math.round(((stats.withStats ?? 0) / stats.total) * 100) : 0}%</span>
+              </div>
+              <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-green-500 rounded-full transition-all duration-500"
+                  style={{ width: `${stats?.total ? ((stats.withStats ?? 0) / stats.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">{stats?.withStats ?? 0} / {stats?.total ?? 0} props have stats</p>
+            </div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-[11px]">
+                <span className="text-muted-foreground">Results Completion</span>
+                <span className="font-semibold">{stats?.total ? Math.round(((stats.withResults ?? 0) / stats.total) * 100) : 0}%</span>
+              </div>
+              <div className="h-2 bg-muted/40 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                  style={{ width: `${stats?.total ? ((stats.withResults ?? 0) / stats.total) * 100 : 0}%` }}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">{stats?.withResults ?? 0} / {stats?.total ?? 0} props settled</p>
+            </div>
+          </div>
+
+          {/* Breakdown Cards */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
             <div className="bg-muted/30 rounded p-2 text-center">
               <p className="text-muted-foreground">With Stats</p>
@@ -443,6 +489,22 @@ export default function PropIntelligenceHub() {
               <p className="font-bold text-primary">{stats?.fullyComplete ?? 0}</p>
             </div>
           </div>
+
+          {/* Smart Alerts */}
+          {((stats?.noStats ?? 0) > 100 || (stats?.pending ?? 0) > 100) && (
+            <div className="flex flex-wrap gap-2">
+              {(stats?.noStats ?? 0) > 100 && (
+                <div className="flex items-center gap-1.5 text-[11px] text-yellow-600 bg-yellow-500/10 rounded px-2 py-1">
+                  <AlertTriangle className="h-3 w-3" /> {stats?.noStats} props missing stats
+                </div>
+              )}
+              {(stats?.pending ?? 0) > 100 && (
+                <div className="flex items-center gap-1.5 text-[11px] text-yellow-600 bg-yellow-500/10 rounded px-2 py-1">
+                  <AlertTriangle className="h-3 w-3" /> {stats?.pending} props awaiting results
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
