@@ -645,8 +645,8 @@ serve(async (req) => {
 
         // ── ROI per market type ──
         for (const [mt, stats] of Object.entries(marketMap)) {
-          const mLosses = allPicks.filter(p => (p.market_type || 'player_prop') === mt && p.result === 'loss').length;
-          const mPushes = allPicks.filter(p => (p.market_type || 'player_prop') === mt && p.result === 'push').length;
+          const mLosses = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'loss').length;
+          const mPushes = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'push').length;
           const mROI = computeROI(stats.w, mLosses, mPushes, avgOdds);
           const mWR = stats.t > 0 ? Math.round((stats.w / stats.t) * 100) : 0;
 
