@@ -259,6 +259,7 @@ export default function PropIntelligenceHub() {
   const [page, setPage] = useState(1);
   const [isCollectingStats, setIsCollectingStats] = useState(false);
   const [isResolvingResults, setIsResolvingResults] = useState(false);
+  const [isExpandingContext, setIsExpandingContext] = useState(false);
   const pageSize = 100;
   const fileRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
