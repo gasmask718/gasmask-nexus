@@ -73,6 +73,10 @@ export default function ResultsPage() {
             <User className="h-4 w-4" />
             Prop Settlement
           </TabsTrigger>
+          <TabsTrigger value="external" className="gap-2">
+            <Database className="h-4 w-4" />
+            External Results (Capper Intel)
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="moneyline">
