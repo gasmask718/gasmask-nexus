@@ -15,8 +15,10 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  let jobId: string | undefined;
   try {
-    const { jobId } = await req.json();
+    const body = await req.json();
+    jobId = body.jobId;
 
     if (!jobId) {
       return new Response(JSON.stringify({ error: 'jobId required' }), {
