@@ -112,6 +112,9 @@ export default function ResultsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="external">
+          <ExternalResultsPanel />
+        </TabsContent>
       </Tabs>
     </div>
   );
