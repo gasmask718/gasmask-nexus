@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Search, Upload, RefreshCw, TrendingUp, Trophy, Target, Zap, BarChart3,
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
-  CheckCircle, XCircle, Clock, Plus, FileSpreadsheet
+  CheckCircle, XCircle, Clock, Plus, FileSpreadsheet, Activity, ShieldCheck, AlertTriangle, Database
 } from 'lucide-react';
 import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
 import { supabase } from '@/integrations/supabase/client';
