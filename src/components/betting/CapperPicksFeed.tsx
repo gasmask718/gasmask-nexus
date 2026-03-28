@@ -352,6 +352,12 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
                       <Clock className="h-3 w-3" />
                       <span>{new Date(p.created_at).toLocaleDateString()}</span>
                       {p.game_date && <span>· {p.game_date}</span>}
+                      {p.team && p.opponent && (
+                        <span className="font-medium text-foreground/70">· {p.team} vs {p.opponent}</span>
+                      )}
+                      {p.team && !p.opponent && (
+                        <span className="font-medium text-foreground/70">· {p.team}</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
