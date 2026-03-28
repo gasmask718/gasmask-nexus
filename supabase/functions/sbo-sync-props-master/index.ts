@@ -62,8 +62,12 @@ Deno.serve(async (req) => {
       const unified = unifiedMap.get(`${p.player_name}|${p.prop_type}|${p.source}|${p.line}`);
 
       // Prefer sbo_predictions, fallback to sbo_unified_props
-      const prediction = pred?.prediction
-        || (unified?.ai_direction === 'OVER' ? 'more' : unified?.ai_direction === 'UNDER' ? 'less' : null);
+      let prediction = pred?.prediction || null;
+      if (!prediction && unified?.ai_direction) {
+        prediction = unified.ai_direction === 'OVER' ? 'more'
+          : unified.ai_direction === 'UNDER' ? 'less'
+          : 'hold';
+      }
       const confidence = pred?.confidence || unified?.ai_confidence || null;
       const edgeScore = pred?.edge_score || unified?.edge_vs_line || null;
       const seasonAvg = pred?.season_avg || unified?.season_avg || null;

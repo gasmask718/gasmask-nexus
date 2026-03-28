@@ -194,11 +194,10 @@ Deno.serve(async (req) => {
 
     let propsUpdated = 0;
     for (const upd of propsMasterUpdates) {
-      if (!upd.prediction) continue;
-      const { error: updErr } = await supabase
+      const { error: updErr, count } = await supabase
         .from('props_master')
         .update({
-          prediction: upd.prediction,
+          prediction: upd.prediction || 'hold',
           confidence_score: upd.confidence_score,
           edge_score: upd.edge_score,
           season_avg: upd.season_avg,
@@ -209,7 +208,8 @@ Deno.serve(async (req) => {
         .eq('player_name', upd.player_name)
         .eq('stat_type', upd.stat_type)
         .eq('line', upd.line)
-        .eq('platform', upd.platform);
+        .eq('platform', upd.platform)
+        .eq('game_date', upd.game_date);
       if (!updErr) propsUpdated++;
     }
     console.log(`[analysis] Updated ${propsUpdated} props_master rows with predictions`);
