@@ -59017,6 +59017,7 @@ export type Database = {
           id: string
           is_lock_play: boolean | null
           line: number | null
+          market_type: string | null
           notes: string | null
           odds: number | null
           placed_at: string
@@ -59041,6 +59042,7 @@ export type Database = {
           id?: string
           is_lock_play?: boolean | null
           line?: number | null
+          market_type?: string | null
           notes?: string | null
           odds?: number | null
           placed_at?: string
@@ -59065,6 +59067,7 @@ export type Database = {
           id?: string
           is_lock_play?: boolean | null
           line?: number | null
+          market_type?: string | null
           notes?: string | null
           odds?: number | null
           placed_at?: string
@@ -60190,6 +60193,63 @@ export type Database = {
           live_total?: string | null
           momentum_indicator?: string | null
           quarter?: number | null
+        }
+        Relationships: []
+      }
+      sbo_market_performance: {
+        Row: {
+          auto_weight_enabled: boolean | null
+          avg_odds: number | null
+          created_at: string | null
+          current_weight: number | null
+          id: string
+          last_recalc_at: string | null
+          losses: number | null
+          market_type: string
+          pushes: number | null
+          roi: number | null
+          sport: string
+          total_bets: number | null
+          updated_at: string | null
+          user_id: string | null
+          win_rate: number | null
+          wins: number | null
+        }
+        Insert: {
+          auto_weight_enabled?: boolean | null
+          avg_odds?: number | null
+          created_at?: string | null
+          current_weight?: number | null
+          id?: string
+          last_recalc_at?: string | null
+          losses?: number | null
+          market_type?: string
+          pushes?: number | null
+          roi?: number | null
+          sport: string
+          total_bets?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          win_rate?: number | null
+          wins?: number | null
+        }
+        Update: {
+          auto_weight_enabled?: boolean | null
+          avg_odds?: number | null
+          created_at?: string | null
+          current_weight?: number | null
+          id?: string
+          last_recalc_at?: string | null
+          losses?: number | null
+          market_type?: string
+          pushes?: number | null
+          roi?: number | null
+          sport?: string
+          total_bets?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          win_rate?: number | null
+          wins?: number | null
         }
         Relationships: []
       }
