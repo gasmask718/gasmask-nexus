@@ -59852,53 +59852,80 @@ export type Database = {
         Row: {
           actual_value: number | null
           api_provider: string | null
+          away_score: number | null
+          away_team: string | null
           created_at: string | null
           event_id: string | null
           game_date: string
+          home_score: number | null
+          home_team: string | null
           id: string
+          league: string | null
           opponent: string | null
           player_name: string
           raw_data: Json | null
+          raw_payload: Json | null
           source: string
           sport: string
+          spread_result: number | null
           stat_type: string
           team: string | null
+          total_score: number | null
           updated_at: string | null
           verified: boolean | null
+          winner: string | null
         }
         Insert: {
           actual_value?: number | null
           api_provider?: string | null
+          away_score?: number | null
+          away_team?: string | null
           created_at?: string | null
           event_id?: string | null
           game_date: string
+          home_score?: number | null
+          home_team?: string | null
           id?: string
+          league?: string | null
           opponent?: string | null
           player_name: string
           raw_data?: Json | null
+          raw_payload?: Json | null
           source?: string
           sport?: string
+          spread_result?: number | null
           stat_type: string
           team?: string | null
+          total_score?: number | null
           updated_at?: string | null
           verified?: boolean | null
+          winner?: string | null
         }
         Update: {
           actual_value?: number | null
           api_provider?: string | null
+          away_score?: number | null
+          away_team?: string | null
           created_at?: string | null
           event_id?: string | null
           game_date?: string
+          home_score?: number | null
+          home_team?: string | null
           id?: string
+          league?: string | null
           opponent?: string | null
           player_name?: string
           raw_data?: Json | null
+          raw_payload?: Json | null
           source?: string
           sport?: string
+          spread_result?: number | null
           stat_type?: string
           team?: string | null
+          total_score?: number | null
           updated_at?: string | null
           verified?: boolean | null
+          winner?: string | null
         }
         Relationships: []
       }

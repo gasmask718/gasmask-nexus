@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trophy, User, Lock } from 'lucide-react';
+import { Trophy, User, Lock, Database } from 'lucide-react';
 import { MoneylineResultsTab, PropResultsTab } from '@/components/betting/results';
 import { useSimplifiedAccuracy } from '@/hooks/useSimplifiedAccuracy';
 import { Badge } from '@/components/ui/badge';
+import ExternalResultsPanel from '@/components/betting/ExternalResultsPanel';
 
 export default function ResultsPage() {
   const { data: accuracy, isLoading: accuracyLoading } = useSimplifiedAccuracy();
@@ -72,6 +73,10 @@ export default function ResultsPage() {
             <User className="h-4 w-4" />
             Prop Settlement
           </TabsTrigger>
+          <TabsTrigger value="external" className="gap-2">
+            <Database className="h-4 w-4" />
+            External Results (Capper Intel)
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="moneyline">
@@ -106,6 +111,9 @@ export default function ResultsPage() {
               <PropResultsTab />
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="external">
+          <ExternalResultsPanel />
         </TabsContent>
       </Tabs>
     </div>
