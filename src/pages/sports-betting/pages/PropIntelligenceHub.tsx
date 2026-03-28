@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Search, Upload, RefreshCw, TrendingUp, Trophy, Target, Zap, BarChart3,
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
-  CheckCircle, XCircle, Clock, Plus, FileSpreadsheet
+  CheckCircle, XCircle, Clock, Plus, FileSpreadsheet, Activity, ShieldCheck, AlertTriangle, Database
 } from 'lucide-react';
 import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
 import { supabase } from '@/integrations/supabase/client';
@@ -258,6 +258,7 @@ export default function PropIntelligenceHub() {
   const [page, setPage] = useState(1);
   const pageSize = 100;
   const fileRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = usePropsMaster({
     platform,
@@ -351,11 +352,11 @@ export default function PropIntelligenceHub() {
           { label: 'Total Props', value: stats?.total ?? 0, icon: Layers, color: 'text-blue-500' },
           { label: 'Best Picks', value: stats?.bestPicks ?? 0, icon: Trophy, color: 'text-amber-500' },
           { label: 'Analyzed', value: stats?.withPrediction ?? 0, icon: Brain, color: 'text-purple-500' },
-          { label: 'No Stats', value: stats?.noStats ?? 0, icon: Target, color: 'text-muted-foreground' },
           { label: 'Wins', value: stats?.wins ?? 0, icon: CheckCircle, color: 'text-green-500' },
           { label: 'Losses', value: stats?.losses ?? 0, icon: XCircle, color: 'text-red-500' },
           { label: 'Pending', value: stats?.pending ?? 0, icon: Clock, color: 'text-yellow-500' },
           { label: 'Accuracy', value: `${stats?.winRate ?? 0}%`, icon: BarChart3, color: 'text-emerald-500' },
+          { label: 'Health', value: `${stats?.healthPct ?? 0}%`, icon: Activity, color: stats?.healthPct && stats.healthPct >= 80 ? 'text-green-500' : stats?.healthPct && stats.healthPct >= 50 ? 'text-yellow-500' : 'text-red-500' },
         ].map(s => (
           <Card key={s.label} className="border-border/40">
             <CardContent className="p-2.5">
@@ -368,6 +369,82 @@ export default function PropIntelligenceHub() {
           </Card>
         ))}
       </div>
+
+      {/* Data Health Panel */}
+      <Card className="border-border/40">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Data Integrity</span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs h-7"
+                onClick={async () => {
+                  toast.info('Collecting missing stats...');
+                  try {
+                    const { data, error } = await supabase.functions.invoke('sbo-run-analysis', {
+                      body: { mode: 'stats_only' },
+                    });
+                    if (error) throw error;
+                    queryClient.invalidateQueries({ queryKey: ['props-master'] });
+                    queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
+                    toast.success(`Stats collected for ${data?.analyzed ?? 0} props`);
+                  } catch (e: any) {
+                    toast.error(`Stats collection failed: ${e.message}`);
+                  }
+                }}
+              >
+                <Database className="h-3 w-3" /> Collect Stats
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs h-7"
+                onClick={async () => {
+                  toast.info('Resolving pending results...');
+                  try {
+                    const { data, error } = await supabase.functions.invoke('sbo-settle-results');
+                    if (error) throw error;
+                    queryClient.invalidateQueries({ queryKey: ['props-master'] });
+                    queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
+                    toast.success(`Resolved ${data?.settled ?? 0} results`);
+                  } catch (e: any) {
+                    toast.error(`Result resolution failed: ${e.message}`);
+                  }
+                }}
+              >
+                <Target className="h-3 w-3" /> Resolve Results
+              </Button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-xs">
+            <div className="bg-muted/30 rounded p-2 text-center">
+              <p className="text-muted-foreground">With Stats</p>
+              <p className="font-bold text-green-500">{stats?.withStats ?? 0}</p>
+            </div>
+            <div className="bg-muted/30 rounded p-2 text-center">
+              <p className="text-muted-foreground">Missing Stats</p>
+              <p className="font-bold text-red-500">{stats?.noStats ?? 0}</p>
+            </div>
+            <div className="bg-muted/30 rounded p-2 text-center">
+              <p className="text-muted-foreground">With Results</p>
+              <p className="font-bold text-green-500">{stats?.withResults ?? 0}</p>
+            </div>
+            <div className="bg-muted/30 rounded p-2 text-center">
+              <p className="text-muted-foreground">Missing Results</p>
+              <p className="font-bold text-yellow-500">{stats?.missingResults ?? 0}</p>
+            </div>
+            <div className="bg-muted/30 rounded p-2 text-center">
+              <p className="text-muted-foreground">Fully Complete</p>
+              <p className="font-bold text-primary">{stats?.fullyComplete ?? 0}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Platform Breakdown with Colors + Accuracy */}
       {stats?.byPlatform && Object.keys(stats.byPlatform).length > 0 && (
@@ -538,9 +615,15 @@ export default function PropIntelligenceHub() {
                         {[primary.team, primary.opponent ? `vs ${primary.opponent}` : null].filter(Boolean).join(' ')}
                       </p>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                      {primary.season_avg != null ? (
+                        <Badge className="bg-green-500/10 text-green-600 text-[10px]">✅ Stats</Badge>
+                      ) : (
+                        <Badge className="bg-red-500/10 text-red-500 text-[10px]">❌ No Stats</Badge>
+                      )}
                       {primary.result === 'win' && <Badge className="bg-green-500/20 text-green-500 text-[10px]">WIN ✅</Badge>}
                       {primary.result === 'loss' && <Badge className="bg-red-500/20 text-red-500 text-[10px]">LOSS ❌</Badge>}
+                      {primary.result === 'pending' && <Badge className="bg-yellow-500/20 text-yellow-600 text-[10px]">PENDING ⏳</Badge>}
                       {hasMultiple && <Badge variant="outline" className="text-[10px]">{groupProps.length} books</Badge>}
                     </div>
                   </div>

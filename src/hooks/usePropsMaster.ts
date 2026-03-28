@@ -139,13 +139,15 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         return q;
       };
 
-      const [totalRes, winsRes, lossesRes, pendingRes, withPredRes, bestRes] = await Promise.all([
+      const [totalRes, winsRes, lossesRes, pendingRes, withPredRes, bestRes, withStatsRes, withResultsRes] = await Promise.all([
         baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true })),
         baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).eq('result', 'win')),
         baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).eq('result', 'loss')),
         baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).eq('result', 'pending')),
         baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).not('prediction', 'is', null)),
         baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).gte('confidence_score', 70)),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).not('season_avg', 'is', null)),
+        baseFilter((supabase.from('props_master') as any).select('*', { count: 'exact', head: true }).in('result', ['win', 'loss'])),
       ]);
 
       const total = totalRes.count ?? 0;
@@ -154,6 +156,8 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
       const pending = pendingRes.count ?? 0;
       const withPrediction = withPredRes.count ?? 0;
       const bestPicks = bestRes.count ?? 0;
+      const withStats = withStatsRes.count ?? 0;
+      const withResults = withResultsRes.count ?? 0;
 
       // Get platform breakdown with results
       const { data: platformData } = await baseFilter(
@@ -197,6 +201,11 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         ? Math.round(confArr.reduce((s: number, c: any) => s + (c.confidence_score || 0), 0) / confArr.length)
         : 0;
 
+      const missingStats = total - withStats;
+      const missingResults = total - withResults;
+      const fullyComplete = Math.min(withStats, withResults);
+      const healthPct = total > 0 ? Math.round((fullyComplete / total) * 100) : 0;
+
       return {
         total,
         wins,
@@ -204,8 +213,12 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         pending,
         withPrediction,
         bestPicks,
-        withStats: withPrediction,
-        noStats: total - withPrediction,
+        withStats,
+        noStats: missingStats,
+        withResults,
+        missingResults,
+        fullyComplete,
+        healthPct,
         avgConfidence,
         winRate: wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0,
         byPlatform,
