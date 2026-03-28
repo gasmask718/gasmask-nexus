@@ -76,7 +76,11 @@ export default function ResultsPage() {
           </TabsTrigger>
           <TabsTrigger value="external" className="gap-2">
             <Database className="h-4 w-4" />
-            External Results (Capper Intel)
+            External Results
+          </TabsTrigger>
+          <TabsTrigger value="rankings" className="gap-2">
+            <Crown className="h-4 w-4" />
+            Capper Rankings
           </TabsTrigger>
         </TabsList>
 
