@@ -461,6 +461,7 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
 export default function SBOCapperTracker() {
   const qc = useQueryClient();
   const [sportFilter, setSportFilter] = useState<string>('all');
+  const [matching, setMatching] = useState(false);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
@@ -486,6 +487,22 @@ export default function SBOCapperTracker() {
     qc.invalidateQueries({ queryKey: ['sbo-cappers'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks-review'] });
+  };
+
+  const runMatchAndResolve = async () => {
+    setMatching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-match-capper-picks', {
+        body: { mode: 'match_and_resolve' },
+      });
+      if (error) throw error;
+      toast.success(`Matched ${data.matched} picks, resolved ${data.resolved} results`);
+      refetchAll();
+    } catch (err: any) {
+      toast.error(err.message || 'Match failed');
+    } finally {
+      setMatching(false);
+    }
   };
 
   const updateResult = async (pickId: string, result: string) => {
