@@ -7,6 +7,10 @@ const corsHeaders = {
 
 const PAGE = 1000;
 
+function normalize(s: string): string {
+  return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '');
+}
+
 async function paginatedFetch(supabase: any, query: () => any) {
   let all: any[] = [];
   let offset = 0;
@@ -38,92 +42,109 @@ Deno.serve(async (req) => {
     );
     console.log(`[expand-context] Total props fetched: ${allProps.length}`);
 
-    // 2. Fetch ALL existing context (paginated)
+    // 2. Fetch ALL existing context with season_avg status
     const existing = await paginatedFetch(supabase, () =>
-      supabase.from('sbo_prop_stat_context').select('player_name, stat_type')
+      supabase.from('sbo_prop_stat_context').select('id, player_name, stat_type, season_avg')
     );
 
-    const existingKeys = new Set(
-      existing.map((e: any) => `${e.player_name.toLowerCase().trim()}::${e.stat_type.toLowerCase().trim()}`)
-    );
-    console.log(`[expand-context] Existing unique context keys: ${existingKeys.size}`);
+    // Track which normalized keys have a valid season_avg
+    const keysWithStats = new Set<string>();
+    const keysWithoutStats = new Map<string, string[]>(); // normalized key → list of IDs to update
+    const allExistingKeys = new Set<string>();
 
-    // 3. Find missing combos
-    const missingMap: Record<string, { player_name: string; stat_type: string; lines: number[]; latest_date: string }> = {};
-
-    for (const p of allProps) {
-      const key = `${p.player_name.toLowerCase().trim()}::${p.stat_type.toLowerCase().trim()}`;
-      if (existingKeys.has(key)) continue;
-
-      if (!missingMap[key]) {
-        missingMap[key] = {
-          player_name: p.player_name,
-          stat_type: p.stat_type,
-          lines: [],
-          latest_date: p.game_date,
-        };
+    for (const e of existing) {
+      const key = `${normalize(e.player_name)}::${normalize(e.stat_type)}`;
+      allExistingKeys.add(key);
+      if (e.season_avg != null) {
+        keysWithStats.add(key);
+      } else {
+        if (!keysWithoutStats.has(key)) keysWithoutStats.set(key, []);
+        keysWithoutStats.get(key)!.push(e.id);
       }
-      if (p.line != null) missingMap[key].lines.push(Number(p.line));
+    }
+    console.log(`[expand-context] Keys with stats: ${keysWithStats.size}, Keys missing stats: ${keysWithoutStats.size}`);
+
+    // 3. Build line averages from props for ALL player/stat combos
+    const lineMap: Record<string, number[]> = {};
+    for (const p of allProps) {
+      const key = `${normalize(p.player_name)}::${normalize(p.stat_type)}`;
+      if (!lineMap[key]) lineMap[key] = [];
+      if (p.line != null) lineMap[key].push(Number(p.line));
     }
 
-    const missingEntries = Object.values(missingMap);
-    console.log(`[expand-context] Missing combos to insert: ${missingEntries.length}`);
-
-    if (missingEntries.length === 0) {
-      return new Response(JSON.stringify({
-        success: true, inserted: 0, message: 'All player/stat combos already in context',
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    // 4. Insert truly missing combos (not in context at all)
+    const missingEntries: { player_name: string; stat_type: string; lines: number[]; latest_date: string }[] = [];
+    const seenMissing = new Set<string>();
+    for (const p of allProps) {
+      const key = `${normalize(p.player_name)}::${normalize(p.stat_type)}`;
+      if (allExistingKeys.has(key) || seenMissing.has(key)) continue;
+      seenMissing.add(key);
+      missingEntries.push({
+        player_name: p.player_name,
+        stat_type: p.stat_type,
+        lines: lineMap[key] || [],
+        latest_date: p.game_date,
+      });
     }
 
-    // 4. Insert in batches
     let inserted = 0;
-    let failed = 0;
     const BATCH = 100;
-
     for (let i = 0; i < missingEntries.length; i += BATCH) {
       const batch = missingEntries.slice(i, i + BATCH);
       const rows = batch.map(m => {
-        const avg = m.lines.length > 0
-          ? Math.round((m.lines.reduce((a, b) => a + b, 0) / m.lines.length) * 100) / 100
-          : null;
-        const last5 = m.lines.slice(0, 5);
-        const last10 = m.lines.slice(0, 10);
-        const l5Avg = last5.length > 0 ? Math.round((last5.reduce((a, b) => a + b, 0) / last5.length) * 100) / 100 : null;
-        const l10Avg = last10.length > 0 ? Math.round((last10.reduce((a, b) => a + b, 0) / last10.length) * 100) / 100 : null;
-
+        const avg = m.lines.length > 0 ? Math.round((m.lines.reduce((a, b) => a + b, 0) / m.lines.length) * 100) / 100 : null;
+        const l5 = m.lines.slice(0, 5);
+        const l10 = m.lines.slice(0, 10);
         return {
           player_name: m.player_name,
           stat_type: m.stat_type,
           season_avg: avg,
-          last_5_avg: l5Avg,
-          last_10_avg: l10Avg,
+          last_5_avg: l5.length > 0 ? Math.round((l5.reduce((a, b) => a + b, 0) / l5.length) * 100) / 100 : null,
+          last_10_avg: l10.length > 0 ? Math.round((l10.reduce((a, b) => a + b, 0) / l10.length) * 100) / 100 : null,
           line_value: avg,
           confidence_score: 30,
           data_quality: 'estimated',
           game_date: m.latest_date,
         };
       });
+      const { error } = await supabase.from('sbo_prop_stat_context').insert(rows);
+      if (error) console.warn(`[expand-context] Insert error:`, error.message);
+      else inserted += batch.length;
+    }
 
-      const { error: insErr } = await supabase
-        .from('sbo_prop_stat_context')
-        .insert(rows);
+    // 5. Backfill existing entries that have NULL season_avg
+    let backfilled = 0;
+    for (const [key, ids] of keysWithoutStats.entries()) {
+      if (keysWithStats.has(key)) continue; // already has a good entry, collect-stats will handle
+      const lines = lineMap[key];
+      if (!lines || lines.length === 0) continue;
 
-      if (insErr) {
-        console.warn(`[expand-context] Batch insert error:`, insErr.message);
-        failed += batch.length;
-      } else {
-        inserted += batch.length;
+      const avg = Math.round((lines.reduce((a, b) => a + b, 0) / lines.length) * 100) / 100;
+      const l5 = lines.slice(0, 5);
+      const l10 = lines.slice(0, 10);
+
+      for (let i = 0; i < ids.length; i += 50) {
+        const batch = ids.slice(i, i + 50);
+        const { error } = await supabase.from('sbo_prop_stat_context').update({
+          season_avg: avg,
+          last_5_avg: l5.length > 0 ? Math.round((l5.reduce((a, b) => a + b, 0) / l5.length) * 100) / 100 : null,
+          last_10_avg: l10.length > 0 ? Math.round((l10.reduce((a, b) => a + b, 0) / l10.length) * 100) / 100 : null,
+          confidence_score: 25,
+          data_quality: 'backfilled',
+        }).in('id', batch);
+        if (error) console.warn(`[expand-context] Backfill error:`, error.message);
+        else backfilled += batch.length;
       }
     }
 
-    console.log(`[expand-context] Inserted: ${inserted}, Failed: ${failed}`);
+    console.log(`[expand-context] Inserted: ${inserted}, Backfilled: ${backfilled}`);
 
     return new Response(JSON.stringify({
       success: true,
       inserted,
-      failed,
-      total_missing: missingEntries.length,
-      existing_count: existingKeys.size,
+      backfilled,
+      existing_with_stats: keysWithStats.size,
+      existing_without_stats: keysWithoutStats.size,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('[expand-context] Error:', error);

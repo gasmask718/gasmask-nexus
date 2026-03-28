@@ -7,6 +7,10 @@ const corsHeaders = {
 
 const PAGE = 1000;
 
+function normalize(s: string): string {
+  return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '');
+}
+
 async function paginatedFetch(supabase: any, query: () => any) {
   // Simple approach: use limit+offset via range
   let all: any[] = [];
@@ -61,7 +65,7 @@ Deno.serve(async (req) => {
     // Build normalized lookup — keep highest confidence per player+stat
     const statMap: Record<string, any> = {};
     for (const s of allStats) {
-      const key = `${s.player_name.toLowerCase().trim()}::${s.stat_type.toLowerCase().trim()}`;
+      const key = `${normalize(s.player_name)}::${normalize(s.stat_type)}`;
       if (!statMap[key] || (s.confidence_score || 0) > (statMap[key].confidence_score || 0)) {
         statMap[key] = s;
       }
@@ -74,7 +78,7 @@ Deno.serve(async (req) => {
 
     const grouped: Record<string, string[]> = {};
     for (const prop of missing) {
-      const key = `${prop.player_name.toLowerCase().trim()}::${prop.stat_type.toLowerCase().trim()}`;
+      const key = `${normalize(prop.player_name)}::${normalize(prop.stat_type)}`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(prop.id);
     }
