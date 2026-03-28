@@ -248,6 +248,7 @@ export default function PropIntelligenceHub() {
   const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [gameDate, setGameDate] = useState('');
   const [minConfidence, setMinConfidence] = useState(0);
+  const [dataFilter, setDataFilter] = useState<'all' | 'missing_stats' | 'missing_results' | 'complete'>('all');
   const [bestOnly, setBestOnly] = useState(false);
   const [searchPlayer, setSearchPlayer] = useState('');
   const [selectedProp, setSelectedProp] = useState<PropMaster | null>(null);
