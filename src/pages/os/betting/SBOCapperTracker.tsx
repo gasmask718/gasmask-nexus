@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
-import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap } from 'lucide-react';
+import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap, Crown, DollarSign, Brain, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
@@ -382,12 +382,88 @@ function ConsensusMeter({ over, under, signal }: { over: number; under: number; 
   );
 }
 
+// ─── Top Play Card ────────────────────────────────────────────────────
+function TopPlayCard({ play, rank }: { play: any; rank: number }) {
+  const rankStyle = rank === 1 ? 'border-amber-500/40 bg-gradient-to-br from-amber-500/10 to-amber-900/5' :
+                    rank === 2 ? 'border-slate-400/30 bg-gradient-to-br from-slate-400/5 to-slate-900/5' :
+                    rank === 3 ? 'border-orange-700/30 bg-gradient-to-br from-orange-700/5 to-orange-900/5' : '';
+  const rankEmoji = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+
+  return (
+    <Card className={`overflow-hidden ${rankStyle}`}>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1">
+            <span className="text-2xl font-black leading-none mt-0.5">{rankEmoji}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-base">{play.player_name}</span>
+                <Badge variant="outline" className="text-[10px]">{play.stat_type}</Badge>
+                <Badge variant="outline" className={`text-[10px] font-bold ${
+                  play.direction === 'OVER' ? 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10' : 'text-blue-400 border-blue-400/30 bg-blue-400/10'
+                }`}>{play.direction} {play.line}</Badge>
+                {play.sharp_indicator === 'SHARP' && <Badge className="text-[10px] bg-purple-500/20 text-purple-400 border-purple-500/30">🧠 SHARP</Badge>}
+                {play.sharp_indicator === 'TRAP' && <Badge className="text-[10px] bg-red-500/20 text-red-400 border-red-500/30">🚨 TRAP</Badge>}
+                {play.is_value_play && <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">💰 VALUE</Badge>}
+              </div>
+              <div className="flex gap-1.5 mt-2 flex-wrap">
+                {(play.play_reasons || []).map((r: string, i: number) => (
+                  <span key={i} className="text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{r}</span>
+                ))}
+              </div>
+              {play.consensus_over != null && (
+                <div className="mt-2">
+                  <ConsensusMeter over={play.consensus_over || 0} under={play.consensus_under || 0} signal={play.signal_strength || 'LOW'} />
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="text-right shrink-0 space-y-1">
+            <div className="text-2xl font-black text-primary">{play.composite_score}</div>
+            <p className="text-[10px] text-muted-foreground">composite</p>
+            <div className="mt-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+              <p className="text-xs font-bold text-emerald-400">${play.bet_amount}</p>
+              <p className="text-[9px] text-emerald-400/70">{play.bet_size_pct}% bankroll</p>
+            </div>
+          </div>
+        </div>
+        {/* Score breakdown */}
+        <div className="flex gap-3 mt-3 pt-2 border-t border-border/50">
+          <div className="text-center flex-1">
+            <p className="text-xs font-bold">{play.consensus_score || 0}%</p>
+            <p className="text-[9px] text-muted-foreground">Consensus</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-xs font-bold">{play.value_score || 0}</p>
+            <p className="text-[9px] text-muted-foreground">Value</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-xs font-bold">{play.capper_confidence || 0}%</p>
+            <p className="text-[9px] text-muted-foreground">Cappers</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-xs font-bold">{play.ai_confidence || 0}%</p>
+            <p className="text-[9px] text-muted-foreground">AI Model</p>
+          </div>
+          <div className="text-center flex-1">
+            <p className="text-xs font-bold">{play.elite_count || 0}</p>
+            <p className="text-[9px] text-muted-foreground">Elite</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────
 export default function SBOCapperTracker() {
   const qc = useQueryClient();
   const [sportFilter, setSportFilter] = useState<string>('all');
   const [matching, setMatching] = useState(false);
   const [runningConsensus, setRunningConsensus] = useState(false);
+  const [runningTopPlays, setRunningTopPlays] = useState(false);
+  const [topPlays, setTopPlays] = useState<any[]>([]);
+  const [bankroll, setBankroll] = useState(1000);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
@@ -432,12 +508,23 @@ export default function SBOCapperTracker() {
     },
   });
 
+  const { data: signalPerf = [] } = useQuery({
+    queryKey: ['sbo-signal-performance'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_signal_performance')
+        .select('*').not('result', 'eq', 'pending')
+        .order('created_at', { ascending: false }).limit(200);
+      return data || [];
+    },
+  });
+
   const refetchAll = () => {
     qc.invalidateQueries({ queryKey: ['sbo-cappers'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks-review'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-performance'] });
     qc.invalidateQueries({ queryKey: ['sbo-value-props'] });
+    qc.invalidateQueries({ queryKey: ['sbo-signal-performance'] });
   };
 
   const runMatchAndResolve = async () => {
@@ -458,6 +545,17 @@ export default function SBOCapperTracker() {
       toast.success(`Consensus: ${data.consensus_updated} props scored, ${data.value_plays} value plays found`);
       refetchAll();
     } catch (err: any) { toast.error(err.message || 'Consensus failed'); } finally { setRunningConsensus(false); }
+  };
+
+  const runTopPlaysEngine = async () => {
+    setRunningTopPlays(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-top-plays', { body: { bankroll } });
+      if (error) throw error;
+      setTopPlays(data.top_plays || []);
+      toast.success(`🏆 ${data.top_plays?.length || 0} top plays ranked from ${data.total_scored} props`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Top plays failed'); } finally { setRunningTopPlays(false); }
   };
 
   const updateResult = async (pickId: string, result: string) => {
@@ -486,10 +584,18 @@ export default function SBOCapperTracker() {
     return acc;
   }, {} as Record<string, { total: number; wins: number }>);
 
-  // Top performers from performance table
   const topPerformers = performances.filter((p: any) => p.total_picks >= 5).slice(0, 5);
   const strongSignals = valueProps.filter((p: any) => p.signal_strength === 'STRONG');
   const valuePlays = valueProps.filter((p: any) => p.is_value_play);
+
+  // Signal accuracy stats
+  const signalStats = signalPerf.reduce((acc: Record<string, { total: number; wins: number }>, s: any) => {
+    const key = s.signal_type || 'OTHER';
+    if (!acc[key]) acc[key] = { total: 0, wins: 0 };
+    acc[key].total++;
+    if (s.result === 'won') acc[key].wins++;
+    return acc;
+  }, {} as Record<string, { total: number; wins: number }>);
 
   return (
     <TooltipProvider>
@@ -497,25 +603,33 @@ export default function SBOCapperTracker() {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
-              <Users className="h-5 w-5 text-blue-400" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center">
+              <Crown className="h-5 w-5 text-amber-400" />
             </div>
             <div>
               <h1 className="text-xl font-bold flex items-center gap-2">
                 Capper Intelligence
-                <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Multi-Sport</Badge>
+                <Badge variant="outline" className="text-[10px] border-amber-500/30 text-amber-400">Decision Engine</Badge>
               </h1>
-              <p className="text-xs text-muted-foreground">AI photo parser · Consensus engine · Value detection</p>
+              <p className="text-xs text-muted-foreground">Top plays · Bet sizing · Sharp detection · Signal learning</p>
             </div>
           </div>
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap items-center">
+            <div className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3 text-muted-foreground" />
+              <Input type="number" value={bankroll} onChange={e => setBankroll(Number(e.target.value) || 1000)} className="w-20 h-7 text-xs" />
+            </div>
+            <Button size="sm" className="gap-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700" onClick={runTopPlaysEngine} disabled={runningTopPlays}>
+              {runningTopPlays ? <Loader2 className="h-3 w-3 animate-spin" /> : <Crown className="h-3 w-3" />}
+              {runningTopPlays ? 'Ranking...' : '🏆 Top Plays'}
+            </Button>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runConsensusEngine} disabled={runningConsensus}>
               {runningConsensus ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
-              {runningConsensus ? 'Running...' : '⚡ Consensus'}
+              ⚡ Consensus
             </Button>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runMatchAndResolve} disabled={matching}>
               {matching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
-              {matching ? 'Linking...' : '🔗 Match & Resolve'}
+              🔗 Match
             </Button>
             <PhotoUploadDialog cappers={cappers} onAdded={refetchAll} />
             <AddPickDialog cappers={cappers} onAdded={refetchAll} />
@@ -544,16 +658,16 @@ export default function SBOCapperTracker() {
             <p className={`text-lg font-bold ${parseFloat(String(overallWinRate)) >= 55 ? 'text-emerald-500' : ''}`}>{overallWinRate}%</p><p className="text-[10px] text-muted-foreground">Win Rate</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold">{Object.keys(sportBreakdown).length}</p><p className="text-[10px] text-muted-foreground">Sports Active</p>
+            <p className="text-lg font-bold">{Object.keys(sportBreakdown).length}</p><p className="text-[10px] text-muted-foreground">Sports</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
             <p className="text-lg font-bold text-emerald-500">{picks.filter((p: any) => p.matched_prop_id).length}</p><p className="text-[10px] text-muted-foreground">🔗 Linked</p>
           </CardContent></Card>
           <Card className="border-amber-500/20"><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-amber-400">{strongSignals.length}</p><p className="text-[10px] text-muted-foreground">🔥 Strong Signals</p>
+            <p className="text-lg font-bold text-amber-400">{topPlays.length || strongSignals.length}</p><p className="text-[10px] text-muted-foreground">🏆 Top Plays</p>
           </CardContent></Card>
           <Card className="border-emerald-500/20"><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-emerald-400">{valuePlays.length}</p><p className="text-[10px] text-muted-foreground">💰 Value Plays</p>
+            <p className="text-lg font-bold text-emerald-400">{valuePlays.length}</p><p className="text-[10px] text-muted-foreground">💰 Value</p>
           </CardContent></Card>
         </div>
 
@@ -568,19 +682,45 @@ export default function SBOCapperTracker() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="signals">
-          <TabsList className="w-full grid grid-cols-6">
+        <Tabs defaultValue="top-plays">
+          <TabsList className="w-full grid grid-cols-7">
+            <TabsTrigger value="top-plays" className="text-xs gap-1"><Crown className="h-3 w-3" /> Top Plays</TabsTrigger>
             <TabsTrigger value="signals" className="text-xs gap-1"><Target className="h-3 w-3" /> Signals</TabsTrigger>
             <TabsTrigger value="feed" className="text-xs gap-1"><Activity className="h-3 w-3" /> Feed</TabsTrigger>
             <TabsTrigger value="review" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" /> Review</TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs gap-1"><Trophy className="h-3 w-3" /> Board</TabsTrigger>
-            <TabsTrigger value="cappers" className="text-xs gap-1"><Eye className="h-3 w-3" /> Cappers</TabsTrigger>
+            <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
 
-          {/* ── SIGNALS TAB (NEW) ── */}
+          {/* ── TOP PLAYS TAB ── */}
+          <TabsContent value="top-plays" className="mt-3 space-y-3">
+            {topPlays.length > 0 ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    <Crown className="h-4 w-4 text-amber-400" /> Today's Top Plays
+                    <Badge variant="outline" className="text-[10px]">${bankroll} bankroll</Badge>
+                  </h3>
+                  <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-400/30">
+                    Total suggested: ${topPlays.reduce((s: number, p: any) => s + (p.bet_amount || 0), 0)}
+                  </Badge>
+                </div>
+                {topPlays.map((play: any, i: number) => (
+                  <TopPlayCard key={play.id} play={play} rank={i + 1} />
+                ))}
+              </>
+            ) : (
+              <Card className="border-dashed border-amber-500/20"><CardContent className="p-8 text-center">
+                <Crown className="h-10 w-10 mx-auto text-amber-500/30 mb-3" />
+                <p className="font-semibold">No top plays generated yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Run ⚡ Consensus first, then click 🏆 Top Plays to rank</p>
+              </CardContent></Card>
+            )}
+          </TabsContent>
+
+          {/* ── SIGNALS TAB ── */}
           <TabsContent value="signals" className="mt-3 space-y-4">
-            {/* Value Plays */}
             {valuePlays.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-emerald-400" /> 💰 Value Plays</h3>
@@ -609,7 +749,6 @@ export default function SBOCapperTracker() {
               </div>
             )}
 
-            {/* Strong Signals */}
             {strongSignals.length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold flex items-center gap-2"><Flame className="h-4 w-4 text-amber-400" /> 🔥 Strong Signals</h3>
@@ -637,7 +776,6 @@ export default function SBOCapperTracker() {
               </div>
             )}
 
-            {/* All consensus props */}
             {valueProps.filter((p: any) => p.signal_strength !== 'STRONG' && !p.is_value_play).length > 0 && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-muted-foreground">Other Consensus Props</h3>
@@ -685,7 +823,7 @@ export default function SBOCapperTracker() {
                         {p.bet_type && p.bet_type !== 'prop' && <Badge variant="outline" className="text-[10px]">{p.bet_type}</Badge>}
                         {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
                         {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
-                        {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-amber-400 border-amber-400/30">🎯 Sharp</Badge>}
+                        {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-purple-400 border-purple-400/30">🧠 Sharp</Badge>}
                         {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -720,7 +858,7 @@ export default function SBOCapperTracker() {
           {/* Review Queue */}
           <TabsContent value="review" className="mt-3"><ReviewQueue onResolved={refetchAll} /></TabsContent>
 
-          {/* Leaderboard with grades */}
+          {/* Leaderboard */}
           <TabsContent value="leaderboard" className="mt-3 space-y-2">
             {topPerformers.length > 0 && (
               <div className="space-y-2 mb-4">
@@ -738,7 +876,6 @@ export default function SBOCapperTracker() {
                                 <span className="font-medium text-sm">{capper?.name || 'Unknown'}</span>
                                 <Badge variant="outline" className={`text-[10px] ${gradeColors[perf.confidence_grade] || ''}`}>Grade {perf.confidence_grade}</Badge>
                                 <Badge className={`text-[10px] ${sportColors[perf.sport] || ''}`}>{perf.sport}</Badge>
-                                {perf.prop_type && <Badge variant="outline" className="text-[8px]">{perf.prop_type}</Badge>}
                               </div>
                               <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                                 {perf.hot_streak > 2 && <span className="text-amber-400">🔥 {perf.hot_streak}W streak</span>}
@@ -791,98 +928,50 @@ export default function SBOCapperTracker() {
             })}
           </TabsContent>
 
-          {/* Cappers Detail */}
-          <TabsContent value="cappers" className="mt-3 space-y-2">
-            {cappers.length === 0 ? (
+          {/* ── LEARNING TAB ── */}
+          <TabsContent value="learning" className="mt-3 space-y-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2"><Brain className="h-4 w-4 text-purple-400" /> Signal Performance Tracker</h3>
+
+            {Object.keys(signalStats).length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {Object.entries(signalStats).map(([type, stats]) => {
+                  const s = stats as { total: number; wins: number };
+                  const wr = s.total > 0 ? Math.round((s.wins / s.total) * 100) : 0;
+                  const color = type === 'SHARP' ? 'purple' : type === 'VALUE' ? 'emerald' : 'blue';
+                  return (
+                    <Card key={type} className={`border-${color}-500/20`}>
+                      <CardContent className="p-4 text-center space-y-2">
+                        <Badge variant="outline" className={`text-xs text-${color}-400 border-${color}-400/30`}>
+                          {type === 'SHARP' ? '🧠' : type === 'VALUE' ? '💰' : '📊'} {type}
+                        </Badge>
+                        <p className="text-3xl font-black">{wr}%</p>
+                        <p className="text-[10px] text-muted-foreground">{s.wins}W / {s.total - s.wins}L ({s.total} total)</p>
+                        <Progress value={wr} className="h-1.5" />
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
               <Card className="border-dashed"><CardContent className="p-8 text-center">
-                <Users className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" /><p className="text-sm text-muted-foreground">No cappers tracked yet.</p>
+                <Brain className="h-8 w-8 mx-auto text-purple-400/30 mb-2" />
+                <p className="text-sm text-muted-foreground">Signal data accumulates as picks are resolved</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Run 🏆 Top Plays → resolve results → learning begins</p>
               </CardContent></Card>
-            ) : cappers.map((c: any) => {
-              const capperPicks = picks.filter((p: any) => p.capper_id === c.id);
-              const resolved = capperPicks.filter((p: any) => p.result !== 'pending');
-              const wins = resolved.filter((p: any) => p.result === 'won').length;
-              const wr = resolved.length > 0 ? ((wins / resolved.length) * 100) : 0;
-              const capperPerfs = performances.filter((p: any) => p.capper_id === c.id);
+            )}
 
-              const cSportBreakdown: Record<string, { w: number; l: number }> = capperPicks.reduce((acc: Record<string, { w: number; l: number }>, p: any) => {
-                const s = p.sport || 'NBA';
-                if (!acc[s]) acc[s] = { w: 0, l: 0 };
-                if (p.result === 'won') acc[s].w++;
-                else if (p.result === 'lost') acc[s].l++;
-                return acc;
-              }, {} as Record<string, { w: number; l: number }>);
-
-              return (
-                <Card key={c.id}>
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">{c.name}</span>
-                          <Badge variant="outline" className={`text-[10px] ${tierColors[c.tier]}`}>{c.tier}</Badge>
-                          {capperPerfs[0]?.confidence_grade && (
-                            <Badge variant="outline" className={`text-[10px] ${gradeColors[capperPerfs[0].confidence_grade] || ''}`}>Grade {capperPerfs[0].confidence_grade}</Badge>
-                          )}
-                        </div>
-                        <div className="flex gap-1 mt-1">
-                          {(c.sports || ['NBA']).map((s: string) => <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold">{wr.toFixed(0)}%</p>
-                        <p className="text-[10px] text-muted-foreground">{capperPicks.length} picks</p>
-                      </div>
-                    </div>
-
-                    {/* Performance grades by sport */}
-                    {capperPerfs.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2">
-                        {capperPerfs.slice(0, 4).map((perf: any) => (
-                          <div key={perf.id} className="p-2 rounded-md border bg-muted/30 text-[10px] space-y-0.5">
-                            <div className="flex items-center gap-1">
-                              <Badge className={`text-[8px] ${sportColors[perf.sport] || ''}`}>{perf.sport}</Badge>
-                              <Badge variant="outline" className={`text-[8px] ${gradeColors[perf.confidence_grade] || ''}`}>{perf.confidence_grade}</Badge>
-                            </div>
-                            <p>{perf.win_rate}% WR · {perf.wins}W/{perf.losses}L</p>
-                            <p className="text-muted-foreground">L7: {perf.last_7_win_rate}% · L30: {perf.last_30_win_rate}%</p>
-                            {perf.roi !== 0 && <p className={perf.roi > 0 ? 'text-emerald-400' : 'text-red-400'}>ROI: {perf.roi > 0 ? '+' : ''}{perf.roi}%</p>}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {Object.keys(cSportBreakdown).length > 0 && (
-                      <div className="flex gap-1.5 flex-wrap">
-                        {Object.entries(cSportBreakdown).map(([s, d]) => (
-                          <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>
-                            {s}: {d.w + d.l > 0 ? Math.round((d.w / (d.w + d.l)) * 100) : 0}%
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {capperPicks.length > 0 && (
-                      <div className="border-t border-border pt-2">
-                        <p className="text-[10px] font-medium text-muted-foreground mb-1">Recent Picks</p>
-                        <div className="space-y-1">
-                          {capperPicks.slice(0, 3).map((p: any) => (
-                            <div key={p.id} className="flex items-center gap-2 text-xs">
-                              {p.result === 'won' ? <CheckCircle className="h-3 w-3 text-emerald-500" /> :
-                               p.result === 'lost' ? <XCircle className="h-3 w-3 text-destructive" /> :
-                               <Clock className="h-3 w-3 text-muted-foreground" />}
-                              <Badge className={`text-[8px] ${sportColors[p.sport] || ''}`}>{p.sport || 'NBA'}</Badge>
-                              <span className="truncate flex-1">{p.player_name || p.pick_text}</span>
-                              {p.direction && <Badge variant="outline" className="text-[8px] h-4">{p.direction}</Badge>}
-                              {p.line != null && <span className="text-muted-foreground">{p.line}</span>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {/* Signal accuracy over time hint */}
+            <Card>
+              <CardContent className="p-4">
+                <h4 className="text-xs font-semibold mb-2">How Signal Learning Works</h4>
+                <div className="space-y-1.5 text-[11px] text-muted-foreground">
+                  <p>📊 <strong>CONSENSUS</strong> — Signals from capper agreement on a prop</p>
+                  <p>💰 <strong>VALUE</strong> — Signals where model edge exceeds implied odds</p>
+                  <p>🧠 <strong>SHARP</strong> — Signals where elite cappers disagree with the public</p>
+                  <p className="pt-2 text-[10px]">As data accumulates, the system automatically weights stronger signal types higher in the composite score.</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Settings */}

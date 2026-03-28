@@ -55563,6 +55563,8 @@ export type Database = {
         Row: {
           actual_result: number | null
           batch_id: string | null
+          bet_size_pct: number | null
+          composite_score: number | null
           confidence_score: number | null
           consensus_over: number | null
           consensus_score: number | null
@@ -55582,17 +55584,20 @@ export type Database = {
           opponent: string | null
           original_image_url: string | null
           platform: string
+          play_reasons: Json | null
           player_name: string
           prediction: string | null
           reasoning_json: Json | null
           result: string | null
           season_avg: number | null
           settled_at: string | null
+          sharp_indicator: string | null
           signal_strength: string | null
           source: string
           sport: string | null
           stat_type: string
           team: string | null
+          top_play_rank: number | null
           updated_at: string
           upload_group_id: string | null
           value_score: number | null
@@ -55600,6 +55605,8 @@ export type Database = {
         Insert: {
           actual_result?: number | null
           batch_id?: string | null
+          bet_size_pct?: number | null
+          composite_score?: number | null
           confidence_score?: number | null
           consensus_over?: number | null
           consensus_score?: number | null
@@ -55619,17 +55626,20 @@ export type Database = {
           opponent?: string | null
           original_image_url?: string | null
           platform?: string
+          play_reasons?: Json | null
           player_name: string
           prediction?: string | null
           reasoning_json?: Json | null
           result?: string | null
           season_avg?: number | null
           settled_at?: string | null
+          sharp_indicator?: string | null
           signal_strength?: string | null
           source?: string
           sport?: string | null
           stat_type: string
           team?: string | null
+          top_play_rank?: number | null
           updated_at?: string
           upload_group_id?: string | null
           value_score?: number | null
@@ -55637,6 +55647,8 @@ export type Database = {
         Update: {
           actual_result?: number | null
           batch_id?: string | null
+          bet_size_pct?: number | null
+          composite_score?: number | null
           confidence_score?: number | null
           consensus_over?: number | null
           consensus_score?: number | null
@@ -55656,17 +55668,20 @@ export type Database = {
           opponent?: string | null
           original_image_url?: string | null
           platform?: string
+          play_reasons?: Json | null
           player_name?: string
           prediction?: string | null
           reasoning_json?: Json | null
           result?: string | null
           season_avg?: number | null
           settled_at?: string | null
+          sharp_indicator?: string | null
           signal_strength?: string | null
           source?: string
           sport?: string | null
           stat_type?: string
           team?: string | null
+          top_play_rank?: number | null
           updated_at?: string
           upload_group_id?: string | null
           value_score?: number | null
@@ -59168,6 +59183,7 @@ export type Database = {
           alignment_score: number | null
           bet_type: string | null
           capper_id: string
+          confidence_score: number | null
           created_at: string
           direction: string | null
           edge_score: number | null
@@ -59196,6 +59212,7 @@ export type Database = {
           alignment_score?: number | null
           bet_type?: string | null
           capper_id: string
+          confidence_score?: number | null
           created_at?: string
           direction?: string | null
           edge_score?: number | null
@@ -59224,6 +59241,7 @@ export type Database = {
           alignment_score?: number | null
           bet_type?: string | null
           capper_id?: string
+          confidence_score?: number | null
           created_at?: string
           direction?: string | null
           edge_score?: number | null
@@ -61719,6 +61737,60 @@ export type Database = {
           sbo_confidence?: number
           top_cappers_count?: number
           wallet_alignment_count?: number
+        }
+        Relationships: []
+      }
+      sbo_signal_performance: {
+        Row: {
+          ai_confidence: number | null
+          capper_confidence: number | null
+          composite_score: number | null
+          consensus_score: number | null
+          created_at: string | null
+          game_date: string | null
+          id: string
+          prop_id: string | null
+          resolved_at: string | null
+          result: string | null
+          signal_strength: string | null
+          signal_type: string
+          sport: string | null
+          stat_type: string | null
+          value_score: number | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          capper_confidence?: number | null
+          composite_score?: number | null
+          consensus_score?: number | null
+          created_at?: string | null
+          game_date?: string | null
+          id?: string
+          prop_id?: string | null
+          resolved_at?: string | null
+          result?: string | null
+          signal_strength?: string | null
+          signal_type: string
+          sport?: string | null
+          stat_type?: string | null
+          value_score?: number | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          capper_confidence?: number | null
+          composite_score?: number | null
+          consensus_score?: number | null
+          created_at?: string | null
+          game_date?: string | null
+          id?: string
+          prop_id?: string | null
+          resolved_at?: string | null
+          result?: string | null
+          signal_strength?: string | null
+          signal_type?: string
+          sport?: string | null
+          stat_type?: string | null
+          value_score?: number | null
         }
         Relationships: []
       }
