@@ -957,6 +957,11 @@ export default function SBOCapperTracker() {
   const [runningTopPlays, setRunningTopPlays] = useState(false);
   const [topPlays, setTopPlays] = useState<any[]>([]);
   const [bankroll, setBankroll] = useState(1000);
+  const [fetchingSport, setFetchingSport] = useState('NBA');
+  const [fetchingDate, setFetchingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [fetchingResults, setFetchingResults] = useState(false);
+  const [resolvingPicks, setResolvingPicks] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
@@ -1061,6 +1066,47 @@ export default function SBOCapperTracker() {
     } catch (err: any) { toast.error(err.message || 'Consensus failed'); } finally { setRunningConsensus(false); }
   };
 
+  const fetchExternalResults = async () => {
+    setFetchingResults(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'fetch', sport: fetchingSport, game_date: fetchingDate },
+      });
+      if (error) throw error;
+      toast.success(`Fetched ${data?.games_fetched || 0} games for ${fetchingSport} on ${fetchingDate}`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Fetch failed'); }
+    finally { setFetchingResults(false); }
+  };
+
+  const resolveExternalPicks = async () => {
+    setResolvingPicks(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'resolve', sport: fetchingSport, game_date: fetchingDate },
+      });
+      if (error) throw error;
+      toast.success(`Resolved ${data?.resolved || 0} picks (${data?.wins || 0}W / ${data?.losses || 0}L)`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Resolve failed'); }
+    finally { setResolvingPicks(false); }
+  };
+
+  const runBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const end = fetchingDate;
+      const start = new Date(new Date(end).getTime() - 7 * 86400000).toISOString().split('T')[0];
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'backfill', sport: fetchingSport, start_date: start, end_date: end },
+      });
+      if (error) throw error;
+      toast.success(`Backfill complete: ${data?.total_resolved || 0} picks resolved over 7 days`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Backfill failed'); }
+    finally { setBackfilling(false); }
+  };
+
   const runTopPlaysEngine = async () => {
     setRunningTopPlays(true);
     try {
@@ -1150,6 +1196,32 @@ export default function SBOCapperTracker() {
             <AddCapperDialog onAdded={refetchAll} />
           </div>
         </div>
+
+        {/* Results Control Bar */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-primary">📡 Results API</span>
+              <Select value={fetchingSport} onValueChange={setFetchingSport}>
+                <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+              <Input type="date" value={fetchingDate} onChange={e => setFetchingDate(e.target.value)} className="w-36 h-7 text-xs" />
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={fetchExternalResults} disabled={fetchingResults}>
+                {fetchingResults ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
+                Fetch Results
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={resolveExternalPicks} disabled={resolvingPicks}>
+                {resolvingPicks ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                Resolve Picks
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-amber-500/30 text-amber-500 hover:bg-amber-500/10" onClick={runBackfill} disabled={backfilling}>
+                {backfilling ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Backfill 7d
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Sport Filter */}
         <div className="flex gap-1.5 flex-wrap">
