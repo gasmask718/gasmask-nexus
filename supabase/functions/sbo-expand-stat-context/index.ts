@@ -35,6 +35,12 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  const startTime = Date.now();
+  const { data: logEntry } = await supabase.from('sbo_function_logs').insert({
+    function_name: 'sbo-expand-stat-context', status: 'running',
+  }).select('id').single();
+  const logId = logEntry?.id;
+
   try {
     // 1. Fetch ALL props_master (paginated)
     const allProps = await paginatedFetch(supabase, () =>
@@ -47,9 +53,8 @@ Deno.serve(async (req) => {
       supabase.from('sbo_prop_stat_context').select('id, player_name, stat_type, season_avg')
     );
 
-    // Track which normalized keys have a valid season_avg
     const keysWithStats = new Set<string>();
-    const keysWithoutStats = new Map<string, string[]>(); // normalized key → list of IDs to update
+    const keysWithoutStats = new Map<string, string[]>();
     const allExistingKeys = new Set<string>();
 
     for (const e of existing) {
@@ -64,7 +69,7 @@ Deno.serve(async (req) => {
     }
     console.log(`[expand-context] Keys with stats: ${keysWithStats.size}, Keys missing stats: ${keysWithoutStats.size}`);
 
-    // 3. Build line averages from props for ALL player/stat combos
+    // 3. Build line averages from props
     const lineMap: Record<string, number[]> = {};
     for (const p of allProps) {
       const key = `${normalize(p.player_name)}::${normalize(p.stat_type)}`;
@@ -72,7 +77,7 @@ Deno.serve(async (req) => {
       if (p.line != null) lineMap[key].push(Number(p.line));
     }
 
-    // 4. Insert truly missing combos (not in context at all)
+    // 4. Insert truly missing combos
     const missingEntries: { player_name: string; stat_type: string; lines: number[]; latest_date: string }[] = [];
     const seenMissing = new Set<string>();
     for (const p of allProps) {
@@ -115,7 +120,7 @@ Deno.serve(async (req) => {
     // 5. Backfill existing entries that have NULL season_avg
     let backfilled = 0;
     for (const [key, ids] of keysWithoutStats.entries()) {
-      if (keysWithStats.has(key)) continue; // already has a good entry, collect-stats will handle
+      if (keysWithStats.has(key)) continue;
       const lines = lineMap[key];
       if (!lines || lines.length === 0) continue;
 
@@ -139,6 +144,13 @@ Deno.serve(async (req) => {
 
     console.log(`[expand-context] Inserted: ${inserted}, Backfilled: ${backfilled}`);
 
+    const duration = Date.now() - startTime;
+    if (logId) await supabase.from('sbo_function_logs').update({
+      status: 'completed', records_processed: inserted + backfilled, duration_ms: duration,
+      completed_at: new Date().toISOString(),
+      metadata: { inserted, backfilled, existing_with_stats: keysWithStats.size },
+    }).eq('id', logId);
+
     return new Response(JSON.stringify({
       success: true,
       inserted,
@@ -148,9 +160,13 @@ Deno.serve(async (req) => {
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (error) {
     console.error('[expand-context] Error:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (logId) await supabase.from('sbo_function_logs').update({
+      status: 'failed', error_message: msg, duration_ms: Date.now() - startTime, completed_at: new Date().toISOString(),
+    }).eq('id', logId);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: msg,
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });

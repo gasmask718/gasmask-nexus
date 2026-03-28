@@ -36,6 +36,13 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  const startTime = Date.now();
+  // Create log entry
+  const { data: logEntry } = await supabase.from('sbo_function_logs').insert({
+    function_name: 'sbo-collect-stats', status: 'running',
+  }).select('id').single();
+  const logId = logEntry?.id;
+
   try {
     // 1. Fetch ALL props missing stats
     const missing = await paginatedFetch(supabase, () =>
@@ -47,6 +54,7 @@ Deno.serve(async (req) => {
     );
 
     if (missing.length === 0) {
+      if (logId) await supabase.from('sbo_function_logs').update({ status: 'completed', records_processed: 0, duration_ms: Date.now() - startTime, completed_at: new Date().toISOString() }).eq('id', logId);
       return new Response(JSON.stringify({ success: true, analyzed: 0, failed: 0, message: 'No props missing stats' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -123,6 +131,13 @@ Deno.serve(async (req) => {
 
     console.log(`[collect-stats] Updated: ${updated}, No match: ${noMatch}`);
 
+    const duration = Date.now() - startTime;
+    if (logId) await supabase.from('sbo_function_logs').update({
+      status: 'completed', records_processed: updated, records_skipped: noMatch,
+      duration_ms: duration, completed_at: new Date().toISOString(),
+      metadata: { stat_entries: Object.keys(statMap).length, total_missing: missing.length },
+    }).eq('id', logId);
+
     return new Response(JSON.stringify({
       success: true,
       analyzed: updated,
@@ -135,9 +150,13 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error('[collect-stats] Error:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    if (logId) await supabase.from('sbo_function_logs').update({
+      status: 'failed', error_message: msg, duration_ms: Date.now() - startTime, completed_at: new Date().toISOString(),
+    }).eq('id', logId);
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: msg,
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
