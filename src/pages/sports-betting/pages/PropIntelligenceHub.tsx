@@ -550,7 +550,16 @@ export default function PropIntelligenceHub() {
                       <Badge variant="secondary" className="text-xs capitalize">{primary.stat_type}</Badge>
                       <span className="text-lg font-bold">{primary.line}</span>
                     </div>
-                    <Badge variant="outline" className="text-[10px] capitalize">{primary.platform}</Badge>
+                    <Badge variant="outline" className={`text-[10px] capitalize ${
+                      ({
+                        prizepicks: 'border-purple-500/50 text-purple-600',
+                        bovada: 'border-red-500/50 text-red-600',
+                        draftkings: 'border-green-500/50 text-green-600',
+                        fanduel: 'border-blue-500/50 text-blue-600',
+                        betmgm: 'border-amber-500/50 text-amber-600',
+                        underdog: 'border-orange-500/50 text-orange-600',
+                      } as Record<string, string>)[primary.platform] || ''
+                    }`}>{primary.platform}</Badge>
                   </div>
 
                   {primary.prediction && (
