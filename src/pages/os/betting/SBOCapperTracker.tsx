@@ -1126,26 +1126,84 @@ export default function SBOCapperTracker() {
 
   const runBackfill = async () => {
     setBackfilling(true);
+    const end = new Date(fetchingDate);
+    const start = new Date(end.getTime() - 7 * 86400000);
+    const dates: string[] = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(d.toISOString().split('T')[0]);
+    }
+
+    const progress = {
+      active: true, totalDays: dates.length, currentDay: 0, currentDate: '',
+      totalGames: 0, totalResolved: 0, totalUnmatched: 0,
+      wins: 0, losses: 0, pushes: 0, errors: [] as string[],
+      phase: 'fetching' as const,
+    };
+    setBackfillProgress({ ...progress });
+
     try {
-      const end = fetchingDate;
-      const start = new Date(new Date(end).getTime() - 7 * 86400000).toISOString().split('T')[0];
-      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
-        body: { mode: 'backfill', sport: fetchingSport, start_date: start, end_date: end },
-      });
-      if (error) throw error;
-      const games = data?.total_games || 0;
-      const resolved = data?.resolved || 0;
-      const unmatched = data?.unmatched || 0;
-      const roi = data?.roi_summary || 0;
-      const days = data?.dates_processed || 7;
-      if (games === 0) {
-        toast.warning(`No ${fetchingSport} games found in the ${days}-day range (${start} → ${end}).`);
-      } else {
-        toast.success(`✅ Backfill: ${days} days, ${games} games, ${resolved} picks resolved, ${unmatched} unmatched. ROI: ${roi}%`);
+      // Phase 1: Fetch day by day
+      for (let i = 0; i < dates.length; i++) {
+        const date = dates[i];
+        progress.currentDay = i + 1;
+        progress.currentDate = date;
+        progress.phase = 'fetching';
+        setBackfillProgress({ ...progress });
+
+        try {
+          const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+            body: { mode: 'fetch', sport: fetchingSport, game_date: date, no_fallback: true },
+          });
+          if (error) throw error;
+          progress.totalGames += data?.games || 0;
+        } catch (err: any) {
+          progress.errors.push(`fetch ${date}: ${err.message}`);
+        }
+        setBackfillProgress({ ...progress });
       }
+
+      // Phase 2: Resolve all
+      progress.phase = 'resolving';
+      setBackfillProgress({ ...progress });
+
+      const startDate = dates[0];
+      const endDate = dates[dates.length - 1];
+      try {
+        const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+          body: { mode: 'resolve', sport: fetchingSport, date_from: startDate, date_to: endDate },
+        });
+        if (error) throw error;
+        progress.totalResolved = data?.resolved || 0;
+        progress.totalUnmatched = data?.unmatched || 0;
+      } catch (err: any) {
+        progress.errors.push(`resolve: ${err.message}`);
+      }
+
+      // Count wins/losses
+      const { data: resolvedPicks } = await (supabase as any).from('sbo_capper_picks')
+        .select('result').gte('game_date', startDate).lte('game_date', endDate).not('result', 'is', null);
+      if (resolvedPicks) {
+        progress.wins = resolvedPicks.filter((p: any) => p.result === 'win' || p.result === 'won').length;
+        progress.losses = resolvedPicks.filter((p: any) => p.result === 'loss' || p.result === 'lost').length;
+        progress.pushes = resolvedPicks.filter((p: any) => p.result === 'push').length;
+      }
+
+      progress.phase = 'done';
+      progress.active = false;
+      setBackfillProgress({ ...progress });
+
+      const total = progress.wins + progress.losses + progress.pushes;
+      const roi = total > 0 ? Math.round(((progress.wins * 0.909 - progress.losses) / total) * 10000) / 100 : 0;
+      toast.success(`✅ Backfill Complete: ${dates.length} days, ${progress.totalGames} games, ${progress.totalResolved} resolved. ROI: ${roi}%`);
       refetchAll();
-    } catch (err: any) { toast.error(err.message || 'Backfill failed'); }
-    finally { setBackfilling(false); }
+    } catch (err: any) {
+      progress.phase = 'error';
+      progress.active = false;
+      setBackfillProgress({ ...progress });
+      toast.error(err.message || 'Backfill failed');
+    } finally {
+      setBackfilling(false);
+    }
   };
 
   const runTopPlaysEngine = async () => {
