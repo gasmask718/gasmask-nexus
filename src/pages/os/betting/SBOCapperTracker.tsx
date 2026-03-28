@@ -1142,7 +1142,7 @@ export default function SBOCapperTracker() {
       active: true, totalDays: dates.length, currentDay: 0, currentDate: '',
       totalGames: 0, totalResolved: 0, totalUnmatched: 0,
       wins: 0, losses: 0, pushes: 0, errors: [] as string[],
-      phase: 'fetching' as const,
+      phase: 'fetching' as 'fetching' | 'resolving' | 'done' | 'error',
     };
     setBackfillProgress({ ...progress });
 
