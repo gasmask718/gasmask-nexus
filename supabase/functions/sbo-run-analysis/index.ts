@@ -17,35 +17,50 @@ Deno.serve(async (req) => {
 
   let jobId: string | undefined;
   try {
-    const body = await req.json();
-    jobId = body.jobId;
-
-    if (!jobId) {
-      return new Response(JSON.stringify({ error: 'jobId required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    let body: Record<string, unknown> = {};
+    try {
+      const rawBody = await req.text();
+      if (rawBody?.trim()) {
+        body = JSON.parse(rawBody);
+      }
+    } catch (parseError) {
+      console.warn('Failed to parse request body, proceeding with empty payload:', parseError);
+      body = {};
     }
 
-    // Mark job as running
-    await supabase
-      .from('sbo_analysis_jobs')
-      .update({ status: 'running', started_at: new Date().toISOString(), progress: 5 })
-      .eq('id', jobId);
+    jobId = typeof body.jobId === 'string' ? body.jobId : undefined;
 
-    // Get job params
-    const { data: job } = await supabase
-      .from('sbo_analysis_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
+    const updateJob = async (payload: Record<string, unknown>) => {
+      if (!jobId) return;
+      const { error } = await supabase
+        .from('sbo_analysis_jobs')
+        .update(payload)
+        .eq('id', jobId);
+      if (error) {
+        console.warn('Job update warning:', error.message);
+      }
+    };
 
-    if (!job) throw new Error('Job not found');
+    const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    let gameDate = todayEST;
 
-    const gameDate = job.params?.game_date || new Date().toISOString().split('T')[0];
+    if (jobId) {
+      await updateJob({ status: 'running', started_at: new Date().toISOString(), progress: 5 });
+
+      const { data: job, error: jobError } = await supabase
+        .from('sbo_analysis_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+
+      if (jobError || !job) throw new Error('Job not found');
+      gameDate = job.params?.game_date || todayEST;
+    }
+
+    console.log(`Starting analysis for gameDate=${gameDate}, mode=${jobId ? 'job' : 'ad-hoc'}`);
 
     // STEP 1: Gather all props from sbo_player_props (all sources)
-    await supabase.from('sbo_analysis_jobs').update({ progress: 15 }).eq('id', jobId);
+    await updateJob({ progress: 15 });
 
     const { data: allProps, error: propsError } = await supabase
       .from('sbo_player_props')
@@ -55,17 +70,19 @@ Deno.serve(async (req) => {
       .order('player_name');
 
     if (propsError) throw propsError;
+    console.log(`Fetched player props: ${(allProps || []).length}`);
 
     // STEP 2: Gather all book props
-    await supabase.from('sbo_analysis_jobs').update({ progress: 25 }).eq('id', jobId);
+    await updateJob({ progress: 25 });
 
     const { data: bookProps } = await supabase
       .from('sbo_book_props')
       .select('*')
       .eq('game_date', gameDate);
+    console.log(`Fetched book props: ${(bookProps || []).length}`);
 
     // STEP 3: Normalize and unify all props
-    await supabase.from('sbo_analysis_jobs').update({ progress: 40 }).eq('id', jobId);
+    await updateJob({ progress: 40 });
 
     const unifiedMap: Record<string, any[]> = {};
 
@@ -104,7 +121,7 @@ Deno.serve(async (req) => {
     }
 
     // STEP 4: Get stat context for enrichment
-    await supabase.from('sbo_analysis_jobs').update({ progress: 55 }).eq('id', jobId);
+    await updateJob({ progress: 55 });
 
     const { data: statContext } = await supabase
       .from('sbo_prop_stat_context')
@@ -117,7 +134,7 @@ Deno.serve(async (req) => {
     }
 
     // STEP 5: Build unified props with enrichment + best platform detection
-    await supabase.from('sbo_analysis_jobs').update({ progress: 70 }).eq('id', jobId);
+    await updateJob({ progress: 70 });
 
     const unifiedRows: any[] = [];
 
@@ -174,7 +191,7 @@ Deno.serve(async (req) => {
     }
 
     // STEP 6: Upsert unified props
-    await supabase.from('sbo_analysis_jobs').update({ progress: 85 }).eq('id', jobId);
+    await updateJob({ progress: 85 });
 
     if (unifiedRows.length > 0) {
       // Clear old data for this date first
@@ -199,15 +216,14 @@ Deno.serve(async (req) => {
       best_picks: unifiedRows.filter(r => r.best_platform && r.ai_confidence && r.ai_confidence >= 70).length,
     };
 
-    await supabase
-      .from('sbo_analysis_jobs')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString(),
-        progress: 100,
-        results: summary,
-      })
-      .eq('id', jobId);
+    await updateJob({
+      status: 'completed',
+      completed_at: new Date().toISOString(),
+      progress: 100,
+      results: summary,
+    });
+
+    console.log(`Analysis complete: total=${summary.total_props}, players=${summary.players}, with_stats=${summary.with_stats}`);
 
     return new Response(JSON.stringify({ success: true, summary }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -220,12 +236,12 @@ Deno.serve(async (req) => {
       try {
         await supabase
           .from('sbo_analysis_jobs')
-          .update({ status: 'failed', error_message: error.message })
+          .update({ status: 'failed', error_message: error instanceof Error ? error.message : String(error) })
           .eq('id', jobId);
       } catch {}
     }
 
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
