@@ -1429,57 +1429,8 @@ export default function SBOCapperTracker() {
           </TabsContent>
 
           {/* Pick Feed */}
-          <TabsContent value="feed" className="mt-3 space-y-2">
-            {picks.length === 0 ? (
-              <Card className="border-dashed"><CardContent className="p-8 text-center">
-                <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                <p className="text-sm text-muted-foreground">No picks logged yet. Use 📸 AI Photo Parse to get started.</p>
-              </CardContent></Card>
-            ) : picks.map((p: any) => (
-              <Card key={p.id} className="overflow-hidden hover:border-primary/20 transition-colors">
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <Badge variant="outline" className={`text-[10px] ${tierColors[p.sbo_cappers?.tier] || ''}`}>{p.sbo_cappers?.name || 'Unknown'}</Badge>
-                        <Badge className={`text-[10px] ${sportColors[p.sport] || sportColors.NBA}`}>{p.sport || 'NBA'}</Badge>
-                        {p.bet_type && p.bet_type !== 'prop' && <Badge variant="outline" className="text-[10px]">{p.bet_type}</Badge>}
-                        {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
-                        {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
-                        {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-purple-400 border-purple-400/30">🧠 Sharp</Badge>}
-                        {p.sbo_cappers?.group_type === 'aggregator' && <Badge variant="outline" className="text-[8px] text-orange-400 border-orange-400/30">📡 Aggregator</Badge>}
-                        {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {p.direction && <Badge variant="outline" className={`text-[10px] ${p.direction === 'OVER' || p.direction === 'WIN' ? 'text-emerald-500 border-emerald-500/30' : 'text-blue-500 border-blue-500/30'}`}>{p.direction}</Badge>}
-                        {p.prop_type && <Badge variant="outline" className="text-[10px]">{p.prop_type}</Badge>}
-                        {p.line != null && <span className="text-xs font-medium">{p.line}</span>}
-                        {p.odds && <span className="text-xs text-muted-foreground">{p.odds > 0 ? '+' : ''}{p.odds}</span>}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                        <Clock className="h-3 w-3" /><span>{new Date(p.created_at).toLocaleString()}</span>
-                        {p.game_date && <span>· {p.game_date}</span>}
-                        {p.source_group && <span>· Source: {p.source_group}</span>}
-                        {p.posted_by && p.sbo_cappers?.group_type === 'aggregator' && <span>· Posted by: {p.posted_by}</span>}
-                        {p.extracted_capper_name && p.sbo_cappers?.group_type === 'aggregator' && <span>· Detected: {p.extracted_capper_name}</span>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {p.result === 'pending' ? (
-                        <>
-                          <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-emerald-500" onClick={() => updateResult(p.id, 'won')}><CheckCircle className="h-3.5 w-3.5" /></Button>
-                          <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-destructive" onClick={() => updateResult(p.id, 'lost')}><XCircle className="h-3.5 w-3.5" /></Button>
-                        </>
-                      ) : (
-                        <Badge variant={p.result === 'won' ? 'default' : 'destructive'} className="text-[10px]">
-                          {p.result === 'won' ? '✅ Won' : p.result === 'push' ? '↔️ Push' : '❌ Lost'}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+          <TabsContent value="feed" className="mt-3">
+            <CapperPicksFeed cappers={cappers} onRefetch={refetchAll} />
           </TabsContent>
 
           {/* Review Queue */}
