@@ -140,8 +140,8 @@ function computeGrade(winRate: number, total: number, hotStreak: number, coldStr
 function computeStreaks(results: string[]): { hot: number; cold: number; bestEver: number; worstEver: number } {
   let hot = 0, cold = 0, bestEver = 0, worstEver = 0, cur = 0;
   for (const r of results) {
-    if (r === 'win') { cur = cur > 0 ? cur + 1 : 1; }
-    else if (r === 'loss') { cur = cur < 0 ? cur - 1 : -1; }
+    if (r === 'won') { cur = cur > 0 ? cur + 1 : 1; }
+    else if (r === 'lost') { cur = cur < 0 ? cur - 1 : -1; }
     else continue;
     if (cur > 0) { bestEver = Math.max(bestEver, cur); }
     else { worstEver = Math.max(worstEver, Math.abs(cur)); }
@@ -457,7 +457,7 @@ serve(async (req) => {
           );
           if (match?.winner) {
             matchId = match.id; matchType = 'team'; matchConfidence = 100;
-            result = normalizeTeam(match.winner) === teamNorm ? 'win' : 'loss';
+            result = normalizeTeam(match.winner) === teamNorm ? 'won' : 'lost';
             matchDetails = { team: pick.team, matched_winner: match.winner };
           }
         } else if (marketType === 'spread') {
@@ -471,7 +471,7 @@ serve(async (req) => {
             const isHome = normalizeTeam(match.home_team || '') === teamNorm;
             const margin = isHome ? Number(match.spread_result) : -Number(match.spread_result);
             const adjusted = margin + (pick.line || 0);
-            result = adjusted > 0 ? 'win' : adjusted < 0 ? 'loss' : 'push';
+            result = adjusted > 0 ? 'won' : adjusted < 0 ? 'lost' : 'push';
             matchDetails = { team: pick.team, spread: match.spread_result, line: pick.line };
           }
         } else if (marketType === 'total' || marketType === 'over_under') {
@@ -484,8 +484,8 @@ serve(async (req) => {
             matchId = match.id; matchType = 'team'; matchConfidence = 100;
             const dir = (pick.direction || '').toLowerCase();
             if (match.total_score === pick.line) result = 'push';
-            else if (['over', 'more'].includes(dir)) result = match.total_score > pick.line ? 'win' : 'loss';
-            else if (['under', 'less'].includes(dir)) result = match.total_score < pick.line ? 'win' : 'loss';
+            else if (['over', 'more'].includes(dir)) result = match.total_score > pick.line ? 'won' : 'lost';
+            else if (['under', 'less'].includes(dir)) result = match.total_score < pick.line ? 'won' : 'lost';
             matchDetails = { total: match.total_score, line: pick.line, direction: dir };
           }
         } else {
@@ -547,8 +547,8 @@ serve(async (req) => {
             const line = pick.line || 0;
             const actual = Number(match.actual_value);
             if (actual === line) result = 'push';
-            else if (['over', 'more', 'yes'].includes(dir)) result = actual > line ? 'win' : 'loss';
-            else if (['under', 'less', 'no'].includes(dir)) result = actual < line ? 'win' : 'loss';
+            else if (['over', 'more', 'yes'].includes(dir)) result = actual > line ? 'won' : 'lost';
+            else if (['under', 'less', 'no'].includes(dir)) result = actual < line ? 'won' : 'lost';
             matchDetails = {
               pick_player: pick.player_name, matched_player: match.player_name,
               pick_stat: pick.prop_type, matched_stat: match.stat_type,
@@ -611,8 +611,8 @@ serve(async (req) => {
 
         if (!allPicks?.length) continue;
 
-        const wins = allPicks.filter(p => p.result === 'win').length;
-        const losses = allPicks.filter(p => p.result === 'loss').length;
+        const wins = allPicks.filter(p => p.result === 'won').length;
+        const losses = allPicks.filter(p => p.result === 'lost').length;
         const pushes = allPicks.filter(p => p.result === 'push').length;
         const total = allPicks.length;
         const winRate = Math.round((wins / total) * 100);
@@ -633,7 +633,7 @@ serve(async (req) => {
           const mt = p.bet_type || 'player_prop';
           if (!marketMap[mt]) marketMap[mt] = { w: 0, t: 0 };
           marketMap[mt].t++;
-          if (p.result === 'win') marketMap[mt].w++;
+          if (p.result === 'won') marketMap[mt].w++;
         }
         let bestMarket = 'player_prop';
         let bestMarketWR = 0;
@@ -651,7 +651,7 @@ serve(async (req) => {
 
         // ── ROI per market type ──
         for (const [mt, stats] of Object.entries(marketMap)) {
-          const mLosses = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'loss').length;
+          const mLosses = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'lost').length;
           const mPushes = allPicks.filter(p => (p.bet_type || 'player_prop') === mt && p.result === 'push').length;
           const mROI = computeROI(stats.w, mLosses, mPushes, avgOdds);
           const mWR = stats.t > 0 ? Math.round((stats.w / stats.t) * 100) : 0;
@@ -736,8 +736,8 @@ serve(async (req) => {
         .gte('game_date', startDate).lte('game_date', endDate)
         .not('result', 'is', null);
       if (resolvedPicks) {
-        wins = resolvedPicks.filter(p => p.result === 'win').length;
-        losses = resolvedPicks.filter(p => p.result === 'loss').length;
+        wins = resolvedPicks.filter(p => p.result === 'won').length;
+        losses = resolvedPicks.filter(p => p.result === 'lost').length;
         pushes = resolvedPicks.filter(p => p.result === 'push').length;
       }
 
