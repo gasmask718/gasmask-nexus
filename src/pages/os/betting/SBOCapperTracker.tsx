@@ -517,10 +517,15 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="text-[10px]">{p.sbo_cappers?.name}</Badge>
                 <Badge className={`text-[10px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
-                <span className="text-[10px] text-amber-500">{p.parse_confidence}% confidence</span>
+                <span className="text-[10px] text-amber-500">{p.parse_confidence}% parse</span>
+                {p.capper_detection_confidence != null && p.capper_detection_confidence < 70 && (
+                  <span className="text-[10px] text-orange-400">⚠️ {p.capper_detection_confidence}% capper ID</span>
+                )}
               </div>
               <p className="text-sm mt-1">{p.player_name} {p.direction} {p.line} {p.prop_type}</p>
               <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
+              {p.extracted_capper_name && <p className="text-[10px] text-orange-400">Detected capper: {p.extracted_capper_name}</p>}
+              {p.source_group && <p className="text-[10px] text-muted-foreground">Source: {p.source_group} {p.posted_by ? `· by ${p.posted_by}` : ''}</p>}
             </div>
             <div className="flex gap-1 shrink-0">
               <Button size="sm" variant="outline" className="h-7 text-emerald-500" onClick={() => approve(p.id)}>✅</Button>
