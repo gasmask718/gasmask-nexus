@@ -573,7 +573,7 @@ export default function SBOCapperTracker() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
           <Card><CardContent className="p-3 text-center">
             <p className="text-lg font-bold">{cappers.length}</p>
             <p className="text-[10px] text-muted-foreground">Cappers</p>
@@ -593,6 +593,10 @@ export default function SBOCapperTracker() {
           <Card><CardContent className="p-3 text-center">
             <p className="text-lg font-bold">{Object.keys(sportBreakdown).length}</p>
             <p className="text-[10px] text-muted-foreground">Sports Active</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-emerald-500">{picks.filter((p: any) => p.matched_prop_id).length}</p>
+            <p className="text-[10px] text-muted-foreground">🔗 Linked</p>
           </CardContent></Card>
         </div>
 
