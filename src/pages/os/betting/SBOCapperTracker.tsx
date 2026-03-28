@@ -833,6 +833,16 @@ export default function SBOCapperTracker() {
     },
   });
 
+  const { data: marketPerf = [] } = useQuery({
+    queryKey: ['sbo-market-performance'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_market_performance')
+        .select('*').order('win_rate', { ascending: false });
+      return data || [];
+    },
+  });
+  const [recalcingMarkets, setRecalcingMarkets] = useState(false);
+
   const refetchAll = () => {
     qc.invalidateQueries({ queryKey: ['sbo-cappers'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks'] });
