@@ -964,7 +964,7 @@ export default function SBOCapperTracker() {
     queryKey: ['sbo-capper-picks', sportFilter],
     queryFn: async () => {
       let q = (supabase as any).from('sbo_capper_picks')
-        .select('*, sbo_cappers(name, tier, source)')
+        .select('*, sbo_cappers(name, tier, source, group_type)')
         .order('created_at', { ascending: false }).limit(200);
       if (sportFilter !== 'all') q = q.eq('sport', sportFilter);
       const { data } = await q;
