@@ -552,6 +552,10 @@ export default function SBOCapperTracker() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runMatchAndResolve} disabled={matching}>
+              {matching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
+              {matching ? 'Linking...' : '🔗 Match & Resolve'}
+            </Button>
             <PhotoUploadDialog cappers={cappers} onAdded={refetchAll} />
             <AddPickDialog cappers={cappers} onAdded={refetchAll} />
             <AddCapperDialog onAdded={refetchAll} />
