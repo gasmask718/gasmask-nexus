@@ -853,9 +853,25 @@ serve(async (req) => {
       const matchQuality: Record<string, number> = { exact: 0, normalized: 0, fuzzy: 0, context: 0, needs_review: 0, team: 0, unmatched: 0 };
       for (const m of matchStats || []) { const t = m.match_type as string; if (t in matchQuality) matchQuality[t]++; }
 
+      // ── AUTO-DETECT: find sports with unresolved picks ──
+      const { data: pickSports } = await supabase
+        .from('sbo_capper_picks')
+        .select('sport')
+        .is('result', null)
+        .limit(500);
+      const unresolvedBySport: Record<string, number> = {};
+      for (const p of pickSports || []) {
+        const s = (p.sport || 'NBA').toUpperCase();
+        unresolvedBySport[s] = (unresolvedBySport[s] || 0) + 1;
+      }
+      const suggestedSports = Object.entries(unresolvedBySport)
+        .sort((a, b) => b[1] - a[1])
+        .map(([sport, count]) => ({ sport, unresolved_count: count }));
+
       return new Response(JSON.stringify({
         external_results_count: totalResults || 0, unresolved_capper_picks: unresolvedPicks || 0,
         externally_resolved_picks: externallyResolved || 0, by_sport: bySport, match_quality: matchQuality,
+        suggested_sports: suggestedSports, unresolved_by_sport: unresolvedBySport,
         isolation: 'ACTIVE — external results do NOT affect props_master',
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
