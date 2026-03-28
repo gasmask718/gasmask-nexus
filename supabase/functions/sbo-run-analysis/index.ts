@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
 
     const statMap: Record<string, any> = {};
     for (const s of statContext || []) {
-      statMap[`${s.player_name}::${s.prop_type}`] = s;
+      statMap[`${s.player_name}::${s.stat_type}`] = s;
     }
     console.log(`[analysis] Stat context entries: ${Object.keys(statMap).length}`);
 
