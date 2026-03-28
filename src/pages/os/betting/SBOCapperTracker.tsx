@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Zap, Camera, Upload, Loader2, AlertTriangle, Filter } from 'lucide-react';
+import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Zap, Camera, Upload, Loader2, AlertTriangle, Filter, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
