@@ -570,7 +570,7 @@ serve(async (req) => {
         });
 
         if (result && matchId && matchType !== 'needs_review') {
-          updates.push({ id: pick.id, result, external_result_id: matchId, capper_id: pick.capper_id, market_type: marketType, odds: pick.odds });
+          updates.push({ id: pick.id, result, external_result_id: matchId, capper_id: pick.capper_id, bet_type: marketType, odds: pick.odds });
           resolved++;
         } else if (matchType === 'needs_review') {
           needsReview++;
