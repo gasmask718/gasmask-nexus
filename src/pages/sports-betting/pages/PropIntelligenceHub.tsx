@@ -562,16 +562,16 @@ export default function PropIntelligenceHub() {
                     }`}>{primary.platform}</Badge>
                   </div>
 
-                  {primary.prediction && (
+                  {primary.prediction && primary.prediction !== 'hold' && (
                     <div className={`flex items-center justify-between p-2 rounded-md ${
-                      primary.prediction === 'MORE' || primary.prediction === 'OVER'
+                      ['more', 'over', 'MORE', 'OVER'].includes(primary.prediction)
                         ? 'bg-green-500/10' : 'bg-red-500/10'
                     }`}>
                       <div className="flex items-center gap-1.5">
-                        {primary.prediction === 'MORE' || primary.prediction === 'OVER'
+                        {['more', 'over', 'MORE', 'OVER'].includes(primary.prediction)
                           ? <ChevronUp className="h-4 w-4 text-green-500" />
                           : <ChevronDown className="h-4 w-4 text-red-500" />}
-                        <span className="text-sm font-semibold">{primary.prediction}</span>
+                        <span className="text-sm font-semibold uppercase">{primary.prediction}</span>
                       </div>
                       {primary.confidence_score != null && (
                         <span className={`text-sm font-bold ${
