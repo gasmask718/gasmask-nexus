@@ -15,8 +15,10 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 
+  let jobId: string | undefined;
   try {
-    const { jobId } = await req.json();
+    const body = await req.json();
+    jobId = body.jobId;
 
     if (!jobId) {
       return new Response(JSON.stringify({ error: 'jobId required' }), {
@@ -214,15 +216,14 @@ Deno.serve(async (req) => {
     console.error('Analysis error:', error);
 
     // Try to mark job as failed
-    try {
-      const { jobId } = await req.clone().json();
-      if (jobId) {
+    if (jobId) {
+      try {
         await supabase
           .from('sbo_analysis_jobs')
           .update({ status: 'failed', error_message: error.message })
           .eq('id', jobId);
-      }
-    } catch {}
+      } catch {}
+    }
 
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
