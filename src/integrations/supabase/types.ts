@@ -58933,6 +58933,72 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_backfill_log: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          end_date: string
+          errors: Json | null
+          failed_count: number
+          id: string
+          losses: number
+          pushes: number
+          resolved_count: number
+          roi_summary: number | null
+          sport: string
+          start_date: string
+          status: string
+          total_dates: number
+          total_games: number
+          total_picks_found: number
+          total_player_stats: number
+          unmatched_count: number
+          wins: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          end_date: string
+          errors?: Json | null
+          failed_count?: number
+          id?: string
+          losses?: number
+          pushes?: number
+          resolved_count?: number
+          roi_summary?: number | null
+          sport?: string
+          start_date: string
+          status?: string
+          total_dates?: number
+          total_games?: number
+          total_picks_found?: number
+          total_player_stats?: number
+          unmatched_count?: number
+          wins?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          end_date?: string
+          errors?: Json | null
+          failed_count?: number
+          id?: string
+          losses?: number
+          pushes?: number
+          resolved_count?: number
+          roi_summary?: number | null
+          sport?: string
+          start_date?: string
+          status?: string
+          total_dates?: number
+          total_games?: number
+          total_picks_found?: number
+          total_player_stats?: number
+          unmatched_count?: number
+          wins?: number
+        }
+        Relationships: []
+      }
       sbo_bankroll: {
         Row: {
           biggest_loss: number | null

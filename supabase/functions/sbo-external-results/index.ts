@@ -624,7 +624,7 @@ serve(async (req) => {
     }
 
     // ══════════════════════════════════════
-    // MODE: backfill
+    // MODE: backfill (fetch + auto-resolve + log)
     // ══════════════════════════════════════
     if (mode === 'backfill') {
       if (!apiKey) throw new Error('SPORTSDATAIO_API_KEY not configured');
@@ -632,30 +632,104 @@ serve(async (req) => {
       const startDate = body.start_date as string;
       const endDate = body.end_date as string;
       if (!startDate || !endDate) throw new Error('start_date and end_date required');
+
+      // Create backfill log entry
+      const { data: logEntry } = await supabase.from('sbo_backfill_log').insert({
+        sport, start_date: startDate, end_date: endDate, status: 'running',
+      }).select('id').single();
+      const logId = logEntry?.id;
+
       const dates: string[] = [];
       const start = new Date(startDate);
       const end = new Date(endDate);
       for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
         dates.push(d.toISOString().split('T')[0]);
       }
+
       let totalGames = 0, totalPlayers = 0;
       const errors: string[] = [];
+      const fnUrl = Deno.env.get('SUPABASE_URL')! + '/functions/v1/sbo-external-results';
+      const fnAuth = `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`;
+
+      // Phase 1: Fetch all dates
       for (const date of dates) {
         try {
-          const innerResp = await fetch(Deno.env.get('SUPABASE_URL')! + '/functions/v1/sbo-external-results', {
+          const innerResp = await fetch(fnUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}` },
+            headers: { 'Content-Type': 'application/json', 'Authorization': fnAuth },
             body: JSON.stringify({ mode: 'fetch', sport, game_date: date }),
           });
           const innerData = await innerResp.json();
           totalGames += innerData.games || 0;
           totalPlayers += innerData.player_stats || 0;
-        } catch (e) { errors.push(`${date}: ${e.message}`); }
+        } catch (e) { errors.push(`fetch ${date}: ${e.message}`); }
       }
+
+      // Phase 2: Auto-resolve all picks in this date range
+      let resolvedCount = 0, failedCount = 0, unmatchedCount = 0;
+      let wins = 0, losses = 0, pushes = 0;
+      try {
+        const resolveResp = await fetch(fnUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': fnAuth },
+          body: JSON.stringify({ mode: 'resolve', sport, date_from: startDate, date_to: endDate }),
+        });
+        const resolveData = await resolveResp.json();
+        resolvedCount = resolveData.resolved || 0;
+        unmatchedCount = resolveData.unmatched || 0;
+      } catch (e) { errors.push(`resolve: ${e.message}`); }
+
+      // Phase 3: Count wins/losses in resolved range
+      const { data: resolvedPicks } = await supabase.from('sbo_capper_picks')
+        .select('result')
+        .gte('game_date', startDate).lte('game_date', endDate)
+        .not('result', 'is', null);
+      if (resolvedPicks) {
+        wins = resolvedPicks.filter(p => p.result === 'win').length;
+        losses = resolvedPicks.filter(p => p.result === 'loss').length;
+        pushes = resolvedPicks.filter(p => p.result === 'push').length;
+      }
+
+      // ROI summary
+      const roiSummary = (wins + losses) > 0
+        ? Math.round(((wins * 0.909 - losses) / (wins + losses + pushes)) * 10000) / 100
+        : 0;
+
+      // Update backfill log
+      if (logId) {
+        await supabase.from('sbo_backfill_log').update({
+          total_dates: dates.length, total_games: totalGames, total_player_stats: totalPlayers,
+          total_picks_found: resolvedCount + unmatchedCount,
+          resolved_count: resolvedCount, failed_count: failedCount, unmatched_count: unmatchedCount,
+          wins, losses, pushes, roi_summary: roiSummary,
+          status: errors.length ? 'completed_with_errors' : 'completed',
+          errors: errors.length ? errors : [],
+          completed_at: new Date().toISOString(),
+        }).eq('id', logId);
+      }
+
       return new Response(JSON.stringify({
-        success: true, dates_processed: dates.length, total_games: totalGames, total_player_stats: totalPlayers,
-        errors: errors.length ? errors : undefined, isolation: 'ACTIVE — does NOT affect props_master',
+        success: true, log_id: logId, dates_processed: dates.length,
+        total_games: totalGames, total_player_stats: totalPlayers,
+        resolved: resolvedCount, unmatched: unmatchedCount, wins, losses, pushes, roi_summary: roiSummary,
+        errors: errors.length ? errors : undefined,
+        isolation: 'ACTIVE — does NOT affect props_master',
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // ══════════════════════════════════════
+    // MODE: backfill_logs — get historical backfill runs
+    // ══════════════════════════════════════
+    if (mode === 'backfill_logs') {
+      const { data, error } = await supabase
+        .from('sbo_backfill_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return new Response(JSON.stringify({ logs: data }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // ══════════════════════════════════════
