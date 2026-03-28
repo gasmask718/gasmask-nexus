@@ -935,7 +935,8 @@ export default function SBOCapperTracker() {
             {Object.keys(signalStats).length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {Object.entries(signalStats).map(([type, stats]) => {
-                  const wr = stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0;
+                  const s = stats as { total: number; wins: number };
+                  const wr = s.total > 0 ? Math.round((s.wins / s.total) * 100) : 0;
                   const color = type === 'SHARP' ? 'purple' : type === 'VALUE' ? 'emerald' : 'blue';
                   return (
                     <Card key={type} className={`border-${color}-500/20`}>
@@ -944,7 +945,7 @@ export default function SBOCapperTracker() {
                           {type === 'SHARP' ? '🧠' : type === 'VALUE' ? '💰' : '📊'} {type}
                         </Badge>
                         <p className="text-3xl font-black">{wr}%</p>
-                        <p className="text-[10px] text-muted-foreground">{stats.wins}W / {stats.total - stats.wins}L ({stats.total} total)</p>
+                        <p className="text-[10px] text-muted-foreground">{s.wins}W / {s.total - s.wins}L ({s.total} total)</p>
                         <Progress value={wr} className="h-1.5" />
                       </CardContent>
                     </Card>
