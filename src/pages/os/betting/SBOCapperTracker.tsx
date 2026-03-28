@@ -10,8 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Zap, Camera, Upload, Loader2, AlertTriangle, Filter, Link2 } from 'lucide-react';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
@@ -29,11 +30,16 @@ const sportColors: Record<string, string> = {
   NCAAB: 'text-purple-500 border-purple-500/30 bg-purple-500/10',
   NCAAF: 'text-purple-400 border-purple-400/30 bg-purple-400/10',
 };
-
 const tierColors: Record<string, string> = {
   elite: 'text-amber-500 border-amber-500/30 bg-amber-500/10',
   good: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10',
   unproven: 'text-muted-foreground border-border bg-muted/50',
+};
+const gradeColors: Record<string, string> = {
+  A: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
+  B: 'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  C: 'text-amber-400 border-amber-400/30 bg-amber-400/10',
+  D: 'text-red-400 border-red-400/30 bg-red-400/10',
 };
 
 // ─── Photo Upload Dialog ──────────────────────────────────────────────
@@ -50,7 +56,6 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) { toast.error('Max 10MB'); return; }
-
     const reader = new FileReader();
     reader.onload = () => setPreview(reader.result as string);
     reader.readAsDataURL(file);
@@ -65,22 +70,16 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Parse failed');
-
       setParsedPicks(data.picks || []);
       setStep('review');
       toast.success(`Parsed ${data.count} picks (${data.needs_review} need review)`);
       onAdded();
     } catch (err: any) {
       toast.error(err.message || 'Failed to parse image');
-    } finally {
-      setUploading(false);
-    }
+    } finally { setUploading(false); }
   };
 
-  const reset = () => {
-    setPreview(null); setParsedPicks([]); setStep('upload'); setCapperId('');
-    if (inputRef.current) inputRef.current.value = '';
-  };
+  const reset = () => { setPreview(null); setParsedPicks([]); setStep('upload'); setCapperId(''); if (inputRef.current) inputRef.current.value = ''; };
 
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
@@ -91,18 +90,12 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
       </DialogTrigger>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader><DialogTitle>📸 AI Capper Pick Parser</DialogTitle></DialogHeader>
-
         {step === 'upload' ? (
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Capper</Label>
+            <div><Label className="text-xs">Capper</Label>
               <Select value={capperId} onValueChange={setCapperId}>
                 <SelectTrigger><SelectValue placeholder="Select capper" /></SelectTrigger>
-                <SelectContent>
-                  {cappers.map((c: any) => (
-                    <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectContent>{cappers.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
@@ -114,8 +107,7 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
                 </div>
               ) : (
                 <Button variant="outline" className="w-full h-32 border-dashed flex-col gap-2" onClick={() => inputRef.current?.click()}>
-                  <Upload className="h-6 w-6 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Upload screenshot of picks</span>
+                  <Upload className="h-6 w-6 text-muted-foreground" /><span className="text-sm text-muted-foreground">Upload screenshot of picks</span>
                 </Button>
               )}
             </div>
@@ -171,81 +163,54 @@ function AddCapperDialog({ onAdded }: { onAdded: () => void }) {
   const [sports, setSports] = useState<string[]>(['NBA']);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-
   const toggleSport = (s: string) => setSports(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
 
   const handleAdd = async () => {
     if (!name.trim()) return;
     setSaving(true);
     const { error } = await (supabase as any).from('sbo_cappers').insert({
-      name: name.trim(), source,
-      source_handle: handle.trim() || null,
-      notes: notes.trim() || null,
-      sports,
+      name: name.trim(), source, source_handle: handle.trim() || null, notes: notes.trim() || null, sports,
     });
     setSaving(false);
     if (error) { toast.error(error.message); } else {
-      toast.success('Capper added');
-      setName(''); setHandle(''); setNotes(''); setSports(['NBA']);
-      setOpen(false); onAdded();
+      toast.success('Capper added'); setName(''); setHandle(''); setNotes(''); setSports(['NBA']); setOpen(false); onAdded();
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1.5"><Plus className="h-3 w-3" /> Add Capper</Button>
-      </DialogTrigger>
+      <DialogTrigger asChild><Button size="sm" variant="outline" className="gap-1.5"><Plus className="h-3 w-3" /> Add Capper</Button></DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Add Capper Source</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div>
-            <Label className="text-xs">Name</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. SharpAction" />
-          </div>
+          <div><Label className="text-xs">Name</Label><Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. SharpAction" /></div>
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Source</Label>
+            <div><Label className="text-xs">Source</Label>
               <Select value={source} onValueChange={setSource}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="telegram">📱 Telegram</SelectItem>
-                  <SelectItem value="twitter">🐦 Twitter/X</SelectItem>
-                  <SelectItem value="manual">✏️ Manual</SelectItem>
-                  <SelectItem value="discord">💬 Discord</SelectItem>
-                  <SelectItem value="instagram">📷 Instagram</SelectItem>
-                  <SelectItem value="youtube">📺 YouTube</SelectItem>
+                  <SelectItem value="telegram">📱 Telegram</SelectItem><SelectItem value="twitter">🐦 Twitter/X</SelectItem>
+                  <SelectItem value="manual">✏️ Manual</SelectItem><SelectItem value="discord">💬 Discord</SelectItem>
+                  <SelectItem value="instagram">📷 Instagram</SelectItem><SelectItem value="youtube">📺 YouTube</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-xs">Handle (optional)</Label>
-              <Input value={handle} onChange={e => setHandle(e.target.value)} placeholder="@handle" />
-            </div>
+            <div><Label className="text-xs">Handle (optional)</Label><Input value={handle} onChange={e => setHandle(e.target.value)} placeholder="@handle" /></div>
           </div>
-          <div>
-            <Label className="text-xs">Sports</Label>
+          <div><Label className="text-xs">Sports</Label>
             <div className="flex flex-wrap gap-1.5 mt-1">
-              {SPORTS.map(s => (
-                <Badge key={s} variant="outline" className={`text-[10px] cursor-pointer transition-all ${sports.includes(s) ? sportColors[s] : 'opacity-40'}`}
-                  onClick={() => toggleSport(s)}>{s}</Badge>
-              ))}
+              {SPORTS.map(s => <Badge key={s} variant="outline" className={`text-[10px] cursor-pointer transition-all ${sports.includes(s) ? sportColors[s] : 'opacity-40'}`} onClick={() => toggleSport(s)}>{s}</Badge>)}
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Notes (optional)</Label>
-            <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Known for NBA props..." />
-          </div>
-          <Button onClick={handleAdd} disabled={saving || !name.trim()} className="w-full">
-            {saving ? 'Adding…' : 'Add Capper'}
-          </Button>
+          <div><Label className="text-xs">Notes (optional)</Label><Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Known for NBA props..." /></div>
+          <Button onClick={handleAdd} disabled={saving || !name.trim()} className="w-full">{saving ? 'Adding…' : 'Add Capper'}</Button>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
 
-// ─── Log Pick Dialog (with auto-parser + multi-sport) ─────────────────
+// ─── Log Pick Dialog ──────────────────────────────────────────────────
 function AddPickDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () => void }) {
   const [open, setOpen] = useState(false);
   const [capperId, setCapperId] = useState('');
@@ -272,82 +237,44 @@ function AddPickDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () => vo
     });
     setSaving(false);
     if (error) { toast.error(error.message); } else {
-      toast.success('Pick logged');
-      setPickText(''); setPlayerName(''); setPropType(''); setLine(''); setDirection(''); setOdds('');
-      setOpen(false); onAdded();
+      toast.success('Pick logged'); setPickText(''); setPlayerName(''); setPropType(''); setLine(''); setDirection(''); setOdds(''); setOpen(false); onAdded();
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="gap-1.5"><MessageSquare className="h-3 w-3" /> Manual Pick</Button>
-      </DialogTrigger>
+      <DialogTrigger asChild><Button size="sm" variant="outline" className="gap-1.5"><MessageSquare className="h-3 w-3" /> Manual Pick</Button></DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle>Log Capper Pick</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Capper</Label>
-              <Select value={capperId} onValueChange={setCapperId}>
-                <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent>{cappers.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-              </Select>
+            <div><Label className="text-xs">Capper</Label>
+              <Select value={capperId} onValueChange={setCapperId}><SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                <SelectContent>{cappers.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select>
             </div>
-            <div>
-              <Label className="text-xs">Sport</Label>
-              <Select value={sport} onValueChange={setSport}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
+            <div><Label className="text-xs">Sport</Label>
+              <Select value={sport} onValueChange={setSport}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
             </div>
           </div>
-          <div>
-            <Label className="text-xs">Pick Text</Label>
-            <Textarea value={pickText} onChange={e => setPickText(e.target.value)} placeholder='e.g. "LeBron James over 27.5 points -110"' rows={2} />
-          </div>
+          <div><Label className="text-xs">Pick Text</Label><Textarea value={pickText} onChange={e => setPickText(e.target.value)} placeholder='e.g. "LeBron James over 27.5 points -110"' rows={2} /></div>
           <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label className="text-xs">Player</Label>
-              <Input value={playerName} onChange={e => setPlayerName(e.target.value)} placeholder="LeBron James" />
-            </div>
-            <div>
-              <Label className="text-xs">Stat</Label>
-              <Input value={propType} onChange={e => setPropType(e.target.value)} placeholder="points" />
-            </div>
-            <div>
-              <Label className="text-xs">Bet Type</Label>
-              <Select value={betType} onValueChange={setBetType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{BET_TYPES.map(bt => <SelectItem key={bt} value={bt}>{bt}</SelectItem>)}</SelectContent>
-              </Select>
+            <div><Label className="text-xs">Player</Label><Input value={playerName} onChange={e => setPlayerName(e.target.value)} placeholder="LeBron James" /></div>
+            <div><Label className="text-xs">Stat</Label><Input value={propType} onChange={e => setPropType(e.target.value)} placeholder="points" /></div>
+            <div><Label className="text-xs">Bet Type</Label>
+              <Select value={betType} onValueChange={setBetType}><SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{BET_TYPES.map(bt => <SelectItem key={bt} value={bt}>{bt}</SelectItem>)}</SelectContent></Select>
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            <div>
-              <Label className="text-xs">Line</Label>
-              <Input type="number" value={line} onChange={e => setLine(e.target.value)} placeholder="25.5" />
+            <div><Label className="text-xs">Line</Label><Input type="number" value={line} onChange={e => setLine(e.target.value)} placeholder="25.5" /></div>
+            <div><Label className="text-xs">Direction</Label>
+              <Select value={direction} onValueChange={setDirection}><SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                <SelectContent><SelectItem value="OVER">OVER</SelectItem><SelectItem value="UNDER">UNDER</SelectItem><SelectItem value="WIN">WIN</SelectItem><SelectItem value="LOSE">LOSE</SelectItem></SelectContent></Select>
             </div>
-            <div>
-              <Label className="text-xs">Direction</Label>
-              <Select value={direction} onValueChange={setDirection}>
-                <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="OVER">OVER</SelectItem>
-                  <SelectItem value="UNDER">UNDER</SelectItem>
-                  <SelectItem value="WIN">WIN</SelectItem>
-                  <SelectItem value="LOSE">LOSE</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-xs">Odds</Label>
-              <Input type="number" value={odds} onChange={e => setOdds(e.target.value)} placeholder="-110" />
-            </div>
+            <div><Label className="text-xs">Odds</Label><Input type="number" value={odds} onChange={e => setOdds(e.target.value)} placeholder="-110" /></div>
           </div>
-          <Button onClick={handleAdd} disabled={saving || !capperId || !pickText.trim()} className="w-full">
-            {saving ? 'Logging…' : 'Log Pick'}
-          </Button>
+          <Button onClick={handleAdd} disabled={saving || !capperId || !pickText.trim()} className="w-full">{saving ? 'Logging…' : 'Log Pick'}</Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -358,8 +285,7 @@ function AddPickDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () => vo
 function SettingsPanel({ cappers, refetch }: { cappers: any[]; refetch: () => void }) {
   const toggleActive = async (id: string, current: boolean) => {
     await (supabase as any).from('sbo_cappers').update({ is_active: !current }).eq('id', id);
-    toast.success(!current ? 'Capper activated' : 'Capper deactivated');
-    refetch();
+    toast.success(!current ? 'Capper activated' : 'Capper deactivated'); refetch();
   };
   const removeCapper = async (id: string) => {
     await (supabase as any).from('sbo_cappers').delete().eq('id', id);
@@ -371,30 +297,17 @@ function SettingsPanel({ cappers, refetch }: { cappers: any[]; refetch: () => vo
       {cappers.length === 0 ? (
         <Card className="border-dashed"><CardContent className="p-6 text-center text-sm text-muted-foreground">No cappers tracked. Add one to begin.</CardContent></Card>
       ) : cappers.map((c: any) => (
-        <Card key={c.id}>
-          <CardContent className="p-3 flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{c.name}</span>
-                <Badge variant="outline" className="text-[10px]">{c.source}</Badge>
-              </div>
-              <div className="flex gap-1 mt-1">
-                {(c.sports || ['NBA']).map((s: string) => (
-                  <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Badge variant="outline" className={`text-[10px] ${c.is_active ? 'text-emerald-500 border-emerald-500/30' : 'text-muted-foreground'}`}>
-                {c.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-              <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => toggleActive(c.id, c.is_active)}>
-                {c.is_active ? 'Deactivate' : 'Activate'}
-              </Button>
-              <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive" onClick={() => removeCapper(c.id)}>Remove</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <Card key={c.id}><CardContent className="p-3 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2"><span className="font-medium text-sm">{c.name}</span><Badge variant="outline" className="text-[10px]">{c.source}</Badge></div>
+            <div className="flex gap-1 mt-1">{(c.sports || ['NBA']).map((s: string) => <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>)}</div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Badge variant="outline" className={`text-[10px] ${c.is_active ? 'text-emerald-500 border-emerald-500/30' : 'text-muted-foreground'}`}>{c.is_active ? 'Active' : 'Inactive'}</Badge>
+            <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => toggleActive(c.id, c.is_active)}>{c.is_active ? 'Deactivate' : 'Activate'}</Button>
+            <Button size="sm" variant="ghost" className="h-6 text-[10px] text-destructive" onClick={() => removeCapper(c.id)}>Remove</Button>
+          </div>
+        </CardContent></Card>
       ))}
     </div>
   );
@@ -406,26 +319,18 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
     queryKey: ['sbo-capper-picks-review'],
     queryFn: async () => {
       const { data } = await (supabase as any).from('sbo_capper_picks')
-        .select('*, sbo_cappers(name)')
-        .eq('review_status', 'needs_review')
+        .select('*, sbo_cappers(name)').eq('review_status', 'needs_review')
         .order('created_at', { ascending: false }).limit(50);
       return data || [];
     },
   });
 
-  const approve = async (id: string) => {
-    await (supabase as any).from('sbo_capper_picks').update({ review_status: 'verified' }).eq('id', id);
-    toast.success('Pick verified'); onResolved();
-  };
-  const reject = async (id: string) => {
-    await (supabase as any).from('sbo_capper_picks').delete().eq('id', id);
-    toast.success('Pick removed'); onResolved();
-  };
+  const approve = async (id: string) => { await (supabase as any).from('sbo_capper_picks').update({ review_status: 'verified' }).eq('id', id); toast.success('Pick verified'); onResolved(); };
+  const reject = async (id: string) => { await (supabase as any).from('sbo_capper_picks').delete().eq('id', id); toast.success('Pick removed'); onResolved(); };
 
   if (picks.length === 0) return (
     <Card className="border-dashed"><CardContent className="p-8 text-center">
-      <CheckCircle className="h-8 w-8 mx-auto text-emerald-500/50 mb-2" />
-      <p className="text-sm text-muted-foreground">All picks verified ✅</p>
+      <CheckCircle className="h-8 w-8 mx-auto text-emerald-500/50 mb-2" /><p className="text-sm text-muted-foreground">All picks verified ✅</p>
     </CardContent></Card>
   );
 
@@ -433,26 +338,46 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
     <div className="space-y-2">
       <Badge variant="outline" className="text-xs text-amber-500 border-amber-500/30">{picks.length} picks need review</Badge>
       {picks.map((p: any) => (
-        <Card key={p.id} className="border-amber-500/20">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className="text-[10px]">{p.sbo_cappers?.name}</Badge>
-                  <Badge className={`text-[10px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
-                  <span className="text-[10px] text-amber-500">{p.parse_confidence}% confidence</span>
-                </div>
-                <p className="text-sm mt-1">{p.player_name} {p.direction} {p.line} {p.prop_type}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
+        <Card key={p.id} className="border-amber-500/20"><CardContent className="p-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="text-[10px]">{p.sbo_cappers?.name}</Badge>
+                <Badge className={`text-[10px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
+                <span className="text-[10px] text-amber-500">{p.parse_confidence}% confidence</span>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <Button size="sm" variant="outline" className="h-7 text-emerald-500" onClick={() => approve(p.id)}>✅</Button>
-                <Button size="sm" variant="outline" className="h-7 text-destructive" onClick={() => reject(p.id)}>❌</Button>
-              </div>
+              <p className="text-sm mt-1">{p.player_name} {p.direction} {p.line} {p.prop_type}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex gap-1 shrink-0">
+              <Button size="sm" variant="outline" className="h-7 text-emerald-500" onClick={() => approve(p.id)}>✅</Button>
+              <Button size="sm" variant="outline" className="h-7 text-destructive" onClick={() => reject(p.id)}>❌</Button>
+            </div>
+          </div>
+        </CardContent></Card>
       ))}
+    </div>
+  );
+}
+
+// ─── Consensus Meter ──────────────────────────────────────────────────
+function ConsensusMeter({ over, under, signal }: { over: number; under: number; signal: string }) {
+  const total = over + under;
+  if (total === 0) return null;
+  const overPct = (over / total) * 100;
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-[10px]">
+        <span className="text-emerald-400">OVER {over}</span>
+        <Badge variant="outline" className={`text-[8px] ${signal === 'STRONG' ? 'text-amber-400 border-amber-400/30 bg-amber-400/10' : signal === 'MEDIUM' ? 'text-blue-400 border-blue-400/30' : 'text-muted-foreground'}`}>
+          {signal === 'STRONG' ? '🔥' : signal === 'MEDIUM' ? '📊' : '○'} {signal}
+        </Badge>
+        <span className="text-blue-400">UNDER {under}</span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden flex">
+        <div className="bg-emerald-500 transition-all" style={{ width: `${overPct}%` }} />
+        <div className="bg-blue-500 transition-all" style={{ width: `${100 - overPct}%` }} />
+      </div>
     </div>
   );
 }
@@ -462,6 +387,7 @@ export default function SBOCapperTracker() {
   const qc = useQueryClient();
   const [sportFilter, setSportFilter] = useState<string>('all');
   const [matching, setMatching] = useState(false);
+  const [runningConsensus, setRunningConsensus] = useState(false);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
@@ -483,26 +409,55 @@ export default function SBOCapperTracker() {
     },
   });
 
+  const { data: performances = [] } = useQuery({
+    queryKey: ['sbo-capper-performance'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_capper_performance')
+        .select('*').order('win_rate', { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: valueProps = [] } = useQuery({
+    queryKey: ['sbo-value-props'],
+    queryFn: async () => {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+      const { data } = await (supabase as any).from('props_master')
+        .select('id, player_name, stat_type, line, consensus_over, consensus_under, consensus_score, signal_strength, is_value_play, value_score, ai_confidence, ai_recommendation')
+        .eq('game_date', today)
+        .not('consensus_score', 'is', null)
+        .order('consensus_score', { ascending: false })
+        .limit(50);
+      return data || [];
+    },
+  });
+
   const refetchAll = () => {
     qc.invalidateQueries({ queryKey: ['sbo-cappers'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks-review'] });
+    qc.invalidateQueries({ queryKey: ['sbo-capper-performance'] });
+    qc.invalidateQueries({ queryKey: ['sbo-value-props'] });
   };
 
   const runMatchAndResolve = async () => {
     setMatching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('sbo-match-capper-picks', {
-        body: { mode: 'match_and_resolve' },
-      });
+      const { data, error } = await supabase.functions.invoke('sbo-match-capper-picks', { body: { mode: 'match_and_resolve' } });
       if (error) throw error;
       toast.success(`Matched ${data.matched} picks, resolved ${data.resolved} results`);
       refetchAll();
-    } catch (err: any) {
-      toast.error(err.message || 'Match failed');
-    } finally {
-      setMatching(false);
-    }
+    } catch (err: any) { toast.error(err.message || 'Match failed'); } finally { setMatching(false); }
+  };
+
+  const runConsensusEngine = async () => {
+    setRunningConsensus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-consensus-engine', { body: {} });
+      if (error) throw error;
+      toast.success(`Consensus: ${data.consensus_updated} props scored, ${data.value_plays} value plays found`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Consensus failed'); } finally { setRunningConsensus(false); }
   };
 
   const updateResult = async (pickId: string, result: string) => {
@@ -514,9 +469,7 @@ export default function SBOCapperTracker() {
       const resolved = updated.filter((p: any) => p.result !== 'pending');
       const wins = resolved.filter((p: any) => p.result === 'won').length;
       const winRate = resolved.length > 0 ? (wins / resolved.length) * 100 : 0;
-      await (supabase as any).from('sbo_cappers').update({
-        total_picks: updated.length, win_rate: winRate, updated_at: new Date().toISOString(),
-      }).eq('id', pick.capper_id);
+      await (supabase as any).from('sbo_cappers').update({ total_picks: updated.length, win_rate: winRate, updated_at: new Date().toISOString() }).eq('id', pick.capper_id);
     }
     toast.success(`Marked ${result}`); refetchAll();
   };
@@ -526,13 +479,17 @@ export default function SBOCapperTracker() {
   const overallWinRate = resolvedPicks.length > 0
     ? ((resolvedPicks.filter((p: any) => p.result === 'won').length / resolvedPicks.length) * 100).toFixed(1) : '—';
 
-  // Sport breakdown
   const sportBreakdown = picks.reduce((acc: Record<string, { total: number; wins: number }>, p: any) => {
     const s = p.sport || 'NBA';
     if (!acc[s]) acc[s] = { total: 0, wins: 0 };
     if (p.result !== 'pending') { acc[s].total++; if (p.result === 'won') acc[s].wins++; }
     return acc;
   }, {} as Record<string, { total: number; wins: number }>);
+
+  // Top performers from performance table
+  const topPerformers = performances.filter((p: any) => p.total_picks >= 5).slice(0, 5);
+  const strongSignals = valueProps.filter((p: any) => p.signal_strength === 'STRONG');
+  const valuePlays = valueProps.filter((p: any) => p.is_value_play);
 
   return (
     <TooltipProvider>
@@ -548,10 +505,14 @@ export default function SBOCapperTracker() {
                 Capper Intelligence
                 <Badge variant="outline" className="text-[10px] border-blue-500/30 text-blue-400">Multi-Sport</Badge>
               </h1>
-              <p className="text-xs text-muted-foreground">AI photo parser · Multi-sport · Performance tracking</p>
+              <p className="text-xs text-muted-foreground">AI photo parser · Consensus engine · Value detection</p>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runConsensusEngine} disabled={runningConsensus}>
+              {runningConsensus ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+              {runningConsensus ? 'Running...' : '⚡ Consensus'}
+            </Button>
             <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runMatchAndResolve} disabled={matching}>
               {matching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
               {matching ? 'Linking...' : '🔗 Match & Resolve'}
@@ -564,39 +525,35 @@ export default function SBOCapperTracker() {
 
         {/* Sport Filter */}
         <div className="flex gap-1.5 flex-wrap">
-          <Badge variant="outline" className={`text-[10px] cursor-pointer ${sportFilter === 'all' ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => setSportFilter('all')}>All Sports</Badge>
-          {SPORTS.map(s => (
-            <Badge key={s} variant="outline" className={`text-[10px] cursor-pointer ${sportFilter === s ? sportColors[s] : 'opacity-50'}`}
-              onClick={() => setSportFilter(s)}>{s}</Badge>
-          ))}
+          <Badge variant="outline" className={`text-[10px] cursor-pointer ${sportFilter === 'all' ? 'bg-primary text-primary-foreground' : ''}`} onClick={() => setSportFilter('all')}>All Sports</Badge>
+          {SPORTS.map(s => <Badge key={s} variant="outline" className={`text-[10px] cursor-pointer ${sportFilter === s ? sportColors[s] : 'opacity-50'}`} onClick={() => setSportFilter(s)}>{s}</Badge>)}
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
           <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold">{cappers.length}</p>
-            <p className="text-[10px] text-muted-foreground">Cappers</p>
+            <p className="text-lg font-bold">{cappers.length}</p><p className="text-[10px] text-muted-foreground">Cappers</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-amber-500">{cappers.filter((c: any) => c.tier === 'elite').length}</p>
-            <p className="text-[10px] text-muted-foreground">Elite Tier</p>
+            <p className="text-lg font-bold text-amber-500">{cappers.filter((c: any) => c.tier === 'elite').length}</p><p className="text-[10px] text-muted-foreground">Elite Tier</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold">{pendingPicks.length}</p>
-            <p className="text-[10px] text-muted-foreground">Pending</p>
+            <p className="text-lg font-bold">{pendingPicks.length}</p><p className="text-[10px] text-muted-foreground">Pending</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
-            <p className={`text-lg font-bold ${parseFloat(String(overallWinRate)) >= 55 ? 'text-emerald-500' : ''}`}>{overallWinRate}%</p>
-            <p className="text-[10px] text-muted-foreground">Win Rate</p>
+            <p className={`text-lg font-bold ${parseFloat(String(overallWinRate)) >= 55 ? 'text-emerald-500' : ''}`}>{overallWinRate}%</p><p className="text-[10px] text-muted-foreground">Win Rate</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold">{Object.keys(sportBreakdown).length}</p>
-            <p className="text-[10px] text-muted-foreground">Sports Active</p>
+            <p className="text-lg font-bold">{Object.keys(sportBreakdown).length}</p><p className="text-[10px] text-muted-foreground">Sports Active</p>
           </CardContent></Card>
           <Card><CardContent className="p-3 text-center">
-            <p className="text-lg font-bold text-emerald-500">{picks.filter((p: any) => p.matched_prop_id).length}</p>
-            <p className="text-[10px] text-muted-foreground">🔗 Linked</p>
+            <p className="text-lg font-bold text-emerald-500">{picks.filter((p: any) => p.matched_prop_id).length}</p><p className="text-[10px] text-muted-foreground">🔗 Linked</p>
+          </CardContent></Card>
+          <Card className="border-amber-500/20"><CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-amber-400">{strongSignals.length}</p><p className="text-[10px] text-muted-foreground">🔥 Strong Signals</p>
+          </CardContent></Card>
+          <Card className="border-emerald-500/20"><CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-emerald-400">{valuePlays.length}</p><p className="text-[10px] text-muted-foreground">💰 Value Plays</p>
           </CardContent></Card>
         </div>
 
@@ -605,24 +562,110 @@ export default function SBOCapperTracker() {
           <div className="flex gap-2 flex-wrap">
             {(Object.entries(sportBreakdown) as [string, { total: number; wins: number }][]).map(([s, data]) => {
               const wr = data.total > 0 ? ((data.wins / data.total) * 100).toFixed(0) : '—';
-              return (
-                <Badge key={s} variant="outline" className={`text-[10px] ${sportColors[s] || ''}`}>
-                  {s}: {wr}% ({data.wins}W/{data.total - data.wins}L)
-                </Badge>
-              );
+              return <Badge key={s} variant="outline" className={`text-[10px] ${sportColors[s] || ''}`}>{s}: {wr}% ({data.wins}W/{data.total - data.wins}L)</Badge>;
             })}
           </div>
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="feed">
-          <TabsList className="w-full grid grid-cols-5">
+        <Tabs defaultValue="signals">
+          <TabsList className="w-full grid grid-cols-6">
+            <TabsTrigger value="signals" className="text-xs gap-1"><Target className="h-3 w-3" /> Signals</TabsTrigger>
             <TabsTrigger value="feed" className="text-xs gap-1"><Activity className="h-3 w-3" /> Feed</TabsTrigger>
             <TabsTrigger value="review" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" /> Review</TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs gap-1"><Trophy className="h-3 w-3" /> Board</TabsTrigger>
             <TabsTrigger value="cappers" className="text-xs gap-1"><Eye className="h-3 w-3" /> Cappers</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
+
+          {/* ── SIGNALS TAB (NEW) ── */}
+          <TabsContent value="signals" className="mt-3 space-y-4">
+            {/* Value Plays */}
+            {valuePlays.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2"><TrendingUp className="h-4 w-4 text-emerald-400" /> 💰 Value Plays</h3>
+                {valuePlays.map((p: any) => (
+                  <Card key={p.id} className="border-emerald-500/20 bg-emerald-500/5">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-sm">{p.player_name}</span>
+                            <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
+                            <span className="text-xs font-medium">{p.line}</span>
+                            <Badge className="text-[10px] bg-emerald-500/20 text-emerald-400 border-emerald-500/30">💰 VALUE</Badge>
+                          </div>
+                          <ConsensusMeter over={p.consensus_over || 0} under={p.consensus_under || 0} signal={p.signal_strength || 'LOW'} />
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-lg font-bold text-emerald-400">+{p.value_score}</p>
+                          <p className="text-[10px] text-muted-foreground">edge score</p>
+                          {p.ai_recommendation && <Badge variant="outline" className={`text-[10px] mt-1 ${p.ai_recommendation?.toUpperCase() === 'OVER' ? 'text-emerald-400 border-emerald-400/30' : 'text-blue-400 border-blue-400/30'}`}>AI: {p.ai_recommendation}</Badge>}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* Strong Signals */}
+            {strongSignals.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold flex items-center gap-2"><Flame className="h-4 w-4 text-amber-400" /> 🔥 Strong Signals</h3>
+                {strongSignals.filter((p: any) => !p.is_value_play).map((p: any) => (
+                  <Card key={p.id} className="border-amber-500/20">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm">{p.player_name}</span>
+                            <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
+                            <span className="text-xs">{p.line}</span>
+                            <Badge className="text-[10px] bg-amber-500/20 text-amber-400 border-amber-500/30">🔥 STRONG</Badge>
+                          </div>
+                          <ConsensusMeter over={p.consensus_over || 0} under={p.consensus_under || 0} signal={p.signal_strength} />
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold">{p.consensus_score}%</p>
+                          <p className="text-[10px] text-muted-foreground">consensus</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {/* All consensus props */}
+            {valueProps.filter((p: any) => p.signal_strength !== 'STRONG' && !p.is_value_play).length > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-semibold text-muted-foreground">Other Consensus Props</h3>
+                {valueProps.filter((p: any) => p.signal_strength !== 'STRONG' && !p.is_value_play).map((p: any) => (
+                  <Card key={p.id}><CardContent className="p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm">{p.player_name}</span>
+                          <Badge variant="outline" className="text-[10px]">{p.stat_type}</Badge>
+                          <span className="text-xs">{p.line}</span>
+                        </div>
+                        <ConsensusMeter over={p.consensus_over || 0} under={p.consensus_under || 0} signal={p.signal_strength} />
+                      </div>
+                      <span className="text-xs text-muted-foreground">{p.consensus_score}%</span>
+                    </div>
+                  </CardContent></Card>
+                ))}
+              </div>
+            )}
+
+            {valueProps.length === 0 && (
+              <Card className="border-dashed"><CardContent className="p-8 text-center">
+                <Target className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                <p className="text-sm text-muted-foreground">Run ⚡ Consensus to generate signals</p>
+              </CardContent></Card>
+            )}
+          </TabsContent>
 
           {/* Pick Feed */}
           <TabsContent value="feed" className="mt-3 space-y-2">
@@ -642,6 +685,7 @@ export default function SBOCapperTracker() {
                         {p.bet_type && p.bet_type !== 'prop' && <Badge variant="outline" className="text-[10px]">{p.bet_type}</Badge>}
                         {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
                         {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
+                        {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-amber-400 border-amber-400/30">🎯 Sharp</Badge>}
                         {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -651,8 +695,7 @@ export default function SBOCapperTracker() {
                         {p.odds && <span className="text-xs text-muted-foreground">{p.odds > 0 ? '+' : ''}{p.odds}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span>{new Date(p.created_at).toLocaleString()}</span>
+                        <Clock className="h-3 w-3" /><span>{new Date(p.created_at).toLocaleString()}</span>
                         {p.game_date && <span>· {p.game_date}</span>}
                       </div>
                     </div>
@@ -675,19 +718,56 @@ export default function SBOCapperTracker() {
           </TabsContent>
 
           {/* Review Queue */}
-          <TabsContent value="review" className="mt-3">
-            <ReviewQueue onResolved={refetchAll} />
-          </TabsContent>
+          <TabsContent value="review" className="mt-3"><ReviewQueue onResolved={refetchAll} /></TabsContent>
 
-          {/* Leaderboard */}
+          {/* Leaderboard with grades */}
           <TabsContent value="leaderboard" className="mt-3 space-y-2">
+            {topPerformers.length > 0 && (
+              <div className="space-y-2 mb-4">
+                <h3 className="text-sm font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-400" /> Top Performers (5+ picks)</h3>
+                {topPerformers.map((perf: any, i: number) => {
+                  const capper = cappers.find((c: any) => c.id === perf.capper_id);
+                  return (
+                    <Card key={perf.id} className={i === 0 ? 'border-amber-500/30' : ''}>
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-bold text-muted-foreground w-6 text-center">#{i + 1}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{capper?.name || 'Unknown'}</span>
+                                <Badge variant="outline" className={`text-[10px] ${gradeColors[perf.confidence_grade] || ''}`}>Grade {perf.confidence_grade}</Badge>
+                                <Badge className={`text-[10px] ${sportColors[perf.sport] || ''}`}>{perf.sport}</Badge>
+                                {perf.prop_type && <Badge variant="outline" className="text-[8px]">{perf.prop_type}</Badge>}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                                {perf.hot_streak > 2 && <span className="text-amber-400">🔥 {perf.hot_streak}W streak</span>}
+                                {perf.cold_streak > 2 && <span className="text-red-400">❄️ {perf.cold_streak}L streak</span>}
+                                <span>L7: {perf.last_7_win_rate}%</span>
+                                <span>L30: {perf.last_30_win_rate}%</span>
+                                {perf.roi !== 0 && <span className={perf.roi > 0 ? 'text-emerald-400' : 'text-red-400'}>ROI: {perf.roi > 0 ? '+' : ''}{perf.roi}%</span>}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold">{perf.win_rate}%</p>
+                            <p className="text-[10px] text-muted-foreground">{perf.wins}W/{perf.losses}L</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
             {cappers.filter((c: any) => c.is_active).sort((a: any, b: any) => (b.win_rate || 0) - (a.win_rate || 0)).map((c: any, i: number) => {
               const capperPicks = picks.filter((p: any) => p.capper_id === c.id);
               const resolved = capperPicks.filter((p: any) => p.result !== 'pending');
               const wins = resolved.filter((p: any) => p.result === 'won').length;
               const wr = resolved.length > 0 ? ((wins / resolved.length) * 100) : 0;
               return (
-                <Card key={c.id} className={i === 0 ? 'border-amber-500/30' : ''}>
+                <Card key={c.id}>
                   <CardContent className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-lg font-bold text-muted-foreground w-6 text-center">#{i + 1}</span>
@@ -697,9 +777,7 @@ export default function SBOCapperTracker() {
                           <span className="font-medium text-sm">{c.name}</span>
                         </div>
                         <div className="flex gap-1 mt-1">
-                          {(c.sports || ['NBA']).map((s: string) => (
-                            <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>
-                          ))}
+                          {(c.sports || ['NBA']).map((s: string) => <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>)}
                         </div>
                       </div>
                     </div>
@@ -717,16 +795,15 @@ export default function SBOCapperTracker() {
           <TabsContent value="cappers" className="mt-3 space-y-2">
             {cappers.length === 0 ? (
               <Card className="border-dashed"><CardContent className="p-8 text-center">
-                <Users className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                <p className="text-sm text-muted-foreground">No cappers tracked yet.</p>
+                <Users className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" /><p className="text-sm text-muted-foreground">No cappers tracked yet.</p>
               </CardContent></Card>
             ) : cappers.map((c: any) => {
               const capperPicks = picks.filter((p: any) => p.capper_id === c.id);
               const resolved = capperPicks.filter((p: any) => p.result !== 'pending');
               const wins = resolved.filter((p: any) => p.result === 'won').length;
               const wr = resolved.length > 0 ? ((wins / resolved.length) * 100) : 0;
+              const capperPerfs = performances.filter((p: any) => p.capper_id === c.id);
 
-              // Sport breakdown for this capper
               const cSportBreakdown: Record<string, { w: number; l: number }> = capperPicks.reduce((acc: Record<string, { w: number; l: number }>, p: any) => {
                 const s = p.sport || 'NBA';
                 if (!acc[s]) acc[s] = { w: 0, l: 0 };
@@ -743,11 +820,12 @@ export default function SBOCapperTracker() {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">{c.name}</span>
                           <Badge variant="outline" className={`text-[10px] ${tierColors[c.tier]}`}>{c.tier}</Badge>
+                          {capperPerfs[0]?.confidence_grade && (
+                            <Badge variant="outline" className={`text-[10px] ${gradeColors[capperPerfs[0].confidence_grade] || ''}`}>Grade {capperPerfs[0].confidence_grade}</Badge>
+                          )}
                         </div>
                         <div className="flex gap-1 mt-1">
-                          {(c.sports || ['NBA']).map((s: string) => (
-                            <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>
-                          ))}
+                          {(c.sports || ['NBA']).map((s: string) => <Badge key={s} variant="outline" className={`text-[8px] ${sportColors[s] || ''}`}>{s}</Badge>)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -755,7 +833,24 @@ export default function SBOCapperTracker() {
                         <p className="text-[10px] text-muted-foreground">{capperPicks.length} picks</p>
                       </div>
                     </div>
-                    {/* Sport accuracy */}
+
+                    {/* Performance grades by sport */}
+                    {capperPerfs.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2">
+                        {capperPerfs.slice(0, 4).map((perf: any) => (
+                          <div key={perf.id} className="p-2 rounded-md border bg-muted/30 text-[10px] space-y-0.5">
+                            <div className="flex items-center gap-1">
+                              <Badge className={`text-[8px] ${sportColors[perf.sport] || ''}`}>{perf.sport}</Badge>
+                              <Badge variant="outline" className={`text-[8px] ${gradeColors[perf.confidence_grade] || ''}`}>{perf.confidence_grade}</Badge>
+                            </div>
+                            <p>{perf.win_rate}% WR · {perf.wins}W/{perf.losses}L</p>
+                            <p className="text-muted-foreground">L7: {perf.last_7_win_rate}% · L30: {perf.last_30_win_rate}%</p>
+                            {perf.roi !== 0 && <p className={perf.roi > 0 ? 'text-emerald-400' : 'text-red-400'}>ROI: {perf.roi > 0 ? '+' : ''}{perf.roi}%</p>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     {Object.keys(cSportBreakdown).length > 0 && (
                       <div className="flex gap-1.5 flex-wrap">
                         {Object.entries(cSportBreakdown).map(([s, d]) => (
@@ -765,6 +860,7 @@ export default function SBOCapperTracker() {
                         ))}
                       </div>
                     )}
+
                     {capperPicks.length > 0 && (
                       <div className="border-t border-border pt-2">
                         <p className="text-[10px] font-medium text-muted-foreground mb-1">Recent Picks</p>
@@ -790,9 +886,7 @@ export default function SBOCapperTracker() {
           </TabsContent>
 
           {/* Settings */}
-          <TabsContent value="settings" className="mt-3">
-            <SettingsPanel cappers={cappers} refetch={refetchAll} />
-          </TabsContent>
+          <TabsContent value="settings" className="mt-3"><SettingsPanel cappers={cappers} refetch={refetchAll} /></TabsContent>
         </Tabs>
       </div>
     </TooltipProvider>

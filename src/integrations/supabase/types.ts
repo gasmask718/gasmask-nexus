@@ -55564,12 +55564,16 @@ export type Database = {
           actual_result: number | null
           batch_id: string | null
           confidence_score: number | null
+          consensus_over: number | null
+          consensus_score: number | null
+          consensus_under: number | null
           created_at: string
           edge_score: number | null
           game_date: string | null
           game_time: string | null
           hit_rate: number | null
           id: string
+          is_value_play: boolean | null
           last_10_avg: number | null
           last_5_avg: number | null
           line: number
@@ -55584,23 +55588,29 @@ export type Database = {
           result: string | null
           season_avg: number | null
           settled_at: string | null
+          signal_strength: string | null
           source: string
           sport: string | null
           stat_type: string
           team: string | null
           updated_at: string
           upload_group_id: string | null
+          value_score: number | null
         }
         Insert: {
           actual_result?: number | null
           batch_id?: string | null
           confidence_score?: number | null
+          consensus_over?: number | null
+          consensus_score?: number | null
+          consensus_under?: number | null
           created_at?: string
           edge_score?: number | null
           game_date?: string | null
           game_time?: string | null
           hit_rate?: number | null
           id?: string
+          is_value_play?: boolean | null
           last_10_avg?: number | null
           last_5_avg?: number | null
           line: number
@@ -55615,23 +55625,29 @@ export type Database = {
           result?: string | null
           season_avg?: number | null
           settled_at?: string | null
+          signal_strength?: string | null
           source?: string
           sport?: string | null
           stat_type: string
           team?: string | null
           updated_at?: string
           upload_group_id?: string | null
+          value_score?: number | null
         }
         Update: {
           actual_result?: number | null
           batch_id?: string | null
           confidence_score?: number | null
+          consensus_over?: number | null
+          consensus_score?: number | null
+          consensus_under?: number | null
           created_at?: string
           edge_score?: number | null
           game_date?: string | null
           game_time?: string | null
           hit_rate?: number | null
           id?: string
+          is_value_play?: boolean | null
           last_10_avg?: number | null
           last_5_avg?: number | null
           line?: number
@@ -55646,12 +55662,14 @@ export type Database = {
           result?: string | null
           season_avg?: number | null
           settled_at?: string | null
+          signal_strength?: string | null
           source?: string
           sport?: string | null
           stat_type?: string
           team?: string | null
           updated_at?: string
           upload_group_id?: string | null
+          value_score?: number | null
         }
         Relationships: []
       }
@@ -59065,12 +59083,94 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_capper_performance: {
+        Row: {
+          avg_odds: number | null
+          capper_id: string
+          cold_streak: number | null
+          confidence_grade: string | null
+          hot_streak: number | null
+          id: string
+          last_30_picks: number | null
+          last_30_win_rate: number | null
+          last_30_wins: number | null
+          last_7_picks: number | null
+          last_7_win_rate: number | null
+          last_7_wins: number | null
+          losses: number | null
+          prop_type: string | null
+          pushes: number | null
+          roi: number | null
+          sport: string
+          total_picks: number | null
+          updated_at: string | null
+          win_rate: number | null
+          wins: number | null
+        }
+        Insert: {
+          avg_odds?: number | null
+          capper_id: string
+          cold_streak?: number | null
+          confidence_grade?: string | null
+          hot_streak?: number | null
+          id?: string
+          last_30_picks?: number | null
+          last_30_win_rate?: number | null
+          last_30_wins?: number | null
+          last_7_picks?: number | null
+          last_7_win_rate?: number | null
+          last_7_wins?: number | null
+          losses?: number | null
+          prop_type?: string | null
+          pushes?: number | null
+          roi?: number | null
+          sport?: string
+          total_picks?: number | null
+          updated_at?: string | null
+          win_rate?: number | null
+          wins?: number | null
+        }
+        Update: {
+          avg_odds?: number | null
+          capper_id?: string
+          cold_streak?: number | null
+          confidence_grade?: string | null
+          hot_streak?: number | null
+          id?: string
+          last_30_picks?: number | null
+          last_30_win_rate?: number | null
+          last_30_wins?: number | null
+          last_7_picks?: number | null
+          last_7_win_rate?: number | null
+          last_7_wins?: number | null
+          losses?: number | null
+          prop_type?: string | null
+          pushes?: number | null
+          roi?: number | null
+          sport?: string
+          total_picks?: number | null
+          updated_at?: string | null
+          win_rate?: number | null
+          wins?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_capper_performance_capper_id_fkey"
+            columns: ["capper_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_cappers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_capper_picks: {
         Row: {
+          alignment_score: number | null
           bet_type: string | null
           capper_id: string
           created_at: string
           direction: string | null
+          edge_score: number | null
           game_date: string | null
           id: string
           league: string | null
@@ -59086,16 +59186,19 @@ export type Database = {
           raw_message: string | null
           result: string | null
           review_status: string | null
+          sharp_flag: boolean | null
           source_image_url: string | null
           sport: string | null
           stake: number | null
           team: string | null
         }
         Insert: {
+          alignment_score?: number | null
           bet_type?: string | null
           capper_id: string
           created_at?: string
           direction?: string | null
+          edge_score?: number | null
           game_date?: string | null
           id?: string
           league?: string | null
@@ -59111,16 +59214,19 @@ export type Database = {
           raw_message?: string | null
           result?: string | null
           review_status?: string | null
+          sharp_flag?: boolean | null
           source_image_url?: string | null
           sport?: string | null
           stake?: number | null
           team?: string | null
         }
         Update: {
+          alignment_score?: number | null
           bet_type?: string | null
           capper_id?: string
           created_at?: string
           direction?: string | null
+          edge_score?: number | null
           game_date?: string | null
           id?: string
           league?: string | null
@@ -59136,6 +59242,7 @@ export type Database = {
           raw_message?: string | null
           result?: string | null
           review_status?: string | null
+          sharp_flag?: boolean | null
           source_image_url?: string | null
           sport?: string | null
           stake?: number | null
