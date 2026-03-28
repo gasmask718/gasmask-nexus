@@ -322,8 +322,6 @@ function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () =
             </div>
           </div>
         )}
-          </div>
-        )}
       </DialogContent>
     </Dialog>
   );
