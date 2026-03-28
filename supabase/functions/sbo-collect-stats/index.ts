@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
     // Build normalized lookup — keep highest confidence per player+stat
     const statMap: Record<string, any> = {};
     for (const s of allStats) {
-      const key = `${s.player_name.toLowerCase().trim()}::${s.stat_type.toLowerCase().trim()}`;
+      const key = `${normalize(s.player_name)}::${normalize(s.stat_type)}`;
       if (!statMap[key] || (s.confidence_score || 0) > (statMap[key].confidence_score || 0)) {
         statMap[key] = s;
       }
