@@ -201,6 +201,11 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         ? Math.round(confArr.reduce((s: number, c: any) => s + (c.confidence_score || 0), 0) / confArr.length)
         : 0;
 
+      const missingStats = total - withStats;
+      const missingResults = total - withResults;
+      const fullyComplete = Math.min(withStats, withResults);
+      const healthPct = total > 0 ? Math.round((fullyComplete / total) * 100) : 0;
+
       return {
         total,
         wins,
@@ -208,8 +213,12 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         pending,
         withPrediction,
         bestPicks,
-        withStats: withPrediction,
-        noStats: total - withPrediction,
+        withStats,
+        noStats: missingStats,
+        withResults,
+        missingResults,
+        fullyComplete,
+        healthPct,
         avgConfidence,
         winRate: wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0,
         byPlatform,
