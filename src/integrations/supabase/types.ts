@@ -59008,6 +59008,135 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_bet_log: {
+        Row: {
+          auto_placed: boolean | null
+          composite_score: number | null
+          direction: string | null
+          game_date: string
+          id: string
+          is_lock_play: boolean | null
+          line: number | null
+          notes: string | null
+          odds: number | null
+          placed_at: string
+          player_name: string
+          potential_payout: number | null
+          profit: number | null
+          prop_id: string | null
+          result: string
+          settled_at: string | null
+          sharp_indicator: string | null
+          signal_type: string | null
+          stake: number
+          stat_type: string | null
+          strategy: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_placed?: boolean | null
+          composite_score?: number | null
+          direction?: string | null
+          game_date?: string
+          id?: string
+          is_lock_play?: boolean | null
+          line?: number | null
+          notes?: string | null
+          odds?: number | null
+          placed_at?: string
+          player_name: string
+          potential_payout?: number | null
+          profit?: number | null
+          prop_id?: string | null
+          result?: string
+          settled_at?: string | null
+          sharp_indicator?: string | null
+          signal_type?: string | null
+          stake: number
+          stat_type?: string | null
+          strategy?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_placed?: boolean | null
+          composite_score?: number | null
+          direction?: string | null
+          game_date?: string
+          id?: string
+          is_lock_play?: boolean | null
+          line?: number | null
+          notes?: string | null
+          odds?: number | null
+          placed_at?: string
+          player_name?: string
+          potential_payout?: number | null
+          profit?: number | null
+          prop_id?: string | null
+          result?: string
+          settled_at?: string | null
+          sharp_indicator?: string | null
+          signal_type?: string | null
+          stake?: number
+          stat_type?: string | null
+          strategy?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sbo_betting_wallet: {
+        Row: {
+          auto_bet_enabled: boolean
+          bankroll: number
+          created_at: string
+          id: string
+          losses: number
+          max_bets_per_day: number
+          max_daily_loss_pct: number
+          pushes: number
+          streak_multiplier: boolean
+          total_bets: number
+          total_profit: number
+          total_wagered: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          auto_bet_enabled?: boolean
+          bankroll?: number
+          created_at?: string
+          id?: string
+          losses?: number
+          max_bets_per_day?: number
+          max_daily_loss_pct?: number
+          pushes?: number
+          streak_multiplier?: boolean
+          total_bets?: number
+          total_profit?: number
+          total_wagered?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          auto_bet_enabled?: boolean
+          bankroll?: number
+          created_at?: string
+          id?: string
+          losses?: number
+          max_bets_per_day?: number
+          max_daily_loss_pct?: number
+          pushes?: number
+          streak_multiplier?: boolean
+          total_bets?: number
+          total_profit?: number
+          total_wagered?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: []
+      }
       sbo_bettor_profile: {
         Row: {
           avg_clv: number | null
@@ -59482,6 +59611,60 @@ export type Database = {
           target_profit?: number | null
           total_capital_required?: number | null
           total_stakes?: number | null
+        }
+        Relationships: []
+      }
+      sbo_daily_report: {
+        Row: {
+          bankroll_end: number | null
+          bankroll_start: number | null
+          best_strategy: string | null
+          best_strategy_roi: number | null
+          created_at: string
+          id: string
+          losses: number | null
+          report_date: string
+          roi_pct: number | null
+          stop_loss_hit: boolean | null
+          total_bets: number | null
+          total_profit: number | null
+          total_wagered: number | null
+          user_id: string
+          wins: number | null
+        }
+        Insert: {
+          bankroll_end?: number | null
+          bankroll_start?: number | null
+          best_strategy?: string | null
+          best_strategy_roi?: number | null
+          created_at?: string
+          id?: string
+          losses?: number | null
+          report_date?: string
+          roi_pct?: number | null
+          stop_loss_hit?: boolean | null
+          total_bets?: number | null
+          total_profit?: number | null
+          total_wagered?: number | null
+          user_id: string
+          wins?: number | null
+        }
+        Update: {
+          bankroll_end?: number | null
+          bankroll_start?: number | null
+          best_strategy?: string | null
+          best_strategy_roi?: number | null
+          created_at?: string
+          id?: string
+          losses?: number | null
+          report_date?: string
+          roi_pct?: number | null
+          stop_loss_hit?: boolean | null
+          total_bets?: number | null
+          total_profit?: number | null
+          total_wagered?: number | null
+          user_id?: string
+          wins?: number | null
         }
         Relationships: []
       }
@@ -61967,6 +62150,45 @@ export type Database = {
           send_type?: string | null
           sent_at?: string | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      sbo_strategy_performance: {
+        Row: {
+          current_weight: number | null
+          id: string
+          last_updated: string | null
+          losses: number | null
+          roi_pct: number | null
+          strategy: string
+          total_bets: number | null
+          total_profit: number | null
+          user_id: string
+          wins: number | null
+        }
+        Insert: {
+          current_weight?: number | null
+          id?: string
+          last_updated?: string | null
+          losses?: number | null
+          roi_pct?: number | null
+          strategy: string
+          total_bets?: number | null
+          total_profit?: number | null
+          user_id: string
+          wins?: number | null
+        }
+        Update: {
+          current_weight?: number | null
+          id?: string
+          last_updated?: string | null
+          losses?: number | null
+          roi_pct?: number | null
+          strategy?: string
+          total_bets?: number | null
+          total_profit?: number | null
+          user_id?: string
+          wins?: number | null
         }
         Relationships: []
       }

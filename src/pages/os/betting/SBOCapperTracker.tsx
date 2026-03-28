@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
-import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap, Crown, DollarSign, Brain, ShieldAlert } from 'lucide-react';
+import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap, Crown, DollarSign, Brain, ShieldAlert, Banknote, BarChart3, Lock, PlayCircle, PauseCircle, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
@@ -455,6 +456,320 @@ function TopPlayCard({ play, rank }: { play: any; rank: number }) {
   );
 }
 
+// ─── Profit Center Panel ──────────────────────────────────────────────
+function ProfitCenter({ bankroll, onBankrollChange }: { bankroll: number; onBankrollChange: (v: number) => void }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [placing, setPlacing] = useState(false);
+  const [settling, setSettling] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [lockPlay, setLockPlay] = useState<any>(null);
+  const [lockLoading, setLockLoading] = useState(false);
+
+  const { data: wallet } = useQuery({
+    queryKey: ['sbo-wallet', user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_betting_wallet').select('*').eq('user_id', user?.id).single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: bets = [] } = useQuery({
+    queryKey: ['sbo-bet-log', user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_bet_log').select('*').eq('user_id', user?.id).order('placed_at', { ascending: false }).limit(50);
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: strategies = [] } = useQuery({
+    queryKey: ['sbo-strategies', user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_strategy_performance').select('*').eq('user_id', user?.id).order('roi_pct', { ascending: false });
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: reports = [] } = useQuery({
+    queryKey: ['sbo-daily-reports', user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_daily_report').select('*').eq('user_id', user?.id).order('report_date', { ascending: false }).limit(14);
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const refetchProfit = () => {
+    qc.invalidateQueries({ queryKey: ['sbo-wallet'] });
+    qc.invalidateQueries({ queryKey: ['sbo-bet-log'] });
+    qc.invalidateQueries({ queryKey: ['sbo-strategies'] });
+    qc.invalidateQueries({ queryKey: ['sbo-daily-reports'] });
+  };
+
+  const runAutoBet = async () => {
+    setPlacing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-auto-bet', { body: { mode: 'auto_bet', bankroll, min_confidence: 70 } });
+      if (error) throw error;
+      if (!data.success) { toast.error(data.reason || 'No bets placed'); return; }
+      toast.success(`🎰 ${data.bets_placed} bets placed ($${data.total_staked} wagered)`);
+      if (data.lock_play) toast.success(`🔒 LOCK: ${data.lock_play.player} ${data.lock_play.direction} ${data.lock_play.line}`);
+      refetchProfit();
+    } catch (err: any) { toast.error(err.message); } finally { setPlacing(false); }
+  };
+
+  const settleBets = async () => {
+    setSettling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-auto-bet', { body: { mode: 'settle' } });
+      if (error) throw error;
+      toast.success(`Settled ${data.settled}: ${data.wins}W/${data.losses}L | P/L: $${data.profit}`);
+      refetchProfit();
+    } catch (err: any) { toast.error(err.message); } finally { setSettling(false); }
+  };
+
+  const generateReport = async () => {
+    setReportLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-auto-bet', { body: { mode: 'daily_report' } });
+      if (error) throw error;
+      toast.success(`📊 Report: ${data.report.wins}W/${data.report.losses}L | ROI: ${data.report.roi}`);
+      refetchProfit();
+    } catch (err: any) { toast.error(err.message); } finally { setReportLoading(false); }
+  };
+
+  const getLockPlay = async () => {
+    setLockLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-auto-bet', { body: { mode: 'lock_play' } });
+      if (error) throw error;
+      if (!data.success) { toast.error(data.reason); return; }
+      setLockPlay(data.lock_play);
+      toast.success(`🔒 Lock play: ${data.lock_play.player_name}`);
+    } catch (err: any) { toast.error(err.message); } finally { setLockLoading(false); }
+  };
+
+  const adjustWeights = async () => {
+    try {
+      const { error } = await supabase.functions.invoke('sbo-auto-bet', { body: { mode: 'adjust_weights' } });
+      if (error) throw error;
+      toast.success('Strategy weights auto-adjusted');
+      refetchProfit();
+    } catch (err: any) { toast.error(err.message); }
+  };
+
+  const totalProfit = wallet?.total_profit || 0;
+  const roi = wallet?.total_wagered > 0 ? (totalProfit / wallet.total_wagered * 100).toFixed(1) : '0.0';
+  const winRate = (wallet?.wins || 0) + (wallet?.losses || 0) > 0
+    ? ((wallet.wins / (wallet.wins + wallet.losses)) * 100).toFixed(1) : '—';
+  const pendingBets = bets.filter((b: any) => b.result === 'pending');
+  const todayBets = bets.filter((b: any) => b.game_date === new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' }));
+
+  return (
+    <div className="space-y-4">
+      {/* Wallet KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+        <Card className="border-emerald-500/20"><CardContent className="p-3 text-center">
+          <Banknote className="h-4 w-4 mx-auto text-emerald-400 mb-1" />
+          <p className="text-xl font-black text-emerald-400">${(wallet?.bankroll || bankroll).toFixed(0)}</p>
+          <p className="text-[10px] text-muted-foreground">Bankroll</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className={`text-xl font-black ${totalProfit >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>{totalProfit >= 0 ? '+' : ''}${totalProfit.toFixed(2)}</p>
+          <p className="text-[10px] text-muted-foreground">Total P/L</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className={`text-xl font-black ${parseFloat(roi) > 0 ? 'text-emerald-400' : 'text-destructive'}`}>{roi}%</p>
+          <p className="text-[10px] text-muted-foreground">ROI</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-xl font-black">{winRate}%</p>
+          <p className="text-[10px] text-muted-foreground">Win Rate</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-xl font-black">{wallet?.total_bets || 0}</p>
+          <p className="text-[10px] text-muted-foreground">Total Bets</p>
+        </CardContent></Card>
+        <Card><CardContent className="p-3 text-center">
+          <p className="text-xl font-black text-amber-400">{pendingBets.length}</p>
+          <p className="text-[10px] text-muted-foreground">Pending</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Action buttons */}
+      <div className="flex gap-2 flex-wrap">
+        <Button size="sm" onClick={runAutoBet} disabled={placing} className="gap-1.5 bg-gradient-to-r from-emerald-600 to-green-600">
+          {placing ? <Loader2 className="h-3 w-3 animate-spin" /> : <PlayCircle className="h-3 w-3" />}
+          {placing ? 'Placing...' : '🎰 Auto Bet'}
+        </Button>
+        <Button size="sm" variant="outline" onClick={settleBets} disabled={settling} className="gap-1.5">
+          {settling ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+          💰 Settle
+        </Button>
+        <Button size="sm" variant="outline" onClick={getLockPlay} disabled={lockLoading} className="gap-1.5">
+          {lockLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Lock className="h-3 w-3" />}
+          🔒 Lock Play
+        </Button>
+        <Button size="sm" variant="outline" onClick={generateReport} disabled={reportLoading} className="gap-1.5">
+          {reportLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <BarChart3 className="h-3 w-3" />}
+          📊 Report
+        </Button>
+        <Button size="sm" variant="ghost" onClick={adjustWeights} className="gap-1.5 text-xs">
+          <Brain className="h-3 w-3" /> Auto-Adjust
+        </Button>
+      </div>
+
+      {/* Lock Play */}
+      {lockPlay && (
+        <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-amber-900/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">🔒</span>
+              <div className="flex-1">
+                <p className="text-xs text-amber-400 font-semibold uppercase">Daily Lock Play</p>
+                <p className="text-lg font-black">{lockPlay.player_name}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className="text-[10px]">{lockPlay.stat_type}</Badge>
+                  <Badge className={`text-[10px] ${lockPlay.direction === 'OVER' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}`}>
+                    {lockPlay.direction} {lockPlay.line}
+                  </Badge>
+                  <span className="text-xs font-bold">Score: {lockPlay.composite_score}</span>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-black text-emerald-400">${lockPlay.bet_amount}</p>
+                <p className="text-[10px] text-muted-foreground">{lockPlay.bet_pct?.toFixed(1)}% bankroll</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Strategy Analyzer */}
+      {strategies.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="h-4 w-4 text-blue-400" /> Strategy Performance</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            {strategies.map((s: any) => {
+              const color = s.strategy === 'SHARP' ? 'purple' : s.strategy === 'VALUE' ? 'emerald' : 'blue';
+              return (
+                <Card key={s.id} className={`border-${color}-500/20`}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant="outline" className={`text-[10px] text-${color}-400 border-${color}-400/30`}>
+                        {s.strategy === 'SHARP' ? '🧠' : s.strategy === 'VALUE' ? '💰' : '📊'} {s.strategy}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">Weight: {(s.current_weight * 100).toFixed(0)}%</span>
+                    </div>
+                    <p className={`text-xl font-black ${(s.roi_pct || 0) > 0 ? 'text-emerald-400' : 'text-destructive'}`}>{s.roi_pct > 0 ? '+' : ''}{s.roi_pct}% ROI</p>
+                    <p className="text-[10px] text-muted-foreground">{s.wins}W/{s.losses}L · ${(s.total_profit || 0).toFixed(2)} P/L</p>
+                    <Progress value={Math.max(0, Math.min(100, 50 + (s.roi_pct || 0)))} className="h-1 mt-2" />
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Bets */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold flex items-center gap-2"><Activity className="h-4 w-4" /> Recent Bets</h3>
+        {bets.length === 0 ? (
+          <Card className="border-dashed"><CardContent className="p-6 text-center text-sm text-muted-foreground">
+            No bets placed yet. Click 🎰 Auto Bet to start.
+          </CardContent></Card>
+        ) : bets.slice(0, 20).map((b: any) => (
+          <Card key={b.id} className={b.is_lock_play ? 'border-amber-500/20' : ''}>
+            <CardContent className="p-3 flex items-center justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="font-medium text-sm">{b.player_name}</span>
+                  <Badge variant="outline" className="text-[10px]">{b.stat_type}</Badge>
+                  <Badge variant="outline" className={`text-[10px] ${b.direction === 'OVER' ? 'text-emerald-400 border-emerald-400/30' : 'text-blue-400 border-blue-400/30'}`}>{b.direction} {b.line}</Badge>
+                  {b.is_lock_play && <Badge className="text-[8px] bg-amber-500/20 text-amber-400 border-amber-500/30">🔒 LOCK</Badge>}
+                  {b.auto_placed && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 Auto</Badge>}
+                  <Badge variant="outline" className="text-[8px]">{b.strategy}</Badge>
+                </div>
+                <div className="text-[10px] text-muted-foreground mt-0.5">{new Date(b.placed_at).toLocaleString()}</div>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xs font-medium">${b.stake}</p>
+                {b.result === 'pending' ? (
+                  <Badge variant="secondary" className="text-[10px]">⏳ Pending</Badge>
+                ) : (
+                  <div>
+                    <Badge variant={b.result === 'won' ? 'default' : 'destructive'} className="text-[10px]">
+                      {b.result === 'won' ? '✅' : b.result === 'push' ? '↔️' : '❌'} {b.result}
+                    </Badge>
+                    <p className={`text-[10px] font-bold ${(b.profit || 0) >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+                      {b.profit >= 0 ? '+' : ''}${(b.profit || 0).toFixed(2)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Daily Reports */}
+      {reports.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Daily Reports</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {reports.slice(0, 7).map((r: any) => (
+              <Card key={r.id} className={r.stop_loss_hit ? 'border-destructive/30' : ''}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold">{r.report_date}</span>
+                    {r.stop_loss_hit && <Badge variant="destructive" className="text-[8px]">⛔ Stop Loss</Badge>}
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px]">
+                    <span>{r.wins}W/{r.losses}L</span>
+                    <span className={`font-bold ${r.total_profit >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>
+                      {r.total_profit >= 0 ? '+' : ''}${r.total_profit?.toFixed(2)}
+                    </span>
+                    <span className="text-muted-foreground">ROI: {r.roi_pct}%</span>
+                    {r.best_strategy && <Badge variant="outline" className="text-[8px]">Best: {r.best_strategy}</Badge>}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Risk Settings */}
+      <Card>
+        <CardContent className="p-4">
+          <h4 className="text-xs font-semibold mb-3 flex items-center gap-2"><ShieldAlert className="h-3.5 w-3.5 text-amber-400" /> Risk Controls</h4>
+          <div className="grid grid-cols-3 gap-3 text-xs">
+            <div>
+              <p className="text-muted-foreground text-[10px]">Max Daily Loss</p>
+              <p className="font-bold">{wallet?.max_daily_loss_pct || 10}%</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-[10px]">Max Bets/Day</p>
+              <p className="font-bold">{wallet?.max_bets_per_day || 15}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground text-[10px]">Streak Scaling</p>
+              <p className="font-bold">{wallet?.streak_multiplier ? '✅ On' : '❌ Off'}</p>
+            </div>
+          </div>
+          <div className="mt-2 text-[10px] text-muted-foreground">
+            Today: {todayBets.length}/{wallet?.max_bets_per_day || 15} bets
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────
 export default function SBOCapperTracker() {
   const qc = useQueryClient();
@@ -682,8 +997,9 @@ export default function SBOCapperTracker() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="top-plays">
-          <TabsList className="w-full grid grid-cols-7">
+        <Tabs defaultValue="profit">
+          <TabsList className="w-full grid grid-cols-8">
+            <TabsTrigger value="profit" className="text-xs gap-1"><Banknote className="h-3 w-3" /> Profit</TabsTrigger>
             <TabsTrigger value="top-plays" className="text-xs gap-1"><Crown className="h-3 w-3" /> Top Plays</TabsTrigger>
             <TabsTrigger value="signals" className="text-xs gap-1"><Target className="h-3 w-3" /> Signals</TabsTrigger>
             <TabsTrigger value="feed" className="text-xs gap-1"><Activity className="h-3 w-3" /> Feed</TabsTrigger>
@@ -692,6 +1008,11 @@ export default function SBOCapperTracker() {
             <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
+
+          {/* ── PROFIT CENTER TAB ── */}
+          <TabsContent value="profit" className="mt-3">
+            <ProfitCenter bankroll={bankroll} onBankrollChange={setBankroll} />
+          </TabsContent>
 
           {/* ── TOP PLAYS TAB ── */}
           <TabsContent value="top-plays" className="mt-3 space-y-3">
