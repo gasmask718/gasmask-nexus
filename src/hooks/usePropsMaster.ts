@@ -248,7 +248,9 @@ export function usePropMutations() {
 
   const runAnalysis = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke('sbo-run-analysis');
+      const { data, error } = await supabase.functions.invoke('sbo-run-analysis', {
+        body: {},
+      });
       if (error) throw error;
       // After analysis, re-sync predictions to props_master
       await supabase.functions.invoke('sbo-sync-props-master');
