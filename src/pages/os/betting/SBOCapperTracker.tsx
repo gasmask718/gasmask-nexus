@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap, Crown, DollarSign, Brain, ShieldAlert, Banknote, BarChart3, Lock, PlayCircle, PauseCircle, RefreshCw, Layers } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { CapperPicksFeed } from '@/components/betting/CapperPicksFeed';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
