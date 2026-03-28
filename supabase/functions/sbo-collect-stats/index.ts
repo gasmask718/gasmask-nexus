@@ -16,22 +16,23 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // 1. Paginated fetch of ALL props missing stats
+    // 1. Paginated fetch of ALL props missing stats (cursor-based using id)
     const PAGE = 1000;
     let missing: any[] = [];
-    let from = 0;
+    let lastId = '00000000-0000-0000-0000-000000000000';
     while (true) {
       const { data, error } = await supabase
         .from('props_master')
         .select('id, player_name, stat_type, line, game_date')
         .is('season_avg', null)
-        .order('game_date', { ascending: false })
-        .range(from, from + PAGE - 1);
+        .gt('id', lastId)
+        .order('id', { ascending: true })
+        .limit(PAGE);
       if (error) throw error;
       if (!data || data.length === 0) break;
       missing = missing.concat(data);
+      lastId = data[data.length - 1].id;
       if (data.length < PAGE) break;
-      from += PAGE;
     }
 
     if (missing.length === 0) {
