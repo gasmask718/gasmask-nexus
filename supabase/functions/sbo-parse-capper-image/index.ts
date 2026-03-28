@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const SPORTS_CONTEXT = `
@@ -33,7 +33,18 @@ serve(async (req) => {
   }
 
   try {
-    const { image, capper_id, capper_name, platform } = await req.json();
+    const rawText = await req.text();
+    let body: Record<string, unknown> = {};
+    try { body = JSON.parse(rawText); } catch { body = {}; }
+
+    const image = body.image as string;
+    const capper_id = body.capper_id as string | undefined;
+    const capper_name = body.capper_name as string | undefined;
+    const platform = body.platform as string | undefined;
+    const source_group = body.source_group as string | undefined;
+    const posted_by = body.posted_by as string | undefined;
+    const group_type = body.group_type as string || 'direct';
+
     if (!image) throw new Error('No image provided');
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -43,7 +54,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Use AI to parse the capper pick image
+    // Use AI to parse the capper pick image — now also extracts capper_name
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -58,35 +69,52 @@ serve(async (req) => {
             role: 'system',
             content: `You are a multi-sport betting pick parser. Extract ALL picks from the image.
 
-Return a JSON array of objects with these EXACT fields:
-- player_name (string or null for game bets)
-- team (string, team name or abbreviation)
-- opponent (string or null)
-- sport (string: "NBA", "WNBA", "NFL", "MLB", "NHL", "Soccer", "UFC", "Tennis", "NCAAB", "NCAAF")
-- league (string or null, e.g. "Premier League", "MLS", "UFC 300")
-- stat_type (string, normalized lowercase)
-- line (number or null)
-- direction (string: "OVER", "UNDER", "WIN", "LOSE", "YES", "NO")
-- odds (string or null, e.g. "-110")
-- bet_type (string: "prop", "moneyline", "spread", "total", "futures", "parlay")
-- confidence_note (string or null, any confidence/lock/fire emoji or text from capper)
-- game_date (string YYYY-MM-DD if visible, else null)
+CRITICAL: Also extract the CAPPER NAME (the person who made the picks) if visible.
+Look for capper identity in:
+- Screenshot headers/titles (e.g. "VegasKing 🔥", "@SharpPlays")
+- Watermarks or logos
+- Username/handle displayed in the image
+- Account name at top of screenshot
+- Any attribution text (e.g. "Picks by...", "From: ...")
+
+Return a JSON object with these EXACT fields:
+{
+  "capper_name": "string or null — the name/handle of the person who made these picks",
+  "capper_handle": "string or null — @username if visible",
+  "picks": [
+    {
+      "player_name": "string or null for game bets",
+      "team": "string, team name or abbreviation",
+      "opponent": "string or null",
+      "sport": "string: NBA, WNBA, NFL, MLB, NHL, Soccer, UFC, Tennis, NCAAB, NCAAF",
+      "league": "string or null",
+      "stat_type": "string, normalized lowercase",
+      "line": "number or null",
+      "direction": "string: OVER, UNDER, WIN, LOSE, YES, NO",
+      "odds": "string or null, e.g. -110",
+      "bet_type": "string: prop, moneyline, spread, total, futures, parlay",
+      "confidence_note": "string or null",
+      "game_date": "string YYYY-MM-DD if visible, else null"
+    }
+  ]
+}
 
 ${SPORTS_CONTEXT}
 
 RULES:
-1. Return ONLY the JSON array, no markdown
-2. Auto-detect the sport from context clues (player names, stat types, teams)
-3. Normalize stat types to lowercase (e.g. "Points" → "points", "Passing Yards" → "passing_yards")
-4. For parlays, return each leg as a separate object
+1. Return ONLY the JSON object, no markdown
+2. Auto-detect the sport from context clues
+3. Normalize stat types to lowercase
+4. For parlays, return each leg as a separate pick
 5. If confidence/conviction is indicated (🔒, 💰, "LOCK", "MAX PLAY"), note it
 6. If you can't parse something, still include it with what you can extract
-7. Return empty array [] if no picks found`
+7. Return empty picks array [] if no picks found
+8. ALWAYS try to extract capper_name — this is critical for attribution`
           },
           {
             role: 'user',
             content: [
-              { type: 'text', text: `Parse all picks from this ${platform || 'capper'} screenshot. Extract every bet/pick visible.` },
+              { type: 'text', text: `Parse all picks from this ${platform || 'capper'} screenshot. Extract every bet/pick visible AND the capper name/identity if shown.` },
               { type: 'image_url', image_url: { url: image.startsWith('data:') ? image : `data:image/jpeg;base64,${image}` } }
             ]
           }
@@ -102,19 +130,32 @@ RULES:
     }
 
     const aiData = await aiResponse.json();
-    const content = aiData.choices?.[0]?.message?.content || '[]';
+    const content = aiData.choices?.[0]?.message?.content || '{}';
 
-    let picks: any[] = [];
+    let parsed: any;
     try {
       const cleaned = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      picks = JSON.parse(cleaned);
+      parsed = JSON.parse(cleaned);
     } catch {
       console.error('Failed to parse AI response:', content);
       throw new Error('AI could not extract picks from the image');
     }
 
-    if (!Array.isArray(picks) || picks.length === 0) {
-      return new Response(JSON.stringify({ success: true, count: 0, picks: [], message: 'No picks found in image' }), {
+    // Handle both old (array) and new (object with picks) formats
+    let picks: any[];
+    let extractedCapperName: string | null = null;
+    let extractedCapperHandle: string | null = null;
+
+    if (Array.isArray(parsed)) {
+      picks = parsed;
+    } else {
+      picks = parsed.picks || [];
+      extractedCapperName = parsed.capper_name || null;
+      extractedCapperHandle = parsed.capper_handle || null;
+    }
+
+    if (picks.length === 0) {
+      return new Response(JSON.stringify({ success: true, count: 0, picks: [], extracted_capper_name: extractedCapperName, message: 'No picks found in image' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -130,11 +171,57 @@ RULES:
       return { ...p, parse_confidence: Math.max(0, confidence) };
     });
 
-    // Insert into sbo_capper_picks if capper_id provided
-    if (capper_id) {
+    // --- CAPPER RESOLUTION LOGIC ---
+    // For aggregator groups: use extracted capper name from image
+    // For direct groups: use the provided capper_id
+    let resolvedCapperId = capper_id || null;
+
+    if (group_type === 'aggregator' && extractedCapperName) {
+      // Try to find existing capper by name
+      const { data: existingCapper } = await supabase
+        .from('sbo_cappers')
+        .select('id, name')
+        .ilike('name', extractedCapperName.trim())
+        .maybeSingle();
+
+      if (existingCapper) {
+        resolvedCapperId = existingCapper.id;
+      } else {
+        // Auto-create the capper
+        const { data: newCapper, error: createErr } = await supabase
+          .from('sbo_cappers')
+          .insert({
+            name: extractedCapperName.trim(),
+            source: 'image_extract',
+            source_handle: extractedCapperHandle || null,
+            tier: 'unproven',
+            confidence_grade: 'D',
+            is_active: true,
+            total_picks: 0,
+            group_type: 'aggregator',
+          })
+          .select('id')
+          .single();
+
+        if (createErr) {
+          // Retry — possible race condition
+          const { data: retry } = await supabase
+            .from('sbo_cappers')
+            .select('id')
+            .ilike('name', extractedCapperName.trim())
+            .maybeSingle();
+          resolvedCapperId = retry?.id || capper_id || null;
+        } else {
+          resolvedCapperId = newCapper.id;
+        }
+      }
+    }
+
+    // Insert picks
+    if (resolvedCapperId) {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
       const rows = scoredPicks.map((p: any) => ({
-        capper_id,
+        capper_id: resolvedCapperId,
         pick_text: [p.player_name, p.direction, p.line, p.stat_type].filter(Boolean).join(' '),
         player_name: p.player_name || null,
         team: p.team || null,
@@ -150,6 +237,9 @@ RULES:
         parsed_by_ai: true,
         game_date: p.game_date || today,
         result: 'pending',
+        source_group: source_group || null,
+        posted_by: posted_by || null,
+        extracted_capper_name: extractedCapperName || null,
       }));
 
       const { data: inserted, error: insertError } = await supabase.from('sbo_capper_picks').insert(rows).select('id, player_name, prop_type, line, game_date, sport');
@@ -158,7 +248,7 @@ RULES:
         throw new Error(`Database error: ${insertError.message}`);
       }
 
-      // ── Auto-match to props_master ──
+      // Auto-match to props_master
       if (inserted && inserted.length > 0) {
         const dates = [...new Set(inserted.map((p: any) => p.game_date).filter(Boolean))];
         let allProps: any[] = [];
@@ -193,10 +283,10 @@ RULES:
       // Update capper sports list
       const sports = [...new Set(scoredPicks.map((p: any) => p.sport).filter(Boolean))];
       if (sports.length > 0) {
-        const { data: capper } = await supabase.from('sbo_cappers').select('sports').eq('id', capper_id).single();
+        const { data: capper } = await supabase.from('sbo_cappers').select('sports').eq('id', resolvedCapperId).single();
         const existingSports = (capper?.sports as string[]) || [];
         const allSports = [...new Set([...existingSports, ...sports])];
-        await supabase.from('sbo_cappers').update({ sports: allSports }).eq('id', capper_id);
+        await supabase.from('sbo_cappers').update({ sports: allSports }).eq('id', resolvedCapperId);
       }
     }
 
@@ -204,6 +294,10 @@ RULES:
       success: true,
       count: scoredPicks.length,
       picks: scoredPicks,
+      extracted_capper_name: extractedCapperName,
+      extracted_capper_handle: extractedCapperHandle,
+      resolved_capper_id: resolvedCapperId,
+      group_type,
       needs_review: scoredPicks.filter((p: any) => p.parse_confidence < 70).length,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
