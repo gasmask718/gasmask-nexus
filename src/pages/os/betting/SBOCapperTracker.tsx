@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
@@ -43,109 +43,281 @@ const gradeColors: Record<string, string> = {
   D: 'text-red-400 border-red-400/30 bg-red-400/10',
 };
 
-// ─── Photo Upload Dialog ──────────────────────────────────────────────
+// ─── Bulk Photo Upload Dialog ──────────────────────────────────────────
+interface QueueImage {
+  id: string;
+  file: File;
+  preview: string;
+  base64: string;
+  status: 'queued' | 'parsing' | 'done' | 'failed';
+  picks: any[];
+  error?: string;
+  needsReview: number;
+}
+
+const MAX_BATCH = 20;
+const MAX_PARALLEL = 2;
+
 function PhotoUploadDialog({ cappers, onAdded }: { cappers: any[]; onAdded: () => void }) {
   const [open, setOpen] = useState(false);
   const [capperId, setCapperId] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [parsedPicks, setParsedPicks] = useState<any[]>([]);
-  const [step, setStep] = useState<'upload' | 'review'>('upload');
+  const [images, setImages] = useState<QueueImage[]>([]);
+  const [processing, setProcessing] = useState(false);
+  const [step, setStep] = useState<'upload' | 'progress' | 'results'>('upload');
+  const [autoProcess, setAutoProcess] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef(false);
 
-  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { toast.error('Max 10MB'); return; }
-    const reader = new FileReader();
-    reader.onload = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
+  const stats = {
+    total: images.length,
+    completed: images.filter(i => i.status === 'done').length,
+    failed: images.filter(i => i.status === 'failed').length,
+    inProgress: images.filter(i => i.status === 'parsing').length,
+    queued: images.filter(i => i.status === 'queued').length,
+    totalPicks: images.reduce((s, i) => s + (Array.isArray(i.picks) ? i.picks.length : 0), 0),
+    needsReview: images.reduce((s, i) => s + (i.needsReview || 0), 0),
+  };
+  const progressPct = stats.total > 0 ? Math.round(((stats.completed + stats.failed) / stats.total) * 100) : 0;
+
+  const handleFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length + images.length > MAX_BATCH) {
+      toast.error(`Max ${MAX_BATCH} images per batch`);
+      return;
+    }
+    const valid = files.filter(f => {
+      if (!f.type.startsWith('image/')) { toast.error(`${f.name} is not an image`); return false; }
+      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name} exceeds 10MB`); return false; }
+      return true;
+    });
+    valid.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        setImages(prev => [...prev, {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          preview: base64,
+          base64,
+          status: 'queued',
+          picks: [],
+          needsReview: 0,
+        }]);
+      };
+      reader.readAsDataURL(file);
+    });
+    if (inputRef.current) inputRef.current.value = '';
   };
 
-  const handleParse = async () => {
-    if (!preview || !capperId) { toast.error('Select a capper and upload an image'); return; }
-    setUploading(true);
+  const removeImage = (id: string) => setImages(prev => prev.filter(i => i.id !== id));
+
+  const parseOne = useCallback(async (img: QueueImage): Promise<QueueImage> => {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60000);
       const { data, error } = await supabase.functions.invoke('sbo-parse-capper-image', {
-        body: { image: preview, capper_id: capperId },
+        body: { image: img.base64, capper_id: capperId },
       });
+      clearTimeout(timeout);
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || 'Parse failed');
-      setParsedPicks(data.picks || []);
-      setStep('review');
-      toast.success(`Parsed ${data.count} picks (${data.needs_review} need review)`);
-      onAdded();
+      const picks = Array.isArray(data.picks) ? data.picks : [];
+      return { ...img, status: 'done', picks, needsReview: picks.filter((p: any) => p.parse_confidence < 70).length };
     } catch (err: any) {
-      toast.error(err.message || 'Failed to parse image');
-    } finally { setUploading(false); }
+      return { ...img, status: 'failed', error: err.message || 'Unknown error' };
+    }
+  }, [capperId]);
+
+  const runQueue = useCallback(async () => {
+    if (!capperId) { toast.error('Select a capper first'); return; }
+    setProcessing(true);
+    setStep('progress');
+    abortRef.current = false;
+
+    const queue = [...images.filter(i => i.status === 'queued' || i.status === 'failed')];
+    let idx = 0;
+
+    const processNext = async (): Promise<void> => {
+      if (abortRef.current || idx >= queue.length) return;
+      const current = queue[idx++];
+      setImages(prev => prev.map(i => i.id === current.id ? { ...i, status: 'parsing' } : i));
+      const result = await parseOne(current);
+      setImages(prev => prev.map(i => i.id === result.id ? result : i));
+    };
+
+    // Run with controlled concurrency
+    const workers = Array.from({ length: Math.min(MAX_PARALLEL, queue.length) }, () => {
+      const work = async (): Promise<void> => {
+        while (idx < queue.length && !abortRef.current) {
+          await processNext();
+        }
+      };
+      return work();
+    });
+
+    await Promise.all(workers);
+    setProcessing(false);
+    setStep('results');
+    toast.success('Batch processing complete');
+    onAdded();
+  }, [images, capperId, parseOne, onAdded]);
+
+  const retryFailed = () => {
+    setImages(prev => prev.map(i => i.status === 'failed' ? { ...i, status: 'queued', error: undefined } : i));
+    setTimeout(() => runQueue(), 100);
   };
 
-  const reset = () => { setPreview(null); setParsedPicks([]); setStep('upload'); setCapperId(''); if (inputRef.current) inputRef.current.value = ''; };
+  const reset = () => {
+    setImages([]);
+    setStep('upload');
+    setCapperId('');
+    setProcessing(false);
+    abortRef.current = false;
+    if (inputRef.current) inputRef.current.value = '';
+  };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { abortRef.current = true; reset(); } }}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
           <Camera className="h-3 w-3" /> AI Photo Parse
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>📸 AI Capper Pick Parser</DialogTitle></DialogHeader>
-        {step === 'upload' ? (
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>📸 Bulk Capper Pick Parser</DialogTitle>
+        </DialogHeader>
+
+        {/* Step 1: Upload */}
+        {step === 'upload' && (
           <div className="space-y-3">
-            <div><Label className="text-xs">Capper</Label>
+            <div>
+              <Label className="text-xs">Capper</Label>
               <Select value={capperId} onValueChange={setCapperId}>
                 <SelectTrigger><SelectValue placeholder="Select capper" /></SelectTrigger>
                 <SelectContent>{cappers.map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Input ref={inputRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-              {preview ? (
-                <div className="relative">
-                  <img src={preview} alt="Preview" className="w-full rounded-lg border max-h-60 object-contain bg-muted" />
-                  <Button size="sm" variant="ghost" className="absolute top-1 right-1 h-6 text-xs" onClick={() => { setPreview(null); if (inputRef.current) inputRef.current.value = ''; }}>✕</Button>
+
+            <input ref={inputRef} type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
+
+            <Button variant="outline" className="w-full h-24 border-dashed flex-col gap-2" onClick={() => inputRef.current?.click()}>
+              <Upload className="h-6 w-6 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Upload multiple screenshots (max {MAX_BATCH})</span>
+            </Button>
+
+            {images.length > 0 && (
+              <>
+                <div className="flex items-center justify-between">
+                  <Badge variant="outline" className="text-xs">{images.length} images queued</Badge>
+                  <Button variant="ghost" size="sm" className="text-xs h-6 text-destructive" onClick={() => setImages([])}>Clear all</Button>
                 </div>
-              ) : (
-                <Button variant="outline" className="w-full h-32 border-dashed flex-col gap-2" onClick={() => inputRef.current?.click()}>
-                  <Upload className="h-6 w-6 text-muted-foreground" /><span className="text-sm text-muted-foreground">Upload screenshot of picks</span>
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 max-h-48 overflow-y-auto">
+                  {images.map(img => (
+                    <div key={img.id} className="relative group">
+                      <img src={img.preview} alt="" className="w-full aspect-square object-cover rounded-md border" />
+                      <button
+                        onClick={() => removeImage(img.id)}
+                        className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full h-4 w-4 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <input type="checkbox" checked={autoProcess} onChange={e => setAutoProcess(e.target.checked)} className="rounded" />
+                  <span className="text-muted-foreground">Auto-run match + consensus after batch</span>
+                </div>
+                <Button onClick={runQueue} disabled={!capperId || images.length === 0} className="w-full">
+                  🧠 Parse {images.length} Images
                 </Button>
-              )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Step 2: Progress */}
+        {step === 'progress' && (
+          <div className="space-y-4">
+            <div className="text-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+              <p className="text-sm font-medium">Processing {stats.completed + stats.failed + stats.inProgress} / {stats.total} images…</p>
             </div>
-            <Button onClick={handleParse} disabled={!preview || !capperId || uploading} className="w-full">
-              {uploading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Parsing with AI…</> : '🧠 Parse Picks'}
+            <Progress value={progressPct} className="h-2" />
+            <div className="flex justify-center gap-4 text-xs">
+              <span className="text-emerald-500">✅ {stats.completed}</span>
+              <span className="text-amber-500">⏳ {stats.queued + stats.inProgress}</span>
+              <span className="text-destructive">❌ {stats.failed}</span>
+            </div>
+            <div className="space-y-1.5 max-h-48 overflow-y-auto">
+              {images.map(img => (
+                <div key={img.id} className="flex items-center gap-2 p-1.5 rounded border text-xs">
+                  <img src={img.preview} alt="" className="w-8 h-8 rounded object-cover" />
+                  <span className="flex-1 truncate text-muted-foreground">{img.file.name}</span>
+                  {img.status === 'parsing' && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+                  {img.status === 'done' && <CheckCircle className="h-3 w-3 text-emerald-500" />}
+                  {img.status === 'failed' && <XCircle className="h-3 w-3 text-destructive" />}
+                  {img.status === 'queued' && <Clock className="h-3 w-3 text-muted-foreground" />}
+                </div>
+              ))}
+            </div>
+            <Button variant="destructive" size="sm" onClick={() => { abortRef.current = true; }} className="w-full">
+              Stop Processing
             </Button>
           </div>
-        ) : (
+        )}
+
+        {/* Step 3: Results */}
+        {step === 'results' && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="text-xs">{parsedPicks.length} picks parsed</Badge>
-              <Badge variant="outline" className={`text-xs ${parsedPicks.some(p => p.parse_confidence < 70) ? 'text-amber-500 border-amber-500/30' : 'text-emerald-500 border-emerald-500/30'}`}>
-                {parsedPicks.filter(p => p.parse_confidence < 70).length} need review
-              </Badge>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <Card><CardContent className="p-2">
+                <div className="text-lg font-bold text-emerald-500">{stats.completed}</div>
+                <div className="text-[10px] text-muted-foreground">Parsed</div>
+              </CardContent></Card>
+              <Card><CardContent className="p-2">
+                <div className="text-lg font-bold">{stats.totalPicks}</div>
+                <div className="text-[10px] text-muted-foreground">Total Picks</div>
+              </CardContent></Card>
+              <Card><CardContent className="p-2">
+                <div className="text-lg font-bold text-amber-500">{stats.needsReview}</div>
+                <div className="text-[10px] text-muted-foreground">Need Review</div>
+              </CardContent></Card>
             </div>
-            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
-              {parsedPicks.map((p: any, i: number) => (
-                <Card key={i} className={p.parse_confidence < 70 ? 'border-amber-500/30' : ''}>
-                  <CardContent className="p-2.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className={`text-[10px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
-                      <Badge variant="outline" className="text-[10px]">{p.bet_type}</Badge>
-                      {p.parse_confidence < 70 && <AlertTriangle className="h-3 w-3 text-amber-500" />}
-                      <span className="text-[10px] text-muted-foreground ml-auto">{p.parse_confidence}% conf</span>
-                    </div>
-                    <div className="mt-1">
-                      <span className="text-sm font-medium">{p.player_name || p.team}</span>
-                      {p.direction && <Badge variant="outline" className={`ml-2 text-[10px] ${p.direction === 'OVER' || p.direction === 'WIN' ? 'text-emerald-500 border-emerald-500/30' : 'text-blue-500 border-blue-500/30'}`}>{p.direction}</Badge>}
-                      {p.line != null && <span className="ml-1 text-xs font-medium">{p.line}</span>}
-                      {p.stat_type && <span className="ml-1 text-xs text-muted-foreground">{p.stat_type}</span>}
-                    </div>
+
+            {stats.failed > 0 && (
+              <Button variant="outline" size="sm" onClick={retryFailed} className="w-full gap-1.5 text-xs">
+                <RefreshCw className="h-3 w-3" /> Retry {stats.failed} Failed
+              </Button>
+            )}
+
+            <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+              {images.filter(i => i.status === 'done' && i.picks.length > 0).map(img => (
+                <Card key={img.id} className="overflow-hidden">
+                  <div className="flex items-center gap-2 p-2 bg-muted/30 border-b">
+                    <img src={img.preview} alt="" className="w-6 h-6 rounded object-cover" />
+                    <span className="text-xs font-medium truncate flex-1">{img.file.name}</span>
+                    <Badge variant="outline" className="text-[10px]">{img.picks.length} picks</Badge>
+                    {img.needsReview > 0 && <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-500/30">{img.needsReview} review</Badge>}
+                  </div>
+                  <CardContent className="p-2 space-y-1">
+                    {img.picks.map((p: any, i: number) => (
+                      <div key={i} className="flex items-center gap-1.5 text-xs flex-wrap">
+                        <Badge className={`text-[9px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
+                        <span className="font-medium">{p.player_name || p.team}</span>
+                        {p.direction && <Badge variant="outline" className={`text-[9px] ${p.direction === 'OVER' || p.direction === 'WIN' ? 'text-emerald-500 border-emerald-500/30' : 'text-blue-500 border-blue-500/30'}`}>{p.direction}</Badge>}
+                        {p.line != null && <span className="text-[10px]">{p.line}</span>}
+                        {p.stat_type && <span className="text-[10px] text-muted-foreground">{p.stat_type}</span>}
+                        {p.parse_confidence < 70 && <AlertTriangle className="h-3 w-3 text-amber-500" />}
+                        <span className="text-[9px] text-muted-foreground ml-auto">{p.parse_confidence}%</span>
+                      </div>
+                    ))}
                   </CardContent>
                 </Card>
               ))}
             </div>
+
             <div className="flex gap-2">
-              <Button variant="outline" onClick={reset} className="flex-1">Upload Another</Button>
+              <Button variant="outline" onClick={reset} className="flex-1">Upload More</Button>
               <Button onClick={() => { setOpen(false); reset(); }} className="flex-1">Done ✅</Button>
             </div>
           </div>
