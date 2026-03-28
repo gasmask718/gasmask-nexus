@@ -490,7 +490,7 @@ serve(async (req) => {
         } else {
           // ── Player prop: 5-layer matching ──
           const playerNorm = normalizeName(pick.player_name || '');
-          const statNorm = normalizeStat(pick.stat_type || '');
+          const statNorm = normalizeStat(pick.prop_type || '');
 
           // LAYER 1: Exact match
           let match = extResults.find(r =>
