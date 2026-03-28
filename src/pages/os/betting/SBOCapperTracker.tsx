@@ -701,13 +701,13 @@ export default function SBOCapperTracker() {
               const wr = resolved.length > 0 ? ((wins / resolved.length) * 100) : 0;
 
               // Sport breakdown for this capper
-              const cSportBreakdown = capperPicks.reduce((acc: Record<string, { w: number; l: number }>, p: any) => {
+              const cSportBreakdown: Record<string, { w: number; l: number }> = capperPicks.reduce((acc: Record<string, { w: number; l: number }>, p: any) => {
                 const s = p.sport || 'NBA';
                 if (!acc[s]) acc[s] = { w: 0, l: 0 };
                 if (p.result === 'won') acc[s].w++;
                 else if (p.result === 'lost') acc[s].l++;
                 return acc;
-              }, {});
+              }, {} as Record<string, { w: number; l: number }>);
 
               return (
                 <Card key={c.id}>
