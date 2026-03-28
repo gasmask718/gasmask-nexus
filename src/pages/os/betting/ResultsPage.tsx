@@ -120,6 +120,9 @@ export default function ResultsPage() {
         <TabsContent value="external">
           <ExternalResultsPanel />
         </TabsContent>
+        <TabsContent value="rankings">
+          <CapperRankingsPanel />
+        </TabsContent>
       </Tabs>
     </div>
   );
