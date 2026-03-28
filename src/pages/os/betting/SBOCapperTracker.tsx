@@ -1019,9 +1019,10 @@ export default function SBOCapperTracker() {
 
         {/* Tabs */}
         <Tabs defaultValue="profit">
-          <TabsList className="w-full grid grid-cols-8">
+          <TabsList className="w-full grid grid-cols-9">
             <TabsTrigger value="profit" className="text-xs gap-1"><Banknote className="h-3 w-3" /> Profit</TabsTrigger>
             <TabsTrigger value="top-plays" className="text-xs gap-1"><Crown className="h-3 w-3" /> Top Plays</TabsTrigger>
+            <TabsTrigger value="markets" className="text-xs gap-1"><Layers className="h-3 w-3" /> Markets</TabsTrigger>
             <TabsTrigger value="signals" className="text-xs gap-1"><Target className="h-3 w-3" /> Signals</TabsTrigger>
             <TabsTrigger value="feed" className="text-xs gap-1"><Activity className="h-3 w-3" /> Feed</TabsTrigger>
             <TabsTrigger value="review" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" /> Review</TabsTrigger>
