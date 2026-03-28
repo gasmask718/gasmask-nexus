@@ -7,6 +7,10 @@ const corsHeaders = {
 
 const PAGE = 1000;
 
+function normalize(s: string): string {
+  return s.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '');
+}
+
 async function paginatedFetch(supabase: any, query: () => any) {
   let all: any[] = [];
   let offset = 0;
