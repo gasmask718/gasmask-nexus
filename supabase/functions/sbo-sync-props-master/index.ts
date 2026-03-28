@@ -1,22 +1,22 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-  const supabase = createClient(supabaseUrl, serviceKey);
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
 
   try {
-    console.log('🔄 Syncing sbo_player_props → props_master...');
+    console.log('🔄 Syncing sbo_player_props + predictions → props_master...');
 
-    // Fetch all props from sbo_player_props (paginated to bypass 1000 limit)
+    // ── 1. Fetch all props from sbo_player_props (paginated) ──
     let allProps: any[] = [];
     let offset = 0;
     const batchSize = 1000;
@@ -32,10 +32,9 @@ serve(async (req) => {
       if (data.length < batchSize) break;
       offset += batchSize;
     }
-
     console.log(`📦 Fetched ${allProps.length} props from sbo_player_props`);
 
-    // Also get existing predictions from sbo_predictions
+    // ── 2. Get predictions from sbo_predictions ──
     const { data: predictions } = await supabase
       .from('sbo_predictions')
       .select('player_name, prop_type, prediction, confidence, edge_score, reasoning, season_avg, last_5_avg, last_10_avg, hit_rate_pct, vs_opp_avg');
@@ -44,10 +43,33 @@ serve(async (req) => {
     for (const p of (predictions || [])) {
       predMap.set(`${p.player_name}|${p.prop_type}`, p);
     }
+    console.log(`🧠 Predictions from sbo_predictions: ${predMap.size}`);
 
-    // Transform and upsert into props_master
+    // ── 3. Also get predictions from sbo_unified_props (analysis output) ──
+    const { data: unifiedPreds } = await supabase
+      .from('sbo_unified_props')
+      .select('player_name, stat_type, ai_direction, ai_confidence, season_avg, l5_avg, l10_avg, edge_vs_line, platform, line');
+
+    const unifiedMap = new Map<string, any>();
+    for (const u of (unifiedPreds || [])) {
+      unifiedMap.set(`${u.player_name}|${u.stat_type}|${u.platform}|${u.line}`, u);
+    }
+    console.log(`📊 Unified props with predictions: ${unifiedMap.size}`);
+
+    // ── 4. Transform and upsert into props_master ──
     const upsertRows = allProps.map(p => {
       const pred = predMap.get(`${p.player_name}|${p.prop_type}`);
+      const unified = unifiedMap.get(`${p.player_name}|${p.prop_type}|${p.source}|${p.line}`);
+
+      // Prefer sbo_predictions, fallback to sbo_unified_props
+      const prediction = pred?.prediction
+        || (unified?.ai_direction === 'OVER' ? 'more' : unified?.ai_direction === 'UNDER' ? 'less' : null);
+      const confidence = pred?.confidence || unified?.ai_confidence || null;
+      const edgeScore = pred?.edge_score || unified?.edge_vs_line || null;
+      const seasonAvg = pred?.season_avg || unified?.season_avg || null;
+      const l5Avg = pred?.last_5_avg || unified?.l5_avg || null;
+      const l10Avg = pred?.last_10_avg || unified?.l10_avg || null;
+
       return {
         player_name: p.player_name,
         team: p.team || null,
@@ -60,13 +82,13 @@ serve(async (req) => {
         game_time: null,
         game_date: p.game_date,
         source: 'api',
-        prediction: pred?.prediction || null,
-        confidence_score: pred?.confidence || null,
-        edge_score: pred?.edge_score || null,
+        prediction,
+        confidence_score: confidence,
+        edge_score: edgeScore,
         reasoning_json: pred?.reasoning || null,
-        season_avg: pred?.season_avg || null,
-        last_5_avg: pred?.last_5_avg || null,
-        last_10_avg: pred?.last_10_avg || null,
+        season_avg: seasonAvg,
+        last_5_avg: l5Avg,
+        last_10_avg: l10Avg,
         hit_rate: pred?.hit_rate_pct || null,
         matchup_avg: pred?.vs_opp_avg || null,
         actual_result: p.actual_value || null,
@@ -76,44 +98,41 @@ serve(async (req) => {
       };
     });
 
-    // Upsert in chunks of 200
-    let inserted = 0;
-    let updated = 0;
+    // Upsert in chunks
+    let synced = 0;
     for (let i = 0; i < upsertRows.length; i += 200) {
       const chunk = upsertRows.slice(i, i + 200);
-      const { error, count } = await supabase
+      const { error } = await supabase
         .from('props_master')
-        .upsert(chunk, { 
+        .upsert(chunk, {
           onConflict: 'player_name,stat_type,line,platform,game_date',
-          ignoreDuplicates: false 
+          ignoreDuplicates: false,
         });
       if (error) {
-        console.error(`Chunk ${i} error:`, error.message);
-        // Try insert without upsert constraint - just insert ignoring dupes
-        const { error: insertErr } = await supabase
-          .from('props_master')
-          .insert(chunk);
-        if (insertErr && !insertErr.message.includes('duplicate')) {
-          console.error('Insert fallback error:', insertErr.message);
-        }
+        console.warn(`Chunk ${i} upsert error:`, error.message);
+        // Fallback: try insert ignoring dupes
+        await supabase.from('props_master').insert(chunk);
       }
-      inserted += chunk.length;
+      synced += chunk.length;
     }
 
-    console.log(`✅ Synced ${inserted} props to props_master`);
+    const withPred = upsertRows.filter(r => r.prediction).length;
+    console.log(`✅ Synced ${synced} props to props_master (${withPred} with predictions)`);
 
     return new Response(JSON.stringify({
       success: true,
-      synced: inserted,
+      synced,
       source_count: allProps.length,
-      predictions_matched: predMap.size,
+      predictions_matched: withPred,
+      from_sbo_predictions: predMap.size,
+      from_unified: unifiedMap.size,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
     console.error('❌ Sync error:', e);
-    return new Response(JSON.stringify({ 
-      success: false, 
-      error: e instanceof Error ? e.message : 'Unknown error' 
+    return new Response(JSON.stringify({
+      success: false,
+      error: e instanceof Error ? e.message : 'Unknown error',
     }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
