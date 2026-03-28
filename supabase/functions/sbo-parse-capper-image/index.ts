@@ -152,10 +152,42 @@ RULES:
         result: 'pending',
       }));
 
-      const { error: insertError } = await supabase.from('sbo_capper_picks').insert(rows);
+      const { data: inserted, error: insertError } = await supabase.from('sbo_capper_picks').insert(rows).select('id, player_name, prop_type, line, game_date, sport');
       if (insertError) {
         console.error('Insert error:', insertError);
         throw new Error(`Database error: ${insertError.message}`);
+      }
+
+      // ── Auto-match to props_master ──
+      if (inserted && inserted.length > 0) {
+        const dates = [...new Set(inserted.map((p: any) => p.game_date).filter(Boolean))];
+        let allProps: any[] = [];
+        for (const d of dates) {
+          const { data: props } = await supabase.from('props_master')
+            .select('id, player_name, stat_type, line, game_date')
+            .eq('game_date', d).limit(1000);
+          if (props) allProps.push(...props);
+        }
+
+        for (const pick of inserted) {
+          if (!pick.player_name) continue;
+          const normName = pick.player_name.toLowerCase().trim();
+          const normStat = (pick.prop_type || '').toLowerCase().trim();
+          
+          const match = allProps.find(p => {
+            const pName = p.player_name.toLowerCase().trim();
+            const pStat = p.stat_type.toLowerCase().trim();
+            if (!pName.includes(normName.split(' ').pop()!) && !normName.includes(pName.split(' ').pop()!)) return false;
+            if (normStat && pStat !== normStat) return false;
+            if (pick.line != null && Math.abs(p.line - pick.line) > 1.0) return false;
+            if (pick.game_date && p.game_date && pick.game_date !== p.game_date) return false;
+            return true;
+          });
+
+          if (match) {
+            await supabase.from('sbo_capper_picks').update({ matched_prop_id: match.id }).eq('id', pick.id);
+          }
+        }
       }
 
       // Update capper sports list
