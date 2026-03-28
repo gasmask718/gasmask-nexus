@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trophy, User, Lock } from 'lucide-react';
+import { Trophy, User, Lock, Database } from 'lucide-react';
 import { MoneylineResultsTab, PropResultsTab } from '@/components/betting/results';
 import { useSimplifiedAccuracy } from '@/hooks/useSimplifiedAccuracy';
 import { Badge } from '@/components/ui/badge';
+import ExternalResultsPanel from '@/components/betting/ExternalResultsPanel';
 
 export default function ResultsPage() {
   const { data: accuracy, isLoading: accuracyLoading } = useSimplifiedAccuracy();
