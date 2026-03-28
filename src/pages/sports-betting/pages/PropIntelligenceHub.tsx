@@ -423,6 +423,36 @@ export default function PropIntelligenceHub() {
               <Button
                 variant="outline"
                 size="sm"
+                className="gap-1.5 text-xs h-7 border-purple-500/30 text-purple-400 hover:bg-purple-500/10"
+                disabled={isExpandingContext}
+                onClick={async () => {
+                  setIsExpandingContext(true);
+                  toast.info('🧠 Expanding stat context library...');
+                  try {
+                    const { data, error } = await supabase.functions.invoke('sbo-expand-stat-context');
+                    if (error) throw error;
+                    const ins = data?.inserted ?? 0;
+                    const fail = data?.failed ?? 0;
+                    queryClient.invalidateQueries({ queryKey: ['props-master'] });
+                    queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
+                    if (ins === 0) {
+                      toast.info('All player/stat combos already in context library');
+                    } else {
+                      toast.success(`🧠 Expanded: ${ins} new entries added${fail > 0 ? ` | ${fail} failed` : ''}`);
+                    }
+                  } catch (e: any) {
+                    toast.error(`Context expansion failed: ${e.message}`);
+                  } finally {
+                    setIsExpandingContext(false);
+                  }
+                }}
+              >
+                {isExpandingContext ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Brain className="h-3 w-3" />}
+                {isExpandingContext ? 'Expanding...' : '🧠 Expand Coverage'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 className="gap-1.5 text-xs h-7"
                 disabled={isResolvingResults}
                 onClick={async () => {
