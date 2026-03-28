@@ -204,6 +204,7 @@ serve(async (req) => {
           const sr = hs != null && as_ != null ? hs - as_ : null;
           gameRows.push({
             event_id: `sdio-nba-${game.GameID}`, sport: 'NBA', league: 'NBA', game_date: gameDate,
+            player_name: `GAME: ${game.HomeTeam} vs ${game.AwayTeam}`,
             home_team: game.HomeTeam, away_team: game.AwayTeam,
             home_score: hs, away_score: as_, winner: w, total_score: ts, spread_result: sr,
             source: 'api', api_provider: 'sportsdataio', verified: true, raw_payload: game,
