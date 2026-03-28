@@ -59471,12 +59471,79 @@ export type Database = {
           },
         ]
       }
+      sbo_capper_roi: {
+        Row: {
+          avg_odds: number | null
+          best_streak: number | null
+          capper_id: string
+          id: string
+          losses: number | null
+          market_type: string
+          pushes: number | null
+          roi_percentage: number | null
+          sport: string
+          total_bets: number | null
+          total_profit: number | null
+          updated_at: string | null
+          win_rate: number | null
+          wins: number | null
+          worst_streak: number | null
+        }
+        Insert: {
+          avg_odds?: number | null
+          best_streak?: number | null
+          capper_id: string
+          id?: string
+          losses?: number | null
+          market_type?: string
+          pushes?: number | null
+          roi_percentage?: number | null
+          sport?: string
+          total_bets?: number | null
+          total_profit?: number | null
+          updated_at?: string | null
+          win_rate?: number | null
+          wins?: number | null
+          worst_streak?: number | null
+        }
+        Update: {
+          avg_odds?: number | null
+          best_streak?: number | null
+          capper_id?: string
+          id?: string
+          losses?: number | null
+          market_type?: string
+          pushes?: number | null
+          roi_percentage?: number | null
+          sport?: string
+          total_bets?: number | null
+          total_profit?: number | null
+          updated_at?: string | null
+          win_rate?: number | null
+          wins?: number | null
+          worst_streak?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_capper_roi_capper_id_fkey"
+            columns: ["capper_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_cappers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_cappers: {
         Row: {
+          best_market: string | null
           best_sport: string | null
+          capper_weight: number | null
+          cold_streak: number | null
           confidence_grade: string
           created_at: string
+          grade: string | null
           group_type: string | null
+          hot_streak: number | null
           id: string
           is_active: boolean | null
           last_active: string | null
@@ -59496,10 +59563,15 @@ export type Database = {
           win_rate: number | null
         }
         Insert: {
+          best_market?: string | null
           best_sport?: string | null
+          capper_weight?: number | null
+          cold_streak?: number | null
           confidence_grade?: string
           created_at?: string
+          grade?: string | null
           group_type?: string | null
+          hot_streak?: number | null
           id?: string
           is_active?: boolean | null
           last_active?: string | null
@@ -59519,10 +59591,15 @@ export type Database = {
           win_rate?: number | null
         }
         Update: {
+          best_market?: string | null
           best_sport?: string | null
+          capper_weight?: number | null
+          cold_streak?: number | null
           confidence_grade?: string
           created_at?: string
+          grade?: string | null
           group_type?: string | null
+          hot_streak?: number | null
           id?: string
           is_active?: boolean | null
           last_active?: string | null
