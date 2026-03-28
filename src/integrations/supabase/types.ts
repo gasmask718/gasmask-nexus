@@ -59067,13 +59067,17 @@ export type Database = {
       }
       sbo_capper_picks: {
         Row: {
+          bet_type: string | null
           capper_id: string
           created_at: string
           direction: string | null
           game_date: string | null
           id: string
+          league: string | null
           line: number | null
+          matched_prop_id: string | null
           odds: number | null
+          parse_confidence: number | null
           parsed_by_ai: boolean | null
           pick_text: string
           player_name: string | null
@@ -59081,17 +59085,24 @@ export type Database = {
           prop_type: string | null
           raw_message: string | null
           result: string | null
+          review_status: string | null
+          source_image_url: string | null
+          sport: string | null
           stake: number | null
           team: string | null
         }
         Insert: {
+          bet_type?: string | null
           capper_id: string
           created_at?: string
           direction?: string | null
           game_date?: string | null
           id?: string
+          league?: string | null
           line?: number | null
+          matched_prop_id?: string | null
           odds?: number | null
+          parse_confidence?: number | null
           parsed_by_ai?: boolean | null
           pick_text: string
           player_name?: string | null
@@ -59099,17 +59110,24 @@ export type Database = {
           prop_type?: string | null
           raw_message?: string | null
           result?: string | null
+          review_status?: string | null
+          source_image_url?: string | null
+          sport?: string | null
           stake?: number | null
           team?: string | null
         }
         Update: {
+          bet_type?: string | null
           capper_id?: string
           created_at?: string
           direction?: string | null
           game_date?: string | null
           id?: string
+          league?: string | null
           line?: number | null
+          matched_prop_id?: string | null
           odds?: number | null
+          parse_confidence?: number | null
           parsed_by_ai?: boolean | null
           pick_text?: string
           player_name?: string | null
@@ -59117,6 +59135,9 @@ export type Database = {
           prop_type?: string | null
           raw_message?: string | null
           result?: string | null
+          review_status?: string | null
+          source_image_url?: string | null
+          sport?: string | null
           stake?: number | null
           team?: string | null
         }
@@ -59132,42 +59153,51 @@ export type Database = {
       }
       sbo_cappers: {
         Row: {
+          best_sport: string | null
           created_at: string
           id: string
           is_active: boolean | null
           name: string
           notes: string | null
+          picks_by_sport: Json | null
           roi_pct: number | null
           source: string
           source_handle: string | null
+          sports: string[] | null
           tier: string
           total_picks: number | null
           updated_at: string
           win_rate: number | null
         }
         Insert: {
+          best_sport?: string | null
           created_at?: string
           id?: string
           is_active?: boolean | null
           name: string
           notes?: string | null
+          picks_by_sport?: Json | null
           roi_pct?: number | null
           source?: string
           source_handle?: string | null
+          sports?: string[] | null
           tier?: string
           total_picks?: number | null
           updated_at?: string
           win_rate?: number | null
         }
         Update: {
+          best_sport?: string | null
           created_at?: string
           id?: string
           is_active?: boolean | null
           name?: string
           notes?: string | null
+          picks_by_sport?: Json | null
           roi_pct?: number | null
           source?: string
           source_handle?: string | null
+          sports?: string[] | null
           tier?: string
           total_picks?: number | null
           updated_at?: string
