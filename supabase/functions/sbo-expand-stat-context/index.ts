@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     );
 
     const existingKeys = new Set(
-      existing.map((e: any) => `${e.player_name.toLowerCase().trim()}::${e.stat_type.toLowerCase().trim()}`)
+      existing.map((e: any) => `${normalize(e.player_name)}::${normalize(e.stat_type)}`)
     );
     console.log(`[expand-context] Existing unique context keys: ${existingKeys.size}`);
 
