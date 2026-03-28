@@ -635,6 +635,16 @@ export default function PropIntelligenceHub() {
           <Switch checked={bestOnly} onCheckedChange={setBestOnly} id="best-only" />
           <Label htmlFor="best-only" className="text-xs cursor-pointer">Best Only (70%+)</Label>
         </div>
+        <Select value={dataFilter} onValueChange={v => { setDataFilter(v as any); setPage(1); }}>
+          <SelectTrigger className="w-40 h-9"><SelectValue placeholder="Data Status" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Data</SelectItem>
+            <SelectItem value="missing_stats">Missing Stats</SelectItem>
+            <SelectItem value="missing_results">Missing Results</SelectItem>
+            <SelectItem value="complete">Complete Only</SelectItem>
+          </SelectContent>
+        </Select>
+        </div>
         {gameDate && (
           <Button variant="ghost" size="sm" onClick={() => { setGameDate(''); setPage(1); }}>
             Clear Date
