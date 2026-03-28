@@ -578,7 +578,7 @@ export default function SBOCapperTracker() {
         {/* Sport Breakdown */}
         {Object.keys(sportBreakdown).length > 0 && (
           <div className="flex gap-2 flex-wrap">
-            {Object.entries(sportBreakdown).map(([s, data]) => {
+            {(Object.entries(sportBreakdown) as [string, { total: number; wins: number }][]).map(([s, data]) => {
               const wr = data.total > 0 ? ((data.wins / data.total) * 100).toFixed(0) : '—';
               return (
                 <Badge key={s} variant="outline" className={`text-[10px] ${sportColors[s] || ''}`}>
