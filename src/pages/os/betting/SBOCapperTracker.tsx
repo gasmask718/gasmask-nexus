@@ -1327,6 +1327,74 @@ export default function SBOCapperTracker() {
           </CardContent>
         </Card>
 
+        {/* Live Backfill Progress Panel */}
+        {backfillProgress && (
+          <Card className={`border-amber-500/30 ${backfillProgress.phase === 'done' ? 'border-emerald-500/30 bg-emerald-500/5' : backfillProgress.phase === 'error' ? 'border-destructive/30 bg-destructive/5' : 'bg-amber-500/5'}`}>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {backfillProgress.active ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+                  ) : backfillProgress.phase === 'done' ? (
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="text-sm font-semibold">
+                    {backfillProgress.phase === 'fetching' ? `Fetching Day ${backfillProgress.currentDay}/${backfillProgress.totalDays}...` :
+                     backfillProgress.phase === 'resolving' ? 'Resolving picks...' :
+                     backfillProgress.phase === 'done' ? '✅ Backfill Complete' : '❌ Backfill Error'}
+                  </span>
+                </div>
+                {!backfillProgress.active && (
+                  <Button size="sm" variant="ghost" className="h-6 text-[10px]" onClick={() => setBackfillProgress(null)}>Dismiss</Button>
+                )}
+              </div>
+
+              <Progress value={backfillProgress.phase === 'resolving' ? 90 : backfillProgress.phase === 'done' ? 100 : backfillPct} className="h-2" />
+
+              <div className="text-xs font-mono text-muted-foreground">
+                {backfillProgress.currentDate && backfillProgress.active && (
+                  <p>📅 Processing: {backfillProgress.currentDate}</p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold">{backfillProgress.currentDay}/{backfillProgress.totalDays}</p>
+                  <p className="text-[10px] text-muted-foreground">Days</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold">{backfillProgress.totalGames}</p>
+                  <p className="text-[10px] text-muted-foreground">Games</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold text-emerald-400">{backfillProgress.totalResolved}</p>
+                  <p className="text-[10px] text-muted-foreground">Resolved</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold text-emerald-500">{backfillProgress.wins}W</p>
+                  <p className="text-[10px] text-muted-foreground">Wins</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className="text-sm font-bold text-destructive">{backfillProgress.losses}L</p>
+                  <p className="text-[10px] text-muted-foreground">Losses</p>
+                </div>
+                <div className="bg-muted/30 rounded p-2">
+                  <p className={`text-sm font-bold ${backfillROI >= 0 ? 'text-emerald-400' : 'text-destructive'}`}>{backfillROI > 0 ? '+' : ''}{backfillROI}%</p>
+                  <p className="text-[10px] text-muted-foreground">ROI</p>
+                </div>
+              </div>
+
+              {backfillProgress.errors.length > 0 && (
+                <div className="text-[10px] text-destructive/80 space-y-0.5 max-h-16 overflow-y-auto">
+                  {backfillProgress.errors.map((e, i) => <p key={i}>⚠ {e}</p>)}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Sport Filter */}
         <div className="flex gap-1.5 flex-wrap">
           <Badge variant="outline" className={`text-[10px] cursor-pointer ${sportFilter === 'all' ? 'bg-primary text-primary-foreground' : ''}`} onClick={() => setSportFilter('all')}>All Sports</Badge>
