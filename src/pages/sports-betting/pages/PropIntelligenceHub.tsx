@@ -390,10 +390,12 @@ export default function PropIntelligenceHub() {
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs h-7"
+                disabled={isCollectingStats}
                 onClick={async () => {
                   const missing = stats?.noStats ?? 0;
                   if (missing === 0) { toast.info('All props already have stats'); return; }
-                  toast.info(`Collecting stats for ${missing} props...`);
+                  setIsCollectingStats(true);
+                  toast.info(`⏳ Collecting stats for ${missing} props — this may take a moment...`);
                   try {
                     const { data, error } = await supabase.functions.invoke('sbo-run-analysis', {
                       body: { mode: 'stats_only' },
@@ -406,23 +408,28 @@ export default function PropIntelligenceHub() {
                     if (failed > 0) {
                       toast.warning(`Stats collected: ${analyzed} ✅ | Failed: ${failed} ❌`);
                     } else {
-                      toast.success(`Stats collected for ${analyzed} props ✅`);
+                      toast.success(`✅ Stats collected for ${analyzed} props`);
                     }
                   } catch (e: any) {
                     toast.error(`Stats collection failed: ${e.message}`);
+                  } finally {
+                    setIsCollectingStats(false);
                   }
                 }}
               >
-                <Database className="h-3 w-3" /> Collect Stats {(stats?.noStats ?? 0) > 0 && `(${stats?.noStats})`}
+                {isCollectingStats ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Database className="h-3 w-3" />}
+                {isCollectingStats ? 'Collecting...' : <>Collect Stats {(stats?.noStats ?? 0) > 0 && `(${stats?.noStats})`}</>}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs h-7"
+                disabled={isResolvingResults}
                 onClick={async () => {
                   const pending = stats?.pending ?? 0;
                   if (pending === 0) { toast.info('No pending results to resolve'); return; }
-                  toast.info(`Resolving ${pending} pending results...`);
+                  setIsResolvingResults(true);
+                  toast.info(`⏳ Resolving ${pending} pending results...`);
                   try {
                     const { data, error } = await supabase.functions.invoke('sbo-settle-results');
                     if (error) throw error;
@@ -431,13 +438,16 @@ export default function PropIntelligenceHub() {
                     const skipped = data?.skipped ?? 0;
                     queryClient.invalidateQueries({ queryKey: ['props-master'] });
                     queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
-                    toast.success(`Resolved: ${settled} ✅ | Skipped: ${skipped} | Failed: ${failed}`);
+                    toast.success(`✅ Resolved: ${settled} | Skipped: ${skipped} | Failed: ${failed}`);
                   } catch (e: any) {
                     toast.error(`Result resolution failed: ${e.message}`);
+                  } finally {
+                    setIsResolvingResults(false);
                   }
                 }}
               >
-                <Target className="h-3 w-3" /> Resolve Results {(stats?.pending ?? 0) > 0 && `(${stats?.pending})`}
+                {isResolvingResults ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Target className="h-3 w-3" />}
+                {isResolvingResults ? 'Resolving...' : <>Resolve Results {(stats?.pending ?? 0) > 0 && `(${stats?.pending})`}</>}
               </Button>
             </div>
           </div>
