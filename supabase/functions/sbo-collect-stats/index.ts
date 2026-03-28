@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 // Paginated fetch to bypass 1000-row limit
-async function fetchAll(supabase: any, table: string, select: string, filters?: (q: any) => any) {
+async function fetchAllFiltered(supabase: any, table: string, select: string, filters?: (q: any) => any) {
   const PAGE = 1000;
   let all: any[] = [];
   let from = 0;
