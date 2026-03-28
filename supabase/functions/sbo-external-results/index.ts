@@ -550,7 +550,7 @@ serve(async (req) => {
             else if (['under', 'less', 'no'].includes(dir)) result = actual < line ? 'win' : 'loss';
             matchDetails = {
               pick_player: pick.player_name, matched_player: match.player_name,
-              pick_stat: pick.stat_type, matched_stat: match.stat_type,
+              pick_stat: pick.prop_type, matched_stat: match.stat_type,
               actual: match.actual_value, line: pick.line, similarity: matchConfidence,
             };
           } else if (matchType === 'needs_review') {
