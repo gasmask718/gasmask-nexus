@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const grouped: Record<string, string[]> = {};
     for (const prop of missing) {
-      const key = `${prop.player_name.toLowerCase().trim()}::${prop.stat_type.toLowerCase().trim()}`;
+      const key = `${normalize(prop.player_name)}::${normalize(prop.stat_type)}`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(prop.id);
     }

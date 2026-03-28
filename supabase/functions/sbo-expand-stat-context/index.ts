@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
     const missingMap: Record<string, { player_name: string; stat_type: string; lines: number[]; latest_date: string }> = {};
 
     for (const p of allProps) {
-      const key = `${p.player_name.toLowerCase().trim()}::${p.stat_type.toLowerCase().trim()}`;
+      const key = `${normalize(p.player_name)}::${normalize(p.stat_type)}`;
       if (existingKeys.has(key)) continue;
 
       if (!missingMap[key]) {
