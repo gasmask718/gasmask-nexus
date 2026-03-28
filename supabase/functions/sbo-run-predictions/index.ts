@@ -372,6 +372,44 @@ serve(async (req) => {
     const { game_id, prop_id, prediction_type, predicted_outcome, force_rerun } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    // ═══ LIVE CALIBRATION: Read from sbo_calibration table ═══
+    let calibrationData: Array<{ confidence_bucket: string; actual_accuracy: number; calibration_score: number; total_picks: number }> = [];
+    let calibrationText = '';
+    try {
+      const { data: calRows } = await supabase
+        .from('sbo_calibration')
+        .select('confidence_bucket, actual_accuracy, calibration_score, total_picks')
+        .order('confidence_bucket');
+      calibrationData = calRows || [];
+
+      if (calibrationData.length > 0) {
+        const totalVerified = calibrationData.reduce((s, r) => s + r.total_picks, 0);
+        const bucketLines = calibrationData.map(b => {
+          const status = b.calibration_score >= 1.1 ? '🔥 STRONG' :
+                         b.calibration_score >= 0.95 ? '✅ CALIBRATED' :
+                         b.calibration_score >= 0.80 ? '⚠️ OVERCONFIDENT' : '🚨 UNRELIABLE';
+          return `- ${b.confidence_bucket}% bucket: actual ${b.actual_accuracy}% accuracy (${b.total_picks} picks) — ${status}`;
+        }).join('\n');
+
+        calibrationText = `
+LIVE SYSTEM CALIBRATION (based on ${totalVerified} verified predictions — auto-updated):
+${bucketLines}
+
+CRITICAL RULES FROM CALIBRATION DATA:
+- 80-90% confidence range has ${calibrationData.find(b => b.confidence_bucket === '80-90')?.actual_accuracy || 'N/A'}% actual accuracy — this is the sweet spot.
+- 65-75% confidence range is OVERCONFIDENT — actual accuracy is only ~50%. If your analysis lands here, either find stronger evidence to push higher or lower your score.
+- Cap confidence at 87% maximum to stay in the proven sweet spot.
+- Minimum confidence to save: 50%.
+- Market Brain is the strongest signal — weight market analysis heavily.
+`;
+      } else {
+        calibrationText = 'No calibration data available yet. Use conservative confidence estimates. Cap at 87%.';
+      }
+    } catch (calErr) {
+      console.error('Failed to load calibration:', calErr);
+      calibrationText = 'Calibration data unavailable. Use conservative estimates. Cap at 87%.';
+    }
+
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
     // Cache check — moneyline
