@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { Database, RefreshCw, Shield, Download, CheckCircle, XCircle, Clock, AlertTriangle, Search, Calendar, Target } from 'lucide-react';
+import { Database, RefreshCw, Shield, Download, CheckCircle, XCircle, Clock, AlertTriangle, Search, Calendar, Target, History, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, subDays } from 'date-fns';
 
@@ -69,6 +69,23 @@ export default function ExternalResultsPanel() {
     },
   });
 
+  const { data: backfillLogs, refetch: refetchBackfillLogs } = useQuery({
+    queryKey: ['backfill-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'backfill_logs' },
+      });
+      if (error) throw error;
+      return (data as { logs: Array<{
+        id: string; sport: string; start_date: string; end_date: string;
+        total_dates: number; total_games: number; total_player_stats: number;
+        total_picks_found: number; resolved_count: number; failed_count: number;
+        unmatched_count: number; wins: number; losses: number; pushes: number;
+        roi_summary: number; status: string; errors: string[]; created_at: string; completed_at: string | null;
+      }> }).logs;
+    },
+  });
+
   const handleFetch = async () => {
     setFetching(true);
     try {
@@ -104,8 +121,8 @@ export default function ExternalResultsPanel() {
         body: { mode: 'backfill', sport, start_date: backfillStart, end_date: backfillEnd },
       });
       if (error) throw error;
-      toast.success(`Backfilled ${data.dates_processed} days: ${data.total_games} games, ${data.total_player_stats} stats`);
-      refetchStatus(); refetchResults();
+      toast.success(`Backfill complete: ${data.resolved} resolved, ${data.wins}W/${data.losses}L/${data.pushes}P, ROI: ${data.roi_summary}%`);
+      refetchStatus(); refetchResults(); refetchBackfillLogs();
     } catch (err: any) {
       toast.error(err.message || 'Backfill failed');
     } finally { setBackfilling(false); }
@@ -182,6 +199,7 @@ export default function ExternalResultsPanel() {
         <TabsList>
           <TabsTrigger value="fetch" className="gap-1.5"><Download className="h-3.5 w-3.5" />Fetch & Resolve</TabsTrigger>
           <TabsTrigger value="backfill" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />Backfill</TabsTrigger>
+          <TabsTrigger value="history" className="gap-1.5"><History className="h-3.5 w-3.5" />Backfill History</TabsTrigger>
           <TabsTrigger value="results" className="gap-1.5"><Database className="h-3.5 w-3.5" />Results</TabsTrigger>
           <TabsTrigger value="logs" className="gap-1.5"><Search className="h-3.5 w-3.5" />Match Logs</TabsTrigger>
         </TabsList>
@@ -233,9 +251,9 @@ export default function ExternalResultsPanel() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-purple-500" />
-                Historical Backfill
+                Historical Backfill + Auto-Resolve
               </CardTitle>
-              <CardDescription>Fetch multiple days at once to resolve past capper picks</CardDescription>
+              <CardDescription>Fetch multiple days, auto-resolve picks, and compute capper stats in one run</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-3 items-end flex-wrap">
@@ -260,12 +278,77 @@ export default function ExternalResultsPanel() {
                 </div>
                 <Button onClick={handleBackfill} disabled={backfilling} variant="default" className="gap-2">
                   <Calendar className="h-4 w-4" />
-                  {backfilling ? 'Backfilling...' : 'Run Backfill'}
+                  {backfilling ? 'Running Backfill...' : 'Run Backfill + Resolve'}
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                ⚠️ Large date ranges may take time. After backfill, run "Resolve Picks" to grade capper performance.
+                ⚡ Backfill now auto-resolves picks and updates capper grades/ROI in one pass.
               </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Backfill History */}
+        <TabsContent value="history">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <History className="h-5 w-5 text-amber-500" />
+                Backfill Run History
+              </CardTitle>
+              <CardDescription>All historical backfill runs with resolution stats and ROI</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!backfillLogs?.length ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No backfill runs yet. Use the Backfill tab to start.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-muted-foreground text-left">
+                        <th className="pb-2 pr-3">Date Range</th>
+                        <th className="pb-2 pr-3">Sport</th>
+                        <th className="pb-2 pr-3">Games</th>
+                        <th className="pb-2 pr-3">Resolved</th>
+                        <th className="pb-2 pr-3">W/L/P</th>
+                        <th className="pb-2 pr-3">ROI</th>
+                        <th className="pb-2 pr-3">Status</th>
+                        <th className="pb-2">Run Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {backfillLogs.map(log => (
+                        <tr key={log.id} className="text-xs">
+                          <td className="py-2 pr-3 font-medium">{log.start_date} → {log.end_date}</td>
+                          <td className="py-2 pr-3"><Badge variant="outline" className="text-xs">{log.sport}</Badge></td>
+                          <td className="py-2 pr-3 font-mono">{log.total_games}</td>
+                          <td className="py-2 pr-3 font-mono">
+                            <span className="text-green-500">{log.resolved_count}</span>
+                            {log.unmatched_count > 0 && <span className="text-red-500 ml-1">/ {log.unmatched_count} ✗</span>}
+                          </td>
+                          <td className="py-2 pr-3 font-mono">
+                            <span className="text-green-500">{log.wins}</span>/
+                            <span className="text-red-500">{log.losses}</span>/
+                            <span className="text-muted-foreground">{log.pushes}</span>
+                          </td>
+                          <td className={`py-2 pr-3 font-mono font-bold ${(log.roi_summary || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                            {(log.roi_summary || 0) >= 0 ? '+' : ''}{log.roi_summary || 0}%
+                          </td>
+                          <td className="py-2 pr-3">
+                            <Badge variant={log.status === 'completed' ? 'default' : log.status === 'running' ? 'secondary' : 'destructive'} className="text-xs">
+                              {log.status}
+                            </Badge>
+                          </td>
+                          <td className="py-2 text-muted-foreground">{format(new Date(log.created_at), 'MMM d HH:mm')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -373,16 +456,16 @@ export default function ExternalResultsPanel() {
                             {log.match_confidence}%
                           </td>
                           <td className="py-2 pr-3">
-                            {log.result === 'win' && <Badge className="bg-green-500/20 text-green-500 text-xs">WIN</Badge>}
-                            {log.result === 'loss' && <Badge className="bg-red-500/20 text-red-500 text-xs">LOSS</Badge>}
-                            {log.result === 'push' && <Badge className="bg-amber-500/20 text-amber-500 text-xs">PUSH</Badge>}
+                            {log.result === 'win' && <span className="text-green-500 font-medium">WIN</span>}
+                            {log.result === 'loss' && <span className="text-red-500 font-medium">LOSS</span>}
+                            {log.result === 'push' && <span className="text-muted-foreground">PUSH</span>}
                             {!log.result && <span className="text-muted-foreground">—</span>}
                           </td>
-                          <td className="py-2 pr-3 max-w-[300px] truncate text-muted-foreground">
+                          <td className="py-2 pr-3 text-muted-foreground max-w-[200px] truncate">
                             {JSON.stringify(log.match_details).slice(0, 80)}
                           </td>
                           <td className="py-2 text-muted-foreground">
-                            {new Date(log.created_at).toLocaleString()}
+                            {format(new Date(log.created_at), 'MMM d HH:mm')}
                           </td>
                         </tr>
                       ))}
