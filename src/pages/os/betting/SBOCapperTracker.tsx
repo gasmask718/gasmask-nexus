@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
-import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Zap, Camera, Upload, Loader2, AlertTriangle, Filter } from 'lucide-react';
+import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Zap, Camera, Upload, Loader2, AlertTriangle, Filter, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
@@ -461,6 +461,7 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
 export default function SBOCapperTracker() {
   const qc = useQueryClient();
   const [sportFilter, setSportFilter] = useState<string>('all');
+  const [matching, setMatching] = useState(false);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
@@ -486,6 +487,22 @@ export default function SBOCapperTracker() {
     qc.invalidateQueries({ queryKey: ['sbo-cappers'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks'] });
     qc.invalidateQueries({ queryKey: ['sbo-capper-picks-review'] });
+  };
+
+  const runMatchAndResolve = async () => {
+    setMatching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-match-capper-picks', {
+        body: { mode: 'match_and_resolve' },
+      });
+      if (error) throw error;
+      toast.success(`Matched ${data.matched} picks, resolved ${data.resolved} results`);
+      refetchAll();
+    } catch (err: any) {
+      toast.error(err.message || 'Match failed');
+    } finally {
+      setMatching(false);
+    }
   };
 
   const updateResult = async (pickId: string, result: string) => {
@@ -535,6 +552,10 @@ export default function SBOCapperTracker() {
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={runMatchAndResolve} disabled={matching}>
+              {matching ? <Loader2 className="h-3 w-3 animate-spin" /> : <Link2 className="h-3 w-3" />}
+              {matching ? 'Linking...' : '🔗 Match & Resolve'}
+            </Button>
             <PhotoUploadDialog cappers={cappers} onAdded={refetchAll} />
             <AddPickDialog cappers={cappers} onAdded={refetchAll} />
             <AddCapperDialog onAdded={refetchAll} />
@@ -552,7 +573,7 @@ export default function SBOCapperTracker() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
           <Card><CardContent className="p-3 text-center">
             <p className="text-lg font-bold">{cappers.length}</p>
             <p className="text-[10px] text-muted-foreground">Cappers</p>
@@ -572,6 +593,10 @@ export default function SBOCapperTracker() {
           <Card><CardContent className="p-3 text-center">
             <p className="text-lg font-bold">{Object.keys(sportBreakdown).length}</p>
             <p className="text-[10px] text-muted-foreground">Sports Active</p>
+          </CardContent></Card>
+          <Card><CardContent className="p-3 text-center">
+            <p className="text-lg font-bold text-emerald-500">{picks.filter((p: any) => p.matched_prop_id).length}</p>
+            <p className="text-[10px] text-muted-foreground">🔗 Linked</p>
           </CardContent></Card>
         </div>
 
@@ -616,6 +641,7 @@ export default function SBOCapperTracker() {
                         <Badge className={`text-[10px] ${sportColors[p.sport] || sportColors.NBA}`}>{p.sport || 'NBA'}</Badge>
                         {p.bet_type && p.bet_type !== 'prop' && <Badge variant="outline" className="text-[10px]">{p.bet_type}</Badge>}
                         {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
+                        {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
                         {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
