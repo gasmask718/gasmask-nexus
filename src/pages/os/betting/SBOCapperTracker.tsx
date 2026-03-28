@@ -1066,6 +1066,47 @@ export default function SBOCapperTracker() {
     } catch (err: any) { toast.error(err.message || 'Consensus failed'); } finally { setRunningConsensus(false); }
   };
 
+  const fetchExternalResults = async () => {
+    setFetchingResults(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'fetch', sport: fetchingSport, game_date: fetchingDate },
+      });
+      if (error) throw error;
+      toast.success(`Fetched ${data?.games_fetched || 0} games for ${fetchingSport} on ${fetchingDate}`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Fetch failed'); }
+    finally { setFetchingResults(false); }
+  };
+
+  const resolveExternalPicks = async () => {
+    setResolvingPicks(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'resolve', sport: fetchingSport, game_date: fetchingDate },
+      });
+      if (error) throw error;
+      toast.success(`Resolved ${data?.resolved || 0} picks (${data?.wins || 0}W / ${data?.losses || 0}L)`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Resolve failed'); }
+    finally { setResolvingPicks(false); }
+  };
+
+  const runBackfill = async () => {
+    setBackfilling(true);
+    try {
+      const end = fetchingDate;
+      const start = new Date(new Date(end).getTime() - 7 * 86400000).toISOString().split('T')[0];
+      const { data, error } = await supabase.functions.invoke('sbo-external-results', {
+        body: { mode: 'backfill', sport: fetchingSport, start_date: start, end_date: end },
+      });
+      if (error) throw error;
+      toast.success(`Backfill complete: ${data?.total_resolved || 0} picks resolved over 7 days`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message || 'Backfill failed'); }
+    finally { setBackfilling(false); }
+  };
+
   const runTopPlaysEngine = async () => {
     setRunningTopPlays(true);
     try {
