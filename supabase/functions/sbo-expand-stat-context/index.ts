@@ -5,21 +5,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Paginated fetch to bypass Supabase 1000-row default limit
-async function fetchAll(supabase: any, table: string, select: string, orderCol?: string) {
-  const PAGE = 1000;
+const PAGE = 1000;
+
+async function paginatedFetch(supabase: any, query: () => any) {
   let all: any[] = [];
-  let from = 0;
+  let offset = 0;
   while (true) {
-    let q = supabase.from(table).select(select);
-    if (orderCol) q = q.order(orderCol, { ascending: false });
-    q = q.range(from, from + PAGE - 1);
-    const { data, error } = await q;
+    const { data, error } = await query().range(offset, offset + PAGE - 1);
     if (error) throw error;
     if (!data || data.length === 0) break;
     all = all.concat(data);
     if (data.length < PAGE) break;
-    from += PAGE;
+    offset += PAGE;
   }
   return all;
 }
@@ -36,18 +33,22 @@ Deno.serve(async (req) => {
 
   try {
     // 1. Fetch ALL props_master (paginated)
-    const allProps = await fetchAll(supabase, 'props_master', 'player_name, stat_type, line, game_date', 'game_date');
+    const allProps = await paginatedFetch(supabase, () =>
+      supabase.from('props_master').select('player_name, stat_type, line, game_date').order('game_date', { ascending: false })
+    );
     console.log(`[expand-context] Total props fetched: ${allProps.length}`);
 
     // 2. Fetch ALL existing context (paginated)
-    const existing = await fetchAll(supabase, 'sbo_prop_stat_context', 'player_name, stat_type');
+    const existing = await paginatedFetch(supabase, () =>
+      supabase.from('sbo_prop_stat_context').select('player_name, stat_type')
+    );
 
     const existingKeys = new Set(
       existing.map((e: any) => `${e.player_name.toLowerCase().trim()}::${e.stat_type.toLowerCase().trim()}`)
     );
-    console.log(`[expand-context] Existing context entries: ${existingKeys.size}`);
+    console.log(`[expand-context] Existing unique context keys: ${existingKeys.size}`);
 
-    // 3. Aggregate missing combos
+    // 3. Find missing combos
     const missingMap: Record<string, { player_name: string; stat_type: string; lines: number[]; latest_date: string }> = {};
 
     for (const p of allProps) {
