@@ -441,7 +441,7 @@ serve(async (req) => {
       const matchLogs: Array<Record<string, unknown>> = [];
 
       for (const pick of picks) {
-        const marketType = (pick.market_type || 'player_prop').toLowerCase();
+        const marketType = (pick.bet_type || 'player_prop').toLowerCase();
         let result: string | null = null;
         let matchId: string | null = null;
         let matchType = 'unmatched';
