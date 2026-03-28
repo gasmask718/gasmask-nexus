@@ -1197,6 +1197,32 @@ export default function SBOCapperTracker() {
           </div>
         </div>
 
+        {/* Results Control Bar */}
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs font-semibold text-primary">📡 Results API</span>
+              <Select value={fetchingSport} onValueChange={setFetchingSport}>
+                <SelectTrigger className="w-24 h-7 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>{SPORTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+              <Input type="date" value={fetchingDate} onChange={e => setFetchingDate(e.target.value)} className="w-36 h-7 text-xs" />
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={fetchExternalResults} disabled={fetchingResults}>
+                {fetchingResults ? <Loader2 className="h-3 w-3 animate-spin" /> : <Activity className="h-3 w-3" />}
+                Fetch Results
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={resolveExternalPicks} disabled={resolvingPicks}>
+                {resolvingPicks ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                Resolve Picks
+              </Button>
+              <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-amber-500/30 text-amber-500 hover:bg-amber-500/10" onClick={runBackfill} disabled={backfilling}>
+                {backfilling ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                Backfill 7d
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Sport Filter */}
         <div className="flex gap-1.5 flex-wrap">
           <Badge variant="outline" className={`text-[10px] cursor-pointer ${sportFilter === 'all' ? 'bg-primary text-primary-foreground' : ''}`} onClick={() => setSportFilter('all')}>All Sports</Badge>
