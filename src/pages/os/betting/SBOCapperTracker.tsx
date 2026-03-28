@@ -997,8 +997,9 @@ export default function SBOCapperTracker() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="top-plays">
-          <TabsList className="w-full grid grid-cols-7">
+        <Tabs defaultValue="profit">
+          <TabsList className="w-full grid grid-cols-8">
+            <TabsTrigger value="profit" className="text-xs gap-1"><Banknote className="h-3 w-3" /> Profit</TabsTrigger>
             <TabsTrigger value="top-plays" className="text-xs gap-1"><Crown className="h-3 w-3" /> Top Plays</TabsTrigger>
             <TabsTrigger value="signals" className="text-xs gap-1"><Target className="h-3 w-3" /> Signals</TabsTrigger>
             <TabsTrigger value="feed" className="text-xs gap-1"><Activity className="h-3 w-3" /> Feed</TabsTrigger>
@@ -1007,6 +1008,11 @@ export default function SBOCapperTracker() {
             <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
+
+          {/* ── PROFIT CENTER TAB ── */}
+          <TabsContent value="profit" className="mt-3">
+            <ProfitCenter bankroll={bankroll} onBankrollChange={setBankroll} />
+          </TabsContent>
 
           {/* ── TOP PLAYS TAB ── */}
           <TabsContent value="top-plays" className="mt-3 space-y-3">
