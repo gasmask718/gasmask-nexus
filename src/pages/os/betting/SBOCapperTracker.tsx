@@ -637,6 +637,7 @@ export default function SBOCapperTracker() {
                         <Badge className={`text-[10px] ${sportColors[p.sport] || sportColors.NBA}`}>{p.sport || 'NBA'}</Badge>
                         {p.bet_type && p.bet_type !== 'prop' && <Badge variant="outline" className="text-[10px]">{p.bet_type}</Badge>}
                         {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
+                        {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
                         {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
