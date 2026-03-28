@@ -644,7 +644,6 @@ export default function PropIntelligenceHub() {
             <SelectItem value="complete">Complete Only</SelectItem>
           </SelectContent>
         </Select>
-        </div>
         {gameDate && (
           <Button variant="ghost" size="sm" onClick={() => { setGameDate(''); setPage(1); }}>
             Clear Date
