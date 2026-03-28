@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,12 +8,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Search, Upload, RefreshCw, TrendingUp, Trophy, Target, Zap, BarChart3,
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
-  CheckCircle, XCircle, Clock
+  CheckCircle, XCircle, Clock, Plus, FileSpreadsheet
 } from 'lucide-react';
 import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 const TIME_RANGES: { value: TimeRange; label: string }[] = [
   { value: 'today', label: 'Today' },
@@ -34,19 +39,221 @@ const PLATFORMS = [
   { value: 'manual', label: 'Manual' },
 ];
 
+const STAT_TYPES = [
+  'points', 'rebounds', 'assists', 'threes', 'blocks', 'steals',
+  'turnovers', 'pts_reb_ast', 'pts_reb', 'pts_ast', 'reb_ast',
+  'fantasy_score', 'double_double', 'triple_double',
+];
+
 function getTodayEST() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
+// ── Manual Entry Form ─────────────────────────────────────────────────────────
+function ManualEntryDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const qc = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    player_name: '', stat_type: 'points', line: '', platform: 'prizepicks',
+    team: '', opponent: '', game_date: getTodayEST(), odds: '',
+  });
+
+  const handleSave = async () => {
+    if (!form.player_name || !form.line) { toast.error('Player name and line are required'); return; }
+    setSaving(true);
+    try {
+      const { error } = await (supabase as any).from('props_master').insert({
+        player_name: form.player_name.trim(),
+        stat_type: form.stat_type,
+        line: parseFloat(form.line),
+        platform: form.platform,
+        team: form.team || null,
+        opponent: form.opponent || null,
+        game_date: form.game_date,
+        odds: form.odds || null,
+        source: 'manual',
+        sport: 'NBA',
+        result: 'pending',
+      });
+      if (error) throw error;
+      toast.success('Prop added successfully');
+      qc.invalidateQueries({ queryKey: ['props-master'] });
+      qc.invalidateQueries({ queryKey: ['props-master-stats'] });
+      setForm({ player_name: '', stat_type: 'points', line: '', platform: 'prizepicks', team: '', opponent: '', game_date: getTodayEST(), odds: '' });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Add Prop Manually</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Player Name *</Label>
+              <Input value={form.player_name} onChange={e => setForm(f => ({ ...f, player_name: e.target.value }))} placeholder="LeBron James" />
+            </div>
+            <div>
+              <Label className="text-xs">Line *</Label>
+              <Input type="number" step="0.5" value={form.line} onChange={e => setForm(f => ({ ...f, line: e.target.value }))} placeholder="25.5" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Stat Type</Label>
+              <Select value={form.stat_type} onValueChange={v => setForm(f => ({ ...f, stat_type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{STAT_TYPES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Platform</Label>
+              <Select value={form.platform} onValueChange={v => setForm(f => ({ ...f, platform: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PLATFORMS.filter(p => p.value !== 'all').map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Team</Label>
+              <Input value={form.team} onChange={e => setForm(f => ({ ...f, team: e.target.value }))} placeholder="LAL" />
+            </div>
+            <div>
+              <Label className="text-xs">Opponent</Label>
+              <Input value={form.opponent} onChange={e => setForm(f => ({ ...f, opponent: e.target.value }))} placeholder="GSW" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs">Game Date</Label>
+              <Input type="date" value={form.game_date} onChange={e => setForm(f => ({ ...f, game_date: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs">Odds</Label>
+              <Input value={form.odds} onChange={e => setForm(f => ({ ...f, odds: e.target.value }))} placeholder="-110" />
+            </div>
+          </div>
+          <Button onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? <><RefreshCw className="h-4 w-4 animate-spin mr-2" /> Saving...</> : 'Add Prop'}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── CSV Upload Dialog ─────────────────────────────────────────────────────────
+function CSVUploadDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+  const qc = useQueryClient();
+  const [uploading, setUploading] = useState(false);
+  const [csvPlatform, setCsvPlatform] = useState('prizepicks');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const text = await file.text();
+      const lines = text.trim().split('\n');
+      if (lines.length < 2) throw new Error('CSV must have headers + data');
+      
+      const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+      const playerIdx = headers.findIndex(h => h.includes('player') || h.includes('name'));
+      const statIdx = headers.findIndex(h => h.includes('stat') || h.includes('type') || h.includes('prop'));
+      const lineIdx = headers.findIndex(h => h.includes('line') || h.includes('value') || h.includes('number'));
+      const teamIdx = headers.findIndex(h => h.includes('team'));
+      const dateIdx = headers.findIndex(h => h.includes('date'));
+
+      if (playerIdx === -1 || lineIdx === -1) throw new Error('CSV must have player_name and line columns');
+
+      const rows = [];
+      let skipped = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cols = lines[i].split(',').map(c => c.trim());
+        const playerName = cols[playerIdx];
+        const line = parseFloat(cols[lineIdx]);
+        if (!playerName || isNaN(line)) { skipped++; continue; }
+        rows.push({
+          player_name: playerName,
+          stat_type: statIdx >= 0 ? cols[statIdx] || 'points' : 'points',
+          line,
+          platform: csvPlatform,
+          team: teamIdx >= 0 ? cols[teamIdx] || null : null,
+          game_date: dateIdx >= 0 ? cols[dateIdx] || getTodayEST() : getTodayEST(),
+          source: 'csv_upload',
+          sport: 'NBA',
+          result: 'pending',
+        });
+      }
+
+      if (rows.length === 0) throw new Error('No valid rows found');
+
+      // Batch insert
+      const batchSize = 50;
+      for (let i = 0; i < rows.length; i += batchSize) {
+        const batch = rows.slice(i, i + batchSize);
+        const { error } = await (supabase as any).from('props_master').insert(batch);
+        if (error) throw error;
+      }
+
+      toast.success(`Imported ${rows.length} props${skipped > 0 ? ` (${skipped} skipped)` : ''}`);
+      qc.invalidateQueries({ queryKey: ['props-master'] });
+      qc.invalidateQueries({ queryKey: ['props-master-stats'] });
+      onOpenChange(false);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Upload CSV</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            CSV must include columns: <code>player_name</code>, <code>line</code>. Optional: <code>stat_type</code>, <code>team</code>, <code>date</code>
+          </p>
+          <div>
+            <Label className="text-xs">Platform</Label>
+            <Select value={csvPlatform} onValueChange={setCsvPlatform}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{PLATFORMS.filter(p => p.value !== 'all').map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <Input ref={fileRef} type="file" accept=".csv,.txt" onChange={handleCSV} />
+          {uploading && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" /> Processing CSV...
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Main Hub ──────────────────────────────────────────────────────────────────
 export default function PropIntelligenceHub() {
   const [platform, setPlatform] = useState('all');
-  const [timeRange, setTimeRange] = useState<TimeRange>('today');
+  const [timeRange, setTimeRange] = useState<TimeRange>('all');
   const [gameDate, setGameDate] = useState('');
   const [minConfidence, setMinConfidence] = useState(0);
   const [bestOnly, setBestOnly] = useState(false);
   const [searchPlayer, setSearchPlayer] = useState('');
   const [selectedProp, setSelectedProp] = useState<PropMaster | null>(null);
-  const [showUpload, setShowUpload] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [showCSVUpload, setShowCSVUpload] = useState(false);
   const [uploadPlatform, setUploadPlatform] = useState('prizepicks');
   const [page, setPage] = useState(1);
   const pageSize = 100;
@@ -69,10 +276,8 @@ export default function PropIntelligenceHub() {
   const { data: crossIntel = [] } = usePropCrossIntelligence(selectedProp?.player_name, selectedProp?.stat_type);
   const { syncBooks, runAnalysis, uploadImage } = usePropMutations();
 
-  // Apply client-side best-only filter
   let filtered = bestOnly ? props.filter(p => (p.confidence_score || 0) >= 70) : props;
 
-  // Group by player+stat for cross-platform view
   const grouped = new Map<string, PropMaster[]>();
   for (const p of filtered) {
     const key = `${p.player_name}|${p.stat_type}`;
@@ -87,7 +292,7 @@ export default function PropIntelligenceHub() {
     reader.onload = () => {
       const base64 = reader.result as string;
       uploadImage.mutate({ imageBase64: base64, platform: uploadPlatform });
-      setShowUpload(false);
+      setShowImageUpload(false);
     };
     reader.readAsDataURL(file);
   };
@@ -106,54 +311,32 @@ export default function PropIntelligenceHub() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Dialog open={showUpload} onOpenChange={setShowUpload}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <ImagePlus className="h-4 w-4" /> Upload Props
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Upload Prop Slip</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <Label>Platform</Label>
-                  <Select value={uploadPlatform} onValueChange={setUploadPlatform}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {PLATFORMS.filter(p => p.value !== 'all').map(p => (
-                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Screenshot</Label>
-                  <Input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} />
-                </div>
-                {uploadImage.isPending && (
-                  <div className="text-sm text-muted-foreground flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 animate-spin" /> Parsing with AI...
-                  </div>
-                )}
-              </div>
-            </DialogContent>
-          </Dialog>
+          {/* Upload Menu */}
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowManualEntry(true)}>
+            <Plus className="h-4 w-4" /> Manual
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCSVUpload(true)}>
+            <FileSpreadsheet className="h-4 w-4" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowImageUpload(true)}>
+            <ImagePlus className="h-4 w-4" /> Image
+          </Button>
 
-          <Button 
-            onClick={() => runAnalysis.mutate()} 
+          <Button
+            onClick={() => runAnalysis.mutate()}
             disabled={runAnalysis.isPending}
-            variant="outline" 
-            size="sm" 
+            variant="outline"
+            size="sm"
             className="gap-1.5"
           >
             {runAnalysis.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
             {runAnalysis.isPending ? 'Analyzing...' : 'Run Analysis'}
           </Button>
 
-          <Button 
-            onClick={() => syncBooks.mutate()} 
+          <Button
+            onClick={() => syncBooks.mutate()}
             disabled={syncBooks.isPending}
-            size="sm" 
+            size="sm"
             className="gap-1.5"
           >
             {syncBooks.isPending ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -191,7 +374,7 @@ export default function PropIntelligenceHub() {
         <div className="flex flex-wrap gap-2">
           {Object.entries(stats.byPlatform).map(([plat, count]) => (
             <Badge key={plat} variant="outline" className="capitalize text-xs gap-1">
-              {plat}: <span className="font-bold">{count}</span>
+              {plat}: <span className="font-bold">{count as number}</span>
             </Badge>
           ))}
         </div>
@@ -201,14 +384,14 @@ export default function PropIntelligenceHub() {
       {stats?.byStatType && Object.keys(stats.byStatType).length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {Object.entries(stats.byStatType)
-            .sort((a, b) => b[1].total - a[1].total)
+            .sort((a, b) => (b[1] as any).total - (a[1] as any).total)
             .slice(0, 12)
             .map(([stat, info]) => (
               <Badge key={stat} variant="secondary" className="text-[10px] capitalize gap-1">
-                {stat}: {info.total}
-                {info.wins + info.losses > 0 && (
+                {stat}: {(info as any).total}
+                {(info as any).wins + (info as any).losses > 0 && (
                   <span className="text-green-500 ml-0.5">
-                    {Math.round((info.wins / (info.wins + info.losses)) * 100)}%
+                    {Math.round(((info as any).wins / ((info as any).wins + (info as any).losses)) * 100)}%
                   </span>
                 )}
               </Badge>
@@ -237,11 +420,11 @@ export default function PropIntelligenceHub() {
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input 
-            placeholder="Search player..." 
-            className="pl-8 w-44 h-9" 
-            value={searchPlayer} 
-            onChange={e => { setSearchPlayer(e.target.value); setPage(1); }} 
+          <Input
+            placeholder="Search player..."
+            className="pl-8 w-44 h-9"
+            value={searchPlayer}
+            onChange={e => { setSearchPlayer(e.target.value); setPage(1); }}
           />
         </div>
         <Select value={platform} onValueChange={v => { setPlatform(v); setPage(1); }}>
@@ -250,11 +433,11 @@ export default function PropIntelligenceHub() {
             {PLATFORMS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
           </SelectContent>
         </Select>
-        <Input 
-          type="date" 
-          className="w-36 h-9" 
-          value={gameDate} 
-          onChange={e => { setGameDate(e.target.value); setPage(1); }} 
+        <Input
+          type="date"
+          className="w-36 h-9"
+          value={gameDate}
+          onChange={e => { setGameDate(e.target.value); setPage(1); }}
         />
         <div className="flex items-center gap-1.5">
           <Switch checked={bestOnly} onCheckedChange={setBestOnly} id="best-only" />
@@ -277,8 +460,8 @@ export default function PropIntelligenceHub() {
         <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
-              {totalCount === 0 
-                ? 'No props in system yet. Click "Sync Books" to ingest from all sportsbooks.'
+              {totalCount === 0
+                ? 'No props in system yet. Click "Sync Books" to ingest from all sportsbooks, or add manually.'
                 : 'No props match your filters. Try adjusting filters or clearing the date.'}
             </p>
           </CardContent>
@@ -299,7 +482,6 @@ export default function PropIntelligenceHub() {
                 onClick={() => setSelectedProp(primary)}
               >
                 <CardContent className="p-3 space-y-2">
-                  {/* Player Header */}
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-semibold text-sm">{primary.player_name}</p>
@@ -314,7 +496,6 @@ export default function PropIntelligenceHub() {
                     </div>
                   </div>
 
-                  {/* Stat + Line */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs capitalize">{primary.stat_type}</Badge>
@@ -323,7 +504,6 @@ export default function PropIntelligenceHub() {
                     <Badge variant="outline" className="text-[10px] capitalize">{primary.platform}</Badge>
                   </div>
 
-                  {/* AI Prediction */}
                   {primary.prediction && (
                     <div className={`flex items-center justify-between p-2 rounded-md ${
                       primary.prediction === 'MORE' || primary.prediction === 'OVER'
@@ -346,7 +526,6 @@ export default function PropIntelligenceHub() {
                     </div>
                   )}
 
-                  {/* Stats Row */}
                   {(primary.season_avg || primary.last_5_avg) && (
                     <div className="grid grid-cols-3 gap-1 text-[10px]">
                       <div className="bg-muted/30 rounded p-1 text-center">
@@ -364,7 +543,6 @@ export default function PropIntelligenceHub() {
                     </div>
                   )}
 
-                  {/* Cross-platform mini */}
                   {hasMultiple && (
                     <div className="border-t border-border/30 pt-1.5 space-y-0.5">
                       {groupProps.map(gp => (
@@ -376,7 +554,6 @@ export default function PropIntelligenceHub() {
                     </div>
                   )}
 
-                  {/* Result */}
                   {primary.actual_result != null && (
                     <div className="text-xs text-muted-foreground border-t border-border/30 pt-1">
                       Actual: <span className="font-bold text-foreground">{primary.actual_result}</span>
@@ -392,9 +569,9 @@ export default function PropIntelligenceHub() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 pt-2">
-          <Button 
-            variant="outline" size="sm" 
-            onClick={() => setPage(p => Math.max(1, p - 1))} 
+          <Button
+            variant="outline" size="sm"
+            onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page <= 1}
           >
             <ArrowLeft className="h-4 w-4" />
@@ -402,9 +579,9 @@ export default function PropIntelligenceHub() {
           <span className="text-sm text-muted-foreground">
             Page {page} of {totalPages} ({totalCount.toLocaleString()} props)
           </span>
-          <Button 
-            variant="outline" size="sm" 
-            onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
+          <Button
+            variant="outline" size="sm"
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
           >
             <ArrowRight className="h-4 w-4" />
@@ -430,7 +607,6 @@ export default function PropIntelligenceHub() {
                   <div><span className="text-muted-foreground">Odds:</span> {selectedProp.odds || '—'}</div>
                 </div>
 
-                {/* AI Analysis */}
                 {selectedProp.prediction && (
                   <Card className="border-primary/30">
                     <CardHeader className="pb-2"><CardTitle className="text-sm">🧠 AI Analysis</CardTitle></CardHeader>
@@ -453,7 +629,6 @@ export default function PropIntelligenceHub() {
                   </Card>
                 )}
 
-                {/* Stats */}
                 <Card>
                   <CardHeader className="pb-2"><CardTitle className="text-sm">📊 Stats</CardTitle></CardHeader>
                   <CardContent>
@@ -467,7 +642,6 @@ export default function PropIntelligenceHub() {
                   </CardContent>
                 </Card>
 
-                {/* Cross-Platform */}
                 {crossIntel.length > 1 && (
                   <Card className="border-orange-500/30">
                     <CardHeader className="pb-2"><CardTitle className="text-sm">🌐 Cross-Platform Lines</CardTitle></CardHeader>
@@ -485,7 +659,6 @@ export default function PropIntelligenceHub() {
                   </Card>
                 )}
 
-                {/* Result */}
                 {selectedProp.result !== 'pending' && (
                   <Card className={selectedProp.result === 'win' ? 'border-green-500/40' : 'border-red-500/40'}>
                     <CardContent className="p-3 flex justify-between items-center">
@@ -501,6 +674,39 @@ export default function PropIntelligenceHub() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Dialogs */}
+      <ManualEntryDialog open={showManualEntry} onOpenChange={setShowManualEntry} />
+      <CSVUploadDialog open={showCSVUpload} onOpenChange={setShowCSVUpload} />
+
+      {/* Image Upload Dialog */}
+      <Dialog open={showImageUpload} onOpenChange={setShowImageUpload}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Upload Prop Slip</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Platform</Label>
+              <Select value={uploadPlatform} onValueChange={setUploadPlatform}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {PLATFORMS.filter(p => p.value !== 'all').map(p => (
+                    <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Screenshot</Label>
+              <Input ref={fileRef} type="file" accept="image/*" onChange={handleImageUpload} />
+            </div>
+            {uploadImage.isPending && (
+              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 animate-spin" /> Parsing with AI...
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
