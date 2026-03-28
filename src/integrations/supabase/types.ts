@@ -59319,6 +59319,7 @@ export type Database = {
           created_at: string
           direction: string | null
           edge_score: number | null
+          extracted_capper_name: string | null
           game_date: string | null
           id: string
           league: string | null
@@ -59329,12 +59330,14 @@ export type Database = {
           parsed_by_ai: boolean | null
           pick_text: string
           player_name: string | null
+          posted_by: string | null
           profit_loss: number | null
           prop_type: string | null
           raw_message: string | null
           result: string | null
           review_status: string | null
           sharp_flag: boolean | null
+          source_group: string | null
           source_image_url: string | null
           sport: string | null
           stake: number | null
@@ -59348,6 +59351,7 @@ export type Database = {
           created_at?: string
           direction?: string | null
           edge_score?: number | null
+          extracted_capper_name?: string | null
           game_date?: string | null
           id?: string
           league?: string | null
@@ -59358,12 +59362,14 @@ export type Database = {
           parsed_by_ai?: boolean | null
           pick_text: string
           player_name?: string | null
+          posted_by?: string | null
           profit_loss?: number | null
           prop_type?: string | null
           raw_message?: string | null
           result?: string | null
           review_status?: string | null
           sharp_flag?: boolean | null
+          source_group?: string | null
           source_image_url?: string | null
           sport?: string | null
           stake?: number | null
@@ -59377,6 +59383,7 @@ export type Database = {
           created_at?: string
           direction?: string | null
           edge_score?: number | null
+          extracted_capper_name?: string | null
           game_date?: string | null
           id?: string
           league?: string | null
@@ -59387,12 +59394,14 @@ export type Database = {
           parsed_by_ai?: boolean | null
           pick_text?: string
           player_name?: string | null
+          posted_by?: string | null
           profit_loss?: number | null
           prop_type?: string | null
           raw_message?: string | null
           result?: string | null
           review_status?: string | null
           sharp_flag?: boolean | null
+          source_group?: string | null
           source_image_url?: string | null
           sport?: string | null
           stake?: number | null
@@ -59413,6 +59422,7 @@ export type Database = {
           best_sport: string | null
           confidence_grade: string
           created_at: string
+          group_type: string | null
           id: string
           is_active: boolean | null
           last_active: string | null
@@ -59434,6 +59444,7 @@ export type Database = {
           best_sport?: string | null
           confidence_grade?: string
           created_at?: string
+          group_type?: string | null
           id?: string
           is_active?: boolean | null
           last_active?: string | null
@@ -59455,6 +59466,7 @@ export type Database = {
           best_sport?: string | null
           confidence_grade?: string
           created_at?: string
+          group_type?: string | null
           id?: string
           is_active?: boolean | null
           last_active?: string | null
