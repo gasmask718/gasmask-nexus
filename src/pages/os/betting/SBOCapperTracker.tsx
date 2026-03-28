@@ -1442,6 +1442,7 @@ export default function SBOCapperTracker() {
                         {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
                         {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
                         {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-purple-400 border-purple-400/30">🧠 Sharp</Badge>}
+                        {p.sbo_cappers?.group_type === 'aggregator' && <Badge variant="outline" className="text-[8px] text-orange-400 border-orange-400/30">📡 Aggregator</Badge>}
                         {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -1453,6 +1454,9 @@ export default function SBOCapperTracker() {
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3" /><span>{new Date(p.created_at).toLocaleString()}</span>
                         {p.game_date && <span>· {p.game_date}</span>}
+                        {p.source_group && <span>· Source: {p.source_group}</span>}
+                        {p.posted_by && p.sbo_cappers?.group_type === 'aggregator' && <span>· Posted by: {p.posted_by}</span>}
+                        {p.extracted_capper_name && p.sbo_cappers?.group_type === 'aggregator' && <span>· Detected: {p.extracted_capper_name}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
