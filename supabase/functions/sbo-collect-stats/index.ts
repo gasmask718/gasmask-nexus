@@ -5,6 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const PAGE = 1000;
+
+async function paginatedFetch(supabase: any, query: () => any) {
+  // Simple approach: use limit+offset via range
+  let all: any[] = [];
+  let offset = 0;
+  while (true) {
+    const { data, error } = await query().range(offset, offset + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,16 +33,16 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // ── 1. Find props_master rows missing stats ──
-    const { data: missing, error: missingErr } = await supabase
-      .from('props_master')
-      .select('id, player_name, stat_type, line, game_date')
-      .is('season_avg', null)
-      .order('game_date', { ascending: false })
-      .limit(1000);
+    // 1. Fetch ALL props missing stats
+    const missing = await paginatedFetch(supabase, () =>
+      supabase
+        .from('props_master')
+        .select('id, player_name, stat_type, line, game_date')
+        .is('season_avg', null)
+        .order('id', { ascending: true })
+    );
 
-    if (missingErr) throw missingErr;
-    if (!missing || missing.length === 0) {
+    if (missing.length === 0) {
       return new Response(JSON.stringify({ success: true, analyzed: 0, failed: 0, message: 'No props missing stats' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -33,39 +50,36 @@ Deno.serve(async (req) => {
 
     console.log(`[collect-stats] Found ${missing.length} props missing stats`);
 
-    // ── 2. Load ALL stat context into a lookup map ──
-    const { data: allStats, error: statsErr } = await supabase
-      .from('sbo_prop_stat_context')
-      .select('player_name, stat_type, season_avg, last_5_avg, last_10_avg, vs_opponent_avg, confidence_score')
-      .not('season_avg', 'is', null);
+    // 2. Fetch ALL stat context
+    const allStats = await paginatedFetch(supabase, () =>
+      supabase
+        .from('sbo_prop_stat_context')
+        .select('player_name, stat_type, season_avg, last_5_avg, last_10_avg, vs_opponent_avg, confidence_score')
+        .not('season_avg', 'is', null)
+    );
 
-    if (statsErr) throw statsErr;
-
-    // Build lookup: player_name::stat_type → best stat row
+    // Build normalized lookup — keep highest confidence per player+stat
     const statMap: Record<string, any> = {};
-    for (const s of allStats || []) {
-      const key = `${s.player_name.toLowerCase()}::${s.stat_type.toLowerCase()}`;
-      // Keep the one with highest confidence or most data
+    for (const s of allStats) {
+      const key = `${s.player_name.toLowerCase().trim()}::${s.stat_type.toLowerCase().trim()}`;
       if (!statMap[key] || (s.confidence_score || 0) > (statMap[key].confidence_score || 0)) {
         statMap[key] = s;
       }
     }
-    console.log(`[collect-stats] Stat context entries: ${Object.keys(statMap).length}`);
+    console.log(`[collect-stats] Stat context unique keys: ${Object.keys(statMap).length}`);
 
-    // ── 3. Match and update props_master ──
+    // 3. Group missing props and match
     let updated = 0;
     let noMatch = 0;
 
-    // Batch by unique player+stat to avoid redundant lookups
-    const updates: { ids: string[]; stats: any }[] = [];
     const grouped: Record<string, string[]> = {};
-    
     for (const prop of missing) {
-      const key = `${prop.player_name.toLowerCase()}::${prop.stat_type.toLowerCase()}`;
+      const key = `${prop.player_name.toLowerCase().trim()}::${prop.stat_type.toLowerCase().trim()}`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(prop.id);
     }
 
+    const updates: { ids: string[]; stats: any }[] = [];
     for (const [key, ids] of Object.entries(grouped)) {
       const stat = statMap[key];
       if (stat) {
@@ -75,10 +89,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Execute updates in batches
+    // 4. Execute batch updates
     for (const upd of updates) {
-      const hitRate = upd.stats.season_avg && upd.stats.season_avg > 0 ? 
-        Math.min(100, Math.round((upd.stats.season_avg / (upd.stats.season_avg + 2)) * 100)) : null;
+      const hitRate = upd.stats.season_avg && upd.stats.season_avg > 0
+        ? Math.min(100, Math.round((upd.stats.season_avg / (upd.stats.season_avg + 2)) * 100))
+        : null;
 
       for (let i = 0; i < upd.ids.length; i += 50) {
         const batch = upd.ids.slice(i, i + 50);
@@ -95,7 +110,7 @@ Deno.serve(async (req) => {
           .in('id', batch);
 
         if (updErr) {
-          console.warn(`[collect-stats] Update error for batch:`, updErr.message);
+          console.warn(`[collect-stats] Update error:`, updErr.message);
         } else {
           updated += batch.length;
         }
