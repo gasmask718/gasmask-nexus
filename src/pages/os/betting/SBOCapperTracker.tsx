@@ -850,6 +850,17 @@ export default function SBOCapperTracker() {
     qc.invalidateQueries({ queryKey: ['sbo-capper-performance'] });
     qc.invalidateQueries({ queryKey: ['sbo-value-props'] });
     qc.invalidateQueries({ queryKey: ['sbo-signal-performance'] });
+    qc.invalidateQueries({ queryKey: ['sbo-market-performance'] });
+  };
+
+  const recalcMarkets = async () => {
+    setRecalcingMarkets(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sbo-market-performance', { body: { mode: 'recalc' } });
+      if (error) throw error;
+      toast.success(`📊 ${data.markets_updated} market segments recalculated`);
+      refetchAll();
+    } catch (err: any) { toast.error(err.message); } finally { setRecalcingMarkets(false); }
   };
 
   const runMatchAndResolve = async () => {
