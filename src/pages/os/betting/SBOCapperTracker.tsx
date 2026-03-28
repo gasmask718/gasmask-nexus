@@ -962,6 +962,20 @@ export default function SBOCapperTracker() {
   const [fetchingResults, setFetchingResults] = useState(false);
   const [resolvingPicks, setResolvingPicks] = useState(false);
   const [backfilling, setBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState<{
+    active: boolean;
+    totalDays: number;
+    currentDay: number;
+    currentDate: string;
+    totalGames: number;
+    totalResolved: number;
+    totalUnmatched: number;
+    wins: number;
+    losses: number;
+    pushes: number;
+    errors: string[];
+    phase: 'fetching' | 'resolving' | 'done' | 'error';
+  } | null>(null);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
