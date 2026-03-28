@@ -397,9 +397,7 @@ export default function PropIntelligenceHub() {
                   setIsCollectingStats(true);
                   toast.info(`⏳ Collecting stats for ${missing} props — this may take a moment...`);
                   try {
-                    const { data, error } = await supabase.functions.invoke('sbo-run-analysis', {
-                      body: { mode: 'stats_only' },
-                    });
+                    const { data, error } = await supabase.functions.invoke('sbo-collect-stats');
                     if (error) throw error;
                     const analyzed = data?.analyzed ?? 0;
                     const failed = data?.failed ?? 0;
