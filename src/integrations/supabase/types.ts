@@ -59230,6 +59230,41 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_capper_aliases: {
+        Row: {
+          alias: string
+          capper_id: string
+          created_at: string | null
+          id: string
+          normalized_alias: string
+          source: string | null
+        }
+        Insert: {
+          alias: string
+          capper_id: string
+          created_at?: string | null
+          id?: string
+          normalized_alias: string
+          source?: string | null
+        }
+        Update: {
+          alias?: string
+          capper_id?: string
+          created_at?: string | null
+          id?: string
+          normalized_alias?: string
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_capper_aliases_capper_id_fkey"
+            columns: ["capper_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_cappers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_capper_performance: {
         Row: {
           avg_odds: number | null
@@ -59314,6 +59349,7 @@ export type Database = {
         Row: {
           alignment_score: number | null
           bet_type: string | null
+          capper_detection_confidence: number | null
           capper_id: string
           confidence_score: number | null
           created_at: string
@@ -59338,6 +59374,7 @@ export type Database = {
           review_status: string | null
           sharp_flag: boolean | null
           source_group: string | null
+          source_group_id: string | null
           source_image_url: string | null
           sport: string | null
           stake: number | null
@@ -59346,6 +59383,7 @@ export type Database = {
         Insert: {
           alignment_score?: number | null
           bet_type?: string | null
+          capper_detection_confidence?: number | null
           capper_id: string
           confidence_score?: number | null
           created_at?: string
@@ -59370,6 +59408,7 @@ export type Database = {
           review_status?: string | null
           sharp_flag?: boolean | null
           source_group?: string | null
+          source_group_id?: string | null
           source_image_url?: string | null
           sport?: string | null
           stake?: number | null
@@ -59378,6 +59417,7 @@ export type Database = {
         Update: {
           alignment_score?: number | null
           bet_type?: string | null
+          capper_detection_confidence?: number | null
           capper_id?: string
           confidence_score?: number | null
           created_at?: string
@@ -59402,6 +59442,7 @@ export type Database = {
           review_status?: string | null
           sharp_flag?: boolean | null
           source_group?: string | null
+          source_group_id?: string | null
           source_image_url?: string | null
           sport?: string | null
           stake?: number | null
@@ -59427,6 +59468,7 @@ export type Database = {
           is_active: boolean | null
           last_active: string | null
           name: string
+          normalized_name: string | null
           notes: string | null
           picks_by_sport: Json | null
           roi_pct: number | null
@@ -59449,6 +59491,7 @@ export type Database = {
           is_active?: boolean | null
           last_active?: string | null
           name: string
+          normalized_name?: string | null
           notes?: string | null
           picks_by_sport?: Json | null
           roi_pct?: number | null
@@ -59471,6 +59514,7 @@ export type Database = {
           is_active?: boolean | null
           last_active?: string | null
           name?: string
+          normalized_name?: string | null
           notes?: string | null
           picks_by_sport?: Json | null
           roi_pct?: number | null

@@ -25,7 +25,22 @@ const CAPPER_NAME_PATTERNS = [
   /^(@\w+)[:\s]/m,
   /^(\w[\w\s]{1,25})[:\s]*\n/m,
   /📸\s*(?:screenshot)?[:\s]*["""]?(.+?)["""]?\s*(?:🔥|💰|💎|⭐|$)/i,
+  /^["""]?(.+?)["""]?\s*[-–—:]\s*(?:LOCK|lock|🔒|💰|picks?|plays?)/im,
 ];
+
+/**
+ * Normalize a capper name for identity matching.
+ * Strips emojis, suffixes like "VIP"/"Picks", and special chars.
+ */
+function normalizeName(name: string): string {
+  let n = name
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}]/gu, '') // emojis
+    .replace(/\b(vip|picks?|plays?|locks?|bets?|premium|free|official)\b/gi, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .toLowerCase()
+    .trim();
+  return n;
+}
 
 function containsBettingSignal(text: string): boolean {
   if (!text || text.length < 8) return false;
@@ -37,16 +52,55 @@ function containsBettingSignal(text: string): boolean {
   return false;
 }
 
-function extractCapperFromText(text: string): string | null {
+function extractCapperFromText(text: string): { name: string; confidence: number } | null {
   if (!text) return null;
-  for (const pattern of CAPPER_NAME_PATTERNS) {
-    const match = text.match(pattern);
+  for (let i = 0; i < CAPPER_NAME_PATTERNS.length; i++) {
+    const match = text.match(CAPPER_NAME_PATTERNS[i]);
     if (match?.[1]) {
-      const name = match[1].trim().replace(/[🔥💰💎⭐🔒]/g, '').trim();
-      if (name.length >= 2 && name.length <= 40) return name;
+      const raw = match[1].trim().replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').trim();
+      if (raw.length >= 2 && raw.length <= 40) {
+        // Earlier patterns = higher confidence
+        const confidence = i <= 1 ? 90 : i === 2 ? 75 : 65;
+        return { name: raw, confidence };
+      }
     }
   }
   return null;
+}
+
+/**
+ * Resolve a capper by normalized name, checking aliases too.
+ */
+async function resolveCapperByName(supabase: any, rawName: string): Promise<{ id: string; name: string } | null> {
+  const normalized = normalizeName(rawName);
+  if (!normalized) return null;
+
+  // 1. Check normalized_name on sbo_cappers
+  const { data: byNorm } = await supabase
+    .from('sbo_cappers')
+    .select('id, name')
+    .eq('normalized_name', normalized)
+    .maybeSingle();
+  if (byNorm) return byNorm;
+
+  // 2. Check aliases
+  const { data: alias } = await supabase
+    .from('sbo_capper_aliases')
+    .select('capper_id, alias')
+    .eq('normalized_alias', normalized)
+    .maybeSingle();
+  if (alias) {
+    const { data: capper } = await supabase.from('sbo_cappers').select('id, name').eq('id', alias.capper_id).single();
+    return capper || null;
+  }
+
+  // 3. Fallback ilike on original name
+  const { data: byName } = await supabase
+    .from('sbo_cappers')
+    .select('id, name')
+    .ilike('name', rawName.trim())
+    .maybeSingle();
+  return byName || null;
 }
 
 serve(async (req) => {
@@ -73,6 +127,7 @@ serve(async (req) => {
       const messageText = body.message_text as string;
       const groupType = (body.group_type as string) || 'direct';
       const sourceGroup = body.source_group as string | undefined;
+      const sourceGroupId = body.source_group_id as string | undefined;
 
       if (!telegramUserId) {
         return new Response(JSON.stringify({ error: 'telegram_user_id required' }), {
@@ -97,31 +152,33 @@ serve(async (req) => {
       let resolvedCapperName: string | null = null;
       let resolvedCapperId: string | null = null;
       let wasCreated = false;
+      let capperDetectionConfidence = 100;
       let postedBy = displayName || username || telegramUserId;
 
       if (groupType === 'aggregator') {
         // Extract capper name from the message text
-        resolvedCapperName = extractCapperFromText(messageText || '');
+        const extracted = extractCapperFromText(messageText || '');
 
-        if (resolvedCapperName) {
-          // Look up by name
-          const { data: existingCapper } = await supabase
-            .from('sbo_cappers')
-            .select('id, name, tier, confidence_grade')
-            .ilike('name', resolvedCapperName)
-            .maybeSingle();
+        if (extracted) {
+          resolvedCapperName = extracted.name;
+          capperDetectionConfidence = extracted.confidence;
+          const normalized = normalizeName(extracted.name);
 
-          if (existingCapper) {
-            resolvedCapperId = existingCapper.id;
+          // Look up by normalized name or alias
+          const existing = await resolveCapperByName(supabase, extracted.name);
+
+          if (existing) {
+            resolvedCapperId = existing.id;
             await supabase.from('sbo_cappers')
               .update({ last_active: new Date().toISOString(), updated_at: new Date().toISOString() })
               .eq('id', resolvedCapperId);
-          } else {
+          } else if (capperDetectionConfidence >= 70) {
             // Auto-create from extracted name
             const { data: newCapper, error: createError } = await supabase
               .from('sbo_cappers')
               .insert({
-                name: resolvedCapperName,
+                name: extracted.name,
+                normalized_name: normalized || null,
                 source: 'aggregator_extract',
                 tier: 'unproven',
                 confidence_grade: 'D',
@@ -134,23 +191,24 @@ serve(async (req) => {
               .single();
 
             if (createError) {
-              const { data: retry } = await supabase
-                .from('sbo_cappers')
-                .select('id, name')
-                .ilike('name', resolvedCapperName)
-                .maybeSingle();
+              // Race condition — retry lookup
+              const retry = await resolveCapperByName(supabase, extracted.name);
               if (retry) resolvedCapperId = retry.id;
             } else {
               resolvedCapperId = newCapper.id;
               wasCreated = true;
             }
           }
+          // If confidence < 70, fall through to sender fallback
         }
-        // Fallback: if no capper extracted, fall through to sender-based logic
       }
 
       // Direct group or aggregator fallback: use telegram sender
       if (!resolvedCapperId) {
+        if (groupType === 'aggregator' && !resolvedCapperName) {
+          capperDetectionConfidence = 30; // low confidence — using sender as fallback
+        }
+
         const { data: existingCapper } = await supabase
           .from('sbo_cappers')
           .select('id, name, total_picks, confidence_grade, tier')
@@ -165,10 +223,12 @@ serve(async (req) => {
             .eq('id', resolvedCapperId);
         } else {
           resolvedCapperName = displayName || username || `TG-${telegramUserId.slice(-6)}`;
+          const normalized = normalizeName(resolvedCapperName);
           const { data: newCapper, error: createError } = await supabase
             .from('sbo_cappers')
             .insert({
               name: resolvedCapperName,
+              normalized_name: normalized || null,
               source: 'telegram',
               source_handle: username ? `@${username}` : null,
               telegram_user_id: telegramUserId,
@@ -209,9 +269,12 @@ serve(async (req) => {
         capper_name: resolvedCapperName,
         posted_by: postedBy,
         source_group: sourceGroup || null,
+        source_group_id: sourceGroupId || null,
         group_type: groupType,
         has_betting_signal: true,
-        extracted_from_content: groupType === 'aggregator' && !!extractCapperFromText(messageText || ''),
+        capper_detection_confidence: capperDetectionConfidence,
+        extracted_from_content: groupType === 'aggregator' && capperDetectionConfidence >= 70,
+        needs_review: capperDetectionConfidence < 70,
       }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -221,7 +284,7 @@ serve(async (req) => {
     if (mode === 'update_profiles') {
       const { data: cappers } = await supabase
         .from('sbo_cappers')
-        .select('id, total_picks, win_rate, roi_pct')
+        .select('id, name, total_picks, win_rate, roi_pct')
         .eq('is_active', true);
 
       if (!cappers || cappers.length === 0) {
@@ -241,11 +304,11 @@ serve(async (req) => {
         if (!picks || picks.length === 0) continue;
 
         const total = picks.length;
-        const wins = picks.filter(p => p.result === 'won').length;
+        const wins = picks.filter((p: any) => p.result === 'won').length;
         const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
 
         const sportCounts: Record<string, number> = {};
-        picks.forEach(p => { if (p.sport) sportCounts[p.sport] = (sportCounts[p.sport] || 0) + 1; });
+        picks.forEach((p: any) => { if (p.sport) sportCounts[p.sport] = (sportCounts[p.sport] || 0) + 1; });
         const bestSport = Object.entries(sportCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
 
         let grade = 'D';
@@ -259,6 +322,9 @@ serve(async (req) => {
         else if (total >= 10 && winRate >= 50) tier = 'consistent';
         else if (total >= 5) tier = 'tracked';
 
+        // Backfill normalized_name if missing
+        const normalized = normalizeName(capper.name || '');
+
         await supabase
           .from('sbo_cappers')
           .update({
@@ -267,6 +333,7 @@ serve(async (req) => {
             confidence_grade: grade,
             tier,
             best_sport: bestSport,
+            normalized_name: normalized || undefined,
             updated_at: new Date().toISOString(),
           })
           .eq('id', capper.id);
@@ -279,7 +346,42 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid mode. Use: process, update_profiles' }), {
+    // MODE: add_alias — manually add a capper alias
+    if (mode === 'add_alias') {
+      const capperId = body.capper_id as string;
+      const alias = body.alias as string;
+      if (!capperId || !alias) {
+        return new Response(JSON.stringify({ error: 'capper_id and alias required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const normalizedAlias = normalizeName(alias);
+      if (!normalizedAlias) {
+        return new Response(JSON.stringify({ error: 'Invalid alias — normalizes to empty' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { error } = await supabase.from('sbo_capper_aliases').insert({
+        capper_id: capperId,
+        alias,
+        normalized_alias: normalizedAlias,
+        source: 'manual',
+      });
+
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, normalized_alias: normalizedAlias }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid mode. Use: process, update_profiles, add_alias' }), {
       status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

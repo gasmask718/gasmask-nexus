@@ -517,10 +517,15 @@ function ReviewQueue({ onResolved }: { onResolved: () => void }) {
               <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant="outline" className="text-[10px]">{p.sbo_cappers?.name}</Badge>
                 <Badge className={`text-[10px] ${sportColors[p.sport] || ''}`}>{p.sport}</Badge>
-                <span className="text-[10px] text-amber-500">{p.parse_confidence}% confidence</span>
+                <span className="text-[10px] text-amber-500">{p.parse_confidence}% parse</span>
+                {p.capper_detection_confidence != null && p.capper_detection_confidence < 70 && (
+                  <span className="text-[10px] text-orange-400">⚠️ {p.capper_detection_confidence}% capper ID</span>
+                )}
               </div>
               <p className="text-sm mt-1">{p.player_name} {p.direction} {p.line} {p.prop_type}</p>
               <p className="text-[10px] text-muted-foreground truncate">{p.pick_text}</p>
+              {p.extracted_capper_name && <p className="text-[10px] text-orange-400">Detected capper: {p.extracted_capper_name}</p>}
+              {p.source_group && <p className="text-[10px] text-muted-foreground">Source: {p.source_group} {p.posted_by ? `· by ${p.posted_by}` : ''}</p>}
             </div>
             <div className="flex gap-1 shrink-0">
               <Button size="sm" variant="outline" className="h-7 text-emerald-500" onClick={() => approve(p.id)}>✅</Button>
@@ -964,7 +969,7 @@ export default function SBOCapperTracker() {
     queryKey: ['sbo-capper-picks', sportFilter],
     queryFn: async () => {
       let q = (supabase as any).from('sbo_capper_picks')
-        .select('*, sbo_cappers(name, tier, source)')
+        .select('*, sbo_cappers(name, tier, source, group_type)')
         .order('created_at', { ascending: false }).limit(200);
       if (sportFilter !== 'all') q = q.eq('sport', sportFilter);
       const { data } = await q;
@@ -1442,6 +1447,7 @@ export default function SBOCapperTracker() {
                         {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
                         {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗 Linked</Badge>}
                         {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-purple-400 border-purple-400/30">🧠 Sharp</Badge>}
+                        {p.sbo_cappers?.group_type === 'aggregator' && <Badge variant="outline" className="text-[8px] text-orange-400 border-orange-400/30">📡 Aggregator</Badge>}
                         {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -1453,6 +1459,9 @@ export default function SBOCapperTracker() {
                       <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
                         <Clock className="h-3 w-3" /><span>{new Date(p.created_at).toLocaleString()}</span>
                         {p.game_date && <span>· {p.game_date}</span>}
+                        {p.source_group && <span>· Source: {p.source_group}</span>}
+                        {p.posted_by && p.sbo_cappers?.group_type === 'aggregator' && <span>· Posted by: {p.posted_by}</span>}
+                        {p.extracted_capper_name && p.sbo_cappers?.group_type === 'aggregator' && <span>· Detected: {p.extracted_capper_name}</span>}
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
