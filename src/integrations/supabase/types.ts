@@ -59848,6 +59848,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_external_match_logs: {
+        Row: {
+          created_at: string | null
+          external_result_id: string | null
+          id: string
+          match_confidence: number | null
+          match_details: Json | null
+          match_type: string
+          pick_id: string | null
+          result: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          external_result_id?: string | null
+          id?: string
+          match_confidence?: number | null
+          match_details?: Json | null
+          match_type?: string
+          pick_id?: string | null
+          result?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          external_result_id?: string | null
+          id?: string
+          match_confidence?: number | null
+          match_details?: Json | null
+          match_type?: string
+          pick_id?: string | null
+          result?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sbo_external_match_logs_external_result_id_fkey"
+            columns: ["external_result_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_external_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sbo_external_match_logs_pick_id_fkey"
+            columns: ["pick_id"]
+            isOneToOne: false
+            referencedRelation: "sbo_capper_picks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sbo_external_results: {
         Row: {
           actual_value: number | null
