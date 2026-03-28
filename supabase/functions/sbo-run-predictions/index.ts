@@ -183,19 +183,8 @@ No real stats available. Base prediction on odds and context only. Cap confidenc
   }
 
   if (ctx.prediction_type === 'player_prop') {
-    const auditCalibration = `
-SYSTEM CALIBRATION (based on 600+ verified predictions):
-- Blocks props historically hit 91% — strong defensive edge
-- Steals props historically hit 83% — strong defensive edge
-- Pts+Ast combo props hit only 45% — AVOID unless overwhelming evidence. Lower confidence by 10 points for these.
-- Pts+Reb combo props hit only 46% — AVOID unless overwhelming evidence. Lower confidence by 10 points for these.
-- UNDER picks hit 68% vs OVER at 45% — PrizePicks lines are systematically set high. If recommending UNDER, this is statistically favorable — can increase confidence by 5 points.
-- Sweet spot confidence range: 80-89% produces 81% accuracy historically.
-- Cap confidence at 87% maximum to avoid elite tier overconfidence.
-- Minimum confidence to save: 55%.
-- Market Brain is the strongest signal — weight market analysis heavily.
-- Context Brain shows weak correlation — do not over-rely on situational factors.
-`;
+    // Build calibration hints dynamically from live sbo_calibration data
+    const auditCalibration = calibrationText;
 
     const system = `You are an elite NBA prop analyst for Dynasty OS SBO Engine. You must decide whether a player goes OVER or UNDER a given prop line based on actual statistics. Do NOT default to OVER. If the player's season average is below the line, lean UNDER. Respond ONLY with valid JSON.
 
@@ -383,6 +372,44 @@ serve(async (req) => {
     const { game_id, prop_id, prediction_type, predicted_outcome, force_rerun } = await req.json();
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    // ═══ LIVE CALIBRATION: Read from sbo_calibration table ═══
+    let calibrationData: Array<{ confidence_bucket: string; actual_accuracy: number; calibration_score: number; total_picks: number }> = [];
+    let calibrationText = '';
+    try {
+      const { data: calRows } = await supabase
+        .from('sbo_calibration')
+        .select('confidence_bucket, actual_accuracy, calibration_score, total_picks')
+        .order('confidence_bucket');
+      calibrationData = calRows || [];
+
+      if (calibrationData.length > 0) {
+        const totalVerified = calibrationData.reduce((s, r) => s + r.total_picks, 0);
+        const bucketLines = calibrationData.map(b => {
+          const status = b.calibration_score >= 1.1 ? '🔥 STRONG' :
+                         b.calibration_score >= 0.95 ? '✅ CALIBRATED' :
+                         b.calibration_score >= 0.80 ? '⚠️ OVERCONFIDENT' : '🚨 UNRELIABLE';
+          return `- ${b.confidence_bucket}% bucket: actual ${b.actual_accuracy}% accuracy (${b.total_picks} picks) — ${status}`;
+        }).join('\n');
+
+        calibrationText = `
+LIVE SYSTEM CALIBRATION (based on ${totalVerified} verified predictions — auto-updated):
+${bucketLines}
+
+CRITICAL RULES FROM CALIBRATION DATA:
+- 80-90% confidence range has ${calibrationData.find(b => b.confidence_bucket === '80-90')?.actual_accuracy || 'N/A'}% actual accuracy — this is the sweet spot.
+- 65-75% confidence range is OVERCONFIDENT — actual accuracy is only ~50%. If your analysis lands here, either find stronger evidence to push higher or lower your score.
+- Cap confidence at 87% maximum to stay in the proven sweet spot.
+- Minimum confidence to save: 50%.
+- Market Brain is the strongest signal — weight market analysis heavily.
+`;
+      } else {
+        calibrationText = 'No calibration data available yet. Use conservative confidence estimates. Cap at 87%.';
+      }
+    } catch (calErr) {
+      console.error('Failed to load calibration:', calErr);
+      calibrationText = 'Calibration data unavailable. Use conservative estimates. Cap at 87%.';
+    }
+
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
     // Cache check — moneyline
@@ -503,6 +530,31 @@ serve(async (req) => {
       if (finalScore > 87) {
         finalScore = 87;
         console.log('Confidence capped at 87% (audit calibration)');
+      }
+    }
+
+    // ═══ LIVE CALIBRATION ADJUSTMENT ═══
+    // Apply calibration_score from historical accuracy data
+    if (calibrationData.length > 0) {
+      const bucket = calibrationData.find(b => {
+        const [low, high] = b.confidence_bucket.split('-').map(Number);
+        return finalScore >= low && finalScore < high;
+      });
+      if (bucket && bucket.total_picks >= 10) {
+        const cal = bucket.calibration_score;
+        if (cal < 0.85) {
+          // This bucket is overconfident — deflate
+          const penalty = Math.round((1 - cal) * 15);
+          const before = finalScore;
+          finalScore = Math.max(50, finalScore - penalty);
+          console.log(`Live calibration: ${bucket.confidence_bucket}% bucket overconfident (cal=${cal}), deflated ${before}→${finalScore}`);
+        } else if (cal > 1.1 && finalScore < 87) {
+          // This bucket is underconfident — slight boost
+          const bonus = Math.round((cal - 1) * 5);
+          const before = finalScore;
+          finalScore = Math.min(87, finalScore + bonus);
+          console.log(`Live calibration: ${bucket.confidence_bucket}% bucket strong (cal=${cal}), boosted ${before}→${finalScore}`);
+        }
       }
     }
 
