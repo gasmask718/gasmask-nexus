@@ -15,6 +15,7 @@ import {
   ChevronUp, ChevronDown, Filter, ImagePlus, Layers, Brain, ArrowLeft, ArrowRight,
   CheckCircle, XCircle, Clock, Plus, FileSpreadsheet, Activity, ShieldCheck, AlertTriangle, Database
 } from 'lucide-react';
+import { SBOSystemStatusBar } from '@/pages/sports-betting/components/SBOSystemStatusBar';
 import { usePropsMaster, usePropsMasterStats, usePropCrossIntelligence, usePropMutations, PropMaster, TimeRange } from '@/hooks/usePropsMaster';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
