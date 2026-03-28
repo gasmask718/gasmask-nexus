@@ -401,10 +401,11 @@ export default function PropIntelligenceHub() {
                     if (error) throw error;
                     const analyzed = data?.analyzed ?? 0;
                     const failed = data?.failed ?? 0;
+                    const skipped = data?.skipped ?? 0;
                     queryClient.invalidateQueries({ queryKey: ['props-master'] });
                     queryClient.invalidateQueries({ queryKey: ['props-master-stats'] });
-                    if (failed > 0) {
-                      toast.warning(`Stats collected: ${analyzed} ✅ | Failed: ${failed} ❌`);
+                    if (skipped > 0 || failed > 0) {
+                      toast.warning(`Stats collected: ${analyzed} ✅ | No match: ${skipped} | Failed: ${failed}`);
                     } else {
                       toast.success(`✅ Stats collected for ${analyzed} props`);
                     }
