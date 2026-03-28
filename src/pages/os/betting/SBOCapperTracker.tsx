@@ -515,7 +515,7 @@ export default function SBOCapperTracker() {
     if (!acc[s]) acc[s] = { total: 0, wins: 0 };
     if (p.result !== 'pending') { acc[s].total++; if (p.result === 'won') acc[s].wins++; }
     return acc;
-  }, {});
+  }, {} as Record<string, { total: number; wins: number }>);
 
   return (
     <TooltipProvider>
