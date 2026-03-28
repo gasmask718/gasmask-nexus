@@ -1073,7 +1073,17 @@ export default function SBOCapperTracker() {
         body: { mode: 'fetch', sport: fetchingSport, game_date: fetchingDate },
       });
       if (error) throw error;
-      toast.success(`Fetched ${data?.games_fetched || 0} games for ${fetchingSport} on ${fetchingDate}`);
+      const games = data?.games || 0;
+      const players = data?.player_stats || 0;
+      const ingested = data?.ingested || 0;
+      if (games === 0 && !data?.fallback) {
+        const checked = data?.dates_checked?.join(', ') || fetchingDate;
+        toast.warning(`No ${fetchingSport} games found on ${checked}. Try a different date.`);
+      } else if (data?.fallback) {
+        toast.success(`No games on ${data.original_date}. Auto-found ${games} games on ${data.game_date} — ${ingested} records stored.`);
+      } else {
+        toast.success(`✅ ${games} games, ${players} player stats fetched — ${ingested} records stored for ${fetchingSport}`);
+      }
       refetchAll();
     } catch (err: any) { toast.error(err.message || 'Fetch failed'); }
     finally { setFetchingResults(false); }
@@ -1086,7 +1096,15 @@ export default function SBOCapperTracker() {
         body: { mode: 'resolve', sport: fetchingSport, game_date: fetchingDate },
       });
       if (error) throw error;
-      toast.success(`Resolved ${data?.resolved || 0} picks (${data?.wins || 0}W / ${data?.losses || 0}L)`);
+      const resolved = data?.resolved || 0;
+      const unmatched = data?.unmatched || 0;
+      const review = data?.needs_review || 0;
+      const graded = data?.cappers_graded || 0;
+      if (resolved === 0 && unmatched === 0) {
+        toast.info('No unresolved picks found for this date range.');
+      } else {
+        toast.success(`✅ ${resolved} resolved, ${unmatched} unmatched, ${review} need review — ${graded} cappers graded`);
+      }
       refetchAll();
     } catch (err: any) { toast.error(err.message || 'Resolve failed'); }
     finally { setResolvingPicks(false); }
@@ -1101,7 +1119,16 @@ export default function SBOCapperTracker() {
         body: { mode: 'backfill', sport: fetchingSport, start_date: start, end_date: end },
       });
       if (error) throw error;
-      toast.success(`Backfill complete: ${data?.total_resolved || 0} picks resolved over 7 days`);
+      const games = data?.total_games || 0;
+      const resolved = data?.resolved || 0;
+      const unmatched = data?.unmatched || 0;
+      const roi = data?.roi_summary || 0;
+      const days = data?.dates_processed || 7;
+      if (games === 0) {
+        toast.warning(`No ${fetchingSport} games found in the ${days}-day range (${start} → ${end}).`);
+      } else {
+        toast.success(`✅ Backfill: ${days} days, ${games} games, ${resolved} picks resolved, ${unmatched} unmatched. ROI: ${roi}%`);
+      }
       refetchAll();
     } catch (err: any) { toast.error(err.message || 'Backfill failed'); }
     finally { setBackfilling(false); }
