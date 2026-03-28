@@ -5,25 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Paginated fetch to bypass 1000-row limit
-async function fetchAllFiltered(supabase: any, table: string, select: string, filters?: (q: any) => any) {
-  const PAGE = 1000;
-  let all: any[] = [];
-  let from = 0;
-  while (true) {
-    let q = supabase.from(table).select(select);
-    if (filters) q = filters(q);
-    q = q.range(from, from + PAGE - 1);
-    const { data, error } = await q;
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    all = all.concat(data);
-    if (data.length < PAGE) break;
-    from += PAGE;
-  }
-  return all;
-}
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,12 +16,23 @@ Deno.serve(async (req) => {
   );
 
   try {
-    // 1. Find ALL props_master rows missing stats (paginated)
-    const missing = await fetchAll(
-      supabase, 'props_master',
-      'id, player_name, stat_type, line, game_date',
-      (q: any) => q.is('season_avg', null).order('game_date', { ascending: false })
-    );
+    // 1. Paginated fetch of ALL props missing stats
+    const PAGE = 1000;
+    let missing: any[] = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('props_master')
+        .select('id, player_name, stat_type, line, game_date')
+        .is('season_avg', null)
+        .order('game_date', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      missing = missing.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
 
     if (missing.length === 0) {
       return new Response(JSON.stringify({ success: true, analyzed: 0, failed: 0, message: 'No props missing stats' }), {
@@ -50,14 +42,23 @@ Deno.serve(async (req) => {
 
     console.log(`[collect-stats] Found ${missing.length} props missing stats`);
 
-    // 2. Load ALL stat context (paginated)
-    const allStats = await fetchAll(
-      supabase, 'sbo_prop_stat_context',
-      'player_name, stat_type, season_avg, last_5_avg, last_10_avg, vs_opponent_avg, confidence_score',
-      (q: any) => q.not('season_avg', 'is', null)
-    );
+    // 2. Paginated fetch of ALL stat context
+    let allStats: any[] = [];
+    from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('sbo_prop_stat_context')
+        .select('player_name, stat_type, season_avg, last_5_avg, last_10_avg, vs_opponent_avg, confidence_score')
+        .not('season_avg', 'is', null)
+        .range(from, from + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      allStats = allStats.concat(data);
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
 
-    // Build lookup with normalized keys
+    // Build normalized lookup
     const statMap: Record<string, any> = {};
     for (const s of allStats) {
       const key = `${s.player_name.toLowerCase().trim()}::${s.stat_type.toLowerCase().trim()}`;
@@ -65,9 +66,9 @@ Deno.serve(async (req) => {
         statMap[key] = s;
       }
     }
-    console.log(`[collect-stats] Stat context entries: ${Object.keys(statMap).length}`);
+    console.log(`[collect-stats] Stat context unique keys: ${Object.keys(statMap).length}`);
 
-    // 3. Match and update
+    // 3. Group missing props by player+stat, match to context
     let updated = 0;
     let noMatch = 0;
 
@@ -88,6 +89,7 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 4. Execute batch updates
     for (const upd of updates) {
       const hitRate = upd.stats.season_avg && upd.stats.season_avg > 0
         ? Math.min(100, Math.round((upd.stats.season_avg / (upd.stats.season_avg + 2)) * 100))
