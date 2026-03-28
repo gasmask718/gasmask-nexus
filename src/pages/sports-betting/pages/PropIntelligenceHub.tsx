@@ -258,6 +258,7 @@ export default function PropIntelligenceHub() {
   const [page, setPage] = useState(1);
   const pageSize = 100;
   const fileRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, refetch } = usePropsMaster({
     platform,
