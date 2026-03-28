@@ -587,10 +587,15 @@ serve(async (req) => {
       }
 
       // Batch update picks
+      let updateErrors = 0;
       for (const u of updates) {
-        await supabase.from('sbo_capper_picks')
+        const { error: updateErr } = await supabase.from('sbo_capper_picks')
           .update({ result: u.result, external_result_id: u.external_result_id, data_source: 'external' })
           .eq('id', u.id);
+        if (updateErr) {
+          console.error('Pick update error:', u.id, updateErr);
+          updateErrors++;
+        }
       }
 
       // ── CAPPER GRADING + ROI ENGINE ──
