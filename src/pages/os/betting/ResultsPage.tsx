@@ -1,10 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Trophy, User, Lock, Database } from 'lucide-react';
+import { Trophy, User, Lock, Database, Crown } from 'lucide-react';
 import { MoneylineResultsTab, PropResultsTab } from '@/components/betting/results';
 import { useSimplifiedAccuracy } from '@/hooks/useSimplifiedAccuracy';
 import { Badge } from '@/components/ui/badge';
 import ExternalResultsPanel from '@/components/betting/ExternalResultsPanel';
+import CapperRankingsPanel from '@/components/betting/CapperRankingsPanel';
 
 export default function ResultsPage() {
   const { data: accuracy, isLoading: accuracyLoading } = useSimplifiedAccuracy();
@@ -75,7 +76,11 @@ export default function ResultsPage() {
           </TabsTrigger>
           <TabsTrigger value="external" className="gap-2">
             <Database className="h-4 w-4" />
-            External Results (Capper Intel)
+            External Results
+          </TabsTrigger>
+          <TabsTrigger value="rankings" className="gap-2">
+            <Crown className="h-4 w-4" />
+            Capper Rankings
           </TabsTrigger>
         </TabsList>
 
@@ -114,6 +119,9 @@ export default function ResultsPage() {
         </TabsContent>
         <TabsContent value="external">
           <ExternalResultsPanel />
+        </TabsContent>
+        <TabsContent value="rankings">
+          <CapperRankingsPanel />
         </TabsContent>
       </Tabs>
     </div>
