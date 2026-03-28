@@ -279,6 +279,9 @@ export default function PropIntelligenceHub() {
   const { syncBooks, runAnalysis, uploadImage } = usePropMutations();
 
   let filtered = bestOnly ? props.filter(p => (p.confidence_score || 0) >= 70) : props;
+  if (dataFilter === 'missing_stats') filtered = filtered.filter(p => p.season_avg == null);
+  else if (dataFilter === 'missing_results') filtered = filtered.filter(p => p.result === 'pending' || !p.result);
+  else if (dataFilter === 'complete') filtered = filtered.filter(p => p.season_avg != null && p.result !== 'pending');
 
   const grouped = new Map<string, PropMaster[]>();
   for (const p of filtered) {
