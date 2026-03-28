@@ -11,8 +11,9 @@ async function fetchAll(supabase: any, table: string, select: string, filters?: 
   let all: any[] = [];
   let from = 0;
   while (true) {
-    let q = supabase.from(table).select(select).range(from, from + PAGE - 1);
+    let q = supabase.from(table).select(select);
     if (filters) q = filters(q);
+    q = q.range(from, from + PAGE - 1);
     const { data, error } = await q;
     if (error) throw error;
     if (!data || data.length === 0) break;
