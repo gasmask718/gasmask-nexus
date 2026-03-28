@@ -59411,9 +59411,11 @@ export type Database = {
       sbo_cappers: {
         Row: {
           best_sport: string | null
+          confidence_grade: string
           created_at: string
           id: string
           is_active: boolean | null
+          last_active: string | null
           name: string
           notes: string | null
           picks_by_sport: Json | null
@@ -59421,6 +59423,8 @@ export type Database = {
           source: string
           source_handle: string | null
           sports: string[] | null
+          telegram_user_id: string | null
+          telegram_username: string | null
           tier: string
           total_picks: number | null
           updated_at: string
@@ -59428,9 +59432,11 @@ export type Database = {
         }
         Insert: {
           best_sport?: string | null
+          confidence_grade?: string
           created_at?: string
           id?: string
           is_active?: boolean | null
+          last_active?: string | null
           name: string
           notes?: string | null
           picks_by_sport?: Json | null
@@ -59438,6 +59444,8 @@ export type Database = {
           source?: string
           source_handle?: string | null
           sports?: string[] | null
+          telegram_user_id?: string | null
+          telegram_username?: string | null
           tier?: string
           total_picks?: number | null
           updated_at?: string
@@ -59445,9 +59453,11 @@ export type Database = {
         }
         Update: {
           best_sport?: string | null
+          confidence_grade?: string
           created_at?: string
           id?: string
           is_active?: boolean | null
+          last_active?: string | null
           name?: string
           notes?: string | null
           picks_by_sport?: Json | null
@@ -59455,6 +59465,8 @@ export type Database = {
           source?: string
           source_handle?: string | null
           sports?: string[] | null
+          telegram_user_id?: string | null
+          telegram_username?: string | null
           tier?: string
           total_picks?: number | null
           updated_at?: string
