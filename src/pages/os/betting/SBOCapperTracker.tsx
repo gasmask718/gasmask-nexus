@@ -957,6 +957,11 @@ export default function SBOCapperTracker() {
   const [runningTopPlays, setRunningTopPlays] = useState(false);
   const [topPlays, setTopPlays] = useState<any[]>([]);
   const [bankroll, setBankroll] = useState(1000);
+  const [fetchingSport, setFetchingSport] = useState('NBA');
+  const [fetchingDate, setFetchingDate] = useState(new Date().toISOString().split('T')[0]);
+  const [fetchingResults, setFetchingResults] = useState(false);
+  const [resolvingPicks, setResolvingPicks] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
 
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
