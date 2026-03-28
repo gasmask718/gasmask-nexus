@@ -204,12 +204,15 @@ export function usePropsMasterStats(gameDate?: string, timeRange?: TimeRange) {
         pending,
         withPrediction,
         bestPicks,
-        withStats: withPrediction, // props that have been analyzed
+        withStats: withPrediction,
         noStats: total - withPrediction,
         avgConfidence,
         winRate: wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0,
         byPlatform,
         byStatType,
+        overCount,
+        underCount,
+        holdCount,
       };
     },
   });
