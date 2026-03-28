@@ -977,6 +977,11 @@ export default function SBOCapperTracker() {
     phase: 'fetching' | 'resolving' | 'done' | 'error';
   } | null>(null);
 
+  const backfillPct = backfillProgress ? Math.round((backfillProgress.currentDay / backfillProgress.totalDays) * 100) : 0;
+  const backfillROI = backfillProgress && (backfillProgress.wins + backfillProgress.losses + backfillProgress.pushes) > 0
+    ? Math.round(((backfillProgress.wins * 0.909 - backfillProgress.losses) / (backfillProgress.wins + backfillProgress.losses + backfillProgress.pushes)) * 10000) / 100
+    : 0;
+
   const { data: cappers = [] } = useQuery({
     queryKey: ['sbo-cappers'],
     queryFn: async () => {
