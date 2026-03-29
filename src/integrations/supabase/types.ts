@@ -59418,6 +59418,7 @@ export type Database = {
           capper_detection_confidence: number | null
           capper_id: string
           confidence_score: number | null
+          consensus_count: number | null
           created_at: string
           data_source: string | null
           direction: string | null
@@ -59426,6 +59427,7 @@ export type Database = {
           extracted_capper_name: string | null
           game_date: string | null
           id: string
+          is_consensus: boolean | null
           league: string | null
           line: number | null
           matched_prop_id: string | null
@@ -59454,6 +59456,7 @@ export type Database = {
           capper_detection_confidence?: number | null
           capper_id: string
           confidence_score?: number | null
+          consensus_count?: number | null
           created_at?: string
           data_source?: string | null
           direction?: string | null
@@ -59462,6 +59465,7 @@ export type Database = {
           extracted_capper_name?: string | null
           game_date?: string | null
           id?: string
+          is_consensus?: boolean | null
           league?: string | null
           line?: number | null
           matched_prop_id?: string | null
@@ -59490,6 +59494,7 @@ export type Database = {
           capper_detection_confidence?: number | null
           capper_id?: string
           confidence_score?: number | null
+          consensus_count?: number | null
           created_at?: string
           data_source?: string | null
           direction?: string | null
@@ -59498,6 +59503,7 @@ export type Database = {
           extracted_capper_name?: string | null
           game_date?: string | null
           id?: string
+          is_consensus?: boolean | null
           league?: string | null
           line?: number | null
           matched_prop_id?: string | null
