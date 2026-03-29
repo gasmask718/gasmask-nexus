@@ -91,7 +91,45 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
 
       const { data, count, error } = await q;
       if (error) throw error;
-      return { data: data || [], totalCount: count || 0 };
+
+      // Compute consensus counts client-side for this page
+      const picksData = data || [];
+      const consensusMap = new Map<string, number>();
+      // Build consensus key for all picks on this page, then query for consensus counts
+      const consensusKeys = picksData
+        .filter((p: any) => p.player_name && p.prop_type && p.line != null && p.game_date)
+        .map((p: any) => `${(p.player_name || '').toLowerCase().trim()}|${(p.prop_type || '').toLowerCase()}|${p.line}|${p.game_date}`);
+      
+      if (consensusKeys.length > 0) {
+        // Get unique keys and query for consensus
+        const uniqueKeys = [...new Set(consensusKeys)];
+        for (const key of uniqueKeys) {
+          const [playerName, propType, line, gameDate] = key.split('|');
+          const { count: capperCount } = await (supabase as any).from('sbo_capper_picks')
+            .select('capper_id', { count: 'exact', head: true })
+            .ilike('player_name', playerName)
+            .ilike('prop_type', propType)
+            .eq('line', parseFloat(line))
+            .eq('game_date', gameDate);
+          if (capperCount && capperCount > 1) {
+            consensusMap.set(key, capperCount);
+          }
+        }
+      }
+
+      // Attach consensus info to picks
+      const enriched = picksData.map((p: any) => {
+        if (p.player_name && p.prop_type && p.line != null && p.game_date) {
+          const key = `${(p.player_name || '').toLowerCase().trim()}|${(p.prop_type || '').toLowerCase()}|${p.line}|${p.game_date}`;
+          const cc = consensusMap.get(key);
+          if (cc && cc > 1) {
+            return { ...p, _consensusCount: cc };
+          }
+        }
+        return p;
+      });
+
+      return { data: enriched, totalCount: count || 0 };
     },
   });
 
