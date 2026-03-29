@@ -50,6 +50,7 @@ export function useUnifiedProps(date?: string) {
       return (data || []) as UnifiedProp[];
     },
     refetchInterval: 30000,
+    placeholderData: (prev: any) => prev, // keep previous data during refetch
   });
 }
 
