@@ -1816,6 +1816,9 @@ export default function SBOCapperTracker() {
           </TabsContent>
 
 
+          {/* Capper Grading */}
+          <TabsContent value="grading" className="mt-3"><CapperGradingDashboard /></TabsContent>
+
           {/* Daily Report */}
           <TabsContent value="report" className="mt-3"><DailyReportDashboard /></TabsContent>
 
