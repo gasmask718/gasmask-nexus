@@ -277,7 +277,7 @@ export function useUnifiedSignals() {
       const conf = pred.final_confidence || 0;
       if (conf < 55) continue;
 
-      const score = calcFinalScore(conf, 0, 1.0, 0, 0, false);
+      const score = calcFinalScore(conf, 0, 1.0, 0, 0, false, dynamicWeights);
       const partial2 = {
         player_name: pp.player_name,
         team: pp.team || null,
