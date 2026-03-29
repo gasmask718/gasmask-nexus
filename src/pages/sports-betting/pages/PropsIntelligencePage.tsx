@@ -4,10 +4,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain } from 'lucide-react';
+import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain, Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
+import { useUnifiedProps, UnifiedProp, getCoverageMode, setCoverageMode, type CoverageMode } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
 import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
 
@@ -27,8 +27,9 @@ export default function PropsIntelligencePage() {
   const [filterPlatform, setFilterPlatform] = useState<string | null>(null);
   const [bestOnly, setBestOnly] = useState(false);
   const [resultFilter, setResultFilter] = useState<ResultFilter>('all');
+  const [coverageMode, setCoverageModeState] = useState<CoverageMode>(getCoverageMode);
 
-  const { data: props, isLoading: propsLoading } = useUnifiedProps();
+  const { data: props, isLoading: propsLoading } = useUnifiedProps(undefined, coverageMode);
   const { state: analysisState, feed: analysisFeed, skippedCount, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
   const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
