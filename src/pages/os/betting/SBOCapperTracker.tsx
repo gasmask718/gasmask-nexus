@@ -16,6 +16,7 @@ import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircl
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CapperPicksFeed } from '@/components/betting/CapperPicksFeed';
+import { ConsensusIntelligenceDashboard } from '@/components/betting/ConsensusIntelligenceDashboard';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
@@ -1440,8 +1441,9 @@ export default function SBOCapperTracker() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="profit">
-          <TabsList className="w-full grid grid-cols-9">
+        <Tabs defaultValue="consensus">
+          <TabsList className="w-full flex flex-wrap h-auto gap-0.5">
+            <TabsTrigger value="consensus" className="text-xs gap-1"><Flame className="h-3 w-3" /> Consensus</TabsTrigger>
             <TabsTrigger value="profit" className="text-xs gap-1"><Banknote className="h-3 w-3" /> Profit</TabsTrigger>
             <TabsTrigger value="top-plays" className="text-xs gap-1"><Crown className="h-3 w-3" /> Top Plays</TabsTrigger>
             <TabsTrigger value="markets" className="text-xs gap-1"><Layers className="h-3 w-3" /> Markets</TabsTrigger>
@@ -1452,6 +1454,11 @@ export default function SBOCapperTracker() {
             <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
+
+          {/* ── CONSENSUS INTELLIGENCE TAB ── */}
+          <TabsContent value="consensus" className="mt-3">
+            <ConsensusIntelligenceDashboard />
+          </TabsContent>
 
           {/* ── PROFIT CENTER TAB ── */}
           <TabsContent value="profit" className="mt-3">
