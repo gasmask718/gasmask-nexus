@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getCoverageMode, setAnalysisLock } from '@/hooks/useUnifiedProps';
+import { getAnalysisLock, setAnalysisLock } from '@/hooks/useUnifiedProps';
 import type { AnalysisState, AnalysisFeedItem } from '@/components/betting/LiveAnalysisPanel';
 
 const INITIAL_STATE: AnalysisState = {
@@ -20,7 +19,6 @@ const INITIAL_STATE: AnalysisState = {
 const BATCH_SIZE = 5;
 
 export function useAnalysisVisibility() {
-  const queryClient = useQueryClient();
   const [state, setState] = useState<AnalysisState>(INITIAL_STATE);
   const [feed, setFeed] = useState<AnalysisFeedItem[]>([]);
   const [skippedCount, setSkippedCount] = useState(0);
@@ -53,9 +51,12 @@ export function useAnalysisVisibility() {
           current_step: null,
           completed_at: Date.now(),
         }));
-        // Soft refetch — uses exact query key with current coverage mode
-        const mode = getCoverageMode();
-        queryClient.refetchQueries({ queryKey: ['unified-props', todayEST, mode] });
+        // HARDLOCK: keep visible dataset immutable until user-initiated refresh
+        console.log('REFETCH TRIGGERED:', ['unified-props', todayEST], {
+          blocked: true,
+          lockState: getAnalysisLock(),
+          reason: 'dataset_lock_active',
+        });
       } else if (data.status === 'failed') {
         setAnalysisLock(false); // 🔓 Unlock dataset
         setState(prev => ({
@@ -75,21 +76,41 @@ export function useAnalysisVisibility() {
       }
     }, 2000);
     return () => clearInterval(interval);
-  }, [state.isRunning, todayEST, queryClient]);
+  }, [state.isRunning, todayEST]);
 
-  const startAnalysis = useCallback(async (forceRerun = false) => {
+  const startAnalysis = useCallback(async (
+    forceRerun = false,
+    datasetSnapshot?: Array<{ id: string; player_name: string; stat_type: string; line: number }>
+  ) => {
     cancelledRef.current = false;
     setSkippedCount(0);
     setAnalysisLock(true); // 🔒 Lock dataset — prevent refetches
 
-    // Get today's props
-    const { data: propsData } = await (supabase as any)
-      .from('sbo_unified_props')
-      .select('id, player_name, stat_type, line')
-      .eq('game_date', todayEST);
+    let propsList: any[] = [];
 
-    const propsList: any[] = propsData || [];
+    if (datasetSnapshot?.length) {
+      propsList = datasetSnapshot.map((p) => ({
+        id: p.id,
+        player_name: p.player_name,
+        stat_type: p.stat_type,
+        line: p.line,
+      }));
+      console.log('SNAPSHOT CREATED:', {
+        timestamp: Date.now(),
+        props_count: propsList.length,
+      });
+    } else {
+      // Fallback: get today's props
+      const { data: propsData } = await (supabase as any)
+        .from('sbo_unified_props')
+        .select('id, player_name, stat_type, line')
+        .eq('game_date', todayEST);
+
+      propsList = propsData || [];
+    }
+
     if (!propsList.length) {
+      setAnalysisLock(false);
       setState({ ...INITIAL_STATE, status: 'completed', completed_at: Date.now() });
       return;
     }
@@ -158,6 +179,7 @@ export function useAnalysisVisibility() {
 
     if (toProcess.length === 0) {
       // All skipped — done instantly
+      setAnalysisLock(false);
       setState(prev => ({
         ...prev,
         isRunning: false,
@@ -184,6 +206,7 @@ export function useAnalysisVisibility() {
       .single();
 
     if (jobError) {
+      setAnalysisLock(false);
       setState(prev => ({ ...prev, isRunning: false, status: 'failed' }));
       return;
     }
@@ -200,7 +223,7 @@ export function useAnalysisVisibility() {
 
     // Simulate parallel batch feed for new props
     simulateParallelFeed(toProcess, total, toSkip.length);
-  }, [todayEST, queryClient]);
+  }, [todayEST]);
 
   const simulateParallelFeed = useCallback((propsList: any[], total: number, offset: number) => {
     const steps = ['fetching', 'ai_model', 'scoring', 'saving'];
