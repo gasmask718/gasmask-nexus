@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { getCoverageMode } from '@/hooks/useUnifiedProps';
+import { getCoverageMode, setAnalysisLock } from '@/hooks/useUnifiedProps';
 import type { AnalysisState, AnalysisFeedItem } from '@/components/betting/LiveAnalysisPanel';
 
 const INITIAL_STATE: AnalysisState = {
@@ -42,6 +42,7 @@ export function useAnalysisVisibility() {
       if (!data) return;
 
       if (data.status === 'completed') {
+        setAnalysisLock(false); // 🔓 Unlock dataset
         setState(prev => ({
           ...prev,
           isRunning: false,
@@ -56,6 +57,7 @@ export function useAnalysisVisibility() {
         const mode = getCoverageMode();
         queryClient.refetchQueries({ queryKey: ['unified-props', todayEST, mode] });
       } else if (data.status === 'failed') {
+        setAnalysisLock(false); // 🔓 Unlock dataset
         setState(prev => ({
           ...prev,
           isRunning: false,
@@ -78,6 +80,7 @@ export function useAnalysisVisibility() {
   const startAnalysis = useCallback(async (forceRerun = false) => {
     cancelledRef.current = false;
     setSkippedCount(0);
+    setAnalysisLock(true); // 🔒 Lock dataset — prevent refetches
 
     // Get today's props
     const { data: propsData } = await (supabase as any)
@@ -275,6 +278,7 @@ export function useAnalysisVisibility() {
 
   const cancelAnalysis = useCallback(() => {
     cancelledRef.current = true;
+    setAnalysisLock(false); // 🔓 Unlock dataset
     setState(prev => ({
       ...prev,
       isRunning: false,

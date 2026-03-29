@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain, Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedProps, UnifiedProp, getCoverageMode, setCoverageMode, type CoverageMode } from '@/hooks/useUnifiedProps';
+import { useUnifiedProps, UnifiedProp, getCoverageMode, setCoverageMode, getAnalysisLock, type CoverageMode } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
 import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
 
@@ -123,8 +123,13 @@ export default function PropsIntelligencePage() {
             <Zap className="h-6 w-6 text-primary" />
             Props Intelligence Engine
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground flex items-center gap-2">
             Unified cross-platform prop analysis — all sources, one engine
+            {isRunning && (
+              <Badge variant="outline" className="text-xs border-primary/50 text-primary animate-pulse">
+                <Lock className="h-3 w-3 mr-1" /> Dataset Locked
+              </Badge>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
