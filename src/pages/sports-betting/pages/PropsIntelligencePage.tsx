@@ -130,13 +130,8 @@ export default function PropsIntelligencePage() {
         </div>
       </div>
 
-      {/* LIVE ANALYSIS PANEL — always rendered when running or recently completed */}
-      {(analysisState.status !== 'idle') && (
-        <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
-      )}
-
-      {/* ALWAYS show analysis panel when running or has results */}
-      {(isRunning || analysisState.status === 'running' || analysisState.status === 'completed' || analysisState.status === 'failed' || analysisState.status === 'cancelled') && (
+      {/* LIVE ANALYSIS PANEL */}
+      {analysisState.status !== 'idle' && (
         <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
       )}
 
