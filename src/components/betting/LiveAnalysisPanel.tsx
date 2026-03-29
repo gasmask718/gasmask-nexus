@@ -80,13 +80,8 @@ export function LiveAnalysisPanel({ state, feed, onCancel, className }: LiveAnal
 
   return (
     <div className={cn('space-y-3', className)}>
-      {/* OVERLAY BANNER */}
-      {state.isRunning && (
-        <div className="fixed inset-0 bg-background/60 backdrop-blur-sm z-40 pointer-events-none" />
-      )}
-
       <Card className={cn(
-        'relative z-50 border',
+        'relative border',
         state.status === 'running' && 'border-primary/40 bg-primary/5',
         state.status === 'completed' && 'border-hud-green/40 bg-hud-green/5',
         state.status === 'failed' && 'border-destructive/40 bg-destructive/5',
