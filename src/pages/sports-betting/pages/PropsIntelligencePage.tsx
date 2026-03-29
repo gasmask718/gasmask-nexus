@@ -31,6 +31,20 @@ export default function PropsIntelligencePage() {
   const { data: props, isLoading: propsLoading } = useUnifiedProps();
   const { state: analysisState, feed: analysisFeed, skippedCount, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
+  const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const { data: predictionCount = 0 } = useQuery({
+    queryKey: ['prediction-count', todayEST],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from('sbo_prop_predictions')
+        .select('*', { count: 'exact', head: true })
+        .eq('game_date', todayEST);
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 5000,
+  });
+
   const safeProps = useMemo(() => Array.isArray(props) ? props : [], [props]);
   const platforms = useMemo(() => [...new Set(safeProps.map(p => p.platform))], [safeProps]);
 
