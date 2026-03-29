@@ -1455,6 +1455,7 @@ export default function SBOCapperTracker() {
             <TabsTrigger value="review" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" /> Review</TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs gap-1"><Trophy className="h-3 w-3" /> Board</TabsTrigger>
             <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
+            <TabsTrigger value="report" className="text-xs gap-1"><FileText className="h-3 w-3" /> Report</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
 
