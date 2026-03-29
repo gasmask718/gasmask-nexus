@@ -128,6 +128,15 @@ export default function PropsIntelligencePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant={coverageMode === 'expanded' ? 'default' : 'outline'}
+            size="sm"
+            onClick={handleToggleCoverage}
+            className={coverageMode === 'expanded' ? 'bg-primary text-primary-foreground' : ''}
+          >
+            {coverageMode === 'expanded' ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
+            {coverageMode === 'expanded' ? 'Expanded 🔒' : 'Expand Coverage'}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleForceRerun} disabled={isRunning}>
             <RefreshCw className="h-3 w-3 mr-1" /> Re-run All
           </Button>
