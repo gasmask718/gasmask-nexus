@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain, Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedProps, UnifiedProp, getCoverageMode, setCoverageMode, type CoverageMode } from '@/hooks/useUnifiedProps';
+import { useUnifiedProps, UnifiedProp, getCoverageMode, setCoverageMode, getAnalysisLock, type CoverageMode } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
 import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
 
