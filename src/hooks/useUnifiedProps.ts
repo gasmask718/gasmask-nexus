@@ -86,7 +86,7 @@ export function useAnalysisJob() {
         table: 'sbo_analysis_jobs',
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['analysis-job'] });
-        queryClient.invalidateQueries({ queryKey: ['unified-props'] });
+        queryClient.refetchQueries({ queryKey: ['unified-props'] });
       })
       .subscribe();
 
