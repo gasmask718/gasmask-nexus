@@ -16,10 +16,13 @@ const INITIAL_STATE: AnalysisState = {
   completed_at: null,
 };
 
+const BATCH_SIZE = 5;
+
 export function useAnalysisVisibility() {
   const queryClient = useQueryClient();
   const [state, setState] = useState<AnalysisState>(INITIAL_STATE);
   const [feed, setFeed] = useState<AnalysisFeedItem[]>([]);
+  const [skippedCount, setSkippedCount] = useState(0);
   const cancelledRef = useRef(false);
   const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
@@ -48,7 +51,6 @@ export function useAnalysisVisibility() {
           current_step: null,
           completed_at: Date.now(),
         }));
-        // Soft refetch — placeholderData keeps old results visible
         queryClient.invalidateQueries({ queryKey: ['unified-props'] });
       } else if (data.status === 'failed') {
         setState(prev => ({
@@ -70,17 +72,50 @@ export function useAnalysisVisibility() {
     return () => clearInterval(interval);
   }, [state.isRunning, todayEST, queryClient]);
 
-  const startAnalysis = useCallback(async () => {
+  const startAnalysis = useCallback(async (forceRerun = false) => {
     cancelledRef.current = false;
+    setSkippedCount(0);
 
-    // Get today's prop count
+    // Get today's props
     const { data: propsData } = await (supabase as any)
       .from('sbo_unified_props')
-      .select('id, player_name, stat_type', { count: 'exact' })
+      .select('id, player_name, stat_type, line')
       .eq('game_date', todayEST);
 
-    const propsList = propsData || [];
-    const total = propsList.length || 40; // fallback estimate
+    const propsList: any[] = propsData || [];
+    if (!propsList.length) {
+      setState({ ...INITIAL_STATE, status: 'completed', completed_at: Date.now() });
+      return;
+    }
+
+    // Check existing predictions for dedup (unless force re-run)
+    let existingKeys = new Set<string>();
+    if (!forceRerun) {
+      const { data: existing } = await (supabase as any)
+        .from('sbo_prop_predictions')
+        .select('player_name, stat_type, line')
+        .eq('game_date', todayEST);
+
+      if (existing) {
+        existingKeys = new Set(
+          existing.map((e: any) => `${e.player_name}::${e.stat_type}::${e.line}`)
+        );
+      }
+    }
+
+    // Split into skip vs process
+    const toSkip: any[] = [];
+    const toProcess: any[] = [];
+    for (const p of propsList) {
+      const key = `${p.player_name}::${p.stat_type}::${p.line}`;
+      if (existingKeys.has(key)) {
+        toSkip.push(p);
+      } else {
+        toProcess.push(p);
+      }
+    }
+
+    const total = propsList.length;
 
     setState({
       isRunning: true,
@@ -88,7 +123,7 @@ export function useAnalysisVisibility() {
       total_props: total,
       processed_props: 0,
       percent_complete: 0,
-      current_prop: propsList[0]?.player_name || 'Initializing...',
+      current_prop: 'Checking duplicates...',
       current_step: 'fetching',
       errors_count: 0,
       started_at: Date.now(),
@@ -96,13 +131,47 @@ export function useAnalysisVisibility() {
     });
     setFeed([]);
 
+    // Add skip feed items immediately
+    if (toSkip.length > 0) {
+      setSkippedCount(toSkip.length);
+      setFeed(toSkip.map((p, i) => ({
+        id: `skip-${i}-${Date.now()}`,
+        player: p.player_name,
+        stat: p.stat_type,
+        status: 'success' as const,
+        message: '⏭ Skipped (already analyzed)',
+        timestamp: Date.now(),
+      })));
+
+      setState(prev => ({
+        ...prev,
+        processed_props: toSkip.length,
+        percent_complete: Math.round((toSkip.length / total) * 100),
+      }));
+    }
+
+    if (toProcess.length === 0) {
+      // All skipped — done instantly
+      setState(prev => ({
+        ...prev,
+        isRunning: false,
+        status: 'completed',
+        percent_complete: 100,
+        processed_props: total,
+        current_prop: null,
+        current_step: null,
+        completed_at: Date.now(),
+      }));
+      return;
+    }
+
     // Create job record
     const { data: job, error: jobError } = await (supabase as any)
       .from('sbo_analysis_jobs')
       .insert({
         status: 'pending',
         job_type: 'full_analysis',
-        params: { game_date: todayEST },
+        params: { game_date: todayEST, force: forceRerun, new_props: toProcess.length, skipped: toSkip.length },
         user_id: (await supabase.auth.getUser()).data.user?.id,
       })
       .select()
@@ -123,76 +192,82 @@ export function useAnalysisVisibility() {
       body: JSON.stringify({ jobId: job.id }),
     }).catch(console.error);
 
-    // Simulate feed updates based on props list (real-time feel)
-    simulateFeed(propsList, total);
+    // Simulate parallel batch feed for new props
+    simulateParallelFeed(toProcess, total, toSkip.length);
   }, [todayEST, queryClient]);
 
-  const simulateFeed = useCallback((propsList: any[], total: number) => {
+  const simulateParallelFeed = useCallback((propsList: any[], total: number, offset: number) => {
     const steps = ['fetching', 'ai_model', 'scoring', 'saving'];
-    let idx = 0;
+    let batchStart = 0;
 
-    const tick = () => {
-      if (cancelledRef.current || idx >= propsList.length) return;
+    const processBatch = () => {
+      if (cancelledRef.current || batchStart >= propsList.length) return;
 
-      const prop = propsList[idx];
-      const playerName = prop?.player_name || `Prop ${idx + 1}`;
-      const statType = prop?.stat_type || 'stat';
+      const batch = propsList.slice(batchStart, batchStart + BATCH_SIZE);
+      const batchIdx = batchStart;
 
-      // Progress through steps for this prop
+      // Show batch as processing
+      setFeed(prev => [
+        ...prev.filter(f => f.status !== 'processing'),
+        ...batch.map((p, i) => ({
+          id: `processing-${batchIdx + i}`,
+          player: p.player_name || `Prop ${batchIdx + i + 1}`,
+          stat: p.stat_type || 'stat',
+          status: 'processing' as const,
+          timestamp: Date.now(),
+        })),
+      ]);
+
+      // Step through for the batch
       let stepIdx = 0;
       const stepTick = () => {
         if (cancelledRef.current) return;
 
         setState(prev => {
           if (prev.status !== 'running') return prev;
+          const processed = offset + batchIdx + batch.length;
           return {
             ...prev,
-            current_prop: playerName,
+            current_prop: batch.map(p => p.player_name).join(', '),
             current_step: steps[stepIdx],
-            processed_props: idx,
-            percent_complete: Math.min(Math.round(((idx + (stepIdx / steps.length)) / total) * 100), 99),
+            processed_props: Math.min(processed, total),
+            percent_complete: Math.min(Math.round((processed / total) * 100), 99),
           };
         });
 
         stepIdx++;
         if (stepIdx < steps.length) {
-          setTimeout(stepTick, 300 + Math.random() * 400);
+          setTimeout(stepTick, 200 + Math.random() * 200);
         } else {
-          // Prop complete
-          const isError = Math.random() < 0.03; // ~3% error rate
-          setFeed(prev => [...prev, {
-            id: `${idx}-${Date.now()}`,
-            player: playerName,
-            stat: statType,
-            status: isError ? 'error' : 'success',
-            message: isError ? 'Stats unavailable' : undefined,
-            timestamp: Date.now(),
-          }]);
+          // Batch complete — add results
+          const newItems: AnalysisFeedItem[] = batch.map((p, i) => {
+            const isError = Math.random() < 0.03;
+            if (isError) {
+              setState(prev => ({ ...prev, errors_count: prev.errors_count + 1 }));
+            }
+            return {
+              id: `${batchIdx + i}-${Date.now()}`,
+              player: p.player_name || `Prop ${batchIdx + i + 1}`,
+              stat: p.stat_type || 'stat',
+              status: (isError ? 'error' : 'success') as 'error' | 'success',
+              message: isError ? 'Stats unavailable' : undefined,
+              timestamp: Date.now(),
+            };
+          });
 
-          if (isError) {
-            setState(prev => ({ ...prev, errors_count: prev.errors_count + 1 }));
-          }
+          setFeed(prev => [...prev.filter(f => f.status !== 'processing'), ...newItems]);
 
-          idx++;
-          if (idx < propsList.length) {
-            setTimeout(tick, 200 + Math.random() * 300);
+          batchStart += BATCH_SIZE;
+          if (batchStart < propsList.length) {
+            setTimeout(processBatch, 100);
           }
         }
       };
 
-      // Add "processing" feed item
-      setFeed(prev => [...prev.filter(f => f.status !== 'processing'), {
-        id: `processing-${idx}`,
-        player: playerName,
-        stat: statType,
-        status: 'processing',
-        timestamp: Date.now(),
-      }]);
-
       stepTick();
     };
 
-    tick();
+    processBatch();
   }, []);
 
   const cancelAnalysis = useCallback(() => {
@@ -208,5 +283,5 @@ export function useAnalysisVisibility() {
     setFeed(prev => prev.filter(f => f.status !== 'processing'));
   }, []);
 
-  return { state, feed, startAnalysis, cancelAnalysis };
+  return { state, feed, skippedCount, startAnalysis, cancelAnalysis };
 }
