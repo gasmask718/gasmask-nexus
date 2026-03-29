@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, Filter } from 'lucide-react';
+import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, Filter, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
