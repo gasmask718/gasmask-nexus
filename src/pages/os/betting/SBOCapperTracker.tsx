@@ -1813,6 +1813,10 @@ export default function SBOCapperTracker() {
             </Card>
           </TabsContent>
 
+
+          {/* Daily Report */}
+          <TabsContent value="report" className="mt-3"><DailyReportDashboard /></TabsContent>
+
           {/* Settings */}
           <TabsContent value="settings" className="mt-3"><SettingsPanel cappers={cappers} refetch={refetchAll} /></TabsContent>
         </Tabs>
