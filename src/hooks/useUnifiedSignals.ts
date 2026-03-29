@@ -362,7 +362,7 @@ export function useUnifiedSignals() {
       marketEdges: edges,
       yesterdayStats: { wins: yWins, losses: yLosses, pushes: 0, roi: yROI, bestSignal: bestY, worstSignal: worstY } as YesterdayStats,
     };
-  }, [aiPredictions, todayProps, consensusPicks, capperKPIs, today, yesterday]);
+  }, [aiPredictions, todayProps, consensusPicks, capperKPIs, today, yesterday, dynamicWeights]);
 
   return {
     signals,
