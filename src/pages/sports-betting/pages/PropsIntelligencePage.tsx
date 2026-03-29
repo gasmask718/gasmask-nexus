@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUnifiedProps, useAnalysisJob, UnifiedProp } from '@/hooks/useUnifiedProps';
+import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
+import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
+import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
 
 const PROP_LABELS: Record<string, string> = {
   points: 'Points', pts: 'Points', player_points: 'Points',
@@ -23,7 +25,7 @@ export default function PropsIntelligencePage() {
   const [bestOnly, setBestOnly] = useState(false);
 
   const { data: props, isLoading: propsLoading } = useUnifiedProps();
-  const { job, startAnalysis } = useAnalysisJob();
+  const { state: analysisState, feed: analysisFeed, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
   const safeProps = useMemo(() => Array.isArray(props) ? props : [], [props]);
 
@@ -40,7 +42,6 @@ export default function PropsIntelligencePage() {
       if (!map[key]) map[key] = [];
       map[key].push(p);
     }
-    // Sort by highest confidence
     return Object.entries(map).sort((a, b) => {
       const maxA = Math.max(...a[1].map(p => p.ai_confidence || 0));
       const maxB = Math.max(...b[1].map(p => p.ai_confidence || 0));
@@ -49,13 +50,11 @@ export default function PropsIntelligencePage() {
   }, [safeProps, search, filterPlatform, bestOnly]);
 
   const handleRunAnalysis = () => {
-    startAnalysis.mutate(undefined, {
-      onSuccess: () => toast.success('Analysis job queued — runs in background!'),
-      onError: (e: any) => toast.error(e.message),
-    });
+    startAnalysis();
+    toast.success('Analysis started — watch the live feed!');
   };
 
-  const isRunning = job?.status === 'pending' || job?.status === 'running';
+  const isRunning = analysisState.isRunning;
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
@@ -72,53 +71,16 @@ export default function PropsIntelligencePage() {
         </div>
         <Button
           onClick={handleRunAnalysis}
-          disabled={isRunning || startAnalysis.isPending}
-          className="bg-lime-600 hover:bg-lime-700"
+          disabled={isRunning}
+          className="bg-primary hover:bg-primary/90"
         >
           {isRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
           {isRunning ? 'Running...' : 'Run Analysis'}
         </Button>
       </div>
 
-      {/* JOB STATUS */}
-      {job && isRunning && (
-        <Card className="border-lime-500/30 bg-lime-500/5">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-lime-400">
-                Analysis in progress — you can leave this page safely
-              </span>
-              <Badge variant="outline" className="text-lime-400 border-lime-500/30">
-                {job.progress}%
-              </Badge>
-            </div>
-            <Progress value={job.progress} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
-
-      {job?.status === 'completed' && job.results && (
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-emerald-400">
-                ✅ Analysis complete — {job.results.total_props} props across {job.results.platforms?.length || 0} platforms, {job.results.players} players
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {job.results.best_picks} best picks found
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {job?.status === 'failed' && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="py-3">
-            <span className="text-sm text-destructive">❌ Analysis failed: {job.error_message}</span>
-          </CardContent>
-        </Card>
-      )}
+      {/* LIVE ANALYSIS PANEL */}
+      <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} />
 
       {/* FILTERS */}
       <div className="flex flex-wrap gap-2 items-center">
