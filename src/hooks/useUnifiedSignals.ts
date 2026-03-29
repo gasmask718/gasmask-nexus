@@ -3,6 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConsensusIntelligence, ConsensusPick, CapperKPI } from './useConsensusIntelligence';
 
+export interface DynamicWeightsInput {
+  ai_weight: number;
+  consensus_weight: number;
+  capper_weight: number;
+  roi_weight: number;
+  market_weight: number;
+  alignment_bonus: number;
+}
+
 export interface UnifiedSignal {
   player_name: string;
   team: string | null;
