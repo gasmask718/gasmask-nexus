@@ -7,9 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Flame, TrendingUp, Target, Users, Trophy, Brain, Eye, Send, Mail, Clock,
-  CheckCircle, XCircle, AlertTriangle, BarChart3, Crown, Zap, Loader2, Shield, ShieldCheck, ShieldAlert
+  CheckCircle, XCircle, AlertTriangle, BarChart3, Crown, Zap, Loader2, Shield, ShieldCheck, ShieldAlert, Info
 } from 'lucide-react';
 import { useUnifiedSignals, UnifiedSignal, MarketEdge } from '@/hooks/useUnifiedSignals';
 import { CapperKPI } from '@/hooks/useConsensusIntelligence';
