@@ -7,19 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { toast } from 'sonner';
-import { RefreshCw, Upload, DollarSign, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { RefreshCw, Upload, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProductRow {
   id: string;
   product_name: string;
-  amazon_price: number | null;
   suggested_sell_price: number | null;
+  supplier_cost: number | null;
   profit_margin: number | null;
-  compare_at_price: number | null;
-  supplier_price: number | null;
   category: string | null;
   status: string | null;
+  competition_score: number | null;
+  ai_score: number | null;
 }
 
 interface PricingRow extends ProductRow {
@@ -28,22 +28,20 @@ interface PricingRow extends ProductRow {
 }
 
 function getMarginColor(margin: number): string {
-  if (margin >= 40) return 'bg-emerald-500/10 border-emerald-500/30';
-  if (margin >= 20) return 'bg-amber-500/10 border-amber-500/30';
-  return 'bg-red-500/10 border-red-500/30';
+  if (margin >= 40) return 'border-l-4 border-l-emerald-500';
+  if (margin >= 20) return 'border-l-4 border-l-amber-500';
+  return 'border-l-4 border-l-destructive';
 }
 
 function getMarginTextColor(margin: number): string {
   if (margin >= 40) return 'text-emerald-400';
   if (margin >= 20) return 'text-amber-400';
-  return 'text-red-400';
+  return 'text-destructive';
 }
 
-function getStatusBadge(ourPrice: number, amazonPrice: number | null) {
-  if (!amazonPrice || amazonPrice === 0) return { label: 'No Data', variant: 'secondary' as const };
-  const gap = ((ourPrice - amazonPrice) / amazonPrice) * 100;
-  if (gap < -10) return { label: 'Underpriced', variant: 'destructive' as const };
-  if (gap > 10) return { label: 'Overpriced', variant: 'default' as const };
+function getStatusBadge(margin: number) {
+  if (margin < 20) return { label: 'Underpriced', variant: 'destructive' as const };
+  if (margin > 50) return { label: 'Overpriced', variant: 'default' as const };
   return { label: 'Competitive', variant: 'secondary' as const };
 }
 
@@ -56,30 +54,35 @@ export function PricingIntelligence() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('trending_products')
-        .select('id, product_name, amazon_price, suggested_sell_price, profit_margin, compare_at_price, supplier_price, category, status')
+        .select('id, product_name, suggested_sell_price, supplier_cost, profit_margin, category, status, competition_score, ai_score')
         .order('ai_score', { ascending: false });
       if (error) throw error;
-      return (data || []) as ProductRow[];
+      return data || [];
     },
   });
 
   useEffect(() => {
     if (products) {
-      setRows(products.map(p => ({
-        ...p,
-        ourPrice: p.suggested_sell_price || (p.amazon_price ? p.amazon_price * 0.85 : 0),
-        discountPct: p.amazon_price && p.suggested_sell_price
-          ? Math.max(0, Math.min(50, Math.round(((p.amazon_price - p.suggested_sell_price) / p.amazon_price) * 100)))
-          : 15,
-      })));
+      setRows(products.map(p => {
+        const sellPrice = p.suggested_sell_price || 0;
+        const cost = p.supplier_cost || 0;
+        // Estimate a "reference market price" as 1.2x supplier cost (competitor estimate)
+        const refPrice = cost > 0 ? cost * 2.5 : sellPrice * 1.2;
+        const discountFromRef = refPrice > 0 ? Math.max(0, Math.min(50, Math.round(((refPrice - sellPrice) / refPrice) * 100))) : 15;
+        return {
+          ...p,
+          ourPrice: sellPrice,
+          discountPct: discountFromRef,
+        };
+      }));
     }
   }, [products]);
 
   const updatePrice = useCallback((id: string, discountPct: number) => {
     setRows(prev => prev.map(r => {
       if (r.id !== id) return r;
-      const amazonRef = r.amazon_price || 0;
-      const newPrice = Math.max(0, amazonRef * (1 - discountPct / 100));
+      const refPrice = (r.supplier_cost || 0) * 2.5 || r.ourPrice * 1.2;
+      const newPrice = Math.max(0, refPrice * (1 - discountPct / 100));
       return { ...r, discountPct, ourPrice: Math.round(newPrice * 100) / 100 };
     }));
   }, []);
@@ -87,8 +90,8 @@ export function PricingIntelligence() {
   const updateOurPrice = useCallback((id: string, price: number) => {
     setRows(prev => prev.map(r => {
       if (r.id !== id) return r;
-      const amazonRef = r.amazon_price || 1;
-      const pct = Math.max(0, Math.min(50, Math.round(((amazonRef - price) / amazonRef) * 100)));
+      const refPrice = (r.supplier_cost || 0) * 2.5 || 1;
+      const pct = Math.max(0, Math.min(50, Math.round(((refPrice - price) / refPrice) * 100)));
       return { ...r, ourPrice: price, discountPct: pct };
     }));
   }, []);
@@ -107,21 +110,23 @@ export function PricingIntelligence() {
   });
 
   const syncToShopify = async (row: PricingRow) => {
-    toast.info(`Syncing ${row.product_name} at $${row.ourPrice.toFixed(2)} — Admin API token required`);
+    toast.info(`Syncing ${row.product_name} at $${row.ourPrice.toFixed(2)} — Shopify Admin API token required`);
   };
 
   const syncAll = async () => {
-    toast.info(`Syncing ${rows.length} products — Admin API token required`);
+    toast.info(`Syncing ${rows.length} products — Shopify Admin API token required`);
   };
 
-  const calcMargin = (ourPrice: number, supplierPrice: number | null) => {
-    if (!supplierPrice || supplierPrice === 0) return 0;
-    return Math.round(((ourPrice - supplierPrice) / ourPrice) * 100);
+  const calcMargin = (ourPrice: number, supplierCost: number | null) => {
+    if (!supplierCost || supplierCost === 0 || ourPrice === 0) return 0;
+    return Math.round(((ourPrice - supplierCost) / ourPrice) * 100);
   };
 
-  const calcGap = (ourPrice: number, amazonPrice: number | null) => {
-    if (!amazonPrice || amazonPrice === 0) return 0;
-    return Math.round(((ourPrice - amazonPrice) / amazonPrice) * 100);
+  const calcGap = (ourPrice: number, supplierCost: number | null) => {
+    // Gap vs estimated market (2.5x supplier cost)
+    const marketEst = (supplierCost || 0) * 2.5;
+    if (marketEst === 0) return 0;
+    return Math.round(((ourPrice - marketEst) / marketEst) * 100);
   };
 
   if (isLoading) {
@@ -138,7 +143,7 @@ export function PricingIntelligence() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">💰 Pricing Intelligence</h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             Real-time competitor pricing &amp; margin optimization • {rows.length} products
           </p>
         </div>
@@ -160,40 +165,19 @@ export function PricingIntelligence() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="text-sm text-muted-foreground">High Margin (40%+)</div>
-            <div className="text-2xl font-bold text-emerald-400">
-              {rows.filter(r => calcMargin(r.ourPrice, r.supplier_price) >= 40).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="text-sm text-muted-foreground">Medium Margin (20-40%)</div>
-            <div className="text-2xl font-bold text-amber-400">
-              {rows.filter(r => { const m = calcMargin(r.ourPrice, r.supplier_price); return m >= 20 && m < 40; }).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-red-500/30 bg-red-500/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="text-sm text-muted-foreground">Low Margin (&lt;20%)</div>
-            <div className="text-2xl font-bold text-red-400">
-              {rows.filter(r => calcMargin(r.ourPrice, r.supplier_price) < 20).length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-primary/30 bg-primary/5">
-          <CardContent className="pt-4 pb-4">
-            <div className="text-sm text-muted-foreground">Avg Margin</div>
-            <div className="text-2xl font-bold text-primary">
-              {rows.length > 0
-                ? Math.round(rows.reduce((s, r) => s + calcMargin(r.ourPrice, r.supplier_price), 0) / rows.length)
-                : 0}%
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: 'High Margin (40%+)', count: rows.filter(r => calcMargin(r.ourPrice, r.supplier_cost) >= 40).length, color: 'text-emerald-400' },
+          { label: 'Medium (20-40%)', count: rows.filter(r => { const m = calcMargin(r.ourPrice, r.supplier_cost); return m >= 20 && m < 40; }).length, color: 'text-amber-400' },
+          { label: 'Low Margin (<20%)', count: rows.filter(r => calcMargin(r.ourPrice, r.supplier_cost) < 20).length, color: 'text-destructive' },
+          { label: 'Avg Margin', count: rows.length > 0 ? Math.round(rows.reduce((s, r) => s + calcMargin(r.ourPrice, r.supplier_cost), 0) / rows.length) : 0, color: 'text-primary', suffix: '%' },
+        ].map(c => (
+          <Card key={c.label}>
+            <CardContent className="pt-4 pb-4">
+              <div className="text-sm text-muted-foreground">{c.label}</div>
+              <div className={cn('text-2xl font-bold', c.color)}>{c.count}{c.suffix || ''}</div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Product Table */}
@@ -208,11 +192,11 @@ export function PricingIntelligence() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-3 font-medium">Product</th>
                   <th className="text-right px-4 py-3 font-medium">Our Price</th>
-                  <th className="text-right px-4 py-3 font-medium">Amazon</th>
-                  <th className="text-right px-4 py-3 font-medium">Compare At</th>
-                  <th className="text-right px-4 py-3 font-medium">Supplier</th>
+                  <th className="text-right px-4 py-3 font-medium">Supplier Cost</th>
+                  <th className="text-right px-4 py-3 font-medium">Est. Market</th>
                   <th className="text-center px-4 py-3 font-medium">Gap %</th>
                   <th className="text-center px-4 py-3 font-medium">Margin %</th>
+                  <th className="text-center px-4 py-3 font-medium">AI Score</th>
                   <th className="text-center px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Pricing Gauge</th>
                   <th className="text-center px-4 py-3 font-medium">Action</th>
@@ -227,21 +211,14 @@ export function PricingIntelligence() {
                   </tr>
                 ) : (
                   rows.map(row => {
-                    const margin = calcMargin(row.ourPrice, row.supplier_price);
-                    const gap = calcGap(row.ourPrice, row.amazon_price);
-                    const status = getStatusBadge(row.ourPrice, row.amazon_price);
+                    const margin = calcMargin(row.ourPrice, row.supplier_cost);
+                    const gap = calcGap(row.ourPrice, row.supplier_cost);
+                    const status = getStatusBadge(margin);
+                    const estMarket = (row.supplier_cost || 0) * 2.5;
 
                     return (
-                      <tr
-                        key={row.id}
-                        className={cn(
-                          'border-b border-border/50 transition-colors',
-                          getMarginColor(margin)
-                        )}
-                      >
-                        <td className="px-4 py-3 font-medium max-w-[200px] truncate">
-                          {row.product_name}
-                        </td>
+                      <tr key={row.id} className={cn('border-b border-border/50 transition-colors', getMarginColor(margin))}>
+                        <td className="px-4 py-3 font-medium max-w-[200px] truncate">{row.product_name}</td>
                         <td className="px-4 py-3 text-right">
                           <Input
                             type="number"
@@ -252,29 +229,25 @@ export function PricingIntelligence() {
                           />
                         </td>
                         <td className="px-4 py-3 text-right text-muted-foreground">
-                          {row.amazon_price ? `$${row.amazon_price.toFixed(2)}` : '—'}
+                          {row.supplier_cost ? `$${row.supplier_cost.toFixed(2)}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-right text-muted-foreground">
-                          {row.compare_at_price ? `$${row.compare_at_price.toFixed(2)}` : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-right text-muted-foreground">
-                          {row.supplier_price ? `$${row.supplier_price.toFixed(2)}` : '—'}
+                          {estMarket > 0 ? `$${estMarket.toFixed(2)}` : '—'}
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={cn('flex items-center justify-center gap-1', gap < 0 ? 'text-emerald-400' : gap > 0 ? 'text-red-400' : 'text-muted-foreground')}>
+                          <span className={cn('flex items-center justify-center gap-1', gap < 0 ? 'text-emerald-400' : gap > 0 ? 'text-destructive' : 'text-muted-foreground')}>
                             {gap < 0 ? <TrendingDown className="h-3 w-3" /> : gap > 0 ? <TrendingUp className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
                             {gap}%
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <span className={cn('font-semibold', getMarginTextColor(margin))}>
-                            {margin}%
-                          </span>
+                          <span className={cn('font-semibold', getMarginTextColor(margin))}>{margin}%</span>
                         </td>
                         <td className="px-4 py-3 text-center">
-                          <Badge variant={status.variant} className="text-xs">
-                            {status.label}
-                          </Badge>
+                          <span className="font-mono text-xs">{row.ai_score ?? '—'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Badge variant={status.variant} className="text-xs">{status.label}</Badge>
                         </td>
                         <td className="px-4 py-3 min-w-[160px]">
                           <div className="flex items-center gap-2">
@@ -286,9 +259,7 @@ export function PricingIntelligence() {
                               onValueChange={([v]) => updatePrice(row.id, v)}
                               className="flex-1"
                             />
-                            <span className="text-xs text-muted-foreground w-10 text-right">
-                              {row.discountPct}%
-                            </span>
+                            <span className="text-xs text-muted-foreground w-10 text-right">{row.discountPct}%</span>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-center">
