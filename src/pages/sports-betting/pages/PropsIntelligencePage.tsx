@@ -4,10 +4,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain } from 'lucide-react';
+import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain, Lock, Unlock } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
+import { useUnifiedProps, UnifiedProp, getCoverageMode, setCoverageMode, type CoverageMode } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
 import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
 
@@ -27,8 +27,9 @@ export default function PropsIntelligencePage() {
   const [filterPlatform, setFilterPlatform] = useState<string | null>(null);
   const [bestOnly, setBestOnly] = useState(false);
   const [resultFilter, setResultFilter] = useState<ResultFilter>('all');
+  const [coverageMode, setCoverageModeState] = useState<CoverageMode>(getCoverageMode);
 
-  const { data: props, isLoading: propsLoading } = useUnifiedProps();
+  const { data: props, isLoading: propsLoading } = useUnifiedProps(undefined, coverageMode);
   const { state: analysisState, feed: analysisFeed, skippedCount, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
   const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -97,6 +98,13 @@ export default function PropsIntelligencePage() {
     toast.success('Force re-run — all props will be re-analyzed!');
   };
 
+  const handleToggleCoverage = () => {
+    const newMode: CoverageMode = coverageMode === 'limited' ? 'expanded' : 'limited';
+    setCoverageMode(newMode);
+    setCoverageModeState(newMode);
+    toast.success(newMode === 'expanded' ? '🔓 Coverage expanded — all dates loaded' : '🔒 Coverage limited to today');
+  };
+
   const isRunning = analysisState.isRunning;
 
   const RESULT_FILTERS: { value: ResultFilter; label: string; icon: React.ReactNode; color: string; activeClass: string }[] = [
@@ -120,6 +128,15 @@ export default function PropsIntelligencePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant={coverageMode === 'expanded' ? 'default' : 'outline'}
+            size="sm"
+            onClick={handleToggleCoverage}
+            className={coverageMode === 'expanded' ? 'bg-primary text-primary-foreground' : ''}
+          >
+            {coverageMode === 'expanded' ? <Lock className="h-3 w-3 mr-1" /> : <Unlock className="h-3 w-3 mr-1" />}
+            {coverageMode === 'expanded' ? 'Expanded 🔒' : 'Expand Coverage'}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleForceRerun} disabled={isRunning}>
             <RefreshCw className="h-3 w-3 mr-1" /> Re-run All
           </Button>
