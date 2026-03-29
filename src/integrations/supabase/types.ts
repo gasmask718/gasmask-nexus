@@ -59952,6 +59952,66 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_decision_weight_history: {
+        Row: {
+          adjustments_applied: Json | null
+          ai_weight_after: number | null
+          ai_weight_before: number | null
+          alignment_bonus_after: number | null
+          alignment_bonus_before: number | null
+          capper_weight_after: number | null
+          capper_weight_before: number | null
+          consensus_weight_after: number | null
+          consensus_weight_before: number | null
+          created_at: string
+          id: string
+          market_weight_after: number | null
+          market_weight_before: number | null
+          roi_weight_after: number | null
+          roi_weight_before: number | null
+          sample_size: number | null
+          trigger_reason: string | null
+        }
+        Insert: {
+          adjustments_applied?: Json | null
+          ai_weight_after?: number | null
+          ai_weight_before?: number | null
+          alignment_bonus_after?: number | null
+          alignment_bonus_before?: number | null
+          capper_weight_after?: number | null
+          capper_weight_before?: number | null
+          consensus_weight_after?: number | null
+          consensus_weight_before?: number | null
+          created_at?: string
+          id?: string
+          market_weight_after?: number | null
+          market_weight_before?: number | null
+          roi_weight_after?: number | null
+          roi_weight_before?: number | null
+          sample_size?: number | null
+          trigger_reason?: string | null
+        }
+        Update: {
+          adjustments_applied?: Json | null
+          ai_weight_after?: number | null
+          ai_weight_before?: number | null
+          alignment_bonus_after?: number | null
+          alignment_bonus_before?: number | null
+          capper_weight_after?: number | null
+          capper_weight_before?: number | null
+          consensus_weight_after?: number | null
+          consensus_weight_before?: number | null
+          created_at?: string
+          id?: string
+          market_weight_after?: number | null
+          market_weight_before?: number | null
+          roi_weight_after?: number | null
+          roi_weight_before?: number | null
+          sample_size?: number | null
+          trigger_reason?: string | null
+        }
+        Relationships: []
+      }
       sbo_defense_vs_position: {
         Row: {
           assists_allowed_avg: number | null

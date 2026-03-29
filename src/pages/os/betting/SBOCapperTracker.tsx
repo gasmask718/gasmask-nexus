@@ -20,6 +20,7 @@ import { ConsensusIntelligenceDashboard } from '@/components/betting/ConsensusIn
 import { ManualBettingDashboard } from '@/components/betting/ManualBettingDashboard';
 import { DailyReportDashboard } from '@/components/betting/DailyReportDashboard';
 import { CapperGradingDashboard } from '@/components/betting/CapperGradingDashboard';
+import { LearningDashboard } from '@/components/betting/LearningDashboard';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
@@ -1770,49 +1771,8 @@ export default function SBOCapperTracker() {
           </TabsContent>
 
           {/* ── LEARNING TAB ── */}
-          <TabsContent value="learning" className="mt-3 space-y-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2"><Brain className="h-4 w-4 text-purple-400" /> Signal Performance Tracker</h3>
-
-            {Object.keys(signalStats).length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {Object.entries(signalStats).map(([type, stats]) => {
-                  const s = stats as { total: number; wins: number };
-                  const wr = s.total > 0 ? Math.round((s.wins / s.total) * 100) : 0;
-                  const color = type === 'SHARP' ? 'purple' : type === 'VALUE' ? 'emerald' : 'blue';
-                  return (
-                    <Card key={type} className={`border-${color}-500/20`}>
-                      <CardContent className="p-4 text-center space-y-2">
-                        <Badge variant="outline" className={`text-xs text-${color}-400 border-${color}-400/30`}>
-                          {type === 'SHARP' ? '🧠' : type === 'VALUE' ? '💰' : '📊'} {type}
-                        </Badge>
-                        <p className="text-3xl font-black">{wr}%</p>
-                        <p className="text-[10px] text-muted-foreground">{s.wins}W / {s.total - s.wins}L ({s.total} total)</p>
-                        <Progress value={wr} className="h-1.5" />
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <Card className="border-dashed"><CardContent className="p-8 text-center">
-                <Brain className="h-8 w-8 mx-auto text-purple-400/30 mb-2" />
-                <p className="text-sm text-muted-foreground">Signal data accumulates as picks are resolved</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Run 🏆 Top Plays → resolve results → learning begins</p>
-              </CardContent></Card>
-            )}
-
-            {/* Signal accuracy over time hint */}
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="text-xs font-semibold mb-2">How Signal Learning Works</h4>
-                <div className="space-y-1.5 text-[11px] text-muted-foreground">
-                  <p>📊 <strong>CONSENSUS</strong> — Signals from capper agreement on a prop</p>
-                  <p>💰 <strong>VALUE</strong> — Signals where model edge exceeds implied odds</p>
-                  <p>🧠 <strong>SHARP</strong> — Signals where elite cappers disagree with the public</p>
-                  <p className="pt-2 text-[10px]">As data accumulates, the system automatically weights stronger signal types higher in the composite score.</p>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="learning" className="mt-3">
+            <LearningDashboard />
           </TabsContent>
 
 

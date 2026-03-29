@@ -3,6 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useConsensusIntelligence, ConsensusPick, CapperKPI } from './useConsensusIntelligence';
 
+export interface DynamicWeightsInput {
+  ai_weight: number;
+  consensus_weight: number;
+  capper_weight: number;
+  roi_weight: number;
+  market_weight: number;
+  alignment_bonus: number;
+}
+
 export interface UnifiedSignal {
   player_name: string;
   team: string | null;
@@ -64,13 +73,8 @@ function gradeFromKPIs(capperNames: string[], capperKPIs: CapperKPI[]): { avgGra
 }
 
 /**
- * FINAL DECISION FORMULA (v2):
- *   ai_confidence     × 0.40
- * + consensus_count   × 0.15
- * + capper_weight     × 0.20
- * + capper_roi        × 0.15
- * + market_wr         × 0.10
- * + alignment_bonus   +10 if AI+capper agree
+ * ADAPTIVE DECISION FORMULA (v3):
+ * Uses dynamic weights from sbo_dynamic_weights table
  */
 function calcFinalScore(
   aiConf: number | null,
@@ -79,13 +83,20 @@ function calcFinalScore(
   capperROI: number,
   marketWR: number,
   hasAlignment: boolean,
+  dw: DynamicWeightsInput,
 ): number {
-  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * 40 : 0;
-  const consensus = Math.min(consensusCount / 5, 1) * 15;
-  const weight = Math.min(capperWeight / 1.5, 1) * 20;
-  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * 15;
-  const mkt = Math.min(marketWR / 100, 1) * 10;
-  const bonus = hasAlignment ? 10 : 0;
+  const aiScale = dw.ai_weight * 100;
+  const consScale = dw.consensus_weight * 100;
+  const cwScale = dw.capper_weight * 100;
+  const roiScale = dw.roi_weight * 100;
+  const mktScale = dw.market_weight * 100;
+
+  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * aiScale : 0;
+  const consensus = Math.min(consensusCount / 5, 1) * consScale;
+  const weight = Math.min(capperWeight / 1.5, 1) * cwScale;
+  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * roiScale;
+  const mkt = Math.min(marketWR / 100, 1) * mktScale;
+  const bonus = hasAlignment ? dw.alignment_bonus : 0;
   return Math.min(100, Math.round(ai + consensus + weight + roi + mkt + bonus));
 }
 
@@ -156,6 +167,23 @@ export function useUnifiedSignals() {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
+  // Fetch dynamic weights
+  const DEFAULT_DW: DynamicWeightsInput = { ai_weight: 0.40, consensus_weight: 0.15, capper_weight: 0.20, roi_weight: 0.15, market_weight: 0.10, alignment_bonus: 10 };
+  const { data: dynamicWeights = DEFAULT_DW } = useQuery({
+    queryKey: ['sbo-dynamic-weights'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_dynamic_weights').select('ai_weight,consensus_weight,capper_weight,roi_weight,market_weight,alignment_bonus').eq('id', 1).single();
+      return data ? {
+        ai_weight: Number(data.ai_weight),
+        consensus_weight: Number(data.consensus_weight),
+        capper_weight: Number(data.capper_weight),
+        roi_weight: Number(data.roi_weight),
+        market_weight: Number(data.market_weight),
+        alignment_bonus: Number(data.alignment_bonus),
+      } as DynamicWeightsInput : DEFAULT_DW;
+    },
+  });
+
   const { data: aiPredictions = [], isLoading: aiLoading } = useQuery({
     queryKey: ['unified-ai-predictions', today],
     queryFn: async () => {
@@ -208,7 +236,7 @@ export function useUnifiedSignals() {
       const hasAI = aiConf != null && aiConf > 0;
       const { avgGrade, avgWeight } = gradeFromKPIs(cp.capperNames, capperKPIs);
 
-      const score = calcFinalScore(aiConf, cp.capperCount, avgWeight, cp.avgCapperROI, cp.avgCapperWinRate, hasAI);
+      const score = calcFinalScore(aiConf, cp.capperCount, avgWeight, cp.avgCapperROI, cp.avgCapperWinRate, hasAI, dynamicWeights);
 
       const partial = {
         player_name: cp.player_name,
@@ -249,7 +277,7 @@ export function useUnifiedSignals() {
       const conf = pred.final_confidence || 0;
       if (conf < 55) continue;
 
-      const score = calcFinalScore(conf, 0, 1.0, 0, 0, false);
+      const score = calcFinalScore(conf, 0, 1.0, 0, 0, false, dynamicWeights);
       const partial2 = {
         player_name: pp.player_name,
         team: pp.team || null,
@@ -334,7 +362,7 @@ export function useUnifiedSignals() {
       marketEdges: edges,
       yesterdayStats: { wins: yWins, losses: yLosses, pushes: 0, roi: yROI, bestSignal: bestY, worstSignal: worstY } as YesterdayStats,
     };
-  }, [aiPredictions, todayProps, consensusPicks, capperKPIs, today, yesterday]);
+  }, [aiPredictions, todayProps, consensusPicks, capperKPIs, today, yesterday, dynamicWeights]);
 
   return {
     signals,
