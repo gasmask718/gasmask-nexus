@@ -1,0 +1,217 @@
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useConsensusIntelligence, ConsensusPick, CapperKPI } from './useConsensusIntelligence';
+
+export interface UnifiedSignal {
+  player_name: string;
+  team: string | null;
+  sport: string;
+  prop_type: string;
+  line: number;
+  direction: string;
+  game_date: string;
+  // AI layer
+  ai_confidence: number | null;
+  ai_recommendation: string | null;
+  ai_prediction_id: string | null;
+  confidence_tier: string | null;
+  // Capper layer
+  capper_consensus: number;
+  capper_names: string[];
+  capper_avg_roi: number;
+  capper_avg_wr: number;
+  // Combined
+  combined_score: number;
+  signal_tier: 'ELITE' | 'STRONG' | 'WATCHLIST' | 'LOW';
+  alignment: 'ai_and_capper' | 'ai_only' | 'capper_only';
+  result: string | null;
+}
+
+export interface YesterdayStats {
+  wins: number;
+  losses: number;
+  pushes: number;
+  roi: number;
+  bestSignal: UnifiedSignal | null;
+  worstSignal: UnifiedSignal | null;
+}
+
+function calcCombinedScore(aiConf: number | null, consensusCount: number, capperROI: number, marketWR: number): number {
+  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * 50 : 0;
+  const consensus = Math.min(consensusCount / 5, 1) * 20;
+  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * 20;
+  const mkt = Math.min(marketWR / 100, 1) * 10;
+  return Math.round(ai + consensus + roi + mkt);
+}
+
+function getTier(score: number): UnifiedSignal['signal_tier'] {
+  if (score >= 75) return 'ELITE';
+  if (score >= 55) return 'STRONG';
+  if (score >= 35) return 'WATCHLIST';
+  return 'LOW';
+}
+
+export function useUnifiedSignals() {
+  const { consensusPicks, consensusStats, capperKPIs, todayConsensusPicks, isLoading: capperLoading } = useConsensusIntelligence();
+
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+
+  // Fetch AI predictions for today
+  const { data: aiPredictions = [], isLoading: aiLoading } = useQuery({
+    queryKey: ['unified-ai-predictions', today],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_predictions')
+        .select('id, prediction_type, final_confidence, confidence_tier, predicted_outcome, was_correct, sbo_player_props(player_name, prop_type, line, team), sbo_games(home_team, away_team, game_date)')
+        .gte('created_at', `${yesterday}T00:00:00`)
+        .order('final_confidence', { ascending: false })
+        .limit(200);
+      return data || [];
+    },
+  });
+
+  // Fetch props_master for today's market data
+  const { data: todayProps = [] } = useQuery({
+    queryKey: ['unified-props-today', today],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('props_master')
+        .select('id, player_name, stat_type, line, game_date, ai_confidence, ai_recommendation, result, consensus_over, consensus_under, season_avg')
+        .eq('game_date', today)
+        .limit(500);
+      return data || [];
+    },
+  });
+
+  // Build unified signals
+  const { signals, alignedSignals, aiOnlySignals, capperOnlySignals, yesterdayStats, pendingSignals } = useMemo(() => {
+    const allSignals: UnifiedSignal[] = [];
+    const aiMap = new Map<string, any>();
+    const propsMap = new Map<string, any>();
+
+    // Index AI predictions by player+stat key
+    for (const pred of aiPredictions) {
+      const pp = pred.sbo_player_props;
+      if (!pp?.player_name) continue;
+      const key = `${pp.player_name.toLowerCase().trim()}|${(pp.prop_type || '').toLowerCase()}|${pp.line}`;
+      aiMap.set(key, pred);
+    }
+
+    // Index props_master
+    for (const prop of todayProps) {
+      const key = `${(prop.player_name || '').toLowerCase().trim()}|${(prop.stat_type || '').toLowerCase()}|${prop.line}`;
+      propsMap.set(key, prop);
+    }
+
+    // Process consensus picks - try to match with AI
+    const processedKeys = new Set<string>();
+    for (const cp of consensusPicks) {
+      const key = `${cp.player_name.toLowerCase().trim()}|${cp.prop_type.toLowerCase()}|${cp.line}`;
+      processedKeys.add(key);
+      const aiPred = aiMap.get(key);
+      const prop = propsMap.get(key);
+
+      const aiConf = aiPred?.final_confidence || prop?.ai_confidence || null;
+
+      const score = calcCombinedScore(aiConf, cp.capperCount, cp.avgCapperROI, cp.avgCapperWinRate);
+      const hasAI = aiConf != null && aiConf > 0;
+
+      allSignals.push({
+        player_name: cp.player_name,
+        team: cp.team,
+        sport: cp.sport,
+        prop_type: cp.prop_type,
+        line: cp.line,
+        direction: cp.direction,
+        game_date: cp.game_date,
+        ai_confidence: aiConf,
+        ai_recommendation: aiPred?.predicted_outcome || prop?.ai_recommendation || null,
+        ai_prediction_id: aiPred?.id || null,
+        confidence_tier: aiPred?.confidence_tier || null,
+        capper_consensus: cp.capperCount,
+        capper_names: cp.capperNames,
+        capper_avg_roi: cp.avgCapperROI,
+        capper_avg_wr: cp.avgCapperWinRate,
+        combined_score: score,
+        signal_tier: getTier(score),
+        alignment: hasAI ? 'ai_and_capper' : 'capper_only',
+        result: cp.result,
+      });
+    }
+
+    // Process AI-only signals (no capper consensus)
+    for (const pred of aiPredictions) {
+      const pp = pred.sbo_player_props;
+      if (!pp?.player_name) continue;
+      const key = `${pp.player_name.toLowerCase().trim()}|${(pp.prop_type || '').toLowerCase()}|${pp.line}`;
+      if (processedKeys.has(key)) continue;
+      processedKeys.add(key);
+
+      const conf = pred.final_confidence || 0;
+      if (conf < 55) continue; // Only include meaningful AI signals
+
+      const score = calcCombinedScore(conf, 0, 0, 0);
+      allSignals.push({
+        player_name: pp.player_name,
+        team: pp.team || null,
+        sport: 'NBA',
+        prop_type: pp.prop_type || '',
+        line: pp.line,
+        direction: pred.predicted_outcome?.includes('OVER') ? 'OVER' : pred.predicted_outcome?.includes('UNDER') ? 'UNDER' : '',
+        game_date: pred.sbo_games?.game_date || today,
+        ai_confidence: conf,
+        ai_recommendation: pred.predicted_outcome,
+        ai_prediction_id: pred.id,
+        confidence_tier: pred.confidence_tier,
+        capper_consensus: 0,
+        capper_names: [],
+        capper_avg_roi: 0,
+        capper_avg_wr: 0,
+        combined_score: score,
+        signal_tier: getTier(score),
+        alignment: 'ai_only',
+        result: pred.was_correct != null ? (pred.was_correct ? 'won' : 'lost') : null,
+      });
+    }
+
+    allSignals.sort((a, b) => b.combined_score - a.combined_score);
+
+    const aligned = allSignals.filter(s => s.alignment === 'ai_and_capper');
+    const aiOnly = allSignals.filter(s => s.alignment === 'ai_only');
+    const capperOnly = allSignals.filter(s => s.alignment === 'capper_only');
+    const pending = allSignals.filter(s => !s.result);
+
+    // Yesterday stats
+    const yesterdaySignals = allSignals.filter(s => s.game_date === yesterday && (s.result === 'won' || s.result === 'lost'));
+    const yWins = yesterdaySignals.filter(s => s.result === 'won').length;
+    const yLosses = yesterdaySignals.filter(s => s.result === 'lost').length;
+    const yTotal = yWins + yLosses;
+    const yROI = yTotal > 0 ? Math.round(((yWins * 0.909 - yLosses) / yTotal) * 10000) / 100 : 0;
+    const bestY = yesterdaySignals.filter(s => s.result === 'won').sort((a, b) => b.combined_score - a.combined_score)[0] || null;
+    const worstY = yesterdaySignals.filter(s => s.result === 'lost').sort((a, b) => b.combined_score - a.combined_score)[0] || null;
+
+    return {
+      signals: allSignals,
+      alignedSignals: aligned,
+      aiOnlySignals: aiOnly,
+      capperOnlySignals: capperOnly,
+      pendingSignals: pending,
+      yesterdayStats: { wins: yWins, losses: yLosses, pushes: 0, roi: yROI, bestSignal: bestY, worstSignal: worstY } as YesterdayStats,
+    };
+  }, [aiPredictions, todayProps, consensusPicks, today, yesterday]);
+
+  return {
+    signals,
+    alignedSignals,
+    aiOnlySignals,
+    capperOnlySignals,
+    pendingSignals,
+    yesterdayStats,
+    consensusStats,
+    capperKPIs,
+    todayConsensusPicks,
+    isLoading: capperLoading || aiLoading,
+    today,
+    yesterday,
+  };
+}
