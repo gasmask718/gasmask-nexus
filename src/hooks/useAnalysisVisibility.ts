@@ -51,7 +51,8 @@ export function useAnalysisVisibility() {
           current_step: null,
           completed_at: Date.now(),
         }));
-        queryClient.invalidateQueries({ queryKey: ['unified-props'] });
+        // Soft refetch — keeps existing data visible via placeholderData
+        queryClient.refetchQueries({ queryKey: ['unified-props'] });
       } else if (data.status === 'failed') {
         setState(prev => ({
           ...prev,
