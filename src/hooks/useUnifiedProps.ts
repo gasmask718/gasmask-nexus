@@ -46,6 +46,11 @@ export function setCoverageMode(mode: CoverageMode) {
   localStorage.setItem(COVERAGE_KEY, mode);
 }
 
+// Global analysis lock — when true, queries won't auto-refetch
+let _analysisLocked = false;
+export function setAnalysisLock(locked: boolean) { _analysisLocked = locked; }
+export function getAnalysisLock() { return _analysisLocked; }
+
 export function useUnifiedProps(date?: string, coverageMode?: CoverageMode) {
   const todayEST = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const mode = coverageMode || getCoverageMode();
@@ -59,18 +64,17 @@ export function useUnifiedProps(date?: string, coverageMode?: CoverageMode) {
         .order('ai_confidence', { ascending: false, nullsFirst: false });
 
       if (mode === 'limited') {
-        // Limited: today only
         query = query.eq('game_date', todayEST);
       }
-      // Expanded: no date filter — fetch all available props
 
       const { data, error } = await query;
       if (error) throw error;
       return (data || []) as UnifiedProp[];
     },
-    refetchInterval: 30000,
+    refetchInterval: _analysisLocked ? false : 30000,
     placeholderData: (prev: any) => prev,
-    staleTime: 10000, // prevent rapid refetches from clearing data
+    staleTime: _analysisLocked ? Infinity : 10000,
+    enabled: true,
   });
 }
 
