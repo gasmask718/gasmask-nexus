@@ -44,10 +44,11 @@ interface LiveAnalysisPanelProps {
   state: AnalysisState;
   feed: AnalysisFeedItem[];
   onCancel?: () => void;
+  skippedCount?: number;
   className?: string;
 }
 
-export function LiveAnalysisPanel({ state, feed, onCancel, className }: LiveAnalysisPanelProps) {
+export function LiveAnalysisPanel({ state, feed, onCancel, skippedCount = 0, className }: LiveAnalysisPanelProps) {
   const feedEndRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
 
