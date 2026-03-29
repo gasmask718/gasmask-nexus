@@ -179,7 +179,15 @@ export default function PropsIntelligencePage() {
     toast.success('Dataset refreshed');
   };
 
-  const isRunning = analysisState.isRunning;
+  const [uiRunning, setUiRunning] = useState(false);
+  const isRunning = analysisState.isRunning || uiRunning;
+
+  // Sync uiRunning down when analysis finishes
+  useEffect(() => {
+    if (!analysisState.isRunning && uiRunning) {
+      setUiRunning(false);
+    }
+  }, [analysisState.isRunning, uiRunning]);
 
   const RESULT_FILTERS: { value: ResultFilter; label: string; icon: React.ReactNode; color: string; activeClass: string }[] = [
     { value: 'all', label: 'All', icon: null, color: 'text-foreground', activeClass: 'bg-primary text-primary-foreground' },
