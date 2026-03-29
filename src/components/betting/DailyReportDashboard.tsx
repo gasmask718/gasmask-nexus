@@ -335,6 +335,9 @@ function EmailPreviewDialog({ signals, aligned, aiOnly, capperOnly, yesterdaySta
                           {s.capper_consensus > 0 && ` · 👥 ${s.capper_consensus} (${s.capper_avg_grade})`}
                         </span>
                       </div>
+                      <p className="text-[10px] text-foreground/60 mt-1.5 italic leading-relaxed">
+                        Why: {s.short_reason}
+                      </p>
                     </div>
                   ))}
                 </div>
