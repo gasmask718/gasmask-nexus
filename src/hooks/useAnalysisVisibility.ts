@@ -42,6 +42,7 @@ export function useAnalysisVisibility() {
       if (!data) return;
 
       if (data.status === 'completed') {
+        setAnalysisLock(false); // 🔓 Unlock dataset
         setState(prev => ({
           ...prev,
           isRunning: false,
