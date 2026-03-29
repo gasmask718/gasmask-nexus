@@ -372,6 +372,11 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
                       {p.parsed_by_ai && <Badge variant="outline" className="text-[8px] text-blue-400 border-blue-400/30">🤖 AI</Badge>}
                       {p.matched_prop_id && <Badge variant="outline" className="text-[8px] text-emerald-400 border-emerald-400/30">🔗</Badge>}
                       {p.sharp_flag && <Badge variant="outline" className="text-[8px] text-purple-400 border-purple-400/30">🧠</Badge>}
+                      {p._consensusCount > 1 && (
+                        <Badge variant="outline" className="text-[8px] text-amber-400 border-amber-400/30 bg-amber-400/10">
+                          🔥 {p._consensusCount} Cappers
+                        </Badge>
+                      )}
                       {p.player_name && <span className="text-sm font-medium">{p.player_name}</span>}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
