@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import { useUnifiedProps, useAnalysisJob, UnifiedProp } from '@/hooks/useUnifiedProps';
+import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
+import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
+import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
 
 const PROP_LABELS: Record<string, string> = {
   points: 'Points', pts: 'Points', player_points: 'Points',
