@@ -78,6 +78,7 @@ export function useAnalysisVisibility() {
   const startAnalysis = useCallback(async (forceRerun = false) => {
     cancelledRef.current = false;
     setSkippedCount(0);
+    setAnalysisLock(true); // 🔒 Lock dataset — prevent refetches
 
     // Get today's props
     const { data: propsData } = await (supabase as any)
