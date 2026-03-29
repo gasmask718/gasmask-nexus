@@ -99,8 +99,6 @@ function calcFinalScore(
   const bonus = hasAlignment ? dw.alignment_bonus : 0;
   return Math.min(100, Math.round(ai + consensus + weight + roi + mkt + bonus));
 }
-  return Math.min(100, Math.round(ai + consensus + weight + roi + mkt + bonus));
-}
 
 function getTier(score: number): UnifiedSignal['signal_tier'] {
   if (score >= 80) return 'ELITE';
