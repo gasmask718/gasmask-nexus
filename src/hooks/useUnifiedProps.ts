@@ -106,7 +106,10 @@ export function useAnalysisJob() {
         table: 'sbo_analysis_jobs',
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['analysis-job'] });
-        queryClient.refetchQueries({ queryKey: ['unified-props'] });
+        // Use exact coverage mode to avoid resetting dataset
+        const mode = getCoverageMode();
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+        queryClient.refetchQueries({ queryKey: ['unified-props', today, mode] });
       })
       .subscribe();
 
