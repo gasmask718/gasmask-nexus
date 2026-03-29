@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
-import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap, Crown, DollarSign, Brain, ShieldAlert, Banknote, BarChart3, Lock, PlayCircle, PauseCircle, RefreshCw, Layers } from 'lucide-react';
+import { Users, Plus, MessageSquare, Trophy, Activity, Settings, Eye, CheckCircle, XCircle, Clock, Camera, Upload, Loader2, AlertTriangle, Link2, Flame, TrendingUp, Target, Zap, Crown, DollarSign, Brain, ShieldAlert, Banknote, BarChart3, Lock, PlayCircle, PauseCircle, RefreshCw, Layers, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CapperPicksFeed } from '@/components/betting/CapperPicksFeed';
 import { ConsensusIntelligenceDashboard } from '@/components/betting/ConsensusIntelligenceDashboard';
 import { ManualBettingDashboard } from '@/components/betting/ManualBettingDashboard';
+import { DailyReportDashboard } from '@/components/betting/DailyReportDashboard';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
@@ -1454,6 +1455,7 @@ export default function SBOCapperTracker() {
             <TabsTrigger value="review" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" /> Review</TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs gap-1"><Trophy className="h-3 w-3" /> Board</TabsTrigger>
             <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
+            <TabsTrigger value="report" className="text-xs gap-1"><FileText className="h-3 w-3" /> Report</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
           </TabsList>
 
@@ -1810,6 +1812,10 @@ export default function SBOCapperTracker() {
               </CardContent>
             </Card>
           </TabsContent>
+
+
+          {/* Daily Report */}
+          <TabsContent value="report" className="mt-3"><DailyReportDashboard /></TabsContent>
 
           {/* Settings */}
           <TabsContent value="settings" className="mt-3"><SettingsPanel cappers={cappers} refetch={refetchAll} /></TabsContent>
