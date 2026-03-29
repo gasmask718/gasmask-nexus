@@ -25,7 +25,7 @@ export default function PropsIntelligencePage() {
   const [bestOnly, setBestOnly] = useState(false);
 
   const { data: props, isLoading: propsLoading } = useUnifiedProps();
-  const { job, startAnalysis } = useAnalysisJob();
+  const { state: analysisState, feed: analysisFeed, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
   const safeProps = useMemo(() => Array.isArray(props) ? props : [], [props]);
 
@@ -42,7 +42,6 @@ export default function PropsIntelligencePage() {
       if (!map[key]) map[key] = [];
       map[key].push(p);
     }
-    // Sort by highest confidence
     return Object.entries(map).sort((a, b) => {
       const maxA = Math.max(...a[1].map(p => p.ai_confidence || 0));
       const maxB = Math.max(...b[1].map(p => p.ai_confidence || 0));
@@ -51,13 +50,11 @@ export default function PropsIntelligencePage() {
   }, [safeProps, search, filterPlatform, bestOnly]);
 
   const handleRunAnalysis = () => {
-    startAnalysis.mutate(undefined, {
-      onSuccess: () => toast.success('Analysis job queued — runs in background!'),
-      onError: (e: any) => toast.error(e.message),
-    });
+    startAnalysis();
+    toast.success('Analysis started — watch the live feed!');
   };
 
-  const isRunning = job?.status === 'pending' || job?.status === 'running';
+  const isRunning = analysisState.isRunning;
 
   return (
     <div className="p-4 max-w-6xl mx-auto space-y-4">
