@@ -119,14 +119,9 @@ export default function PropsIntelligencePage() {
         <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
       )}
 
-      {/* Failsafe: if running but panel somehow hidden */}
-      {isRunning && analysisState.status === 'idle' && (
-        <Card className="border-primary/50 bg-primary/5">
-          <CardContent className="py-3 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm font-medium text-foreground">Analysis Running...</span>
-          </CardContent>
-        </Card>
+      {/* ALWAYS show analysis panel when running or has results */}
+      {(isRunning || analysisState.status === 'running' || analysisState.status === 'completed' || analysisState.status === 'failed' || analysisState.status === 'cancelled') && (
+        <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
       )}
 
       {/* RESULT FILTER BAR */}
