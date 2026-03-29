@@ -60057,6 +60057,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_dynamic_weights: {
+        Row: {
+          ai_weight: number
+          alignment_bonus: number
+          capper_weight: number
+          consensus_weight: number
+          id: number
+          last_recalibrated_at: string | null
+          market_weight: number
+          recalibration_count: number
+          roi_weight: number
+          sample_size: number
+          updated_at: string
+          weights_locked: boolean
+        }
+        Insert: {
+          ai_weight?: number
+          alignment_bonus?: number
+          capper_weight?: number
+          consensus_weight?: number
+          id?: number
+          last_recalibrated_at?: string | null
+          market_weight?: number
+          recalibration_count?: number
+          roi_weight?: number
+          sample_size?: number
+          updated_at?: string
+          weights_locked?: boolean
+        }
+        Update: {
+          ai_weight?: number
+          alignment_bonus?: number
+          capper_weight?: number
+          consensus_weight?: number
+          id?: number
+          last_recalibrated_at?: string | null
+          market_weight?: number
+          recalibration_count?: number
+          roi_weight?: number
+          sample_size?: number
+          updated_at?: string
+          weights_locked?: boolean
+        }
+        Relationships: []
+      }
       sbo_external_match_logs: {
         Row: {
           created_at: string | null
@@ -60474,6 +60519,81 @@ export type Database = {
           status?: string | null
           team?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sbo_learning_events: {
+        Row: {
+          ai_confidence: number | null
+          alignment: string | null
+          alignment_bonus: boolean | null
+          capper_avg_grade: string | null
+          capper_avg_roi: number | null
+          capper_consensus: number | null
+          capper_weight: number | null
+          created_at: string
+          direction: string | null
+          final_score: number
+          full_reason: string | null
+          game_date: string | null
+          id: string
+          line: number | null
+          market_type: string | null
+          player_name: string | null
+          prop_type: string | null
+          result: string
+          risk_tag: string | null
+          short_reason: string | null
+          signal_tier: string | null
+          sport: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          alignment?: string | null
+          alignment_bonus?: boolean | null
+          capper_avg_grade?: string | null
+          capper_avg_roi?: number | null
+          capper_consensus?: number | null
+          capper_weight?: number | null
+          created_at?: string
+          direction?: string | null
+          final_score?: number
+          full_reason?: string | null
+          game_date?: string | null
+          id?: string
+          line?: number | null
+          market_type?: string | null
+          player_name?: string | null
+          prop_type?: string | null
+          result: string
+          risk_tag?: string | null
+          short_reason?: string | null
+          signal_tier?: string | null
+          sport?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          alignment?: string | null
+          alignment_bonus?: boolean | null
+          capper_avg_grade?: string | null
+          capper_avg_roi?: number | null
+          capper_consensus?: number | null
+          capper_weight?: number | null
+          created_at?: string
+          direction?: string | null
+          final_score?: number
+          full_reason?: string | null
+          game_date?: string | null
+          id?: string
+          line?: number | null
+          market_type?: string | null
+          player_name?: string | null
+          prop_type?: string | null
+          result?: string
+          risk_tag?: string | null
+          short_reason?: string | null
+          signal_tier?: string | null
+          sport?: string | null
         }
         Relationships: []
       }
