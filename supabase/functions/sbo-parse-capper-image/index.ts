@@ -308,11 +308,23 @@ RULES:
         capper_detection_confidence: capperDetectionConfidence,
       }));
 
-      const { data: inserted, error: insertError } = await supabase.from('sbo_capper_picks').insert(rows).select('id, player_name, prop_type, line, game_date, sport');
-      if (insertError) {
-        console.error('Insert error:', insertError);
-        throw new Error(`Database error: ${insertError.message}`);
+      // Insert with dedup: skip true duplicates (same capper + player + stat + line + date)
+      const inserted: any[] = [];
+      let dupCount = 0;
+      for (const row of rows) {
+        const { data, error: insertError } = await supabase.from('sbo_capper_picks').insert(row).select('id, player_name, prop_type, line, game_date, sport');
+        if (insertError) {
+          if (insertError.code === '23505') {
+            dupCount++;
+            console.log(`Skipped duplicate: ${row.player_name} ${row.prop_type} ${row.line} ${row.game_date}`);
+            continue;
+          }
+          console.error('Insert error:', insertError);
+          throw new Error(`Database error: ${insertError.message}`);
+        }
+        if (data) inserted.push(...data);
       }
+      if (dupCount > 0) console.log(`Skipped ${dupCount} duplicate picks`);
 
       // Auto-match to props_master
       if (inserted && inserted.length > 0) {
