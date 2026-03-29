@@ -4428,6 +4428,42 @@ export type Database = {
           },
         ]
       }
+      ai_scoring_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          products_analyzed: number | null
+          products_approved: number | null
+          products_published: number | null
+          products_scored: number | null
+          run_status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          products_analyzed?: number | null
+          products_approved?: number | null
+          products_published?: number | null
+          products_scored?: number | null
+          run_status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          products_analyzed?: number | null
+          products_approved?: number | null
+          products_published?: number | null
+          products_scored?: number | null
+          run_status?: string | null
+        }
+        Relationships: []
+      }
       ai_suggestion_logs: {
         Row: {
           acted_at: string | null
@@ -33593,6 +33629,111 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      dropship_orders: {
+        Row: {
+          autods_order_id: string | null
+          carrier: string | null
+          created_at: string | null
+          customer_address: Json | null
+          customer_email: string | null
+          customer_name: string | null
+          fulfillment_status: string | null
+          id: string
+          notes: string | null
+          product_name: string | null
+          profit: number | null
+          quantity: number | null
+          sell_price: number | null
+          shopify_order_id: string
+          shopify_order_number: string | null
+          shopify_product_id: string | null
+          sms_alert_sent: boolean | null
+          supplier_cost: number | null
+          supplier_product_id: string | null
+          tracking_number: string | null
+        }
+        Insert: {
+          autods_order_id?: string | null
+          carrier?: string | null
+          created_at?: string | null
+          customer_address?: Json | null
+          customer_email?: string | null
+          customer_name?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          product_name?: string | null
+          profit?: number | null
+          quantity?: number | null
+          sell_price?: number | null
+          shopify_order_id: string
+          shopify_order_number?: string | null
+          shopify_product_id?: string | null
+          sms_alert_sent?: boolean | null
+          supplier_cost?: number | null
+          supplier_product_id?: string | null
+          tracking_number?: string | null
+        }
+        Update: {
+          autods_order_id?: string | null
+          carrier?: string | null
+          created_at?: string | null
+          customer_address?: Json | null
+          customer_email?: string | null
+          customer_name?: string | null
+          fulfillment_status?: string | null
+          id?: string
+          notes?: string | null
+          product_name?: string | null
+          profit?: number | null
+          quantity?: number | null
+          sell_price?: number | null
+          shopify_order_id?: string
+          shopify_order_number?: string | null
+          shopify_product_id?: string | null
+          sms_alert_sent?: boolean | null
+          supplier_cost?: number | null
+          supplier_product_id?: string | null
+          tracking_number?: string | null
+        }
+        Relationships: []
+      }
+      dropship_revenue: {
+        Row: {
+          best_selling_product: string | null
+          date: string
+          id: string
+          refund_amount: number | null
+          refund_count: number | null
+          total_cost: number | null
+          total_orders: number | null
+          total_profit: number | null
+          total_revenue: number | null
+        }
+        Insert: {
+          best_selling_product?: string | null
+          date: string
+          id?: string
+          refund_amount?: number | null
+          refund_count?: number | null
+          total_cost?: number | null
+          total_orders?: number | null
+          total_profit?: number | null
+          total_revenue?: number | null
+        }
+        Update: {
+          best_selling_product?: string | null
+          date?: string
+          id?: string
+          refund_amount?: number | null
+          refund_count?: number | null
+          total_cost?: number | null
+          total_orders?: number | null
+          total_profit?: number | null
+          total_revenue?: number | null
+        }
+        Relationships: []
       }
       dynasty_agent_actions: {
         Row: {
@@ -71756,6 +71897,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      trending_products: {
+        Row: {
+          ai_reasoning: string | null
+          ai_score: number | null
+          category: string | null
+          competition_score: number | null
+          created_at: string | null
+          demand_score: number | null
+          id: string
+          margin_score: number | null
+          niche_alignment_score: number | null
+          product_image: string | null
+          product_name: string
+          profit_margin: number | null
+          published_to_shopify: boolean | null
+          scraped_at: string | null
+          ship_from: string | null
+          shipping_days: number | null
+          shipping_score: number | null
+          shopify_product_id: string | null
+          source: string | null
+          status: string | null
+          suggested_sell_price: number | null
+          supplier: string | null
+          supplier_cost: number | null
+          supplier_product_id: string | null
+          supplier_rating: number | null
+          supplier_url: string | null
+          total_orders: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          ai_score?: number | null
+          category?: string | null
+          competition_score?: number | null
+          created_at?: string | null
+          demand_score?: number | null
+          id?: string
+          margin_score?: number | null
+          niche_alignment_score?: number | null
+          product_image?: string | null
+          product_name: string
+          profit_margin?: number | null
+          published_to_shopify?: boolean | null
+          scraped_at?: string | null
+          ship_from?: string | null
+          shipping_days?: number | null
+          shipping_score?: number | null
+          shopify_product_id?: string | null
+          source?: string | null
+          status?: string | null
+          suggested_sell_price?: number | null
+          supplier?: string | null
+          supplier_cost?: number | null
+          supplier_product_id?: string | null
+          supplier_rating?: number | null
+          supplier_url?: string | null
+          total_orders?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          ai_score?: number | null
+          category?: string | null
+          competition_score?: number | null
+          created_at?: string | null
+          demand_score?: number | null
+          id?: string
+          margin_score?: number | null
+          niche_alignment_score?: number | null
+          product_image?: string | null
+          product_name?: string
+          profit_margin?: number | null
+          published_to_shopify?: boolean | null
+          scraped_at?: string | null
+          ship_from?: string | null
+          shipping_days?: number | null
+          shipping_score?: number | null
+          shopify_product_id?: string | null
+          source?: string | null
+          status?: string | null
+          suggested_sell_price?: number | null
+          supplier?: string | null
+          supplier_cost?: number | null
+          supplier_product_id?: string | null
+          supplier_rating?: number | null
+          supplier_url?: string | null
+          total_orders?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       trust_calibration_scores: {
         Row: {
