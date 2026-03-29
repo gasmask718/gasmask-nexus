@@ -120,53 +120,39 @@ export default function PropsIntelligencePage() {
   }, [safeProps, search, filterPlatform, bestOnly, resultFilter]);
 
   const handleRunAnalysis = () => {
+    // FORCE instant UI feedback BEFORE any async work
+    setUiRunning(true);
+    toast.success('⚡ Analysis started — duplicates will be skipped!');
+
     const datasetSnapshot = structuredClone(displayProps);
     const snapshot_id = `dataset-${datasetVersionId}-${Date.now()}`;
-
-    setSnapshotMeta({
-      snapshot_id,
-      timestamp: Date.now(),
-      props_count: datasetSnapshot.length,
-    });
+    setSnapshotMeta({ snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
     setLockedProps(datasetSnapshot);
     setIsDatasetLocked(true);
 
-    console.log('SNAPSHOT CREATED:', { snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
-    console.log('Coverage Mode:', coverageMode);
-    console.log('Props Count:', datasetSnapshot.length);
-
-    startAnalysis(false, datasetSnapshot.map((p) => ({
-      id: p.id,
-      player_name: p.player_name,
-      stat_type: p.stat_type,
-      line: p.line,
-    })));
-    toast.success('Analysis started — duplicates will be skipped!');
+    // Defer async work so React renders the loading state first
+    setTimeout(() => {
+      startAnalysis(false, datasetSnapshot.map((p) => ({
+        id: p.id, player_name: p.player_name, stat_type: p.stat_type, line: p.line,
+      })));
+    }, 0);
   };
 
   const handleForceRerun = () => {
+    setUiRunning(true);
+    toast.success('⚡ Force re-run — all props will be re-analyzed!');
+
     const datasetSnapshot = structuredClone(displayProps);
     const snapshot_id = `dataset-${datasetVersionId}-${Date.now()}`;
-
-    setSnapshotMeta({
-      snapshot_id,
-      timestamp: Date.now(),
-      props_count: datasetSnapshot.length,
-    });
+    setSnapshotMeta({ snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
     setLockedProps(datasetSnapshot);
     setIsDatasetLocked(true);
 
-    console.log('SNAPSHOT CREATED:', { snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
-    console.log('Coverage Mode:', coverageMode);
-    console.log('Props Count:', datasetSnapshot.length);
-
-    startAnalysis(true, datasetSnapshot.map((p) => ({
-      id: p.id,
-      player_name: p.player_name,
-      stat_type: p.stat_type,
-      line: p.line,
-    })));
-    toast.success('Force re-run — all props will be re-analyzed!');
+    setTimeout(() => {
+      startAnalysis(true, datasetSnapshot.map((p) => ({
+        id: p.id, player_name: p.player_name, stat_type: p.stat_type, line: p.line,
+      })));
+    }, 0);
   };
 
   const handleToggleCoverage = () => {
@@ -193,7 +179,15 @@ export default function PropsIntelligencePage() {
     toast.success('Dataset refreshed');
   };
 
-  const isRunning = analysisState.isRunning;
+  const [uiRunning, setUiRunning] = useState(false);
+  const isRunning = analysisState.isRunning || uiRunning;
+
+  // Sync uiRunning down when analysis finishes
+  useEffect(() => {
+    if (!analysisState.isRunning && uiRunning) {
+      setUiRunning(false);
+    }
+  }, [analysisState.isRunning, uiRunning]);
 
   const RESULT_FILTERS: { value: ResultFilter; label: string; icon: React.ReactNode; color: string; activeClass: string }[] = [
     { value: 'all', label: 'All', icon: null, color: 'text-foreground', activeClass: 'bg-primary text-primary-foreground' },
@@ -252,6 +246,16 @@ export default function PropsIntelligencePage() {
           </Button>
         </div>
       </div>
+
+      {/* INSTANT LOADING BAR — shows before async hook catches up */}
+      {isRunning && analysisState.status === 'idle' && (
+        <Card className="bg-primary/10 border-primary/30 animate-pulse">
+          <CardContent className="py-3 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-sm font-medium text-primary">⚡ Initializing analysis engine...</span>
+          </CardContent>
+        </Card>
+      )}
 
       {/* LIVE ANALYSIS PANEL */}
       {analysisState.status !== 'idle' && (
