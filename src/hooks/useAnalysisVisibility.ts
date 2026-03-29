@@ -52,8 +52,9 @@ export function useAnalysisVisibility() {
           current_step: null,
           completed_at: Date.now(),
         }));
-        // Soft refetch — keeps existing data visible via placeholderData
-        queryClient.refetchQueries({ queryKey: ['unified-props'] });
+        // Soft refetch — uses exact query key with current coverage mode
+        const mode = getCoverageMode();
+        queryClient.refetchQueries({ queryKey: ['unified-props', todayEST, mode] });
       } else if (data.status === 'failed') {
         setState(prev => ({
           ...prev,
