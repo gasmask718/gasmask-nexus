@@ -258,7 +258,7 @@ export default function PropsIntelligencePage() {
       )}
 
       {/* LIVE ANALYSIS PANEL */}
-      {(analysisState.status !== 'idle' || isRunning) && analysisState.status !== 'idle' && (
+      {analysisState.status !== 'idle' && (
         <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
       )}
 
