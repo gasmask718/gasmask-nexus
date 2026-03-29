@@ -278,6 +278,7 @@ export function useAnalysisVisibility() {
 
   const cancelAnalysis = useCallback(() => {
     cancelledRef.current = true;
+    setAnalysisLock(false); // 🔓 Unlock dataset
     setState(prev => ({
       ...prev,
       isRunning: false,
