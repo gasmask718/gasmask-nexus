@@ -102,6 +102,54 @@ function getRiskTag(score: number, capperWeight: number, capperROI: number): Uni
   return 'MEDIUM_CONFIDENCE';
 }
 
+function generateReason(signal: Omit<UnifiedSignal, 'short_reason' | 'full_reason'>): { short_reason: string; full_reason: string } {
+  const strengths: string[] = [];
+  const risks: string[] = [];
+
+  // AI confidence
+  if (signal.ai_confidence != null) {
+    if (signal.ai_confidence >= 75) strengths.push(`Strong AI confidence (${signal.ai_confidence}%)`);
+    else if (signal.ai_confidence >= 60) strengths.push(`Moderate AI confidence (${signal.ai_confidence}%)`);
+    else risks.push(`Low AI confidence (${signal.ai_confidence}%)`);
+  }
+
+  // Consensus
+  if (signal.capper_consensus >= 4) strengths.push(`${signal.capper_consensus} cappers aligned (elite consensus)`);
+  else if (signal.capper_consensus >= 3) strengths.push(`${signal.capper_consensus} cappers aligned (strong consensus)`);
+  else if (signal.capper_consensus >= 2) strengths.push(`${signal.capper_consensus} cappers aligned`);
+  else if (signal.capper_consensus === 0 && signal.alignment !== 'ai_only') risks.push('No capper consensus');
+
+  // Grade
+  if (signal.capper_avg_grade === 'A') strengths.push('Backed by A-grade capper(s)');
+  else if (signal.capper_avg_grade === 'B') strengths.push('Backed by B-grade capper(s)');
+  else if (signal.capper_avg_grade === 'D' && signal.capper_consensus > 0) risks.push('Low capper reliability (D-grade)');
+
+  // ROI
+  if (signal.capper_avg_roi > 5 && signal.capper_consensus > 0) strengths.push(`Capper ROI: +${signal.capper_avg_roi}%`);
+  else if (signal.capper_avg_roi < -5 && signal.capper_consensus > 0) risks.push(`Negative capper ROI (${signal.capper_avg_roi}%)`);
+
+  // Alignment
+  if (signal.alignment_bonus) strengths.push('AI + capper agreement (+10 bonus)');
+
+  // Risk tag context
+  if (signal.risk_tag === 'HIGH_RISK') risks.push('Flagged as high risk');
+
+  const full_parts: string[] = [];
+  if (strengths.length > 0) full_parts.push(strengths.join('. ') + '.');
+  if (risks.length > 0) full_parts.push('Risks: ' + risks.join('; ') + '.');
+
+  const full_reason = full_parts.join(' ') || 'Insufficient data for detailed analysis.';
+
+  // Short reason: top strength or top risk
+  const short_reason = strengths.length > 0
+    ? strengths[0]
+    : risks.length > 0
+    ? risks[0]
+    : 'Limited signal data';
+
+  return { short_reason, full_reason };
+}
+
 export function useUnifiedSignals() {
   const { consensusPicks, consensusStats, capperKPIs, todayConsensusPicks, isLoading: capperLoading } = useConsensusIntelligence();
 
