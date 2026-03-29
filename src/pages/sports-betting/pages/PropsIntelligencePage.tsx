@@ -239,8 +239,18 @@ export default function PropsIntelligencePage() {
         </div>
       </div>
 
+      {/* INSTANT LOADING BAR — shows before async hook catches up */}
+      {isRunning && analysisState.status === 'idle' && (
+        <Card className="bg-primary/10 border-primary/30 animate-pulse">
+          <CardContent className="py-3 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-sm font-medium text-primary">⚡ Initializing analysis engine...</span>
+          </CardContent>
+        </Card>
+      )}
+
       {/* LIVE ANALYSIS PANEL */}
-      {analysisState.status !== 'idle' && (
+      {(analysisState.status !== 'idle' || isRunning) && analysisState.status !== 'idle' && (
         <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
       )}
 
