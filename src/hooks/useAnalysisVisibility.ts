@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getCoverageMode } from '@/hooks/useUnifiedProps';
 import type { AnalysisState, AnalysisFeedItem } from '@/components/betting/LiveAnalysisPanel';
 
 const INITIAL_STATE: AnalysisState = {
