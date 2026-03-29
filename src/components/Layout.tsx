@@ -366,6 +366,7 @@ const DYNASTY_NAVIGATION = {
       { path: '/os/unforgettable/products', label: '📦 Floor 5 — Product Engine', icon: Package },
       { path: '/os/unforgettable/automation', label: '🤖 Floor 6 — AI & Automation', icon: Bot },
       { path: '/os/unforgettable/analytics', label: '📊 Floor 7 — Analytics', icon: BarChart3 },
+      { path: '/os/unforgettable/pricing-intelligence', label: '💰 Floor 8 — Pricing Intelligence', icon: DollarSign },
     ],
   },
   dynastyBusiness: {

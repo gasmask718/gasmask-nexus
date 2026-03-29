@@ -2988,6 +2988,7 @@ export default function AppRoutes() {
           <Route path="products" element={<UTProductEngine />} />
           <Route path="suppliers" element={<UTSupplierConsole />} />
           <Route path="automation" element={<UTAutomation />} />
+          <Route path="pricing-intelligence" element={<UTPricingIntelligence />} />
           <Route path="staff" element={<UnforgettableStaff />} />
           <Route path="staff/new" element={<UnforgettableStaffNew />} />
           <Route path="staff/categories" element={<UnforgettableStaffCategories />} />
