@@ -175,14 +175,21 @@ export default function PropsIntelligencePage() {
       </div>
 
       {/* STATS BAR */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <Card className="bg-card/50"><CardContent className="py-2 text-center">
           <div className="text-lg font-bold text-foreground">{safeProps.length}</div>
           <div className="text-xs text-muted-foreground">Total Props</div>
         </CardContent></Card>
         <Card className="bg-card/50"><CardContent className="py-2 text-center">
-          <div className="text-lg font-bold text-foreground">{platforms.length}</div>
-          <div className="text-xs text-muted-foreground">Platforms</div>
+          <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
+            <Brain className="h-4 w-4 text-primary" />
+            {predictionCount}
+          </div>
+          <div className="text-xs text-muted-foreground">Predicted</div>
+        </CardContent></Card>
+        <Card className="bg-card/50"><CardContent className="py-2 text-center">
+          <div className="text-lg font-bold text-muted-foreground">{Math.max(0, safeProps.length - predictionCount)}</div>
+          <div className="text-xs text-muted-foreground">Remaining</div>
         </CardContent></Card>
         <Card className="bg-card/50"><CardContent className="py-2 text-center">
           <div className="text-lg font-bold text-emerald-400">{resultCounts.won}</div>
