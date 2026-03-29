@@ -17,6 +17,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { CapperPicksFeed } from '@/components/betting/CapperPicksFeed';
 import { ConsensusIntelligenceDashboard } from '@/components/betting/ConsensusIntelligenceDashboard';
+import { ManualBettingDashboard } from '@/components/betting/ManualBettingDashboard';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
