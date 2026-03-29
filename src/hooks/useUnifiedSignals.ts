@@ -210,7 +210,7 @@ export function useUnifiedSignals() {
 
       const score = calcFinalScore(aiConf, cp.capperCount, avgWeight, cp.avgCapperROI, cp.avgCapperWinRate, hasAI);
 
-      allSignals.push({
+      const partial = {
         player_name: cp.player_name,
         team: cp.team,
         sport: cp.sport,
@@ -231,10 +231,11 @@ export function useUnifiedSignals() {
         combined_score: score,
         signal_tier: getTier(score),
         risk_tag: getRiskTag(score, avgWeight, cp.avgCapperROI),
-        alignment: hasAI ? 'ai_and_capper' : 'capper_only',
+        alignment: hasAI ? 'ai_and_capper' as const : 'capper_only' as const,
         alignment_bonus: hasAI,
         result: cp.result,
-      });
+      };
+      allSignals.push({ ...partial, ...generateReason(partial) });
     }
 
     // Process AI-only signals
