@@ -34,23 +34,43 @@ export interface AnalysisJob {
   completed_at: string | null;
 }
 
-export function useUnifiedProps(date?: string) {
+export type CoverageMode = 'limited' | 'expanded';
+
+const COVERAGE_KEY = 'sbo_coverage_mode';
+
+export function getCoverageMode(): CoverageMode {
+  return (localStorage.getItem(COVERAGE_KEY) as CoverageMode) || 'limited';
+}
+
+export function setCoverageMode(mode: CoverageMode) {
+  localStorage.setItem(COVERAGE_KEY, mode);
+}
+
+export function useUnifiedProps(date?: string, coverageMode?: CoverageMode) {
   const todayEST = date || new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const mode = coverageMode || getCoverageMode();
 
   return useQuery({
-    queryKey: ['unified-props', todayEST],
+    queryKey: ['unified-props', todayEST, mode],
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      let query = (supabase as any)
         .from('sbo_unified_props')
         .select('*')
-        .eq('game_date', todayEST)
         .order('ai_confidence', { ascending: false, nullsFirst: false });
 
+      if (mode === 'limited') {
+        // Limited: today only
+        query = query.eq('game_date', todayEST);
+      }
+      // Expanded: no date filter — fetch all available props
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as UnifiedProp[];
     },
     refetchInterval: 30000,
-    placeholderData: (prev: any) => prev, // keep previous data during refetch
+    placeholderData: (prev: any) => prev,
+    staleTime: 10000, // prevent rapid refetches from clearing data
   });
 }
 
