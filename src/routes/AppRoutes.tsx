@@ -950,6 +950,7 @@ export default function AppRoutes() {
       <Route element={<PublicLayout />}>
         <Route path="/public" element={<LandingRedirect />} />
         <Route path="/shop" element={<Shop />} />
+        <Route path="/store" element={<ShopifyStore />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/about" element={<AboutPage />} />
