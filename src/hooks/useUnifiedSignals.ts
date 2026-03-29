@@ -21,10 +21,14 @@ export interface UnifiedSignal {
   capper_names: string[];
   capper_avg_roi: number;
   capper_avg_wr: number;
+  capper_avg_grade: string;
+  capper_weight: number;
   // Combined
   combined_score: number;
   signal_tier: 'ELITE' | 'STRONG' | 'WATCHLIST' | 'LOW';
+  risk_tag: 'HIGH_CONFIDENCE' | 'MEDIUM_CONFIDENCE' | 'HIGH_RISK';
   alignment: 'ai_and_capper' | 'ai_only' | 'capper_only';
+  alignment_bonus: boolean;
   result: string | null;
 }
 
@@ -37,19 +41,63 @@ export interface YesterdayStats {
   worstSignal: UnifiedSignal | null;
 }
 
-function calcCombinedScore(aiConf: number | null, consensusCount: number, capperROI: number, marketWR: number): number {
-  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * 50 : 0;
-  const consensus = Math.min(consensusCount / 5, 1) * 20;
-  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * 20;
+export interface MarketEdge {
+  market: string;
+  winRate: number;
+  roi: number;
+  totalPicks: number;
+}
+
+// Grade → weight multiplier
+const GRADE_WEIGHT: Record<string, number> = { A: 1.5, B: 1.2, C: 1.0, D: 0.6 };
+
+function gradeFromKPIs(capperNames: string[], capperKPIs: CapperKPI[]): { avgGrade: string; avgWeight: number } {
+  if (capperNames.length === 0) return { avgGrade: 'C', avgWeight: 1.0 };
+  const matched = capperKPIs.filter(k => capperNames.some(n => n.toLowerCase() === k.name.toLowerCase()));
+  if (matched.length === 0) return { avgGrade: 'C', avgWeight: 1.0 };
+  const totalWeight = matched.reduce((s, k) => s + (GRADE_WEIGHT[k.grade] || 1.0), 0);
+  const avgW = totalWeight / matched.length;
+  const avgGrade = avgW >= 1.4 ? 'A' : avgW >= 1.1 ? 'B' : avgW >= 0.9 ? 'C' : 'D';
+  return { avgGrade, avgWeight: Math.round(avgW * 100) / 100 };
+}
+
+/**
+ * FINAL DECISION FORMULA (v2):
+ *   ai_confidence     × 0.40
+ * + consensus_count   × 0.15
+ * + capper_weight     × 0.20
+ * + capper_roi        × 0.15
+ * + market_wr         × 0.10
+ * + alignment_bonus   +10 if AI+capper agree
+ */
+function calcFinalScore(
+  aiConf: number | null,
+  consensusCount: number,
+  capperWeight: number,
+  capperROI: number,
+  marketWR: number,
+  hasAlignment: boolean,
+): number {
+  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * 40 : 0;
+  const consensus = Math.min(consensusCount / 5, 1) * 15;
+  const weight = Math.min(capperWeight / 1.5, 1) * 20;
+  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * 15;
   const mkt = Math.min(marketWR / 100, 1) * 10;
-  return Math.round(ai + consensus + roi + mkt);
+  const bonus = hasAlignment ? 10 : 0;
+  return Math.min(100, Math.round(ai + consensus + weight + roi + mkt + bonus));
 }
 
 function getTier(score: number): UnifiedSignal['signal_tier'] {
-  if (score >= 75) return 'ELITE';
-  if (score >= 55) return 'STRONG';
-  if (score >= 35) return 'WATCHLIST';
+  if (score >= 80) return 'ELITE';
+  if (score >= 60) return 'STRONG';
+  if (score >= 40) return 'WATCHLIST';
   return 'LOW';
+}
+
+function getRiskTag(score: number, capperWeight: number, capperROI: number): UnifiedSignal['risk_tag'] {
+  if (score >= 75 && capperWeight >= 1.2) return 'HIGH_CONFIDENCE';
+  if (capperROI < -5 || capperWeight <= 0.6) return 'HIGH_RISK';
+  return 'MEDIUM_CONFIDENCE';
 }
 
 export function useUnifiedSignals() {
@@ -58,7 +106,6 @@ export function useUnifiedSignals() {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
-  // Fetch AI predictions for today
   const { data: aiPredictions = [], isLoading: aiLoading } = useQuery({
     queryKey: ['unified-ai-predictions', today],
     queryFn: async () => {
@@ -71,7 +118,6 @@ export function useUnifiedSignals() {
     },
   });
 
-  // Fetch props_master for today's market data
   const { data: todayProps = [] } = useQuery({
     queryKey: ['unified-props-today', today],
     queryFn: async () => {
@@ -83,13 +129,11 @@ export function useUnifiedSignals() {
     },
   });
 
-  // Build unified signals
-  const { signals, alignedSignals, aiOnlySignals, capperOnlySignals, yesterdayStats, pendingSignals } = useMemo(() => {
+  const { signals, alignedSignals, aiOnlySignals, capperOnlySignals, yesterdayStats, pendingSignals, eliteSignals, strongSignals, bestPlays, marketEdges } = useMemo(() => {
     const allSignals: UnifiedSignal[] = [];
     const aiMap = new Map<string, any>();
     const propsMap = new Map<string, any>();
 
-    // Index AI predictions by player+stat key
     for (const pred of aiPredictions) {
       const pp = pred.sbo_player_props;
       if (!pp?.player_name) continue;
@@ -97,24 +141,24 @@ export function useUnifiedSignals() {
       aiMap.set(key, pred);
     }
 
-    // Index props_master
     for (const prop of todayProps) {
       const key = `${(prop.player_name || '').toLowerCase().trim()}|${(prop.stat_type || '').toLowerCase()}|${prop.line}`;
       propsMap.set(key, prop);
     }
 
-    // Process consensus picks - try to match with AI
     const processedKeys = new Set<string>();
+
+    // Process consensus picks
     for (const cp of consensusPicks) {
       const key = `${cp.player_name.toLowerCase().trim()}|${cp.prop_type.toLowerCase()}|${cp.line}`;
       processedKeys.add(key);
       const aiPred = aiMap.get(key);
       const prop = propsMap.get(key);
-
       const aiConf = aiPred?.final_confidence || prop?.ai_confidence || null;
-
-      const score = calcCombinedScore(aiConf, cp.capperCount, cp.avgCapperROI, cp.avgCapperWinRate);
       const hasAI = aiConf != null && aiConf > 0;
+      const { avgGrade, avgWeight } = gradeFromKPIs(cp.capperNames, capperKPIs);
+
+      const score = calcFinalScore(aiConf, cp.capperCount, avgWeight, cp.avgCapperROI, cp.avgCapperWinRate, hasAI);
 
       allSignals.push({
         player_name: cp.player_name,
@@ -132,14 +176,18 @@ export function useUnifiedSignals() {
         capper_names: cp.capperNames,
         capper_avg_roi: cp.avgCapperROI,
         capper_avg_wr: cp.avgCapperWinRate,
+        capper_avg_grade: avgGrade,
+        capper_weight: avgWeight,
         combined_score: score,
         signal_tier: getTier(score),
+        risk_tag: getRiskTag(score, avgWeight, cp.avgCapperROI),
         alignment: hasAI ? 'ai_and_capper' : 'capper_only',
+        alignment_bonus: hasAI,
         result: cp.result,
       });
     }
 
-    // Process AI-only signals (no capper consensus)
+    // Process AI-only signals
     for (const pred of aiPredictions) {
       const pp = pred.sbo_player_props;
       if (!pp?.player_name) continue;
@@ -148,9 +196,9 @@ export function useUnifiedSignals() {
       processedKeys.add(key);
 
       const conf = pred.final_confidence || 0;
-      if (conf < 55) continue; // Only include meaningful AI signals
+      if (conf < 55) continue;
 
-      const score = calcCombinedScore(conf, 0, 0, 0);
+      const score = calcFinalScore(conf, 0, 1.0, 0, 0, false);
       allSignals.push({
         player_name: pp.player_name,
         team: pp.team || null,
@@ -167,9 +215,13 @@ export function useUnifiedSignals() {
         capper_names: [],
         capper_avg_roi: 0,
         capper_avg_wr: 0,
+        capper_avg_grade: '—',
+        capper_weight: 1.0,
         combined_score: score,
         signal_tier: getTier(score),
+        risk_tag: getRiskTag(score, 1.0, 0),
         alignment: 'ai_only',
+        alignment_bonus: false,
         result: pred.was_correct != null ? (pred.was_correct ? 'won' : 'lost') : null,
       });
     }
@@ -180,6 +232,34 @@ export function useUnifiedSignals() {
     const aiOnly = allSignals.filter(s => s.alignment === 'ai_only');
     const capperOnly = allSignals.filter(s => s.alignment === 'capper_only');
     const pending = allSignals.filter(s => !s.result);
+    const elite = allSignals.filter(s => s.signal_tier === 'ELITE');
+    const strong = allSignals.filter(s => s.signal_tier === 'STRONG');
+
+    // Best plays = top 5 ELITE+STRONG, no result yet
+    const best = allSignals
+      .filter(s => !s.result && (s.signal_tier === 'ELITE' || s.signal_tier === 'STRONG'))
+      .slice(0, 5);
+
+    // Market edge detection
+    const mktMap = new Map<string, { wins: number; losses: number; total: number; roiSum: number }>();
+    for (const s of allSignals) {
+      if (!s.result || (s.result !== 'won' && s.result !== 'lost')) continue;
+      const m = s.prop_type || 'unknown';
+      if (!mktMap.has(m)) mktMap.set(m, { wins: 0, losses: 0, total: 0, roiSum: 0 });
+      const entry = mktMap.get(m)!;
+      entry.total++;
+      if (s.result === 'won') { entry.wins++; entry.roiSum += 0.909; }
+      else { entry.losses++; entry.roiSum -= 1; }
+    }
+    const edges: MarketEdge[] = [...mktMap.entries()]
+      .filter(([, v]) => v.total >= 3)
+      .map(([market, v]) => ({
+        market,
+        winRate: Math.round((v.wins / v.total) * 100),
+        roi: Math.round((v.roiSum / v.total) * 10000) / 100,
+        totalPicks: v.total,
+      }))
+      .sort((a, b) => b.roi - a.roi);
 
     // Yesterday stats
     const yesterdaySignals = allSignals.filter(s => s.game_date === yesterday && (s.result === 'won' || s.result === 'lost'));
@@ -196,9 +276,13 @@ export function useUnifiedSignals() {
       aiOnlySignals: aiOnly,
       capperOnlySignals: capperOnly,
       pendingSignals: pending,
+      eliteSignals: elite,
+      strongSignals: strong,
+      bestPlays: best,
+      marketEdges: edges,
       yesterdayStats: { wins: yWins, losses: yLosses, pushes: 0, roi: yROI, bestSignal: bestY, worstSignal: worstY } as YesterdayStats,
     };
-  }, [aiPredictions, todayProps, consensusPicks, today, yesterday]);
+  }, [aiPredictions, todayProps, consensusPicks, capperKPIs, today, yesterday]);
 
   return {
     signals,
@@ -206,6 +290,10 @@ export function useUnifiedSignals() {
     aiOnlySignals,
     capperOnlySignals,
     pendingSignals,
+    eliteSignals,
+    strongSignals,
+    bestPlays,
+    marketEdges,
     yesterdayStats,
     consensusStats,
     capperKPIs,
