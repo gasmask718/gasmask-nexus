@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,8 +28,13 @@ export default function PropsIntelligencePage() {
   const [bestOnly, setBestOnly] = useState(false);
   const [resultFilter, setResultFilter] = useState<ResultFilter>('all');
   const [coverageMode, setCoverageModeState] = useState<CoverageMode>(getCoverageMode);
+  const [lockedProps, setLockedProps] = useState<UnifiedProp[] | null>(null);
+  const [isDatasetLocked, setIsDatasetLocked] = useState(false);
+  const [datasetVersionId, setDatasetVersionId] = useState(1);
+  const [snapshotMeta, setSnapshotMeta] = useState<{ snapshot_id: string; timestamp: number; props_count: number } | null>(null);
+  const prevRunningRef = useRef(false);
 
-  const { data: props, isLoading: propsLoading } = useUnifiedProps(undefined, coverageMode);
+  const { data: props, isLoading: propsLoading, refetch } = useUnifiedProps(undefined, coverageMode);
   const { state: analysisState, feed: analysisFeed, skippedCount, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
   const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
@@ -46,7 +51,33 @@ export default function PropsIntelligencePage() {
     refetchInterval: 5000,
   });
 
-  const safeProps = useMemo(() => Array.isArray(props) ? props : [], [props]);
+  useEffect(() => {
+    if (!isDatasetLocked && Array.isArray(props)) {
+      setLockedProps(props);
+    }
+  }, [props, isDatasetLocked]);
+
+  const displayProps = useMemo(() => {
+    if (lockedProps && lockedProps.length > 0) return lockedProps;
+    return Array.isArray(props) ? props : [];
+  }, [lockedProps, props]);
+
+  useEffect(() => {
+    console.log('PROPS LOAD:', displayProps.length);
+  }, [displayProps.length]);
+
+  useEffect(() => {
+    if (analysisState.isRunning && !prevRunningRef.current) {
+      console.log('PROPS BEFORE ANALYSIS:', displayProps.length);
+    }
+    if (!analysisState.isRunning && prevRunningRef.current) {
+      console.log('PROPS AFTER ANALYSIS:', displayProps.length);
+      setIsDatasetLocked(false);
+    }
+    prevRunningRef.current = analysisState.isRunning;
+  }, [analysisState.isRunning, displayProps.length]);
+
+  const safeProps = displayProps;
   const platforms = useMemo(() => [...new Set(safeProps.map(p => p.platform))], [safeProps]);
 
   // Result counts
@@ -89,12 +120,52 @@ export default function PropsIntelligencePage() {
   }, [safeProps, search, filterPlatform, bestOnly, resultFilter]);
 
   const handleRunAnalysis = () => {
-    startAnalysis(false);
+    const datasetSnapshot = structuredClone(displayProps);
+    const snapshot_id = `dataset-${datasetVersionId}-${Date.now()}`;
+
+    setSnapshotMeta({
+      snapshot_id,
+      timestamp: Date.now(),
+      props_count: datasetSnapshot.length,
+    });
+    setLockedProps(datasetSnapshot);
+    setIsDatasetLocked(true);
+
+    console.log('SNAPSHOT CREATED:', { snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
+    console.log('Coverage Mode:', coverageMode);
+    console.log('Props Count:', datasetSnapshot.length);
+
+    startAnalysis(false, datasetSnapshot.map((p) => ({
+      id: p.id,
+      player_name: p.player_name,
+      stat_type: p.stat_type,
+      line: p.line,
+    })));
     toast.success('Analysis started — duplicates will be skipped!');
   };
 
   const handleForceRerun = () => {
-    startAnalysis(true);
+    const datasetSnapshot = structuredClone(displayProps);
+    const snapshot_id = `dataset-${datasetVersionId}-${Date.now()}`;
+
+    setSnapshotMeta({
+      snapshot_id,
+      timestamp: Date.now(),
+      props_count: datasetSnapshot.length,
+    });
+    setLockedProps(datasetSnapshot);
+    setIsDatasetLocked(true);
+
+    console.log('SNAPSHOT CREATED:', { snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
+    console.log('Coverage Mode:', coverageMode);
+    console.log('Props Count:', datasetSnapshot.length);
+
+    startAnalysis(true, datasetSnapshot.map((p) => ({
+      id: p.id,
+      player_name: p.player_name,
+      stat_type: p.stat_type,
+      line: p.line,
+    })));
     toast.success('Force re-run — all props will be re-analyzed!');
   };
 
@@ -102,7 +173,24 @@ export default function PropsIntelligencePage() {
     const newMode: CoverageMode = coverageMode === 'limited' ? 'expanded' : 'limited';
     setCoverageMode(newMode);
     setCoverageModeState(newMode);
+    setLockedProps(null);
+    setSnapshotMeta(null);
+    setDatasetVersionId((v) => v + 1);
+    setIsDatasetLocked(false);
     toast.success(newMode === 'expanded' ? '🔓 Coverage expanded — all dates loaded' : '🔒 Coverage limited to today');
+  };
+
+  const handleRefreshDataset = async () => {
+    if (isDatasetLocked || analysisState.isRunning) return;
+
+    const result = await refetch();
+    const nextProps = Array.isArray(result.data) ? result.data : [];
+    setLockedProps(nextProps);
+    setSnapshotMeta(null);
+    setDatasetVersionId((v) => v + 1);
+    console.log('Coverage Mode:', coverageMode);
+    console.log('Props Count:', nextProps.length);
+    toast.success('Dataset refreshed');
   };
 
   const isRunning = analysisState.isRunning;
@@ -130,6 +218,16 @@ export default function PropsIntelligencePage() {
                 <Lock className="h-3 w-3 mr-1" /> Dataset Locked
               </Badge>
             )}
+            {isDatasetLocked && (
+              <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                Dataset Locked 🔒 (Analysis Running)
+              </Badge>
+            )}
+            {coverageMode === 'expanded' && (
+              <Badge variant="outline" className="text-xs border-primary/50 text-primary">
+                Coverage: EXPANDED 🔒
+              </Badge>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -144,6 +242,9 @@ export default function PropsIntelligencePage() {
           </Button>
           <Button variant="outline" size="sm" onClick={handleForceRerun} disabled={isRunning}>
             <RefreshCw className="h-3 w-3 mr-1" /> Re-run All
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleRefreshDataset} disabled={isDatasetLocked || isRunning}>
+            <RefreshCw className="h-3 w-3 mr-1" /> Refresh Dataset
           </Button>
           <Button onClick={handleRunAnalysis} disabled={isRunning} className="bg-primary hover:bg-primary/90">
             {isRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
@@ -222,6 +323,16 @@ export default function PropsIntelligencePage() {
           <div className="text-xs text-muted-foreground">Pending</div>
         </CardContent></Card>
       </div>
+
+      {snapshotMeta && (
+        <Card className="bg-card/50">
+          <CardContent className="py-2 text-xs text-muted-foreground flex flex-wrap items-center gap-3">
+            <span>Version: {datasetVersionId}</span>
+            <span>Snapshot: {snapshotMeta.snapshot_id}</span>
+            <span>Props: {snapshotMeta.props_count}</span>
+          </CardContent>
+        </Card>
+      )}
 
       {/* PROPS TABLE */}
       {propsLoading ? (
