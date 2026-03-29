@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
 import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
@@ -28,6 +30,20 @@ export default function PropsIntelligencePage() {
 
   const { data: props, isLoading: propsLoading } = useUnifiedProps();
   const { state: analysisState, feed: analysisFeed, skippedCount, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
+
+  const todayEST = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const { data: predictionCount = 0 } = useQuery({
+    queryKey: ['prediction-count', todayEST],
+    queryFn: async () => {
+      const { count, error } = await (supabase as any)
+        .from('sbo_prop_predictions')
+        .select('*', { count: 'exact', head: true })
+        .eq('game_date', todayEST);
+      if (error) throw error;
+      return count || 0;
+    },
+    refetchInterval: 5000,
+  });
 
   const safeProps = useMemo(() => Array.isArray(props) ? props : [], [props]);
   const platforms = useMemo(() => [...new Set(safeProps.map(p => p.platform))], [safeProps]);
@@ -114,13 +130,8 @@ export default function PropsIntelligencePage() {
         </div>
       </div>
 
-      {/* LIVE ANALYSIS PANEL — always rendered when running or recently completed */}
-      {(analysisState.status !== 'idle') && (
-        <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
-      )}
-
-      {/* ALWAYS show analysis panel when running or has results */}
-      {(isRunning || analysisState.status === 'running' || analysisState.status === 'completed' || analysisState.status === 'failed' || analysisState.status === 'cancelled') && (
+      {/* LIVE ANALYSIS PANEL */}
+      {analysisState.status !== 'idle' && (
         <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
       )}
 
@@ -164,14 +175,21 @@ export default function PropsIntelligencePage() {
       </div>
 
       {/* STATS BAR */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <Card className="bg-card/50"><CardContent className="py-2 text-center">
           <div className="text-lg font-bold text-foreground">{safeProps.length}</div>
           <div className="text-xs text-muted-foreground">Total Props</div>
         </CardContent></Card>
         <Card className="bg-card/50"><CardContent className="py-2 text-center">
-          <div className="text-lg font-bold text-foreground">{platforms.length}</div>
-          <div className="text-xs text-muted-foreground">Platforms</div>
+          <div className="text-lg font-bold text-foreground flex items-center justify-center gap-1">
+            <Brain className="h-4 w-4 text-primary" />
+            {predictionCount}
+          </div>
+          <div className="text-xs text-muted-foreground">Predicted</div>
+        </CardContent></Card>
+        <Card className="bg-card/50"><CardContent className="py-2 text-center">
+          <div className="text-lg font-bold text-muted-foreground">{Math.max(0, safeProps.length - predictionCount)}</div>
+          <div className="text-xs text-muted-foreground">Remaining</div>
         </CardContent></Card>
         <Card className="bg-card/50"><CardContent className="py-2 text-center">
           <div className="text-lg font-bold text-emerald-400">{resultCounts.won}</div>
