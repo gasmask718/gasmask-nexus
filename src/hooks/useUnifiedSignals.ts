@@ -250,7 +250,7 @@ export function useUnifiedSignals() {
       if (conf < 55) continue;
 
       const score = calcFinalScore(conf, 0, 1.0, 0, 0, false);
-      allSignals.push({
+      const partial2 = {
         player_name: pp.player_name,
         team: pp.team || null,
         sport: 'NBA',
@@ -263,7 +263,7 @@ export function useUnifiedSignals() {
         ai_prediction_id: pred.id,
         confidence_tier: pred.confidence_tier,
         capper_consensus: 0,
-        capper_names: [],
+        capper_names: [] as string[],
         capper_avg_roi: 0,
         capper_avg_wr: 0,
         capper_avg_grade: '—',
@@ -271,10 +271,11 @@ export function useUnifiedSignals() {
         combined_score: score,
         signal_tier: getTier(score),
         risk_tag: getRiskTag(score, 1.0, 0),
-        alignment: 'ai_only',
+        alignment: 'ai_only' as const,
         alignment_bonus: false,
         result: pred.was_correct != null ? (pred.was_correct ? 'won' : 'lost') : null,
-      });
+      };
+      allSignals.push({ ...partial2, ...generateReason(partial2) });
     }
 
     allSignals.sort((a, b) => b.combined_score - a.combined_score);
