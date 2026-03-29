@@ -20,6 +20,7 @@ import { ConsensusIntelligenceDashboard } from '@/components/betting/ConsensusIn
 import { ManualBettingDashboard } from '@/components/betting/ManualBettingDashboard';
 import { DailyReportDashboard } from '@/components/betting/DailyReportDashboard';
 import { CapperGradingDashboard } from '@/components/betting/CapperGradingDashboard';
+import { LearningDashboard } from '@/components/betting/LearningDashboard';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
