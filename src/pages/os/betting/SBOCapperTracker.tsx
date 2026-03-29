@@ -1441,7 +1441,7 @@ export default function SBOCapperTracker() {
         )}
 
         {/* Tabs */}
-        <Tabs defaultValue="profit">
+        <Tabs defaultValue="consensus">
           <TabsList className="w-full flex flex-wrap h-auto gap-0.5">
             <TabsTrigger value="consensus" className="text-xs gap-1"><Flame className="h-3 w-3" /> Consensus</TabsTrigger>
             <TabsTrigger value="profit" className="text-xs gap-1"><Banknote className="h-3 w-3" /> Profit</TabsTrigger>
