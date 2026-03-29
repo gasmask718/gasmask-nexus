@@ -150,11 +150,6 @@ function CapperLeaderboard({ capperKPIs }: { capperKPIs: CapperKPI[] }) {
               </span>
               <span className="text-muted-foreground">{c.winRate}% WR</span>
               <span className="text-muted-foreground/60">{c.totalPicks}p</span>
-              {c.currentStreak !== 0 && (
-                <span className={`text-[10px] font-bold ${c.currentStreak > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {c.currentStreak > 0 ? `🔥${c.currentStreak}` : `❄️${Math.abs(c.currentStreak)}`}
-                </span>
-              )}
             </div>
           </div>
         ))}
