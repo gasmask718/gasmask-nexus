@@ -236,7 +236,7 @@ export function useUnifiedSignals() {
       const hasAI = aiConf != null && aiConf > 0;
       const { avgGrade, avgWeight } = gradeFromKPIs(cp.capperNames, capperKPIs);
 
-      const score = calcFinalScore(aiConf, cp.capperCount, avgWeight, cp.avgCapperROI, cp.avgCapperWinRate, hasAI);
+      const score = calcFinalScore(aiConf, cp.capperCount, avgWeight, cp.avgCapperROI, cp.avgCapperWinRate, hasAI, dynamicWeights);
 
       const partial = {
         player_name: cp.player_name,
