@@ -19,6 +19,7 @@ import { CapperPicksFeed } from '@/components/betting/CapperPicksFeed';
 import { ConsensusIntelligenceDashboard } from '@/components/betting/ConsensusIntelligenceDashboard';
 import { ManualBettingDashboard } from '@/components/betting/ManualBettingDashboard';
 import { DailyReportDashboard } from '@/components/betting/DailyReportDashboard';
+import { CapperGradingDashboard } from '@/components/betting/CapperGradingDashboard';
 
 const SPORTS = ['NBA', 'WNBA', 'NFL', 'MLB', 'NHL', 'Soccer', 'UFC', 'Tennis', 'NCAAB', 'NCAAF'] as const;
 const BET_TYPES = ['prop', 'moneyline', 'spread', 'total', 'futures', 'parlay'] as const;
@@ -1454,6 +1455,7 @@ export default function SBOCapperTracker() {
             <TabsTrigger value="feed" className="text-xs gap-1"><Activity className="h-3 w-3" /> Feed</TabsTrigger>
             <TabsTrigger value="review" className="text-xs gap-1"><AlertTriangle className="h-3 w-3" /> Review</TabsTrigger>
             <TabsTrigger value="leaderboard" className="text-xs gap-1"><Trophy className="h-3 w-3" /> Board</TabsTrigger>
+            <TabsTrigger value="grading" className="text-xs gap-1"><ShieldAlert className="h-3 w-3" /> Grading</TabsTrigger>
             <TabsTrigger value="learning" className="text-xs gap-1"><Brain className="h-3 w-3" /> Learning</TabsTrigger>
             <TabsTrigger value="report" className="text-xs gap-1"><FileText className="h-3 w-3" /> Report</TabsTrigger>
             <TabsTrigger value="settings" className="text-xs gap-1"><Settings className="h-3 w-3" /> Settings</TabsTrigger>
@@ -1813,6 +1815,9 @@ export default function SBOCapperTracker() {
             </Card>
           </TabsContent>
 
+
+          {/* Capper Grading */}
+          <TabsContent value="grading" className="mt-3"><CapperGradingDashboard /></TabsContent>
 
           {/* Daily Report */}
           <TabsContent value="report" className="mt-3"><DailyReportDashboard /></TabsContent>

@@ -14,6 +14,9 @@ export interface CapperKPI {
   consensusHitRate: number;
   bestMarket: string;
   badge: 'high_roi' | 'low_accuracy' | 'neutral';
+  currentStreak: number;
+  grade: string;
+  weight: number;
 }
 
 export interface ConsensusPick {
@@ -192,6 +195,19 @@ export function useConsensusIntelligence() {
 
       const badge: CapperKPI['badge'] = roi > 5 ? 'high_roi' : winRate < 45 && cResolved.length >= 5 ? 'low_accuracy' : 'neutral';
 
+      // Current streak
+      const recentResults = cResolved.map((p: any) => p.result);
+      let streak = 0;
+      for (let i = recentResults.length - 1; i >= 0; i--) {
+        if (i === recentResults.length - 1) {
+          streak = recentResults[i] === 'won' ? 1 : -1;
+        } else {
+          if (recentResults[i] === 'won' && streak > 0) streak++;
+          else if (recentResults[i] === 'lost' && streak < 0) streak--;
+          else break;
+        }
+      }
+
       return {
         id: c.id,
         name: c.name,
@@ -204,6 +220,9 @@ export function useConsensusIntelligence() {
         consensusHitRate,
         bestMarket,
         badge,
+        currentStreak: streak,
+        grade: c.grade || c.confidence_grade || 'D',
+        weight: c.capper_weight || 1.0,
       };
     });
 
