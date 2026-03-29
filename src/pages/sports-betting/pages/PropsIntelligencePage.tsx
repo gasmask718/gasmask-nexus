@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, Filter } from 'lucide-react';
+import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, Filter, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
@@ -25,7 +25,7 @@ export default function PropsIntelligencePage() {
   const [bestOnly, setBestOnly] = useState(false);
 
   const { data: props, isLoading: propsLoading } = useUnifiedProps();
-  const { state: analysisState, feed: analysisFeed, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
+  const { state: analysisState, feed: analysisFeed, skippedCount, startAnalysis, cancelAnalysis } = useAnalysisVisibility();
 
   const safeProps = useMemo(() => Array.isArray(props) ? props : [], [props]);
 
@@ -50,8 +50,13 @@ export default function PropsIntelligencePage() {
   }, [safeProps, search, filterPlatform, bestOnly]);
 
   const handleRunAnalysis = () => {
-    startAnalysis();
-    toast.success('Analysis started — watch the live feed!');
+    startAnalysis(false);
+    toast.success('Analysis started — duplicates will be skipped!');
+  };
+
+  const handleForceRerun = () => {
+    startAnalysis(true);
+    toast.success('Force re-run — all props will be re-analyzed!');
   };
 
   const isRunning = analysisState.isRunning;
@@ -62,25 +67,35 @@ export default function PropsIntelligencePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Zap className="h-6 w-6 text-lime-400" />
+            <Zap className="h-6 w-6 text-primary" />
             Props Intelligence Engine
           </h1>
           <p className="text-sm text-muted-foreground">
             Unified cross-platform prop analysis — all sources, one engine
           </p>
         </div>
-        <Button
-          onClick={handleRunAnalysis}
-          disabled={isRunning}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
-          {isRunning ? 'Running...' : 'Run Analysis'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleForceRerun}
+            disabled={isRunning}
+          >
+            <RefreshCw className="h-3 w-3 mr-1" /> Re-run All
+          </Button>
+          <Button
+            onClick={handleRunAnalysis}
+            disabled={isRunning}
+            className="bg-primary hover:bg-primary/90"
+          >
+            {isRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+            {isRunning ? 'Running...' : 'Run Analysis'}
+          </Button>
+        </div>
       </div>
 
       {/* LIVE ANALYSIS PANEL */}
-      <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} />
+      <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} skippedCount={skippedCount} />
 
       {/* FILTERS */}
       <div className="flex flex-wrap gap-2 items-center">

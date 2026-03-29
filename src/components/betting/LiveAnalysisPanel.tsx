@@ -44,10 +44,11 @@ interface LiveAnalysisPanelProps {
   state: AnalysisState;
   feed: AnalysisFeedItem[];
   onCancel?: () => void;
+  skippedCount?: number;
   className?: string;
 }
 
-export function LiveAnalysisPanel({ state, feed, onCancel, className }: LiveAnalysisPanelProps) {
+export function LiveAnalysisPanel({ state, feed, onCancel, skippedCount = 0, className }: LiveAnalysisPanelProps) {
   const feedEndRef = useRef<HTMLDivElement>(null);
   const [elapsed, setElapsed] = useState(0);
 
@@ -136,10 +137,14 @@ export function LiveAnalysisPanel({ state, feed, onCancel, className }: LiveAnal
           </div>
 
           {/* STATS ROW */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-2">
             <div className="rounded-md bg-muted/30 p-2 text-center">
               <div className="text-lg font-bold text-foreground font-mono">{successCount}</div>
               <div className="text-[10px] uppercase tracking-wider text-hud-green">Completed</div>
+            </div>
+            <div className="rounded-md bg-muted/30 p-2 text-center">
+              <div className="text-lg font-bold text-foreground font-mono">{skippedCount}</div>
+              <div className="text-[10px] uppercase tracking-wider text-hud-cyan">Skipped</div>
             </div>
             <div className="rounded-md bg-muted/30 p-2 text-center">
               <div className="text-lg font-bold text-foreground font-mono">{errorCount}</div>
