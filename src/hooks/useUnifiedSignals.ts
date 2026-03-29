@@ -73,13 +73,8 @@ function gradeFromKPIs(capperNames: string[], capperKPIs: CapperKPI[]): { avgGra
 }
 
 /**
- * FINAL DECISION FORMULA (v2):
- *   ai_confidence     × 0.40
- * + consensus_count   × 0.15
- * + capper_weight     × 0.20
- * + capper_roi        × 0.15
- * + market_wr         × 0.10
- * + alignment_bonus   +10 if AI+capper agree
+ * ADAPTIVE DECISION FORMULA (v3):
+ * Uses dynamic weights from sbo_dynamic_weights table
  */
 function calcFinalScore(
   aiConf: number | null,
@@ -88,13 +83,22 @@ function calcFinalScore(
   capperROI: number,
   marketWR: number,
   hasAlignment: boolean,
+  dw: DynamicWeightsInput,
 ): number {
-  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * 40 : 0;
-  const consensus = Math.min(consensusCount / 5, 1) * 15;
-  const weight = Math.min(capperWeight / 1.5, 1) * 20;
-  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * 15;
-  const mkt = Math.min(marketWR / 100, 1) * 10;
-  const bonus = hasAlignment ? 10 : 0;
+  const aiScale = dw.ai_weight * 100;
+  const consScale = dw.consensus_weight * 100;
+  const cwScale = dw.capper_weight * 100;
+  const roiScale = dw.roi_weight * 100;
+  const mktScale = dw.market_weight * 100;
+
+  const ai = aiConf != null ? Math.min(aiConf / 100, 1) * aiScale : 0;
+  const consensus = Math.min(consensusCount / 5, 1) * consScale;
+  const weight = Math.min(capperWeight / 1.5, 1) * cwScale;
+  const roi = Math.min(Math.max(capperROI + 20, 0) / 40, 1) * roiScale;
+  const mkt = Math.min(marketWR / 100, 1) * mktScale;
+  const bonus = hasAlignment ? dw.alignment_bonus : 0;
+  return Math.min(100, Math.round(ai + consensus + weight + roi + mkt + bonus));
+}
   return Math.min(100, Math.round(ai + consensus + weight + roi + mkt + bonus));
 }
 
