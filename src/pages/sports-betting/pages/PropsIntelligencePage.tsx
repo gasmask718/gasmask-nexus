@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Loader2, Zap, Search, TrendingUp, TrendingDown, Trophy, RefreshCw, CheckCircle, XCircle, Clock, Brain } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useUnifiedProps, UnifiedProp } from '@/hooks/useUnifiedProps';
 import { LiveAnalysisPanel } from '@/components/betting/LiveAnalysisPanel';
 import { useAnalysisVisibility } from '@/hooks/useAnalysisVisibility';
