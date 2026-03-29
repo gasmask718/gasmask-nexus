@@ -14,6 +14,9 @@ export interface CapperKPI {
   consensusHitRate: number;
   bestMarket: string;
   badge: 'high_roi' | 'low_accuracy' | 'neutral';
+  currentStreak: number;
+  grade: string;
+  weight: number;
 }
 
 export interface ConsensusPick {
