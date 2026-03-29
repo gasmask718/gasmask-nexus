@@ -102,7 +102,7 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
       
       if (consensusKeys.length > 0) {
         // Get unique keys and query for consensus
-        const uniqueKeys = [...new Set(consensusKeys)];
+        const uniqueKeys = [...new Set(consensusKeys)] as string[];
         for (const key of uniqueKeys) {
           const [playerName, propType, line, gameDate] = key.split('|');
           const { count: capperCount } = await (supabase as any).from('sbo_capper_picks')
@@ -112,7 +112,7 @@ export function CapperPicksFeed({ cappers, onRefetch }: CapperPicksFeedProps) {
             .eq('line', parseFloat(line))
             .eq('game_date', gameDate);
           if (capperCount && capperCount > 1) {
-            consensusMap.set(key, capperCount);
+            consensusMap.set(key, capperCount as number);
           }
         }
       }
