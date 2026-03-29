@@ -167,6 +167,23 @@ export function useUnifiedSignals() {
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
   const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 
+  // Fetch dynamic weights
+  const DEFAULT_DW: DynamicWeightsInput = { ai_weight: 0.40, consensus_weight: 0.15, capper_weight: 0.20, roi_weight: 0.15, market_weight: 0.10, alignment_bonus: 10 };
+  const { data: dynamicWeights = DEFAULT_DW } = useQuery({
+    queryKey: ['sbo-dynamic-weights'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('sbo_dynamic_weights').select('ai_weight,consensus_weight,capper_weight,roi_weight,market_weight,alignment_bonus').eq('id', 1).single();
+      return data ? {
+        ai_weight: Number(data.ai_weight),
+        consensus_weight: Number(data.consensus_weight),
+        capper_weight: Number(data.capper_weight),
+        roi_weight: Number(data.roi_weight),
+        market_weight: Number(data.market_weight),
+        alignment_bonus: Number(data.alignment_bonus),
+      } as DynamicWeightsInput : DEFAULT_DW;
+    },
+  });
+
   const { data: aiPredictions = [], isLoading: aiLoading } = useQuery({
     queryKey: ['unified-ai-predictions', today],
     queryFn: async () => {
