@@ -30,6 +30,8 @@ export interface UnifiedSignal {
   alignment: 'ai_and_capper' | 'ai_only' | 'capper_only';
   alignment_bonus: boolean;
   result: string | null;
+  short_reason: string;
+  full_reason: string;
 }
 
 export interface YesterdayStats {
