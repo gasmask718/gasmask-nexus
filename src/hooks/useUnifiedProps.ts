@@ -58,6 +58,7 @@ export function useUnifiedProps(date?: string, coverageMode?: CoverageMode) {
   return useQuery({
     queryKey: ['unified-props', todayEST, mode],
     queryFn: async () => {
+      console.log('Coverage Mode:', mode);
       let query = (supabase as any)
         .from('sbo_unified_props')
         .select('*')
@@ -69,11 +70,14 @@ export function useUnifiedProps(date?: string, coverageMode?: CoverageMode) {
 
       const { data, error } = await query;
       if (error) throw error;
+      console.log('PROPS LOAD:', (data || []).length);
       return (data || []) as UnifiedProp[];
     },
-    refetchInterval: _analysisLocked ? false : 30000,
     placeholderData: (prev: any) => prev,
-    staleTime: _analysisLocked ? Infinity : 10000,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
     enabled: true,
   });
 }
@@ -113,7 +117,13 @@ export function useAnalysisJob() {
         // Use exact coverage mode to avoid resetting dataset
         const mode = getCoverageMode();
         const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
-        queryClient.refetchQueries({ queryKey: ['unified-props', today, mode] });
+        const queryKey = ['unified-props', today, mode] as const;
+        if (getAnalysisLock()) {
+          console.log('REFETCH TRIGGERED:', queryKey, { blocked: true, reason: 'dataset_locked' });
+          return;
+        }
+        console.log('REFETCH TRIGGERED:', queryKey, { blocked: false, source: 'analysis-job-updates' });
+        queryClient.refetchQueries({ queryKey });
       })
       .subscribe();
 
