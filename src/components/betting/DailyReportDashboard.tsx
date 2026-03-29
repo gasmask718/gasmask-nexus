@@ -59,6 +59,7 @@ function genExecSummary(signals: UnifiedSignal[], aligned: UnifiedSignal[], capp
 
 // ── Decision Signal Card ──
 function SignalCard({ signal, rank }: { signal: UnifiedSignal; rank?: number }) {
+  const [expanded, setExpanded] = useState(false);
   const tier = TIER[signal.signal_tier] || TIER.LOW;
   return (
     <div className={`relative rounded-lg border p-4 ${tier.border} ${tier.bg} ${tier.glow} shadow-sm transition-all hover:shadow-md`}>
@@ -89,6 +90,36 @@ function SignalCard({ signal, rank }: { signal: UnifiedSignal; rank?: number }) 
           <Badge className={`ml-auto text-[10px] ${signal.result === 'won' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'}`}>
             {signal.result === 'won' ? '✅ WON' : '❌ LOST'}
           </Badge>
+        )}
+      </div>
+
+      {/* Reasoning section */}
+      <div className="mb-2.5 rounded border border-border/40 bg-muted/20 px-3 py-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 text-[10px] min-w-0">
+            <Info className="h-3 w-3 text-amber-400 shrink-0" />
+            <span className="text-muted-foreground font-medium truncate">{signal.short_reason}</span>
+          </div>
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setExpanded(!expanded)}
+                  className="text-[9px] font-bold text-amber-400 hover:text-amber-300 shrink-0 tracking-wider"
+                >
+                  {expanded ? 'LESS' : 'WHY?'}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left" className="max-w-[300px] text-xs leading-relaxed">
+                {signal.full_reason}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        {expanded && (
+          <p className="text-[11px] leading-relaxed text-foreground/70 mt-1.5 border-t border-border/30 pt-1.5">
+            {signal.full_reason}
+          </p>
         )}
       </div>
 
