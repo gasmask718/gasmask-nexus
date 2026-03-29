@@ -71,53 +71,16 @@ export default function PropsIntelligencePage() {
         </div>
         <Button
           onClick={handleRunAnalysis}
-          disabled={isRunning || startAnalysis.isPending}
-          className="bg-lime-600 hover:bg-lime-700"
+          disabled={isRunning}
+          className="bg-primary hover:bg-primary/90"
         >
           {isRunning ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
           {isRunning ? 'Running...' : 'Run Analysis'}
         </Button>
       </div>
 
-      {/* JOB STATUS */}
-      {job && isRunning && (
-        <Card className="border-lime-500/30 bg-lime-500/5">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-lime-400">
-                Analysis in progress — you can leave this page safely
-              </span>
-              <Badge variant="outline" className="text-lime-400 border-lime-500/30">
-                {job.progress}%
-              </Badge>
-            </div>
-            <Progress value={job.progress} className="h-2" />
-          </CardContent>
-        </Card>
-      )}
-
-      {job?.status === 'completed' && job.results && (
-        <Card className="border-emerald-500/30 bg-emerald-500/5">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-emerald-400">
-                ✅ Analysis complete — {job.results.total_props} props across {job.results.platforms?.length || 0} platforms, {job.results.players} players
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {job.results.best_picks} best picks found
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {job?.status === 'failed' && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="py-3">
-            <span className="text-sm text-destructive">❌ Analysis failed: {job.error_message}</span>
-          </CardContent>
-        </Card>
-      )}
+      {/* LIVE ANALYSIS PANEL */}
+      <LiveAnalysisPanel state={analysisState} feed={analysisFeed} onCancel={cancelAnalysis} />
 
       {/* FILTERS */}
       <div className="flex flex-wrap gap-2 items-center">
