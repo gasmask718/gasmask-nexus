@@ -120,53 +120,39 @@ export default function PropsIntelligencePage() {
   }, [safeProps, search, filterPlatform, bestOnly, resultFilter]);
 
   const handleRunAnalysis = () => {
+    // FORCE instant UI feedback BEFORE any async work
+    setUiRunning(true);
+    toast.success('⚡ Analysis started — duplicates will be skipped!');
+
     const datasetSnapshot = structuredClone(displayProps);
     const snapshot_id = `dataset-${datasetVersionId}-${Date.now()}`;
-
-    setSnapshotMeta({
-      snapshot_id,
-      timestamp: Date.now(),
-      props_count: datasetSnapshot.length,
-    });
+    setSnapshotMeta({ snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
     setLockedProps(datasetSnapshot);
     setIsDatasetLocked(true);
 
-    console.log('SNAPSHOT CREATED:', { snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
-    console.log('Coverage Mode:', coverageMode);
-    console.log('Props Count:', datasetSnapshot.length);
-
-    startAnalysis(false, datasetSnapshot.map((p) => ({
-      id: p.id,
-      player_name: p.player_name,
-      stat_type: p.stat_type,
-      line: p.line,
-    })));
-    toast.success('Analysis started — duplicates will be skipped!');
+    // Defer async work so React renders the loading state first
+    setTimeout(() => {
+      startAnalysis(false, datasetSnapshot.map((p) => ({
+        id: p.id, player_name: p.player_name, stat_type: p.stat_type, line: p.line,
+      })));
+    }, 0);
   };
 
   const handleForceRerun = () => {
+    setUiRunning(true);
+    toast.success('⚡ Force re-run — all props will be re-analyzed!');
+
     const datasetSnapshot = structuredClone(displayProps);
     const snapshot_id = `dataset-${datasetVersionId}-${Date.now()}`;
-
-    setSnapshotMeta({
-      snapshot_id,
-      timestamp: Date.now(),
-      props_count: datasetSnapshot.length,
-    });
+    setSnapshotMeta({ snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
     setLockedProps(datasetSnapshot);
     setIsDatasetLocked(true);
 
-    console.log('SNAPSHOT CREATED:', { snapshot_id, timestamp: Date.now(), props_count: datasetSnapshot.length });
-    console.log('Coverage Mode:', coverageMode);
-    console.log('Props Count:', datasetSnapshot.length);
-
-    startAnalysis(true, datasetSnapshot.map((p) => ({
-      id: p.id,
-      player_name: p.player_name,
-      stat_type: p.stat_type,
-      line: p.line,
-    })));
-    toast.success('Force re-run — all props will be re-analyzed!');
+    setTimeout(() => {
+      startAnalysis(true, datasetSnapshot.map((p) => ({
+        id: p.id, player_name: p.player_name, stat_type: p.stat_type, line: p.line,
+      })));
+    }, 0);
   };
 
   const handleToggleCoverage = () => {
