@@ -98,6 +98,13 @@ export default function PropsIntelligencePage() {
     toast.success('Force re-run — all props will be re-analyzed!');
   };
 
+  const handleToggleCoverage = () => {
+    const newMode: CoverageMode = coverageMode === 'limited' ? 'expanded' : 'limited';
+    setCoverageMode(newMode);
+    setCoverageModeState(newMode);
+    toast.success(newMode === 'expanded' ? '🔓 Coverage expanded — all dates loaded' : '🔒 Coverage limited to today');
+  };
+
   const isRunning = analysisState.isRunning;
 
   const RESULT_FILTERS: { value: ResultFilter; label: string; icon: React.ReactNode; color: string; activeClass: string }[] = [
