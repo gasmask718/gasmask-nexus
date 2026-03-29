@@ -57,6 +57,7 @@ export function useAnalysisVisibility() {
         const mode = getCoverageMode();
         queryClient.refetchQueries({ queryKey: ['unified-props', todayEST, mode] });
       } else if (data.status === 'failed') {
+        setAnalysisLock(false); // 🔓 Unlock dataset
         setState(prev => ({
           ...prev,
           isRunning: false,
