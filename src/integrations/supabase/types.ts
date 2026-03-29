@@ -62158,6 +62158,60 @@ export type Database = {
         }
         Relationships: []
       }
+      sbo_prop_predictions: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          direction: string | null
+          final_score: number | null
+          full_reason: string | null
+          game_date: string
+          id: string
+          line: number
+          player_name: string
+          prediction: string | null
+          risk_tag: string | null
+          short_reason: string | null
+          signal_tier: string | null
+          stat_type: string
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          direction?: string | null
+          final_score?: number | null
+          full_reason?: string | null
+          game_date: string
+          id?: string
+          line: number
+          player_name: string
+          prediction?: string | null
+          risk_tag?: string | null
+          short_reason?: string | null
+          signal_tier?: string | null
+          stat_type: string
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          direction?: string | null
+          final_score?: number | null
+          full_reason?: string | null
+          game_date?: string
+          id?: string
+          line?: number
+          player_name?: string
+          prediction?: string | null
+          risk_tag?: string | null
+          short_reason?: string | null
+          signal_tier?: string | null
+          stat_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sbo_prop_stat_context: {
         Row: {
           confidence_score: number | null
