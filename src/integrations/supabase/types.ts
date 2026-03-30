@@ -50296,25 +50296,40 @@ export type Database = {
       pipeline_health_logs: {
         Row: {
           alert_sent: boolean | null
+          auto_heal_count: number | null
+          auto_heal_details: Json | null
+          check_type: string | null
           created_at: string
           failure_point: string | null
           id: string
+          recurring_failure_key: string | null
+          severity: string | null
           steps: Json | null
           success: boolean
         }
         Insert: {
           alert_sent?: boolean | null
+          auto_heal_count?: number | null
+          auto_heal_details?: Json | null
+          check_type?: string | null
           created_at?: string
           failure_point?: string | null
           id?: string
+          recurring_failure_key?: string | null
+          severity?: string | null
           steps?: Json | null
           success: boolean
         }
         Update: {
           alert_sent?: boolean | null
+          auto_heal_count?: number | null
+          auto_heal_details?: Json | null
+          check_type?: string | null
           created_at?: string
           failure_point?: string | null
           id?: string
+          recurring_failure_key?: string | null
+          severity?: string | null
           steps?: Json | null
           success?: boolean
         }
@@ -70998,6 +71013,36 @@ export type Database = {
         }
         Relationships: []
       }
+      system_alert_config: {
+        Row: {
+          alert_phone: string | null
+          alerts_enabled: boolean
+          created_at: string
+          id: string
+          sms_throttle_minutes: number
+          system_name: string
+          updated_at: string
+        }
+        Insert: {
+          alert_phone?: string | null
+          alerts_enabled?: boolean
+          created_at?: string
+          id?: string
+          sms_throttle_minutes?: number
+          system_name: string
+          updated_at?: string
+        }
+        Update: {
+          alert_phone?: string | null
+          alerts_enabled?: boolean
+          created_at?: string
+          id?: string
+          sms_throttle_minutes?: number
+          system_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       system_alerts: {
         Row: {
           alert_date: string
@@ -71073,6 +71118,33 @@ export type Database = {
           label?: string
           notes?: string | null
           version?: string | null
+        }
+        Relationships: []
+      }
+      system_operation_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          id: string
+          operation_type: string
+          success: boolean
+          system_name: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          operation_type: string
+          success?: boolean
+          system_name: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          id?: string
+          operation_type?: string
+          success?: boolean
+          system_name?: string
         }
         Relationships: []
       }
@@ -73297,29 +73369,42 @@ export type Database = {
           approved_at: string | null
           approved_by: string | null
           auto_managed: boolean
+          avg_revenue_per_conversion: number | null
+          boost_reason: string | null
+          boost_updated_at: string | null
           business_unit: string
           commission_rate: number
           conversion_rate: number | null
           created_at: string
+          earnings_per_click: number | null
           email: string | null
           full_name: string
           id: string
           is_boosted: boolean
+          is_tier_locked: boolean
           last_conversion_at: string | null
           last_insight_at: string | null
           last_payout_at: string | null
+          last_reengagement_at: string | null
           payout_status: string | null
           performance_tier: string
           phone: string | null
           referral_code: string | null
+          revenue_per_click: number | null
           risk_level: string | null
+          risk_reason: string | null
+          risk_updated_at: string | null
           source: string
           state: string | null
           status: string
           tier: string
+          tier_updated_at: string | null
+          total_clicks: number | null
           total_commissions: number | null
+          total_conversions: number | null
           total_converted_referrals: number | null
           total_earnings: number
+          total_leads: number | null
           total_referrals: number | null
           total_revenue: number | null
           total_sales: number
@@ -73329,29 +73414,42 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           auto_managed?: boolean
+          avg_revenue_per_conversion?: number | null
+          boost_reason?: string | null
+          boost_updated_at?: string | null
           business_unit?: string
           commission_rate?: number
           conversion_rate?: number | null
           created_at?: string
+          earnings_per_click?: number | null
           email?: string | null
           full_name: string
           id?: string
           is_boosted?: boolean
+          is_tier_locked?: boolean
           last_conversion_at?: string | null
           last_insight_at?: string | null
           last_payout_at?: string | null
+          last_reengagement_at?: string | null
           payout_status?: string | null
           performance_tier?: string
           phone?: string | null
           referral_code?: string | null
+          revenue_per_click?: number | null
           risk_level?: string | null
+          risk_reason?: string | null
+          risk_updated_at?: string | null
           source?: string
           state?: string | null
           status?: string
           tier?: string
+          tier_updated_at?: string | null
+          total_clicks?: number | null
           total_commissions?: number | null
+          total_conversions?: number | null
           total_converted_referrals?: number | null
           total_earnings?: number
+          total_leads?: number | null
           total_referrals?: number | null
           total_revenue?: number | null
           total_sales?: number
@@ -73361,29 +73459,42 @@ export type Database = {
           approved_at?: string | null
           approved_by?: string | null
           auto_managed?: boolean
+          avg_revenue_per_conversion?: number | null
+          boost_reason?: string | null
+          boost_updated_at?: string | null
           business_unit?: string
           commission_rate?: number
           conversion_rate?: number | null
           created_at?: string
+          earnings_per_click?: number | null
           email?: string | null
           full_name?: string
           id?: string
           is_boosted?: boolean
+          is_tier_locked?: boolean
           last_conversion_at?: string | null
           last_insight_at?: string | null
           last_payout_at?: string | null
+          last_reengagement_at?: string | null
           payout_status?: string | null
           performance_tier?: string
           phone?: string | null
           referral_code?: string | null
+          revenue_per_click?: number | null
           risk_level?: string | null
+          risk_reason?: string | null
+          risk_updated_at?: string | null
           source?: string
           state?: string | null
           status?: string
           tier?: string
+          tier_updated_at?: string | null
+          total_clicks?: number | null
           total_commissions?: number | null
+          total_conversions?: number | null
           total_converted_referrals?: number | null
           total_earnings?: number
+          total_leads?: number | null
           total_referrals?: number | null
           total_revenue?: number | null
           total_sales?: number
@@ -74144,28 +74255,34 @@ export type Database = {
         Row: {
           ambassador_id: string
           created_at: string
+          dismissed_at: string | null
           id: string
           insight_text: string
           insight_type: string
           is_resolved: boolean
+          priority: number | null
           severity: string
         }
         Insert: {
           ambassador_id: string
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           insight_text: string
           insight_type: string
           is_resolved?: boolean
+          priority?: number | null
           severity?: string
         }
         Update: {
           ambassador_id?: string
           created_at?: string
+          dismissed_at?: string | null
           id?: string
           insight_text?: string
           insight_type?: string
           is_resolved?: boolean
+          priority?: number | null
           severity?: string
         }
         Relationships: [
