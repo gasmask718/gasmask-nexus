@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Users, Clock, DollarSign, CheckCircle, XCircle, Search,
   Trophy, TrendingUp, Link2, Activity, Wallet, Copy,
-  Eye, ArrowUpRight, Hash
+  Eye, ArrowUpRight, Hash, FlaskConical, Loader2
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -62,6 +62,10 @@ export default function UTAmbassadorManagement() {
 
   // Detail dialog
   const [detailAmb, setDetailAmb] = useState<any>(null);
+
+  // Pipeline test
+  const [pipelineRunning, setPipelineRunning] = useState(false);
+  const [pipelineResult, setPipelineResult] = useState<any>(null);
 
   const fetchAll = async () => {
     const [ambRes, refRes, payRes] = await Promise.all([
@@ -243,16 +247,74 @@ export default function UTAmbassadorManagement() {
     return 'bg-amber-500/20 text-amber-400';
   };
 
+  const runPipelineTest = async () => {
+    setPipelineRunning(true);
+    setPipelineResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('run-ut-ambassador-pipeline-test');
+      if (error) throw error;
+      setPipelineResult(data);
+      if (data?.success) {
+        toast.success('Pipeline test passed ✅');
+      } else {
+        toast.error(`Pipeline test failed at: ${data?.failure_point || 'unknown'}`);
+      }
+    } catch (err: any) {
+      setPipelineResult({ success: false, error: err.message });
+      toast.error('Pipeline test error');
+    } finally {
+      setPipelineRunning(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: PINK }}>
-          Ambassador Revenue Engine
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Track referrals, attribute revenue, manage commissions & payouts
-        </p>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: PINK }}>
+            Ambassador Revenue Engine
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Track referrals, attribute revenue, manage commissions & payouts
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={runPipelineTest}
+          disabled={pipelineRunning}
+          className="gap-2"
+        >
+          {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+          {pipelineRunning ? 'Running Test...' : 'Run Pipeline Test'}
+        </Button>
       </div>
+
+      {/* Pipeline Test Results */}
+      {pipelineResult && (
+        <Card className={pipelineResult.success ? 'border-green-500/50' : 'border-destructive/50'}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2">
+              {pipelineResult.success ? <CheckCircle className="h-4 w-4 text-green-400" /> : <XCircle className="h-4 w-4 text-destructive" />}
+              Pipeline Test — {pipelineResult.success ? 'ALL PASS' : 'FAILURE DETECTED'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-xs">
+              {pipelineResult.steps && Object.entries(pipelineResult.steps).map(([key, val]: [string, any]) => (
+                <div key={key} className={`rounded-md p-2 border ${val.passed ? 'border-green-500/30 bg-green-500/10' : 'border-destructive/30 bg-destructive/10'}`}>
+                  <p className="font-medium capitalize">{key.replace(/_/g, ' ')}</p>
+                  <p className={val.passed ? 'text-green-400' : 'text-destructive'}>{val.passed ? '✅ Pass' : '❌ Fail'}</p>
+                  {val.error && <p className="text-destructive/80 mt-1 truncate">{val.error}</p>}
+                </div>
+              ))}
+            </div>
+            {pipelineResult.test_email && (
+              <p className="text-xs text-muted-foreground mt-2">Test email: {pipelineResult.test_email} • SMS: {pipelineResult.sms_sent ? '✅' : '⚠️ skipped'}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
