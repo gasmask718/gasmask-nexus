@@ -63,6 +63,106 @@ function statusBadge(status: string, count?: number) {
   }
 }
 
+const SPANISH_COUNTRIES = [
+  { label: "🇩🇴 República Dominicana", value: "DR" },
+  { label: "🇲🇽 México", value: "Mexico" },
+  { label: "🇨🇴 Colombia", value: "Colombia" },
+  { label: "🇵🇷 Puerto Rico", value: "PR" },
+  { label: "🇺🇸 US Hispanic", value: "US-Hispanic" },
+];
+
+function SpanishLeadsPanel() {
+  const [country, setCountry] = useState("all");
+  const { data: spanishLeads = [], isLoading } = useQuery({
+    queryKey: ["spanish-leads-discovery", country],
+    queryFn: async () => {
+      let query = (supabase as any)
+        .from("brandaro_leads_master")
+        .select("id, business_name, phone, status, region, language, intent_score, created_at")
+        .eq("language", "spanish")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (country !== "all") query = query.eq("region", country);
+      const { data } = await query;
+      return data || [];
+    },
+  });
+
+  const statusLabel: Record<string, string> = {
+    new: "Nuevo", contacted: "Contactado", interested: "Interesado",
+    closed: "Cerrado", not_interested: "No Interesado",
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Flag className="h-4 w-4 text-amber-500" /> Spanish Leads — By Country
+        </CardTitle>
+        <CardDescription>Filter and manage leads tagged as Spanish-language by region.</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={country === "all" ? "default" : "outline"}
+            className="text-xs"
+            onClick={() => setCountry("all")}
+          >
+            All ({spanishLeads.length})
+          </Button>
+          {SPANISH_COUNTRIES.map((c) => (
+            <Button
+              key={c.value}
+              size="sm"
+              variant={country === c.value ? "default" : "outline"}
+              className="text-xs"
+              onClick={() => setCountry(c.value)}
+            >
+              {c.label}
+            </Button>
+          ))}
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : spanishLeads.length === 0 ? (
+          <p className="text-center text-muted-foreground py-8">No hay leads en español{country !== "all" ? ` en ${country}` : ""}.</p>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Negocio</TableHead>
+                <TableHead>Teléfono</TableHead>
+                <TableHead>Región</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Score</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {spanishLeads.map((lead: any) => (
+                <TableRow key={lead.id}>
+                  <TableCell className="font-medium">{lead.business_name || "—"}</TableCell>
+                  <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
+                  <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">
+                      {statusLabel[lead.status] || lead.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{lead.intent_score || 0}%</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function LeadDiscoveryPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
