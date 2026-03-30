@@ -23,6 +23,7 @@ import SystemStatusPage from '@/pages/brandaro/SystemStatusPage';
 import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter';
 import SpanishVADashboard from '@/pages/brandaro/SpanishVADashboard';
 import SpanishManagerDashboard from '@/pages/brandaro/SpanishManagerDashboard';
+import BrandaroGlobalControl from '@/pages/brandaro/BrandaroGlobalControl';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -52,6 +53,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/va-espanol', label: 'Panel VA Español', icon: Globe },
   { path: '/os/brandaro/manager-espanol', label: 'Gerente Español', icon: Users },
   { path: '/brandaro/phone-numbers', label: 'Phone Numbers', icon: Smartphone },
+  { path: '/os/brandaro/global-control', label: 'Global Control', icon: Globe },
 ];
 
 export const BrandaroModule: DynastyModule = {
@@ -91,6 +93,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
     { path: '/va-espanol', component: SpanishVADashboard, label: 'Panel VA Español', icon: Globe, requiresAuth: true },
     { path: '/manager-espanol', component: SpanishManagerDashboard, label: 'Gerente Español', icon: Users, requiresAuth: true },
+    { path: '/global-control', component: BrandaroGlobalControl, label: 'Global Control', icon: Globe, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,
