@@ -64,21 +64,45 @@ function statusBadge(status: string, count?: number) {
 }
 
 const SPANISH_COUNTRIES = [
-  { label: "🇩🇴 República Dominicana", value: "DR" },
-  { label: "🇲🇽 México", value: "Mexico" },
-  { label: "🇨🇴 Colombia", value: "Colombia" },
-  { label: "🇵🇷 Puerto Rico", value: "PR" },
-  { label: "🇺🇸 US Hispanic", value: "US-Hispanic" },
+  { label: "🇩🇴 República Dominicana", value: "DR", cities: ["Santo Domingo","Santiago","La Romana","San Pedro de Macorís","San Cristóbal","Puerto Plata","Higüey","La Vega","Barahona","Moca","Bonao","Azua","San Juan","Nagua","Cotuí","Baní","Mao","Esperanza","Villa Altagracia","Hato Mayor"] },
+  { label: "🇲🇽 México", value: "Mexico", cities: ["Ciudad de México","Guadalajara","Monterrey","Puebla","Cancún","Tijuana","Mérida","León","Querétaro","Toluca","Aguascalientes","San Luis Potosí","Hermosillo","Saltillo","Chihuahua","Morelia","Durango","Villahermosa","Tuxtla Gutiérrez","Oaxaca"] },
+  { label: "🇨🇴 Colombia", value: "Colombia", cities: ["Bogotá","Medellín","Cali","Barranquilla","Cartagena","Bucaramanga","Pereira","Santa Marta","Manizales","Ibagué","Cúcuta","Villavicencio","Pasto","Montería","Neiva","Armenia","Valledupar","Popayán","Sincelejo","Tunja"] },
+  { label: "🇵🇷 Puerto Rico", value: "PR", cities: ["San Juan","Bayamón","Carolina","Ponce","Caguas","Guaynabo","Mayagüez","Arecibo","Toa Baja","Fajardo","Humacao","Aguadilla","Isabela","Manatí","Cayey","Río Grande","Yauco","Vega Baja","Guayama","Hatillo"] },
+  { label: "🇺🇸 US Hispanic", value: "US-Hispanic", cities: ["Miami","Los Angeles","Houston","San Antonio","Dallas","Chicago","New York","Phoenix","San Diego","El Paso","San Jose","Austin","Jacksonville","Fort Worth","Denver","Tucson","Albuquerque","Las Vegas","Fresno","Sacramento"] },
+];
+
+const SPANISH_INDUSTRIES = [
+  { emoji: "🍽️", label: "Restaurante", value: "restaurante" },
+  { emoji: "💇", label: "Salón de Belleza", value: "salon de belleza" },
+  { emoji: "🔧", label: "Plomero", value: "plomero" },
+  { emoji: "🚗", label: "Mecánico", value: "mecanico" },
+  { emoji: "🧹", label: "Limpieza", value: "servicio de limpieza" },
+  { emoji: "🏗️", label: "Construcción", value: "construccion" },
+  { emoji: "🌿", label: "Jardinería", value: "jardineria" },
+  { emoji: "⚡", label: "Electricista", value: "electricista" },
+  { emoji: "🎨", label: "Pintor", value: "pintor" },
+  { emoji: "📦", label: "Mudanzas", value: "mudanzas" },
 ];
 
 function SpanishLeadsPanel() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"search" | "existing">("search");
   const [country, setCountry] = useState("all");
+  const [searchCountry, setSearchCountry] = useState("");
+  const [searchCity, setSearchCity] = useState("");
+  const [searchIndustry, setSearchIndustry] = useState("");
+  const [customCity, setCustomCity] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
+  const [selectedCities, setSelectedCities] = useState<string[]>([]);
+
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
     queryFn: async () => {
       let query = (supabase as any)
         .from("brandaro_leads_master")
-        .select("id, business_name, phone, status, region, language, intent_score, created_at")
+        .select("id, business_name, phone, status, region, language, intent_score, website, created_at")
         .eq("language", "spanish")
         .order("created_at", { ascending: false })
         .limit(100);
@@ -93,73 +117,331 @@ function SpanishLeadsPanel() {
     closed: "Cerrado", not_interested: "No Interesado",
   };
 
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Flag className="h-4 w-4 text-amber-500" /> Spanish Leads — By Country
-        </CardTitle>
-        <CardDescription>Filter and manage leads tagged as Spanish-language by region.</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant={country === "all" ? "default" : "outline"}
-            className="text-xs"
-            onClick={() => setCountry("all")}
-          >
-            All ({spanishLeads.length})
-          </Button>
-          {SPANISH_COUNTRIES.map((c) => (
-            <Button
-              key={c.value}
-              size="sm"
-              variant={country === c.value ? "default" : "outline"}
-              className="text-xs"
-              onClick={() => setCountry(c.value)}
-            >
-              {c.label}
-            </Button>
-          ))}
-        </div>
+  const selectedCountryData = SPANISH_COUNTRIES.find(c => c.value === searchCountry);
 
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : spanishLeads.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">No hay leads en español{country !== "all" ? ` en ${country}` : ""}.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Negocio</TableHead>
-                <TableHead>Teléfono</TableHead>
-                <TableHead>Región</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Score</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {spanishLeads.map((lead: any) => (
-                <TableRow key={lead.id}>
-                  <TableCell className="font-medium">{lead.business_name || "—"}</TableCell>
-                  <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
-                  <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-xs">
-                      {statusLabel[lead.status] || lead.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">{lead.intent_score || 0}%</TableCell>
-                </TableRow>
+  const runSingleSearch = async (cityName: string) => {
+    const countryLabel = selectedCountryData?.label || searchCountry;
+    const stateCode = searchCountry === "US-Hispanic" ? "US" : searchCountry;
+
+    // Create discovery job
+    const { data: job, error: jobErr } = await supabase
+      .from("brandaro_discovery_jobs" as any)
+      .insert({
+        search_query: `${searchIndustry} in ${cityName}, ${countryLabel}`,
+        city: cityName,
+        state: stateCode,
+        industry: searchIndustry,
+        radius_meters: 40234,
+        status: "queued",
+      } as any)
+      .select()
+      .single();
+
+    if (jobErr) throw jobErr;
+
+    // Fire edge function
+    const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
+      body: {
+        job_id: (job as any).id,
+        city: cityName,
+        state: stateCode,
+        industry: searchIndustry,
+        radius_meters: 40234,
+      },
+    });
+
+    if (fnErr) throw fnErr;
+
+    // Poll for completion
+    let attempts = 0;
+    while (attempts < 40) {
+      await new Promise(r => setTimeout(r, 3000));
+      const { data: jobData } = await supabase
+        .from("brandaro_discovery_jobs" as any)
+        .select("*")
+        .eq("id", (job as any).id)
+        .single();
+      const jd = jobData as any;
+      if (jd?.status === "completed" || jd?.status === "failed") {
+        return { status: jd.status, imported: jd.imported_count || 0, noWebsite: jd.no_website_count || 0 };
+      }
+      attempts++;
+    }
+    return { status: "timeout", imported: 0, noWebsite: 0 };
+  };
+
+  const handleSingleSearch = async () => {
+    if (!searchIndustry || !searchCountry) return;
+    const cityToSearch = customCity || searchCity;
+    if (!cityToSearch) {
+      toast({ title: "Selecciona una ciudad", variant: "destructive" });
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const result = await runSingleSearch(cityToSearch);
+      queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] });
+      queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] });
+      if (result.status === "completed") {
+        toast({ title: "✅ Búsqueda completada", description: `${result.imported} leads importados (${result.noWebsite} sin sitio web)` });
+      } else {
+        toast({ title: "⚠️ Búsqueda falló", description: `Estado: ${result.status}`, variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleBulkSearch = async () => {
+    if (!searchIndustry || !searchCountry || selectedCities.length === 0) return;
+    setIsBulkRunning(true);
+    let totalImported = 0;
+    let completed = 0;
+
+    for (const city of selectedCities) {
+      try {
+        const result = await runSingleSearch(city);
+        totalImported += result.imported;
+        completed++;
+        toast({ title: `🔍 ${city}`, description: `${result.imported} leads — ${completed}/${selectedCities.length}` });
+      } catch {
+        toast({ title: `❌ ${city}`, description: "Error en búsqueda", variant: "destructive" });
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] });
+    toast({ title: "✅ Búsqueda masiva completada", description: `${totalImported} leads importados de ${completed} ciudades` });
+    setIsBulkRunning(false);
+    setSelectedCities([]);
+  };
+
+  const toggleCity = (city: string) => {
+    setSelectedCities(prev => prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]);
+  };
+
+  const selectAllCities = () => {
+    if (!selectedCountryData) return;
+    setSelectedCities(prev => prev.length === selectedCountryData.cities.length ? [] : [...selectedCountryData.cities]);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Tab toggle */}
+      <div className="flex gap-2">
+        <Button size="sm" variant={activeTab === "search" ? "default" : "outline"} onClick={() => setActiveTab("search")}>
+          <Search className="h-3.5 w-3.5 mr-1" /> Buscar Nuevos Leads
+        </Button>
+        <Button size="sm" variant={activeTab === "existing" ? "default" : "outline"} onClick={() => setActiveTab("existing")}>
+          <Flag className="h-3.5 w-3.5 mr-1" /> Leads Existentes ({spanishLeads.length})
+        </Button>
+      </div>
+
+      {activeTab === "search" ? (
+        <div className="space-y-4">
+          {/* Country Selector */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Globe className="h-4 w-4 text-amber-500" /> Buscador de Leads — Mercado Español
+              </CardTitle>
+              <CardDescription>Encuentra negocios sin sitio web en países hispanohablantes</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Country buttons */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">País / Región</label>
+                <div className="flex flex-wrap gap-2">
+                  {SPANISH_COUNTRIES.map(c => (
+                    <Button
+                      key={c.value}
+                      size="sm"
+                      variant={searchCountry === c.value ? "default" : "outline"}
+                      className="text-xs"
+                      onClick={() => { setSearchCountry(c.value); setSearchCity(""); setSelectedCities([]); }}
+                    >
+                      {c.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Industry */}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Tipo de Negocio</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {SPANISH_INDUSTRIES.map(p => (
+                    <Button
+                      key={p.value}
+                      variant={searchIndustry === p.value ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setSearchIndustry(p.value)}
+                    >
+                      {p.emoji} {p.label}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  placeholder="O escribe un tipo de negocio..."
+                  value={searchIndustry}
+                  onChange={e => setSearchIndustry(e.target.value)}
+                  className="max-w-sm"
+                />
+              </div>
+
+              {/* City selection */}
+              {searchCountry && (
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Ciudad</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Select value={searchCity} onValueChange={v => { setSearchCity(v); setCustomCity(""); }}>
+                        <SelectTrigger><SelectValue placeholder="Selecciona una ciudad" /></SelectTrigger>
+                        <SelectContent>
+                          {selectedCountryData?.cities.map(c => (
+                            <SelectItem key={c} value={c}>{c}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Input
+                      placeholder="O escribe una ciudad personalizada..."
+                      value={customCity}
+                      onChange={e => { setCustomCity(e.target.value); setSearchCity(""); }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Single search button */}
+              <Button
+                onClick={handleSingleSearch}
+                disabled={!searchIndustry || !searchCountry || (!searchCity && !customCity) || isSearching}
+                className="w-full md:w-auto"
+              >
+                {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                {isSearching ? "Buscando..." : "Buscar Leads"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Bulk city selector */}
+          {searchCountry && selectedCountryData && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" /> Búsqueda Masiva — {selectedCountryData.label}
+                  </CardTitle>
+                  <Button size="sm" variant="outline" className="text-xs" onClick={selectAllCities}>
+                    {selectedCities.length === selectedCountryData.cities.length ? "Deseleccionar Todo" : "Seleccionar Todo"}
+                  </Button>
+                </div>
+                <CardDescription>Selecciona ciudades para búsqueda masiva</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedCountryData.cities.map(city => (
+                    <Button
+                      key={city}
+                      size="sm"
+                      variant={selectedCities.includes(city) ? "default" : "outline"}
+                      className="text-xs h-7"
+                      onClick={() => toggleCity(city)}
+                    >
+                      {city}
+                    </Button>
+                  ))}
+                </div>
+
+                {selectedCities.length > 0 && (
+                  <div className="flex items-center justify-between p-3 rounded-md bg-primary/5 border border-primary/20">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {selectedCities.length} ciudades seleccionadas — <span className="text-primary">{searchIndustry || "sin industria"}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Estimado: ~{selectedCities.length * 5}–{selectedCities.length * 15} leads
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleBulkSearch}
+                      disabled={!searchIndustry || isBulkRunning}
+                      size="sm"
+                    >
+                      {isBulkRunning ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Play className="h-3.5 w-3.5 mr-1" />}
+                      {isBulkRunning ? "Ejecutando..." : `Buscar ${selectedCities.length} Ciudades`}
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      ) : (
+        /* Existing leads view */
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Flag className="h-4 w-4 text-amber-500" /> Leads en Español — Por País
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant={country === "all" ? "default" : "outline"} className="text-xs" onClick={() => setCountry("all")}>
+                Todos ({spanishLeads.length})
+              </Button>
+              {SPANISH_COUNTRIES.map((c) => (
+                <Button key={c.value} size="sm" variant={country === c.value ? "default" : "outline"} className="text-xs" onClick={() => setCountry(c.value)}>
+                  {c.label}
+                </Button>
               ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+            ) : spanishLeads.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No hay leads en español{country !== "all" ? ` en ${country}` : ""}.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Negocio</TableHead>
+                    <TableHead>Teléfono</TableHead>
+                    <TableHead>Región</TableHead>
+                    <TableHead>Website</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead>Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {spanishLeads.map((lead: any) => (
+                    <TableRow key={lead.id}>
+                      <TableCell className="font-medium">{lead.business_name || "—"}</TableCell>
+                      <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
+                      <TableCell>
+                        {lead.website ? (
+                          <Badge variant="secondary" className="text-xs">Tiene Web</Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-[10px]">❌ SIN WEB</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="text-xs">{statusLabel[lead.status] || lead.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm">{lead.intent_score || 0}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 }
 
