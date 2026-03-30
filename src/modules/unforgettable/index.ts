@@ -15,6 +15,7 @@ import UTStaffMemberDashboard from '@/pages/os/unforgettable/UTStaffMemberDashbo
 import UTVenuesManagement from '@/pages/os/unforgettable/UTVenuesManagement';
 import UTStaffManagement from '@/pages/os/unforgettable/UTStaffManagement';
 import UTPlatformStats from '@/pages/os/unforgettable/UTPlatformStats';
+import UTAmbassadorManagement from '@/pages/os/unforgettable/UTAmbassadorManagement';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/unforgettable', label: 'Dashboard', icon: LayoutDashboard },
