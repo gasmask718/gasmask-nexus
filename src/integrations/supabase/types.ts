@@ -14252,6 +14252,7 @@ export type Database = {
       }
       brandaro_leads_master: {
         Row: {
+          assigned_va_id: string | null
           business_name: string
           created_at: string | null
           email: string | null
@@ -14259,14 +14260,17 @@ export type Database = {
           id: string
           industry: string | null
           intent_score: number | null
+          language: string | null
           location: string | null
           phone: string | null
+          region: string | null
           source: string | null
           status: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
+          assigned_va_id?: string | null
           business_name: string
           created_at?: string | null
           email?: string | null
@@ -14274,14 +14278,17 @@ export type Database = {
           id?: string
           industry?: string | null
           intent_score?: number | null
+          language?: string | null
           location?: string | null
           phone?: string | null
+          region?: string | null
           source?: string | null
           status?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
+          assigned_va_id?: string | null
           business_name?: string
           created_at?: string | null
           email?: string | null
@@ -14289,14 +14296,24 @@ export type Database = {
           id?: string
           industry?: string | null
           intent_score?: number | null
+          language?: string | null
           location?: string | null
           phone?: string | null
+          region?: string | null
           source?: string | null
           status?: string | null
           updated_at?: string | null
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_leads_master_assigned_va_id_fkey"
+            columns: ["assigned_va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_learning_events: {
         Row: {
@@ -18218,6 +18235,54 @@ export type Database = {
           },
         ]
       }
+      brandaro_va_call_notes: {
+        Row: {
+          call_duration_seconds: number | null
+          created_at: string | null
+          id: string
+          lead_id: string
+          next_step: string | null
+          objection: string | null
+          summary: string
+          va_id: string
+        }
+        Insert: {
+          call_duration_seconds?: number | null
+          created_at?: string | null
+          id?: string
+          lead_id: string
+          next_step?: string | null
+          objection?: string | null
+          summary: string
+          va_id: string
+        }
+        Update: {
+          call_duration_seconds?: number | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string
+          next_step?: string | null
+          objection?: string | null
+          summary?: string
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_call_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_va_call_notes_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_va_call_sessions: {
         Row: {
           ai_analyzed: boolean | null
@@ -18629,6 +18694,50 @@ export type Database = {
             columns: ["call_session_id"]
             isOneToOne: false
             referencedRelation: "brandaro_va_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_va_performance: {
+        Row: {
+          calls_made: number | null
+          created_at: string | null
+          deals_closed: number | null
+          forms_sent: number | null
+          id: string
+          interested_count: number | null
+          period_end: string
+          period_start: string
+          va_id: string
+        }
+        Insert: {
+          calls_made?: number | null
+          created_at?: string | null
+          deals_closed?: number | null
+          forms_sent?: number | null
+          id?: string
+          interested_count?: number | null
+          period_end: string
+          period_start: string
+          va_id: string
+        }
+        Update: {
+          calls_made?: number | null
+          created_at?: string | null
+          deals_closed?: number | null
+          forms_sent?: number | null
+          id?: string
+          interested_count?: number | null
+          period_end?: string
+          period_start?: string
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_va_performance_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
