@@ -90,6 +90,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/closer-ai', component: CloserAIPage, label: 'Closer AI', icon: Brain, requiresAuth: true },
     { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
     { path: '/va-espanol', component: SpanishVADashboard, label: 'Panel VA Español', icon: Globe, requiresAuth: true },
+    { path: '/manager-espanol', component: SpanishManagerDashboard, label: 'Gerente Español', icon: Users, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,
