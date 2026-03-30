@@ -78,6 +78,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/leads', component: LeadDatabasePage, label: 'Lead Database', icon: Database, requiresAuth: true },
     { path: '/qualification', component: LeadQualificationPage, label: 'Qualification', icon: Target, requiresAuth: true },
     { path: '/calling', component: CallingOpsPage, label: 'Calling Ops', icon: Phone, requiresAuth: true },
+    { path: '/va-dashboard', component: EnglishVADashboard, label: 'VA Dashboard', icon: Headset, requiresAuth: true },
     { path: '/workspace', component: VAWorkspacePage, label: 'VA Workspace', icon: Headset, requiresAuth: true },
     { path: '/command-center', component: VACommandCenterPage, label: 'VA Command Center', icon: Brain, requiresAuth: true },
     { path: '/performance', component: VAPerformancePage, label: 'VA Performance', icon: BarChart3, requiresAuth: true },
