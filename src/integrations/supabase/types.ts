@@ -14438,6 +14438,7 @@ export type Database = {
           language: string | null
           location: string | null
           phone: string | null
+          priority_tier: string | null
           region: string | null
           source: string | null
           spanish_description: string | null
@@ -14459,6 +14460,7 @@ export type Database = {
           language?: string | null
           location?: string | null
           phone?: string | null
+          priority_tier?: string | null
           region?: string | null
           source?: string | null
           spanish_description?: string | null
@@ -14480,6 +14482,7 @@ export type Database = {
           language?: string | null
           location?: string | null
           phone?: string | null
+          priority_tier?: string | null
           region?: string | null
           source?: string | null
           spanish_description?: string | null
