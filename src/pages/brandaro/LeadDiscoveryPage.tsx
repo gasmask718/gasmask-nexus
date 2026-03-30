@@ -145,7 +145,9 @@ function SpanishLeadsPanel() {
     const countryLabel = selectedCountryData?.label || searchCountry;
     const stateCode = searchCountry === "US-Hispanic" ? "US" : searchCountry;
 
-    // Create discovery job
+    setSearchStep(0); setSearchProgress(10);
+    setDebugInfo(`Creating job: ${searchIndustry} in ${cityName}, ${countryLabel}`);
+
     const { data: job, error: jobErr } = await supabase
       .from("brandaro_discovery_jobs" as any)
       .insert({
@@ -161,7 +163,9 @@ function SpanishLeadsPanel() {
 
     if (jobErr) throw jobErr;
 
-    // Fire edge function
+    setSearchStep(1); setSearchProgress(30);
+    setDebugInfo(`Job created: ${(job as any).id}. Invoking edge function...`);
+
     const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
       body: {
         job_id: (job as any).id,
@@ -174,76 +178,9 @@ function SpanishLeadsPanel() {
 
     if (fnErr) throw fnErr;
 
-    // Poll for completion
-    let attempts = 0;
-    while (attempts < 40) {
-      await new Promise(r => setTimeout(r, 3000));
-      const { data: jobData } = await supabase
-        .from("brandaro_discovery_jobs" as any)
-        .select("*")
-        .eq("id", (job as any).id)
-        .single();
-      const jd = jobData as any;
-      if (jd?.status === "completed" || jd?.status === "failed") {
-        return { status: jd.status, imported: jd.imported_count || 0, noWebsite: jd.no_website_count || 0 };
-      }
-      attempts++;
-    }
-    return { status: "timeout", imported: 0, noWebsite: 0 };
-  };
-
-  const handleSingleSearch = async () => {
-    if (!searchIndustry || !searchCountry) return;
-    const cityToSearch = customCity || searchCity;
-    if (!cityToSearch) {
-      toast({ title: "Selecciona una ciudad", variant: "destructive" });
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const result = await runSingleSearch(cityToSearch);
-    const countryLabel = selectedCountryData?.label || searchCountry;
-    const stateCode = searchCountry === "US-Hispanic" ? "US" : searchCountry;
-
-    // Create discovery job
-    setSearchStep(0); setSearchProgress(10);
-    setDebugInfo(`Creating job: ${searchIndustry} in ${cityToSearch}, ${countryLabel}`);
-
-    const { data: job, error: jobErr } = await supabase
-      .from("brandaro_discovery_jobs" as any)
-      .insert({
-        search_query: `${searchIndustry} in ${cityToSearch}, ${countryLabel}`,
-        city: cityToSearch,
-        state: stateCode,
-        industry: searchIndustry,
-        radius_meters: 40234,
-        status: "queued",
-      } as any)
-      .select()
-      .single();
-
-    if (jobErr) throw jobErr;
-
-    setSearchStep(1); setSearchProgress(30);
-    setDebugInfo(`Job created: ${(job as any).id}. Invoking edge function...`);
-
-    // Fire edge function
-    const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
-      body: {
-        job_id: (job as any).id,
-        city: cityToSearch,
-        state: stateCode,
-        industry: searchIndustry,
-        radius_meters: 40234,
-      },
-    });
-
-    if (fnErr) throw fnErr;
-
     setSearchStep(2); setSearchProgress(50);
     setDebugInfo("Edge function invoked. Polling for results...");
 
-    // Poll for completion
     let attempts = 0;
     while (attempts < 40) {
       await new Promise(r => setTimeout(r, 3000));
