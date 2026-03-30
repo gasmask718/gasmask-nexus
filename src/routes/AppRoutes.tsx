@@ -984,6 +984,7 @@ export default function AppRoutes() {
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
       <Route path="/ambassador/set-password" element={<AmbassadorSetPassword />} />
+      <Route path="/ut/ambassador/dashboard" element={<UTAmbassadorDashboard />} />
       {/* Public Invite Signup - Primary and fallback routes */}
       <Route path="/signup" element={<InviteSignup />} />
       <Route path="/invite/accept" element={<InviteSignup />} />
