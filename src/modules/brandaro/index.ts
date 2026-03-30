@@ -33,6 +33,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/leads', label: 'Lead Database', icon: Database },
   { path: '/os/brandaro/qualification', label: 'Qualification', icon: Target },
   { path: '/os/brandaro/calling', label: 'Calling Ops', icon: Phone },
+  { path: '/os/brandaro/va-dashboard', label: 'VA Dashboard', icon: Headset },
   { path: '/os/brandaro/workspace', label: 'VA Workspace', icon: Headset },
   { path: '/os/brandaro/command-center', label: 'VA Command Center', icon: Brain },
   { path: '/os/brandaro/campaigns', label: 'Campaigns', icon: FolderOpen },
