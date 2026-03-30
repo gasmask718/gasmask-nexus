@@ -72,10 +72,11 @@ export default function UTAmbassadorManagement() {
   const [monitorRunning, setMonitorRunning] = useState(false);
 
   const fetchAll = async () => {
-    const [ambRes, refRes, payRes] = await Promise.all([
+    const [ambRes, refRes, payRes, healthRes] = await Promise.all([
       supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
       (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
       (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
+      (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(20),
     ]);
     if (ambRes.data) {
       console.log('Loaded ambassadors:', ambRes.data);
@@ -83,6 +84,7 @@ export default function UTAmbassadorManagement() {
     }
     if (refRes.data) setReferrals(refRes.data);
     if (payRes.data) setPayouts(payRes.data);
+    if (healthRes.data) setHealthLogs(healthRes.data);
     setLoading(false);
   };
 
