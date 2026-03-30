@@ -121,8 +121,8 @@ export default function AmbassadorLogin() {
 
           {forgotMode ? (
             resetSent ? (
-              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 text-center">
-                <Mail className="h-8 w-8 text-green-500 mx-auto mb-2" />
+              <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 text-center">
+                <Mail className="h-8 w-8 text-primary mx-auto mb-2" />
                 <p className="text-sm font-medium">Check your email</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   We sent a password reset link to {email}

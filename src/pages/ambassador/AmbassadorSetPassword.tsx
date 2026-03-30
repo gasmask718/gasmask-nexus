@@ -103,7 +103,7 @@ export default function AmbassadorSetPassword() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <Check className="h-12 w-12 text-green-500 mx-auto mb-2" />
+            <Check className="h-12 w-12 text-primary mx-auto mb-2" />
             <CardTitle>Password Set!</CardTitle>
             <CardDescription>
               Your password has been set. You can now log in to your ambassador dashboard.
