@@ -233,6 +233,7 @@ serve(async (req) => {
             updated_at: now,
             language,
             region,
+            pipeline: language === 'spanish' ? 'spanish' : 'english',
             english_description: descriptions.english,
             spanish_description: descriptions.spanish,
           });
