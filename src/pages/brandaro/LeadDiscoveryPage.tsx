@@ -1493,6 +1493,7 @@ export default function LeadDiscoveryPage() {
                               <TableCell className="font-medium text-sm">{lead.business_name || "—"}</TableCell>
                               <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
                               <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
+                              <TableCell><Badge variant="outline" className="text-[10px]">{lead.language === "spanish" ? "🇪🇸" : "🇺🇸"}</Badge></TableCell>
                               <TableCell>
                                 {lead.website ? (
                                   <Badge variant="secondary" className="text-[10px]">✅ Has Website</Badge>
