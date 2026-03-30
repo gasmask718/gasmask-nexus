@@ -47,15 +47,15 @@ export default function UTAmbassadorDashboard() {
       if (!user) { navigate('/ambassador/login'); return; }
 
       // Fetch ambassador record
-      let { data: amb } = await supabase
-        .from('unforgettable_ambassadors' as any)
+      let { data: amb } = await (supabase as any)
+        .from('unforgettable_ambassadors')
         .select('*')
         .eq('auth_user_id', user.id)
         .maybeSingle();
 
       if (!amb) {
-        const { data: ambByEmail } = await supabase
-          .from('unforgettable_ambassadors' as any)
+        const { data: ambByEmail } = await (supabase as any)
+          .from('unforgettable_ambassadors')
           .select('*')
           .eq('email', user.email)
           .maybeSingle();
@@ -69,9 +69,9 @@ export default function UTAmbassadorDashboard() {
 
       // Fetch referrals, payouts, insights in parallel
       const [refRes, payRes, insRes] = await Promise.all([
-        supabase.from('ut_ambassador_referrals' as any).select('*').eq('ambassador_id', amb.id).order('created_at', { ascending: false }).limit(20),
-        supabase.from('ut_ambassador_payouts' as any).select('*').eq('ambassador_id', amb.id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('ut_ambassador_insights' as any).select('*').eq('ambassador_id', amb.id).eq('is_resolved', false).order('created_at', { ascending: false }).limit(5),
+        (supabase as any).from('ut_ambassador_referrals').select('*').eq('ambassador_id', amb.id).order('created_at', { ascending: false }).limit(20),
+        (supabase as any).from('ut_ambassador_payouts').select('*').eq('ambassador_id', amb.id).order('created_at', { ascending: false }).limit(10),
+        (supabase as any).from('ut_ambassador_insights').select('*').eq('ambassador_id', amb.id).eq('is_resolved', false).order('created_at', { ascending: false }).limit(5),
       ]);
 
       setReferrals(refRes.data || []);
