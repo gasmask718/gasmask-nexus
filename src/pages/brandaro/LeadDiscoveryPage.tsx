@@ -84,6 +84,23 @@ const SPANISH_INDUSTRIES = [
   { emoji: "📦", label: "Mudanzas", value: "mudanzas" },
 ];
 
+// Dual-language label helper
+function DualLabel({ es, en, className = "" }: { es: string; en: string; className?: string }) {
+  return (
+    <span className={className}>
+      <span className="font-semibold">{es}</span>
+      <span className="text-[10px] text-muted-foreground ml-1.5">({en})</span>
+    </span>
+  );
+}
+
+const SEARCH_STEPS = [
+  { es: "Buscando negocios...", en: "Searching businesses..." },
+  { es: "Analizando resultados...", en: "Analyzing results..." },
+  { es: "Filtrando sin sitio web...", en: "Filtering no website..." },
+  { es: "Preparando resultados...", en: "Preparing results..." },
+];
+
 function SpanishLeadsPanel() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -96,6 +113,11 @@ function SpanishLeadsPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [isBulkRunning, setIsBulkRunning] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [searchStep, setSearchStep] = useState(0);
+  const [searchProgress, setSearchProgress] = useState(0);
+  const [lastSearchResult, setLastSearchResult] = useState<{ status: string; imported: number; noWebsite: number } | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
