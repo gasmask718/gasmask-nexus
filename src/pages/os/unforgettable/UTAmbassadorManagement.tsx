@@ -67,11 +67,16 @@ export default function UTAmbassadorManagement() {
   const [pipelineRunning, setPipelineRunning] = useState(false);
   const [pipelineResult, setPipelineResult] = useState<any>(null);
 
+  // Health monitoring
+  const [healthLogs, setHealthLogs] = useState<any[]>([]);
+  const [monitorRunning, setMonitorRunning] = useState(false);
+
   const fetchAll = async () => {
-    const [ambRes, refRes, payRes] = await Promise.all([
+    const [ambRes, refRes, payRes, healthRes] = await Promise.all([
       supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
       (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
       (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
+      (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(20),
     ]);
     if (ambRes.data) {
       console.log('Loaded ambassadors:', ambRes.data);
@@ -79,6 +84,7 @@ export default function UTAmbassadorManagement() {
     }
     if (refRes.data) setReferrals(refRes.data);
     if (payRes.data) setPayouts(payRes.data);
+    if (healthRes.data) setHealthLogs(healthRes.data);
     setLoading(false);
   };
 
@@ -267,6 +273,24 @@ export default function UTAmbassadorManagement() {
     }
   };
 
+  const runMonitor = async () => {
+    setMonitorRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('monitor-ut-ambassador-pipeline');
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Monitor check passed ✅ ${data.auto_healed > 0 ? `(${data.auto_healed} records auto-healed)` : ''}`);
+      } else {
+        toast.error(`Monitor detected failure: ${data?.failure_point || 'unknown'}`);
+      }
+      fetchAll();
+    } catch (err: any) {
+      toast.error('Monitor error: ' + err.message);
+    } finally {
+      setMonitorRunning(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -278,16 +302,28 @@ export default function UTAmbassadorManagement() {
             Track referrals, attribute revenue, manage commissions & payouts
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={runPipelineTest}
-          disabled={pipelineRunning}
-          className="gap-2"
-        >
-          {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
-          {pipelineRunning ? 'Running Test...' : 'Run Pipeline Test'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runMonitor}
+            disabled={monitorRunning}
+            className="gap-2"
+          >
+            {monitorRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+            {monitorRunning ? 'Monitoring...' : 'Run Health Check'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runPipelineTest}
+            disabled={pipelineRunning}
+            className="gap-2"
+          >
+            {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+            {pipelineRunning ? 'Running Test...' : 'Run Pipeline Test'}
+          </Button>
+        </div>
       </div>
 
       {/* Pipeline Test Results */}
@@ -351,6 +387,7 @@ export default function UTAmbassadorManagement() {
           <TabsTrigger value="leaderboard" className="gap-1"><Trophy className="h-3.5 w-3.5" />Leaderboard</TabsTrigger>
           <TabsTrigger value="referrals" className="gap-1"><Link2 className="h-3.5 w-3.5" />Referral Activity</TabsTrigger>
           <TabsTrigger value="payouts" className="gap-1"><Wallet className="h-3.5 w-3.5" />Payouts</TabsTrigger>
+          <TabsTrigger value="health" className="gap-1"><Activity className="h-3.5 w-3.5" />System Health</TabsTrigger>
         </TabsList>
 
         {/* ====== AMBASSADORS TAB ====== */}
@@ -610,6 +647,62 @@ export default function UTAmbassadorManagement() {
                               </Button>
                             )}
                           </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ====== SYSTEM HEALTH TAB ====== */}
+        <TabsContent value="health">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-400" />
+                Pipeline Health Monitor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {healthLogs.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No health checks recorded yet. Click "Run Health Check" to start monitoring.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Failure Point</TableHead>
+                      <TableHead>Steps</TableHead>
+                      <TableHead>Alert Sent</TableHead>
+                      <TableHead>Timestamp</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {healthLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          <Badge className={log.success ? 'bg-green-500/20 text-green-400' : 'bg-destructive/20 text-destructive'}>
+                            {log.success ? '✅ PASS' : '❌ FAIL'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{log.failure_point || '—'}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {log.steps && Object.entries(log.steps).map(([key, val]: [string, any]) => (
+                              <Badge key={key} variant="outline" className={`text-[10px] ${val?.passed ? 'border-green-500/30 text-green-400' : 'border-destructive/30 text-destructive'}`}>
+                                {key.replace(/_/g, ' ')}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {log.alert_sent ? <Badge className="bg-amber-500/20 text-amber-400">📱 SMS Sent</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {format(new Date(log.created_at), 'MMM d, HH:mm:ss')}
                         </TableCell>
                       </TableRow>
                     ))}

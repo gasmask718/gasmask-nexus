@@ -50293,6 +50293,33 @@ export type Database = {
           },
         ]
       }
+      pipeline_health_logs: {
+        Row: {
+          alert_sent: boolean | null
+          created_at: string
+          failure_point: string | null
+          id: string
+          steps: Json | null
+          success: boolean
+        }
+        Insert: {
+          alert_sent?: boolean | null
+          created_at?: string
+          failure_point?: string | null
+          id?: string
+          steps?: Json | null
+          success: boolean
+        }
+        Update: {
+          alert_sent?: boolean | null
+          created_at?: string
+          failure_point?: string | null
+          id?: string
+          steps?: Json | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           created_at: string | null
