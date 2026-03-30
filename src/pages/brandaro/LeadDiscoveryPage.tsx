@@ -217,6 +217,17 @@ function SpanishLeadsPanel() {
           };
         setSearchProgress(100);
         setLastSearchResult(result);
+        // Fetch the newly imported leads for instant display
+        if (jd?.status === "completed" && jd.imported_count > 0) {
+          const { data: newLeads } = await (supabase as any)
+            .from("brandaro_leads_master")
+            .select("id, business_name, phone, status, region, language, intent_score, priority_tier, website, industry, created_at")
+            .eq("language", "spanish")
+            .eq("source", "brandaro-lead-discovery")
+            .order("created_at", { ascending: false })
+            .limit(jd.imported_count + 5);
+          setSearchResults(newLeads || []);
+        }
         return result;
       }
       attempts++;
