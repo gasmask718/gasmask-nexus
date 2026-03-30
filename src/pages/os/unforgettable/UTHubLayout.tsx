@@ -10,6 +10,24 @@ import { supabase } from '@/integrations/supabase/client';
 
 const PINK = '#E91E8C';
 
+const normalizeAmbassadorStatus = (status?: string | null) => {
+  const normalized = (status || '').trim().toLowerCase();
+
+  if (!normalized || normalized === 'new' || normalized === 'pending_review') {
+    return 'pending';
+  }
+
+  if (normalized === 'approved') {
+    return 'active';
+  }
+
+  if (normalized === 'inactive') {
+    return 'suspended';
+  }
+
+  return normalized;
+};
+
 interface NavItem {
   path: string;
   label: string;
@@ -105,12 +123,12 @@ export default function UTHubLayout() {
 
   useEffect(() => {
     const fetchPending = async () => {
-      // HARD ISOLATION: Only count from unforgettable_ambassadors
-      const { count } = await supabase
+      const { data } = await supabase
         .from('unforgettable_ambassadors')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-      setPendingCount(count || 0);
+        .select('id, status');
+
+      const count = (data || []).filter((row) => normalizeAmbassadorStatus(row.status) === 'pending').length;
+      setPendingCount(count);
     };
 
     fetchPending();

@@ -20,6 +20,29 @@ import { format } from 'date-fns';
 const PINK = '#E91E8C';
 const TABLE = 'unforgettable_ambassadors' as const;
 
+const normalizeAmbassadorStatus = (status?: string | null) => {
+  const normalized = (status || '').trim().toLowerCase();
+
+  if (!normalized || normalized === 'new' || normalized === 'pending_review') {
+    return 'pending';
+  }
+
+  if (normalized === 'approved') {
+    return 'active';
+  }
+
+  if (normalized === 'inactive') {
+    return 'suspended';
+  }
+
+  return normalized;
+};
+
+const getAmbassadorStatusLabel = (status?: string | null) => {
+  const raw = (status || '').trim();
+  return raw || 'pending';
+};
+
 export default function UTAmbassadorManagement() {
   const [ambassadors, setAmbassadors] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
@@ -46,7 +69,10 @@ export default function UTAmbassadorManagement() {
       (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
       (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
     ]);
-    if (ambRes.data) setAmbassadors(ambRes.data);
+    if (ambRes.data) {
+      console.log('Loaded ambassadors:', ambRes.data);
+      setAmbassadors(ambRes.data);
+    }
     if (refRes.data) setReferrals(refRes.data);
     if (payRes.data) setPayouts(payRes.data);
     setLoading(false);
@@ -64,7 +90,8 @@ export default function UTAmbassadorManagement() {
   }, []);
 
   const filtered = ambassadors.filter(a => {
-    if (statusFilter !== 'all' && a.status !== statusFilter) return false;
+    const normalizedStatus = normalizeAmbassadorStatus(a.status);
+    if (statusFilter !== 'all' && normalizedStatus !== statusFilter) return false;
     if (search) {
       const q = search.toLowerCase();
       return (a.full_name || '').toLowerCase().includes(q)
@@ -75,8 +102,8 @@ export default function UTAmbassadorManagement() {
   });
 
   // KPIs
-  const pendingCount = ambassadors.filter(a => a.status === 'pending').length;
-  const activeCount = ambassadors.filter(a => a.status === 'active').length;
+  const pendingCount = ambassadors.filter(a => normalizeAmbassadorStatus(a.status) === 'pending').length;
+  const activeCount = ambassadors.filter(a => normalizeAmbassadorStatus(a.status) === 'active').length;
   const totalRevenue = ambassadors.reduce((s, a) => s + Number(a.total_revenue || 0), 0);
   const totalCommissions = ambassadors.reduce((s, a) => s + Number(a.total_commissions || 0), 0);
   const totalReferralClicks = referrals.length;
@@ -85,7 +112,7 @@ export default function UTAmbassadorManagement() {
   // Leaderboard
   const leaderboard = useMemo(() =>
     [...ambassadors]
-      .filter(a => a.status === 'active')
+      .filter(a => normalizeAmbassadorStatus(a.status) === 'active')
       .sort((a, b) => Number(b.total_revenue || 0) - Number(a.total_revenue || 0))
       .slice(0, 20),
     [ambassadors]
@@ -201,11 +228,12 @@ export default function UTAmbassadorManagement() {
   };
 
   const statusColor = (s: string) => {
-    if (s === 'active') return 'bg-green-500/20 text-green-400 border-green-500/30';
-    if (s === 'suspended') return 'bg-red-500/20 text-red-400 border-red-500/30';
-    if (s === 'converted') return 'bg-green-500/20 text-green-400 border-green-500/30';
-    if (s === 'lead') return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
-    if (s === 'clicked') return 'bg-muted text-muted-foreground border-border';
+    const normalized = normalizeAmbassadorStatus(s);
+    if (normalized === 'active') return 'bg-green-500/20 text-green-400 border-green-500/30';
+    if (normalized === 'suspended') return 'bg-red-500/20 text-red-400 border-red-500/30';
+    if (normalized === 'converted') return 'bg-green-500/20 text-green-400 border-green-500/30';
+    if (normalized === 'lead') return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+    if (normalized === 'clicked') return 'bg-muted text-muted-foreground border-border';
     return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
   };
 
@@ -308,7 +336,11 @@ export default function UTAmbassadorManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filtered.map((a) => (
+                      {filtered.map((a) => {
+                        const normalizedStatus = normalizeAmbassadorStatus(a.status);
+                        const statusLabel = getAmbassadorStatusLabel(a.status);
+
+                        return (
                         <TableRow key={a.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setDetailAmb(a)}>
                           <TableCell>
                             <div>
@@ -332,15 +364,24 @@ export default function UTAmbassadorManagement() {
                           </TableCell>
                           <TableCell className="font-medium">${Number(a.total_revenue || 0).toLocaleString()}</TableCell>
                           <TableCell className="text-emerald-400 font-medium">${Number(a.total_commissions || 0).toLocaleString()}</TableCell>
-                          <TableCell><Badge className={statusColor(a.status)}>{a.status}</Badge></TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <Badge className={statusColor(statusLabel)}>{statusLabel}</Badge>
+                              {statusLabel.toLowerCase() !== normalizedStatus && (
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                  normalized: {normalizedStatus}
+                                </p>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-1">
-                              {a.status === 'pending' && (
+                              {normalizedStatus === 'pending' && (
                                 <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleApprove(a)} disabled={approving === a.id}>
                                   <CheckCircle className="h-3 w-3 mr-1" />{approving === a.id ? '...' : 'Approve'}
                                 </Button>
                               )}
-                              {a.status === 'active' && (
+                              {normalizedStatus === 'active' && (
                                 <>
                                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setPayoutTarget(a); setPayoutDialog(true); }}>
                                     <Wallet className="h-3 w-3 mr-1" />Payout
@@ -350,7 +391,7 @@ export default function UTAmbassadorManagement() {
                                   </Button>
                                 </>
                               )}
-                              {a.status === 'suspended' && (
+                              {normalizedStatus === 'suspended' && (
                                 <Button size="sm" className="h-7 text-xs bg-green-600 hover:bg-green-700" onClick={() => handleApprove(a)} disabled={approving === a.id}>
                                   Reactivate
                                 </Button>
@@ -358,7 +399,7 @@ export default function UTAmbassadorManagement() {
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      )})}
                     </TableBody>
                   </Table>
                 </div>
@@ -563,7 +604,7 @@ export default function UTAmbassadorManagement() {
                 <div><span className="text-muted-foreground">State:</span> <span className="font-medium">{detailAmb.state || '—'}</span></div>
                 <div><span className="text-muted-foreground">Tier:</span> <Badge variant="outline" className="capitalize">{detailAmb.tier}</Badge></div>
                 <div><span className="text-muted-foreground">Rate:</span> <span className="font-medium">{detailAmb.commission_rate}%</span></div>
-                <div><span className="text-muted-foreground">Status:</span> <Badge className={statusColor(detailAmb.status)}>{detailAmb.status}</Badge></div>
+                <div><span className="text-muted-foreground">Status:</span> <Badge className={statusColor(getAmbassadorStatusLabel(detailAmb.status))}>{getAmbassadorStatusLabel(detailAmb.status)}</Badge></div>
               </div>
 
               <div className="p-3 bg-muted/30 rounded-lg space-y-2">
