@@ -358,15 +358,78 @@ function SpanishLeadsPanel() {
                 </div>
               )}
 
-              {/* Single search button */}
+              {/* Search button */}
               <Button
                 onClick={handleSingleSearch}
                 disabled={!searchIndustry || !searchCountry || (!searchCity && !customCity) || isSearching}
                 className="w-full md:w-auto"
               >
                 {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                {isSearching ? "Buscando..." : "Buscar Leads"}
+                {isSearching ? <DualLabel es="Buscando..." en="Searching..." /> : <DualLabel es="Buscar Leads" en="Search Leads" />}
               </Button>
+
+              {/* Loading progress */}
+              {isSearching && (
+                <div className="space-y-2 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                  <Progress value={searchProgress} className="h-2" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <DualLabel
+                      es={SEARCH_STEPS[searchStep]?.es || "Procesando..."}
+                      en={SEARCH_STEPS[searchStep]?.en || "Processing..."}
+                      className="text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{Math.round(searchProgress)}% completado</p>
+                </div>
+              )}
+
+              {/* Search result feedback */}
+              {lastSearchResult && !isSearching && (
+                <div className={`p-4 rounded-lg border ${
+                  lastSearchResult.status === "completed" ? "border-green-500/30 bg-green-500/5" :
+                  "border-destructive/30 bg-destructive/5"
+                }`}>
+                  {lastSearchResult.status === "completed" ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className="font-medium text-sm">
+                          <DualLabel es={`${lastSearchResult.imported} negocios encontrados`} en={`${lastSearchResult.imported} businesses found`} />
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {lastSearchResult.noWebsite} sin sitio web (no website)
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-destructive" />
+                        <DualLabel es="No se encontraron resultados" en="No results found" className="font-medium text-sm" />
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Intenta una ciudad diferente (Try a different city)</p>
+                        <p>• Usa un tipo de negocio más amplio (Use a broader business type)</p>
+                        <p>• Quita filtros (Remove filters)</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => { setLastSearchResult(null); }}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> <DualLabel es="Intentar de nuevo" en="Try again" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Debug toggle */}
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => setShowDebug(!showDebug)}>
+                  {showDebug ? "🔧 Ocultar Debug" : "🔧 Modo Debug"}
+                </Button>
+              </div>
+              {showDebug && debugInfo && (
+                <pre className="text-[10px] p-2 rounded bg-muted text-muted-foreground font-mono overflow-x-auto">{debugInfo}</pre>
+              )}
             </CardContent>
           </Card>
 
