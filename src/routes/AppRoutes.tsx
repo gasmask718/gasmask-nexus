@@ -723,6 +723,12 @@ const UTMarketplaceControl = lazy(() => import('@/pages/os/unforgettable').then(
 const UTAutomation = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomation })));
 const UTAnalytics = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAnalytics })));
 const UTPenthouse = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPenthouse })));
+const UTHallOwnerDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTHallOwnerDashboard })));
+const UTStaffMemberDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTStaffMemberDashboard })));
+const UTVenuesManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTVenuesManagement })));
+const UTStaffManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTStaffManagement })));
+const UTPlatformStats = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlatformStats })));
+const UTAmbassadorManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAmbassadorManagement })));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 
 // Unforgettable CRM
