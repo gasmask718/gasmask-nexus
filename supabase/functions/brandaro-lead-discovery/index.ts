@@ -190,10 +190,8 @@ serve(async (req) => {
         const language = inferLanguage(state, industry, cityName);
         const descriptions = buildLeadDescriptions(industry, cityName, stateName);
 
-        // Score with Claude (or fallback)
-        const score = anthropicKey
-          ? await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types)
-          : { priority_score: 5 };
+        // Deterministic scoring engine
+        const score = scoreLead(p.name, industry, p.rating, p.user_ratings_total, hasRealWebsite, phone, p.types || []);
 
         const now = new Date().toISOString();
         let masterInserted = false;
