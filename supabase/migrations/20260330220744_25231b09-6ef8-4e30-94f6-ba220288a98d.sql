@@ -1,0 +1,1 @@
+ALTER TABLE brandaro_leads_master ADD COLUMN IF NOT EXISTS priority_tier text DEFAULT 'cold';
