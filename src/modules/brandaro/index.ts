@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity, Smartphone } from 'lucide-react';
+import { Globe, LayoutDashboard, Search, Database, Target, Phone, Headset, BarChart3, FolderOpen, Wand2, FileText, Bell, Hammer, Users, TrendingUp, Factory, ShieldCheck, Brain, Megaphone, Crown, Cpu, Activity, Smartphone, Zap } from 'lucide-react';
 import BrandaroDashboard from '@/pages/brandaro/BrandaroDashboard';
 import LeadDiscoveryPage from '@/pages/brandaro/LeadDiscoveryPage';
 import LeadDatabasePage from '@/pages/brandaro/LeadDatabasePage';
@@ -20,9 +20,11 @@ import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import SystemStatusPage from '@/pages/brandaro/SystemStatusPage';
+import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
+  { path: '/os/brandaro/activation', label: 'Activation Center', icon: Zap },
   { path: '/os/brandaro/discovery', label: 'Lead Discovery', icon: Search },
   { path: '/os/brandaro/leads', label: 'Lead Database', icon: Database },
   { path: '/os/brandaro/qualification', label: 'Qualification', icon: Target },
@@ -63,6 +65,7 @@ export const BrandaroModule: DynastyModule = {
   routes: [
     { path: '', component: BrandaroDashboard, label: 'Command Center', icon: LayoutDashboard, requiresAuth: true },
     { path: '/dashboard', component: BrandaroDashboard, label: 'Command Center', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/activation', component: BrandaroActivationCenter, label: 'Activation Center', icon: Zap, requiresAuth: true },
     { path: '/discovery', component: LeadDiscoveryPage, label: 'Lead Discovery', icon: Search, requiresAuth: true },
     { path: '/leads', component: LeadDatabasePage, label: 'Lead Database', icon: Database, requiresAuth: true },
     { path: '/qualification', component: LeadQualificationPage, label: 'Qualification', icon: Target, requiresAuth: true },
