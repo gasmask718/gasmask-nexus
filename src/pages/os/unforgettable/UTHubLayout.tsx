@@ -54,9 +54,13 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
-    title: '📦 Products',
+    title: '📦 Floor 5 — Business Builder',
     items: [
-      { path: '/os/unforgettable/products', label: 'Floor 5 — Product Engine', icon: Package },
+      { path: '/os/unforgettable/business-requests', label: 'Business Requests', icon: ClipboardCheck },
+      { path: '/os/unforgettable/business-quotes', label: 'Quotes Manager', icon: FileText },
+      { path: '/os/unforgettable/business-products', label: 'Products', icon: Package },
+      { path: '/os/unforgettable/business-packages', label: 'Packages', icon: Package },
+      { path: '/os/unforgettable/products', label: 'Product Engine', icon: Package },
       { path: '/os/unforgettable/suppliers', label: 'Supplier Console', icon: Package },
     ],
   },

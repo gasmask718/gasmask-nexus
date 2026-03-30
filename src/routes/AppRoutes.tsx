@@ -3032,6 +3032,10 @@ export default function AppRoutes() {
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="platform-stats" element={<UTPlatformStats />} />
           <Route path="ambassadors" element={<UTAmbassadorManagement />} />
+          <Route path="business-requests" element={<UTBusinessRequests />} />
+          <Route path="business-quotes" element={<UTBusinessQuotes />} />
+          <Route path="business-products" element={<UTBusinessProducts />} />
+          <Route path="business-packages" element={<UTBusinessPackages />} />
         </Route>
       </Route>
 
