@@ -312,7 +312,7 @@ function SpanishLeadsPanel() {
 
               {/* Industry */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Tipo de Negocio</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium"><DualLabel es="Tipo de Negocio" en="Business Type" /></label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {SPANISH_INDUSTRIES.map(p => (
                     <Button
