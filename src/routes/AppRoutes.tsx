@@ -3022,6 +3022,12 @@ export default function AppRoutes() {
           <Route path="customer-service" element={<UnforgettableCustomerService />} />
           <Route path="media" element={<UnforgettableMedia />} />
           <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
+          <Route path="hall-dashboard" element={<UTHallOwnerDashboard />} />
+          <Route path="staff-dashboard" element={<UTStaffMemberDashboard />} />
+          <Route path="venues" element={<UTVenuesManagement />} />
+          <Route path="staff-management" element={<UTStaffManagement />} />
+          <Route path="platform-stats" element={<UTPlatformStats />} />
+          <Route path="ambassadors" element={<UTAmbassadorManagement />} />
         </Route>
       </Route>
 
