@@ -190,10 +190,8 @@ serve(async (req) => {
         const language = inferLanguage(state, industry, cityName);
         const descriptions = buildLeadDescriptions(industry, cityName, stateName);
 
-        // Score with Claude (or fallback)
-        const score = anthropicKey
-          ? await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types)
-          : { priority_score: 5 };
+        // Deterministic scoring engine
+        const score = scoreLead(p.name, industry, p.rating, p.user_ratings_total, hasRealWebsite, phone, p.types || []);
 
         const now = new Date().toISOString();
         let masterInserted = false;
@@ -230,7 +228,7 @@ serve(async (req) => {
             has_website: false,
             source: 'brandaro-lead-discovery',
             status: 'new',
-            intent_score: Math.min(score.priority_score * 10, 100),
+            intent_score: score.intent_score,
             created_at: now,
             updated_at: now,
             language,
@@ -407,29 +405,42 @@ function buildLeadDescriptions(industry: string, city: string, state: string) {
   };
 }
 
-async function scoreLeadWithClaude(
-  apiKey: string, businessName: string, industry: string,
-  city: string, rating: number, reviewCount: number, types: string[]
-): Promise<{ priority_score: number }> {
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 50,
-        system: `Score this business lead 1-10 for likelihood to buy a website. Return ONLY a JSON object: {"priority_score": N}. Higher if: established, good reviews, local service. Lower if: chain/franchise, very new, no reviews.`,
-        messages: [{ role: 'user', content: `Business: ${businessName}\nIndustry: ${industry}\nCity: ${city}\nRating: ${rating || 'none'}\nReviews: ${reviewCount || 0}\nTypes: ${(types || []).join(', ')}` }],
-      }),
-    });
-    const data = await res.json();
-    const result = JSON.parse(data.content[0].text.trim());
-    return { priority_score: Math.min(10, Math.max(1, result.priority_score)) };
-  } catch {
-    return { priority_score: 5 };
-  }
+function scoreLead(
+  businessName: string, industry: string,
+  rating: number, reviewCount: number, hasWebsite: boolean, phone: string | null, types: string[]
+): { priority_score: number; intent_score: number; priority_tier: string } {
+  let score = 0;
+
+  // No website = highest signal (+40)
+  if (!hasWebsite) score += 40;
+
+  // Has phone = reachable (+20)
+  if (phone) score += 20;
+
+  // High-value industries (+15-20)
+  const highValue = ['contractor', 'plumber', 'plomero', 'electrician', 'electricista', 'hvac', 'handyman', 'pressure washing', 'junk removal', 'moving', 'mudanzas', 'construccion', 'painting', 'pintor'];
+  const medValue = ['salon', 'belleza', 'beauty', 'restaurant', 'restaurante', 'cleaning', 'limpieza', 'landscaping', 'jardineria', 'auto detailing', 'carpet cleaning', 'mecanico', 'mechanic'];
+  const industryLower = (industry || '').toLowerCase();
+  const typesStr = (types || []).join(' ').toLowerCase();
+  const combined = `${industryLower} ${typesStr}`;
+
+  if (highValue.some(k => combined.includes(k))) score += 20;
+  else if (medValue.some(k => combined.includes(k))) score += 15;
+  else score += 5;
+
+  // Rating signals (+5-10)
+  if (rating && rating >= 4.0) score += 10;
+  else if (rating && rating >= 3.0) score += 5;
+
+  // Review count = established business (+5-10)
+  if (reviewCount >= 50) score += 10;
+  else if (reviewCount >= 10) score += 7;
+  else if (reviewCount >= 1) score += 3;
+
+  const finalScore = Math.min(100, Math.max(0, score));
+  const priority_tier = finalScore >= 80 ? 'hot' : finalScore >= 60 ? 'warm' : 'cold';
+  // Map to 1-10 for priority_score column
+  const priority_score = Math.max(1, Math.min(10, Math.round(finalScore / 10)));
+
+  return { priority_score, intent_score: finalScore, priority_tier };
 }
