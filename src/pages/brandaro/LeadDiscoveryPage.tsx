@@ -119,6 +119,7 @@ function SpanishLeadsPanel() {
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
@@ -226,7 +227,11 @@ function SpanishLeadsPanel() {
             .eq("source", "brandaro-lead-discovery")
             .order("created_at", { ascending: false })
             .limit(jd.imported_count + 5);
+          console.log("Fetched Leads:", newLeads?.length, newLeads);
           setSearchResults(newLeads || []);
+          setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+        } else if (jd?.status === "completed" && jd.imported_count === 0) {
+          setSearchResults([]);
         }
         return result;
       }
@@ -487,7 +492,8 @@ function SpanishLeadsPanel() {
           </Card>
 
           {/* ── Instant Search Results Table ── */}
-          {searchResults.length > 0 && !isSearching && (
+          <div ref={resultsRef}>
+          {searchResults.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -546,6 +552,15 @@ function SpanishLeadsPanel() {
               </CardContent>
             </Card>
           )}
+          {!isSearching && lastSearchResult && searchResults.length === 0 && lastSearchResult.status === "completed" && (
+            <Card className="border-dashed border-muted-foreground/30">
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <p className="text-sm font-medium">No se encontraron resultados nuevos</p>
+                <p className="text-xs mt-1">No new results returned — try a different city or industry</p>
+              </CardContent>
+            </Card>
+          )}
+          </div>
 
           {/* Bulk city selector */}
           {searchCountry && selectedCountryData && (
