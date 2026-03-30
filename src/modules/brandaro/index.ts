@@ -65,6 +65,7 @@ export const BrandaroModule: DynastyModule = {
   routes: [
     { path: '', component: BrandaroDashboard, label: 'Command Center', icon: LayoutDashboard, requiresAuth: true },
     { path: '/dashboard', component: BrandaroDashboard, label: 'Command Center', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/activation', component: BrandaroActivationCenter, label: 'Activation Center', icon: Zap, requiresAuth: true },
     { path: '/discovery', component: LeadDiscoveryPage, label: 'Lead Discovery', icon: Search, requiresAuth: true },
     { path: '/leads', component: LeadDatabasePage, label: 'Lead Database', icon: Database, requiresAuth: true },
     { path: '/qualification', component: LeadQualificationPage, label: 'Qualification', icon: Target, requiresAuth: true },
