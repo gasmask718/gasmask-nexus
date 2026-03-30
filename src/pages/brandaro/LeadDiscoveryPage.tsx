@@ -559,28 +559,36 @@ function SpanishLeadsPanel() {
                     <TableHead>Región</TableHead>
                     <TableHead>Website</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Score</TableHead>
+                    <TableHead>Prioridad</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {spanishLeads.map((lead: any) => (
-                    <TableRow key={lead.id}>
-                      <TableCell className="font-medium">{lead.business_name || "—"}</TableCell>
-                      <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
-                      <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
-                      <TableCell>
-                        {lead.website ? (
-                          <Badge variant="secondary" className="text-xs">Tiene Web</Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-[10px]">❌ SIN WEB</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="text-xs">{statusLabel[lead.status] || lead.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm">{lead.intent_score || 0}%</TableCell>
-                    </TableRow>
-                  ))}
+                  {[...spanishLeads].sort((a: any, b: any) => (b.intent_score || 0) - (a.intent_score || 0)).map((lead: any) => {
+                    const s = lead.intent_score || 0;
+                    const tier = s >= 80 ? { label: "🔥 HOT", cls: "bg-amber-500 text-white" }
+                      : s >= 60 ? { label: "⚡ WARM", cls: "bg-blue-500 text-white" }
+                      : { label: "❄️ COLD", cls: "bg-muted text-muted-foreground" };
+                    return (
+                      <TableRow key={lead.id}>
+                        <TableCell className="font-medium">{lead.business_name || "—"}</TableCell>
+                        <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
+                        <TableCell>
+                          {lead.website ? (
+                            <Badge variant="secondary" className="text-xs">Tiene Web</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-[10px]">❌ SIN WEB</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">{statusLabel[lead.status] || lead.status}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${tier.cls}`}>{tier.label} ({s}%)</Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}
