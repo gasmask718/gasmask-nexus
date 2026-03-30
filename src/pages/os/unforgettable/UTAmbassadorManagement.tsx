@@ -63,6 +63,10 @@ export default function UTAmbassadorManagement() {
   // Detail dialog
   const [detailAmb, setDetailAmb] = useState<any>(null);
 
+  // Pipeline test
+  const [pipelineRunning, setPipelineRunning] = useState(false);
+  const [pipelineResult, setPipelineResult] = useState<any>(null);
+
   const fetchAll = async () => {
     const [ambRes, refRes, payRes] = await Promise.all([
       supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
