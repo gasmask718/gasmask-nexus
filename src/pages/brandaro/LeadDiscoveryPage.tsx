@@ -552,6 +552,15 @@ function SpanishLeadsPanel() {
               </CardContent>
             </Card>
           )}
+          {!isSearching && lastSearchResult && searchResults.length === 0 && lastSearchResult.status === "completed" && (
+            <Card className="border-dashed border-muted-foreground/30">
+              <CardContent className="py-8 text-center text-muted-foreground">
+                <p className="text-sm font-medium">No se encontraron resultados nuevos</p>
+                <p className="text-xs mt-1">No new results returned — try a different city or industry</p>
+              </CardContent>
+            </Card>
+          )}
+          </div>
 
           {/* Bulk city selector */}
           {searchCountry && selectedCountryData && (
