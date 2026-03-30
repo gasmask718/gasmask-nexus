@@ -101,19 +101,19 @@ export default function UTHubLayout() {
 
   useEffect(() => {
     const fetchPending = async () => {
+      // HARD ISOLATION: Only count from unforgettable_ambassadors
       const { count } = await supabase
-        .from('ambassadors')
+        .from('unforgettable_ambassadors')
         .select('*', { count: 'exact', head: true })
-        .eq('is_active', false)
-        .is('deleted_at', null);
+        .eq('status', 'pending');
       setPendingCount(count || 0);
     };
 
     fetchPending();
 
     const channel = supabase
-      .channel('ambassador-pending-badge')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ambassadors' }, () => {
+      .channel('ut-ambassador-pending-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'unforgettable_ambassadors' }, () => {
         fetchPending();
       })
       .subscribe();

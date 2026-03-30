@@ -73264,6 +73264,63 @@ export type Database = {
           },
         ]
       }
+      unforgettable_ambassadors: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          business_unit: string
+          commission_rate: number
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          referral_code: string | null
+          source: string
+          state: string | null
+          status: string
+          tier: string
+          total_earnings: number
+          total_sales: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_unit?: string
+          commission_rate?: number
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          referral_code?: string | null
+          source?: string
+          state?: string | null
+          status?: string
+          tier?: string
+          total_earnings?: number
+          total_sales?: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          business_unit?: string
+          commission_rate?: number
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          referral_code?: string | null
+          source?: string
+          state?: string | null
+          status?: string
+          tier?: string
+          total_earnings?: number
+          total_sales?: number
+        }
+        Relationships: []
+      }
       universal_activity: {
         Row: {
           action: string
