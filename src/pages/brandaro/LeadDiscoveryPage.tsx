@@ -84,6 +84,23 @@ const SPANISH_INDUSTRIES = [
   { emoji: "📦", label: "Mudanzas", value: "mudanzas" },
 ];
 
+// Dual-language label helper
+function DualLabel({ es, en, className = "" }: { es: string; en: string; className?: string }) {
+  return (
+    <span className={className}>
+      <span className="font-semibold">{es}</span>
+      <span className="text-[10px] text-muted-foreground ml-1.5">({en})</span>
+    </span>
+  );
+}
+
+const SEARCH_STEPS = [
+  { es: "Buscando negocios...", en: "Searching businesses..." },
+  { es: "Analizando resultados...", en: "Analyzing results..." },
+  { es: "Filtrando sin sitio web...", en: "Filtering no website..." },
+  { es: "Preparando resultados...", en: "Preparing results..." },
+];
+
 function SpanishLeadsPanel() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -96,6 +113,11 @@ function SpanishLeadsPanel() {
   const [isSearching, setIsSearching] = useState(false);
   const [isBulkRunning, setIsBulkRunning] = useState(false);
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
+  const [searchStep, setSearchStep] = useState(0);
+  const [searchProgress, setSearchProgress] = useState(0);
+  const [lastSearchResult, setLastSearchResult] = useState<{ status: string; imported: number; noWebsite: number } | null>(null);
+  const [showDebug, setShowDebug] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
@@ -123,7 +145,9 @@ function SpanishLeadsPanel() {
     const countryLabel = selectedCountryData?.label || searchCountry;
     const stateCode = searchCountry === "US-Hispanic" ? "US" : searchCountry;
 
-    // Create discovery job
+    setSearchStep(0); setSearchProgress(10);
+    setDebugInfo(`Creating job: ${searchIndustry} in ${cityName}, ${countryLabel}`);
+
     const { data: job, error: jobErr } = await supabase
       .from("brandaro_discovery_jobs" as any)
       .insert({
@@ -139,7 +163,9 @@ function SpanishLeadsPanel() {
 
     if (jobErr) throw jobErr;
 
-    // Fire edge function
+    setSearchStep(1); setSearchProgress(30);
+    setDebugInfo(`Job created: ${(job as any).id}. Invoking edge function...`);
+
     const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
       body: {
         job_id: (job as any).id,
@@ -152,22 +178,34 @@ function SpanishLeadsPanel() {
 
     if (fnErr) throw fnErr;
 
-    // Poll for completion
+    setSearchStep(2); setSearchProgress(50);
+    setDebugInfo("Edge function invoked. Polling for results...");
+
     let attempts = 0;
     while (attempts < 40) {
       await new Promise(r => setTimeout(r, 3000));
+      const progressVal = Math.min(50 + (attempts / 40) * 45, 95);
+      setSearchProgress(progressVal);
+      if (attempts > 10) setSearchStep(3);
+
       const { data: jobData } = await supabase
         .from("brandaro_discovery_jobs" as any)
         .select("*")
         .eq("id", (job as any).id)
         .single();
       const jd = jobData as any;
+      setDebugInfo(`Poll #${attempts + 1}: status=${jd?.status}, imported=${jd?.imported_count || 0}`);
       if (jd?.status === "completed" || jd?.status === "failed") {
-        return { status: jd.status, imported: jd.imported_count || 0, noWebsite: jd.no_website_count || 0 };
+        const result = { status: jd.status, imported: jd.imported_count || 0, noWebsite: jd.no_website_count || 0 };
+        setSearchProgress(100);
+        setLastSearchResult(result);
+        return result;
       }
       attempts++;
     }
-    return { status: "timeout", imported: 0, noWebsite: 0 };
+    const timeoutResult = { status: "timeout", imported: 0, noWebsite: 0 };
+    setLastSearchResult(timeoutResult);
+    return timeoutResult;
   };
 
   const handleSingleSearch = async () => {
@@ -178,6 +216,9 @@ function SpanishLeadsPanel() {
       return;
     }
     setIsSearching(true);
+    setLastSearchResult(null);
+    setSearchProgress(0);
+    setSearchStep(0);
     try {
       const result = await runSingleSearch(cityToSearch);
       queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] });
@@ -188,6 +229,8 @@ function SpanishLeadsPanel() {
         toast({ title: "⚠️ Búsqueda falló", description: `Estado: ${result.status}`, variant: "destructive" });
       }
     } catch (err: any) {
+      setDebugInfo(`Error: ${err.message}`);
+      setLastSearchResult({ status: "error", imported: 0, noWebsite: 0 });
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsSearching(false);
@@ -231,10 +274,10 @@ function SpanishLeadsPanel() {
       {/* Tab toggle */}
       <div className="flex gap-2">
         <Button size="sm" variant={activeTab === "search" ? "default" : "outline"} onClick={() => setActiveTab("search")}>
-          <Search className="h-3.5 w-3.5 mr-1" /> Buscar Nuevos Leads
+          <Search className="h-3.5 w-3.5 mr-1" /> <DualLabel es="Buscar Nuevos Leads" en="Search New Leads" />
         </Button>
         <Button size="sm" variant={activeTab === "existing" ? "default" : "outline"} onClick={() => setActiveTab("existing")}>
-          <Flag className="h-3.5 w-3.5 mr-1" /> Leads Existentes ({spanishLeads.length})
+          <Flag className="h-3.5 w-3.5 mr-1" /> <DualLabel es="Leads Existentes" en="Existing Leads" /> ({spanishLeads.length})
         </Button>
       </div>
 
@@ -244,14 +287,14 @@ function SpanishLeadsPanel() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Globe className="h-4 w-4 text-amber-500" /> Buscador de Leads — Mercado Español
+                <Globe className="h-4 w-4 text-primary" /> <DualLabel es="Buscador de Leads — Mercado Español" en="Lead Finder — Spanish Market" />
               </CardTitle>
-              <CardDescription>Encuentra negocios sin sitio web en países hispanohablantes</CardDescription>
+              <CardDescription><DualLabel es="Encuentra negocios sin sitio web en países hispanohablantes" en="Find businesses without websites in Spanish-speaking countries" /></CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Country buttons */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">País / Región</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium"><DualLabel es="País / Región" en="Country / Region" /></label>
                 <div className="flex flex-wrap gap-2">
                   {SPANISH_COUNTRIES.map(c => (
                     <Button
@@ -269,7 +312,7 @@ function SpanishLeadsPanel() {
 
               {/* Industry */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Tipo de Negocio</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium"><DualLabel es="Tipo de Negocio" en="Business Type" /></label>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {SPANISH_INDUSTRIES.map(p => (
                     <Button
@@ -294,7 +337,7 @@ function SpanishLeadsPanel() {
               {/* City selection */}
               {searchCountry && (
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Ciudad</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block font-medium"><DualLabel es="Ciudad" en="City" /></label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <Select value={searchCity} onValueChange={v => { setSearchCity(v); setCustomCity(""); }}>
@@ -315,15 +358,78 @@ function SpanishLeadsPanel() {
                 </div>
               )}
 
-              {/* Single search button */}
+              {/* Search button */}
               <Button
                 onClick={handleSingleSearch}
                 disabled={!searchIndustry || !searchCountry || (!searchCity && !customCity) || isSearching}
                 className="w-full md:w-auto"
               >
                 {isSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
-                {isSearching ? "Buscando..." : "Buscar Leads"}
+                {isSearching ? <DualLabel es="Buscando..." en="Searching..." /> : <DualLabel es="Buscar Leads" en="Search Leads" />}
               </Button>
+
+              {/* Loading progress */}
+              {isSearching && (
+                <div className="space-y-2 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                  <Progress value={searchProgress} className="h-2" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <DualLabel
+                      es={SEARCH_STEPS[searchStep]?.es || "Procesando..."}
+                      en={SEARCH_STEPS[searchStep]?.en || "Processing..."}
+                      className="text-sm"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{Math.round(searchProgress)}% completado</p>
+                </div>
+              )}
+
+              {/* Search result feedback */}
+              {lastSearchResult && !isSearching && (
+                <div className={`p-4 rounded-lg border ${
+                  lastSearchResult.status === "completed" ? "border-green-500/30 bg-green-500/5" :
+                  "border-destructive/30 bg-destructive/5"
+                }`}>
+                  {lastSearchResult.status === "completed" ? (
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className="font-medium text-sm">
+                          <DualLabel es={`${lastSearchResult.imported} negocios encontrados`} en={`${lastSearchResult.imported} businesses found`} />
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {lastSearchResult.noWebsite} sin sitio web (no website)
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-destructive" />
+                        <DualLabel es="No se encontraron resultados" en="No results found" className="font-medium text-sm" />
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Intenta una ciudad diferente (Try a different city)</p>
+                        <p>• Usa un tipo de negocio más amplio (Use a broader business type)</p>
+                        <p>• Quita filtros (Remove filters)</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => { setLastSearchResult(null); }}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> <DualLabel es="Intentar de nuevo" en="Try again" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Debug toggle */}
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => setShowDebug(!showDebug)}>
+                  {showDebug ? "🔧 Ocultar Debug" : "🔧 Modo Debug"}
+                </Button>
+              </div>
+              {showDebug && debugInfo && (
+                <pre className="text-[10px] p-2 rounded bg-muted text-muted-foreground font-mono overflow-x-auto">{debugInfo}</pre>
+              )}
             </CardContent>
           </Card>
 
@@ -333,13 +439,13 @@ function SpanishLeadsPanel() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-500" /> Búsqueda Masiva — {selectedCountryData.label}
+                    <Zap className="h-4 w-4 text-primary" /> <DualLabel es={`Búsqueda Masiva — ${selectedCountryData.label}`} en="Bulk Search" />
                   </CardTitle>
                   <Button size="sm" variant="outline" className="text-xs" onClick={selectAllCities}>
                     {selectedCities.length === selectedCountryData.cities.length ? "Deseleccionar Todo" : "Seleccionar Todo"}
                   </Button>
                 </div>
-                <CardDescription>Selecciona ciudades para búsqueda masiva</CardDescription>
+                <CardDescription><DualLabel es="Selecciona ciudades para búsqueda masiva" en="Select cities for bulk search" /></CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex flex-wrap gap-1.5">
