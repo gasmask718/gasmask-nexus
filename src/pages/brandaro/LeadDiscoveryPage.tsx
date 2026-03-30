@@ -246,6 +246,7 @@ function SpanishLeadsPanel() {
     }
     setIsSearching(true);
     setLastSearchResult(null);
+    setSearchResults([]);
     setSearchProgress(0);
     setSearchStep(0);
     try {
