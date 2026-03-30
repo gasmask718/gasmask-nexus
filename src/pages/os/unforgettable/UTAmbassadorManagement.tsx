@@ -302,16 +302,28 @@ export default function UTAmbassadorManagement() {
             Track referrals, attribute revenue, manage commissions & payouts
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={runPipelineTest}
-          disabled={pipelineRunning}
-          className="gap-2"
-        >
-          {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
-          {pipelineRunning ? 'Running Test...' : 'Run Pipeline Test'}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runMonitor}
+            disabled={monitorRunning}
+            className="gap-2"
+          >
+            {monitorRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+            {monitorRunning ? 'Monitoring...' : 'Run Health Check'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={runPipelineTest}
+            disabled={pipelineRunning}
+            className="gap-2"
+          >
+            {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
+            {pipelineRunning ? 'Running Test...' : 'Run Pipeline Test'}
+          </Button>
+        </div>
       </div>
 
       {/* Pipeline Test Results */}
