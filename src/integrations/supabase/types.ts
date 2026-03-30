@@ -73296,17 +73296,23 @@ export type Database = {
           active_referral_link: string | null
           approved_at: string | null
           approved_by: string | null
+          auto_managed: boolean
           business_unit: string
           commission_rate: number
+          conversion_rate: number | null
           created_at: string
           email: string | null
           full_name: string
           id: string
+          is_boosted: boolean
           last_conversion_at: string | null
+          last_insight_at: string | null
           last_payout_at: string | null
           payout_status: string | null
+          performance_tier: string
           phone: string | null
           referral_code: string | null
+          risk_level: string | null
           source: string
           state: string | null
           status: string
@@ -73322,17 +73328,23 @@ export type Database = {
           active_referral_link?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_managed?: boolean
           business_unit?: string
           commission_rate?: number
+          conversion_rate?: number | null
           created_at?: string
           email?: string | null
           full_name: string
           id?: string
+          is_boosted?: boolean
           last_conversion_at?: string | null
+          last_insight_at?: string | null
           last_payout_at?: string | null
           payout_status?: string | null
+          performance_tier?: string
           phone?: string | null
           referral_code?: string | null
+          risk_level?: string | null
           source?: string
           state?: string | null
           status?: string
@@ -73348,17 +73360,23 @@ export type Database = {
           active_referral_link?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auto_managed?: boolean
           business_unit?: string
           commission_rate?: number
+          conversion_rate?: number | null
           created_at?: string
           email?: string | null
           full_name?: string
           id?: string
+          is_boosted?: boolean
           last_conversion_at?: string | null
+          last_insight_at?: string | null
           last_payout_at?: string | null
           payout_status?: string | null
+          performance_tier?: string
           phone?: string | null
           referral_code?: string | null
+          risk_level?: string | null
           source?: string
           state?: string | null
           status?: string
@@ -74118,6 +74136,44 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_ambassador_insights: {
+        Row: {
+          ambassador_id: string
+          created_at: string
+          id: string
+          insight_text: string
+          insight_type: string
+          is_resolved: boolean
+          severity: string
+        }
+        Insert: {
+          ambassador_id: string
+          created_at?: string
+          id?: string
+          insight_text: string
+          insight_type: string
+          is_resolved?: boolean
+          severity?: string
+        }
+        Update: {
+          ambassador_id?: string
+          created_at?: string
+          id?: string
+          insight_text?: string
+          insight_type?: string
+          is_resolved?: boolean
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ambassador_insights_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "unforgettable_ambassadors"
             referencedColumns: ["id"]
           },
         ]
