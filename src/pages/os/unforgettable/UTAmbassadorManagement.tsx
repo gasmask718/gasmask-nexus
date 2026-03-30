@@ -387,6 +387,7 @@ export default function UTAmbassadorManagement() {
           <TabsTrigger value="leaderboard" className="gap-1"><Trophy className="h-3.5 w-3.5" />Leaderboard</TabsTrigger>
           <TabsTrigger value="referrals" className="gap-1"><Link2 className="h-3.5 w-3.5" />Referral Activity</TabsTrigger>
           <TabsTrigger value="payouts" className="gap-1"><Wallet className="h-3.5 w-3.5" />Payouts</TabsTrigger>
+          <TabsTrigger value="health" className="gap-1"><Activity className="h-3.5 w-3.5" />System Health</TabsTrigger>
         </TabsList>
 
         {/* ====== AMBASSADORS TAB ====== */}
