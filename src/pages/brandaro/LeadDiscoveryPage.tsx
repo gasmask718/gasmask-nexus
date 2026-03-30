@@ -115,7 +115,7 @@ function SpanishLeadsPanel() {
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [searchStep, setSearchStep] = useState(0);
   const [searchProgress, setSearchProgress] = useState(0);
-  const [lastSearchResult, setLastSearchResult] = useState<{ status: string; imported: number; noWebsite: number } | null>(null);
+  const [lastSearchResult, setLastSearchResult] = useState<{ status: string; imported: number; noWebsite: number; totalFound: number; fetched: number } | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
 
@@ -193,17 +193,34 @@ function SpanishLeadsPanel() {
         .select("*")
         .eq("id", (job as any).id)
         .single();
-      const jd = jobData as any;
-      setDebugInfo(`Poll #${attempts + 1}: status=${jd?.status}, imported=${jd?.imported_count || 0}`);
+        const jd = jobData as any;
+        let fetchedCount = 0;
+
+        if (jd?.status === "completed") {
+          const { count } = await supabase
+            .from("brandaro_leads_master")
+            .select("id", { count: "exact", head: true })
+            .eq("language", "spanish")
+            .eq("source", "brandaro-lead-discovery");
+          fetchedCount = count || 0;
+        }
+
+        setDebugInfo(`Poll #${attempts + 1}: status=${jd?.status}, found=${jd?.total_found || 0}, imported=${jd?.imported_count || 0}, fetched=${fetchedCount}`);
       if (jd?.status === "completed" || jd?.status === "failed") {
-        const result = { status: jd.status, imported: jd.imported_count || 0, noWebsite: jd.no_website_count || 0 };
+          const result = {
+            status: jd.status,
+            imported: jd.imported_count || 0,
+            noWebsite: jd.no_website_count || 0,
+            totalFound: jd.total_found || 0,
+            fetched: fetchedCount,
+          };
         setSearchProgress(100);
         setLastSearchResult(result);
         return result;
       }
       attempts++;
     }
-    const timeoutResult = { status: "timeout", imported: 0, noWebsite: 0 };
+    const timeoutResult = { status: "timeout", imported: 0, noWebsite: 0, totalFound: 0, fetched: 0 };
     setLastSearchResult(timeoutResult);
     return timeoutResult;
   };
@@ -221,8 +238,10 @@ function SpanishLeadsPanel() {
     setSearchStep(0);
     try {
       const result = await runSingleSearch(cityToSearch);
-      queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] });
-      queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] }),
+        queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] }),
+      ]);
       if (result.status === "completed") {
         toast({ title: "✅ Búsqueda completada", description: `${result.imported} leads importados (${result.noWebsite} sin sitio web)` });
       } else {
@@ -230,7 +249,7 @@ function SpanishLeadsPanel() {
       }
     } catch (err: any) {
       setDebugInfo(`Error: ${err.message}`);
-      setLastSearchResult({ status: "error", imported: 0, noWebsite: 0 });
+      setLastSearchResult({ status: "error", imported: 0, noWebsite: 0, totalFound: 0, fetched: 0 });
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsSearching(false);
@@ -254,7 +273,10 @@ function SpanishLeadsPanel() {
       }
     }
 
-    queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] }),
+        queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] }),
+      ]);
     toast({ title: "✅ Búsqueda masiva completada", description: `${totalImported} leads importados de ${completed} ciudades` });
     setIsBulkRunning(false);
     setSelectedCities([]);
@@ -387,21 +409,39 @@ function SpanishLeadsPanel() {
               {/* Search result feedback */}
               {lastSearchResult && !isSearching && (
                 <div className={`p-4 rounded-lg border ${
-                  lastSearchResult.status === "completed" ? "border-green-500/30 bg-green-500/5" :
+                  lastSearchResult.status === "completed" ? "border-primary/30 bg-primary/5" :
                   "border-destructive/30 bg-destructive/5"
                 }`}>
                   {lastSearchResult.status === "completed" ? (
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      <div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium text-sm">
+                            <DualLabel es={`${lastSearchResult.imported} negocios guardados`} en={`${lastSearchResult.imported} businesses saved`} />
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {lastSearchResult.noWebsite} sin sitio web (no website) • {lastSearchResult.totalFound} detectados
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
                         <p className="font-medium text-sm">
-                          <DualLabel es={`${lastSearchResult.imported} negocios encontrados`} en={`${lastSearchResult.imported} businesses found`} />
+                          <DualLabel es={`Detectados: ${lastSearchResult.totalFound}`} en={`Found: ${lastSearchResult.totalFound}`} />
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {lastSearchResult.noWebsite} sin sitio web (no website)
+                          <DualLabel es={`Guardados: ${lastSearchResult.imported}`} en={`Saved: ${lastSearchResult.imported}`} />
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          <DualLabel es={`Visibles: ${lastSearchResult.fetched}`} en={`Visible: ${lastSearchResult.fetched}`} />
                         </p>
                       </div>
-                    </div>
+                      {lastSearchResult.imported === 0 && lastSearchResult.totalFound > 0 && (
+                        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+                          <DualLabel es="Leads encontrados pero no guardados — revisa la lógica de inserción" en="Leads found but not saved — check insertion logic" />
+                        </div>
+                      )}
+                      </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
