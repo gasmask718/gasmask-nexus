@@ -492,7 +492,8 @@ function SpanishLeadsPanel() {
           </Card>
 
           {/* ── Instant Search Results Table ── */}
-          {searchResults.length > 0 && !isSearching && (
+          <div ref={resultsRef}>
+          {searchResults.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
