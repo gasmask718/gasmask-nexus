@@ -60,6 +60,7 @@ export const UnforgettableModule: DynastyModule = {
     { path: '/venues', component: UTVenuesManagement, label: 'Venues Management', icon: Building, requiresAuth: true },
     { path: '/staff-management', component: UTStaffManagement, label: 'Staff Management', icon: Users, requiresAuth: true },
     { path: '/platform-stats', component: UTPlatformStats, label: 'Platform Stats', icon: BarChart3, requiresAuth: true },
+    { path: '/ambassadors', component: UTAmbassadorManagement, label: 'Ambassadors', icon: Users, requiresAuth: true },
     { path: '/staff', component: UnforgettableStaff, label: 'Staff', icon: UserCog, requiresAuth: true },
     { path: '/staff/:staffId', component: UnforgettableStaffProfile, label: 'Staff Profile', icon: UserCog, requiresAuth: true },
     { path: '/scheduling', component: UnforgettableScheduling, label: 'Scheduling', icon: CalendarDays, requiresAuth: true },
