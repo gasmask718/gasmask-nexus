@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Search, Loader2, CheckCircle2, XCircle, Clock, MapPin,
-  Play, Pause, Trash2, RotateCcw, Zap, Globe
+  Play, Pause, Trash2, RotateCcw, Zap, Globe, Flag
 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
