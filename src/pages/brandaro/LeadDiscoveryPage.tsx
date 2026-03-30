@@ -287,14 +287,14 @@ function SpanishLeadsPanel() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Globe className="h-4 w-4 text-amber-500" /> Buscador de Leads — Mercado Español
+                <Globe className="h-4 w-4 text-primary" /> <DualLabel es="Buscador de Leads — Mercado Español" en="Lead Finder — Spanish Market" />
               </CardTitle>
-              <CardDescription>Encuentra negocios sin sitio web en países hispanohablantes</CardDescription>
+              <CardDescription><DualLabel es="Encuentra negocios sin sitio web en países hispanohablantes" en="Find businesses without websites in Spanish-speaking countries" /></CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Country buttons */}
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">País / Región</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium"><DualLabel es="País / Región" en="Country / Region" /></label>
                 <div className="flex flex-wrap gap-2">
                   {SPANISH_COUNTRIES.map(c => (
                     <Button
