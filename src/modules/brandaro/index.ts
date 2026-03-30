@@ -22,6 +22,7 @@ import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import SystemStatusPage from '@/pages/brandaro/SystemStatusPage';
 import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter';
 import SpanishVADashboard from '@/pages/brandaro/SpanishVADashboard';
+import SpanishManagerDashboard from '@/pages/brandaro/SpanishManagerDashboard';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -49,6 +50,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
   { path: '/os/brandaro/system-status', label: 'System Status', icon: Activity },
   { path: '/os/brandaro/va-espanol', label: 'Panel VA Español', icon: Globe },
+  { path: '/os/brandaro/manager-espanol', label: 'Gerente Español', icon: Users },
   { path: '/brandaro/phone-numbers', label: 'Phone Numbers', icon: Smartphone },
 ];
 
@@ -88,6 +90,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/closer-ai', component: CloserAIPage, label: 'Closer AI', icon: Brain, requiresAuth: true },
     { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
     { path: '/va-espanol', component: SpanishVADashboard, label: 'Panel VA Español', icon: Globe, requiresAuth: true },
+    { path: '/manager-espanol', component: SpanishManagerDashboard, label: 'Gerente Español', icon: Users, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,

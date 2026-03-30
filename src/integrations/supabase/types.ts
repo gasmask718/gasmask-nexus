@@ -14050,6 +14050,48 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_lead_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string
+          assigned_to: string
+          id: string
+          lead_id: string
+          notes: string | null
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by: string
+          assigned_to: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string
+          assigned_to?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_lead_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_lead_assignments_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_lead_events: {
         Row: {
           client_id: string | null
@@ -14252,10 +14294,12 @@ export type Database = {
       }
       brandaro_leads_master: {
         Row: {
+          assigned_manager_id: string | null
           assigned_va_id: string | null
           business_name: string
           created_at: string | null
           email: string | null
+          english_description: string | null
           has_website: boolean | null
           id: string
           industry: string | null
@@ -14265,15 +14309,18 @@ export type Database = {
           phone: string | null
           region: string | null
           source: string | null
+          spanish_description: string | null
           status: string | null
           updated_at: string | null
           website: string | null
         }
         Insert: {
+          assigned_manager_id?: string | null
           assigned_va_id?: string | null
           business_name: string
           created_at?: string | null
           email?: string | null
+          english_description?: string | null
           has_website?: boolean | null
           id?: string
           industry?: string | null
@@ -14283,15 +14330,18 @@ export type Database = {
           phone?: string | null
           region?: string | null
           source?: string | null
+          spanish_description?: string | null
           status?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Update: {
+          assigned_manager_id?: string | null
           assigned_va_id?: string | null
           business_name?: string
           created_at?: string | null
           email?: string | null
+          english_description?: string | null
           has_website?: boolean | null
           id?: string
           industry?: string | null
@@ -14301,11 +14351,19 @@ export type Database = {
           phone?: string | null
           region?: string | null
           source?: string | null
+          spanish_description?: string | null
           status?: string | null
           updated_at?: string | null
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "brandaro_leads_master_assigned_manager_id_fkey"
+            columns: ["assigned_manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "brandaro_leads_master_assigned_va_id_fkey"
             columns: ["assigned_va_id"]
@@ -17736,6 +17794,48 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "brandaro_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_team_hierarchy: {
+        Row: {
+          created_at: string | null
+          id: string
+          manager_id: string
+          status: string | null
+          team_name: string | null
+          va_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          manager_id: string
+          status?: string | null
+          team_name?: string | null
+          va_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          manager_id?: string
+          status?: string | null
+          team_name?: string | null
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_team_hierarchy_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_team_hierarchy_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
