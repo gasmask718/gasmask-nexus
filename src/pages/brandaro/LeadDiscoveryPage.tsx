@@ -274,10 +274,10 @@ function SpanishLeadsPanel() {
       {/* Tab toggle */}
       <div className="flex gap-2">
         <Button size="sm" variant={activeTab === "search" ? "default" : "outline"} onClick={() => setActiveTab("search")}>
-          <Search className="h-3.5 w-3.5 mr-1" /> Buscar Nuevos Leads
+          <Search className="h-3.5 w-3.5 mr-1" /> <DualLabel es="Buscar Nuevos Leads" en="Search New Leads" />
         </Button>
         <Button size="sm" variant={activeTab === "existing" ? "default" : "outline"} onClick={() => setActiveTab("existing")}>
-          <Flag className="h-3.5 w-3.5 mr-1" /> Leads Existentes ({spanishLeads.length})
+          <Flag className="h-3.5 w-3.5 mr-1" /> <DualLabel es="Leads Existentes" en="Existing Leads" /> ({spanishLeads.length})
         </Button>
       </div>
 
