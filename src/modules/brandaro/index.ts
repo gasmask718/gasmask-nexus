@@ -53,6 +53,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/va-espanol', label: 'Panel VA Español', icon: Globe },
   { path: '/os/brandaro/manager-espanol', label: 'Gerente Español', icon: Users },
   { path: '/brandaro/phone-numbers', label: 'Phone Numbers', icon: Smartphone },
+  { path: '/os/brandaro/global-control', label: 'Global Control', icon: Globe },
 ];
 
 export const BrandaroModule: DynastyModule = {
