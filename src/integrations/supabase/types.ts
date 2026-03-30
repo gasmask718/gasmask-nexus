@@ -14440,6 +14440,7 @@ export type Database = {
           location: string | null
           lock_assigned_by: string | null
           phone: string | null
+          pipeline: string
           priority_tier: string | null
           region: string | null
           source: string | null
@@ -14464,6 +14465,7 @@ export type Database = {
           location?: string | null
           lock_assigned_by?: string | null
           phone?: string | null
+          pipeline?: string
           priority_tier?: string | null
           region?: string | null
           source?: string | null
@@ -14488,6 +14490,7 @@ export type Database = {
           location?: string | null
           lock_assigned_by?: string | null
           phone?: string | null
+          pipeline?: string
           priority_tier?: string | null
           region?: string | null
           source?: string | null
