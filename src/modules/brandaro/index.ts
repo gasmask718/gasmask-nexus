@@ -93,6 +93,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/system-status', component: SystemStatusPage, label: 'System Status', icon: Activity, requiresAuth: true },
     { path: '/va-espanol', component: SpanishVADashboard, label: 'Panel VA Español', icon: Globe, requiresAuth: true },
     { path: '/manager-espanol', component: SpanishManagerDashboard, label: 'Gerente Español', icon: Users, requiresAuth: true },
+    { path: '/global-control', component: BrandaroGlobalControl, label: 'Global Control', icon: Globe, requiresAuth: true },
   ],
   Dashboard: BrandaroDashboard,
   sidebarItems,
