@@ -119,6 +119,7 @@ function SpanishLeadsPanel() {
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
