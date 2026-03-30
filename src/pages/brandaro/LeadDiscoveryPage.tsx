@@ -236,6 +236,14 @@ function SpanishLeadsPanel() {
       setIsSearching(false);
     }
   };
+
+  const handleBulkSearch = async () => {
+    if (!searchIndustry || !searchCountry || selectedCities.length === 0) return;
+    setIsBulkRunning(true);
+    let totalImported = 0;
+    let completed = 0;
+
+    for (const city of selectedCities) {
       try {
         const result = await runSingleSearch(city);
         totalImported += result.imported;
