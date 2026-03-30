@@ -13,7 +13,8 @@ import { toast } from 'sonner';
 import {
   Users, Clock, DollarSign, CheckCircle, XCircle, Search,
   Trophy, TrendingUp, Link2, Activity, Wallet, Copy,
-  Eye, ArrowUpRight, Hash, FlaskConical, Loader2
+  Eye, ArrowUpRight, Hash, FlaskConical, Loader2,
+  Sparkles, AlertTriangle, Zap, Brain, ShieldAlert, Star
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -22,25 +23,22 @@ const TABLE = 'unforgettable_ambassadors' as const;
 
 const normalizeAmbassadorStatus = (status?: string | null) => {
   const normalized = (status || '').trim().toLowerCase();
-
-  if (!normalized || normalized === 'new' || normalized === 'pending_review') {
-    return 'pending';
-  }
-
-  if (normalized === 'approved') {
-    return 'active';
-  }
-
-  if (normalized === 'inactive') {
-    return 'suspended';
-  }
-
+  if (!normalized || normalized === 'new' || normalized === 'pending_review') return 'pending';
+  if (normalized === 'approved') return 'active';
+  if (normalized === 'inactive') return 'suspended';
   return normalized;
 };
 
 const getAmbassadorStatusLabel = (status?: string | null) => {
   const raw = (status || '').trim();
   return raw || 'pending';
+};
+
+const tierConfig: Record<string, { color: string; icon: string; bg: string }> = {
+  legend: { color: 'text-amber-400', icon: '👑', bg: 'bg-amber-500/10 border-amber-500/30' },
+  elite: { color: 'text-purple-400', icon: '💎', bg: 'bg-purple-500/10 border-purple-500/30' },
+  rising: { color: 'text-blue-400', icon: '🚀', bg: 'bg-blue-500/10 border-blue-500/30' },
+  starter: { color: 'text-muted-foreground', icon: '🌱', bg: 'bg-muted/50 border-border' },
 };
 
 export default function UTAmbassadorManagement() {
@@ -71,20 +69,23 @@ export default function UTAmbassadorManagement() {
   const [healthLogs, setHealthLogs] = useState<any[]>([]);
   const [monitorRunning, setMonitorRunning] = useState(false);
 
+  // AI Insights
+  const [insights, setInsights] = useState<any[]>([]);
+  const [insightsRunning, setInsightsRunning] = useState(false);
+
   const fetchAll = async () => {
-    const [ambRes, refRes, payRes, healthRes] = await Promise.all([
+    const [ambRes, refRes, payRes, healthRes, insightRes] = await Promise.all([
       supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
       (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
       (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
       (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(20),
+      (supabase as any).from('ut_ambassador_insights').select('*').order('created_at', { ascending: false }).limit(50),
     ]);
-    if (ambRes.data) {
-      console.log('Loaded ambassadors:', ambRes.data);
-      setAmbassadors(ambRes.data);
-    }
+    if (ambRes.data) setAmbassadors(ambRes.data);
     if (refRes.data) setReferrals(refRes.data);
     if (payRes.data) setPayouts(payRes.data);
     if (healthRes.data) setHealthLogs(healthRes.data);
+    if (insightRes.data) setInsights(insightRes.data);
     setLoading(false);
   };
 
@@ -118,6 +119,8 @@ export default function UTAmbassadorManagement() {
   const totalCommissions = ambassadors.reduce((s, a) => s + Number(a.total_commissions || 0), 0);
   const totalReferralClicks = referrals.length;
   const totalConversions = referrals.filter(r => r.status === 'converted').length;
+  const boostedCount = ambassadors.filter(a => a.is_boosted).length;
+  const riskCount = ambassadors.filter(a => a.risk_level === 'high' || a.risk_level === 'medium').length;
 
   // Leaderboard
   const leaderboard = useMemo(() =>
@@ -142,16 +145,9 @@ export default function UTAmbassadorManagement() {
         .eq('id', amb.id);
       if (error) throw error;
 
-      // Send approval SMS
       try {
         await supabase.functions.invoke('ambassador-notify', {
-          body: {
-            event: 'approved',
-            ambassador_id: amb.id,
-            referral_code: amb.referral_code,
-            name: amb.full_name,
-            phone: amb.phone,
-          },
+          body: { event: 'approved', ambassador_id: amb.id, referral_code: amb.referral_code, name: amb.full_name, phone: amb.phone },
         });
       } catch (smsErr) {
         console.warn('SMS failed, ambassador still approved:', smsErr);
@@ -203,22 +199,16 @@ export default function UTAmbassadorManagement() {
     const { error } = await (supabase as any).from('ut_ambassador_payouts').update(updates).eq('id', payoutId);
     if (error) { toast.error('Failed to update payout'); return; }
 
-    // Send SMS when paid
     if (action === 'paid') {
       const payout = payouts.find(p => p.id === payoutId);
       if (payout) {
         try {
           await supabase.functions.invoke('ambassador-notify', {
-            body: {
-              event: 'payout_paid',
-              ambassador_id: payout.ambassador_id,
-              payout_amount: payout.commission_amount,
-            },
+            body: { event: 'payout_paid', ambassador_id: payout.ambassador_id, payout_amount: payout.commission_amount },
           });
         } catch {}
       }
 
-      // Update ambassador payout tracking
       const amb = ambassadors.find(a => a.id === payout?.ambassador_id);
       if (amb) {
         await supabase.from(TABLE).update({
@@ -253,6 +243,12 @@ export default function UTAmbassadorManagement() {
     return 'bg-amber-500/20 text-amber-400';
   };
 
+  const insightSeverityIcon = (s: string) => {
+    if (s === 'warning') return <AlertTriangle className="h-4 w-4 text-amber-400" />;
+    if (s === 'success') return <Star className="h-4 w-4 text-green-400" />;
+    return <Brain className="h-4 w-4 text-blue-400" />;
+  };
+
   const runPipelineTest = async () => {
     setPipelineRunning(true);
     setPipelineResult(null);
@@ -260,11 +256,8 @@ export default function UTAmbassadorManagement() {
       const { data, error } = await supabase.functions.invoke('run-ut-ambassador-pipeline-test');
       if (error) throw error;
       setPipelineResult(data);
-      if (data?.success) {
-        toast.success('Pipeline test passed ✅');
-      } else {
-        toast.error(`Pipeline test failed at: ${data?.failure_point || 'unknown'}`);
-      }
+      if (data?.success) toast.success('Pipeline test passed ✅');
+      else toast.error(`Pipeline test failed at: ${data?.failure_point || 'unknown'}`);
     } catch (err: any) {
       setPipelineResult({ success: false, error: err.message });
       toast.error('Pipeline test error');
@@ -278,16 +271,31 @@ export default function UTAmbassadorManagement() {
     try {
       const { data, error } = await supabase.functions.invoke('monitor-ut-ambassador-pipeline');
       if (error) throw error;
-      if (data?.success) {
-        toast.success(`Monitor check passed ✅ ${data.auto_healed > 0 ? `(${data.auto_healed} records auto-healed)` : ''}`);
-      } else {
-        toast.error(`Monitor detected failure: ${data?.failure_point || 'unknown'}`);
-      }
+      if (data?.success) toast.success(`Monitor check passed ✅ ${data.auto_healed > 0 ? `(${data.auto_healed} records auto-healed)` : ''}`);
+      else toast.error(`Monitor detected failure: ${data?.failure_point || 'unknown'}`);
       fetchAll();
     } catch (err: any) {
       toast.error('Monitor error: ' + err.message);
     } finally {
       setMonitorRunning(false);
+    }
+  };
+
+  const runInsightsEngine = async () => {
+    setInsightsRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-ut-ambassador-insights');
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`AI Insights: ${data.insights_generated} generated, ${data.tier_changes} tier changes`);
+      } else {
+        toast.error('Insights engine failed');
+      }
+      fetchAll();
+    } catch (err: any) {
+      toast.error('Insights error: ' + err.message);
+    } finally {
+      setInsightsRunning(false);
     }
   };
 
@@ -299,29 +307,21 @@ export default function UTAmbassadorManagement() {
             Ambassador Revenue Engine
           </h1>
           <p className="text-sm text-muted-foreground">
-            Track referrals, attribute revenue, manage commissions & payouts
+            AI-optimized referral tracking, commissions & performance intelligence
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={runMonitor}
-            disabled={monitorRunning}
-            className="gap-2"
-          >
-            {monitorRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-            {monitorRunning ? 'Monitoring...' : 'Run Health Check'}
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={runInsightsEngine} disabled={insightsRunning} className="gap-2">
+            {insightsRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            {insightsRunning ? 'Analyzing...' : 'Run AI Optimizer'}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={runPipelineTest}
-            disabled={pipelineRunning}
-            className="gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={runMonitor} disabled={monitorRunning} className="gap-2">
+            {monitorRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
+            {monitorRunning ? 'Monitoring...' : 'Health Check'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={runPipelineTest} disabled={pipelineRunning} className="gap-2">
             {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
-            {pipelineRunning ? 'Running Test...' : 'Run Pipeline Test'}
+            {pipelineRunning ? 'Testing...' : 'Pipeline Test'}
           </Button>
         </div>
       </div>
@@ -345,15 +345,12 @@ export default function UTAmbassadorManagement() {
                 </div>
               ))}
             </div>
-            {pipelineResult.test_email && (
-              <p className="text-xs text-muted-foreground mt-2">Test email: {pipelineResult.test_email} • SMS: {pipelineResult.sms_sent ? '✅' : '⚠️ skipped'}</p>
-            )}
           </CardContent>
         </Card>
       )}
 
       {/* KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
         <Card><CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1"><Users className="h-4 w-4 text-muted-foreground" /><span className="text-xs text-muted-foreground">Total</span></div>
           <p className="text-2xl font-bold">{ambassadors.length}</p>
@@ -367,27 +364,36 @@ export default function UTAmbassadorManagement() {
           <p className="text-2xl font-bold text-green-400">{activeCount}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
-          <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-blue-400" /><span className="text-xs text-muted-foreground">Referral Revenue</span></div>
+          <div className="flex items-center gap-2 mb-1"><TrendingUp className="h-4 w-4 text-blue-400" /><span className="text-xs text-muted-foreground">Revenue</span></div>
           <p className="text-2xl font-bold">${totalRevenue.toLocaleString()}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
-          <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-emerald-400" /><span className="text-xs text-muted-foreground">Commissions Owed</span></div>
+          <div className="flex items-center gap-2 mb-1"><DollarSign className="h-4 w-4 text-emerald-400" /><span className="text-xs text-muted-foreground">Commissions</span></div>
           <p className="text-2xl font-bold text-emerald-400">${totalCommissions.toLocaleString()}</p>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1"><Activity className="h-4 w-4 text-purple-400" /><span className="text-xs text-muted-foreground">Conversions</span></div>
-          <p className="text-2xl font-bold">{totalConversions}<span className="text-xs text-muted-foreground ml-1">/ {totalReferralClicks} clicks</span></p>
+          <p className="text-2xl font-bold">{totalConversions}</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <div className="flex items-center gap-2 mb-1"><Zap className="h-4 w-4 text-amber-400" /><span className="text-xs text-muted-foreground">Boosted</span></div>
+          <p className="text-2xl font-bold text-amber-400">{boostedCount}</p>
+        </CardContent></Card>
+        <Card><CardContent className="pt-4">
+          <div className="flex items-center gap-2 mb-1"><ShieldAlert className="h-4 w-4 text-red-400" /><span className="text-xs text-muted-foreground">At Risk</span></div>
+          <p className="text-2xl font-bold text-red-400">{riskCount}</p>
         </CardContent></Card>
       </div>
 
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="bg-muted/50">
+        <TabsList className="bg-muted/50 flex-wrap">
           <TabsTrigger value="ambassadors" className="gap-1"><Users className="h-3.5 w-3.5" />Ambassadors</TabsTrigger>
           <TabsTrigger value="leaderboard" className="gap-1"><Trophy className="h-3.5 w-3.5" />Leaderboard</TabsTrigger>
-          <TabsTrigger value="referrals" className="gap-1"><Link2 className="h-3.5 w-3.5" />Referral Activity</TabsTrigger>
+          <TabsTrigger value="insights" className="gap-1"><Brain className="h-3.5 w-3.5" />AI Insights</TabsTrigger>
+          <TabsTrigger value="referrals" className="gap-1"><Link2 className="h-3.5 w-3.5" />Referrals</TabsTrigger>
           <TabsTrigger value="payouts" className="gap-1"><Wallet className="h-3.5 w-3.5" />Payouts</TabsTrigger>
-          <TabsTrigger value="health" className="gap-1"><Activity className="h-3.5 w-3.5" />System Health</TabsTrigger>
+          <TabsTrigger value="health" className="gap-1"><Activity className="h-3.5 w-3.5" />Health</TabsTrigger>
         </TabsList>
 
         {/* ====== AMBASSADORS TAB ====== */}
@@ -416,7 +422,6 @@ export default function UTAmbassadorManagement() {
                 <div className="text-center py-12">
                   <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">No ambassadors found</p>
-                  <p className="text-xs text-muted-foreground mt-1">Applications from the public form will appear here</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -438,13 +443,18 @@ export default function UTAmbassadorManagement() {
                       {filtered.map((a) => {
                         const normalizedStatus = normalizeAmbassadorStatus(a.status);
                         const statusLabel = getAmbassadorStatusLabel(a.status);
+                        const tier = tierConfig[a.performance_tier] || tierConfig.starter;
 
                         return (
                         <TableRow key={a.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setDetailAmb(a)}>
                           <TableCell>
-                            <div>
-                              <p className="font-medium">{a.full_name}</p>
-                              <p className="text-xs text-muted-foreground">{a.email}</p>
+                            <div className="flex items-center gap-2">
+                              {a.is_boosted && <Zap className="h-4 w-4 text-amber-400" />}
+                              {a.risk_level === 'high' && <ShieldAlert className="h-4 w-4 text-red-400" />}
+                              <div>
+                                <p className="font-medium">{a.full_name}</p>
+                                <p className="text-xs text-muted-foreground">{a.email}</p>
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -455,7 +465,11 @@ export default function UTAmbassadorManagement() {
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell><Badge variant="outline" className="text-xs capitalize">{a.tier}</Badge></TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`text-xs ${tier.bg} ${tier.color}`}>
+                              {tier.icon} {(a.performance_tier || a.tier || 'starter').toUpperCase()}
+                            </Badge>
+                          </TableCell>
                           <TableCell>{a.commission_rate}%</TableCell>
                           <TableCell>
                             <span className="font-medium">{a.total_converted_referrals || 0}</span>
@@ -464,14 +478,7 @@ export default function UTAmbassadorManagement() {
                           <TableCell className="font-medium">${Number(a.total_revenue || 0).toLocaleString()}</TableCell>
                           <TableCell className="text-emerald-400 font-medium">${Number(a.total_commissions || 0).toLocaleString()}</TableCell>
                           <TableCell>
-                            <div className="space-y-1">
-                              <Badge className={statusColor(statusLabel)}>{statusLabel}</Badge>
-                              {statusLabel.toLowerCase() !== normalizedStatus && (
-                                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                                  normalized: {normalizedStatus}
-                                </p>
-                              )}
-                            </div>
+                            <Badge className={statusColor(statusLabel)}>{statusLabel}</Badge>
                           </TableCell>
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <div className="flex gap-1">
@@ -523,6 +530,7 @@ export default function UTAmbassadorManagement() {
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>Ambassador</TableHead>
                       <TableHead>Tier</TableHead>
+                      <TableHead>Conv Rate</TableHead>
                       <TableHead>Referrals</TableHead>
                       <TableHead>Converted</TableHead>
                       <TableHead>Revenue</TableHead>
@@ -530,29 +538,113 @@ export default function UTAmbassadorManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaderboard.map((a, i) => (
-                      <TableRow key={a.id} className={i < 3 ? 'bg-amber-500/5' : ''}>
-                        <TableCell>
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-muted-foreground">{i + 1}</span>}
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-semibold">{a.full_name}</p>
-                            <p className="text-xs text-muted-foreground">{a.state || '—'}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell><Badge variant="outline" className="capitalize">{a.tier}</Badge></TableCell>
-                        <TableCell>{a.total_referrals || 0}</TableCell>
-                        <TableCell className="font-medium">{a.total_converted_referrals || 0}</TableCell>
-                        <TableCell className="font-bold">${Number(a.total_revenue || 0).toLocaleString()}</TableCell>
-                        <TableCell className="text-emerald-400 font-bold">${Number(a.total_commissions || 0).toLocaleString()}</TableCell>
-                      </TableRow>
-                    ))}
+                    {leaderboard.map((a, i) => {
+                      const tier = tierConfig[a.performance_tier] || tierConfig.starter;
+                      return (
+                        <TableRow key={a.id} className={i < 3 ? 'bg-amber-500/5' : ''}>
+                          <TableCell>
+                            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-muted-foreground">{i + 1}</span>}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {a.is_boosted && <Zap className="h-4 w-4 text-amber-400" />}
+                              <div>
+                                <p className="font-semibold">{a.full_name}</p>
+                                <p className="text-xs text-muted-foreground">{a.state || '—'}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={`${tier.bg} ${tier.color}`}>
+                              {tier.icon} {(a.performance_tier || 'starter').toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className={Number(a.conversion_rate || 0) >= 15 ? 'text-green-400 font-medium' : ''}>
+                              {Number(a.conversion_rate || 0).toFixed(1)}%
+                            </span>
+                          </TableCell>
+                          <TableCell>{a.total_referrals || 0}</TableCell>
+                          <TableCell className="font-medium">{a.total_converted_referrals || 0}</TableCell>
+                          <TableCell className="font-bold">${Number(a.total_revenue || 0).toLocaleString()}</TableCell>
+                          <TableCell className="text-emerald-400 font-bold">${Number(a.total_commissions || 0).toLocaleString()}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ====== AI INSIGHTS TAB ====== */}
+        <TabsContent value="insights">
+          <div className="space-y-4">
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <Card className="border-amber-500/20 bg-amber-500/5">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1"><Star className="h-4 w-4 text-amber-400" /><span className="text-xs">Top Performers</span></div>
+                  <p className="text-xl font-bold">{ambassadors.filter(a => a.performance_tier === 'elite' || a.performance_tier === 'legend').length}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-green-500/20 bg-green-500/5">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1"><Zap className="h-4 w-4 text-green-400" /><span className="text-xs">Boosted</span></div>
+                  <p className="text-xl font-bold">{boostedCount}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-red-500/20 bg-red-500/5">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1"><ShieldAlert className="h-4 w-4 text-red-400" /><span className="text-xs">Risk Alerts</span></div>
+                  <p className="text-xl font-bold">{riskCount}</p>
+                </CardContent>
+              </Card>
+              <Card className="border-blue-500/20 bg-blue-500/5">
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-1"><Brain className="h-4 w-4 text-blue-400" /><span className="text-xs">Total Insights</span></div>
+                  <p className="text-xl font-bold">{insights.length}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-purple-400" />
+                  AI Performance Insights
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {insights.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Brain className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                    <p>No insights yet. Click "Run AI Optimizer" to analyze ambassador performance.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                    {insights.map((insight) => (
+                      <div key={insight.id} className={`p-3 rounded-lg border flex items-start gap-3 ${
+                        insight.severity === 'warning' ? 'border-amber-500/30 bg-amber-500/5' :
+                        insight.severity === 'success' ? 'border-green-500/30 bg-green-500/5' :
+                        'border-blue-500/30 bg-blue-500/5'
+                      }`}>
+                        {insightSeverityIcon(insight.severity)}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-[10px]">{insight.insight_type?.replace(/_/g, ' ')}</Badge>
+                            <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, HH:mm')}</span>
+                          </div>
+                          <p className="text-sm">{insight.insight_text}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         {/* ====== REFERRAL ACTIVITY TAB ====== */}
@@ -563,7 +655,7 @@ export default function UTAmbassadorManagement() {
             </CardHeader>
             <CardContent>
               {referrals.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No referral activity yet. Clicks, leads, and conversions will appear here.</p>
+                <p className="text-muted-foreground text-center py-8">No referral activity yet.</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -611,7 +703,7 @@ export default function UTAmbassadorManagement() {
             </CardHeader>
             <CardContent>
               {payouts.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No payouts created yet. Use the "Payout" button on active ambassadors to create one.</p>
+                <p className="text-muted-foreground text-center py-8">No payouts created yet.</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -661,14 +753,11 @@ export default function UTAmbassadorManagement() {
         <TabsContent value="health">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-blue-400" />
-                Pipeline Health Monitor
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-blue-400" />Pipeline Health Monitor</CardTitle>
             </CardHeader>
             <CardContent>
               {healthLogs.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">No health checks recorded yet. Click "Run Health Check" to start monitoring.</p>
+                <p className="text-muted-foreground text-center py-8">No health checks recorded yet.</p>
               ) : (
                 <Table>
                   <TableHeader>
@@ -701,9 +790,7 @@ export default function UTAmbassadorManagement() {
                         <TableCell>
                           {log.alert_sent ? <Badge className="bg-amber-500/20 text-amber-400">📱 SMS Sent</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                         </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {format(new Date(log.created_at), 'MMM d, HH:mm:ss')}
-                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, HH:mm:ss')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -749,7 +836,11 @@ export default function UTAmbassadorManagement() {
       <Dialog open={!!detailAmb} onOpenChange={() => setDetailAmb(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>{detailAmb?.full_name}</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              {detailAmb?.full_name}
+              {detailAmb?.is_boosted && <Badge className="bg-amber-500/20 text-amber-400 text-xs"><Zap className="h-3 w-3 mr-1" />BOOSTED</Badge>}
+              {detailAmb?.risk_level === 'high' && <Badge className="bg-red-500/20 text-red-400 text-xs"><ShieldAlert className="h-3 w-3 mr-1" />HIGH RISK</Badge>}
+            </DialogTitle>
           </DialogHeader>
           {detailAmb && (
             <div className="space-y-4">
@@ -757,9 +848,15 @@ export default function UTAmbassadorManagement() {
                 <div><span className="text-muted-foreground">Email:</span> <span className="font-medium">{detailAmb.email || '—'}</span></div>
                 <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium">{detailAmb.phone || '—'}</span></div>
                 <div><span className="text-muted-foreground">State:</span> <span className="font-medium">{detailAmb.state || '—'}</span></div>
-                <div><span className="text-muted-foreground">Tier:</span> <Badge variant="outline" className="capitalize">{detailAmb.tier}</Badge></div>
+                <div><span className="text-muted-foreground">Tier:</span>
+                  <Badge variant="outline" className={`ml-1 ${(tierConfig[detailAmb.performance_tier] || tierConfig.starter).bg} ${(tierConfig[detailAmb.performance_tier] || tierConfig.starter).color}`}>
+                    {(tierConfig[detailAmb.performance_tier] || tierConfig.starter).icon} {(detailAmb.performance_tier || 'starter').toUpperCase()}
+                  </Badge>
+                </div>
                 <div><span className="text-muted-foreground">Rate:</span> <span className="font-medium">{detailAmb.commission_rate}%</span></div>
                 <div><span className="text-muted-foreground">Status:</span> <Badge className={statusColor(getAmbassadorStatusLabel(detailAmb.status))}>{getAmbassadorStatusLabel(detailAmb.status)}</Badge></div>
+                <div><span className="text-muted-foreground">Conv Rate:</span> <span className="font-medium">{Number(detailAmb.conversion_rate || 0).toFixed(1)}%</span></div>
+                <div><span className="text-muted-foreground">Risk:</span> <span className={`font-medium ${detailAmb.risk_level === 'high' ? 'text-red-400' : detailAmb.risk_level === 'medium' ? 'text-amber-400' : 'text-green-400'}`}>{detailAmb.risk_level || 'low'}</span></div>
               </div>
 
               <div className="p-3 bg-muted/30 rounded-lg space-y-2">
@@ -789,6 +886,7 @@ export default function UTAmbassadorManagement() {
                 <p>Joined: {format(new Date(detailAmb.created_at), 'MMM d, yyyy')}</p>
                 {detailAmb.approved_at && <p>Approved: {format(new Date(detailAmb.approved_at), 'MMM d, yyyy')}</p>}
                 {detailAmb.last_conversion_at && <p>Last Conversion: {format(new Date(detailAmb.last_conversion_at), 'MMM d, yyyy')}</p>}
+                {detailAmb.last_insight_at && <p>Last AI Analysis: {format(new Date(detailAmb.last_insight_at), 'MMM d, HH:mm')}</p>}
               </div>
             </div>
           )}
