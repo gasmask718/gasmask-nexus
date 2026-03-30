@@ -73368,6 +73368,7 @@ export type Database = {
           active_referral_link: string | null
           approved_at: string | null
           approved_by: string | null
+          auth_user_id: string | null
           auto_managed: boolean
           avg_revenue_per_conversion: number | null
           boost_reason: string | null
@@ -73413,6 +73414,7 @@ export type Database = {
           active_referral_link?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auth_user_id?: string | null
           auto_managed?: boolean
           avg_revenue_per_conversion?: number | null
           boost_reason?: string | null
@@ -73458,6 +73460,7 @@ export type Database = {
           active_referral_link?: string | null
           approved_at?: string | null
           approved_by?: string | null
+          auth_user_id?: string | null
           auto_managed?: boolean
           avg_revenue_per_conversion?: number | null
           boost_reason?: string | null
