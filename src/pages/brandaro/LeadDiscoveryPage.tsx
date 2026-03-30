@@ -227,7 +227,11 @@ function SpanishLeadsPanel() {
             .eq("source", "brandaro-lead-discovery")
             .order("created_at", { ascending: false })
             .limit(jd.imported_count + 5);
+          console.log("Fetched Leads:", newLeads?.length, newLeads);
           setSearchResults(newLeads || []);
+          setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+        } else if (jd?.status === "completed" && jd.imported_count === 0) {
+          setSearchResults([]);
         }
         return result;
       }
