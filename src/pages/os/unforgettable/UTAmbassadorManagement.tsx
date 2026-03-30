@@ -273,6 +273,24 @@ export default function UTAmbassadorManagement() {
     }
   };
 
+  const runMonitor = async () => {
+    setMonitorRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('monitor-ut-ambassador-pipeline');
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Monitor check passed ✅ ${data.auto_healed > 0 ? `(${data.auto_healed} records auto-healed)` : ''}`);
+      } else {
+        toast.error(`Monitor detected failure: ${data?.failure_point || 'unknown'}`);
+      }
+      fetchAll();
+    } catch (err: any) {
+      toast.error('Monitor error: ' + err.message);
+    } finally {
+      setMonitorRunning(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
