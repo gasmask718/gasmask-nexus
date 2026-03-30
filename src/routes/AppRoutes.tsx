@@ -194,6 +194,8 @@ const QACommandCenter = lazy(() => import('@/pages/admin/qa/QACommandCenter'));
 const AmbassadorApplications = lazy(() => import('@/pages/admin/AmbassadorApplications'));
 const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
+const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
+const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const AmbassadorEarningsPage = lazy(() => import('@/pages/ambassador/reports').then(m => ({ default: m.AmbassadorEarningsPage })));
 const AmbassadorPayoutsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutsPage })));
 const AmbassadorPayoutStatementPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutStatementPage })));
