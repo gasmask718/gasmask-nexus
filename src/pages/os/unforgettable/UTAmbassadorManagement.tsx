@@ -14,9 +14,10 @@ import {
   Users, Clock, DollarSign, CheckCircle, XCircle, Search,
   Trophy, TrendingUp, Link2, Activity, Wallet, Copy,
   Eye, ArrowUpRight, Hash, FlaskConical, Loader2,
-  Sparkles, AlertTriangle, Zap, Brain, ShieldAlert, Star
+  Sparkles, AlertTriangle, Zap, Brain, ShieldAlert, Star,
+  Gauge, HeartPulse, RefreshCw, Settings, Timer, Shield
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const PINK = '#E91E8C';
 const TABLE = 'unforgettable_ambassadors' as const;
@@ -51,41 +52,45 @@ export default function UTAmbassadorManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [tab, setTab] = useState('ambassadors');
 
-  // Payout dialog
   const [payoutDialog, setPayoutDialog] = useState(false);
   const [payoutTarget, setPayoutTarget] = useState<any>(null);
   const [payoutAmount, setPayoutAmount] = useState('');
   const [payoutNotes, setPayoutNotes] = useState('');
   const [payoutMethod, setPayoutMethod] = useState('');
 
-  // Detail dialog
   const [detailAmb, setDetailAmb] = useState<any>(null);
 
-  // Pipeline test
   const [pipelineRunning, setPipelineRunning] = useState(false);
   const [pipelineResult, setPipelineResult] = useState<any>(null);
 
-  // Health monitoring
   const [healthLogs, setHealthLogs] = useState<any[]>([]);
   const [monitorRunning, setMonitorRunning] = useState(false);
 
-  // AI Insights
   const [insights, setInsights] = useState<any[]>([]);
   const [insightsRunning, setInsightsRunning] = useState(false);
 
+  // Autonomous ops data
+  const [opsLogs, setOpsLogs] = useState<any[]>([]);
+  const [alertConfig, setAlertConfig] = useState<any>(null);
+  const [optimizerRunning, setOptimizerRunning] = useState(false);
+
   const fetchAll = async () => {
-    const [ambRes, refRes, payRes, healthRes, insightRes] = await Promise.all([
+    const [ambRes, refRes, payRes, healthRes, insightRes, opsRes, configRes] = await Promise.all([
       supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
       (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
       (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
-      (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(20),
-      (supabase as any).from('ut_ambassador_insights').select('*').order('created_at', { ascending: false }).limit(50),
+      (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(50),
+      (supabase as any).from('ut_ambassador_insights').select('*').is('dismissed_at', null).order('created_at', { ascending: false }).limit(50),
+      (supabase as any).from('system_operation_logs').select('*').eq('system_name', 'ut_ambassador_pipeline').order('created_at', { ascending: false }).limit(30),
+      (supabase as any).from('system_alert_config').select('*').eq('system_name', 'ut_ambassador_pipeline').maybeSingle(),
     ]);
     if (ambRes.data) setAmbassadors(ambRes.data);
     if (refRes.data) setReferrals(refRes.data);
     if (payRes.data) setPayouts(payRes.data);
     if (healthRes.data) setHealthLogs(healthRes.data);
     if (insightRes.data) setInsights(insightRes.data);
+    if (opsRes.data) setOpsLogs(opsRes.data);
+    if (configRes.data) setAlertConfig(configRes.data);
     setLoading(false);
   };
 
@@ -96,6 +101,8 @@ export default function UTAmbassadorManagement() {
       .on('postgres_changes', { event: '*', schema: 'public', table: TABLE }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ut_ambassador_referrals' }, fetchAll)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ut_ambassador_payouts' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pipeline_health_logs' }, fetchAll)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'system_operation_logs' }, fetchAll)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, []);
@@ -122,7 +129,17 @@ export default function UTAmbassadorManagement() {
   const boostedCount = ambassadors.filter(a => a.is_boosted).length;
   const riskCount = ambassadors.filter(a => a.risk_level === 'high' || a.risk_level === 'medium').length;
 
-  // Leaderboard
+  // Autonomous Ops metrics
+  const now24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentHealth = healthLogs.filter(l => new Date(l.created_at) > now24h);
+  const failuresLast24h = recentHealth.filter(l => !l.success).length;
+  const alertsSentToday = recentHealth.filter(l => l.alert_sent).length;
+  const autoHealsToday = recentHealth.reduce((s, l) => s + (l.auto_heal_count || 0), 0);
+  const lastHealthCheck = healthLogs[0];
+  const lastDeepTest = healthLogs.find(l => l.check_type === 'deep_test');
+  const lastOptRun = opsLogs.find(l => l.operation_type === 'daily_optimization');
+  const pipelineHealthy = lastHealthCheck?.success !== false;
+
   const leaderboard = useMemo(() =>
     [...ambassadors]
       .filter(a => normalizeAmbassadorStatus(a.status) === 'active')
@@ -137,22 +154,14 @@ export default function UTAmbassadorManagement() {
       const refLink = `https://unforgettabletimesusa.com?ref=${amb.referral_code}`;
       const { error } = await supabase
         .from(TABLE)
-        .update({
-          status: 'active',
-          approved_at: new Date().toISOString(),
-          active_referral_link: refLink,
-        })
+        .update({ status: 'active', approved_at: new Date().toISOString(), active_referral_link: refLink })
         .eq('id', amb.id);
       if (error) throw error;
-
       try {
         await supabase.functions.invoke('ambassador-notify', {
           body: { event: 'approved', ambassador_id: amb.id, referral_code: amb.referral_code, name: amb.full_name, phone: amb.phone },
         });
-      } catch (smsErr) {
-        console.warn('SMS failed, ambassador still approved:', smsErr);
-      }
-
+      } catch {}
       toast.success(`${amb.full_name} approved!`);
       fetchAll();
     } catch (err: any) {
@@ -173,7 +182,6 @@ export default function UTAmbassadorManagement() {
     if (!payoutTarget || !payoutAmount) return;
     const amt = parseFloat(payoutAmount);
     if (isNaN(amt) || amt <= 0) { toast.error('Invalid amount'); return; }
-
     const { error } = await (supabase as any).from('ut_ambassador_payouts').insert({
       ambassador_id: payoutTarget.id,
       commission_amount: amt,
@@ -182,7 +190,6 @@ export default function UTAmbassadorManagement() {
       notes: payoutNotes || null,
       payout_status: 'pending',
     });
-
     if (error) { toast.error('Failed to create payout'); return; }
     toast.success('Payout created');
     setPayoutDialog(false);
@@ -195,10 +202,8 @@ export default function UTAmbassadorManagement() {
   const handlePayoutAction = async (payoutId: string, action: 'approved' | 'paid') => {
     const updates: any = { payout_status: action };
     if (action === 'paid') updates.paid_at = new Date().toISOString();
-
     const { error } = await (supabase as any).from('ut_ambassador_payouts').update(updates).eq('id', payoutId);
     if (error) { toast.error('Failed to update payout'); return; }
-
     if (action === 'paid') {
       const payout = payouts.find(p => p.id === payoutId);
       if (payout) {
@@ -207,17 +212,12 @@ export default function UTAmbassadorManagement() {
             body: { event: 'payout_paid', ambassador_id: payout.ambassador_id, payout_amount: payout.commission_amount },
           });
         } catch {}
-      }
-
-      const amb = ambassadors.find(a => a.id === payout?.ambassador_id);
-      if (amb) {
-        await supabase.from(TABLE).update({
-          payout_status: 'paid',
-          last_payout_at: new Date().toISOString(),
-        }).eq('id', amb.id);
+        const amb = ambassadors.find(a => a.id === payout?.ambassador_id);
+        if (amb) {
+          await supabase.from(TABLE).update({ payout_status: 'paid', last_payout_at: new Date().toISOString() }).eq('id', amb.id);
+        }
       }
     }
-
     toast.success(`Payout marked as ${action}`);
     fetchAll();
   };
@@ -271,13 +271,31 @@ export default function UTAmbassadorManagement() {
     try {
       const { data, error } = await supabase.functions.invoke('monitor-ut-ambassador-pipeline');
       if (error) throw error;
-      if (data?.success) toast.success(`Monitor check passed ✅ ${data.auto_healed > 0 ? `(${data.auto_healed} records auto-healed)` : ''}`);
-      else toast.error(`Monitor detected failure: ${data?.failure_point || 'unknown'}`);
+      if (data?.success) toast.success(`Monitor passed ✅ ${data.auto_healed > 0 ? `(${data.auto_healed} auto-healed)` : ''}`);
+      else toast.error(`Monitor failure: ${data?.failure_point || 'unknown'} (severity: ${data?.severity})`);
       fetchAll();
     } catch (err: any) {
       toast.error('Monitor error: ' + err.message);
     } finally {
       setMonitorRunning(false);
+    }
+  };
+
+  const runOptimizer = async () => {
+    setOptimizerRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('optimize-ut-ambassador-performance');
+      if (error) throw error;
+      if (data?.success) {
+        toast.success(`Optimizer: ${data.processed} processed, ${data.tier_changes} tier changes, ${data.insights_generated} insights`);
+      } else {
+        toast.error('Optimizer failed');
+      }
+      fetchAll();
+    } catch (err: any) {
+      toast.error('Optimizer error: ' + err.message);
+    } finally {
+      setOptimizerRunning(false);
     }
   };
 
@@ -299,6 +317,11 @@ export default function UTAmbassadorManagement() {
     }
   };
 
+  const dismissInsight = async (insightId: string) => {
+    await (supabase as any).from('ut_ambassador_insights').update({ dismissed_at: new Date().toISOString() }).eq('id', insightId);
+    fetchAll();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -307,21 +330,25 @@ export default function UTAmbassadorManagement() {
             Ambassador Revenue Engine
           </h1>
           <p className="text-sm text-muted-foreground">
-            AI-optimized referral tracking, commissions & performance intelligence
+            Autonomous revenue infrastructure with self-monitoring & AI optimization
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={runOptimizer} disabled={optimizerRunning} className="gap-2">
+            {optimizerRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
+            {optimizerRunning ? 'Optimizing...' : 'Run Optimizer'}
+          </Button>
           <Button variant="outline" size="sm" onClick={runInsightsEngine} disabled={insightsRunning} className="gap-2">
             {insightsRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-            {insightsRunning ? 'Analyzing...' : 'Run AI Optimizer'}
+            {insightsRunning ? 'Analyzing...' : 'AI Insights'}
           </Button>
           <Button variant="outline" size="sm" onClick={runMonitor} disabled={monitorRunning} className="gap-2">
-            {monitorRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-            {monitorRunning ? 'Monitoring...' : 'Health Check'}
+            {monitorRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <HeartPulse className="h-4 w-4" />}
+            {monitorRunning ? 'Checking...' : 'Health Check'}
           </Button>
           <Button variant="outline" size="sm" onClick={runPipelineTest} disabled={pipelineRunning} className="gap-2">
             {pipelineRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlaskConical className="h-4 w-4" />}
-            {pipelineRunning ? 'Testing...' : 'Pipeline Test'}
+            {pipelineRunning ? 'Testing...' : 'Deep Test'}
           </Button>
         </div>
       </div>
@@ -389,11 +416,12 @@ export default function UTAmbassadorManagement() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="bg-muted/50 flex-wrap">
           <TabsTrigger value="ambassadors" className="gap-1"><Users className="h-3.5 w-3.5" />Ambassadors</TabsTrigger>
+          <TabsTrigger value="ops" className="gap-1"><Gauge className="h-3.5 w-3.5" />Autonomous Ops</TabsTrigger>
           <TabsTrigger value="leaderboard" className="gap-1"><Trophy className="h-3.5 w-3.5" />Leaderboard</TabsTrigger>
           <TabsTrigger value="insights" className="gap-1"><Brain className="h-3.5 w-3.5" />AI Insights</TabsTrigger>
           <TabsTrigger value="referrals" className="gap-1"><Link2 className="h-3.5 w-3.5" />Referrals</TabsTrigger>
           <TabsTrigger value="payouts" className="gap-1"><Wallet className="h-3.5 w-3.5" />Payouts</TabsTrigger>
-          <TabsTrigger value="health" className="gap-1"><Activity className="h-3.5 w-3.5" />Health</TabsTrigger>
+          <TabsTrigger value="health" className="gap-1"><HeartPulse className="h-3.5 w-3.5" />Health Log</TabsTrigger>
         </TabsList>
 
         {/* ====== AMBASSADORS TAB ====== */}
@@ -450,7 +478,7 @@ export default function UTAmbassadorManagement() {
                           <TableCell>
                             <div className="flex items-center gap-2">
                               {a.is_boosted && <Zap className="h-4 w-4 text-amber-400" />}
-                              {a.risk_level === 'high' && <ShieldAlert className="h-4 w-4 text-red-400" />}
+                              {(a.risk_level === 'high' || a.risk_level === 'medium') && <ShieldAlert className="h-4 w-4 text-red-400" />}
                               <div>
                                 <p className="font-medium">{a.full_name}</p>
                                 <p className="text-xs text-muted-foreground">{a.email}</p>
@@ -509,6 +537,246 @@ export default function UTAmbassadorManagement() {
                     </TableBody>
                   </Table>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ====== AUTONOMOUS OPS TAB ====== */}
+        <TabsContent value="ops" className="space-y-4">
+          {/* Health Summary KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            <Card className={pipelineHealthy ? 'border-green-500/30' : 'border-red-500/30'}>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-1">
+                  <HeartPulse className={`h-4 w-4 ${pipelineHealthy ? 'text-green-400' : 'text-red-400'}`} />
+                  <span className="text-xs text-muted-foreground">Pipeline</span>
+                </div>
+                <Badge className={pipelineHealthy ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                  {pipelineHealthy ? '✅ HEALTHY' : '❌ FAILING'}
+                </Badge>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-1"><Timer className="h-4 w-4 text-blue-400" /><span className="text-xs text-muted-foreground">Last Check</span></div>
+                <p className="text-sm font-medium">{lastHealthCheck ? formatDistanceToNow(new Date(lastHealthCheck.created_at), { addSuffix: true }) : 'Never'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-1"><AlertTriangle className="h-4 w-4 text-amber-400" /><span className="text-xs text-muted-foreground">Failures (24h)</span></div>
+                <p className={`text-2xl font-bold ${failuresLast24h > 0 ? 'text-red-400' : 'text-green-400'}`}>{failuresLast24h}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-1"><Activity className="h-4 w-4 text-purple-400" /><span className="text-xs text-muted-foreground">Alerts Sent</span></div>
+                <p className="text-2xl font-bold">{alertsSentToday}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-1"><RefreshCw className="h-4 w-4 text-cyan-400" /><span className="text-xs text-muted-foreground">Auto-Heals (24h)</span></div>
+                <p className="text-2xl font-bold text-cyan-400">{autoHealsToday}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-2 mb-1"><Gauge className="h-4 w-4 text-emerald-400" /><span className="text-xs text-muted-foreground">Last Optimizer</span></div>
+                <p className="text-sm font-medium">{lastOptRun ? formatDistanceToNow(new Date(lastOptRun.created_at), { addSuffix: true }) : 'Never'}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Scheduler & Alert Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Settings className="h-4 w-4 text-muted-foreground" />Scheduled Jobs</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-500/20 text-green-400 text-[10px]">ACTIVE</Badge>
+                    <span className="text-sm font-medium">Health Monitor</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Every 15 min</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-500/20 text-green-400 text-[10px]">ACTIVE</Badge>
+                    <span className="text-sm font-medium">Deep Validation</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Daily @ 6:00 AM UTC</span>
+                </div>
+                <div className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 border">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-500/20 text-green-400 text-[10px]">ACTIVE</Badge>
+                    <span className="text-sm font-medium">Performance Optimizer</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Daily @ 7:00 AM UTC</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-muted-foreground" />Alert Configuration</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">SMS Alerts</span>
+                  <Badge className={alertConfig?.alerts_enabled !== false ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                    {alertConfig?.alerts_enabled !== false ? 'ENABLED' : 'DISABLED'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Throttle</span>
+                  <span className="text-sm font-medium">{alertConfig?.sms_throttle_minutes || 30} min</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Alert Phone</span>
+                  <span className="text-sm font-medium text-muted-foreground">{alertConfig?.alert_phone ? '••••' + alertConfig.alert_phone.slice(-4) : 'Using env default'}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Deep Test Status</span>
+                  {lastDeepTest ? (
+                    <Badge className={lastDeepTest.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                      {lastDeepTest.success ? '✅ PASS' : '❌ FAIL'} — {formatDistanceToNow(new Date(lastDeepTest.created_at), { addSuffix: true })}
+                    </Badge>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No deep test yet</span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top Performers & Risk */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><Zap className="h-4 w-4 text-amber-400" />Boosted Ambassadors</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ambassadors.filter(a => a.is_boosted).length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">No boosted ambassadors yet</p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {ambassadors.filter(a => a.is_boosted).map(a => (
+                      <div key={a.id} className="flex items-center justify-between p-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                        <div>
+                          <p className="text-sm font-medium">{a.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{a.boost_reason || 'Top performer'}</p>
+                        </div>
+                        <Badge variant="outline" className="text-amber-400 border-amber-500/30">
+                          {(tierConfig[a.performance_tier] || tierConfig.starter).icon} {(a.performance_tier || 'starter').toUpperCase()}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm flex items-center gap-2"><ShieldAlert className="h-4 w-4 text-red-400" />Risk Alerts</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {ambassadors.filter(a => a.risk_level === 'high' || a.risk_level === 'medium').length === 0 ? (
+                  <p className="text-muted-foreground text-sm text-center py-4">No risk alerts — all clear</p>
+                ) : (
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {ambassadors.filter(a => a.risk_level === 'high' || a.risk_level === 'medium').map(a => (
+                      <div key={a.id} className={`flex items-center justify-between p-2 rounded-lg border ${a.risk_level === 'high' ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'}`}>
+                        <div>
+                          <p className="text-sm font-medium">{a.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{a.risk_reason || 'Suspicious activity'}</p>
+                        </div>
+                        <Badge className={a.risk_level === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'}>
+                          {a.risk_level?.toUpperCase()}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Latest Insights */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2"><Sparkles className="h-4 w-4 text-purple-400" />Latest AI Insights</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {insights.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">No active insights</p>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {insights.slice(0, 10).map(insight => (
+                    <div key={insight.id} className={`p-2.5 rounded-lg border flex items-start gap-3 ${
+                      insight.severity === 'warning' ? 'border-amber-500/30 bg-amber-500/5' :
+                      insight.severity === 'success' ? 'border-green-500/30 bg-green-500/5' :
+                      'border-blue-500/30 bg-blue-500/5'
+                    }`}>
+                      {insightSeverityIcon(insight.severity)}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <Badge variant="outline" className="text-[10px]">{insight.insight_type?.replace(/_/g, ' ')}</Badge>
+                          <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, HH:mm')}</span>
+                        </div>
+                        <p className="text-sm">{insight.insight_text}</p>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => dismissInsight(insight.id)}>
+                        <XCircle className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Operation Logs */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm flex items-center gap-2"><Activity className="h-4 w-4 text-muted-foreground" />Operation Log</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {opsLogs.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">No operations logged yet</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Operation</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Details</TableHead>
+                      <TableHead>Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {opsLogs.slice(0, 15).map(log => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">{log.operation_type?.replace(/_/g, ' ')}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={log.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                            {log.success ? '✅' : '❌'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs max-w-[200px] truncate">
+                          {log.details?.error || (log.details?.auto_healed > 0 ? `${log.details.auto_healed} healed` : log.details?.processed ? `${log.details.processed} processed` : '—')}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, HH:mm')}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>
@@ -581,7 +849,6 @@ export default function UTAmbassadorManagement() {
         {/* ====== AI INSIGHTS TAB ====== */}
         <TabsContent value="insights">
           <div className="space-y-4">
-            {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <Card className="border-amber-500/20 bg-amber-500/5">
                 <CardContent className="pt-4">
@@ -603,7 +870,7 @@ export default function UTAmbassadorManagement() {
               </Card>
               <Card className="border-blue-500/20 bg-blue-500/5">
                 <CardContent className="pt-4">
-                  <div className="flex items-center gap-2 mb-1"><Brain className="h-4 w-4 text-blue-400" /><span className="text-xs">Total Insights</span></div>
+                  <div className="flex items-center gap-2 mb-1"><Brain className="h-4 w-4 text-blue-400" /><span className="text-xs">Active Insights</span></div>
                   <p className="text-xl font-bold">{insights.length}</p>
                 </CardContent>
               </Card>
@@ -620,7 +887,7 @@ export default function UTAmbassadorManagement() {
                 {insights.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Brain className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                    <p>No insights yet. Click "Run AI Optimizer" to analyze ambassador performance.</p>
+                    <p>No insights yet. Click "AI Insights" or "Run Optimizer" to generate.</p>
                   </div>
                 ) : (
                   <div className="space-y-3 max-h-[500px] overflow-y-auto">
@@ -634,10 +901,14 @@ export default function UTAmbassadorManagement() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <Badge variant="outline" className="text-[10px]">{insight.insight_type?.replace(/_/g, ' ')}</Badge>
+                            {insight.priority >= 3 && <Badge className="bg-red-500/20 text-red-400 text-[10px]">HIGH</Badge>}
                             <span className="text-[10px] text-muted-foreground">{format(new Date(insight.created_at), 'MMM d, HH:mm')}</span>
                           </div>
                           <p className="text-sm">{insight.insight_text}</p>
                         </div>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => dismissInsight(insight.id)}>
+                          <XCircle className="h-3 w-3" />
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -749,11 +1020,11 @@ export default function UTAmbassadorManagement() {
           </Card>
         </TabsContent>
 
-        {/* ====== SYSTEM HEALTH TAB ====== */}
+        {/* ====== HEALTH LOG TAB ====== */}
         <TabsContent value="health">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-blue-400" />Pipeline Health Monitor</CardTitle>
+              <CardTitle className="flex items-center gap-2"><HeartPulse className="h-5 w-5 text-blue-400" />Pipeline Health Log</CardTitle>
             </CardHeader>
             <CardContent>
               {healthLogs.length === 0 ? (
@@ -763,9 +1034,11 @@ export default function UTAmbassadorManagement() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Status</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Severity</TableHead>
                       <TableHead>Failure Point</TableHead>
-                      <TableHead>Steps</TableHead>
-                      <TableHead>Alert Sent</TableHead>
+                      <TableHead>Auto-Heals</TableHead>
+                      <TableHead>Alert</TableHead>
                       <TableHead>Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -777,18 +1050,28 @@ export default function UTAmbassadorManagement() {
                             {log.success ? '✅ PASS' : '❌ FAIL'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm">{log.failure_point || '—'}</TableCell>
                         <TableCell>
-                          <div className="flex gap-1 flex-wrap">
-                            {log.steps && Object.entries(log.steps).map(([key, val]: [string, any]) => (
-                              <Badge key={key} variant="outline" className={`text-[10px] ${val?.passed ? 'border-green-500/30 text-green-400' : 'border-destructive/30 text-destructive'}`}>
-                                {key.replace(/_/g, ' ')}
-                              </Badge>
-                            ))}
-                          </div>
+                          <Badge variant="outline" className="text-[10px]">
+                            {(log.check_type || 'health_check').replace(/_/g, ' ')}
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                          {log.alert_sent ? <Badge className="bg-amber-500/20 text-amber-400">📱 SMS Sent</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                          <Badge className={
+                            log.severity === 'high' ? 'bg-red-500/20 text-red-400' :
+                            log.severity === 'medium' ? 'bg-amber-500/20 text-amber-400' :
+                            'bg-muted text-muted-foreground'
+                          }>
+                            {(log.severity || 'low').toUpperCase()}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{log.failure_point || '—'}</TableCell>
+                        <TableCell>
+                          {(log.auto_heal_count || 0) > 0 ? (
+                            <Badge className="bg-cyan-500/20 text-cyan-400">{log.auto_heal_count} healed</Badge>
+                          ) : <span className="text-xs text-muted-foreground">—</span>}
+                        </TableCell>
+                        <TableCell>
+                          {log.alert_sent ? <Badge className="bg-amber-500/20 text-amber-400">📱 SMS</Badge> : <span className="text-muted-foreground text-xs">—</span>}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">{format(new Date(log.created_at), 'MMM d, HH:mm:ss')}</TableCell>
                       </TableRow>
@@ -839,7 +1122,7 @@ export default function UTAmbassadorManagement() {
             <DialogTitle className="flex items-center gap-2">
               {detailAmb?.full_name}
               {detailAmb?.is_boosted && <Badge className="bg-amber-500/20 text-amber-400 text-xs"><Zap className="h-3 w-3 mr-1" />BOOSTED</Badge>}
-              {detailAmb?.risk_level === 'high' && <Badge className="bg-red-500/20 text-red-400 text-xs"><ShieldAlert className="h-3 w-3 mr-1" />HIGH RISK</Badge>}
+              {(detailAmb?.risk_level === 'high' || detailAmb?.risk_level === 'medium') && <Badge className="bg-red-500/20 text-red-400 text-xs"><ShieldAlert className="h-3 w-3 mr-1" />{detailAmb.risk_level?.toUpperCase()} RISK</Badge>}
             </DialogTitle>
           </DialogHeader>
           {detailAmb && (
@@ -852,6 +1135,7 @@ export default function UTAmbassadorManagement() {
                   <Badge variant="outline" className={`ml-1 ${(tierConfig[detailAmb.performance_tier] || tierConfig.starter).bg} ${(tierConfig[detailAmb.performance_tier] || tierConfig.starter).color}`}>
                     {(tierConfig[detailAmb.performance_tier] || tierConfig.starter).icon} {(detailAmb.performance_tier || 'starter').toUpperCase()}
                   </Badge>
+                  {detailAmb.is_tier_locked && <Badge className="ml-1 bg-muted text-muted-foreground text-[10px]">🔒 Locked</Badge>}
                 </div>
                 <div><span className="text-muted-foreground">Rate:</span> <span className="font-medium">{detailAmb.commission_rate}%</span></div>
                 <div><span className="text-muted-foreground">Status:</span> <Badge className={statusColor(getAmbassadorStatusLabel(detailAmb.status))}>{getAmbassadorStatusLabel(detailAmb.status)}</Badge></div>
@@ -860,14 +1144,30 @@ export default function UTAmbassadorManagement() {
               </div>
 
               <div className="p-3 bg-muted/30 rounded-lg space-y-2">
-                <h4 className="font-semibold text-sm">Performance</h4>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div>Referrals: <strong>{detailAmb.total_referrals || 0}</strong></div>
-                  <div>Converted: <strong>{detailAmb.total_converted_referrals || 0}</strong></div>
+                <h4 className="font-semibold text-sm">Performance Metrics</h4>
+                <div className="grid grid-cols-3 gap-2 text-sm">
+                  <div>Clicks: <strong>{detailAmb.total_clicks || 0}</strong></div>
+                  <div>Leads: <strong>{detailAmb.total_leads || 0}</strong></div>
+                  <div>Conversions: <strong>{detailAmb.total_conversions || 0}</strong></div>
                   <div>Revenue: <strong>${Number(detailAmb.total_revenue || 0).toLocaleString()}</strong></div>
                   <div>Commissions: <strong className="text-emerald-400">${Number(detailAmb.total_commissions || 0).toLocaleString()}</strong></div>
+                  <div>Rev/Click: <strong>${Number(detailAmb.revenue_per_click || 0).toFixed(2)}</strong></div>
                 </div>
               </div>
+
+              {detailAmb.boost_reason && (
+                <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                  <h4 className="font-semibold text-sm text-amber-400 mb-1">⚡ Boost Reason</h4>
+                  <p className="text-xs">{detailAmb.boost_reason}</p>
+                </div>
+              )}
+
+              {detailAmb.risk_reason && (
+                <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg">
+                  <h4 className="font-semibold text-sm text-red-400 mb-1">⚠️ Risk Reason</h4>
+                  <p className="text-xs">{detailAmb.risk_reason}</p>
+                </div>
+              )}
 
               {detailAmb.active_referral_link && (
                 <div className="p-3 bg-muted/30 rounded-lg">
@@ -886,7 +1186,9 @@ export default function UTAmbassadorManagement() {
                 <p>Joined: {format(new Date(detailAmb.created_at), 'MMM d, yyyy')}</p>
                 {detailAmb.approved_at && <p>Approved: {format(new Date(detailAmb.approved_at), 'MMM d, yyyy')}</p>}
                 {detailAmb.last_conversion_at && <p>Last Conversion: {format(new Date(detailAmb.last_conversion_at), 'MMM d, yyyy')}</p>}
+                {detailAmb.tier_updated_at && <p>Tier Updated: {format(new Date(detailAmb.tier_updated_at), 'MMM d, HH:mm')}</p>}
                 {detailAmb.last_insight_at && <p>Last AI Analysis: {format(new Date(detailAmb.last_insight_at), 'MMM d, HH:mm')}</p>}
+                {detailAmb.last_reengagement_at && <p>Last Re-engagement: {format(new Date(detailAmb.last_reengagement_at), 'MMM d, HH:mm')}</p>}
               </div>
             </div>
           )}
