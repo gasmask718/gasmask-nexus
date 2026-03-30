@@ -139,6 +139,8 @@ serve(async (req) => {
     let imported = 0;
     let skipped = 0;
     let noWebsiteCount = 0;
+    let masterInsertedCount = 0;
+    let qualifiedInsertedCount = 0;
 
     for (const place of allPlaces) {
       try {
@@ -175,25 +177,6 @@ serve(async (req) => {
         const phone = rawPhone ? normalizePhone(rawPhone) : null;
         // Don't skip if no phone — still import the lead
 
-        // Dedup check
-        if (phone) {
-          const { data: existing } = await supabase
-            .from('brandaro_qualified_leads')
-            .select('id')
-            .or(`phone_number.eq.${phone},google_place_id.eq.${place.place_id}`)
-            .limit(1)
-            .maybeSingle();
-          if (existing) { skipped++; continue; }
-        } else {
-          const { data: existing } = await supabase
-            .from('brandaro_qualified_leads')
-            .select('id')
-            .eq('google_place_id', place.place_id)
-            .limit(1)
-            .maybeSingle();
-          if (existing) { skipped++; continue; }
-        }
-
         const addressComps = p.address_components || [];
         const getComp = (type: string) => addressComps.find((c: any) => c.types.includes(type))?.long_name || '';
         const cityName = getComp('locality') || getComp('sublocality') || city;
@@ -202,11 +185,94 @@ serve(async (req) => {
         const streetNum = getComp('street_number');
         const streetName = getComp('route');
         const address = [streetNum, streetName].filter(Boolean).join(' ');
+        const region = [cityName, stateName].filter(Boolean).join(', ');
+        const locationLabel = p.formatted_address || [address, cityName, stateName, postalCode].filter(Boolean).join(', ');
+        const language = inferLanguage(state, industry, cityName);
+        const descriptions = buildLeadDescriptions(industry, cityName, stateName);
 
         // Score with Claude (or fallback)
         const score = anthropicKey
           ? await scoreLeadWithClaude(anthropicKey, p.name, industry, cityName, p.rating, p.user_ratings_total, p.types)
           : { priority_score: 5 };
+
+        const now = new Date().toISOString();
+        let masterInserted = false;
+        let qualifiedInserted = false;
+        let insertedLead: { id: string; business_name: string } | null = null;
+
+        const { data: existingMaster, error: masterLookupErr } = phone
+          ? await supabase
+              .from('brandaro_leads_master')
+              .select('id')
+              .eq('phone', phone)
+              .limit(1)
+              .maybeSingle()
+          : await supabase
+              .from('brandaro_leads_master')
+              .select('id')
+              .eq('business_name', p.name)
+              .eq('region', region)
+              .limit(1)
+              .maybeSingle();
+
+        if (masterLookupErr) {
+          console.error('[DISCOVERY] MASTER LOOKUP FAILED:', masterLookupErr.message);
+          continue;
+        }
+
+        if (!existingMaster) {
+          const { error: masterInsertErr } = await supabase.from('brandaro_leads_master').insert({
+            business_name: p.name,
+            phone,
+            website: null,
+            industry,
+            location: locationLabel,
+            has_website: false,
+            source: 'brandaro-lead-discovery',
+            status: 'new',
+            intent_score: Math.min(score.priority_score * 10, 100),
+            created_at: now,
+            updated_at: now,
+            language,
+            region,
+            english_description: descriptions.english,
+            spanish_description: descriptions.spanish,
+          });
+
+          if (masterInsertErr) {
+            console.error('[DISCOVERY] MASTER INSERT FAILED:', {
+              error: masterInsertErr.message,
+              code: masterInsertErr.code,
+              details: masterInsertErr.details,
+              business: p.name,
+            });
+          } else {
+            masterInserted = true;
+            masterInsertedCount++;
+            console.log('[DISCOVERY] MASTER INSERT SUCCESS:', p.name, region);
+          }
+        } else {
+          console.log('[DISCOVERY] MASTER DUPLICATE SKIP:', p.name, phone || region);
+        }
+
+        const { data: existingQualified, error: qualifiedLookupErr } = phone
+          ? await supabase
+              .from('brandaro_qualified_leads')
+              .select('id')
+              .or(`phone_number.eq.${phone},google_place_id.eq.${place.place_id}`)
+              .limit(1)
+              .maybeSingle()
+          : await supabase
+              .from('brandaro_qualified_leads')
+              .select('id')
+              .eq('google_place_id', place.place_id)
+              .limit(1)
+              .maybeSingle();
+
+        if (qualifiedLookupErr) {
+          console.error('[DISCOVERY] QUALIFIED LOOKUP FAILED:', qualifiedLookupErr.message);
+          continue;
+        }
 
         console.log('[DISCOVERY] Attempting insert:', {
           business_name: p.name,
@@ -216,44 +282,54 @@ serve(async (req) => {
           job_id: job_id,
         });
 
-        const { data: insertedLead, error: insertErr } = await supabase.from('brandaro_qualified_leads').insert({
-          business_name: p.name,
-          phone_number: phone,
-          address: p.formatted_address || address,
-          city: cityName,
-          state: stateName,
-          postal_code: postalCode,
-          industry,
-          category: (p.types || []).join(', '),
-          rating: p.rating ? Math.min(parseFloat(p.rating), 5.0) : null,
-          review_count: p.user_ratings_total || 0,
-          website: null,
-          has_website: false,
-          website_status: 'no_website',
-          google_place_id: place.place_id,
-          google_maps_url: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
-          discovery_job_id: job_id,
-          pipeline_stage: 'new',
-          lead_status: 'new',
-          priority_score: score.priority_score,
-          engagement_score: 0,
-          call_attempts: 0,
-          ai_paused: false,
-          converted: false,
-        }).select('id, business_name').single();
+        if (!existingQualified) {
+          const { data: qualifiedLead, error: insertErr } = await supabase.from('brandaro_qualified_leads').insert({
+            business_name: p.name,
+            phone_number: phone,
+            address: p.formatted_address || address,
+            city: cityName,
+            state: stateName,
+            postal_code: postalCode,
+            industry,
+            category: (p.types || []).join(', '),
+            rating: p.rating ? Math.min(parseFloat(p.rating), 5.0) : null,
+            review_count: p.user_ratings_total || 0,
+            has_website: false,
+            website_status: 'no_website',
+            google_place_id: place.place_id,
+            google_maps_url: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+            discovery_job_id: job_id,
+            pipeline_stage: 'new',
+            lead_status: 'new',
+            priority_score: score.priority_score,
+            engagement_score: 0,
+            call_attempts: 0,
+            ai_paused: false,
+            converted: false,
+          }).select('id, business_name').single();
 
-        if (insertErr) {
-          console.error('[DISCOVERY] INSERT FAILED:', {
-            error: insertErr.message,
-            code: insertErr.code,
-            details: insertErr.details,
-            hint: insertErr.hint,
-            business: p.name,
-          });
-          continue;
+          if (insertErr) {
+            console.error('[DISCOVERY] QUALIFIED INSERT FAILED:', {
+              error: insertErr.message,
+              code: insertErr.code,
+              details: insertErr.details,
+              hint: insertErr.hint,
+              business: p.name,
+            });
+          } else {
+            insertedLead = qualifiedLead;
+            qualifiedInserted = true;
+            qualifiedInsertedCount++;
+            console.log('[DISCOVERY] QUALIFIED INSERT SUCCESS:', qualifiedLead?.business_name, qualifiedLead?.id);
+          }
+        } else {
+          console.log('[DISCOVERY] QUALIFIED DUPLICATE SKIP:', p.name, phone || place.place_id);
         }
 
-        console.log('[DISCOVERY] INSERT SUCCESS:', insertedLead?.business_name, insertedLead?.id);
+        if (!masterInserted && !qualifiedInserted) {
+          skipped++;
+          continue;
+        }
 
         // Wire into pipeline automator
         if (insertedLead?.id) {
@@ -267,7 +343,7 @@ serve(async (req) => {
         }
 
         imported++;
-        console.log(`IMPORTED: ${p.name} (score: ${score.priority_score})`);
+        console.log(`IMPORTED: ${p.name} (score: ${score.priority_score}, master=${masterInserted}, qualified=${qualifiedInserted})`);
         await new Promise(r => setTimeout(r, 150));
       } catch (leadErr) {
         console.error('Error processing place:', (leadErr as Error).message);
@@ -275,7 +351,7 @@ serve(async (req) => {
       }
     }
 
-    console.log(`JOB COMPLETE: found=${allPlaces.length}, noWebsite=${noWebsiteCount}, imported=${imported}, skipped=${skipped}`);
+    console.log(`JOB COMPLETE: found=${allPlaces.length}, noWebsite=${noWebsiteCount}, imported=${imported}, skipped=${skipped}, masterInserted=${masterInsertedCount}, qualifiedInserted=${qualifiedInsertedCount}`);
 
     // Update job completed
     await supabase.from('brandaro_discovery_jobs').update({
@@ -311,6 +387,24 @@ function normalizePhone(raw: string): string | null {
   if (digits.length === 11 && digits[0] === '1') return '+' + digits;
   if (digits.length > 6) return '+' + digits;
   return null;
+}
+
+function inferLanguage(state: string, industry: string, city: string): 'spanish' | 'english' {
+  const haystack = `${state} ${industry} ${city}`.toLowerCase();
+  const spanishMarkets = ['dr', 'dominican republic', 'republica dominicana', 'mexico', 'colombia', 'pr', 'puerto rico'];
+  const spanishKeywords = ['plomero', 'restaurante', 'salon', 'belleza', 'mecanico', 'limpieza', 'construccion', 'jardineria', 'electricista', 'pintor', 'mudanzas'];
+
+  return spanishMarkets.some((term) => haystack.includes(term)) || spanishKeywords.some((term) => haystack.includes(term))
+    ? 'spanish'
+    : 'english';
+}
+
+function buildLeadDescriptions(industry: string, city: string, state: string) {
+  const placeLabel = [city, state].filter(Boolean).join(', ');
+  return {
+    english: `${industry} business discovered in ${placeLabel} with no website detected.`,
+    spanish: `Negocio de ${industry} descubierto en ${placeLabel} sin sitio web detectado.`,
+  };
 }
 
 async function scoreLeadWithClaude(
