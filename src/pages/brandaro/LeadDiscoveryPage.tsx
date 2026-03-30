@@ -202,6 +202,88 @@ function SpanishLeadsPanel() {
     setIsSearching(true);
     try {
       const result = await runSingleSearch(cityToSearch);
+    const countryLabel = selectedCountryData?.label || searchCountry;
+    const stateCode = searchCountry === "US-Hispanic" ? "US" : searchCountry;
+
+    // Create discovery job
+    setSearchStep(0); setSearchProgress(10);
+    setDebugInfo(`Creating job: ${searchIndustry} in ${cityToSearch}, ${countryLabel}`);
+
+    const { data: job, error: jobErr } = await supabase
+      .from("brandaro_discovery_jobs" as any)
+      .insert({
+        search_query: `${searchIndustry} in ${cityToSearch}, ${countryLabel}`,
+        city: cityToSearch,
+        state: stateCode,
+        industry: searchIndustry,
+        radius_meters: 40234,
+        status: "queued",
+      } as any)
+      .select()
+      .single();
+
+    if (jobErr) throw jobErr;
+
+    setSearchStep(1); setSearchProgress(30);
+    setDebugInfo(`Job created: ${(job as any).id}. Invoking edge function...`);
+
+    // Fire edge function
+    const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
+      body: {
+        job_id: (job as any).id,
+        city: cityToSearch,
+        state: stateCode,
+        industry: searchIndustry,
+        radius_meters: 40234,
+      },
+    });
+
+    if (fnErr) throw fnErr;
+
+    setSearchStep(2); setSearchProgress(50);
+    setDebugInfo("Edge function invoked. Polling for results...");
+
+    // Poll for completion
+    let attempts = 0;
+    while (attempts < 40) {
+      await new Promise(r => setTimeout(r, 3000));
+      const progressVal = Math.min(50 + (attempts / 40) * 45, 95);
+      setSearchProgress(progressVal);
+      if (attempts > 10) setSearchStep(3);
+
+      const { data: jobData } = await supabase
+        .from("brandaro_discovery_jobs" as any)
+        .select("*")
+        .eq("id", (job as any).id)
+        .single();
+      const jd = jobData as any;
+      setDebugInfo(`Poll #${attempts + 1}: status=${jd?.status}, imported=${jd?.imported_count || 0}`);
+      if (jd?.status === "completed" || jd?.status === "failed") {
+        const result = { status: jd.status, imported: jd.imported_count || 0, noWebsite: jd.no_website_count || 0 };
+        setSearchProgress(100);
+        setLastSearchResult(result);
+        return result;
+      }
+      attempts++;
+    }
+    const timeoutResult = { status: "timeout", imported: 0, noWebsite: 0 };
+    setLastSearchResult(timeoutResult);
+    return timeoutResult;
+  };
+
+  const handleSingleSearch = async () => {
+    if (!searchIndustry || !searchCountry) return;
+    const cityToSearch = customCity || searchCity;
+    if (!cityToSearch) {
+      toast({ title: "Selecciona una ciudad", variant: "destructive" });
+      return;
+    }
+    setIsSearching(true);
+    setLastSearchResult(null);
+    setSearchProgress(0);
+    setSearchStep(0);
+    try {
+      const result = await runSingleSearch(cityToSearch);
       queryClient.invalidateQueries({ queryKey: ["spanish-leads-discovery"] });
       queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] });
       if (result.status === "completed") {
@@ -210,19 +292,13 @@ function SpanishLeadsPanel() {
         toast({ title: "⚠️ Búsqueda falló", description: `Estado: ${result.status}`, variant: "destructive" });
       }
     } catch (err: any) {
+      setDebugInfo(`Error: ${err.message}`);
+      setLastSearchResult({ status: "error", imported: 0, noWebsite: 0 });
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally {
       setIsSearching(false);
     }
   };
-
-  const handleBulkSearch = async () => {
-    if (!searchIndustry || !searchCountry || selectedCities.length === 0) return;
-    setIsBulkRunning(true);
-    let totalImported = 0;
-    let completed = 0;
-
-    for (const city of selectedCities) {
       try {
         const result = await runSingleSearch(city);
         totalImported += result.imported;
