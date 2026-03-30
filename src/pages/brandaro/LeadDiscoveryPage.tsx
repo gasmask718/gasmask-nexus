@@ -118,6 +118,7 @@ function SpanishLeadsPanel() {
   const [lastSearchResult, setLastSearchResult] = useState<{ status: string; imported: number; noWebsite: number; totalFound: number; fetched: number } | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
