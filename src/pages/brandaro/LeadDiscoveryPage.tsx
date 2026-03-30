@@ -342,6 +342,7 @@ export default function LeadDiscoveryPage() {
       <Tabs defaultValue="bulk" className="space-y-4">
         <TabsList>
           <TabsTrigger value="bulk" className="gap-1"><Globe className="h-3.5 w-3.5" /> Bulk Search Queue</TabsTrigger>
+          <TabsTrigger value="spanish" className="gap-1">🇪🇸 Spanish Leads</TabsTrigger>
           <TabsTrigger value="single" className="gap-1"><MapPin className="h-3.5 w-3.5" /> Single Search</TabsTrigger>
           <TabsTrigger value="history" className="gap-1"><Clock className="h-3.5 w-3.5" /> History</TabsTrigger>
         </TabsList>
