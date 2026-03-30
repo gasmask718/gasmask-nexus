@@ -656,6 +656,62 @@ export default function UTAmbassadorManagement() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ====== SYSTEM HEALTH TAB ====== */}
+        <TabsContent value="health">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-blue-400" />
+                Pipeline Health Monitor
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {healthLogs.length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No health checks recorded yet. Click "Run Health Check" to start monitoring.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Failure Point</TableHead>
+                      <TableHead>Steps</TableHead>
+                      <TableHead>Alert Sent</TableHead>
+                      <TableHead>Timestamp</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {healthLogs.map((log) => (
+                      <TableRow key={log.id}>
+                        <TableCell>
+                          <Badge className={log.success ? 'bg-green-500/20 text-green-400' : 'bg-destructive/20 text-destructive'}>
+                            {log.success ? '✅ PASS' : '❌ FAIL'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{log.failure_point || '—'}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {log.steps && Object.entries(log.steps).map(([key, val]: [string, any]) => (
+                              <Badge key={key} variant="outline" className={`text-[10px] ${val?.passed ? 'border-green-500/30 text-green-400' : 'border-destructive/30 text-destructive'}`}>
+                                {key.replace(/_/g, ' ')}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {log.alert_sent ? <Badge className="bg-amber-500/20 text-amber-400">📱 SMS Sent</Badge> : <span className="text-muted-foreground text-xs">—</span>}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {format(new Date(log.created_at), 'MMM d, HH:mm:ss')}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {/* Create Payout Dialog */}
