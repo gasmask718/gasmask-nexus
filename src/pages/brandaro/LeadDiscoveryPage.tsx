@@ -565,6 +565,11 @@ export default function LeadDiscoveryPage() {
           </Card>
         </TabsContent>
 
+        {/* ────── SPANISH LEADS TAB ────── */}
+        <TabsContent value="spanish" className="space-y-4">
+          <SpanishLeadsPanel />
+        </TabsContent>
+
         {/* ────── SINGLE SEARCH TAB ────── */}
         <TabsContent value="single" className="space-y-4">
           <Card>
