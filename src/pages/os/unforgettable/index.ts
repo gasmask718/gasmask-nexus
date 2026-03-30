@@ -47,3 +47,7 @@ export { default as UTVenuesManagement } from './UTVenuesManagement';
 export { default as UTStaffManagement } from './UTStaffManagement';
 export { default as UTPlatformStats } from './UTPlatformStats';
 export { default as UTAmbassadorManagement } from './UTAmbassadorManagement';
+export { default as UTBusinessRequests } from './UTBusinessRequests';
+export { default as UTBusinessQuotes } from './UTBusinessQuotes';
+export { default as UTBusinessProducts } from './UTBusinessProducts';
+export { default as UTBusinessPackages } from './UTBusinessPackages';

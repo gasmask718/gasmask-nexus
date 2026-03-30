@@ -14,15 +14,17 @@ const PINK = '#E91E8C';
 interface Product {
   id: string;
   name: string;
-  category: string | null;
-  cost: number;
-  rental_price: number;
-  roi_tag: string | null;
-  active: boolean;
-  created_at: string;
+  category: string;
+  cost_price: number | null;
+  sell_price: number | null;
+  rental_price_estimate: number | null;
+  margin_pct: number | null;
+  is_active: boolean | null;
+  product_type: string;
+  created_at: string | null;
 }
 
-const emptyForm = { name: '', category: '', cost: '', rental_price: '', roi_tag: '' };
+const emptyForm = { name: '', category: '', cost_price: '', sell_price: '', rental_price_estimate: '', product_type: 'business_asset' };
 
 export default function UTBusinessProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -32,29 +34,44 @@ export default function UTBusinessProducts() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
-  const fetch = async () => {
-    const { data } = await supabase.from('ut_products').select('*').order('created_at', { ascending: false });
-    if (data) setProducts(data as Product[]);
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from('ut_products')
+      .select('id, name, category, cost_price, sell_price, rental_price_estimate, margin_pct, is_active, product_type, created_at')
+      .order('created_at', { ascending: false });
+    if (data) setProducts(data);
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetchProducts(); }, []);
 
   const openNew = () => { setEditId(null); setForm(emptyForm); setDialogOpen(true); };
   const openEdit = (p: Product) => {
     setEditId(p.id);
-    setForm({ name: p.name, category: p.category || '', cost: String(p.cost), rental_price: String(p.rental_price), roi_tag: p.roi_tag || '' });
+    setForm({
+      name: p.name,
+      category: p.category || '',
+      cost_price: String(p.cost_price ?? ''),
+      sell_price: String(p.sell_price ?? ''),
+      rental_price_estimate: String(p.rental_price_estimate ?? ''),
+      product_type: p.product_type || 'business_asset',
+    });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    const payload = {
+    const cost = parseFloat(form.cost_price) || 0;
+    const sell = parseFloat(form.sell_price) || 0;
+    const margin = sell > 0 ? Math.round(((sell - cost) / sell) * 100) : 0;
+    const payload: any = {
       name: form.name,
-      category: form.category || null,
-      cost: parseFloat(form.cost) || 0,
-      rental_price: parseFloat(form.rental_price) || 0,
-      roi_tag: form.roi_tag || null,
+      category: form.category,
+      cost_price: cost,
+      sell_price: sell,
+      rental_price_estimate: parseFloat(form.rental_price_estimate) || null,
+      margin_pct: margin,
+      product_type: form.product_type as any,
     };
     if (editId) {
       await supabase.from('ut_products').update(payload).eq('id', editId);
@@ -65,7 +82,7 @@ export default function UTBusinessProducts() {
     }
     setDialogOpen(false);
     setSaving(false);
-    fetch();
+    fetchProducts();
   };
 
   return (
@@ -87,23 +104,25 @@ export default function UTBusinessProducts() {
                   <th className="text-left p-3 font-medium">Name</th>
                   <th className="text-left p-3 font-medium">Category</th>
                   <th className="text-left p-3 font-medium">Cost</th>
-                  <th className="text-left p-3 font-medium">Rental Price</th>
-                  <th className="text-left p-3 font-medium">ROI Tag</th>
+                  <th className="text-left p-3 font-medium">Sell Price</th>
+                  <th className="text-left p-3 font-medium">Rental</th>
+                  <th className="text-left p-3 font-medium">Margin</th>
                   <th className="text-left p-3 font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">Loading...</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">Loading...</td></tr>
                 ) : products.length === 0 ? (
-                  <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No products yet</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No products yet</td></tr>
                 ) : products.map(p => (
                   <tr key={p.id} className="border-b hover:bg-muted/30">
                     <td className="p-3 font-medium">{p.name}</td>
-                    <td className="p-3">{p.category || '—'}</td>
-                    <td className="p-3">${p.cost}</td>
-                    <td className="p-3">${p.rental_price}</td>
-                    <td className="p-3">{p.roi_tag ? <Badge variant="outline">{p.roi_tag}</Badge> : '—'}</td>
+                    <td className="p-3">{p.category}</td>
+                    <td className="p-3">${p.cost_price ?? '—'}</td>
+                    <td className="p-3">${p.sell_price ?? '—'}</td>
+                    <td className="p-3">{p.rental_price_estimate ? `$${p.rental_price_estimate}` : '—'}</td>
+                    <td className="p-3">{p.margin_pct != null ? <Badge variant="outline">{p.margin_pct}%</Badge> : '—'}</td>
                     <td className="p-3">
                       <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-3 w-3" /></Button>
                     </td>
@@ -122,14 +141,14 @@ export default function UTBusinessProducts() {
             <div><Label>Name</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
             <div><Label>Category</Label><Input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Cost ($)</Label><Input type="number" value={form.cost} onChange={e => setForm(f => ({ ...f, cost: e.target.value }))} /></div>
-              <div><Label>Rental Price ($)</Label><Input type="number" value={form.rental_price} onChange={e => setForm(f => ({ ...f, rental_price: e.target.value }))} /></div>
+              <div><Label>Cost ($)</Label><Input type="number" value={form.cost_price} onChange={e => setForm(f => ({ ...f, cost_price: e.target.value }))} /></div>
+              <div><Label>Sell Price ($)</Label><Input type="number" value={form.sell_price} onChange={e => setForm(f => ({ ...f, sell_price: e.target.value }))} /></div>
             </div>
-            <div><Label>ROI Tag</Label><Input value={form.roi_tag} onChange={e => setForm(f => ({ ...f, roi_tag: e.target.value }))} placeholder="e.g. High ROI" /></div>
+            <div><Label>Rental Price Estimate ($)</Label><Input type="number" value={form.rental_price_estimate} onChange={e => setForm(f => ({ ...f, rental_price_estimate: e.target.value }))} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button disabled={saving || !form.name} style={{ backgroundColor: PINK, color: 'white' }} onClick={handleSave}>
+            <Button disabled={saving || !form.name || !form.category} style={{ backgroundColor: PINK, color: 'white' }} onClick={handleSave}>
               {saving ? 'Saving...' : 'Save'}
             </Button>
           </DialogFooter>
