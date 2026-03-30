@@ -723,6 +723,12 @@ const UTMarketplaceControl = lazy(() => import('@/pages/os/unforgettable').then(
 const UTAutomation = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomation })));
 const UTAnalytics = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAnalytics })));
 const UTPenthouse = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPenthouse })));
+const UTHallOwnerDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTHallOwnerDashboard })));
+const UTStaffMemberDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTStaffMemberDashboard })));
+const UTVenuesManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTVenuesManagement })));
+const UTStaffManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTStaffManagement })));
+const UTPlatformStats = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlatformStats })));
+const UTAmbassadorManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAmbassadorManagement })));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 
 // Unforgettable CRM
@@ -3016,6 +3022,12 @@ export default function AppRoutes() {
           <Route path="customer-service" element={<UnforgettableCustomerService />} />
           <Route path="media" element={<UnforgettableMedia />} />
           <Route path="media/:mediaId" element={<UnforgettableMediaDetail />} />
+          <Route path="hall-dashboard" element={<UTHallOwnerDashboard />} />
+          <Route path="staff-dashboard" element={<UTStaffMemberDashboard />} />
+          <Route path="venues" element={<UTVenuesManagement />} />
+          <Route path="staff-management" element={<UTStaffManagement />} />
+          <Route path="platform-stats" element={<UTPlatformStats />} />
+          <Route path="ambassadors" element={<UTAmbassadorManagement />} />
         </Route>
       </Route>
 
