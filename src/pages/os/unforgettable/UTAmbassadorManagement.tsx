@@ -67,6 +67,10 @@ export default function UTAmbassadorManagement() {
   const [pipelineRunning, setPipelineRunning] = useState(false);
   const [pipelineResult, setPipelineResult] = useState<any>(null);
 
+  // Health monitoring
+  const [healthLogs, setHealthLogs] = useState<any[]>([]);
+  const [monitorRunning, setMonitorRunning] = useState(false);
+
   const fetchAll = async () => {
     const [ambRes, refRes, payRes] = await Promise.all([
       supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
