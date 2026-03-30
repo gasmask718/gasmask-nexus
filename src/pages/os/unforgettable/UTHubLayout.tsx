@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -5,10 +6,18 @@ import {
   PartyPopper, Users, CalendarDays, DollarSign, FileText, MapPin
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
 
 const PINK = '#E91E8C';
 
-const utNavSections = [
+interface NavItem {
+  path: string;
+  label: string;
+  icon: any;
+  hasBadge?: boolean;
+}
+
+const utNavSections: { title: string; items: NavItem[] }[] = [
   {
     title: '🎉 Penthouse',
     items: [
@@ -71,6 +80,7 @@ const utNavSections = [
   {
     title: '🏢 Management',
     items: [
+      { path: '/os/unforgettable/ambassadors', label: 'Ambassadors', icon: Users, hasBadge: true },
       { path: '/os/unforgettable/hall-dashboard', label: 'Hall Owner Dashboard', icon: Store },
       { path: '/os/unforgettable/staff-dashboard', label: 'Staff Dashboard', icon: Users },
       { path: '/os/unforgettable/venues', label: 'Venues Management', icon: MapPin },
@@ -82,10 +92,34 @@ const utNavSections = [
 
 export default function UTHubLayout() {
   const location = useLocation();
+  const [pendingCount, setPendingCount] = useState(0);
+
   const isActive = (path: string) => {
     if (path === '/os/unforgettable') return location.pathname === '/os/unforgettable';
     return location.pathname.startsWith(path);
   };
+
+  useEffect(() => {
+    const fetchPending = async () => {
+      const { count } = await supabase
+        .from('ambassadors')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', false)
+        .is('deleted_at', null);
+      setPendingCount(count || 0);
+    };
+
+    fetchPending();
+
+    const channel = supabase
+      .channel('ambassador-pending-badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ambassadors' }, () => {
+        fetchPending();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   return (
     <div className="flex h-full min-h-screen">
@@ -119,7 +153,12 @@ export default function UTHubLayout() {
                       style={isActive(item.path) ? { backgroundColor: 'rgba(233,30,140,0.1)', color: PINK } : undefined}
                     >
                       <item.icon className="h-4 w-4" />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      {item.hasBadge && pendingCount > 0 && (
+                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                          {pendingCount}
+                        </span>
+                      )}
                     </Link>
                   ))}
                 </div>
