@@ -22,6 +22,7 @@ import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import SystemStatusPage from '@/pages/brandaro/SystemStatusPage';
 import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter';
 import SpanishVADashboard from '@/pages/brandaro/SpanishVADashboard';
+import SpanishManagerDashboard from '@/pages/brandaro/SpanishManagerDashboard';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
