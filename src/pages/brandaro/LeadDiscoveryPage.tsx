@@ -337,7 +337,7 @@ function SpanishLeadsPanel() {
               {/* City selection */}
               {searchCountry && (
                 <div>
-                  <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Ciudad</label>
+                  <label className="text-xs text-muted-foreground mb-1.5 block font-medium"><DualLabel es="Ciudad" en="City" /></label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <Select value={searchCity} onValueChange={v => { setSearchCity(v); setCustomCity(""); }}>
