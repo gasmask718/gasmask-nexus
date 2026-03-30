@@ -20,9 +20,11 @@ import ResultEnginePage from '@/pages/brandaro/ResultEnginePage';
 import ReviewQueuePage from '@/pages/brandaro/ReviewQueuePage';
 import CloserAIPage from '@/pages/brandaro/CloserAIPage';
 import SystemStatusPage from '@/pages/brandaro/SystemStatusPage';
+import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
+  { path: '/os/brandaro/activation', label: 'Activation Center', icon: Zap },
   { path: '/os/brandaro/discovery', label: 'Lead Discovery', icon: Search },
   { path: '/os/brandaro/leads', label: 'Lead Database', icon: Database },
   { path: '/os/brandaro/qualification', label: 'Qualification', icon: Target },
