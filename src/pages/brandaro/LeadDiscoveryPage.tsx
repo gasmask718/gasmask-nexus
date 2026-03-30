@@ -118,6 +118,7 @@ function SpanishLeadsPanel() {
   const [lastSearchResult, setLastSearchResult] = useState<{ status: string; imported: number; noWebsite: number; totalFound: number; fetched: number } | null>(null);
   const [showDebug, setShowDebug] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const { data: spanishLeads = [], isLoading } = useQuery({
     queryKey: ["spanish-leads-discovery", country],
@@ -216,6 +217,17 @@ function SpanishLeadsPanel() {
           };
         setSearchProgress(100);
         setLastSearchResult(result);
+        // Fetch the newly imported leads for instant display
+        if (jd?.status === "completed" && jd.imported_count > 0) {
+          const { data: newLeads } = await (supabase as any)
+            .from("brandaro_leads_master")
+            .select("id, business_name, phone, status, region, language, intent_score, priority_tier, website, industry, created_at")
+            .eq("language", "spanish")
+            .eq("source", "brandaro-lead-discovery")
+            .order("created_at", { ascending: false })
+            .limit(jd.imported_count + 5);
+          setSearchResults(newLeads || []);
+        }
         return result;
       }
       attempts++;
@@ -234,6 +246,7 @@ function SpanishLeadsPanel() {
     }
     setIsSearching(true);
     setLastSearchResult(null);
+    setSearchResults([]);
     setSearchProgress(0);
     setSearchStep(0);
     try {
@@ -472,6 +485,67 @@ function SpanishLeadsPanel() {
               )}
             </CardContent>
           </Card>
+
+          {/* ── Instant Search Results Table ── */}
+          {searchResults.length > 0 && !isSearching && (
+            <Card>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                    <DualLabel es={`${searchResults.length} Resultados Encontrados`} en={`${searchResults.length} Results Found`} />
+                  </CardTitle>
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => setSearchResults([])}>
+                    <XCircle className="h-3 w-3 mr-1" /> Cerrar
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border overflow-auto max-h-[500px]">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur">
+                      <TableRow>
+                        <TableHead><DualLabel es="Negocio" en="Business" /></TableHead>
+                        <TableHead><DualLabel es="Teléfono" en="Phone" /></TableHead>
+                        <TableHead><DualLabel es="Ciudad" en="City" /></TableHead>
+                        <TableHead><DualLabel es="Sitio Web" en="Website" /></TableHead>
+                        <TableHead><DualLabel es="Puntuación" en="Score" /></TableHead>
+                        <TableHead><DualLabel es="Prioridad" en="Priority" /></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {searchResults.map((lead: any) => {
+                        const s = lead.intent_score || 0;
+                        const tier = s >= 80
+                          ? { label: "🔥 HOT", cls: "bg-destructive text-destructive-foreground" }
+                          : s >= 60
+                          ? { label: "⚡ WARM", cls: "bg-primary text-primary-foreground" }
+                          : { label: "❄️ COLD", cls: "bg-muted text-muted-foreground" };
+                        return (
+                          <TableRow key={lead.id}>
+                            <TableCell className="font-medium text-sm">{lead.business_name || "—"}</TableCell>
+                            <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
+                            <TableCell>
+                              {lead.website ? (
+                                <Badge variant="secondary" className="text-[10px]">✅ Tiene Web</Badge>
+                              ) : (
+                                <Badge variant="destructive" className="text-[10px]">❌ SIN WEB</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="font-mono text-sm font-semibold">{s}%</TableCell>
+                            <TableCell>
+                              <Badge className={`text-xs ${tier.cls}`}>{tier.label}</Badge>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Bulk city selector */}
           {searchCountry && selectedCountryData && (
