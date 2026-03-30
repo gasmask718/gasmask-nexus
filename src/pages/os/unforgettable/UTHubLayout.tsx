@@ -71,6 +71,7 @@ const utNavSections = [
   {
     title: '🏢 Management',
     items: [
+      { path: '/os/unforgettable/ambassadors', label: 'Ambassadors', icon: Users, hasBadge: true },
       { path: '/os/unforgettable/hall-dashboard', label: 'Hall Owner Dashboard', icon: Store },
       { path: '/os/unforgettable/staff-dashboard', label: 'Staff Dashboard', icon: Users },
       { path: '/os/unforgettable/venues', label: 'Venues Management', icon: MapPin },
