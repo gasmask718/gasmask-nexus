@@ -24,6 +24,7 @@ import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter'
 import SpanishVADashboard from '@/pages/brandaro/SpanishVADashboard';
 import SpanishManagerDashboard from '@/pages/brandaro/SpanishManagerDashboard';
 import BrandaroGlobalControl from '@/pages/brandaro/BrandaroGlobalControl';
+import EnglishVADashboard from '@/pages/brandaro/EnglishVADashboard';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
@@ -32,6 +33,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/leads', label: 'Lead Database', icon: Database },
   { path: '/os/brandaro/qualification', label: 'Qualification', icon: Target },
   { path: '/os/brandaro/calling', label: 'Calling Ops', icon: Phone },
+  { path: '/os/brandaro/va-dashboard', label: 'VA Dashboard', icon: Headset },
   { path: '/os/brandaro/workspace', label: 'VA Workspace', icon: Headset },
   { path: '/os/brandaro/command-center', label: 'VA Command Center', icon: Brain },
   { path: '/os/brandaro/campaigns', label: 'Campaigns', icon: FolderOpen },
@@ -76,6 +78,7 @@ export const BrandaroModule: DynastyModule = {
     { path: '/leads', component: LeadDatabasePage, label: 'Lead Database', icon: Database, requiresAuth: true },
     { path: '/qualification', component: LeadQualificationPage, label: 'Qualification', icon: Target, requiresAuth: true },
     { path: '/calling', component: CallingOpsPage, label: 'Calling Ops', icon: Phone, requiresAuth: true },
+    { path: '/va-dashboard', component: EnglishVADashboard, label: 'VA Dashboard', icon: Headset, requiresAuth: true },
     { path: '/workspace', component: VAWorkspacePage, label: 'VA Workspace', icon: Headset, requiresAuth: true },
     { path: '/command-center', component: VACommandCenterPage, label: 'VA Command Center', icon: Brain, requiresAuth: true },
     { path: '/performance', component: VAPerformancePage, label: 'VA Performance', icon: BarChart3, requiresAuth: true },
