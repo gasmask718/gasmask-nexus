@@ -228,7 +228,7 @@ serve(async (req) => {
             has_website: false,
             source: 'brandaro-lead-discovery',
             status: 'new',
-            intent_score: Math.min(score.priority_score * 10, 100),
+            intent_score: score.intent_score,
             created_at: now,
             updated_at: now,
             language,
