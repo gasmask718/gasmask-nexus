@@ -698,6 +698,127 @@ export default function LeadDiscoveryPage() {
   const [state, setState] = useState("");
   const [radius, setRadius] = useState("40234");
 
+  // Instant search state
+  const [isInstantSearching, setIsInstantSearching] = useState(false);
+  const [instantResults, setInstantResults] = useState<any[]>([]);
+  const [instantSearchStep, setInstantSearchStep] = useState(0);
+  const [instantSearchProgress, setInstantSearchProgress] = useState(0);
+  const [instantLastResult, setInstantLastResult] = useState<{ status: string; imported: number; noWebsite: number; totalFound: number } | null>(null);
+  const [instantDebug, setInstantDebug] = useState("");
+  const [showInstantDebug, setShowInstantDebug] = useState(false);
+  const instantResultsRef = useRef<HTMLDivElement>(null);
+
+  const handleInstantSearch = async () => {
+    if (!industry || !city) return;
+    setIsInstantSearching(true);
+    setInstantResults([]);
+    setInstantLastResult(null);
+    setInstantSearchProgress(0);
+    setInstantSearchStep(0);
+    try {
+      setInstantSearchStep(0); setInstantSearchProgress(10);
+      setInstantDebug(`Creating job: ${industry} in ${city}, ${state}`);
+
+      const { data: job, error: jobErr } = await supabase
+        .from("brandaro_discovery_jobs" as any)
+        .insert({
+          search_query: `${industry} in ${city}, ${state}`,
+          city,
+          state: state || "US",
+          industry,
+          radius_meters: parseInt(radius),
+          status: "queued",
+        } as any)
+        .select()
+        .single();
+
+      if (jobErr) throw jobErr;
+
+      setInstantSearchStep(1); setInstantSearchProgress(30);
+      setInstantDebug(`Job created: ${(job as any).id}. Invoking edge function...`);
+
+      const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
+        body: {
+          job_id: (job as any).id,
+          city,
+          state: state || "US",
+          industry,
+          radius_meters: parseInt(radius),
+        },
+      });
+
+      if (fnErr) throw fnErr;
+
+      setInstantSearchStep(2); setInstantSearchProgress(50);
+      setInstantDebug("Edge function invoked. Polling for results...");
+
+      let attempts = 0;
+      while (attempts < 40) {
+        await new Promise(r => setTimeout(r, 3000));
+        const progressVal = Math.min(50 + (attempts / 40) * 45, 95);
+        setInstantSearchProgress(progressVal);
+        if (attempts > 10) setInstantSearchStep(3);
+
+        const { data: jobData } = await supabase
+          .from("brandaro_discovery_jobs" as any)
+          .select("*")
+          .eq("id", (job as any).id)
+          .single();
+        const jd = jobData as any;
+
+        setInstantDebug(`Poll #${attempts + 1}: status=${jd?.status}, found=${jd?.total_found || 0}, imported=${jd?.imported_count || 0}`);
+
+        if (jd?.status === "completed" || jd?.status === "failed") {
+          setInstantSearchProgress(100);
+          const result = {
+            status: jd.status,
+            imported: jd.imported_count || 0,
+            noWebsite: jd.no_website_count || 0,
+            totalFound: jd.total_found || 0,
+          };
+          setInstantLastResult(result);
+
+          if (jd?.status === "completed" && jd.imported_count > 0) {
+            const { data: newLeads } = await (supabase as any)
+              .from("brandaro_leads_master")
+              .select("id, business_name, phone, status, region, intent_score, priority_tier, website, industry, created_at")
+              .eq("source", "brandaro-lead-discovery")
+              .order("created_at", { ascending: false })
+              .limit(jd.imported_count + 5);
+            console.log("Instant Search Fetched Leads:", newLeads?.length, newLeads);
+            setInstantResults(newLeads || []);
+            setTimeout(() => instantResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+          } else {
+            setInstantResults([]);
+          }
+
+          if (result.status === "completed") {
+            toast({ title: "✅ Search Complete", description: `${result.imported} leads imported (${result.noWebsite} no website)` });
+          } else {
+            toast({ title: "⚠️ Search Failed", description: `Status: ${result.status}`, variant: "destructive" });
+          }
+
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] }),
+          ]);
+          break;
+        }
+        attempts++;
+      }
+
+      if (attempts >= 40) {
+        setInstantLastResult({ status: "timeout", imported: 0, noWebsite: 0, totalFound: 0 });
+        toast({ title: "⏱ Timeout", description: "Search timed out. Check History tab.", variant: "destructive" });
+      }
+    } catch (err: any) {
+      setInstantDebug(`Error: ${err.message}`);
+      setInstantLastResult({ status: "error", imported: 0, noWebsite: 0, totalFound: 0 });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsInstantSearching(false);
+    }
+  };
+
   // Bulk generator state
   const [bulkIndustry, setBulkIndustry] = useState("");
   const [bulkState, setBulkState] = useState("");
