@@ -73266,6 +73266,7 @@ export type Database = {
       }
       unforgettable_ambassadors: {
         Row: {
+          active_referral_link: string | null
           approved_at: string | null
           approved_by: string | null
           business_unit: string
@@ -73274,16 +73275,24 @@ export type Database = {
           email: string | null
           full_name: string
           id: string
+          last_conversion_at: string | null
+          last_payout_at: string | null
+          payout_status: string | null
           phone: string | null
           referral_code: string | null
           source: string
           state: string | null
           status: string
           tier: string
+          total_commissions: number | null
+          total_converted_referrals: number | null
           total_earnings: number
+          total_referrals: number | null
+          total_revenue: number | null
           total_sales: number
         }
         Insert: {
+          active_referral_link?: string | null
           approved_at?: string | null
           approved_by?: string | null
           business_unit?: string
@@ -73292,16 +73301,24 @@ export type Database = {
           email?: string | null
           full_name: string
           id?: string
+          last_conversion_at?: string | null
+          last_payout_at?: string | null
+          payout_status?: string | null
           phone?: string | null
           referral_code?: string | null
           source?: string
           state?: string | null
           status?: string
           tier?: string
+          total_commissions?: number | null
+          total_converted_referrals?: number | null
           total_earnings?: number
+          total_referrals?: number | null
+          total_revenue?: number | null
           total_sales?: number
         }
         Update: {
+          active_referral_link?: string | null
           approved_at?: string | null
           approved_by?: string | null
           business_unit?: string
@@ -73310,13 +73327,20 @@ export type Database = {
           email?: string | null
           full_name?: string
           id?: string
+          last_conversion_at?: string | null
+          last_payout_at?: string | null
+          payout_status?: string | null
           phone?: string | null
           referral_code?: string | null
           source?: string
           state?: string | null
           status?: string
           tier?: string
+          total_commissions?: number | null
+          total_converted_referrals?: number | null
           total_earnings?: number
+          total_referrals?: number | null
+          total_revenue?: number | null
           total_sales?: number
         }
         Relationships: []
@@ -74067,6 +74091,124 @@ export type Database = {
             columns: ["partner_id"]
             isOneToOne: false
             referencedRelation: "ut_partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_ambassador_payouts: {
+        Row: {
+          ambassador_id: string
+          business_slug: string | null
+          commission_amount: number | null
+          created_at: string
+          gross_revenue: number | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payout_method: string | null
+          payout_period_end: string | null
+          payout_period_start: string | null
+          payout_reference: string | null
+          payout_status: string
+        }
+        Insert: {
+          ambassador_id: string
+          business_slug?: string | null
+          commission_amount?: number | null
+          created_at?: string
+          gross_revenue?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payout_method?: string | null
+          payout_period_end?: string | null
+          payout_period_start?: string | null
+          payout_reference?: string | null
+          payout_status?: string
+        }
+        Update: {
+          ambassador_id?: string
+          business_slug?: string | null
+          commission_amount?: number | null
+          created_at?: string
+          gross_revenue?: number | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payout_method?: string | null
+          payout_period_end?: string | null
+          payout_period_start?: string | null
+          payout_reference?: string | null
+          payout_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ambassador_payouts_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "unforgettable_ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_ambassador_referrals: {
+        Row: {
+          ambassador_id: string
+          business_slug: string | null
+          commission_amount: number | null
+          converted_at: string | null
+          created_at: string
+          id: string
+          landing_page: string | null
+          lead_email: string | null
+          lead_name: string | null
+          lead_phone: string | null
+          referral_code: string
+          referral_source: string | null
+          revenue_amount: number | null
+          status: string
+          visitor_session_id: string | null
+        }
+        Insert: {
+          ambassador_id: string
+          business_slug?: string | null
+          commission_amount?: number | null
+          converted_at?: string | null
+          created_at?: string
+          id?: string
+          landing_page?: string | null
+          lead_email?: string | null
+          lead_name?: string | null
+          lead_phone?: string | null
+          referral_code: string
+          referral_source?: string | null
+          revenue_amount?: number | null
+          status?: string
+          visitor_session_id?: string | null
+        }
+        Update: {
+          ambassador_id?: string
+          business_slug?: string | null
+          commission_amount?: number | null
+          converted_at?: string | null
+          created_at?: string
+          id?: string
+          landing_page?: string | null
+          lead_email?: string | null
+          lead_name?: string | null
+          lead_phone?: string | null
+          referral_code?: string
+          referral_source?: string | null
+          revenue_amount?: number | null
+          status?: string
+          visitor_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_ambassador_referrals_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "unforgettable_ambassadors"
             referencedColumns: ["id"]
           },
         ]
