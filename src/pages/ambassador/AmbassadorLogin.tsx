@@ -50,7 +50,7 @@ export default function AmbassadorLogin() {
       }
 
       toast.success('Welcome back!');
-      navigate('/ambassador/dashboard');
+      navigate('/ut/ambassador/dashboard');
     } catch (err: any) {
       if (err.message?.includes('Invalid login')) {
         toast.error('Invalid email or password');

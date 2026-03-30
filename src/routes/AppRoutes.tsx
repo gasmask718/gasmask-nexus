@@ -196,6 +196,7 @@ const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
+const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
 const AmbassadorEarningsPage = lazy(() => import('@/pages/ambassador/reports').then(m => ({ default: m.AmbassadorEarningsPage })));
 const AmbassadorPayoutsPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutsPage })));
 const AmbassadorPayoutStatementPage = lazy(() => import('@/pages/ambassador/payouts').then(m => ({ default: m.AmbassadorPayoutStatementPage })));
@@ -983,6 +984,7 @@ export default function AppRoutes() {
       <Route path="/apply/ambassador" element={<AmbassadorApplication />} />
       <Route path="/ambassador/login" element={<AmbassadorLogin />} />
       <Route path="/ambassador/set-password" element={<AmbassadorSetPassword />} />
+      <Route path="/ut/ambassador/dashboard" element={<UTAmbassadorDashboard />} />
       {/* Public Invite Signup - Primary and fallback routes */}
       <Route path="/signup" element={<InviteSignup />} />
       <Route path="/invite/accept" element={<InviteSignup />} />
