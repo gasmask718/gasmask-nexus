@@ -1474,6 +1474,7 @@ export default function LeadDiscoveryPage() {
                           <TableHead>Business</TableHead>
                           <TableHead>Phone</TableHead>
                           <TableHead>Region</TableHead>
+                          <TableHead>Lang</TableHead>
                           <TableHead>Website</TableHead>
                           <TableHead>Score</TableHead>
                           <TableHead>Priority</TableHead>
