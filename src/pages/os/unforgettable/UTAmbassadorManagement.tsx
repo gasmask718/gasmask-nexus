@@ -157,6 +157,21 @@ export default function UTAmbassadorManagement() {
         .update({ status: 'active', approved_at: new Date().toISOString(), active_referral_link: refLink })
         .eq('id', amb.id);
       if (error) throw error;
+
+      // Create auth user + send password setup email
+      try {
+        const { data: authResult, error: authErr } = await supabase.functions.invoke('approve-ut-ambassador', {
+          body: { ambassador_id: amb.id },
+        });
+        if (authErr) console.error('Auth user creation failed:', authErr);
+        else if (authResult?.success) {
+          toast.success(`Auth account created — password setup email sent to ${amb.email}`);
+        }
+      } catch (e) {
+        console.error('Auth user creation error:', e);
+      }
+
+      // Send SMS notification
       try {
         await supabase.functions.invoke('ambassador-notify', {
           body: { event: 'approved', ambassador_id: amb.id, referral_code: amb.referral_code, name: amb.full_name, phone: amb.phone },
