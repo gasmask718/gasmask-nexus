@@ -14425,6 +14425,7 @@ export type Database = {
       }
       brandaro_leads_master: {
         Row: {
+          assigned_locked_until: string | null
           assigned_manager_id: string | null
           assigned_va_id: string | null
           business_name: string
@@ -14437,6 +14438,7 @@ export type Database = {
           intent_score: number | null
           language: string | null
           location: string | null
+          lock_assigned_by: string | null
           phone: string | null
           priority_tier: string | null
           region: string | null
@@ -14447,6 +14449,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          assigned_locked_until?: string | null
           assigned_manager_id?: string | null
           assigned_va_id?: string | null
           business_name: string
@@ -14459,6 +14462,7 @@ export type Database = {
           intent_score?: number | null
           language?: string | null
           location?: string | null
+          lock_assigned_by?: string | null
           phone?: string | null
           priority_tier?: string | null
           region?: string | null
@@ -14469,6 +14473,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          assigned_locked_until?: string | null
           assigned_manager_id?: string | null
           assigned_va_id?: string | null
           business_name?: string
@@ -14481,6 +14486,7 @@ export type Database = {
           intent_score?: number | null
           language?: string | null
           location?: string | null
+          lock_assigned_by?: string | null
           phone?: string | null
           priority_tier?: string | null
           region?: string | null
