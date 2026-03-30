@@ -24,6 +24,7 @@ import BrandaroActivationCenter from '@/pages/brandaro/BrandaroActivationCenter'
 import SpanishVADashboard from '@/pages/brandaro/SpanishVADashboard';
 import SpanishManagerDashboard from '@/pages/brandaro/SpanishManagerDashboard';
 import BrandaroGlobalControl from '@/pages/brandaro/BrandaroGlobalControl';
+import EnglishVADashboard from '@/pages/brandaro/EnglishVADashboard';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/dashboard', label: 'Command Center', icon: LayoutDashboard },
