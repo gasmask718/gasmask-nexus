@@ -9924,6 +9924,62 @@ export type Database = {
           },
         ]
       }
+      brandaro_ai_calls: {
+        Row: {
+          ai_score: number | null
+          call_sid: string | null
+          called_at: string | null
+          completed_at: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          id: string
+          interest_level: string | null
+          language: string
+          lead_id: string | null
+          outcome: string | null
+          status: string | null
+          transcript: string | null
+        }
+        Insert: {
+          ai_score?: number | null
+          call_sid?: string | null
+          called_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          interest_level?: string | null
+          language?: string
+          lead_id?: string | null
+          outcome?: string | null
+          status?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          ai_score?: number | null
+          call_sid?: string | null
+          called_at?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          interest_level?: string | null
+          language?: string
+          lead_id?: string | null
+          outcome?: string | null
+          status?: string | null
+          transcript?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_ai_calls_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brandaro_ai_conversations: {
         Row: {
           call_id: string | null
@@ -13079,6 +13135,39 @@ export type Database = {
         }
         Relationships: []
       }
+      brandaro_division_revenue: {
+        Row: {
+          amount: number | null
+          country: string | null
+          deal_count: number | null
+          division: string
+          id: string
+          language: string | null
+          period: string | null
+          recorded_at: string | null
+        }
+        Insert: {
+          amount?: number | null
+          country?: string | null
+          deal_count?: number | null
+          division: string
+          id?: string
+          language?: string | null
+          period?: string | null
+          recorded_at?: string | null
+        }
+        Update: {
+          amount?: number | null
+          country?: string | null
+          deal_count?: number | null
+          division?: string
+          id?: string
+          language?: string | null
+          period?: string | null
+          recorded_at?: string | null
+        }
+        Relationships: []
+      }
       brandaro_event_failures: {
         Row: {
           created_at: string | null
@@ -14088,6 +14177,48 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      brandaro_lead_distributions: {
+        Row: {
+          assigned_by: string | null
+          assigned_to: string | null
+          created_at: string | null
+          distribution_reason: string | null
+          id: string
+          lead_id: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          distribution_reason?: string | null
+          id?: string
+          lead_id?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_to?: string | null
+          created_at?: string | null
+          distribution_reason?: string | null
+          id?: string
+          lead_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_lead_distributions_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "brandaro_lead_distributions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_leads_master"
             referencedColumns: ["id"]
           },
         ]
