@@ -126,8 +126,9 @@ function SpanishLeadsPanel() {
     queryFn: async () => {
       let query = (supabase as any)
         .from("brandaro_leads_master")
-        .select("id, business_name, phone, status, region, language, intent_score, priority_tier, website, created_at")
+        .select("id, business_name, phone, status, region, language, pipeline, intent_score, priority_tier, website, created_at")
         .eq("language", "spanish")
+        .eq("pipeline", "spanish")
         .order("intent_score", { ascending: false })
         .limit(100);
       if (country !== "all") query = query.eq("region", country);
