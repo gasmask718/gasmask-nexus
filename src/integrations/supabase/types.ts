@@ -34310,6 +34310,117 @@ export type Database = {
           },
         ]
       }
+      event_halls: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          availability: Json | null
+          capacity_max: number | null
+          capacity_min: number | null
+          catering_options: string | null
+          city: string | null
+          contact_name: string | null
+          created_at: string | null
+          description: string | null
+          email: string | null
+          event_types: string[] | null
+          facebook_url: string | null
+          id: string
+          instagram_handle: string | null
+          is_featured: boolean | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          owner_user_id: string | null
+          parking_info: string | null
+          phone: string | null
+          photos: string[] | null
+          price_per_event: number | null
+          price_per_hour: number | null
+          rating_avg: number | null
+          review_count: number | null
+          rules: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          views_count: number | null
+          website: string | null
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          availability?: Json | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          catering_options?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          event_types?: string[] | null
+          facebook_url?: string | null
+          id?: string
+          instagram_handle?: string | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          owner_user_id?: string | null
+          parking_info?: string | null
+          phone?: string | null
+          photos?: string[] | null
+          price_per_event?: number | null
+          price_per_hour?: number | null
+          rating_avg?: number | null
+          review_count?: number | null
+          rules?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          views_count?: number | null
+          website?: string | null
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          availability?: Json | null
+          capacity_max?: number | null
+          capacity_min?: number | null
+          catering_options?: string | null
+          city?: string | null
+          contact_name?: string | null
+          created_at?: string | null
+          description?: string | null
+          email?: string | null
+          event_types?: string[] | null
+          facebook_url?: string | null
+          id?: string
+          instagram_handle?: string | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          owner_user_id?: string | null
+          parking_info?: string | null
+          phone?: string | null
+          photos?: string[] | null
+          price_per_event?: number | null
+          price_per_hour?: number | null
+          rating_avg?: number | null
+          review_count?: number | null
+          rules?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          views_count?: number | null
+          website?: string | null
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
       excel_analyses: {
         Row: {
           action_plan: Json | null
@@ -36806,6 +36917,109 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      hall_inquiries: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          hall_id: string
+          id: string
+          message: string | null
+          notes: string | null
+          replied_at: string | null
+          reply: string | null
+          requester_email: string | null
+          requester_name: string
+          requester_phone: string | null
+          status: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          hall_id: string
+          id?: string
+          message?: string | null
+          notes?: string | null
+          replied_at?: string | null
+          reply?: string | null
+          requester_email?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          status?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          hall_id?: string
+          id?: string
+          message?: string | null
+          notes?: string | null
+          replied_at?: string | null
+          reply?: string | null
+          requester_email?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hall_inquiries_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "event_halls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hall_reviews: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          hall_id: string
+          id: string
+          rating: number
+          replied_at: string | null
+          reply: string | null
+          reviewer_name: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          hall_id: string
+          id?: string
+          rating: number
+          replied_at?: string | null
+          reply?: string | null
+          reviewer_name: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          hall_id?: string
+          id?: string
+          rating?: number
+          replied_at?: string | null
+          reply?: string | null
+          reviewer_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hall_reviews_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "event_halls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       historical_invoice_line_repairs: {
         Row: {
@@ -66009,6 +66223,214 @@ export type Database = {
           slug?: string
         }
         Relationships: []
+      }
+      staff_inquiries: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          hours_needed: number | null
+          id: string
+          message: string | null
+          notes: string | null
+          replied_at: string | null
+          reply: string | null
+          requester_email: string | null
+          requester_name: string
+          requester_phone: string | null
+          staff_id: string
+          status: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          hours_needed?: number | null
+          id?: string
+          message?: string | null
+          notes?: string | null
+          replied_at?: string | null
+          reply?: string | null
+          requester_email?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          staff_id: string
+          status?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          hours_needed?: number | null
+          id?: string
+          message?: string | null
+          notes?: string | null
+          replied_at?: string | null
+          reply?: string | null
+          requester_email?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          staff_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_inquiries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members_ut"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_members_ut: {
+        Row: {
+          availability: Json | null
+          bio: string | null
+          city: string | null
+          created_at: string | null
+          demo_video_url: string | null
+          email: string | null
+          event_rate: number | null
+          full_name: string
+          hourly_rate: number | null
+          id: string
+          instagram_handle: string | null
+          is_featured: boolean | null
+          languages: string[] | null
+          phone: string | null
+          portfolio_photos: string[] | null
+          portfolio_videos: string[] | null
+          profile_photo: string | null
+          rating_avg: number | null
+          review_count: number | null
+          role_category: string | null
+          specialties: string[] | null
+          state: string | null
+          status: string | null
+          tiktok_handle: string | null
+          total_bookings: number | null
+          total_earnings: number | null
+          updated_at: string | null
+          user_id: string | null
+          views_count: number | null
+          website: string | null
+          years_experience: number | null
+        }
+        Insert: {
+          availability?: Json | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          demo_video_url?: string | null
+          email?: string | null
+          event_rate?: number | null
+          full_name: string
+          hourly_rate?: number | null
+          id?: string
+          instagram_handle?: string | null
+          is_featured?: boolean | null
+          languages?: string[] | null
+          phone?: string | null
+          portfolio_photos?: string[] | null
+          portfolio_videos?: string[] | null
+          profile_photo?: string | null
+          rating_avg?: number | null
+          review_count?: number | null
+          role_category?: string | null
+          specialties?: string[] | null
+          state?: string | null
+          status?: string | null
+          tiktok_handle?: string | null
+          total_bookings?: number | null
+          total_earnings?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          views_count?: number | null
+          website?: string | null
+          years_experience?: number | null
+        }
+        Update: {
+          availability?: Json | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string | null
+          demo_video_url?: string | null
+          email?: string | null
+          event_rate?: number | null
+          full_name?: string
+          hourly_rate?: number | null
+          id?: string
+          instagram_handle?: string | null
+          is_featured?: boolean | null
+          languages?: string[] | null
+          phone?: string | null
+          portfolio_photos?: string[] | null
+          portfolio_videos?: string[] | null
+          profile_photo?: string | null
+          rating_avg?: number | null
+          review_count?: number | null
+          role_category?: string | null
+          specialties?: string[] | null
+          state?: string | null
+          status?: string | null
+          tiktok_handle?: string | null
+          total_bookings?: number | null
+          total_earnings?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          views_count?: number | null
+          website?: string | null
+          years_experience?: number | null
+        }
+        Relationships: []
+      }
+      staff_reviews: {
+        Row: {
+          body: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          replied_at: string | null
+          reply: string | null
+          reviewer_name: string
+          staff_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          replied_at?: string | null
+          reply?: string | null
+          reviewer_name: string
+          staff_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          replied_at?: string | null
+          reply?: string | null
+          reviewer_name?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_reviews_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_members_ut"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       state_rules: {
         Row: {
