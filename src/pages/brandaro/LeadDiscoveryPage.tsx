@@ -439,13 +439,13 @@ function SpanishLeadsPanel() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-500" /> Búsqueda Masiva — {selectedCountryData.label}
+                    <Zap className="h-4 w-4 text-primary" /> <DualLabel es={`Búsqueda Masiva — ${selectedCountryData.label}`} en="Bulk Search" />
                   </CardTitle>
                   <Button size="sm" variant="outline" className="text-xs" onClick={selectAllCities}>
                     {selectedCities.length === selectedCountryData.cities.length ? "Deseleccionar Todo" : "Seleccionar Todo"}
                   </Button>
                 </div>
-                <CardDescription>Selecciona ciudades para búsqueda masiva</CardDescription>
+                <CardDescription><DualLabel es="Selecciona ciudades para búsqueda masiva" en="Select cities for bulk search" /></CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex flex-wrap gap-1.5">
