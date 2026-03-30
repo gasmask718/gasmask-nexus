@@ -698,6 +698,127 @@ export default function LeadDiscoveryPage() {
   const [state, setState] = useState("");
   const [radius, setRadius] = useState("40234");
 
+  // Instant search state
+  const [isInstantSearching, setIsInstantSearching] = useState(false);
+  const [instantResults, setInstantResults] = useState<any[]>([]);
+  const [instantSearchStep, setInstantSearchStep] = useState(0);
+  const [instantSearchProgress, setInstantSearchProgress] = useState(0);
+  const [instantLastResult, setInstantLastResult] = useState<{ status: string; imported: number; noWebsite: number; totalFound: number } | null>(null);
+  const [instantDebug, setInstantDebug] = useState("");
+  const [showInstantDebug, setShowInstantDebug] = useState(false);
+  const instantResultsRef = useRef<HTMLDivElement>(null);
+
+  const handleInstantSearch = async () => {
+    if (!industry || !city) return;
+    setIsInstantSearching(true);
+    setInstantResults([]);
+    setInstantLastResult(null);
+    setInstantSearchProgress(0);
+    setInstantSearchStep(0);
+    try {
+      setInstantSearchStep(0); setInstantSearchProgress(10);
+      setInstantDebug(`Creating job: ${industry} in ${city}, ${state}`);
+
+      const { data: job, error: jobErr } = await supabase
+        .from("brandaro_discovery_jobs" as any)
+        .insert({
+          search_query: `${industry} in ${city}, ${state}`,
+          city,
+          state: state || "US",
+          industry,
+          radius_meters: parseInt(radius),
+          status: "queued",
+        } as any)
+        .select()
+        .single();
+
+      if (jobErr) throw jobErr;
+
+      setInstantSearchStep(1); setInstantSearchProgress(30);
+      setInstantDebug(`Job created: ${(job as any).id}. Invoking edge function...`);
+
+      const { error: fnErr } = await supabase.functions.invoke("brandaro-lead-discovery", {
+        body: {
+          job_id: (job as any).id,
+          city,
+          state: state || "US",
+          industry,
+          radius_meters: parseInt(radius),
+        },
+      });
+
+      if (fnErr) throw fnErr;
+
+      setInstantSearchStep(2); setInstantSearchProgress(50);
+      setInstantDebug("Edge function invoked. Polling for results...");
+
+      let attempts = 0;
+      while (attempts < 40) {
+        await new Promise(r => setTimeout(r, 3000));
+        const progressVal = Math.min(50 + (attempts / 40) * 45, 95);
+        setInstantSearchProgress(progressVal);
+        if (attempts > 10) setInstantSearchStep(3);
+
+        const { data: jobData } = await supabase
+          .from("brandaro_discovery_jobs" as any)
+          .select("*")
+          .eq("id", (job as any).id)
+          .single();
+        const jd = jobData as any;
+
+        setInstantDebug(`Poll #${attempts + 1}: status=${jd?.status}, found=${jd?.total_found || 0}, imported=${jd?.imported_count || 0}`);
+
+        if (jd?.status === "completed" || jd?.status === "failed") {
+          setInstantSearchProgress(100);
+          const result = {
+            status: jd.status,
+            imported: jd.imported_count || 0,
+            noWebsite: jd.no_website_count || 0,
+            totalFound: jd.total_found || 0,
+          };
+          setInstantLastResult(result);
+
+          if (jd?.status === "completed" && jd.imported_count > 0) {
+            const { data: newLeads } = await (supabase as any)
+              .from("brandaro_leads_master")
+              .select("id, business_name, phone, status, region, intent_score, priority_tier, website, industry, created_at")
+              .eq("source", "brandaro-lead-discovery")
+              .order("created_at", { ascending: false })
+              .limit(jd.imported_count + 5);
+            console.log("Instant Search Fetched Leads:", newLeads?.length, newLeads);
+            setInstantResults(newLeads || []);
+            setTimeout(() => instantResultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+          } else {
+            setInstantResults([]);
+          }
+
+          if (result.status === "completed") {
+            toast({ title: "✅ Search Complete", description: `${result.imported} leads imported (${result.noWebsite} no website)` });
+          } else {
+            toast({ title: "⚠️ Search Failed", description: `Status: ${result.status}`, variant: "destructive" });
+          }
+
+          await Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["brandaro-discovery-jobs"] }),
+          ]);
+          break;
+        }
+        attempts++;
+      }
+
+      if (attempts >= 40) {
+        setInstantLastResult({ status: "timeout", imported: 0, noWebsite: 0, totalFound: 0 });
+        toast({ title: "⏱ Timeout", description: "Search timed out. Check History tab.", variant: "destructive" });
+      }
+    } catch (err: any) {
+      setInstantDebug(`Error: ${err.message}`);
+      setInstantLastResult({ status: "error", imported: 0, noWebsite: 0, totalFound: 0 });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsInstantSearching(false);
+    }
+  };
+
   // Bulk generator state
   const [bulkIndustry, setBulkIndustry] = useState("");
   const [bulkState, setBulkState] = useState("");
@@ -1195,36 +1316,41 @@ export default function LeadDiscoveryPage() {
           <SpanishLeadsPanel />
         </TabsContent>
 
-        {/* ────── SINGLE SEARCH TAB ────── */}
+        {/* ────── SINGLE SEARCH TAB (INSTANT) ────── */}
         <TabsContent value="single" className="space-y-4">
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <MapPin className="h-4 w-4" /> Add Search to Queue
+                <Search className="h-4 w-4 text-primary" /> Instant Lead Search
               </CardTitle>
-              <CardDescription>Search a specific city. Items are added to the queue for batch processing.</CardDescription>
+              <CardDescription>Search a specific city and see results immediately.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Industry presets */}
-              <div className="flex flex-wrap gap-1.5">
-                {INDUSTRY_PRESETS.map(p => (
-                  <Button
-                    key={p.value}
-                    variant={industry === p.value ? "default" : "outline"}
-                    size="sm"
-                    className="text-xs h-7"
-                    onClick={() => setIndustry(p.value)}
-                  >
-                    {p.emoji} {p.label}
-                  </Button>
-                ))}
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-medium">Industry</label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {INDUSTRY_PRESETS.map(p => (
+                    <Button
+                      key={p.value}
+                      variant={industry === p.value ? "default" : "outline"}
+                      size="sm"
+                      className="text-xs h-7"
+                      onClick={() => setIndustry(p.value)}
+                    >
+                      {p.emoji} {p.label}
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  placeholder="Or type a custom industry..."
+                  value={industry}
+                  onChange={e => setIndustry(e.target.value)}
+                  className="max-w-sm"
+                />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block font-medium">Industry</label>
-                  <Input placeholder="e.g. plumber" value={industry} onChange={e => setIndustry(e.target.value)} />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground mb-1 block font-medium">City</label>
                   <Input placeholder="e.g. Austin" value={city} onChange={e => setCity(e.target.value)} />
@@ -1246,11 +1372,152 @@ export default function LeadDiscoveryPage() {
                 </div>
               </div>
 
-              <Button onClick={addToQueue} disabled={!industry || !city}>
-                Add to Queue
-              </Button>
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleInstantSearch}
+                  disabled={!industry || !city || isInstantSearching}
+                >
+                  {isInstantSearching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+                  {isInstantSearching ? "Searching..." : "Search Now"}
+                </Button>
+                <Button variant="outline" onClick={addToQueue} disabled={!industry || !city}>
+                  <Clock className="h-4 w-4 mr-2" /> Add to Queue
+                </Button>
+              </div>
+
+              {/* Loading progress */}
+              {isInstantSearching && (
+                <div className="space-y-2 p-4 rounded-lg border border-primary/20 bg-primary/5">
+                  <Progress value={instantSearchProgress} className="h-2" />
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <span className="text-sm">
+                      {SEARCH_STEPS[instantSearchStep]?.en || "Processing..."}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{Math.round(instantSearchProgress)}% complete</p>
+                </div>
+              )}
+
+              {/* Search result feedback */}
+              {instantLastResult && !isInstantSearching && (
+                <div className={`p-4 rounded-lg border ${
+                  instantLastResult.status === "completed" ? "border-primary/30 bg-primary/5" :
+                  "border-destructive/30 bg-destructive/5"
+                }`}>
+                  {instantLastResult.status === "completed" ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="font-medium text-sm">{instantLastResult.imported} businesses saved</p>
+                          <p className="text-xs text-muted-foreground">
+                            {instantLastResult.noWebsite} no website • {instantLastResult.totalFound} detected
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-destructive" />
+                        <span className="font-medium text-sm">No results found</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• Try a different city</p>
+                        <p>• Use a broader industry type</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => setInstantLastResult(null)}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> Try again
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Debug toggle */}
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="ghost" className="text-xs h-6" onClick={() => setShowInstantDebug(!showInstantDebug)}>
+                  {showInstantDebug ? "🔧 Hide Debug" : "🔧 Debug Mode"}
+                </Button>
+              </div>
+              {showInstantDebug && instantDebug && (
+                <pre className="text-[10px] p-2 rounded bg-muted text-muted-foreground font-mono overflow-x-auto">{instantDebug}</pre>
+              )}
             </CardContent>
           </Card>
+
+          {/* ── Instant Search Results Table ── */}
+          <div ref={instantResultsRef}>
+            {instantResults.length > 0 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                      {instantResults.length} Results Found
+                    </CardTitle>
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => setInstantResults([])}>
+                      <XCircle className="h-3 w-3 mr-1" /> Close
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border overflow-auto max-h-[500px]">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur">
+                        <TableRow>
+                          <TableHead>Business</TableHead>
+                          <TableHead>Phone</TableHead>
+                          <TableHead>Region</TableHead>
+                          <TableHead>Website</TableHead>
+                          <TableHead>Score</TableHead>
+                          <TableHead>Priority</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {instantResults.map((lead: any) => {
+                          const s = lead.intent_score || 0;
+                          const tier = s >= 80
+                            ? { label: "🔥 HOT", cls: "bg-destructive text-destructive-foreground" }
+                            : s >= 60
+                            ? { label: "⚡ WARM", cls: "bg-primary text-primary-foreground" }
+                            : { label: "❄️ COLD", cls: "bg-muted text-muted-foreground" };
+                          return (
+                            <TableRow key={lead.id}>
+                              <TableCell className="font-medium text-sm">{lead.business_name || "—"}</TableCell>
+                              <TableCell className="text-sm">{lead.phone || "—"}</TableCell>
+                              <TableCell><Badge variant="outline" className="text-xs">{lead.region || "—"}</Badge></TableCell>
+                              <TableCell>
+                                {lead.website ? (
+                                  <Badge variant="secondary" className="text-[10px]">✅ Has Website</Badge>
+                                ) : (
+                                  <Badge variant="destructive" className="text-[10px]">❌ NO WEBSITE</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell className="font-mono text-sm font-semibold">{s}%</TableCell>
+                              <TableCell>
+                                <Badge className={`text-xs ${tier.cls}`}>{tier.label}</Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {!isInstantSearching && instantLastResult && instantResults.length === 0 && instantLastResult.status === "completed" && (
+              <Card className="border-dashed border-muted-foreground/30">
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <p className="text-sm font-medium">No new results found</p>
+                  <p className="text-xs mt-1">Try a different city or industry</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
 
         {/* ────── HISTORY TAB ────── */}
