@@ -74071,6 +74071,125 @@ export type Database = {
           },
         ]
       }
+      ut_business_packages: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          estimated_cost: number
+          estimated_monthly_profit: number
+          id: string
+          items: Json | null
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          estimated_cost?: number
+          estimated_monthly_profit?: number
+          id?: string
+          items?: Json | null
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          estimated_cost?: number
+          estimated_monthly_profit?: number
+          id?: string
+          items?: Json | null
+          name?: string
+        }
+        Relationships: []
+      }
+      ut_business_quotes: {
+        Row: {
+          created_at: string
+          estimated_delivery_days: number | null
+          id: string
+          notes: string | null
+          product_cost: number
+          request_id: string
+          shipping_cost: number
+          status: string
+          total_cost: number
+        }
+        Insert: {
+          created_at?: string
+          estimated_delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          product_cost?: number
+          request_id: string
+          shipping_cost?: number
+          status?: string
+          total_cost?: number
+        }
+        Update: {
+          created_at?: string
+          estimated_delivery_days?: number | null
+          id?: string
+          notes?: string | null
+          product_cost?: number
+          request_id?: string
+          shipping_cost?: number
+          status?: string
+          total_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_business_quotes_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "ut_business_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_business_requests: {
+        Row: {
+          created_at: string
+          email: string | null
+          estimated_budget: number | null
+          full_name: string
+          id: string
+          location: string | null
+          notes: string | null
+          phone: string | null
+          selected_items: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          estimated_budget?: number | null
+          full_name: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          phone?: string | null
+          selected_items?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          estimated_budget?: number | null
+          full_name?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          phone?: string | null
+          selected_items?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ut_catering_menus: {
         Row: {
           beverage_packages: Json | null

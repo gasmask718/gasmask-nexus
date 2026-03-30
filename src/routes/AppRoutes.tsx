@@ -729,6 +729,10 @@ const UTVenuesManagement = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UTStaffManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTStaffManagement })));
 const UTPlatformStats = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPlatformStats })));
 const UTAmbassadorManagement = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAmbassadorManagement })));
+const UTBusinessRequests = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessRequests })));
+const UTBusinessQuotes = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessQuotes })));
+const UTBusinessProducts = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessProducts })));
+const UTBusinessPackages = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessPackages })));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 
 // Unforgettable CRM
@@ -3028,6 +3032,10 @@ export default function AppRoutes() {
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="platform-stats" element={<UTPlatformStats />} />
           <Route path="ambassadors" element={<UTAmbassadorManagement />} />
+          <Route path="business-requests" element={<UTBusinessRequests />} />
+          <Route path="business-quotes" element={<UTBusinessQuotes />} />
+          <Route path="business-products" element={<UTBusinessProducts />} />
+          <Route path="business-packages" element={<UTBusinessPackages />} />
         </Route>
       </Route>
 
