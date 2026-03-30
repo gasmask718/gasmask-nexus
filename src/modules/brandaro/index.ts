@@ -50,6 +50,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/brandaro/closer-ai', label: 'Closer AI', icon: Brain },
   { path: '/os/brandaro/system-status', label: 'System Status', icon: Activity },
   { path: '/os/brandaro/va-espanol', label: 'Panel VA Español', icon: Globe },
+  { path: '/os/brandaro/manager-espanol', label: 'Gerente Español', icon: Users },
   { path: '/brandaro/phone-numbers', label: 'Phone Numbers', icon: Smartphone },
 ];
 
