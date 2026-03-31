@@ -314,6 +314,18 @@ function SpanishLeadsPanel() {
 
   return (
     <div className="space-y-4">
+      {/* Data integrity banner */}
+      <div className="bg-muted/50 border rounded-lg p-3 flex items-center justify-between text-sm">
+        <div className="flex items-center gap-4">
+          <span className="font-medium">🇪🇸 Spanish Pipeline:</span>
+          <span className="text-muted-foreground">{spanishLeads.length} leads loaded</span>
+          {isLoading && <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>}
+        </div>
+        <Badge variant={spanishLeads.length > 0 ? "default" : "destructive"} className="text-xs">
+          {spanishLeads.length > 0 ? "✅ Connected" : "⚠️ No leads found"}
+        </Badge>
+      </div>
+
       {/* Tab toggle */}
       <div className="flex gap-2">
         <Button size="sm" variant={activeTab === "search" ? "default" : "outline"} onClick={() => setActiveTab("search")}>
