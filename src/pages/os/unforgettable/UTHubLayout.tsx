@@ -51,6 +51,7 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/leads', label: 'Lead Intelligence', icon: Brain },
       { path: '/os/unforgettable/outreach-engine', label: 'Outreach Engine', icon: Send },
       { path: '/os/unforgettable/automation-runs', label: 'Automation Runs', icon: Zap },
+      { path: '/os/unforgettable/ambassador-finder', label: 'Ambassador Finder', icon: Star },
     ],
   },
   {
