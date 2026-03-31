@@ -74902,6 +74902,51 @@ export type Database = {
           },
         ]
       }
+      ut_automation_runs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          errors: number | null
+          id: string
+          leads_found: number | null
+          leads_graded: number | null
+          outreach_sent: number | null
+          run_type: string | null
+          source: string | null
+          started_at: string | null
+          status: string | null
+          summary: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          errors?: number | null
+          id?: string
+          leads_found?: number | null
+          leads_graded?: number | null
+          outreach_sent?: number | null
+          run_type?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string | null
+          summary?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          errors?: number | null
+          id?: string
+          leads_found?: number | null
+          leads_graded?: number | null
+          outreach_sent?: number | null
+          run_type?: string | null
+          source?: string | null
+          started_at?: string | null
+          status?: string | null
+          summary?: string | null
+        }
+        Relationships: []
+      }
       ut_business_packages: {
         Row: {
           active: boolean
@@ -75544,6 +75589,141 @@ export type Database = {
           },
         ]
       }
+      ut_lead_sources: {
+        Row: {
+          api_key_configured: boolean | null
+          config: Json | null
+          created_at: string | null
+          id: string
+          is_connected: boolean | null
+          last_run_at: string | null
+          last_run_count: number | null
+          source_name: string | null
+          status: string | null
+          total_leads_pulled: number | null
+        }
+        Insert: {
+          api_key_configured?: boolean | null
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_run_at?: string | null
+          last_run_count?: number | null
+          source_name?: string | null
+          status?: string | null
+          total_leads_pulled?: number | null
+        }
+        Update: {
+          api_key_configured?: boolean | null
+          config?: Json | null
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_run_at?: string | null
+          last_run_count?: number | null
+          source_name?: string | null
+          status?: string | null
+          total_leads_pulled?: number | null
+        }
+        Relationships: []
+      }
+      ut_leads: {
+        Row: {
+          address: string | null
+          ai_outreach_message: string | null
+          ai_summary: string | null
+          business_name: string | null
+          city: string | null
+          contact_name: string | null
+          converted_at: string | null
+          created_at: string | null
+          email: string | null
+          engagement_rate: number | null
+          followers_count: number | null
+          google_rating: number | null
+          google_reviews: number | null
+          grade: string | null
+          id: string
+          instagram_handle: string | null
+          lead_type: string | null
+          linkedin_url: string | null
+          notes: string | null
+          outreach_channel: string | null
+          outreach_sent_at: string | null
+          phone: string | null
+          responded_at: string | null
+          score: number | null
+          source: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          ai_outreach_message?: string | null
+          ai_summary?: string | null
+          business_name?: string | null
+          city?: string | null
+          contact_name?: string | null
+          converted_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          engagement_rate?: number | null
+          followers_count?: number | null
+          google_rating?: number | null
+          google_reviews?: number | null
+          grade?: string | null
+          id?: string
+          instagram_handle?: string | null
+          lead_type?: string | null
+          linkedin_url?: string | null
+          notes?: string | null
+          outreach_channel?: string | null
+          outreach_sent_at?: string | null
+          phone?: string | null
+          responded_at?: string | null
+          score?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          ai_outreach_message?: string | null
+          ai_summary?: string | null
+          business_name?: string | null
+          city?: string | null
+          contact_name?: string | null
+          converted_at?: string | null
+          created_at?: string | null
+          email?: string | null
+          engagement_rate?: number | null
+          followers_count?: number | null
+          google_rating?: number | null
+          google_reviews?: number | null
+          grade?: string | null
+          id?: string
+          instagram_handle?: string | null
+          lead_type?: string | null
+          linkedin_url?: string | null
+          notes?: string | null
+          outreach_channel?: string | null
+          outreach_sent_at?: string | null
+          phone?: string | null
+          responded_at?: string | null
+          score?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       ut_listing_wizard: {
         Row: {
           ai_classifications: Json | null
@@ -75839,6 +76019,59 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "ut_partner_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_outreach_sequences: {
+        Row: {
+          channel: string | null
+          clicked_at: string | null
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          message: string | null
+          opened_at: string | null
+          replied_at: string | null
+          sent_at: string | null
+          sequence_type: string | null
+          status: string | null
+          step_number: number | null
+        }
+        Insert: {
+          channel?: string | null
+          clicked_at?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          message?: string | null
+          opened_at?: string | null
+          replied_at?: string | null
+          sent_at?: string | null
+          sequence_type?: string | null
+          status?: string | null
+          step_number?: number | null
+        }
+        Update: {
+          channel?: string | null
+          clicked_at?: string | null
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          message?: string | null
+          opened_at?: string | null
+          replied_at?: string | null
+          sent_at?: string | null
+          sequence_type?: string | null
+          status?: string | null
+          step_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_outreach_sequences_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "ut_leads"
             referencedColumns: ["id"]
           },
         ]
