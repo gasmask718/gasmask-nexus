@@ -144,7 +144,7 @@ export default function UTEventBookings() {
         </div>
         <div className="flex gap-2 items-center">
           {pendingCount > 0 && <Badge variant="outline" className="border-amber-500 text-amber-400">{pendingCount} Pending</Badge>}
-          <Badge variant="outline" className="text-sm">{localBookings.length} total</Badge>
+          <Badge variant="outline" className="text-sm">{bookings.length} total</Badge>
         </div>
       </div>
 
