@@ -123,8 +123,25 @@ const AmbassadorProfile: React.FC = () => {
     recentOrdersCount: metrics?.last30DaysOrders || 0
   };
 
+  const ambassadorEmail = ambassador.email || ambassador.profiles?.email;
+  const missingEmail = !ambassadorEmail;
+
   return (
     <div className="p-6 space-y-6">
+      {/* Missing Email Warning */}
+      {missingEmail && (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-400">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">Missing Email Address</p>
+            <p className="text-sm text-amber-400/80">This ambassador does not have an email on file. Please edit their profile to add one.</p>
+          </div>
+          <Button variant="outline" size="sm" className="border-amber-500/50 text-amber-400 hover:bg-amber-500/20" onClick={() => setEditOpen(true)}>
+            Add Email
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/grabba/crm')}>
