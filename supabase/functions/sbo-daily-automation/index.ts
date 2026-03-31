@@ -405,17 +405,107 @@ serve(async (req) => {
 
   await new Promise(r => setTimeout(r, 1000));
 
-  // ── STEP 7: Auto-recalibrate model ──
+  // ── STEP 7: Sync Polymarket markets ──
   try {
-    console.log('Step 7: Recalibrating model...');
+    console.log('Step 7: Syncing Polymarket...');
+    const { data, error } = await supabase.functions.invoke('sbo-sync-polymarket', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.polymarket_sync = { status: 'success', markets: data?.synced || 0 };
+    console.log('Step 7 done:', log.steps.polymarket_sync.markets, 'markets synced');
+  } catch (e: any) {
+    log.steps.polymarket_sync = { status: 'failed', error: e.message };
+    log.errors.push('polymarket_sync: ' + e.message);
+    console.error('Step 7 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  // ── STEP 8: Run detailed props analysis ──
+  try {
+    console.log('Step 8: Running props analysis...');
+    const { data, error } = await supabase.functions.invoke('sbo-run-analysis', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.props_analysis = { status: 'success', analyzed: data?.analyzed || 0 };
+    console.log('Step 8 done');
+  } catch (e: any) {
+    log.steps.props_analysis = { status: 'failed', error: e.message };
+    log.errors.push('props_analysis: ' + e.message);
+    console.error('Step 8 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  // ── STEP 9: Run consensus engine ──
+  try {
+    console.log('Step 9: Running consensus engine...');
+    const { data, error } = await supabase.functions.invoke('sbo-consensus-engine', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.consensus = { status: 'success', scored: data?.scored || 0 };
+    console.log('Step 9 done');
+  } catch (e: any) {
+    log.steps.consensus = { status: 'failed', error: e.message };
+    log.errors.push('consensus: ' + e.message);
+    console.error('Step 9 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  // ── STEP 10: Build Top Plays (cross-engine consensus) ──
+  try {
+    console.log('Step 10: Building top plays...');
+    const { data, error } = await supabase.functions.invoke('sbo-top-plays', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.top_plays = { status: 'success', plays: data?.top_plays?.length || 0 };
+    console.log('Step 10 done:', log.steps.top_plays.plays, 'top plays');
+  } catch (e: any) {
+    log.steps.top_plays = { status: 'failed', error: e.message };
+    log.errors.push('top_plays: ' + e.message);
+    console.error('Step 10 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  // ── STEP 11: Compare odds (Polymarket vs books) ──
+  try {
+    console.log('Step 11: Comparing odds...');
+    const { data, error } = await supabase.functions.invoke('sbo-compare-odds', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.compare_odds = { status: 'success', comparisons: data?.compared || 0 };
+    console.log('Step 11 done');
+  } catch (e: any) {
+    log.steps.compare_odds = { status: 'failed', error: e.message };
+    log.errors.push('compare_odds: ' + e.message);
+    console.error('Step 11 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  // ── STEP 12: Auto-recalibrate model ──
+  try {
+    console.log('Step 12: Recalibrating model...');
     const { data, error } = await supabase.functions.invoke('sbo-recalibrate', { body: {} });
     if (error) throw new Error(error.message || String(error));
     log.steps.recalibrate = { status: 'success', buckets: data?.results?.length || 0 };
-    console.log('Step 7 done:', log.steps.recalibrate.buckets, 'buckets updated');
+    console.log('Step 12 done:', log.steps.recalibrate.buckets, 'buckets updated');
   } catch (e: any) {
     log.steps.recalibrate = { status: 'failed', error: e.message };
     log.errors.push('recalibrate: ' + e.message);
-    console.error('Step 7 failed:', e.message);
+    console.error('Step 12 failed:', e.message);
+  }
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  // ── STEP 13: Send daily email report ──
+  try {
+    console.log('Step 13: Sending daily email report...');
+    const { data, error } = await supabase.functions.invoke('sbo-send-daily-email', { body: {} });
+    if (error) throw new Error(error.message || String(error));
+    log.steps.daily_email = { status: 'success', sent: data?.sent || 0 };
+    console.log('Step 13 done:', data?.sent, 'emails sent');
+  } catch (e: any) {
+    log.steps.daily_email = { status: 'failed', error: e.message };
+    log.errors.push('daily_email: ' + e.message);
+    console.error('Step 13 failed:', e.message);
   }
 
   log.completed_at = new Date().toISOString();
