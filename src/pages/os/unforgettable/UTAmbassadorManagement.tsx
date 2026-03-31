@@ -347,8 +347,15 @@ export default function UTAmbassadorManagement() {
           <p className="text-sm text-muted-foreground">
             Autonomous revenue infrastructure with self-monitoring & AI optimization
           </p>
+          <p className="text-xs font-mono text-muted-foreground mt-1">
+            Total Ambassadors: {ambassadors.length} (Pending: {pendingCount} · Active: {activeCount})
+          </p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); fetchAll(); }} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
           <Button variant="outline" size="sm" onClick={runOptimizer} disabled={optimizerRunning} className="gap-2">
             {optimizerRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Gauge className="h-4 w-4" />}
             {optimizerRunning ? 'Optimizing...' : 'Run Optimizer'}
