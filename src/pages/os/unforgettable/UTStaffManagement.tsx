@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Users, Search, CheckCircle, XCircle, Star as StarIcon, Eye } from 'lucide-react';
+import { Users, Search, CheckCircle, XCircle, Star as StarIcon, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const sendApprovalSms = async (phone: string, message: string) => {
@@ -20,11 +20,21 @@ const sendApprovalSms = async (phone: string, message: string) => {
   }
 };
 
+const statusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'verified': return 'border-emerald-500 text-emerald-400';
+    case 'featured': return 'border-violet-500 text-violet-400';
+    case 'suspended': return 'border-red-500 text-red-400';
+    default: return 'border-amber-500 text-amber-400';
+  }
+};
+
 export default function UTStaffManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
+  const [mutatingIds, setMutatingIds] = useState<Set<string>>(new Set());
 
   const { data: staff = [] } = useQuery({
     queryKey: ['admin-staff-ut'],
@@ -36,18 +46,21 @@ export default function UTStaffManagement() {
 
   const updateStaff = useMutation({
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
+      setMutatingIds(prev => new Set(prev).add(id));
       await supabase.from('staff_members_ut').update(updates).eq('id', id);
-      // Send SMS on approval (non-blocking)
       if (updates.status === 'verified' && contactPhone) {
-        sendApprovalSms(
-          contactPhone,
-          '🎉 Congratulations! Your staff profile has been approved on Unforgettable Times. Log in to complete your profile and start receiving bookings!'
-        );
+        sendApprovalSms(contactPhone, '🎉 Congratulations! Your staff profile has been approved on Unforgettable Times. Log in to complete your profile and start receiving bookings!');
       }
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-staff-ut'] });
-      toast.success('Staff member updated');
+      setMutatingIds(prev => { const n = new Set(prev); n.delete(vars.id); return n; });
+      const msg = vars.updates.status === 'verified' ? '✅ Approved successfully' : vars.updates.status === 'featured' ? '⭐ Marked as featured' : '❌ Suspended';
+      toast.success(msg);
+    },
+    onError: (_e, vars) => {
+      setMutatingIds(prev => { const n = new Set(prev); n.delete(vars.id); return n; });
+      toast.error('Update failed');
     }
   });
 
@@ -90,31 +103,38 @@ export default function UTStaffManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((s: any) => (
-                <TableRow key={s.id}>
-                  <TableCell className="font-medium">{s.full_name}</TableCell>
-                  <TableCell>{s.role_category || '—'}</TableCell>
-                  <TableCell>{s.city || '—'}</TableCell>
-                  <TableCell>{s.state || '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={
-                      s.status === 'verified' ? 'border-emerald-500 text-emerald-400' :
-                      s.status === 'featured' ? 'border-pink-500 text-pink-400' :
-                      s.status === 'suspended' ? 'border-red-500 text-red-400' :
-                      'border-amber-500 text-amber-400'
-                    }>{s.status}</Badge>
-                  </TableCell>
-                  <TableCell><span className="flex items-center gap-1"><StarIcon className="h-3 w-3 text-amber-400" />{Number(s.rating_avg || 0).toFixed(1)}</span></TableCell>
-                  <TableCell><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{s.views_count}</span></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {s.status !== 'verified' && <Button size="sm" variant="outline" className="text-emerald-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>}
-                      {s.status !== 'featured' && <Button size="sm" variant="outline" className="text-pink-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'featured', is_featured: true } })}><StarIcon className="h-3 w-3" /></Button>}
-                      {s.status !== 'suspended' && <Button size="sm" variant="outline" className="text-red-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'suspended' } })}><XCircle className="h-3 w-3" /></Button>}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((s: any) => {
+                const isBusy = mutatingIds.has(s.id);
+                return (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-medium">{s.full_name}</TableCell>
+                    <TableCell>{s.role_category || '—'}</TableCell>
+                    <TableCell>{s.city || '—'}</TableCell>
+                    <TableCell>{s.state || '—'}</TableCell>
+                    <TableCell><Badge variant="outline" className={statusBadgeClass(s.status)}>{s.status}</Badge></TableCell>
+                    <TableCell><span className="flex items-center gap-1"><StarIcon className="h-3 w-3 text-amber-400" />{Number(s.rating_avg || 0).toFixed(1)}</span></TableCell>
+                    <TableCell><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{s.views_count}</span></TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 items-center">
+                        {isBusy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                        {!isBusy && s.status === 'verified' && <CheckCircle className="h-4 w-4 text-emerald-400" />}
+                        {!isBusy && s.status !== 'verified' && s.status !== 'featured' && (
+                          <Button size="sm" variant="outline" className="text-emerald-400" disabled={isBusy} onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>
+                        )}
+                        {!isBusy && s.status !== 'featured' && (
+                          <Button size="sm" variant="outline" className="text-pink-400" disabled={isBusy} onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'featured', is_featured: true } })}><StarIcon className="h-3 w-3" /></Button>
+                        )}
+                        {!isBusy && s.status !== 'suspended' && (
+                          <Button size="sm" variant="outline" className="text-red-400" disabled={isBusy} onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'suspended' } })}><XCircle className="h-3 w-3" /></Button>
+                        )}
+                        {!isBusy && s.status === 'suspended' && (
+                          <Button size="sm" variant="outline" className="text-emerald-400" disabled={isBusy} onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No staff found</TableCell></TableRow>}
             </TableBody>
           </Table>
