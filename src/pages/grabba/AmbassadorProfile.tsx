@@ -123,8 +123,25 @@ const AmbassadorProfile: React.FC = () => {
     recentOrdersCount: metrics?.last30DaysOrders || 0
   };
 
+  const ambassadorEmail = ambassador.email || ambassador.profiles?.email;
+  const missingEmail = !ambassadorEmail;
+
   return (
     <div className="p-6 space-y-6">
+      {/* Missing Email Warning */}
+      {missingEmail && (
+        <div className="flex items-center gap-3 p-4 rounded-lg border border-amber-500/50 bg-amber-500/10 text-amber-400">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="font-medium">Missing Email Address</p>
+            <p className="text-sm text-amber-400/80">This ambassador does not have an email on file. Please edit their profile to add one.</p>
+          </div>
+          <Button variant="outline" size="sm" className="border-amber-500/50 text-amber-400 hover:bg-amber-500/20" onClick={() => setEditOpen(true)}>
+            Add Email
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate('/grabba/crm')}>
@@ -239,12 +256,12 @@ const AmbassadorProfile: React.FC = () => {
                     </div>
                   </a>
                 )}
-                {ambassador.profiles?.email && (
-                  <a href={`mailto:${ambassador.profiles.email}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                {(ambassador.email || ambassador.profiles?.email) && (
+                  <a href={`mailto:${ambassador.email || ambassador.profiles.email}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                     <Mail className="h-5 w-5 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{ambassador.profiles.email}</p>
+                      <p className="font-medium">{ambassador.email || ambassador.profiles?.email}</p>
                     </div>
                   </a>
                 )}
@@ -385,6 +402,7 @@ const EditAmbassadorForm: React.FC<{
 }> = ({ ambassador, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
     name: ambassador.name || '',
+    email: ambassador.email || '',
     phone_primary: ambassador.phone_primary || '',
     phone_secondary: ambassador.phone_secondary || '',
     phone_whatsapp: ambassador.phone_whatsapp || '',
@@ -404,6 +422,15 @@ const EditAmbassadorForm: React.FC<{
         <Input 
           value={formData.name}
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium">Email <span className="text-destructive">*</span></label>
+        <Input 
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          placeholder="ambassador@example.com"
         />
       </div>
       <div className="grid grid-cols-2 gap-4">

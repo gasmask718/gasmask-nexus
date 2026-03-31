@@ -6605,6 +6605,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          email: string | null
           id: string
           is_active: boolean
           is_simulation: boolean | null
@@ -6629,6 +6630,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          email?: string | null
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null
@@ -6653,6 +6655,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          email?: string | null
           id?: string
           is_active?: boolean
           is_simulation?: boolean | null

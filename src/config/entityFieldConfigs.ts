@@ -100,6 +100,7 @@ export const bikerFields: FieldConfig[] = [
 
 export const ambassadorFields: FieldConfig[] = [
   { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'Ambassador name' },
+  { name: 'email', label: 'Email', type: 'email', required: true, placeholder: 'ambassador@example.com' },
   { name: 'tracking_code', label: 'Tracking Code', type: 'text', required: true, placeholder: 'e.g., AMB001' },
   { name: 'phone_primary', label: 'Primary Phone', type: 'phone', placeholder: '(555) 123-4567' },
   { name: 'phone_secondary', label: 'Secondary Phone', type: 'phone', placeholder: '(555) 987-6543' },
