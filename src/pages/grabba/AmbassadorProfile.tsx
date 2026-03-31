@@ -424,6 +424,15 @@ const EditAmbassadorForm: React.FC<{
           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
         />
       </div>
+      <div>
+        <label className="text-sm font-medium">Email <span className="text-destructive">*</span></label>
+        <Input 
+          type="email"
+          value={formData.email}
+          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          placeholder="ambassador@example.com"
+        />
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium">Phone</label>

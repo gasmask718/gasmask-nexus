@@ -345,12 +345,15 @@ export default function GrabbaAmbassadors() {
                             </div>
                             <div>
                               <div className="font-medium text-foreground">{amb.name || amb.user?.name || 'Unknown Ambassador'}</div>
-                              <div className="text-sm text-muted-foreground">{amb.user?.email}</div>
+                              <div className="text-sm text-muted-foreground">{amb.email || amb.user?.email || <span className="text-amber-400 italic">No email</span>}</div>
                               <div className="flex gap-2 mt-1">
                                 <Badge variant={amb.is_active ? 'default' : 'secondary'}>
                                   {amb.is_active ? 'Active' : 'Inactive'}
                                 </Badge>
                                 <Badge variant="outline">{amb.tier}</Badge>
+                                {!amb.email && !amb.user?.email && (
+                                  <Badge variant="outline" className="text-amber-400 border-amber-500/50">⚠ Missing Email</Badge>
+                                )}
                               </div>
                             </div>
                           </div>
