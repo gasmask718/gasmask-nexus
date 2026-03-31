@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,7 +14,7 @@ interface LineItem { description: string; price: number; }
 interface VAInvoiceModalProps {
   open: boolean;
   onClose: () => void;
-  lead?: { id: string; business_name: string; } | null;
+  lead?: { id: string; business_name: string; phone?: string; } | null;
 }
 
 const SERVICE_TYPES = [
@@ -27,12 +27,19 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    customerName: lead?.business_name || '',
+    customerName: '',
     serviceType: '',
     dueDate: '',
     notes: '',
     lineItems: [{ description: '', price: 0 }] as LineItem[],
   });
+
+  // Auto-fill from lead when modal opens
+  useEffect(() => {
+    if (open && lead) {
+      setForm(f => ({ ...f, customerName: lead.business_name || '' }));
+    }
+  }, [open, lead]);
 
   const total = form.lineItems.reduce((s, i) => s + (i.price || 0), 0);
 
@@ -47,7 +54,7 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
 
   const handleSave = async () => {
     if (!form.customerName || form.lineItems.length === 0) {
-      toast.error('Customer name and at least one line item required');
+      toast.error(t('va.invoice.required'));
       return;
     }
     setSaving(true);
@@ -68,10 +75,10 @@ export function VAInvoiceModal({ open, onClose, lead }: VAInvoiceModalProps) {
           notes: form.notes || null,
         });
       if (error) throw error;
-      toast.success('Invoice saved!');
+      toast.success(t('va.invoice.saved'));
       onClose();
     } catch (err: any) {
-      toast.error(err.message || 'Failed to save invoice');
+      toast.error(err.message || t('va.invoice.saveFailed'));
     } finally {
       setSaving(false);
     }

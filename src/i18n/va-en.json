@@ -42,6 +42,7 @@
   "va.leads.sendInvoice": "Send Invoice",
   "va.leads.search": "Search leads...",
   "va.leads.noLeads": "No leads found",
+  "va.leads.actions": "Actions",
 
   "va.call.title": "Active Call",
   "va.call.ringing": "Ringing",
@@ -56,6 +57,7 @@
   "va.call.callReview": "Call Review",
   "va.call.noActiveCall": "No active call",
   "va.call.startCall": "Click 'Call' on a lead to start",
+  "va.call.callFailed": "Call failed",
 
   "va.scripts.title": "Call Scripts",
   "va.scripts.step": "Step",
@@ -105,6 +107,9 @@
   "va.invoice.send": "Send Invoice",
   "va.invoice.sendViaSms": "Send via SMS",
   "va.invoice.sendViaEmail": "Send via Email",
+  "va.invoice.saved": "Invoice saved!",
+  "va.invoice.saveFailed": "Failed to save invoice",
+  "va.invoice.required": "Customer name and at least one line item required",
 
   "va.admin.numbersTitle": "Phone Number Pool",
   "va.admin.addNumber": "Add Number",

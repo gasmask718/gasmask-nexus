@@ -42,6 +42,7 @@
   "va.leads.sendInvoice": "Enviar Factura",
   "va.leads.search": "Buscar prospectos...",
   "va.leads.noLeads": "No se encontraron prospectos",
+  "va.leads.actions": "Acciones",
 
   "va.call.title": "Llamada Activa",
   "va.call.ringing": "Sonando",
@@ -56,6 +57,7 @@
   "va.call.callReview": "Revisión de Llamada",
   "va.call.noActiveCall": "Sin llamada activa",
   "va.call.startCall": "Haz clic en 'Llamar' en un prospecto para comenzar",
+  "va.call.callFailed": "Llamada fallida",
 
   "va.scripts.title": "Guiones de Llamada",
   "va.scripts.step": "Paso",
@@ -105,6 +107,9 @@
   "va.invoice.send": "Enviar Factura",
   "va.invoice.sendViaSms": "Enviar por SMS",
   "va.invoice.sendViaEmail": "Enviar por Correo",
+  "va.invoice.saved": "¡Factura guardada!",
+  "va.invoice.saveFailed": "Error al guardar factura",
+  "va.invoice.required": "Se requiere nombre del cliente y al menos un elemento",
 
   "va.admin.numbersTitle": "Pool de Números Telefónicos",
   "va.admin.addNumber": "Agregar Número",
