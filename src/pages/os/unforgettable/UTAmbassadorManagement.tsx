@@ -427,6 +427,37 @@ export default function UTAmbassadorManagement() {
         </CardContent></Card>
       </div>
 
+      {/* Debug / Pipeline Visibility Panel */}
+      <Card className="border-dashed border-pink-500/40 bg-pink-500/5">
+        <CardContent className="pt-4 flex flex-wrap items-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-pink-400" />
+            <span className="text-muted-foreground">DB Rows:</span>
+            <span className="font-bold">{ambassadors.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Showing:</span>
+            <span className="font-bold">{filtered.length}</span>
+          </div>
+          {ambassadors.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-400" />
+              <span className="text-muted-foreground">Latest:</span>
+              <span className="font-medium">{ambassadors[0]?.full_name}</span>
+              <Badge variant="outline" className={statusColor(ambassadors[0]?.status)}>
+                {normalizeAmbassadorStatus(ambassadors[0]?.status)}
+              </Badge>
+              <span className="text-xs text-muted-foreground">
+                {ambassadors[0]?.created_at ? formatDistanceToNow(new Date(ambassadors[0].created_at), { addSuffix: true }) : ''}
+              </span>
+            </div>
+          )}
+          {ambassadors.length === 0 && !loading && (
+            <span className="text-amber-400 font-medium">⚠ No ambassador records in database</span>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Tabs */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="bg-muted/50 flex-wrap">
