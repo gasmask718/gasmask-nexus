@@ -194,6 +194,12 @@ const QACommandCenter = lazy(() => import('@/pages/admin/qa/QACommandCenter'));
 const AmbassadorApplications = lazy(() => import('@/pages/admin/AmbassadorApplications'));
 const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
+
+// VA Portal
+const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
+const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
+const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
+const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
