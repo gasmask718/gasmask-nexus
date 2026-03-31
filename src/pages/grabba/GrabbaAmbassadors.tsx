@@ -189,7 +189,9 @@ export default function GrabbaAmbassadors() {
   // Filter ambassadors by search
   const filteredAmbassadors = ambassadors?.filter(amb => 
     !searchTerm || 
+    amb.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     amb.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    amb.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     amb.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     amb.tracking_code?.toLowerCase().includes(searchTerm.toLowerCase())
   );
