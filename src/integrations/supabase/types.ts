@@ -34688,12 +34688,15 @@ export type Database = {
           capacity_min: number | null
           catering_options: string | null
           city: string | null
+          contact_email: string | null
           contact_name: string | null
+          contact_phone: string | null
           created_at: string | null
           description: string | null
           email: string | null
           event_types: string[] | null
           facebook_url: string | null
+          hall_name: string | null
           id: string
           instagram_handle: string | null
           is_featured: boolean | null
@@ -34704,6 +34707,7 @@ export type Database = {
           parking_info: string | null
           phone: string | null
           photos: string[] | null
+          price_per_day: number | null
           price_per_event: number | null
           price_per_hour: number | null
           rating_avg: number | null
@@ -34711,9 +34715,11 @@ export type Database = {
           rules: string | null
           state: string | null
           status: string | null
+          tagline: string | null
           updated_at: string | null
           views_count: number | null
           website: string | null
+          website_url: string | null
           zip_code: string | null
         }
         Insert: {
@@ -34724,12 +34730,15 @@ export type Database = {
           capacity_min?: number | null
           catering_options?: string | null
           city?: string | null
+          contact_email?: string | null
           contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           description?: string | null
           email?: string | null
           event_types?: string[] | null
           facebook_url?: string | null
+          hall_name?: string | null
           id?: string
           instagram_handle?: string | null
           is_featured?: boolean | null
@@ -34740,6 +34749,7 @@ export type Database = {
           parking_info?: string | null
           phone?: string | null
           photos?: string[] | null
+          price_per_day?: number | null
           price_per_event?: number | null
           price_per_hour?: number | null
           rating_avg?: number | null
@@ -34747,9 +34757,11 @@ export type Database = {
           rules?: string | null
           state?: string | null
           status?: string | null
+          tagline?: string | null
           updated_at?: string | null
           views_count?: number | null
           website?: string | null
+          website_url?: string | null
           zip_code?: string | null
         }
         Update: {
@@ -34760,12 +34772,15 @@ export type Database = {
           capacity_min?: number | null
           catering_options?: string | null
           city?: string | null
+          contact_email?: string | null
           contact_name?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           description?: string | null
           email?: string | null
           event_types?: string[] | null
           facebook_url?: string | null
+          hall_name?: string | null
           id?: string
           instagram_handle?: string | null
           is_featured?: boolean | null
@@ -34776,6 +34791,7 @@ export type Database = {
           parking_info?: string | null
           phone?: string | null
           photos?: string[] | null
+          price_per_day?: number | null
           price_per_event?: number | null
           price_per_hour?: number | null
           rating_avg?: number | null
@@ -34783,9 +34799,11 @@ export type Database = {
           rules?: string | null
           state?: string | null
           status?: string | null
+          tagline?: string | null
           updated_at?: string | null
           views_count?: number | null
           website?: string | null
+          website_url?: string | null
           zip_code?: string | null
         }
         Relationships: []
@@ -66754,8 +66772,11 @@ export type Database = {
       staff_members_ut: {
         Row: {
           availability: Json | null
+          available_states: string[] | null
           bio: string | null
           city: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
           demo_video_url: string | null
           email: string | null
@@ -66766,19 +66787,26 @@ export type Database = {
           instagram_handle: string | null
           is_featured: boolean | null
           languages: string[] | null
+          languages_spoken: string[] | null
           phone: string | null
           portfolio_photos: string[] | null
           portfolio_videos: string[] | null
+          price_per_event: number | null
+          price_per_hour: number | null
+          price_type: string | null
           profile_photo: string | null
           rating_avg: number | null
           review_count: number | null
           role_category: string | null
+          skills: string[] | null
           specialties: string[] | null
           state: string | null
           status: string | null
+          tagline: string | null
           tiktok_handle: string | null
           total_bookings: number | null
           total_earnings: number | null
+          travel_willing: boolean | null
           updated_at: string | null
           user_id: string | null
           views_count: number | null
@@ -66787,8 +66815,11 @@ export type Database = {
         }
         Insert: {
           availability?: Json | null
+          available_states?: string[] | null
           bio?: string | null
           city?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           demo_video_url?: string | null
           email?: string | null
@@ -66799,19 +66830,26 @@ export type Database = {
           instagram_handle?: string | null
           is_featured?: boolean | null
           languages?: string[] | null
+          languages_spoken?: string[] | null
           phone?: string | null
           portfolio_photos?: string[] | null
           portfolio_videos?: string[] | null
+          price_per_event?: number | null
+          price_per_hour?: number | null
+          price_type?: string | null
           profile_photo?: string | null
           rating_avg?: number | null
           review_count?: number | null
           role_category?: string | null
+          skills?: string[] | null
           specialties?: string[] | null
           state?: string | null
           status?: string | null
+          tagline?: string | null
           tiktok_handle?: string | null
           total_bookings?: number | null
           total_earnings?: number | null
+          travel_willing?: boolean | null
           updated_at?: string | null
           user_id?: string | null
           views_count?: number | null
@@ -66820,8 +66858,11 @@ export type Database = {
         }
         Update: {
           availability?: Json | null
+          available_states?: string[] | null
           bio?: string | null
           city?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string | null
           demo_video_url?: string | null
           email?: string | null
@@ -66832,19 +66873,26 @@ export type Database = {
           instagram_handle?: string | null
           is_featured?: boolean | null
           languages?: string[] | null
+          languages_spoken?: string[] | null
           phone?: string | null
           portfolio_photos?: string[] | null
           portfolio_videos?: string[] | null
+          price_per_event?: number | null
+          price_per_hour?: number | null
+          price_type?: string | null
           profile_photo?: string | null
           rating_avg?: number | null
           review_count?: number | null
           role_category?: string | null
+          skills?: string[] | null
           specialties?: string[] | null
           state?: string | null
           status?: string | null
+          tagline?: string | null
           tiktok_handle?: string | null
           total_bookings?: number | null
           total_earnings?: number | null
+          travel_willing?: boolean | null
           updated_at?: string | null
           user_id?: string | null
           views_count?: number | null
