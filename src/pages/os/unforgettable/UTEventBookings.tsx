@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
 
 export default function UTEventBookings() {
   const queryClient = useQueryClient();
-  const [localBookings, setLocalBookings] = useState<any[]>([]);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
