@@ -63488,6 +63488,7 @@ export type Database = {
           active: boolean | null
           auto_send: boolean | null
           created_at: string | null
+          email: string | null
           group_tag: string | null
           id: string
           last_sent_at: string | null
@@ -63500,6 +63501,7 @@ export type Database = {
           active?: boolean | null
           auto_send?: boolean | null
           created_at?: string | null
+          email?: string | null
           group_tag?: string | null
           id?: string
           last_sent_at?: string | null
@@ -63512,6 +63514,7 @@ export type Database = {
           active?: boolean | null
           auto_send?: boolean | null
           created_at?: string | null
+          email?: string | null
           group_tag?: string | null
           id?: string
           last_sent_at?: string | null
@@ -63696,6 +63699,54 @@ export type Database = {
           turnovers_per_game?: number | null
           updated_at?: string | null
           wins?: number | null
+        }
+        Relationships: []
+      }
+      sbo_top_plays: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          edge_score: number | null
+          engine_count: number | null
+          engines_agreed: string[] | null
+          game_date: string
+          id: string
+          odds_american: number | null
+          pick: string
+          player_name: string | null
+          recommended_action: string | null
+          signal_sources: Json | null
+          sport: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          edge_score?: number | null
+          engine_count?: number | null
+          engines_agreed?: string[] | null
+          game_date: string
+          id?: string
+          odds_american?: number | null
+          pick: string
+          player_name?: string | null
+          recommended_action?: string | null
+          signal_sources?: Json | null
+          sport?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          edge_score?: number | null
+          engine_count?: number | null
+          engines_agreed?: string[] | null
+          game_date?: string
+          id?: string
+          odds_american?: number | null
+          pick?: string
+          player_name?: string | null
+          recommended_action?: string | null
+          signal_sources?: Json | null
+          sport?: string | null
         }
         Relationships: []
       }
