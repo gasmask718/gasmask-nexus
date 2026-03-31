@@ -3050,6 +3050,11 @@ export default function AppRoutes() {
           <Route path="staff-dashboard" element={<UTStaffMemberDashboard />} />
           <Route path="venues" element={<UTVenuesManagement />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
+          <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
+          <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
+          <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
+          <Route path="party-bags" element={<Navigate to="/os/unforgettable/venues" replace />} />
+          <Route path="ai-builder" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="platform-stats" element={<UTPlatformStats />} />
           <Route path="ambassadors" element={<UTAmbassadorManagement />} />
           <Route path="business-requests" element={<UTBusinessRequests />} />
