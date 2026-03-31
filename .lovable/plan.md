@@ -1,79 +1,140 @@
 
 
-## Plan: Fix Build Errors + Campaign Voice Pipeline + Transcript Logging
+# SBO AI Engine — Stabilization and Unification Plan
 
-### Problem Summary
+## Current State Assessment
 
-There are 17 build errors across multiple edge functions, plus the campaign dashboard's "Logs" tab is a placeholder. The core voice pipeline (Twilio TTS opener -> ElevenLabs AI handoff) is already wired but needs fixes to compile and properly use the campaign's script from Step 4.
+Your system already has **most of the components built**. The issue is not missing code — it's that the pieces are disconnected, some engines have bugs, and there's no unified dashboard or email report tying everything together.
 
-### Part 1: Fix All Build Errors (17 errors across ~10 files)
+**What exists and works (partially):**
+- `sbo-daily-automation` — 7-step orchestrator (games → props → predictions → SMS → settle → bankroll → recalibrate)
+- `sbo-run-analysis` — Props analysis engine (reads `sbo_player_props`, generates predictions)
+- `sbo-analyze-tonight` — Game-level predictions from `sbo_games`
+- `sbo-sync-polymarket` / `sbo-sync-polymarket-full` — Polymarket market sync
+- `sbo-consensus-engine` — Capper performance + consensus scoring
+- `sbo-compare-odds` — Polymarket vs sportsbook divergence detection
+- `sbo-generate-daily-briefing` — Briefing builder (moneyline + props + parlays)
+- `sbo-match-capper-picks` / `sbo-parse-capper-image` — Capper pick ingestion
+- `SBOWalletTracker.tsx` — Polymarket wallet tracker UI
 
-These are mechanical TypeScript fixes:
+**What's broken or missing:**
+1. No **email delivery** — only SMS via Twilio
+2. No **unified Top Bets / Consensus dashboard** combining all 3 engines
+3. Polymarket wallet tracker lacks automated scraping
+4. Telegram capper scraping not connected to consensus
+5. Daily automation doesn't call consensus engine or Polymarket sync
+6. No single "AI Engine Results" dashboard with 3-panel view
 
-1. **`apply-call-disposition/index.ts` (line 149)**: Replace `.catch()` on Supabase query with proper `{ data, error }` destructuring pattern.
+---
 
-2. **`auto-draft-batches/index.ts` (line 77)**: Change `err.message` to `(err as Error).message` (or `err instanceof Error ? err.message : String(err)`).
+## Implementation Plan
 
-3. **`aws-polly-tts/index.ts` (line 38)**: Fix `ArrayBufferLike` type issue by casting: `key instanceof ArrayBuffer ? new Uint8Array(key) : key` and passing `.buffer` correctly, or use `as ArrayBuffer`.
+### Phase 1: Fix Daily Automation Pipeline (Edge Function)
+**File:** `supabase/functions/sbo-daily-automation/index.ts`
 
-4. **`create-ops-thread/index.ts` (line 130)**: Type `err` as `unknown`, use safe access.
+Add missing steps to the 7-step orchestrator:
+- **Step 1.7**: Call `sbo-sync-polymarket` to sync Polymarket markets
+- **Step 2.5**: Call `sbo-run-analysis` (the detailed props analysis) after predictions
+- **Step 3.5**: Call `sbo-consensus-engine` to build consensus scores
+- **Step 3.7**: Call `sbo-compare-odds` for Polymarket vs books divergence
+- Ensure each step has retry logic (1 retry on failure) and proper error logging
 
-5. **`generate-shipping-label/index.ts` (line 166)**: Same `err.message` fix.
+### Phase 2: Build Consensus Top Bets Engine (New Edge Function)
+**File:** `supabase/functions/sbo-top-plays/index.ts` (exists, will be rewritten)
 
-6. **`ingest-google-places/index.ts` (line 320)**: Add type annotation `(t: string)` to the `.map()` callback.
+This engine will:
+- Query `props_master` for props with `consensus_score >= 65`
+- Query `sbo_odds_comparison` for Polymarket value spots (`has_value = true`)
+- Query `sbo_capper_picks` for today's verified picks
+- Cross-reference all 3 sources to find overlapping picks
+- Score each pick: `(consensus_score * 0.4) + (ai_confidence * 0.3) + (polymarket_edge * 0.3)`
+- Save results to a new `sbo_top_plays` table with columns: pick, sport, engines_agreed, confidence, edge_score, signal_sources
 
-7. **`marketplace-order-engine/index.ts` (line 232)**: Same `err.message` fix.
+**Database migration:** Create `sbo_top_plays` table.
 
-8. **`predictive-dialer-engine/index.ts` (lines 1214-1225)**: The `outcome` variable is typed too narrowly (`"failed" | "voicemail" | "no_answer"`), excluding `"answered"`. Widen the type to include `"answered"` at the declaration site.
+### Phase 3: Build Daily Email Report (New Edge Function)
+**File:** `supabase/functions/sbo-send-daily-email/index.ts`
 
-9. **`process-notification-queue/index.ts` (lines 249, 263)**: Two `err.message` fixes.
+- Use Lovable Cloud's built-in email or Resend integration
+- Sections: Top Consensus Picks, Props Engine Picks, Polymarket Signals, Capper Signals
+- Each pick shows: Game, Pick, Odds, Confidence, Source Engines
+- Called at the end of `sbo-daily-automation` after all analysis is complete
+- Recipients managed via `sbo_sms_recipients` table (add `email` column)
 
-10. **`process-settlements/index.ts` (line 41)**: Same `err.message` fix.
+### Phase 4: Build Unified AI Engine Dashboard (UI)
+**File:** `src/pages/os/betting/SBOCommandCenter.tsx` (new)
 
-11. **`production-alert-engine/index.ts` (line 125)**: Same `err.message` fix.
+Three-panel layout:
+1. **Props Engine Panel** — Today's prop predictions from `sbo_predictions` with confidence tiers
+2. **Polymarket Signals Panel** — Value spots from `sbo_odds_comparison` where `has_value = true`
+3. **Capper Signals Panel** — Today's verified capper picks from `sbo_capper_picks`
 
-12. **`twilio-outbound-call/index.ts` (line 67)**: The `.select()` returns `dialer_campaigns` as an array (joined relation). Fix: access `item.dialer_campaigns?.[0]?.agent_id` or add `.single()` semantics, or destructure properly. The select returns an array for joined tables -- need to handle `item.dialer_campaigns` as array.
+**Top Bets Section** at the top:
+- Pulls from `sbo_top_plays` table
+- Shows: Game, Pick, Odds, Engines in Agreement, Confidence Score
+- Color-coded: ELITE (gold), STRONG (green), WATCHLIST (blue)
 
-### Part 2: Campaign Script in TwiML (twilio-outbound-call)
+### Phase 5: Fix Polymarket Wallet Tracker
+**File:** `supabase/functions/sbo-sync-polymarket-full/index.ts`
 
-Currently line 75 hardcodes: `"Hello ${item.contact_name}. Are you ready to speak with our AI assistant?"`. 
+- Add wallet tracking: monitor known wallet addresses for position changes
+- Store trades in `sbo_polymarket_wallets` table (new migration)
+- Feed high-conviction wallet signals into the consensus engine
 
-**Fix**: Read the campaign's `initial_script` from the joined `dialer_campaigns` relation and use it as the TwiML `<Say>` content. Fall back to the current default if no script is set.
+### Phase 6: Wire Telegram Capper Data into Consensus
+**File:** `supabase/functions/sbo-consensus-engine/index.ts`
 
-### Part 3: Transcript Logging in Campaign Dashboard
+- Already reads `sbo_capper_picks` — verify Telegram-sourced picks have `source = 'telegram'`
+- Ensure `sbo-parse-capper-image` correctly tags source channel
+- Add Telegram pick count to consensus scoring weight
 
-The "Logs" tab (line 706-710) is a static placeholder. 
+### Phase 7: Add Route and Sidebar Entry
+**File:** `src/modules/betting/index.ts`
 
-**Fix**: Query `live_call_transcripts` by matching `call_sid` values from the campaign's `outbound_call_queue` items (which have `twilio_call_sid`). Also query `call_recordings` for completed calls. Display per-contact transcript threads grouped by call.
+- Add `SBOCommandCenter` as a new route: `/os/sports-betting/command-center`
+- Add sidebar item with `Monitor` icon: "Command Center"
+- Position it as the first item in the sidebar for quick access
 
-Additionally, ensure the `twilio-call-status` webhook also handles campaign calls (not just manual calls) -- it currently only saves transcripts when `recording.manual_call_id` exists. Need to add a parallel path that checks for campaign queue items by `provider_call_sid` and fetches/stores ElevenLabs transcripts for those too.
+---
 
-### Part 4: ElevenLabs Bridge Separation
+## Technical Details
 
-The existing `twilio-gather-webhook` already redirects to `twilio-elevenlabs-bridge` when the user confirms. This flow is correct:
+### New Database Tables
 
-1. `twilio-outbound-call` -> Twilio dials with TwiML containing `<Gather>` pointing to `twilio-gather-webhook`
-2. `twilio-gather-webhook` -> If user says yes/presses 1, `<Redirect>` to `twilio-elevenlabs-bridge`
-3. `twilio-elevenlabs-bridge` -> Registers with ElevenLabs API, returns their TwiML
+```sql
+-- Top plays consensus table
+CREATE TABLE sbo_top_plays (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  game_date DATE NOT NULL,
+  player_name TEXT,
+  pick TEXT NOT NULL,
+  sport TEXT DEFAULT 'NBA',
+  odds_american INTEGER,
+  confidence NUMERIC,
+  edge_score NUMERIC,
+  engines_agreed TEXT[] DEFAULT '{}',
+  engine_count INTEGER DEFAULT 0,
+  signal_sources JSONB DEFAULT '{}',
+  recommended_action TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-This is already a separate webhook. No new function needed -- just ensure it's working correctly with the campaign's agent_id.
+-- Add email column to recipients
+ALTER TABLE sbo_sms_recipients ADD COLUMN IF NOT EXISTS email TEXT;
+```
 
-### Files to Modify
+### Files Changed (Summary)
+1. `supabase/functions/sbo-daily-automation/index.ts` — Add Polymarket + consensus steps
+2. `supabase/functions/sbo-top-plays/index.ts` — Rewrite as consensus detector
+3. `supabase/functions/sbo-send-daily-email/index.ts` — New email report function
+4. `supabase/functions/sbo-consensus-engine/index.ts` — Wire Telegram source
+5. `src/pages/os/betting/SBOCommandCenter.tsx` — New unified dashboard
+6. `src/modules/betting/index.ts` — Add route + sidebar
+7. Database migration for `sbo_top_plays` table + email column
 
-| File | Change |
-|------|--------|
-| `supabase/functions/apply-call-disposition/index.ts` | Fix `.catch()` pattern |
-| `supabase/functions/auto-draft-batches/index.ts` | Type-safe error |
-| `supabase/functions/aws-polly-tts/index.ts` | Fix ArrayBuffer type |
-| `supabase/functions/create-ops-thread/index.ts` | Type-safe error |
-| `supabase/functions/generate-shipping-label/index.ts` | Type-safe error |
-| `supabase/functions/ingest-google-places/index.ts` | Add type annotation |
-| `supabase/functions/marketplace-order-engine/index.ts` | Type-safe error |
-| `supabase/functions/predictive-dialer-engine/index.ts` | Widen outcome type |
-| `supabase/functions/process-notification-queue/index.ts` | Type-safe errors |
-| `supabase/functions/process-settlements/index.ts` | Type-safe error |
-| `supabase/functions/production-alert-engine/index.ts` | Type-safe error |
-| `supabase/functions/twilio-outbound-call/index.ts` | Fix array join access + use campaign script |
-| `supabase/functions/twilio-call-status/index.ts` | Add campaign transcript path (not just manual calls) |
-| `src/pages/communication/dialer/CampaignWizardPage.tsx` | Build real Logs tab with transcript display |
+### Execution Order
+1. Database migration first (tables needed by functions)
+2. Edge functions (top-plays → email → automation updates)
+3. UI (command center dashboard)
+4. Sidebar wiring
 
