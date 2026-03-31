@@ -51,3 +51,4 @@ export { default as UTBusinessRequests } from './UTBusinessRequests';
 export { default as UTBusinessQuotes } from './UTBusinessQuotes';
 export { default as UTBusinessProducts } from './UTBusinessProducts';
 export { default as UTBusinessPackages } from './UTBusinessPackages';
+export { default as UTEventBookings } from './UTEventBookings';

@@ -742,6 +742,7 @@ const UTBusinessRequests = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UTBusinessQuotes = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessQuotes })));
 const UTBusinessProducts = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessProducts })));
 const UTBusinessPackages = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessPackages })));
+const UTEventBookings = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTEventBookings })));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 
 // Unforgettable CRM
@@ -3050,6 +3051,7 @@ export default function AppRoutes() {
           <Route path="hall-dashboard" element={<UTHallOwnerDashboard />} />
           <Route path="staff-dashboard" element={<UTStaffMemberDashboard />} />
           <Route path="venues" element={<UTVenuesManagement />} />
+          <Route path="event-bookings" element={<UTEventBookings />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
