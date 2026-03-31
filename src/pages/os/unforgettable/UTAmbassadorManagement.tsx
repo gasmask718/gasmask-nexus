@@ -85,7 +85,9 @@ export default function UTAmbassadorManagement() {
       (supabase as any).from('system_operation_logs').select('*').eq('system_name', 'ut_ambassador_pipeline').order('created_at', { ascending: false }).limit(30),
       (supabase as any).from('system_alert_config').select('*').eq('system_name', 'ut_ambassador_pipeline').maybeSingle(),
     ]);
+    console.log('[UT Ambassador] Query result:', { count: ambRes.data?.length, error: ambRes.error, data: ambRes.data });
     if (ambRes.data) setAmbassadors(ambRes.data);
+    else console.error('[UT Ambassador] Failed to fetch:', ambRes.error);
     if (refRes.data) setReferrals(refRes.data);
     if (payRes.data) setPayouts(payRes.data);
     if (healthRes.data) setHealthLogs(healthRes.data);
