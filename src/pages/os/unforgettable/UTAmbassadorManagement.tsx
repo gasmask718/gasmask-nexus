@@ -76,28 +76,37 @@ export default function UTAmbassadorManagement() {
 
   const fetchAll = async () => {
     console.log('[UT Ambassador] Fetching all records from', TABLE);
-    const [ambRes, refRes, payRes, healthRes, insightRes, opsRes, configRes] = await Promise.all([
-      supabase.from(TABLE).select('*').order('created_at', { ascending: false }).throwOnError(),
-      (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
-      (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
-      (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(50),
-      (supabase as any).from('ut_ambassador_insights').select('*').is('dismissed_at', null).order('created_at', { ascending: false }).limit(50),
-      (supabase as any).from('system_operation_logs').select('*').eq('system_name', 'ut_ambassador_pipeline').order('created_at', { ascending: false }).limit(30),
-      (supabase as any).from('system_alert_config').select('*').eq('system_name', 'ut_ambassador_pipeline').maybeSingle(),
-    ]);
-    console.log('[UT Ambassador] Query result:', { count: ambRes.data?.length, error: ambRes.error, data: ambRes.data });
-    if (ambRes.data) setAmbassadors(ambRes.data);
-    else console.error('[UT Ambassador] Failed to fetch:', ambRes.error);
-    if (refRes.data) setReferrals(refRes.data);
-    if (payRes.data) setPayouts(payRes.data);
-    if (healthRes.data) setHealthLogs(healthRes.data);
-    if (insightRes.data) setInsights(insightRes.data);
-    if (opsRes.data) setOpsLogs(opsRes.data);
-    if (configRes.data) setAlertConfig(configRes.data);
+    try {
+      const ambRes = await supabase.from(TABLE).select('*').order('created_at', { ascending: false });
+      console.log('[UT Ambassador] Query result:', { count: ambRes.data?.length, error: ambRes.error });
+      if (ambRes.error) console.error('[UT Ambassador] Query error:', ambRes.error);
+      if (ambRes.data) setAmbassadors(ambRes.data);
+    } catch (err) {
+      console.error('[UT Ambassador] Fetch exception:', err);
+    }
+
+    // Fetch supporting tables (may not exist yet, ignore errors)
+    try {
+      const [refRes, payRes, healthRes, insightRes, opsRes, configRes] = await Promise.all([
+        (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
+        (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
+        (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(50),
+        (supabase as any).from('ut_ambassador_insights').select('*').is('dismissed_at', null).order('created_at', { ascending: false }).limit(50),
+        (supabase as any).from('system_operation_logs').select('*').eq('system_name', 'ut_ambassador_pipeline').order('created_at', { ascending: false }).limit(30),
+        (supabase as any).from('system_alert_config').select('*').eq('system_name', 'ut_ambassador_pipeline').maybeSingle(),
+      ]);
+      if (refRes.data) setReferrals(refRes.data);
+      if (payRes.data) setPayouts(payRes.data);
+      if (healthRes.data) setHealthLogs(healthRes.data);
+      if (insightRes.data) setInsights(insightRes.data);
+      if (opsRes.data) setOpsLogs(opsRes.data);
+      if (configRes.data) setAlertConfig(configRes.data);
+    } catch (err) {
+      console.warn('[UT Ambassador] Supporting tables fetch error (non-critical):', err);
+    }
+
     setLoading(false);
   };
-
-  useEffect(() => {
     fetchAll();
     const ch = supabase
       .channel('ut-amb-engine')
