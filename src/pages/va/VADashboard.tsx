@@ -37,8 +37,13 @@ function VADashboardInner() {
   const [invoiceOpen, setInvoiceOpen] = useState(false);
 
   const handleLogout = async () => {
-    await endSession();
+    try {
+      await endSession();
+    } catch (e) {
+      console.error('Failed to end session cleanly:', e);
+    }
     await signOut();
+    navigate('/va/auth');
   };
 
   const navItems = [
