@@ -402,6 +402,7 @@ const EditAmbassadorForm: React.FC<{
 }> = ({ ambassador, onSubmit, isLoading }) => {
   const [formData, setFormData] = useState({
     name: ambassador.name || '',
+    email: ambassador.email || '',
     phone_primary: ambassador.phone_primary || '',
     phone_secondary: ambassador.phone_secondary || '',
     phone_whatsapp: ambassador.phone_whatsapp || '',
