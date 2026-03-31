@@ -1511,8 +1511,8 @@ export default function LeadDiscoveryPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary" />
-                      {instantResults.length} Results Found
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ✅ {instantResults.length} Leads Saved to System
                     </CardTitle>
                     <Button size="sm" variant="outline" className="text-xs" onClick={() => setInstantResults([])}>
                       <XCircle className="h-3 w-3 mr-1" /> Close
