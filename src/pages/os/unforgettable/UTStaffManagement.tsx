@@ -56,7 +56,7 @@ export default function UTStaffManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [localStaff, setLocalStaff] = useState<any[]>([]);
+  
 
   const { data: staff = [] } = useQuery({
     queryKey: ['admin-staff-ut'],
@@ -66,7 +66,6 @@ export default function UTStaffManagement() {
     }
   });
 
-  useEffect(() => { setLocalStaff(staff); }, [staff]);
 
   // Realtime
   useEffect(() => {
@@ -83,18 +82,21 @@ export default function UTStaffManagement() {
   const updateStaff = useMutation({
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       const { error } = await supabase.from('staff_members_ut').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('UPDATE FAILED staff_members_ut:', error);
+        throw error;
+      }
+      console.log('UPDATE SUCCESS staff_members_ut:', id, updates);
       if (updates.status === 'verified' && contactPhone) {
         sendApprovalSms(contactPhone, '🎉 Congratulations! Your staff profile has been approved on Unforgettable Times.');
       }
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: async ({ id }) => {
       setLoadingId(id);
-      setLocalStaff(prev => prev.map(s => s.id === id ? { ...s, ...updates, updated_at: new Date().toISOString() } : s));
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-staff-ut'] });
-      const name = localStaff.find(s => s.id === vars.id)?.full_name || 'Staff';
+      const name = staff.find(s => s.id === vars.id)?.full_name || 'Staff';
       const msgs: Record<string, string> = {
         verified: `✅ ${name} approved!`,
         featured: `⭐ ${name} marked as featured!`,
@@ -109,8 +111,8 @@ export default function UTStaffManagement() {
     onSettled: () => setLoadingId(null),
   });
 
-  const suspended = localStaff.filter((s: any) => s.status === 'suspended');
-  const nonSuspended = localStaff.filter((s: any) => s.status !== 'suspended');
+  const suspended = staff.filter((s: any) => s.status === 'suspended');
+  const nonSuspended = staff.filter((s: any) => s.status !== 'suspended');
 
   const filtered = nonSuspended.filter((s: any) => {
     const matchSearch = !search || s.full_name?.toLowerCase().includes(search.toLowerCase()) || s.city?.toLowerCase().includes(search.toLowerCase());
@@ -119,8 +121,8 @@ export default function UTStaffManagement() {
     return matchSearch && matchStatus && matchState;
   });
 
-  const states = [...new Set(localStaff.map((s: any) => s.state).filter(Boolean))].sort();
-  const pendingCount = localStaff.filter((s: any) => s.status === 'pending').length;
+  const states = [...new Set(staff.map((s: any) => s.state).filter(Boolean))].sort();
+  const pendingCount = staff.filter((s: any) => s.status === 'pending').length;
 
   const renderActions = (s: any) => {
     const isBusy = loadingId === s.id;
@@ -186,7 +188,7 @@ export default function UTStaffManagement() {
           {pendingCount > 0 && <Badge variant="outline" className="border-amber-500 text-amber-400">{pendingCount} Pending</Badge>}
           {pendingCount > 0 && (
             <Button size="sm" onClick={() => {
-              localStaff.filter((s: any) => s.status === 'pending').forEach((s: any) => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone }));
+              staff.filter((s: any) => s.status === 'pending').forEach((s: any) => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone }));
             }}>Approve All Pending</Button>
           )}
         </div>

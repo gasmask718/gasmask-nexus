@@ -43,7 +43,7 @@ export default function UTVenuesManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
   const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [localHalls, setLocalHalls] = useState<any[]>([]);
+  
 
   const { data: halls = [] } = useQuery({
     queryKey: ['admin-halls'],
@@ -53,7 +53,6 @@ export default function UTVenuesManagement() {
     }
   });
 
-  useEffect(() => { setLocalHalls(halls); }, [halls]);
 
   // Realtime
   useEffect(() => {
@@ -70,18 +69,21 @@ export default function UTVenuesManagement() {
   const updateHall = useMutation({
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       const { error } = await supabase.from('event_halls').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('UPDATE FAILED event_halls:', error);
+        throw error;
+      }
+      console.log('UPDATE SUCCESS event_halls:', id, updates);
       if (updates.status === 'verified' && contactPhone) {
         sendApprovalSms(contactPhone, '🎉 Congratulations! Your venue has been approved on Unforgettable Times.');
       }
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: async ({ id }) => {
       setLoadingId(id);
-      setLocalHalls(prev => prev.map(h => h.id === id ? { ...h, ...updates, updated_at: new Date().toISOString() } : h));
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-halls'] });
-      const name = localHalls.find(h => h.id === vars.id)?.name || 'Venue';
+      const name = halls.find(h => h.id === vars.id)?.name || 'Venue';
       const msgs: Record<string, string> = {
         verified: `✅ ${name} approved!`,
         featured: `⭐ ${name} marked as featured!`,
@@ -96,8 +98,8 @@ export default function UTVenuesManagement() {
     onSettled: () => setLoadingId(null),
   });
 
-  const suspended = localHalls.filter((h: any) => h.status === 'suspended');
-  const nonSuspended = localHalls.filter((h: any) => h.status !== 'suspended');
+  const suspended = halls.filter((h: any) => h.status === 'suspended');
+  const nonSuspended = halls.filter((h: any) => h.status !== 'suspended');
 
   const filtered = nonSuspended.filter((h: any) => {
     const matchSearch = !search || h.name?.toLowerCase().includes(search.toLowerCase()) || h.city?.toLowerCase().includes(search.toLowerCase());
@@ -106,8 +108,8 @@ export default function UTVenuesManagement() {
     return matchSearch && matchStatus && matchState;
   });
 
-  const states = [...new Set(localHalls.map((h: any) => h.state).filter(Boolean))].sort();
-  const pendingCount = localHalls.filter((h: any) => h.status === 'pending').length;
+  const states = [...new Set(halls.map((h: any) => h.state).filter(Boolean))].sort();
+  const pendingCount = halls.filter((h: any) => h.status === 'pending').length;
 
   const renderActions = (h: any) => {
     const isBusy = loadingId === h.id;
@@ -170,7 +172,7 @@ export default function UTVenuesManagement() {
           {pendingCount > 0 && <Badge variant="outline" className="border-amber-500 text-amber-400">{pendingCount} Pending</Badge>}
           {pendingCount > 0 && (
             <Button size="sm" onClick={() => {
-              localHalls.filter((h: any) => h.status === 'pending').forEach((h: any) => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone }));
+              halls.filter((h: any) => h.status === 'pending').forEach((h: any) => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone }));
             }}>Approve All Pending</Button>
           )}
         </div>

@@ -21,7 +21,6 @@ const STATUS_CONFIG: Record<string, { label: string; classes: string }> = {
 
 export default function UTEventBookings() {
   const queryClient = useQueryClient();
-  const [localBookings, setLocalBookings] = useState<any[]>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
@@ -37,7 +36,7 @@ export default function UTEventBookings() {
     },
   });
 
-  useEffect(() => { setLocalBookings(bookings); }, [bookings]);
+  
 
   // Realtime subscription
   useEffect(() => {
@@ -57,15 +56,18 @@ export default function UTEventBookings() {
         .from('ut_event_bookings')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('UPDATE FAILED ut_event_bookings:', error);
+        throw error;
+      }
+      console.log('UPDATE SUCCESS ut_event_bookings:', id, status);
     },
-    onMutate: async ({ id, status }) => {
+    onMutate: async ({ id }) => {
       setLoadingId(id);
-      setLocalBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
     },
     onSuccess: (_, { id, status }) => {
       queryClient.invalidateQueries({ queryKey: ['ut-event-bookings'] });
-      const name = localBookings.find(b => b.id === id)?.name || 'Booking';
+      const name = bookings.find(b => b.id === id)?.name || 'Booking';
       const msgs: Record<string, string> = {
         deposit_received: `💰 Payment marked as received for ${name}!`,
         confirmed: `✅ ${name}'s event confirmed!`,
@@ -89,11 +91,11 @@ export default function UTEventBookings() {
     });
   };
 
-  const activeBookings = localBookings.filter(b => b.status !== 'cancelled');
-  const cancelledBookings = localBookings.filter(b => b.status === 'cancelled');
-  const pendingCount = localBookings.filter(b => b.status === 'pending_payment').length;
+  const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+  const cancelledBookings = bookings.filter(b => b.status === 'cancelled');
+  const pendingCount = bookings.filter(b => b.status === 'pending_payment').length;
   const totalRevenue = activeBookings.reduce((s, b) => s + Number(b.full_price || 0), 0);
-  const depositsCollected = localBookings.filter(b => b.deposit_paid).reduce((s, b) => s + Number(b.deposit_amount || 0), 0);
+  const depositsCollected = bookings.filter(b => b.deposit_paid).reduce((s, b) => s + Number(b.deposit_amount || 0), 0);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
@@ -142,14 +144,14 @@ export default function UTEventBookings() {
         </div>
         <div className="flex gap-2 items-center">
           {pendingCount > 0 && <Badge variant="outline" className="border-amber-500 text-amber-400">{pendingCount} Pending</Badge>}
-          <Badge variant="outline" className="text-sm">{localBookings.length} total</Badge>
+          <Badge variant="outline" className="text-sm">{bookings.length} total</Badge>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardContent className="pt-4">
           <div className="text-sm text-muted-foreground">Total Bookings</div>
-          <div className="text-2xl font-bold">{localBookings.length}</div>
+          <div className="text-2xl font-bold">{bookings.length}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <div className="text-sm text-muted-foreground">Pending</div>
