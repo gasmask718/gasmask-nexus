@@ -106,7 +106,8 @@ export default function UTAmbassadorManagement() {
     }
 
     setLoading(false);
-  };
+
+  useEffect(() => {
     fetchAll();
     const ch = supabase
       .channel('ut-amb-engine')
