@@ -68,7 +68,7 @@ export default function UTEventBookings() {
     },
     onSuccess: (_, { id, status }) => {
       queryClient.invalidateQueries({ queryKey: ['ut-event-bookings'] });
-      const name = localBookings.find(b => b.id === id)?.name || 'Booking';
+      const name = bookings.find(b => b.id === id)?.name || 'Booking';
       const msgs: Record<string, string> = {
         deposit_received: `💰 Payment marked as received for ${name}!`,
         confirmed: `✅ ${name}'s event confirmed!`,
