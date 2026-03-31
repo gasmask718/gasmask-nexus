@@ -151,7 +151,7 @@ export default function UTEventBookings() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardContent className="pt-4">
           <div className="text-sm text-muted-foreground">Total Bookings</div>
-          <div className="text-2xl font-bold">{localBookings.length}</div>
+          <div className="text-2xl font-bold">{bookings.length}</div>
         </CardContent></Card>
         <Card><CardContent className="pt-4">
           <div className="text-sm text-muted-foreground">Pending</div>
