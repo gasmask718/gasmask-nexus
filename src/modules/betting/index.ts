@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { Trophy, Target, BarChart3, Shield, LayoutDashboard, Search, FileInput, Settings, Building2, ClipboardList, Activity, Calculator, Layers, Monitor, CheckCircle, Lock, ArrowRightLeft } from 'lucide-react';
+import { Trophy, Target, BarChart3, LayoutDashboard, Search, FileInput, Settings, Building2, ClipboardList, Activity, Calculator, Layers, Monitor, CheckCircle, Lock, ArrowRightLeft, Radar } from 'lucide-react';
 import BettingDashboard from '@/pages/os/betting/BettingDashboard';
 import StatsInspector from '@/pages/os/betting/StatsInspector';
 import LineIntake from '@/pages/os/betting/LineIntake';
@@ -17,8 +17,10 @@ import ResultsPage from '@/pages/os/betting/ResultsPage';
 import SimulationPage from '@/pages/os/betting/SimulationPage';
 import OwnerInternal from '@/pages/os/betting/OwnerInternal';
 import CrossPlatformLines from '@/pages/os/betting/CrossPlatformLines';
+import SBOCommandCenter from '@/pages/os/betting/SBOCommandCenter';
 
 const sidebarItems: SidebarItem[] = [
+  { path: '/os/sports-betting/command-center', label: 'Command Center', icon: Radar },
   { path: '/os/sports-betting/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/os/sports-betting/workflow', label: 'Workflow', icon: Activity },
   { path: '/os/sports-betting/entries', label: 'Entries', icon: ClipboardList },
@@ -49,6 +51,7 @@ export const BettingModule: DynastyModule = {
   },
   routes: [
     { path: '', component: BettingDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/command-center', component: SBOCommandCenter, label: 'Command Center', icon: Radar, requiresAuth: true },
     { path: '/workflow', component: BettingWorkflow, label: 'Workflow', icon: Activity, requiresAuth: true },
     { path: '/entries', component: EntriesList, label: 'Entries', icon: ClipboardList, requiresAuth: true },
     { path: '/entries/new', component: PickEntryWizard, label: 'New Entry', icon: ClipboardList, requiresAuth: true },

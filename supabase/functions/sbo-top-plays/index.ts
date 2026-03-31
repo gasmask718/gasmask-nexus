@@ -148,7 +148,41 @@ Deno.serve(async (req) => {
       rank++;
     }
 
-    // 6. Log signals for learning
+    // 6. Save top plays to sbo_top_plays table
+    // Clear today's old entries first
+    await supabase.from("sbo_top_plays").delete().eq("game_date", gameDate);
+
+    for (const play of topPlays) {
+      const enginesAgreed: string[] = [];
+      if (play.ai_confidence >= 60) enginesAgreed.push("Props Engine");
+      if (play.total_picks > 0) enginesAgreed.push("Capper Signals");
+      if (play.is_value_play) enginesAgreed.push("Value Engine");
+
+      const tier = play.composite_score >= 80 ? "ELITE BET" :
+                   play.composite_score >= 60 ? "STRONG BET" : "WATCHLIST";
+
+      await supabase.from("sbo_top_plays").insert({
+        game_date: gameDate,
+        player_name: play.player_name,
+        pick: `${play.stat_type} ${play.direction} ${play.line}`,
+        sport: "NBA",
+        odds_american: play.over_odds || null,
+        confidence: play.composite_score,
+        edge_score: play.value_score || 0,
+        engines_agreed: enginesAgreed,
+        engine_count: enginesAgreed.length,
+        signal_sources: {
+          ai_confidence: play.ai_confidence,
+          consensus_score: play.consensus_score,
+          capper_confidence: play.capper_confidence,
+          sharp_indicator: play.sharp_indicator,
+          play_reasons: play.play_reasons,
+        },
+        recommended_action: tier,
+      });
+    }
+
+    // 7. Log signals for learning
     for (const play of topPlays.slice(0, 5)) {
       await supabase.from("sbo_signal_performance").insert({
         signal_type: play.sharp_indicator === "SHARP" ? "SHARP" : play.is_value_play ? "VALUE" : "CONSENSUS",
@@ -163,6 +197,45 @@ Deno.serve(async (req) => {
         stat_type: play.stat_type,
         game_date: gameDate,
       });
+    }
+
+    // 8. Fetch Polymarket value spots for cross-referencing
+    const { data: polySignals } = await supabase
+      .from("sbo_odds_comparison")
+      .select("*")
+      .eq("has_value", true)
+      .gte("created_at", `${gameDate}T00:00:00`);
+
+    if (polySignals?.length) {
+      for (const sig of polySignals.slice(0, 5)) {
+        const existing = topPlays.find((p: any) =>
+          p.player_name && sig.description && 
+          sig.description.toLowerCase().includes(p.player_name.toLowerCase())
+        );
+        if (!existing) {
+          await supabase.from("sbo_top_plays").insert({
+            game_date: gameDate,
+            player_name: null,
+            pick: sig.description || sig.market_slug || "Polymarket Value",
+            sport: "NBA",
+            confidence: Math.round((sig.implied_edge || 0) * 100),
+            edge_score: sig.implied_edge || 0,
+            engines_agreed: ["Polymarket"],
+            engine_count: 1,
+            signal_sources: { polymarket: sig },
+            recommended_action: "WATCHLIST",
+          });
+        } else {
+          // Upgrade existing play — add Polymarket as engine
+          await supabase.from("sbo_top_plays")
+            .update({
+              engines_agreed: [...(existing.engines_agreed || []), "Polymarket"],
+              engine_count: (existing.engines_agreed?.length || 0) + 1,
+            })
+            .eq("game_date", gameDate)
+            .eq("player_name", existing.player_name);
+        }
+      }
     }
 
     return new Response(JSON.stringify({
