@@ -1416,33 +1416,73 @@ export default function LeadDiscoveryPage() {
                 </div>
               )}
 
-              {/* Search result feedback */}
+              {/* Search result feedback — SAVE CONFIRMATION */}
               {instantLastResult && !isInstantSearching && (
                 <div className={`p-4 rounded-lg border ${
-                  instantLastResult.status === "completed" ? "border-primary/30 bg-primary/5" :
-                  "border-destructive/30 bg-destructive/5"
+                  instantLastResult.status === "completed" && instantLastResult.imported > 0
+                    ? "border-green-500/40 bg-green-500/10"
+                    : instantLastResult.status === "completed"
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-destructive/30 bg-destructive/5"
                 }`}>
-                  {instantLastResult.status === "completed" ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-primary" />
+                  {instantLastResult.status === "completed" && instantLastResult.imported > 0 ? (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <CheckCircle2 className="h-6 w-6 text-green-600" />
+                        </div>
                         <div>
-                          <p className="font-medium text-sm">{instantLastResult.imported} businesses saved</p>
+                          <p className="font-bold text-base text-green-700 dark:text-green-400">
+                            ✅ {instantLastResult.imported} leads SAVED to database
+                          </p>
                           <p className="text-xs text-muted-foreground">
-                            {instantLastResult.noWebsite} no website • {instantLastResult.totalFound} detected
+                            Saved to brandaro_leads_master + qualified pipeline
                           </p>
                         </div>
                       </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-md bg-muted/50 p-2">
+                          <p className="text-lg font-bold">{instantLastResult.totalFound}</p>
+                          <p className="text-[10px] text-muted-foreground">Detected</p>
+                        </div>
+                        <div className="rounded-md bg-muted/50 p-2">
+                          <p className="text-lg font-bold">{instantLastResult.noWebsite}</p>
+                          <p className="text-[10px] text-muted-foreground">No Website</p>
+                        </div>
+                        <div className="rounded-md bg-green-500/10 p-2 border border-green-500/20">
+                          <p className="text-lg font-bold text-green-600">{instantLastResult.imported}</p>
+                          <p className="text-[10px] text-green-600 font-medium">Saved ✓</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        🇺🇸 Leads tagged: language=english • pipeline=english • source=brandaro-lead-discovery
+                      </p>
+                    </div>
+                  ) : instantLastResult.status === "completed" && instantLastResult.imported === 0 ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <XCircle className="h-5 w-5 text-muted-foreground" />
+                        <span className="font-medium text-sm">0 new leads — all duplicates or had websites</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>• {instantLastResult.totalFound} businesses detected</p>
+                        <p>• All were either duplicates or had real websites</p>
+                        <p>• Try a different city or industry</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => setInstantLastResult(null)}>
+                        <RotateCcw className="h-3 w-3 mr-1" /> Try again
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <XCircle className="h-5 w-5 text-destructive" />
-                        <span className="font-medium text-sm">No results found</span>
+                        <span className="font-medium text-sm">Search failed — Status: {instantLastResult.status}</span>
                       </div>
                       <div className="text-xs text-muted-foreground space-y-1">
                         <p>• Try a different city</p>
                         <p>• Use a broader industry type</p>
+                        <p>• Check Debug Mode for details</p>
                       </div>
                       <Button size="sm" variant="outline" onClick={() => setInstantLastResult(null)}>
                         <RotateCcw className="h-3 w-3 mr-1" /> Try again
