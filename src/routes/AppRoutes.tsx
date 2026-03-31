@@ -742,6 +742,7 @@ const UTBusinessRequests = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UTBusinessQuotes = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessQuotes })));
 const UTBusinessProducts = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessProducts })));
 const UTBusinessPackages = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTBusinessPackages })));
+const UTEventBookings = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTEventBookings })));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 
 // Unforgettable CRM
