@@ -57,11 +57,14 @@ export default function UTEventBookings() {
         .from('ut_event_bookings')
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('UPDATE FAILED ut_event_bookings:', error);
+        throw error;
+      }
+      console.log('UPDATE SUCCESS ut_event_bookings:', id, status);
     },
-    onMutate: async ({ id, status }) => {
+    onMutate: async ({ id }) => {
       setLoadingId(id);
-      setLocalBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
     },
     onSuccess: (_, { id, status }) => {
       queryClient.invalidateQueries({ queryKey: ['ut-event-bookings'] });

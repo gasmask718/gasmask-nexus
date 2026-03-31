@@ -70,14 +70,17 @@ export default function UTVenuesManagement() {
   const updateHall = useMutation({
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       const { error } = await supabase.from('event_halls').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('UPDATE FAILED event_halls:', error);
+        throw error;
+      }
+      console.log('UPDATE SUCCESS event_halls:', id, updates);
       if (updates.status === 'verified' && contactPhone) {
         sendApprovalSms(contactPhone, '🎉 Congratulations! Your venue has been approved on Unforgettable Times.');
       }
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: async ({ id }) => {
       setLoadingId(id);
-      setLocalHalls(prev => prev.map(h => h.id === id ? { ...h, ...updates, updated_at: new Date().toISOString() } : h));
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-halls'] });

@@ -83,14 +83,17 @@ export default function UTStaffManagement() {
   const updateStaff = useMutation({
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       const { error } = await supabase.from('staff_members_ut').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
-      if (error) throw error;
+      if (error) {
+        console.error('UPDATE FAILED staff_members_ut:', error);
+        throw error;
+      }
+      console.log('UPDATE SUCCESS staff_members_ut:', id, updates);
       if (updates.status === 'verified' && contactPhone) {
         sendApprovalSms(contactPhone, '🎉 Congratulations! Your staff profile has been approved on Unforgettable Times.');
       }
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: async ({ id }) => {
       setLoadingId(id);
-      setLocalStaff(prev => prev.map(s => s.id === id ? { ...s, ...updates, updated_at: new Date().toISOString() } : s));
     },
     onSuccess: (_, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-staff-ut'] });
