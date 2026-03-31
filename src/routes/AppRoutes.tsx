@@ -1001,6 +1001,14 @@ export default function AppRoutes() {
       {/* Brandaro Public Client Demo View */}
       <Route path="/client/:token" element={<ClientDemoViewPage />} />
 
+      {/* VA Portal — Public routes */}
+      <Route path="/va/auth" element={<VAAuthPage />} />
+      <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
+
+      {/* VA Portal — Protected routes */}
+      <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
+      <Route path="/admin/numbers" element={<ProtectedRoute><AdminNumbersPage /></ProtectedRoute>} />
+
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
