@@ -106,6 +106,7 @@ export default function UTAmbassadorManagement() {
     }
 
     setLoading(false);
+  };
 
   useEffect(() => {
     fetchAll();
