@@ -130,9 +130,10 @@ function SpanishLeadsPanel() {
         .eq("language", "spanish")
         .eq("pipeline", "spanish")
         .order("intent_score", { ascending: false })
-        .limit(100);
+        .limit(200);
       if (country !== "all") query = query.eq("region", country);
-      const { data } = await query;
+      const { data, error } = await query;
+      console.log("🇪🇸 Spanish leads query:", { count: data?.length, error, country });
       return data || [];
     },
   });
@@ -313,6 +314,18 @@ function SpanishLeadsPanel() {
 
   return (
     <div className="space-y-4">
+      {/* Data integrity banner */}
+      <div className="bg-muted/50 border rounded-lg p-3 flex items-center justify-between text-sm">
+        <div className="flex items-center gap-4">
+          <span className="font-medium">🇪🇸 Spanish Pipeline:</span>
+          <span className="text-muted-foreground">{spanishLeads.length} leads loaded</span>
+          {isLoading && <span className="text-xs text-muted-foreground animate-pulse">Loading...</span>}
+        </div>
+        <Badge variant={spanishLeads.length > 0 ? "default" : "destructive"} className="text-xs">
+          {spanishLeads.length > 0 ? "✅ Connected" : "⚠️ No leads found"}
+        </Badge>
+      </div>
+
       {/* Tab toggle */}
       <div className="flex gap-2">
         <Button size="sm" variant={activeTab === "search" ? "default" : "outline"} onClick={() => setActiveTab("search")}>
