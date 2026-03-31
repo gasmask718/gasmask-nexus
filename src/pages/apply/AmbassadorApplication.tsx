@@ -86,22 +86,22 @@ export default function AmbassadorApplication() {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('ambassador_applications')
-        .insert({
-          referred_by_ambassador_id: referrerInfo.id,
-          referral_code: referralCode!,
+      // Call the edge function to insert into unforgettable_ambassadors
+      const { data: result, error } = await supabase.functions.invoke('submit-ut-ambassador', {
+        body: {
           full_name: data.full_name,
           email: data.email,
-          phone: data.phone || null,
-          city: data.city || null,
-          state: data.state || null,
-          experience: data.experience || null,
-          motivation: data.motivation,
-          status: 'pending_review',
-        });
+          phone: data.phone || '',
+          state: data.state || '',
+          referral_source: referralCode || undefined,
+          motivation: data.motivation || undefined,
+          city: data.city || undefined,
+          experience: data.experience || undefined,
+        },
+      });
 
       if (error) throw error;
+      if (result?.error) throw new Error(result.error);
 
       setSubmitted(true);
       toast.success('Application submitted successfully!');

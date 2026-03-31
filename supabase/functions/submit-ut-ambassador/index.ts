@@ -4,14 +4,19 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const BodySchema = z.object({
   full_name: z.string().min(1).max(255),
   email: z.string().email(),
-  phone: z.string().min(5).max(30),
-  state: z.string().min(1).max(100),
+  phone: z.string().max(30).default(""),
+  state: z.string().max(100).default(""),
+  referral_source: z.string().optional(),
+  motivation: z.string().optional(),
+  city: z.string().optional(),
+  experience: z.string().optional(),
 });
 
 function generateReferralCode(name: string): string {
@@ -26,15 +31,19 @@ serve(async (req) => {
   }
 
   try {
-    const parsed = BodySchema.safeParse(await req.json());
+    const body = await req.json();
+    console.log("Incoming UT ambassador submission:", JSON.stringify(body));
+
+    const parsed = BodySchema.safeParse(body);
     if (!parsed.success) {
-      return new Response(JSON.stringify({ error: parsed.error.flatten().fieldErrors }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("Validation failed:", parsed.error.flatten().fieldErrors);
+      return new Response(
+        JSON.stringify({ error: parsed.error.flatten().fieldErrors }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
-    const { full_name, email, phone, state } = parsed.data;
+    const { full_name, email, phone, state, referral_source } = parsed.data;
     const referral_code = generateReferralCode(full_name);
 
     const supabase = createClient(
@@ -42,23 +51,52 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Check for duplicate email
+    const { data: existing } = await supabase
+      .from("unforgettable_ambassadors")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+
+    if (existing) {
+      console.log("Duplicate email detected:", email);
+      return new Response(
+        JSON.stringify({ error: "An application with this email already exists." }),
+        { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const { data, error } = await supabase
       .from("unforgettable_ambassadors")
-      .insert({ full_name, email, phone, state, referral_code })
+      .insert({
+        full_name,
+        email,
+        phone: phone || null,
+        state: state || null,
+        referral_code,
+        status: "pending",
+        source: referral_source ? `referral:${referral_source}` : "public_form",
+      })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("DB insert error:", error);
+      throw error;
+    }
 
-    return new Response(JSON.stringify({ success: true, ambassador: data }), {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.log("Ambassador created successfully:", data.id);
+
+    return new Response(
+      JSON.stringify({ success: true, ambassador: { id: data.id, full_name: data.full_name } }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("submit-ut-ambassador error:", message);
+    return new Response(
+      JSON.stringify({ error: message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
