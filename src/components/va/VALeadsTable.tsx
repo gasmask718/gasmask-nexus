@@ -96,7 +96,7 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
                 <th className="text-left p-3">{t('va.leads.phone')}</th>
                 <th className="text-left p-3 hidden md:table-cell">{t('va.leads.email')}</th>
                 <th className="text-left p-3">{t('va.leads.status')}</th>
-                <th className="text-right p-3">{t('va.nav.activeCall')}</th>
+                <th className="text-right p-3">{t('va.leads.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -116,11 +116,11 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
                         onClick={() => onCall(lead)} disabled={!lead.phone}>
                         <Phone className="h-3 w-3 mr-1" /> {t('va.leads.call')}
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-400 hover:text-white hidden lg:flex"
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
                         onClick={() => onCreateInvoice(lead)}>
                         <FileText className="h-3 w-3 mr-1" /> {t('va.leads.createInvoice')}
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-xs text-slate-400 hover:text-white hidden lg:flex"
+                      <Button size="sm" variant="ghost" className="h-7 text-xs text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
                         onClick={() => onSendInvoice(lead)}>
                         <Send className="h-3 w-3 mr-1" /> {t('va.leads.sendInvoice')}
                       </Button>

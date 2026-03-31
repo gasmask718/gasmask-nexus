@@ -5,11 +5,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Phone, PhoneOff, Mic, MicOff, Pause, Play, X } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, Pause, Play, X, FileText, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
 import { VAFAQs } from './VAFAQs';
+import { VAInvoiceModal } from './VAInvoiceModal';
 
 interface ActiveCallLead {
   id: string;
@@ -20,15 +21,18 @@ interface ActiveCallLead {
 interface VACallPanelProps {
   lead: ActiveCallLead | null;
   onClose: () => void;
+  onSendInvoice?: (lead: ActiveCallLead) => void;
 }
 
-export function VACallPanel({ lead, onClose }: VACallPanelProps) {
+export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) {
   const { t, twilioNumber, sessionId } = useVASession();
   const { user } = useAuth();
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'ended'>('idle');
   const [muted, setMuted] = useState(false);
   const [onHold, setOnHold] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [invoiceCreated, setInvoiceCreated] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const callLogIdRef = useRef<string | null>(null);
 
@@ -62,10 +66,9 @@ export function VACallPanel({ lead, onClose }: VACallPanelProps) {
       if (error) throw error;
       callLogIdRef.current = data?.callLogId || null;
 
-      // Simulate connection after 3s (real Twilio would use status callbacks)
       setTimeout(() => setCallStatus('connected'), 3000);
     } catch (err: any) {
-      toast.error('Call failed: ' + (err.message || 'Unknown error'));
+      toast.error(t('va.call.callFailed') + ': ' + (err.message || 'Unknown error'));
       setCallStatus('idle');
     }
   };
@@ -74,7 +77,6 @@ export function VACallPanel({ lead, onClose }: VACallPanelProps) {
     if (timerRef.current) clearInterval(timerRef.current);
     setCallStatus('ended');
 
-    // Save call log
     if (callLogIdRef.current) {
       await (supabase as any)
         .from('va_call_logs')
@@ -86,6 +88,11 @@ export function VACallPanel({ lead, onClose }: VACallPanelProps) {
     }
 
     toast.success(t('va.call.ended'));
+  };
+
+  const handleInvoiceClose = () => {
+    setInvoiceOpen(false);
+    setInvoiceCreated(true);
   };
 
   if (!lead) {
@@ -130,7 +137,7 @@ export function VACallPanel({ lead, onClose }: VACallPanelProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-2 justify-center">
+        <div className="flex gap-2 justify-center flex-wrap">
           {callStatus === 'idle' && (
             <Button onClick={initiateCall} className="bg-emerald-600 hover:bg-emerald-700 gap-2 px-8">
               <Phone className="h-4 w-4" /> {t('va.leads.call')}
@@ -150,6 +157,30 @@ export function VACallPanel({ lead, onClose }: VACallPanelProps) {
             </>
           )}
         </div>
+
+        {/* Invoice buttons during/after call */}
+        {(callStatus === 'connected' || callStatus === 'ended') && (
+          <div className="flex gap-2 justify-center mt-3 pt-3 border-t border-slate-700">
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10 gap-1"
+              onClick={() => setInvoiceOpen(true)}
+            >
+              <FileText className="h-3.5 w-3.5" /> {t('va.leads.createInvoice')}
+            </Button>
+            {invoiceCreated && onSendInvoice && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-amber-400 border-amber-500/30 hover:bg-amber-500/10 gap-1"
+                onClick={() => onSendInvoice(lead)}
+              >
+                <Send className="h-3.5 w-3.5" /> {t('va.leads.sendInvoice')}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Contextual Tabs */}
@@ -163,6 +194,13 @@ export function VACallPanel({ lead, onClose }: VACallPanelProps) {
         <TabsContent value="rebuttals" className="p-4"><VARebuttals /></TabsContent>
         <TabsContent value="faqs" className="p-4"><VAFAQs /></TabsContent>
       </Tabs>
+
+      {/* Invoice Modal */}
+      <VAInvoiceModal
+        open={invoiceOpen}
+        onClose={handleInvoiceClose}
+        lead={lead}
+      />
     </div>
   );
 }
