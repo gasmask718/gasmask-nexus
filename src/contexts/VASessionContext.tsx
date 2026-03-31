@@ -1,0 +1,125 @@
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import vaEn from '@/i18n/va-en.json';
+import vaEs from '@/i18n/va-es.json';
+
+type VALanguage = 'en' | 'es';
+
+interface VASessionState {
+  language: VALanguage;
+  twilioNumberId: string | null;
+  twilioNumber: string | null;
+  sessionId: string | null;
+  isOnboarded: boolean;
+}
+
+interface VASessionContextType extends VASessionState {
+  t: (key: string) => string;
+  setLanguage: (lang: VALanguage) => void;
+  startSession: (numberId: string, numberPhone: string, lang: VALanguage) => Promise<void>;
+  endSession: () => Promise<void>;
+}
+
+const translations: Record<VALanguage, Record<string, string>> = { en: vaEn, es: vaEs };
+
+const VASessionContext = createContext<VASessionContextType | undefined>(undefined);
+
+export function VASessionProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const [state, setState] = useState<VASessionState>({
+    language: 'en',
+    twilioNumberId: null,
+    twilioNumber: null,
+    sessionId: null,
+    isOnboarded: false,
+  });
+
+  const t = useCallback((key: string): string => {
+    return translations[state.language]?.[key] || translations.en[key] || key;
+  }, [state.language]);
+
+  const setLanguage = useCallback((lang: VALanguage) => {
+    setState(prev => ({ ...prev, language: lang }));
+  }, []);
+
+  const startSession = useCallback(async (numberId: string, numberPhone: string, lang: VALanguage) => {
+    if (!user) return;
+
+    // Mark number as in_use
+    await (supabase as any)
+      .from('brandaro_phone_numbers')
+      .update({ in_use: true, assigned_va_id: user.id })
+      .eq('id', numberId);
+
+    // Create session record
+    const { data } = await (supabase as any)
+      .from('va_sessions')
+      .insert({
+        va_id: user.id,
+        twilio_number_id: numberId,
+        language: lang,
+        is_active: true,
+      })
+      .select('id')
+      .single();
+
+    setState({
+      language: lang,
+      twilioNumberId: numberId,
+      twilioNumber: numberPhone,
+      sessionId: data?.id || null,
+      isOnboarded: true,
+    });
+  }, [user]);
+
+  const endSession = useCallback(async () => {
+    if (state.twilioNumberId) {
+      await (supabase as any)
+        .from('brandaro_phone_numbers')
+        .update({ in_use: false, assigned_va_id: null })
+        .eq('id', state.twilioNumberId);
+    }
+
+    if (state.sessionId) {
+      await (supabase as any)
+        .from('va_sessions')
+        .update({ is_active: false, ended_at: new Date().toISOString() })
+        .eq('id', state.sessionId);
+    }
+
+    setState({
+      language: 'en',
+      twilioNumberId: null,
+      twilioNumber: null,
+      sessionId: null,
+      isOnboarded: false,
+    });
+  }, [state.twilioNumberId, state.sessionId]);
+
+  // Cleanup on unmount (page close / logout)
+  useEffect(() => {
+    const cleanup = () => {
+      if (state.twilioNumberId) {
+        navigator.sendBeacon?.(
+          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brandaro_phone_numbers?id=eq.${state.twilioNumberId}`,
+          JSON.stringify({ in_use: false, assigned_va_id: null })
+        );
+      }
+    };
+    window.addEventListener('beforeunload', cleanup);
+    return () => window.removeEventListener('beforeunload', cleanup);
+  }, [state.twilioNumberId]);
+
+  return (
+    <VASessionContext.Provider value={{ ...state, t, setLanguage, startSession, endSession }}>
+      {children}
+    </VASessionContext.Provider>
+  );
+}
+
+export function useVASession() {
+  const ctx = useContext(VASessionContext);
+  if (!ctx) throw new Error('useVASession must be used inside VASessionProvider');
+  return ctx;
+}
