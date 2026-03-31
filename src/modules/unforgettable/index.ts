@@ -1,5 +1,5 @@
 import { DynastyModule, SidebarItem } from '../types';
-import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog, CalendarDays, DollarSign, Clock, Star, FileText, MessageSquare, Phone, Target, Brain, BarChart3, Home } from 'lucide-react';
+import { PartyPopper, Building, Users, Package, ShoppingBag, Sparkles, LayoutDashboard, UserCog, CalendarDays, DollarSign, Clock, Star, FileText, MessageSquare, Phone, Target, Brain, BarChart3, Home, Send, Zap } from 'lucide-react';
 import UnforgettableDashboard from '@/pages/os/unforgettable/UnforgettableDashboard';
 import UnforgettableStaff from '@/pages/os/unforgettable/UnforgettableStaff';
 import UnforgettableStaffProfile from '@/pages/os/unforgettable/UnforgettableStaffProfile';
