@@ -10,6 +10,16 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users, Search, CheckCircle, XCircle, Star as StarIcon, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
+const sendApprovalSms = async (phone: string, message: string) => {
+  try {
+    await supabase.functions.invoke('send-approval-sms', {
+      body: { to: phone, message }
+    });
+  } catch (err) {
+    console.error('SMS notification failed (non-blocking):', err);
+  }
+};
+
 export default function UTStaffManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
@@ -25,8 +35,15 @@ export default function UTStaffManagement() {
   });
 
   const updateStaff = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+    mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       await supabase.from('staff_members_ut').update(updates).eq('id', id);
+      // Send SMS on approval (non-blocking)
+      if (updates.status === 'verified' && contactPhone) {
+        sendApprovalSms(
+          contactPhone,
+          '🎉 Congratulations! Your staff profile has been approved on Unforgettable Times. Log in to complete your profile and start receiving bookings!'
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-staff-ut'] });
@@ -51,7 +68,7 @@ export default function UTStaffManagement() {
         <div className="flex gap-2">
           <Badge variant="outline" className="border-amber-500 text-amber-400">{pendingCount} Pending</Badge>
           <Button size="sm" onClick={() => {
-            staff.filter((s: any) => s.status === 'pending').forEach((s: any) => updateStaff.mutate({ id: s.id, updates: { status: 'verified' } }));
+            staff.filter((s: any) => s.status === 'pending').forEach((s: any) => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone }));
           }}>Approve All Pending</Button>
         </div>
       </div>
@@ -91,7 +108,7 @@ export default function UTStaffManagement() {
                   <TableCell><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{s.views_count}</span></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {s.status !== 'verified' && <Button size="sm" variant="outline" className="text-emerald-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'verified' } })}><CheckCircle className="h-3 w-3" /></Button>}
+                      {s.status !== 'verified' && <Button size="sm" variant="outline" className="text-emerald-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'verified' }, contactPhone: s.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>}
                       {s.status !== 'featured' && <Button size="sm" variant="outline" className="text-pink-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'featured', is_featured: true } })}><StarIcon className="h-3 w-3" /></Button>}
                       {s.status !== 'suspended' && <Button size="sm" variant="outline" className="text-red-400" onClick={() => updateStaff.mutate({ id: s.id, updates: { status: 'suspended' } })}><XCircle className="h-3 w-3" /></Button>}
                     </div>
