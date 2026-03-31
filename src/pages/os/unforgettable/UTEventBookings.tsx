@@ -37,7 +37,7 @@ export default function UTEventBookings() {
     },
   });
 
-  useEffect(() => { setLocalBookings(bookings); }, [bookings]);
+  
 
   // Realtime subscription
   useEffect(() => {
