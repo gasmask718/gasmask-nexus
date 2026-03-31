@@ -92,11 +92,11 @@ export default function UTEventBookings() {
     });
   };
 
-  const activeBookings = localBookings.filter(b => b.status !== 'cancelled');
-  const cancelledBookings = localBookings.filter(b => b.status === 'cancelled');
-  const pendingCount = localBookings.filter(b => b.status === 'pending_payment').length;
+  const activeBookings = bookings.filter(b => b.status !== 'cancelled');
+  const cancelledBookings = bookings.filter(b => b.status === 'cancelled');
+  const pendingCount = bookings.filter(b => b.status === 'pending_payment').length;
   const totalRevenue = activeBookings.reduce((s, b) => s + Number(b.full_price || 0), 0);
-  const depositsCollected = localBookings.filter(b => b.deposit_paid).reduce((s, b) => s + Number(b.deposit_amount || 0), 0);
+  const depositsCollected = bookings.filter(b => b.deposit_paid).reduce((s, b) => s + Number(b.deposit_amount || 0), 0);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
