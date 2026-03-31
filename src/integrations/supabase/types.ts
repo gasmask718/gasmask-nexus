@@ -74840,6 +74840,129 @@ export type Database = {
           },
         ]
       }
+      ut_ambassador_prospects: {
+        Row: {
+          ai_dm_message: string | null
+          ai_email_message: string | null
+          ai_summary: string | null
+          applied_at: string | null
+          audience_quality_score: number | null
+          avg_comments: number | null
+          avg_likes: number | null
+          avg_views: number | null
+          bio: string | null
+          brand_alignment_score: number | null
+          city: string | null
+          contact_phone: string | null
+          converted_at: string | null
+          country: string | null
+          created_at: string | null
+          dm_sent_at: string | null
+          email: string | null
+          engagement_rate: number | null
+          fake_follower_pct: number | null
+          followers_count: number | null
+          following_count: number | null
+          full_name: string | null
+          grade: string | null
+          hashtags_used: string[] | null
+          id: string
+          niche: string[] | null
+          notes: string | null
+          platform: string
+          posts_count: number | null
+          profile_pic_url: string | null
+          profile_url: string | null
+          responded_at: string | null
+          score: number | null
+          source: string | null
+          state: string | null
+          status: string | null
+          updated_at: string | null
+          username: string
+        }
+        Insert: {
+          ai_dm_message?: string | null
+          ai_email_message?: string | null
+          ai_summary?: string | null
+          applied_at?: string | null
+          audience_quality_score?: number | null
+          avg_comments?: number | null
+          avg_likes?: number | null
+          avg_views?: number | null
+          bio?: string | null
+          brand_alignment_score?: number | null
+          city?: string | null
+          contact_phone?: string | null
+          converted_at?: string | null
+          country?: string | null
+          created_at?: string | null
+          dm_sent_at?: string | null
+          email?: string | null
+          engagement_rate?: number | null
+          fake_follower_pct?: number | null
+          followers_count?: number | null
+          following_count?: number | null
+          full_name?: string | null
+          grade?: string | null
+          hashtags_used?: string[] | null
+          id?: string
+          niche?: string[] | null
+          notes?: string | null
+          platform: string
+          posts_count?: number | null
+          profile_pic_url?: string | null
+          profile_url?: string | null
+          responded_at?: string | null
+          score?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          username: string
+        }
+        Update: {
+          ai_dm_message?: string | null
+          ai_email_message?: string | null
+          ai_summary?: string | null
+          applied_at?: string | null
+          audience_quality_score?: number | null
+          avg_comments?: number | null
+          avg_likes?: number | null
+          avg_views?: number | null
+          bio?: string | null
+          brand_alignment_score?: number | null
+          city?: string | null
+          contact_phone?: string | null
+          converted_at?: string | null
+          country?: string | null
+          created_at?: string | null
+          dm_sent_at?: string | null
+          email?: string | null
+          engagement_rate?: number | null
+          fake_follower_pct?: number | null
+          followers_count?: number | null
+          following_count?: number | null
+          full_name?: string | null
+          grade?: string | null
+          hashtags_used?: string[] | null
+          id?: string
+          niche?: string[] | null
+          notes?: string | null
+          platform?: string
+          posts_count?: number | null
+          profile_pic_url?: string | null
+          profile_url?: string | null
+          responded_at?: string | null
+          score?: number | null
+          source?: string | null
+          state?: string | null
+          status?: string | null
+          updated_at?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       ut_ambassador_referrals: {
         Row: {
           ambassador_id: string

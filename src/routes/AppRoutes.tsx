@@ -746,6 +746,7 @@ const UTEventBookings = lazy(() => import('@/pages/os/unforgettable').then(m => 
 const UTLeadIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTLeadIntelligence })));
 const UTOutreachEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachEngine })));
 const UTAutomationRuns = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomationRuns })));
+const UTAmbassadorFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAmbassadorFinder })));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 
 // Unforgettable CRM
@@ -3058,6 +3059,7 @@ export default function AppRoutes() {
           <Route path="leads" element={<UTLeadIntelligence />} />
           <Route path="outreach-engine" element={<UTOutreachEngine />} />
           <Route path="automation-runs" element={<UTAutomationRuns />} />
+          <Route path="ambassador-finder" element={<UTAmbassadorFinder />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
