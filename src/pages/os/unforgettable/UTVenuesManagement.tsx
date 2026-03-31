@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Building, Search, CheckCircle, XCircle, Star as StarIcon, Eye } from 'lucide-react';
+import { Building, Search, CheckCircle, XCircle, Star as StarIcon, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const sendApprovalSms = async (phone: string, message: string) => {
@@ -20,11 +20,21 @@ const sendApprovalSms = async (phone: string, message: string) => {
   }
 };
 
+const statusBadgeClass = (status: string) => {
+  switch (status) {
+    case 'verified': return 'border-emerald-500 text-emerald-400';
+    case 'featured': return 'border-violet-500 text-violet-400';
+    case 'suspended': return 'border-red-500 text-red-400';
+    default: return 'border-amber-500 text-amber-400';
+  }
+};
+
 export default function UTVenuesManagement() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [stateFilter, setStateFilter] = useState('all');
+  const [mutatingIds, setMutatingIds] = useState<Set<string>>(new Set());
 
   const { data: halls = [] } = useQuery({
     queryKey: ['admin-halls'],
@@ -36,18 +46,21 @@ export default function UTVenuesManagement() {
 
   const updateHall = useMutation({
     mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
+      setMutatingIds(prev => new Set(prev).add(id));
       await supabase.from('event_halls').update(updates).eq('id', id);
-      // Send SMS on approval (non-blocking)
       if (updates.status === 'verified' && contactPhone) {
-        sendApprovalSms(
-          contactPhone,
-          '🎉 Congratulations! Your venue has been approved on Unforgettable Times. Log in to complete your profile and start receiving bookings!'
-        );
+        sendApprovalSms(contactPhone, '🎉 Congratulations! Your venue has been approved on Unforgettable Times. Log in to complete your profile and start receiving bookings!');
       }
     },
-    onSuccess: () => {
+    onSuccess: (_d, vars) => {
       queryClient.invalidateQueries({ queryKey: ['admin-halls'] });
-      toast.success('Hall updated');
+      setMutatingIds(prev => { const n = new Set(prev); n.delete(vars.id); return n; });
+      const msg = vars.updates.status === 'verified' ? '✅ Approved successfully' : vars.updates.status === 'featured' ? '⭐ Marked as featured' : '❌ Suspended';
+      toast.success(msg);
+    },
+    onError: (_e, vars) => {
+      setMutatingIds(prev => { const n = new Set(prev); n.delete(vars.id); return n; });
+      toast.error('Update failed');
     }
   });
 
@@ -90,31 +103,38 @@ export default function UTVenuesManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((h: any) => (
-                <TableRow key={h.id}>
-                  <TableCell className="font-medium">{h.name}</TableCell>
-                  <TableCell>{h.city || '—'}</TableCell>
-                  <TableCell>{h.state || '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={
-                      h.status === 'verified' ? 'border-emerald-500 text-emerald-400' :
-                      h.status === 'featured' ? 'border-pink-500 text-pink-400' :
-                      h.status === 'suspended' ? 'border-red-500 text-red-400' :
-                      'border-amber-500 text-amber-400'
-                    }>{h.status}</Badge>
-                  </TableCell>
-                  <TableCell><span className="flex items-center gap-1"><StarIcon className="h-3 w-3 text-amber-400" />{Number(h.rating_avg || 0).toFixed(1)}</span></TableCell>
-                  <TableCell><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{h.views_count}</span></TableCell>
-                  <TableCell>—</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {h.status !== 'verified' && <Button size="sm" variant="outline" className="text-emerald-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>}
-                      {h.status !== 'featured' && <Button size="sm" variant="outline" className="text-pink-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'featured', is_featured: true } })}><StarIcon className="h-3 w-3" /></Button>}
-                      {h.status !== 'suspended' && <Button size="sm" variant="outline" className="text-red-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'suspended' } })}><XCircle className="h-3 w-3" /></Button>}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map((h: any) => {
+                const isBusy = mutatingIds.has(h.id);
+                return (
+                  <TableRow key={h.id}>
+                    <TableCell className="font-medium">{h.name}</TableCell>
+                    <TableCell>{h.city || '—'}</TableCell>
+                    <TableCell>{h.state || '—'}</TableCell>
+                    <TableCell><Badge variant="outline" className={statusBadgeClass(h.status)}>{h.status}</Badge></TableCell>
+                    <TableCell><span className="flex items-center gap-1"><StarIcon className="h-3 w-3 text-amber-400" />{Number(h.rating_avg || 0).toFixed(1)}</span></TableCell>
+                    <TableCell><span className="flex items-center gap-1"><Eye className="h-3 w-3" />{h.views_count}</span></TableCell>
+                    <TableCell>—</TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 items-center">
+                        {isBusy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                        {!isBusy && h.status === 'verified' && <CheckCircle className="h-4 w-4 text-emerald-400" />}
+                        {!isBusy && h.status !== 'verified' && h.status !== 'featured' && (
+                          <Button size="sm" variant="outline" className="text-emerald-400" disabled={isBusy} onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>
+                        )}
+                        {!isBusy && h.status !== 'featured' && (
+                          <Button size="sm" variant="outline" className="text-pink-400" disabled={isBusy} onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'featured', is_featured: true } })}><StarIcon className="h-3 w-3" /></Button>
+                        )}
+                        {!isBusy && h.status !== 'suspended' && (
+                          <Button size="sm" variant="outline" className="text-red-400" disabled={isBusy} onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'suspended' } })}><XCircle className="h-3 w-3" /></Button>
+                        )}
+                        {!isBusy && h.status === 'suspended' && (
+                          <Button size="sm" variant="outline" className="text-emerald-400" disabled={isBusy} onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {filtered.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">No venues found</TableCell></TableRow>}
             </TableBody>
           </Table>
