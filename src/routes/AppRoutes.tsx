@@ -3057,6 +3057,7 @@ export default function AppRoutes() {
           <Route path="event-bookings" element={<UTEventBookings />} />
           <Route path="leads" element={<UTLeadIntelligence />} />
           <Route path="outreach-engine" element={<UTOutreachEngine />} />
+          <Route path="automation-runs" element={<UTAutomationRuns />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
