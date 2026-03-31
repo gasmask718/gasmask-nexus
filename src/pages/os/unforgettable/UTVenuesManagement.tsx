@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +9,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Building, Search, CheckCircle, XCircle, Star as StarIcon, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+
+const sendApprovalSms = async (phone: string, message: string) => {
+  try {
+    await supabase.functions.invoke('send-approval-sms', {
+      body: { to: phone, message }
+    });
+  } catch (err) {
+    console.error('SMS notification failed (non-blocking):', err);
+  }
+};
 
 export default function UTVenuesManagement() {
   const queryClient = useQueryClient();
@@ -25,8 +35,15 @@ export default function UTVenuesManagement() {
   });
 
   const updateHall = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Record<string, any> }) => {
+    mutationFn: async ({ id, updates, contactPhone }: { id: string; updates: Record<string, any>; contactPhone?: string }) => {
       await supabase.from('event_halls').update(updates).eq('id', id);
+      // Send SMS on approval (non-blocking)
+      if (updates.status === 'verified' && contactPhone) {
+        sendApprovalSms(
+          contactPhone,
+          '🎉 Congratulations! Your venue has been approved on Unforgettable Times. Log in to complete your profile and start receiving bookings!'
+        );
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-halls'] });
@@ -51,7 +68,7 @@ export default function UTVenuesManagement() {
         <div className="flex gap-2">
           <Badge variant="outline" className="border-amber-500 text-amber-400">{pendingCount} Pending</Badge>
           <Button size="sm" onClick={() => {
-            halls.filter((h: any) => h.status === 'pending').forEach((h: any) => updateHall.mutate({ id: h.id, updates: { status: 'verified' } }));
+            halls.filter((h: any) => h.status === 'pending').forEach((h: any) => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone }));
           }}>Approve All Pending</Button>
         </div>
       </div>
@@ -91,7 +108,7 @@ export default function UTVenuesManagement() {
                   <TableCell>—</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {h.status !== 'verified' && <Button size="sm" variant="outline" className="text-emerald-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'verified' } })}><CheckCircle className="h-3 w-3" /></Button>}
+                      {h.status !== 'verified' && <Button size="sm" variant="outline" className="text-emerald-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'verified' }, contactPhone: h.contact_phone })}><CheckCircle className="h-3 w-3" /></Button>}
                       {h.status !== 'featured' && <Button size="sm" variant="outline" className="text-pink-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'featured', is_featured: true } })}><StarIcon className="h-3 w-3" /></Button>}
                       {h.status !== 'suspended' && <Button size="sm" variant="outline" className="text-red-400" onClick={() => updateHall.mutate({ id: h.id, updates: { status: 'suspended' } })}><XCircle className="h-3 w-3" /></Button>}
                     </div>
