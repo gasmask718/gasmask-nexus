@@ -194,6 +194,12 @@ const QACommandCenter = lazy(() => import('@/pages/admin/qa/QACommandCenter'));
 const AmbassadorApplications = lazy(() => import('@/pages/admin/AmbassadorApplications'));
 const SmsSystemTests = lazy(() => import('@/pages/admin/SmsSystemTests'));
 const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplication'));
+
+// VA Portal
+const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
+const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
+const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
+const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
@@ -994,6 +1000,14 @@ export default function AppRoutes() {
       <Route path="/proposal/:token" element={<PublicProposalPage />} />
       {/* Brandaro Public Client Demo View */}
       <Route path="/client/:token" element={<ClientDemoViewPage />} />
+
+      {/* VA Portal — Public routes */}
+      <Route path="/va/auth" element={<VAAuthPage />} />
+      <Route path="/pay/:invoiceId" element={<PayInvoicePage />} />
+
+      {/* VA Portal — Protected routes */}
+      <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
+      <Route path="/admin/numbers" element={<ProtectedRoute><AdminNumbersPage /></ProtectedRoute>} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}

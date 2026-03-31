@@ -16031,6 +16031,7 @@ export type Database = {
       brandaro_phone_numbers: {
         Row: {
           assigned_campaign: string | null
+          assigned_va_id: string | null
           brand: string | null
           calls_made: number | null
           capabilities: Json | null
@@ -16039,6 +16040,7 @@ export type Database = {
           description: string | null
           friendly_name: string
           id: string
+          in_use: boolean | null
           is_active: boolean | null
           is_default: boolean | null
           last_used_at: string | null
@@ -16053,6 +16055,7 @@ export type Database = {
         }
         Insert: {
           assigned_campaign?: string | null
+          assigned_va_id?: string | null
           brand?: string | null
           calls_made?: number | null
           capabilities?: Json | null
@@ -16061,6 +16064,7 @@ export type Database = {
           description?: string | null
           friendly_name: string
           id?: string
+          in_use?: boolean | null
           is_active?: boolean | null
           is_default?: boolean | null
           last_used_at?: string | null
@@ -16075,6 +16079,7 @@ export type Database = {
         }
         Update: {
           assigned_campaign?: string | null
+          assigned_va_id?: string | null
           brand?: string | null
           calls_made?: number | null
           capabilities?: Json | null
@@ -16083,6 +16088,7 @@ export type Database = {
           description?: string | null
           friendly_name?: string
           id?: string
+          in_use?: boolean | null
           is_active?: boolean | null
           is_default?: boolean | null
           last_used_at?: string | null
@@ -16095,7 +16101,15 @@ export type Database = {
           twilio_sid?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "brandaro_phone_numbers_assigned_va_id_fkey"
+            columns: ["assigned_va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       brandaro_positioning_tests: {
         Row: {
@@ -79127,6 +79141,152 @@ export type Database = {
           },
         ]
       }
+      va_call_logs: {
+        Row: {
+          ai_analysis: Json | null
+          call_status: string | null
+          called_at: string | null
+          duration_seconds: number | null
+          id: string
+          lead_id: string | null
+          recording_url: string | null
+          transcript: string | null
+          twilio_number: string
+          va_id: string
+        }
+        Insert: {
+          ai_analysis?: Json | null
+          call_status?: string | null
+          called_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          recording_url?: string | null
+          transcript?: string | null
+          twilio_number: string
+          va_id: string
+        }
+        Update: {
+          ai_analysis?: Json | null
+          call_status?: string | null
+          called_at?: string | null
+          duration_seconds?: number | null
+          id?: string
+          lead_id?: string | null
+          recording_url?: string | null
+          transcript?: string | null
+          twilio_number?: string
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_call_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_call_logs_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_invoice_logs: {
+        Row: {
+          id: string
+          invoice_id: string
+          sent_at: string | null
+          sent_to: string | null
+          sent_via: string
+        }
+        Insert: {
+          id?: string
+          invoice_id: string
+          sent_at?: string | null
+          sent_to?: string | null
+          sent_via: string
+        }
+        Update: {
+          id?: string
+          invoice_id?: string
+          sent_at?: string | null
+          sent_to?: string | null
+          sent_via?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_invoice_logs_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "va_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_invoices: {
+        Row: {
+          created_at: string | null
+          customer_name: string
+          due_date: string | null
+          id: string
+          lead_id: string | null
+          line_items: Json
+          notes: string | null
+          payment_link: string | null
+          service_type: string | null
+          status: string | null
+          total: number
+          va_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          customer_name: string
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          line_items?: Json
+          notes?: string | null
+          payment_link?: string | null
+          service_type?: string | null
+          status?: string | null
+          total?: number
+          va_id: string
+        }
+        Update: {
+          created_at?: string | null
+          customer_name?: string
+          due_date?: string | null
+          id?: string
+          lead_id?: string | null
+          line_items?: Json
+          notes?: string | null
+          payment_link?: string | null
+          service_type?: string | null
+          status?: string | null
+          total?: number
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_invoices_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_invoices_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_lessons: {
         Row: {
           category: string
@@ -79328,6 +79488,51 @@ export type Database = {
             columns: ["va_id"]
             isOneToOne: false
             referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_sessions: {
+        Row: {
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          language: string
+          started_at: string | null
+          twilio_number_id: string
+          va_id: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string
+          started_at?: string | null
+          twilio_number_id: string
+          va_id: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          language?: string
+          started_at?: string | null
+          twilio_number_id?: string
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_sessions_twilio_number_id_fkey"
+            columns: ["twilio_number_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_phone_numbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_sessions_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
