@@ -26,12 +26,11 @@ serve(async (req) => {
     )
 
     const body = await req.json()
-    const { email } = body
 
     const { data: existing } = await supabase
       .from('event_halls')
       .select('id')
-      .eq('contact_email', email)
+      .eq('contact_email', body.contact_email)
       .maybeSingle()
 
     if (existing) {
@@ -43,7 +42,27 @@ serve(async (req) => {
 
     const { error: insertError } = await supabase
       .from('event_halls')
-      .insert({ ...body, status: 'pending' })
+      .insert({
+        name: body.hall_name || body.name,
+        description: body.description,
+        tagline: body.tagline,
+        address: body.address,
+        city: body.city,
+        state: body.state,
+        zip_code: body.zip_code,
+        capacity_min: body.capacity_min,
+        capacity_max: body.capacity_max,
+        price_per_hour: body.price_per_hour,
+        price_per_day: body.price_per_day,
+        contact_name: body.contact_name,
+        contact_email: body.contact_email,
+        contact_phone: body.contact_phone,
+        instagram_handle: body.instagram_handle,
+        website_url: body.website_url,
+        amenities: body.amenities,
+        event_types: body.event_types,
+        status: 'pending'
+      })
 
     if (insertError) {
       return new Response(
