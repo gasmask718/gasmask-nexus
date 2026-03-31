@@ -130,9 +130,10 @@ function SpanishLeadsPanel() {
         .eq("language", "spanish")
         .eq("pipeline", "spanish")
         .order("intent_score", { ascending: false })
-        .limit(100);
+        .limit(200);
       if (country !== "all") query = query.eq("region", country);
-      const { data } = await query;
+      const { data, error } = await query;
+      console.log("🇪🇸 Spanish leads query:", { count: data?.length, error, country });
       return data || [];
     },
   });
