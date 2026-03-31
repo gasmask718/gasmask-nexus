@@ -73785,8 +73785,11 @@ export type Database = {
           created_at: string
           earnings_per_click: number | null
           email: string | null
+          event_types: string[] | null
+          follower_range: string | null
           full_name: string
           id: string
+          instagram_handle: string | null
           is_boosted: boolean
           is_tier_locked: boolean
           last_conversion_at: string | null
@@ -73806,6 +73809,7 @@ export type Database = {
           status: string
           tier: string
           tier_updated_at: string | null
+          tiktok_handle: string | null
           total_clicks: number | null
           total_commissions: number | null
           total_conversions: number | null
@@ -73815,6 +73819,8 @@ export type Database = {
           total_referrals: number | null
           total_revenue: number | null
           total_sales: number
+          why_ambassador: string | null
+          youtube_handle: string | null
         }
         Insert: {
           active_referral_link?: string | null
@@ -73831,8 +73837,11 @@ export type Database = {
           created_at?: string
           earnings_per_click?: number | null
           email?: string | null
+          event_types?: string[] | null
+          follower_range?: string | null
           full_name: string
           id?: string
+          instagram_handle?: string | null
           is_boosted?: boolean
           is_tier_locked?: boolean
           last_conversion_at?: string | null
@@ -73852,6 +73861,7 @@ export type Database = {
           status?: string
           tier?: string
           tier_updated_at?: string | null
+          tiktok_handle?: string | null
           total_clicks?: number | null
           total_commissions?: number | null
           total_conversions?: number | null
@@ -73861,6 +73871,8 @@ export type Database = {
           total_referrals?: number | null
           total_revenue?: number | null
           total_sales?: number
+          why_ambassador?: string | null
+          youtube_handle?: string | null
         }
         Update: {
           active_referral_link?: string | null
@@ -73877,8 +73889,11 @@ export type Database = {
           created_at?: string
           earnings_per_click?: number | null
           email?: string | null
+          event_types?: string[] | null
+          follower_range?: string | null
           full_name?: string
           id?: string
+          instagram_handle?: string | null
           is_boosted?: boolean
           is_tier_locked?: boolean
           last_conversion_at?: string | null
@@ -73898,6 +73913,7 @@ export type Database = {
           status?: string
           tier?: string
           tier_updated_at?: string | null
+          tiktok_handle?: string | null
           total_clicks?: number | null
           total_commissions?: number | null
           total_conversions?: number | null
@@ -73907,6 +73923,8 @@ export type Database = {
           total_referrals?: number | null
           total_revenue?: number | null
           total_sales?: number
+          why_ambassador?: string | null
+          youtube_handle?: string | null
         }
         Relationships: []
       }
