@@ -75144,6 +75144,72 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_event_bookings: {
+        Row: {
+          ai_plan: Json | null
+          budget: string | null
+          city: string | null
+          created_at: string | null
+          deposit_amount: number | null
+          deposit_paid: boolean | null
+          email: string
+          event_date: string | null
+          event_type: string | null
+          full_price: number | null
+          guest_count: number | null
+          id: string
+          name: string
+          package_name: string | null
+          phone: string
+          preferences: string | null
+          status: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_plan?: Json | null
+          budget?: string | null
+          city?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          email: string
+          event_date?: string | null
+          event_type?: string | null
+          full_price?: number | null
+          guest_count?: number | null
+          id?: string
+          name: string
+          package_name?: string | null
+          phone: string
+          preferences?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_plan?: Json | null
+          budget?: string | null
+          city?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          email?: string
+          event_date?: string | null
+          event_type?: string | null
+          full_price?: number | null
+          guest_count?: number | null
+          id?: string
+          name?: string
+          package_name?: string | null
+          phone?: string
+          preferences?: string | null
+          status?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ut_event_packages: {
         Row: {
           base_price: number | null
