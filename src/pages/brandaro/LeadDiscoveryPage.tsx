@@ -798,6 +798,7 @@ export default function LeadDiscoveryPage() {
               .from("brandaro_leads_master")
               .select("id, business_name, phone, status, region, language, pipeline, intent_score, priority_tier, website, industry, created_at")
               .eq("language", "english")
+              .eq("pipeline", "english")
               .eq("source", "brandaro-lead-discovery")
               .order("created_at", { ascending: false })
               .limit(jd.imported_count + 5);
