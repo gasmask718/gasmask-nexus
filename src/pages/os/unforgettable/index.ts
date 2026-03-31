@@ -54,3 +54,4 @@ export { default as UTBusinessPackages } from './UTBusinessPackages';
 export { default as UTEventBookings } from './UTEventBookings';
 export { default as UTLeadIntelligence } from './UTLeadIntelligence';
 export { default as UTOutreachEngine } from './UTOutreachEngine';
+export { default as UTAutomationRuns } from './UTAutomationRuns';

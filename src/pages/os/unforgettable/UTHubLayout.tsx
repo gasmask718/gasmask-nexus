@@ -3,7 +3,7 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   BarChart3, Target, Phone, ClipboardCheck, Store, Package, Bot, TrendingUp,
-  PartyPopper, Users, CalendarDays, DollarSign, FileText, MapPin
+  PartyPopper, Users, CalendarDays, DollarSign, FileText, MapPin, Brain, Send, Zap
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,6 +48,9 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/intelligence', label: 'Floor 1 — Lead Intelligence', icon: Target },
       { path: '/os/unforgettable/territory', label: 'Territory Map', icon: MapPin },
       { path: '/os/unforgettable/places', label: 'Places Lead Finder', icon: Target },
+      { path: '/os/unforgettable/leads', label: 'Lead Intelligence', icon: Brain },
+      { path: '/os/unforgettable/outreach-engine', label: 'Outreach Engine', icon: Send },
+      { path: '/os/unforgettable/automation-runs', label: 'Automation Runs', icon: Zap },
     ],
   },
   {
