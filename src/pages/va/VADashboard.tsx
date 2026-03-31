@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { VASessionProvider, useVASession } from '@/contexts/VASessionContext';
 import { VAOnboardingModal } from '@/components/va/VAOnboardingModal';
@@ -9,6 +9,7 @@ import { VAInvoiceModal } from '@/components/va/VAInvoiceModal';
 import { VAScripts } from '@/components/va/VAScripts';
 import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
+import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -17,15 +18,20 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
+  Search, ArrowLeft,
 } from 'lucide-react';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings';
+type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery';
 
 function VADashboardInner() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { signOut } = useAuth();
   const { t, twilioNumber, language, isOnboarded, endSession } = useVASession();
-  const [view, setView] = useState<VAView>('leads');
+
+  // Auto-set view based on route
+  const initialView = location.pathname.includes('lead-discovery') ? 'discovery' : 'leads';
+  const [view, setView] = useState<VAView>(initialView);
   const [callLead, setCallLead] = useState<any>(null);
   const [invoiceLead, setInvoiceLead] = useState<any>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
@@ -37,6 +43,7 @@ function VADashboardInner() {
 
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
+    { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
     { key: 'call' as VAView, label: t('va.nav.activeCall'), icon: Phone },
     { key: 'scripts' as VAView, label: t('va.nav.scripts'), icon: BookOpen },
     { key: 'faqs' as VAView, label: t('va.nav.faqs'), icon: HelpCircle },
@@ -74,6 +81,24 @@ function VADashboardInner() {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
+
+            {/* Brandaro Link */}
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-orange-400 font-bold text-xs">Brandaro</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => navigate('/brandaro')}
+                      className="text-slate-400 hover:text-orange-300 hover:bg-orange-500/10"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      <span>{t('va.nav.backToBrandaro')}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </SidebarContent>
         </Sidebar>
 
@@ -86,6 +111,7 @@ function VADashboardInner() {
                 <PanelLeft className="h-5 w-5" />
               </SidebarTrigger>
               <h1 className="text-sm font-bold text-white hidden sm:block">VA Portal</h1>
+              <span className="text-xs text-slate-500 hidden md:inline">/ Brandaro</span>
             </div>
             <div className="flex items-center gap-3">
               {twilioNumber && (
@@ -111,8 +137,13 @@ function VADashboardInner() {
                 onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
               />
             )}
+            {view === 'discovery' && <VALeadDiscovery />}
             {view === 'call' && (
-              <VACallPanel lead={callLead} onClose={() => { setCallLead(null); setView('leads'); }} />
+              <VACallPanel
+                lead={callLead}
+                onClose={() => { setCallLead(null); setView('leads'); }}
+                onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
+              />
             )}
             {view === 'scripts' && (
               <div className="max-w-2xl space-y-4">
@@ -124,14 +155,14 @@ function VADashboardInner() {
             {view === 'invoices' && (
               <div className="text-center text-slate-400 py-16">
                 <FileText className="h-12 w-12 mx-auto text-slate-600 mb-3" />
-                <p className="font-medium">Invoice history coming soon</p>
-                <p className="text-sm">Create invoices from the Leads tab</p>
+                <p className="font-medium">{t('va.invoices.comingSoon')}</p>
+                <p className="text-sm">{t('va.invoices.createFromLeads')}</p>
               </div>
             )}
             {view === 'settings' && (
               <div className="text-center text-slate-400 py-16">
                 <Settings className="h-12 w-12 mx-auto text-slate-600 mb-3" />
-                <p className="font-medium">Settings coming soon</p>
+                <p className="font-medium">{t('va.settings.comingSoon')}</p>
               </div>
             )}
           </main>
