@@ -27,6 +27,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/os/unforgettable/staff-management', label: 'Staff Management', icon: Users },
   { path: '/os/unforgettable/platform-stats', label: 'Platform Stats', icon: BarChart3 },
   { path: '/os/unforgettable/ambassadors', label: 'Ambassadors', icon: Users },
+  { path: '/os/unforgettable/event-bookings', label: 'Event Bookings', icon: CalendarDays },
   { path: '/os/unforgettable/staff', label: 'Staff', icon: UserCog },
   { path: '/os/unforgettable/scheduling', label: 'Scheduling', icon: CalendarDays },
   { path: '/os/unforgettable/payroll', label: 'Payroll', icon: DollarSign },
