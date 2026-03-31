@@ -256,12 +256,12 @@ const AmbassadorProfile: React.FC = () => {
                     </div>
                   </a>
                 )}
-                {ambassador.profiles?.email && (
-                  <a href={`mailto:${ambassador.profiles.email}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
+                {(ambassador.email || ambassador.profiles?.email) && (
+                  <a href={`mailto:${ambassador.email || ambassador.profiles.email}`} className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors">
                     <Mail className="h-5 w-5 text-primary" />
                     <div>
                       <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{ambassador.profiles.email}</p>
+                      <p className="font-medium">{ambassador.email || ambassador.profiles?.email}</p>
                     </div>
                   </a>
                 )}
