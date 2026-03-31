@@ -106,6 +106,7 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/hall-dashboard', label: 'Hall Owner Dashboard', icon: Store },
       { path: '/os/unforgettable/staff-dashboard', label: 'Staff Dashboard', icon: Users },
       { path: '/os/unforgettable/venues', label: 'Venues Management', icon: MapPin },
+      { path: '/os/unforgettable/event-bookings', label: 'Event Bookings', icon: CalendarDays },
       { path: '/os/unforgettable/staff-management', label: 'Staff Management', icon: Users },
       { path: '/os/unforgettable/platform-stats', label: 'Platform Stats', icon: BarChart3 },
     ],
