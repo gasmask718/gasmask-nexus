@@ -75,8 +75,9 @@ export default function UTAmbassadorManagement() {
   const [optimizerRunning, setOptimizerRunning] = useState(false);
 
   const fetchAll = async () => {
+    console.log('[UT Ambassador] Fetching all records from', TABLE);
     const [ambRes, refRes, payRes, healthRes, insightRes, opsRes, configRes] = await Promise.all([
-      supabase.from(TABLE).select('*').order('created_at', { ascending: false }),
+      supabase.from(TABLE).select('*').order('created_at', { ascending: false }).throwOnError(),
       (supabase as any).from('ut_ambassador_referrals').select('*').order('created_at', { ascending: false }).limit(200),
       (supabase as any).from('ut_ambassador_payouts').select('*, unforgettable_ambassadors(full_name)').order('created_at', { ascending: false }),
       (supabase as any).from('pipeline_health_logs').select('*').order('created_at', { ascending: false }).limit(50),
