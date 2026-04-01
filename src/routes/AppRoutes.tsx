@@ -1051,6 +1051,10 @@ export default function AppRoutes() {
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/admin/numbers" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminNumbersPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/leaderboard" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminLeaderboardPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/call-review" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminCallReviewPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/monitor" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminVAMonitorPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/dnc" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminDNCManagerPage /></RequireRole></ProtectedRoute>} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
