@@ -46,8 +46,8 @@ export default function UTSupplierManager() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ['ut-suppliers'],
     queryFn: async () => {
-      const { data } = await supabase.from('ut_suppliers').select('*').order('created_at', { ascending: false });
-      return data || [];
+      const { data } = await supabase.from('ut_suppliers' as any).select('*').order('created_at', { ascending: false });
+      return (data || []) as any[];
     },
   });
 
