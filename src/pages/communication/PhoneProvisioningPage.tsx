@@ -2,633 +2,688 @@
  * Phone Number Provisioning Page
  * Buy Twilio numbers (Local + Toll-Free + International) directly from the OS
  */
-import { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Phone, ShoppingCart, Loader2, CheckCircle, AlertCircle, Search, Zap, MapPin, PhoneCall, Globe } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Phone, MapPin, Search, ShoppingCart, Check, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
-// ── Types ──
-type NumberType = 'local' | 'toll-free';
-type Country = 'US' | 'DR';
-
-// ── State area codes ──
-const STATE_AREA_CODES: Record<string, { label: string; codes: string[] }> = {
-  all: { label: 'All States (929 default)', codes: ['929', '848', '718', '347', '212', '646'] },
-  NY: { label: 'New York', codes: ['929', '718', '347'] },
-  FL: { label: 'Florida', codes: ['305', '754', '786'] },
-  TX: { label: 'Texas', codes: ['214', '713', '832'] },
-  CA: { label: 'California', codes: ['213', '310', '323'] },
-  NJ: { label: 'New Jersey', codes: ['848', '201', '973'] },
-  GA: { label: 'Georgia', codes: ['404', '470', '678'] },
-  IL: { label: 'Illinois', codes: ['312', '773'] },
-  PA: { label: 'Pennsylvania', codes: ['215', '267'] },
-};
-
-const DR_AREA_CODES = ['809', '829', '849'];
-const TOLL_FREE_PREFIXES = ['800', '888', '877', '866', '855', '844', '833'];
-
-// ── Business config with recommendations ──
 const BUSINESSES = [
-  { key: 'unforgettable_times', label: 'Unforgettable Times', envKey: 'UT_PHONE_NUMBER', recType: 'local' as NumberType, recCode: '929', recTag: '💡 Local (929)' },
-  { key: 'real_estate', label: 'Real Estate', envKey: 'RE_PHONE_NUMBER', recType: 'local' as NumberType, recCode: '929', recTag: '💡 Local (929)' },
-  { key: 'surplus_funds', label: 'Surplus Funds', envKey: 'SF_PHONE_NUMBER', recType: 'toll-free' as NumberType, recCode: '800', recTag: '⭐ Toll-Free (800/888)' },
-  { key: 'top_tier', label: 'Top Tier', envKey: 'TT_PHONE_NUMBER', recType: 'toll-free' as NumberType, recCode: '800', recTag: '⭐ Toll-Free (800)' },
-  { key: 'brandaro', label: 'Brandaro', envKey: 'BRANDARO_PHONE_NUMBER', recType: 'toll-free' as NumberType, recCode: '888', recTag: '⭐ Toll-Free (888)' },
-  { key: 'iclean', label: 'iClean', envKey: 'ICLEAN_PHONE_NUMBER', recType: 'toll-free' as NumberType, recCode: '877', recTag: '⭐ Toll-Free (877)' },
-  { key: 'playboxxx', label: 'Playboxxx', envKey: 'PLAYBOXXX_PHONE_NUMBER', recType: 'local' as NumberType, recCode: '929', recTag: '💡 Local (929)' },
-] as const;
-
-const COST: Record<string, number> = { local: 1, 'toll-free': 2, dr: 4 };
-
-// ── Brandaro setup plan ──
-const BRANDARO_PLAN = [
-  { label: 'New York × 5', type: 'Local 929', cost: 5, code: '929', numberType: 'local' as NumberType, country: 'US' as Country, qty: 5 },
-  { label: 'Florida × 2', type: 'Local 305', cost: 2, code: '305', numberType: 'local' as NumberType, country: 'US' as Country, qty: 2 },
-  { label: 'Texas × 2', type: 'Local 214', cost: 2, code: '214', numberType: 'local' as NumberType, country: 'US' as Country, qty: 2 },
-  { label: 'California × 2', type: 'Local 213', cost: 2, code: '213', numberType: 'local' as NumberType, country: 'US' as Country, qty: 2 },
-  { label: 'New Jersey × 1', type: 'Local 848', cost: 1, code: '848', numberType: 'local' as NumberType, country: 'US' as Country, qty: 1 },
-  { label: 'Georgia × 1', type: 'Local 404', cost: 1, code: '404', numberType: 'local' as NumberType, country: 'US' as Country, qty: 1 },
-  { label: 'Dom Republic × 2', type: 'Local 809', cost: 6, code: '809', numberType: 'local' as NumberType, country: 'DR' as Country, qty: 2 },
-  { label: 'Inbound × 1', type: 'TF 888', cost: 2, code: '888', numberType: 'toll-free' as NumberType, country: 'US' as Country, qty: 1 },
+  { key: "gasmask", label: "GasMask Approved" },
+  { key: "unforgettable_times", label: "Unforgettable Times" },
+  { key: "real_estate", label: "Real Estate Division" },
+  { key: "surplus_funds", label: "Surplus Funds Recovery" },
+  { key: "top_tier", label: "Top Tier Experience" },
+  { key: "brandaro", label: "Brandaro Digital" },
+  { key: "iclean", label: "iClean WeClean" },
+  { key: "playboxxx", label: "Playboxxx Entertainment" },
 ];
 
-interface AvailableNumber {
-  phone_number: string;
-  friendly_name: string;
+const STATE_AREA_CODES: Record<string, { label: string; emoji: string; codes: string[] }> = {
+  "New York": { label: "New York", emoji: "🗽", codes: ["929", "718", "347", "646", "212"] },
+  "Texas": { label: "Texas", emoji: "⭐", codes: ["214", "713", "832", "512", "972", "469"] },
+  "Florida": { label: "Florida", emoji: "🌴", codes: ["305", "786", "754", "407", "561", "321"] },
+  "California": { label: "California", emoji: "🌅", codes: ["213", "310", "323", "415", "619", "818"] },
+  "New Jersey": { label: "New Jersey", emoji: "🏙️", codes: ["848", "201", "732", "908", "973"] },
+  "Georgia": { label: "Georgia", emoji: "🍑", codes: ["404", "470", "678", "770"] },
+  "Illinois": { label: "Illinois", emoji: "🌃", codes: ["312", "773", "847"] },
+  "Pennsylvania": { label: "Pennsylvania", emoji: "🔔", codes: ["215", "267", "412"] },
+  "Arizona": { label: "Arizona", emoji: "🌵", codes: ["602", "480", "520"] },
+  "Nevada": { label: "Nevada", emoji: "🎰", codes: ["702", "725"] },
+};
+
+const TOLL_FREE_PREFIXES = ["800", "888", "877", "866", "855", "844", "833"];
+
+const BUSINESS_AGENTS: Record<string, { id: string; name: string }[]> = {
+  gasmask: [{ id: "gasmask-main", name: "GasMask Main Agent" }],
+  unforgettable_times: [
+    { id: "ut-ambassador", name: "UT Ambassador Agent" },
+    { id: "ut-concierge", name: "UT Concierge Agent" },
+    { id: "ut-partner", name: "UT Partner Agent" },
+  ],
+  real_estate: [
+    { id: "re-qualifier", name: "RE Lead Qualifier" },
+    { id: "re-closer", name: "RE Closer Agent" },
+    { id: "re-specialist", name: "RE Specialist Agent" },
+  ],
+  surplus_funds: [
+    { id: "sf-client", name: "SF Client Outreach" },
+    { id: "sf-attorney", name: "SF Attorney Agent" },
+  ],
+  top_tier: [
+    { id: "tt-concierge", name: "TT Concierge Agent" },
+    { id: "tt-ambassador", name: "TT Ambassador Agent" },
+  ],
+  brandaro: [
+    { id: "brandaro-sales", name: "Brandaro Digital Sales Expert" },
+    { id: "brandaro-closer", name: "Brandaro Sales Closer" },
+    { id: "brandaro-rel", name: "Brandaro Relationship Specialist" },
+    { id: "brandaro-es-closer", name: "Brandaro Spanish Closer" },
+    { id: "brandaro-es-rel", name: "Brandaro Spanish Relationship" },
+  ],
+  iclean: [{ id: "iclean-booking", name: "iClean Booking Agent" }],
+  playboxxx: [
+    { id: "playboxxx-affiliate", name: "Playboxxx Affiliate Agent" },
+    { id: "playboxxx-manager", name: "Playboxxx Manager Agent" },
+    { id: "playboxxx-production", name: "Playboxxx Production Agent" },
+  ],
+};
+
+type SearchResult = {
+  phoneNumber: string;
+  friendlyName: string;
   locality: string;
   region: string;
-}
-
-type WizardStep = 'business' | 'area_code' | 'results' | 'agent' | 'purchasing' | 'done';
-
-interface BulkProgress {
-  business: string;
-  numberType: NumberType;
-  cost: number;
-  status: 'pending' | 'searching' | 'purchasing' | 'done' | 'error';
-  number?: string;
-  error?: string;
-}
-
-interface BrandaroProgress {
-  label: string;
-  status: 'pending' | 'searching' | 'purchasing' | 'done' | 'error';
-  numbers: string[];
-  error?: string;
-}
+  country: string;
+  monthlyCost: number;
+};
 
 export default function PhoneProvisioningPage() {
-  const queryClient = useQueryClient();
+  const [step, setStep] = useState(0);
+  const [twilioStatus, setTwilioStatus] = useState<{ connected: boolean; accountName: string } | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [existingNumbers, setExistingNumbers] = useState<any[]>([]);
 
-  // Wizard state
-  const [step, setStep] = useState<WizardStep>('business');
-  const [selectedBusiness, setSelectedBusiness] = useState('');
-  const [country, setCountry] = useState<Country>('US');
-  const [numberType, setNumberType] = useState<NumberType>('local');
-  const [targetState, setTargetState] = useState('all');
-  const [selectedCode, setSelectedCode] = useState('929');
-  const [availableNumbers, setAvailableNumbers] = useState<AvailableNumber[]>([]);
-  const [selectedNumber, setSelectedNumber] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState('');
+  const [business, setBusiness] = useState("");
+  const [country, setCountry] = useState<"US" | "DO">("US");
+  const [numberType, setNumberType] = useState<"local" | "tollfree">("local");
+  const [selectedState, setSelectedState] = useState("");
+  const [areaCode, setAreaCode] = useState("");
+  const [tollFreePrefix, setTollFreePrefix] = useState("");
+  const [customAreaCode, setCustomAreaCode] = useState("");
+  const [quantity, setQuantity] = useState(1);
+
   const [searching, setSearching] = useState(false);
-  const [purchaseStatus, setPurchaseStatus] = useState('');
-  const [bulkRunning, setBulkRunning] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState<BulkProgress[]>([]);
-  const [brandaroBuying, setBrandaroBuying] = useState(false);
-  const [brandaroProgress, setBrandaroProgress] = useState<BrandaroProgress[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [selectedNumber, setSelectedNumber] = useState<SearchResult | null>(null);
+  const [selectedAgent, setSelectedAgent] = useState<{ id: string; name: string } | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseProgress, setPurchaseProgress] = useState<string[]>([]);
+  const [purchaseComplete, setPurchaseComplete] = useState(false);
 
-  // ── Fetch existing numbers ──
-  const { data: existingNumbers = [], isLoading: numbersLoading } = useQuery({
-    queryKey: ['dc-phone-numbers'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('dc_phone_numbers').select('*').order('business');
+  useEffect(() => {
+    checkTwilioStatus();
+    loadExistingNumbers();
+  }, []);
+
+  const checkTwilioStatus = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", {
+        body: { action: "status" },
+      });
       if (error) throw error;
-      return data || [];
-    },
-  });
-
-  // ── Fetch agents ──
-  const { data: agents = [] } = useQuery({
-    queryKey: ['dc-agents'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('dc_agents').select('name, agent_id, business, agent_type, is_active').eq('is_active', true).order('business');
-      if (error) throw error;
-      return data || [];
-    },
-  });
-
-  const businessesWithNumbers = new Set(existingNumbers.map((n: any) => n.business));
-  const missingBusinesses = BUSINESSES.filter(b => !businessesWithNumbers.has(b.key));
-  const filteredAgents = agents.filter((a: any) => a.business === selectedBusiness);
-
-  // Area codes based on country + state
-  const activeAreaCodes = useMemo(() => {
-    if (country === 'DR') return DR_AREA_CODES;
-    if (numberType === 'toll-free') return TOLL_FREE_PREFIXES;
-    return STATE_AREA_CODES[targetState]?.codes || STATE_AREA_CODES.all.codes;
-  }, [country, numberType, targetState]);
-
-  // ── Cost summary from existing numbers ──
-  const costSummary = useMemo(() => {
-    const localCount = existingNumbers.filter((n: any) => n.number_type !== 'toll-free').length;
-    const tollFreeCount = existingNumbers.filter((n: any) => n.number_type === 'toll-free').length;
-    return { localCount, tollFreeCount, total: localCount * 1 + tollFreeCount * 2 };
-  }, [existingNumbers]);
-
-  const handleSelectBusiness = (key: string) => {
-    setSelectedBusiness(key);
-    const biz = BUSINESSES.find(b => b.key === key);
-    if (biz) {
-      setCountry('US');
-      setNumberType(biz.recType);
-      setSelectedCode(biz.recCode);
-      setTargetState('all');
+      setTwilioStatus({ connected: data.connected, accountName: data.accountName });
+    } catch {
+      setTwilioStatus({ connected: false, accountName: "Error" });
+    } finally {
+      setStatusLoading(false);
     }
   };
 
-  const callProvision = async (payload: Record<string, any>) => {
-    const { data, error } = await supabase.functions.invoke('provision-dc-number', { body: payload });
-    if (error) throw error;
-    return data;
+  const loadExistingNumbers = async () => {
+    const { data } = await supabase.from("dc_phone_numbers").select("*").order("created_at", { ascending: false });
+    if (data) setExistingNumbers(data);
   };
 
   const handleSearch = async () => {
     setSearching(true);
-    setAvailableNumbers([]);
+    setSearchResults([]);
     try {
-      const data = await callProvision({
-        action: 'search',
-        number_type: numberType,
-        country,
-        area_code: numberType === 'local' ? selectedCode : undefined,
-        toll_free_prefix: numberType === 'toll-free' ? selectedCode : undefined,
-      });
-      setAvailableNumbers(data.numbers || []);
-      setStep('results');
-    } catch (e: any) {
-      toast.error('Search failed: ' + (e.message || 'Unknown error'));
+      const searchBody: any = { action: "search", country, numberType };
+      if (country === "DO") {
+        searchBody.areaCode = "809";
+      } else if (numberType === "tollfree") {
+        searchBody.prefix = tollFreePrefix;
+      } else {
+        searchBody.areaCode = areaCode || customAreaCode || "929";
+      }
+
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", { body: searchBody });
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || "Search failed");
+      setSearchResults(data.numbers || []);
+      if (data.numbers?.length === 0) toast.info("No numbers found. Try a different area code.");
+    } catch (err: any) {
+      toast.error("Search failed: " + (err.message || "Unknown error"));
     } finally {
       setSearching(false);
     }
   };
 
   const handlePurchase = async () => {
-    if (!selectedNumber) return;
-    setStep('purchasing');
-    const businessLabel = BUSINESSES.find(b => b.key === selectedBusiness)?.label || selectedBusiness;
+    if (!selectedNumber || !business) return;
+    setPurchasing(true);
+    setPurchaseProgress(["📞 Contacting Twilio..."]);
 
     try {
-      setPurchaseStatus('Purchasing in Twilio...');
-      const data = await callProvision({
-        action: 'purchase',
-        phone_number: selectedNumber,
-        friendly_name: `${businessLabel} AI Line`,
-        number_type: numberType,
-        country,
+      await new Promise((r) => setTimeout(r, 800));
+      setPurchaseProgress((p) => [...p, "✅ Number secured!"]);
+
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", {
+        body: {
+          action: "purchase",
+          phoneNumber: selectedNumber.phoneNumber,
+          business,
+          agentId: selectedAgent?.id,
+          agentName: selectedAgent?.name,
+          country,
+          numberType: country === "DO" ? "dr_local" : numberType,
+          quantity: 1,
+        },
       });
 
-      setPurchaseStatus('Updating database...');
-      await supabase
-        .from('dc_phone_numbers')
-        .update({
-          business: selectedBusiness,
-          assigned_agent_id: selectedAgent || null,
-          assigned_agent_name: agents.find((a: any) => a.agent_id === selectedAgent)?.name || null,
-          number_type: numberType,
-        })
-        .eq('phone_number', data.phone_number);
+      if (error) throw error;
+      setPurchaseProgress((p) => [...p, "💾 Saving to database..."]);
+      await new Promise((r) => setTimeout(r, 500));
 
-      setPurchaseStatus('✅ Line is LIVE!');
-      setStep('done');
-      queryClient.invalidateQueries({ queryKey: ['dc-phone-numbers'] });
-      toast.success(`Number ${data.phone_number} purchased and assigned!`);
-    } catch (e: any) {
-      setPurchaseStatus('');
-      setStep('results');
-      toast.error('Purchase failed: ' + (e.message || 'Unknown error'));
-    }
-  };
-
-  const handleBulkBuy = async () => {
-    if (missingBusinesses.length === 0) { toast.info('All businesses already have numbers.'); return; }
-    setBulkRunning(true);
-    const progress: BulkProgress[] = missingBusinesses.map(b => ({
-      business: b.label, numberType: b.recType, cost: COST[b.recType], status: 'pending',
-    }));
-    setBulkProgress([...progress]);
-
-    for (let i = 0; i < missingBusinesses.length; i++) {
-      const biz = missingBusinesses[i];
-      progress[i].status = 'searching';
-      setBulkProgress([...progress]);
-      try {
-        const searchData = await callProvision({
-          action: 'search', number_type: biz.recType,
-          area_code: biz.recType === 'local' ? biz.recCode : undefined,
-          toll_free_prefix: biz.recType === 'toll-free' ? biz.recCode : undefined,
-        });
-        const numbers = searchData.numbers || [];
-        if (numbers.length === 0) { progress[i].status = 'error'; progress[i].error = 'No numbers'; setBulkProgress([...progress]); continue; }
-        progress[i].status = 'purchasing';
-        setBulkProgress([...progress]);
-        const purchaseData = await callProvision({ action: 'purchase', phone_number: numbers[0].phone_number, friendly_name: `${biz.label} AI Line`, number_type: biz.recType });
-        await supabase.from('dc_phone_numbers').update({ business: biz.key, number_type: biz.recType }).eq('phone_number', purchaseData.phone_number);
-        progress[i].status = 'done'; progress[i].number = purchaseData.phone_number;
-        setBulkProgress([...progress]);
-      } catch (e: any) {
-        progress[i].status = 'error'; progress[i].error = e.message || 'Failed';
-        setBulkProgress([...progress]);
+      const result = data.results?.[0];
+      if (result?.success) {
+        setPurchaseProgress((p) => [...p, `✅ ${result.number} is LIVE!`]);
+        setPurchaseComplete(true);
+        loadExistingNumbers();
+        toast.success("Number purchased successfully!");
+      } else {
+        throw new Error(JSON.stringify(result?.error || "Purchase failed"));
       }
+    } catch (err: any) {
+      setPurchaseProgress((p) => [...p, `❌ Error: ${err.message}`]);
+      toast.error("Purchase failed");
+    } finally {
+      setPurchasing(false);
     }
-    setBulkRunning(false);
-    queryClient.invalidateQueries({ queryKey: ['dc-phone-numbers'] });
-    toast.success('Bulk purchase complete!');
-  };
-
-  // ── Brandaro full package buy ──
-  const handleBrandaroPackage = async () => {
-    setBrandaroBuying(true);
-    const progress: BrandaroProgress[] = BRANDARO_PLAN.map(p => ({ label: p.label, status: 'pending', numbers: [] }));
-    setBrandaroProgress([...progress]);
-
-    for (let i = 0; i < BRANDARO_PLAN.length; i++) {
-      const plan = BRANDARO_PLAN[i];
-      progress[i].status = 'searching';
-      setBrandaroProgress([...progress]);
-      try {
-        for (let q = 0; q < plan.qty; q++) {
-          const searchData = await callProvision({
-            action: 'search', number_type: plan.numberType, country: plan.country,
-            area_code: plan.numberType === 'local' ? plan.code : undefined,
-            toll_free_prefix: plan.numberType === 'toll-free' ? plan.code : undefined,
-          });
-          const numbers = searchData.numbers || [];
-          if (numbers.length === 0) { progress[i].status = 'error'; progress[i].error = 'No numbers'; setBrandaroProgress([...progress]); break; }
-          progress[i].status = 'purchasing';
-          setBrandaroProgress([...progress]);
-          const purchaseData = await callProvision({ action: 'purchase', phone_number: numbers[0].phone_number, friendly_name: `Brandaro ${plan.label}`, number_type: plan.numberType, country: plan.country });
-          await supabase.from('dc_phone_numbers').update({ business: 'brandaro', number_type: plan.numberType }).eq('phone_number', purchaseData.phone_number);
-          progress[i].numbers.push(purchaseData.phone_number);
-          setBrandaroProgress([...progress]);
-        }
-        if (progress[i].status !== 'error') progress[i].status = 'done';
-        setBrandaroProgress([...progress]);
-      } catch (e: any) {
-        progress[i].status = 'error'; progress[i].error = e.message || 'Failed';
-        setBrandaroProgress([...progress]);
-      }
-    }
-    setBrandaroBuying(false);
-    queryClient.invalidateQueries({ queryKey: ['dc-phone-numbers'] });
-    toast.success('Brandaro package complete!');
   };
 
   const resetWizard = () => {
-    setStep('business'); setSelectedBusiness(''); setCountry('US'); setNumberType('local');
-    setTargetState('all'); setSelectedCode('929'); setAvailableNumbers([]);
-    setSelectedNumber(''); setSelectedAgent(''); setPurchaseStatus('');
+    setStep(0);
+    setBusiness("");
+    setCountry("US");
+    setNumberType("local");
+    setSelectedState("");
+    setAreaCode("");
+    setTollFreePrefix("");
+    setCustomAreaCode("");
+    setQuantity(1);
+    setSearchResults([]);
+    setSelectedNumber(null);
+    setSelectedAgent(null);
+    setPurchaseProgress([]);
+    setPurchaseComplete(false);
   };
 
-  const bulkCostEstimate = missingBusinesses.reduce((sum, b) => sum + COST[b.recType], 0);
-  const brandaroTotal = BRANDARO_PLAN.reduce((s, p) => s + p.cost, 0);
+  const formatPhone = (num: string) => {
+    const d = num.replace(/\D/g, "");
+    if (d.length === 11 && d[0] === "1") {
+      return `+1 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
+    }
+    return num;
+  };
 
-  const currentCost = country === 'DR' ? '$3-5' : numberType === 'toll-free' ? '$2.00' : '$1.00';
+  const monthlyCost = country === "DO" ? 5.0 : numberType === "tollfree" ? 2.0 : 1.0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Phone Number Provisioning</h1>
-        <p className="text-muted-foreground">Buy & assign Twilio numbers — Local, Toll-Free, International</p>
+    <div className="p-6 space-y-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Phone className="h-8 w-8 text-primary" /> Phone Number Provisioning
+          </h1>
+          <p className="text-muted-foreground mt-1">Search, purchase, and assign Twilio phone numbers</p>
+        </div>
+        {step > 0 && !purchaseComplete && (
+          <Button variant="outline" onClick={resetWizard}>
+            <ArrowLeft className="h-4 w-4 mr-2" /> Start Over
+          </Button>
+        )}
       </div>
 
-      {/* ── SECTION 1: Current Numbers ── */}
+      {/* Connection Status */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Phone className="h-5 w-5" /> Current Numbers</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {numbersLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading...</div>
+        <CardContent className="py-4">
+          {statusLoading ? (
+            <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Checking Twilio connection...</div>
+          ) : twilioStatus?.connected ? (
+            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium">
+              🟢 Twilio Connected — {twilioStatus.accountName}
+            </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Business</TableHead>
-                  <TableHead>Number</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Agent</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {existingNumbers.map((num: any) => (
-                  <TableRow key={num.id}>
-                    <TableCell className="capitalize font-medium">{(num.business || '').replace(/_/g, ' ')}</TableCell>
-                    <TableCell className="font-mono">{num.phone_number}</TableCell>
-                    <TableCell><Badge variant="outline" className="text-xs">{num.number_type === 'toll-free' ? '📞 TF' : '📍 Local'}</Badge></TableCell>
-                    <TableCell>{num.assigned_agent_name || '—'}</TableCell>
-                    <TableCell>
-                      <Badge variant={num.is_active ? 'default' : 'destructive'} className={num.is_active ? 'bg-green-600' : ''}>
-                        {num.is_active ? '✅ Active' : '🔴 Inactive'}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {missingBusinesses.map(biz => (
-                  <TableRow key={biz.key} className="opacity-60">
-                    <TableCell className="font-medium">{biz.label}</TableCell>
-                    <TableCell className="text-muted-foreground italic">Not provisioned</TableCell>
-                    <TableCell><span className="text-xs text-muted-foreground">{biz.recTag}</span></TableCell>
-                    <TableCell>—</TableCell>
-                    <TableCell><Badge variant="outline" className="text-red-500 border-red-500">🔴 Needed</Badge></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="flex items-center gap-2 text-red-500 font-medium">
+              🔴 Twilio Not Connected — add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to secrets
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* ── SECTION 2: Buy New Number Wizard ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5" /> Buy New Number</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Step 1: Select Business */}
-          {step === 'business' && (
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Step 1 — Select Business</p>
-              <div className="flex flex-wrap gap-2">
-                {BUSINESSES.map(biz => {
-                  const hasBiz = businessesWithNumbers.has(biz.key);
-                  return (
-                    <Button key={biz.key} variant={selectedBusiness === biz.key ? 'default' : 'outline'} size="sm" onClick={() => handleSelectBusiness(biz.key)} className="relative">
-                      {biz.label}
-                      {hasBiz && <CheckCircle className="ml-1 h-3 w-3 text-green-400" />}
-                    </Button>
-                  );
-                })}
-              </div>
-              {selectedBusiness && (
-                <>
-                  <div className="text-xs text-muted-foreground">Recommended: {BUSINESSES.find(b => b.key === selectedBusiness)?.recTag}</div>
-                  <Button onClick={() => setStep('area_code')}>Next — Choose Number Type</Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Country + Number Type + Code */}
-          {step === 'area_code' && (
-            <div className="space-y-4">
-              <p className="text-sm font-medium">Step 2 — Choose Number</p>
-
-              {/* Country Toggle */}
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Country</p>
-                <div className="flex gap-2">
-                  <Button variant={country === 'US' ? 'default' : 'outline'} size="sm" onClick={() => { setCountry('US'); setNumberType('local'); setSelectedCode('929'); setTargetState('all'); }}>
-                    🇺🇸 United States
-                  </Button>
-                  <Button variant={country === 'DR' ? 'default' : 'outline'} size="sm" onClick={() => { setCountry('DR'); setNumberType('local'); setSelectedCode('809'); }}>
-                    🇩🇴 Dominican Republic
-                  </Button>
-                </div>
-              </div>
-
-              {country === 'DR' ? (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">Select DR area code — <span className="font-semibold">$3-5/month</span></p>
-                  <p className="text-xs text-muted-foreground italic">Local DR number — callers see a Dominican Republic number calling — 3-4x higher answer rate</p>
-                  <div className="flex flex-wrap gap-2">
-                    {DR_AREA_CODES.map(code => (
-                      <Button key={code} variant={selectedCode === code ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCode(code)}>{code}</Button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Type Toggle */}
-                  <div className="flex gap-2">
-                    <Button variant={numberType === 'local' ? 'default' : 'outline'} size="sm" onClick={() => { setNumberType('local'); setSelectedCode(STATE_AREA_CODES[targetState]?.codes[0] || '929'); }}>
-                      <MapPin className="mr-1 h-4 w-4" /> Local Number
-                    </Button>
-                    <Button variant={numberType === 'toll-free' ? 'default' : 'outline'} size="sm" onClick={() => { setNumberType('toll-free'); setSelectedCode('800'); }}>
-                      <PhoneCall className="mr-1 h-4 w-4" /> Toll-Free Number
-                    </Button>
-                  </div>
-
-                  {numberType === 'local' ? (
-                    <div className="space-y-2">
-                      {/* State selector */}
-                      <div className="flex items-center gap-3">
-                        <p className="text-xs text-muted-foreground">Target State:</p>
-                        <Select value={targetState} onValueChange={(v) => { setTargetState(v); setSelectedCode(STATE_AREA_CODES[v]?.codes[0] || '929'); }}>
-                          <SelectTrigger className="w-[220px] h-8 text-sm">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(STATE_AREA_CODES).map(([key, val]) => (
-                              <SelectItem key={key} value={key}>{val.label}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <p className="text-xs text-muted-foreground">Select area code — <span className="font-semibold">$1.00/month</span></p>
-                      <div className="flex flex-wrap gap-2">
-                        {activeAreaCodes.map(code => (
-                          <Button key={code} variant={selectedCode === code ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCode(code)}>{code}</Button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground">Select toll-free prefix — <span className="font-semibold">$2.00/month</span></p>
-                      <p className="text-xs text-muted-foreground italic">Callers reach you for free — builds trust and credibility</p>
-                      <div className="flex flex-wrap gap-2">
-                        {TOLL_FREE_PREFIXES.map(code => (
-                          <Button key={code} variant={selectedCode === code ? 'default' : 'outline'} size="sm" onClick={() => setSelectedCode(code)}>{code}</Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setStep('business')}>Back</Button>
-                <Button onClick={handleSearch} disabled={searching}>
-                  {searching ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Searching...</> : <><Search className="mr-2 h-4 w-4" />Search Available Numbers</>}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Results */}
-          {step === 'results' && (
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Step 3 — Pick a Number</p>
-              <Badge variant="outline">
-                {country === 'DR' ? '🇩🇴 DR' : numberType === 'toll-free' ? '📞 Toll-Free' : '📍 Local'} · {currentCost}/month
-              </Badge>
-              {availableNumbers.length === 0 ? (
-                <p className="text-muted-foreground">No numbers found. Try a different code.</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {availableNumbers.map(num => (
-                    <Card key={num.phone_number} className={`cursor-pointer transition-all ${selectedNumber === num.phone_number ? 'ring-2 ring-primary' : 'hover:border-primary/50'}`}
-                      onClick={() => { setSelectedNumber(num.phone_number); setStep('agent'); }}>
-                      <CardContent className="p-4">
-                        <p className="font-mono text-lg font-bold">{num.phone_number}</p>
-                        <p className="text-xs text-muted-foreground">{num.locality ? `${num.locality}, ${num.region}` : country === 'DR' ? 'Dominican Republic' : numberType === 'toll-free' ? 'US Toll-Free' : num.region}</p>
-                      </CardContent>
-                    </Card>
+      {/* Existing Numbers */}
+      {existingNumbers.length > 0 && step === 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-lg">Current Numbers</CardTitle></CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="pb-2 font-medium">Business</th>
+                    <th className="pb-2 font-medium">Number</th>
+                    <th className="pb-2 font-medium">Agent</th>
+                    <th className="pb-2 font-medium">Type</th>
+                    <th className="pb-2 font-medium">Cost</th>
+                    <th className="pb-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {existingNumbers.map((n) => (
+                    <tr key={n.id} className="border-b border-border/50">
+                      <td className="py-2">{n.business}</td>
+                      <td className="py-2 font-mono">{formatPhone(n.phone_number)}</td>
+                      <td className="py-2">{n.assigned_agent_name || "—"}</td>
+                      <td className="py-2">{n.number_type || "local"}</td>
+                      <td className="py-2">${n.monthly_cost || "1.00"}/mo</td>
+                      <td className="py-2">
+                        {n.is_active ? (
+                          <span className="text-green-600 dark:text-green-400">✅ Active</span>
+                        ) : (
+                          <span className="text-muted-foreground">Inactive</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              )}
-              <Button variant="ghost" size="sm" onClick={() => setStep('area_code')}>Back</Button>
+                </tbody>
+              </table>
             </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Step 4: Select Agent */}
-          {step === 'agent' && (
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Step 4 — Assign Agent (optional)</p>
-              <p className="text-xs text-muted-foreground">Number: <span className="font-mono font-bold">{selectedNumber}</span> · {currentCost}/mo</p>
-              <div className="flex flex-wrap gap-2">
-                {filteredAgents.map((agent: any) => (
-                  <Button key={agent.agent_id} variant={selectedAgent === agent.agent_id ? 'default' : 'outline'} size="sm" onClick={() => setSelectedAgent(agent.agent_id)}>
-                    {agent.name}
-                  </Button>
-                ))}
-                {filteredAgents.length === 0 && <p className="text-muted-foreground text-sm">No agents found for this business.</p>}
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setStep('results')}>Back</Button>
-                <Button onClick={handlePurchase}><ShoppingCart className="mr-2 h-4 w-4" /> Buy {selectedNumber} — {currentCost}/mo</Button>
-              </div>
-            </div>
-          )}
-
-          {step === 'purchasing' && (
-            <div className="flex items-center gap-3 p-4">
-              <Loader2 className="h-5 w-5 animate-spin text-primary" />
-              <span className="font-medium">{purchaseStatus}</span>
-            </div>
-          )}
-
-          {step === 'done' && (
-            <div className="space-y-3 p-4">
-              <div className="flex items-center gap-2 text-green-600 font-bold text-lg"><CheckCircle className="h-6 w-6" /> Line is LIVE!</div>
-              <Button onClick={resetWizard}>Buy Another Number</Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* ── SECTION 3: Bulk Buy (missing businesses) ── */}
-      {missingBusinesses.length > 0 && (
+      {/* STEP 0 — Select Business */}
+      {step === 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Zap className="h-5 w-5" /> Bulk Provision</CardTitle>
-            <CardDescription>Auto-buy recommended types for {missingBusinesses.length} missing business{missingBusinesses.length > 1 ? 'es' : ''}</CardDescription>
+            <CardTitle>Step 1 — Select Business</CardTitle>
+            <CardDescription>Which business needs a phone number?</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm space-y-1 bg-muted/50 rounded-lg p-3">
-              {missingBusinesses.map(b => (
-                <div key={b.key} className="flex justify-between">
-                  <span>{b.label}</span>
-                  <span className="text-muted-foreground">{b.recTag} — ${COST[b.recType]}/mo</span>
-                </div>
-              ))}
-              <div className="border-t pt-1 mt-2 font-bold flex justify-between">
-                <span>Total</span><span>~${bulkCostEstimate}/month</span>
-              </div>
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {BUSINESSES.map((b) => (
+              <Button
+                key={b.key}
+                variant={business === b.key ? "default" : "outline"}
+                className="h-auto py-4 flex flex-col gap-1"
+                onClick={() => { setBusiness(b.key); setStep(1); }}
+              >
+                <span className="font-semibold text-sm">{b.label}</span>
+              </Button>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 1 — Select Country */}
+      {step === 1 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 2 — Select Country</CardTitle>
+            <CardDescription>Where do you need a phone number?</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => { setCountry("US"); setStep(2); }}
+                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
+              >
+                <div className="text-4xl mb-2">🇺🇸</div>
+                <div className="text-lg font-bold">United States</div>
+                <div className="text-muted-foreground text-sm mt-1">Local & Toll-Free numbers</div>
+                <div className="text-primary font-semibold mt-2">From $1/month</div>
+              </button>
+              <button
+                onClick={() => { setCountry("DO"); setStep(3); setNumberType("local"); }}
+                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
+              >
+                <div className="text-4xl mb-2">🇩🇴</div>
+                <div className="text-lg font-bold">Dominican Republic</div>
+                <div className="text-muted-foreground text-sm mt-1">Local presence — 3-4x higher answer rate</div>
+                <div className="text-primary font-semibold mt-2">~$5/month</div>
+              </button>
             </div>
-            <Button size="lg" onClick={handleBulkBuy} disabled={bulkRunning} className="w-full">
-              {bulkRunning ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Provisioning...</> : <>Buy All {missingBusinesses.length} Business Numbers — ~${bulkCostEstimate}/mo</>}
-            </Button>
-            {bulkProgress.length > 0 && (
-              <div className="space-y-2">
-                {bulkProgress.map((bp, i) => (
-                  <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-md bg-muted/50">
-                    {bp.status === 'pending' && <div className="h-4 w-4 rounded-full bg-muted-foreground/30" />}
-                    {bp.status === 'searching' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                    {bp.status === 'purchasing' && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                    {bp.status === 'done' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                    {bp.status === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
-                    <span className="font-medium">{bp.business}</span>
-                    {bp.number && <span className="font-mono text-xs">{bp.number}</span>}
-                    {bp.error && <span className="text-xs text-red-500">{bp.error}</span>}
+            <div className="mt-4 text-center text-sm text-muted-foreground">🌍 More countries coming soon</div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 2 — Number Type (US only) */}
+      {step === 2 && country === "US" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 3 — Number Type</CardTitle>
+            <CardDescription>What kind of number do you need?</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => { setNumberType("local"); setStep(3); }}
+                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
+              >
+                <MapPin className="h-8 w-8 text-primary mb-2" />
+                <div className="text-lg font-bold">📍 Local Number</div>
+                <div className="text-muted-foreground text-sm mt-1">Best for outbound cold calling</div>
+                <div className="text-primary font-semibold mt-2">$1/month</div>
+              </button>
+              <button
+                onClick={() => { setNumberType("tollfree"); setStep(3); }}
+                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
+              >
+                <Phone className="h-8 w-8 text-primary mb-2" />
+                <div className="text-lg font-bold">📞 Toll-Free</div>
+                <div className="text-muted-foreground text-sm mt-1">Best for inbound callbacks — builds trust</div>
+                <div className="text-primary font-semibold mt-2">$2/month</div>
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 3 — State / Area Code */}
+      {step === 3 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 4 — {country === "DO" ? "Dominican Republic" : numberType === "tollfree" ? "Toll-Free Prefix" : "Select State & Area Code"}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {country === "DO" ? (
+              <div className="space-y-4">
+                <div className="bg-muted/50 p-4 rounded-lg">
+                  <p className="font-medium">🇩🇴 Dominican Republic Numbers</p>
+                  <p className="text-sm text-muted-foreground mt-1">DR numbers use area codes 809, 829, 849. We'll find the best available number.</p>
+                </div>
+                <Button onClick={() => { setAreaCode("809"); setStep(business === "brandaro" ? 4 : 5); }}>
+                  Continue <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+            ) : numberType === "tollfree" ? (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">Select a toll-free prefix:</p>
+                <div className="flex flex-wrap gap-3">
+                  {TOLL_FREE_PREFIXES.map((p) => (
+                    <Button
+                      key={p}
+                      variant={tollFreePrefix === p ? "default" : "outline"}
+                      size="lg"
+                      className="text-lg font-mono"
+                      onClick={() => { setTollFreePrefix(p); setStep(business === "brandaro" ? 4 : 5); }}
+                    >
+                      {p}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">Select a state to see available area codes:</p>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {Object.entries(STATE_AREA_CODES).map(([state, info]) => (
+                    <Button
+                      key={state}
+                      variant={selectedState === state ? "default" : "outline"}
+                      className="h-auto py-3 flex flex-col gap-0.5"
+                      onClick={() => setSelectedState(state)}
+                    >
+                      <span className="text-lg">{info.emoji}</span>
+                      <span className="text-xs font-medium">{info.label}</span>
+                    </Button>
+                  ))}
+                  <Button
+                    variant={selectedState === "Other" ? "default" : "outline"}
+                    className="h-auto py-3 flex flex-col gap-0.5"
+                    onClick={() => setSelectedState("Other")}
+                  >
+                    <span className="text-lg">🤠</span>
+                    <span className="text-xs font-medium">Other</span>
+                  </Button>
+                </div>
+
+                {selectedState && selectedState !== "Other" && (
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">{STATE_AREA_CODES[selectedState]?.emoji} {selectedState} area codes:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {STATE_AREA_CODES[selectedState]?.codes.map((code) => (
+                        <Button
+                          key={code}
+                          variant={areaCode === code ? "default" : "outline"}
+                          size="lg"
+                          className="text-lg font-mono"
+                          onClick={() => { setAreaCode(code); setStep(business === "brandaro" ? 4 : 5); }}
+                        >
+                          {code}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                )}
+
+                {selectedState === "Other" && (
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Enter area code (e.g. 702)"
+                      value={customAreaCode}
+                      onChange={(e) => setCustomAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))}
+                      className="w-40 font-mono text-lg"
+                      maxLength={3}
+                    />
+                    <Button
+                      disabled={customAreaCode.length !== 3}
+                      onClick={() => { setAreaCode(customAreaCode); setStep(business === "brandaro" ? 4 : 5); }}
+                    >
+                      Use {customAreaCode} <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* ── SECTION 4: Brandaro Complete Package ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Globe className="h-5 w-5" /> Brandaro Complete Setup</CardTitle>
-          <CardDescription>16 numbers across NY, FL, TX, CA, NJ, GA, DR + Inbound TF</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-muted/50 rounded-lg p-4 font-mono text-sm space-y-1">
-            <div className="grid grid-cols-3 gap-x-4 font-bold text-foreground border-b pb-1 mb-1">
-              <span>Region</span><span>Type</span><span className="text-right">$/mo</span>
-            </div>
-            {BRANDARO_PLAN.map((p, i) => (
-              <div key={i} className="grid grid-cols-3 gap-x-4">
-                <span>{p.label}</span>
-                <span className="text-muted-foreground">{p.type}</span>
-                <span className="text-right">${p.cost}</span>
-              </div>
-            ))}
-            <div className="border-t pt-1 mt-1 grid grid-cols-3 gap-x-4 font-bold">
-              <span>Total: 16 numbers</span><span></span><span className="text-right">~${brandaroTotal}/mo</span>
-            </div>
-          </div>
-
-          <Button size="lg" onClick={handleBrandaroPackage} disabled={brandaroBuying} className="w-full">
-            {brandaroBuying ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Purchasing Brandaro Package...</> : <>Buy Complete Brandaro Package — ${brandaroTotal}/mo</>}
-          </Button>
-
-          {brandaroProgress.length > 0 && (
-            <div className="space-y-2">
-              {brandaroProgress.map((bp, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-md bg-muted/50">
-                  {bp.status === 'pending' && <div className="h-4 w-4 rounded-full bg-muted-foreground/30" />}
-                  {(bp.status === 'searching' || bp.status === 'purchasing') && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-                  {bp.status === 'done' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                  {bp.status === 'error' && <AlertCircle className="h-4 w-4 text-red-500" />}
-                  <span className="font-medium">{bp.label}</span>
-                  {bp.numbers.length > 0 && <span className="font-mono text-xs">{bp.numbers.join(', ')}</span>}
-                  {bp.error && <span className="text-xs text-red-500">{bp.error}</span>}
-                </div>
+      {/* STEP 4 — Quantity (Brandaro only) */}
+      {step === 4 && business === "brandaro" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 5 — Quantity</CardTitle>
+            <CardDescription>How many outbound numbers do you need?</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              {[1, 2, 3, 4, 5].map((q) => (
+                <Button
+                  key={q}
+                  variant={quantity === q ? "default" : "outline"}
+                  size="lg"
+                  className="text-xl w-14 h-14"
+                  onClick={() => setQuantity(q)}
+                >
+                  {q}
+                </Button>
               ))}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <p className="text-sm text-muted-foreground">💡 Recommended: 1 number per 4 VAs. For 20 VAs → select 5</p>
+            <Button onClick={() => setStep(5)}>Continue <ArrowRight className="h-4 w-4 ml-2" /></Button>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* ── SECTION 5: Cost Summary ── */}
-      {existingNumbers.length > 0 && (
+      {/* STEP 5 — Search */}
+      {step === 5 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">💰 Monthly Cost Summary</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Step 6 — Search Available Numbers</CardTitle>
+            <CardDescription>
+              {country === "DO" ? "Searching Dominican Republic" : numberType === "tollfree" ? `Searching toll-free ${tollFreePrefix}` : `Searching ${selectedState || "US"} — area code ${areaCode || customAreaCode}`}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={handleSearch} disabled={searching} size="lg">
+              {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+              {searching ? "Searching..." : "🔍 Search Available Numbers"}
+            </Button>
+
+            {searchResults.length > 0 && (
+              <div className="grid gap-3">
+                {searchResults.map((num) => (
+                  <button
+                    key={num.phoneNumber}
+                    onClick={() => { setSelectedNumber(num); setStep(6); }}
+                    className={`p-4 rounded-lg border-2 text-left transition-all hover:shadow-md ${
+                      selectedNumber?.phoneNumber === num.phoneNumber ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-lg font-mono font-bold">📞 {formatPhone(num.phoneNumber)}</div>
+                        <div className="text-sm text-muted-foreground">{num.locality || num.region}{num.locality ? `, ${num.region}` : ""} • Voice + SMS</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-semibold text-primary">${num.monthlyCost.toFixed(2)}/mo</div>
+                        <div className="text-xs text-green-600 dark:text-green-400 mt-1">✓ Select</div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {!searching && searchResults.length === 0 && (
+              <p className="text-muted-foreground text-sm">Click search to find available numbers.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 6 — Assign Agent */}
+      {step === 6 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Step 7 — Assign Agent</CardTitle>
+            <CardDescription>Which AI agent should answer calls on this number?</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              {(BUSINESS_AGENTS[business] || []).map((agent) => (
+                <Button
+                  key={agent.id}
+                  variant={selectedAgent?.id === agent.id ? "default" : "outline"}
+                  className="justify-start h-auto py-3"
+                  onClick={() => { setSelectedAgent(agent); setStep(7); }}
+                >
+                  <Check className={`h-4 w-4 mr-2 ${selectedAgent?.id === agent.id ? "opacity-100" : "opacity-0"}`} />
+                  {agent.name}
+                </Button>
+              ))}
+              <Button
+                variant={selectedAgent?.id === "none" ? "default" : "outline"}
+                className="justify-start h-auto py-3"
+                onClick={() => { setSelectedAgent({ id: "none", name: "Unassigned" }); setStep(7); }}
+              >
+                <Check className={`h-4 w-4 mr-2 ${selectedAgent?.id === "none" ? "opacity-100" : "opacity-0"}`} />
+                Skip — Assign later
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* STEP 7 — Confirm & Buy */}
+      {step === 7 && !purchaseComplete && (
+        <Card>
+          <CardHeader><CardTitle>Step 8 — Confirm Purchase</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 p-5 rounded-lg space-y-2">
+              <div className="flex justify-between"><span className="text-muted-foreground">Number:</span><span className="font-mono font-bold">{formatPhone(selectedNumber?.phoneNumber || "")}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Country:</span><span>{country === "DO" ? "🇩🇴 Dominican Republic" : "🇺🇸 United States"}{selectedState ? ` — ${selectedState}` : ""}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Type:</span><span>{country === "DO" ? "Local (DR)" : numberType === "tollfree" ? "Toll-Free" : "Local"}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Business:</span><span>{BUSINESSES.find((b) => b.key === business)?.label}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Agent:</span><span>{selectedAgent?.name}</span></div>
+              <hr className="border-border" />
+              <div className="flex justify-between text-lg font-bold"><span>Monthly Cost:</span><span className="text-primary">${monthlyCost.toFixed(2)}/mo</span></div>
+            </div>
+
+            {purchaseProgress.length > 0 && (
+              <div className="space-y-1 p-4 bg-muted/30 rounded-lg font-mono text-sm">
+                {purchaseProgress.map((msg, i) => (
+                  <div key={i}>{msg}</div>
+                ))}
+                {purchasing && <Loader2 className="h-4 w-4 animate-spin mt-2" />}
+              </div>
+            )}
+
+            {!purchasing && purchaseProgress.length === 0 && (
+              <Button onClick={handlePurchase} size="lg" className="w-full">
+                <ShoppingCart className="h-5 w-5 mr-2" /> Buy This Number — ${monthlyCost.toFixed(2)}/month
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Purchase Complete */}
+      {purchaseComplete && (
+        <Card className="border-green-500/50 bg-green-500/5">
+          <CardContent className="py-6 text-center space-y-4">
+            <div className="text-4xl">🎉</div>
+            <h2 className="text-2xl font-bold text-green-600 dark:text-green-400">Number is LIVE!</h2>
+            <p className="font-mono text-lg">{formatPhone(selectedNumber?.phoneNumber || "")}</p>
+            <p className="text-muted-foreground">Assigned to {selectedAgent?.name} for {BUSINESSES.find((b) => b.key === business)?.label}</p>
+            <Button onClick={resetWizard} variant="outline">Buy Another Number</Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Bulk Setup Card */}
+      {step === 0 && (
+        <Card className="border-primary/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">🚀 Dynasty Complete Setup</CardTitle>
+            <CardDescription>Recommended number package for all businesses — ~$25/month</CardDescription>
+          </CardHeader>
           <CardContent>
-            <div className="text-sm space-y-1">
-              {costSummary.localCount > 0 && <p>Local numbers: {costSummary.localCount} × $1 = <span className="font-bold">${costSummary.localCount}/month</span></p>}
-              {costSummary.tollFreeCount > 0 && <p>Toll-free numbers: {costSummary.tollFreeCount} × $2 = <span className="font-bold">${costSummary.tollFreeCount * 2}/month</span></p>}
-              <p className="border-t pt-1 mt-1 font-bold text-base">Total monthly: ${costSummary.total}/month</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="pb-2 font-medium">Region</th>
+                    <th className="pb-2 font-medium">Qty</th>
+                    <th className="pb-2 font-medium">Type</th>
+                    <th className="pb-2 font-medium">Code</th>
+                    <th className="pb-2 font-medium">Cost</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm">
+                  {[
+                    { region: "🗽 New York", qty: 5, type: "Local", code: "929", cost: "$5/mo" },
+                    { region: "🌴 Florida", qty: 2, type: "Local", code: "305", cost: "$2/mo" },
+                    { region: "⭐ Texas", qty: 2, type: "Local", code: "214", cost: "$2/mo" },
+                    { region: "🌅 California", qty: 2, type: "Local", code: "213", cost: "$2/mo" },
+                    { region: "🏙️ New Jersey", qty: 1, type: "Local", code: "848", cost: "$1/mo" },
+                    { region: "🍑 Georgia", qty: 1, type: "Local", code: "404", cost: "$1/mo" },
+                    { region: "🇩🇴 Dom Republic", qty: 2, type: "Local", code: "809", cost: "$10/mo" },
+                    { region: "📞 Inbound", qty: 1, type: "Toll-Free", code: "888", cost: "$2/mo" },
+                  ].map((r, i) => (
+                    <tr key={i} className="border-b border-border/50">
+                      <td className="py-2">{r.region}</td>
+                      <td className="py-2">{r.qty}</td>
+                      <td className="py-2">{r.type}</td>
+                      <td className="py-2 font-mono">{r.code}</td>
+                      <td className="py-2">{r.cost}</td>
+                    </tr>
+                  ))}
+                  <tr className="font-bold">
+                    <td className="py-2">Total</td>
+                    <td className="py-2">16</td>
+                    <td></td>
+                    <td></td>
+                    <td className="py-2 text-primary">~$25/mo</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </CardContent>
         </Card>
