@@ -57,3 +57,4 @@ export { default as UTOutreachEngine } from './UTOutreachEngine';
 export { default as UTAutomationRuns } from './UTAutomationRuns';
 export { default as UTAmbassadorFinder } from './UTAmbassadorFinder';
 export { default as UTPricingEngine } from './UTPricingEngine';
+export { default as UTGrowthSimulator } from './UTGrowthSimulator';

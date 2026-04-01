@@ -105,6 +105,7 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
     items: [
       { path: '/os/unforgettable/analytics', label: 'Floor 7 — Analytics', icon: TrendingUp },
       { path: '/os/unforgettable/performance', label: 'Performance', icon: BarChart3 },
+      { path: '/os/unforgettable/growth-simulator', label: 'Growth Simulator', icon: TrendingUp },
     ],
   },
   {
