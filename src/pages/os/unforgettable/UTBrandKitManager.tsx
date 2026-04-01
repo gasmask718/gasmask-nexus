@@ -30,10 +30,10 @@ export default function UTBrandKitManager() {
   const saveMutation = useMutation({
     mutationFn: async (values: any) => {
       if (kit?.id) {
-        const { error } = await supabase.from('ut_brand_kits').update({ ...values, updated_at: new Date().toISOString() }).eq('id', kit.id);
+        const { error } = await supabase.from('ut_brand_kits' as any).update({ ...values, updated_at: new Date().toISOString() }).eq('id', kit.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('ut_brand_kits').insert(values);
+        const { error } = await supabase.from('ut_brand_kits' as any).insert(values);
         if (error) throw error;
       }
     },

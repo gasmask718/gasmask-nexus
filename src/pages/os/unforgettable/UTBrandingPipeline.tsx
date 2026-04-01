@@ -63,7 +63,7 @@ export default function UTBrandingPipeline() {
 
   const updateRequest = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const { error } = await supabase.from('ut_branding_requests').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+      const { error } = await supabase.from('ut_branding_requests' as any).update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {

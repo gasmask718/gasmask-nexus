@@ -50,7 +50,7 @@ export default function UTConsultations() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from('ut_business_consultations').update({ status }).eq('id', id);
+      const { error } = await supabase.from('ut_business_consultations' as any).update({ status }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {

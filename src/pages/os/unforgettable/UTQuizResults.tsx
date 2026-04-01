@@ -25,7 +25,7 @@ export default function UTQuizResults() {
 
   const convertMutation = useMutation({
     mutationFn: async (quiz: any) => {
-      const { error } = await supabase.from('ut_business_consultations').insert({
+      const { error } = await supabase.from('ut_business_consultations' as any).insert({
         name: quiz.email?.split('@')[0] || 'Lead',
         email: quiz.email || '',
         phone: quiz.phone || '',
