@@ -30,7 +30,7 @@ export default function UTKitOrders() {
   const { data: orders = [] } = useQuery({
     queryKey: ['ut-kit-orders'],
     queryFn: async () => {
-      const { data } = await supabase.from('ut_kit_orders').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('ut_kit_orders' as any).select('*').order('created_at', { ascending: false });
       return data || [];
     },
   });
