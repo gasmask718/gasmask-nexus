@@ -10,6 +10,7 @@ import { RoleRouteGuard } from '@/components/security/RoleRouteGuard';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts — kept static (used as wrappers, always needed)
 import PublicLayout from '@/layouts/PublicLayout';
@@ -1022,8 +1023,9 @@ function LandingRedirect() {
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<PageLoader />}>
-    <Routes>
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PUBLIC ROUTES (No authentication required)                                   */}
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
@@ -3188,7 +3190,8 @@ export default function AppRoutes() {
       </Route>
 
       <Route path="*" element={<NotFound />} />
-    </Routes>
-    </Suspense>
+        </Routes>
+      </Suspense>
+    </ErrorBoundary>
   );
 }

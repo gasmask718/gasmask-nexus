@@ -14,18 +14,16 @@ import { ViewAsProvider } from "./contexts/ViewAsContext";
 import { ViewAsBanner } from "./components/admin/ViewAsBanner";
 import { BackendFingerprint, BackendMismatchGuard } from "./components/dev/BackendFingerprint";
 import { SchemaSanityChecker } from "./components/dev/SchemaSanityChecker";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
-// Initialize Dynasty OS Module System - Auto-registers all modules
 import './modules';
-
-// Import the new clean routes
 import AppRoutes from './routes/AppRoutes';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,      // 5 minutes
-      gcTime: 10 * 60 * 1000,         // 10 minutes
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
       retry: 1,
       refetchOnWindowFocus: false,
     },
@@ -38,27 +36,29 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <BackendMismatchGuard>
-          <AuthProvider>
-            <BusinessProvider>
-              <SimulationModeProvider>
-                <ViewAsProvider>
-                  <VoiceDeviceProvider>
-                    <CallProvider>
-                      <MessageProvider>
-                        <BackendFingerprint />
-                        <SchemaSanityChecker />
-                        <ViewAsBanner />
-                        <SimulationModeBanner />
-                        <AppRoutes />
-                      </MessageProvider>
-                    </CallProvider>
-                  </VoiceDeviceProvider>
-                </ViewAsProvider>
-              </SimulationModeProvider>
-            </BusinessProvider>
-          </AuthProvider>
-        </BackendMismatchGuard>
+        <ErrorBoundary>
+          <BackendMismatchGuard>
+            <AuthProvider>
+              <BusinessProvider>
+                <SimulationModeProvider>
+                  <ViewAsProvider>
+                    <VoiceDeviceProvider>
+                      <CallProvider>
+                        <MessageProvider>
+                          <BackendFingerprint />
+                          <SchemaSanityChecker />
+                          <ViewAsBanner />
+                          <SimulationModeBanner />
+                          <AppRoutes />
+                        </MessageProvider>
+                      </CallProvider>
+                    </VoiceDeviceProvider>
+                  </ViewAsProvider>
+                </SimulationModeProvider>
+              </BusinessProvider>
+            </AuthProvider>
+          </BackendMismatchGuard>
+        </ErrorBoundary>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
