@@ -36,7 +36,7 @@ export default function UTBrandingPipeline() {
   const { data: requests = [] } = useQuery({
     queryKey: ['ut-branding-requests'],
     queryFn: async () => {
-      const { data } = await supabase.from('ut_branding_requests').select('*, ut_suppliers(name)').order('created_at', { ascending: false });
+      const { data } = await supabase.from('ut_branding_requests' as any).select('*, ut_suppliers(name)').order('created_at', { ascending: false });
       return data || [];
     },
   });
