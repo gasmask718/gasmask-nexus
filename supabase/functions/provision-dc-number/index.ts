@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
   const twilioGateway = 'https://connector-gateway.lovable.dev/twilio';
   const hasConnectorAuth = Boolean(LOVABLE_API_KEY && TWILIO_CONNECTOR_KEY);
   const hasDirectAuth = Boolean(TWILIO_SID && TWILIO_TOKEN);
+  const authMode = hasDirectAuth ? 'direct' : hasConnectorAuth ? 'connector' : 'none';
 
   if (!hasConnectorAuth && !hasDirectAuth) {
     return new Response(JSON.stringify({
@@ -41,6 +42,15 @@ Deno.serve(async (req) => {
   const callTwilio = (path: string, init: RequestInit = {}) => {
     const headers = new Headers(init.headers);
 
+    if (hasDirectAuth) {
+      headers.set('Authorization', 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`));
+
+      return fetch(`${twilioBase}/Accounts/${TWILIO_SID}${path}`, {
+        ...init,
+        headers,
+      });
+    }
+
     if (hasConnectorAuth) {
       headers.set('Authorization', `Bearer ${LOVABLE_API_KEY}`);
       headers.set('X-Connection-Api-Key', TWILIO_CONNECTOR_KEY!);
@@ -51,12 +61,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    headers.set('Authorization', 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`));
-
-    return fetch(`${twilioBase}/Accounts/${TWILIO_SID}${path}`, {
-      ...init,
-      headers,
-    });
+    throw new Error('Twilio authentication is not configured');
   };
 
   try {
@@ -76,19 +81,21 @@ Deno.serve(async (req) => {
 
     // STATUS CHECK
     if (action === 'status') {
-      const res = hasConnectorAuth
-        ? await callTwilio('/IncomingPhoneNumbers.json?PageSize=1')
-        : await fetch(`${twilioBase}/Accounts/${TWILIO_SID}.json`, {
+      const res = hasDirectAuth
+        ? await fetch(`${twilioBase}/Accounts/${TWILIO_SID}.json`, {
             headers: { Authorization: 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`) }
-          });
+          })
+        : hasConnectorAuth
+        ? await callTwilio('/IncomingPhoneNumbers.json?PageSize=1')
+        : new Response(JSON.stringify({ error: 'Twilio authentication is not configured' }), { status: 401 });
       const data = await res.json().catch(() => ({}));
 
       return new Response(JSON.stringify({
         connected: res.ok,
-        accountName: hasConnectorAuth ? 'Twilio Connector' : data.friendly_name || 'Twilio',
-        accountSid: hasConnectorAuth ? null : data.sid,
+        accountName: authMode === 'connector' ? 'Twilio Connector' : data.friendly_name || 'Twilio',
+        accountSid: authMode === 'connector' ? null : data.sid,
         status: res.ok ? (data.status || 'connected') : 'not_connected',
-        authMode: hasConnectorAuth ? 'connector' : 'direct',
+        authMode,
         error: res.ok ? null : data,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -160,11 +167,11 @@ Deno.serve(async (req) => {
         });
 
         const res = await fetch(
-          hasConnectorAuth ? `${twilioGateway}/IncomingPhoneNumbers.json` : `${twilioBase}/Accounts/${TWILIO_SID}/IncomingPhoneNumbers.json`,
+          authMode === 'connector' ? `${twilioGateway}/IncomingPhoneNumbers.json` : `${twilioBase}/Accounts/${TWILIO_SID}/IncomingPhoneNumbers.json`,
           {
             method: 'POST',
             headers: {
-              ...(hasConnectorAuth
+              ...(authMode === 'connector'
                 ? {
                     Authorization: `Bearer ${LOVABLE_API_KEY}`,
                     'X-Connection-Api-Key': TWILIO_CONNECTOR_KEY!,
