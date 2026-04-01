@@ -31000,6 +31000,7 @@ export type Database = {
           is_active: boolean | null
           is_ai_number: boolean | null
           monthly_cost: number | null
+          number_type: string | null
           phone_number: string
           purchased_at: string | null
           sid: string | null
@@ -31018,6 +31019,7 @@ export type Database = {
           is_active?: boolean | null
           is_ai_number?: boolean | null
           monthly_cost?: number | null
+          number_type?: string | null
           phone_number: string
           purchased_at?: string | null
           sid?: string | null
@@ -31036,6 +31038,7 @@ export type Database = {
           is_active?: boolean | null
           is_ai_number?: boolean | null
           monthly_cost?: number | null
+          number_type?: string | null
           phone_number?: string
           purchased_at?: string | null
           sid?: string | null

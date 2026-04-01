@@ -1,0 +1,1 @@
+ALTER TABLE public.dc_phone_numbers ADD COLUMN IF NOT EXISTS number_type text DEFAULT 'local';
