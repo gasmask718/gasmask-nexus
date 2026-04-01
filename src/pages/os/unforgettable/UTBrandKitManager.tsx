@@ -22,8 +22,9 @@ export default function UTBrandKitManager() {
     queryKey: ['ut-brand-kit'],
     queryFn: async () => {
       const { data } = await supabase.from('ut_brand_kits' as any).select('*').eq('active', true).limit(1).maybeSingle();
-      if (data) setForm(data);
-      return data;
+      const d = data as any;
+      if (d) setForm(d);
+      return d;
     },
   });
 

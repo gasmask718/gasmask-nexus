@@ -19,7 +19,7 @@ export default function UTQuizResults() {
     queryKey: ['ut-quiz-results-all'],
     queryFn: async () => {
       const { data } = await supabase.from('ut_quiz_results' as any).select('*').order('created_at', { ascending: false });
-      return data || [];
+      return (data || []) as any[];
     },
   });
 

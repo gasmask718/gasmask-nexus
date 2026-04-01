@@ -30,7 +30,7 @@ export default function UTBizOwnerDashboard() {
     queryKey: ['ut-kit-orders-recent'],
     queryFn: async () => {
       const { data } = await supabase.from('ut_kit_orders' as any).select('*').order('created_at', { ascending: false });
-      return data || [];
+      return (data || []) as any[];
     },
   });
 
