@@ -747,6 +747,7 @@ const UTLeadIntelligence = lazy(() => import('@/pages/os/unforgettable').then(m 
 const UTOutreachEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTOutreachEngine })));
 const UTAutomationRuns = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAutomationRuns })));
 const UTAmbassadorFinder = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTAmbassadorFinder })));
+const UTPricingEngine = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UTPricingEngine })));
 const UTGrowthEngine = lazy(() => import('@/pages/os/unforgettable/UTGrowthEngine'));
 const UTBizOwnerOutreach = lazy(() => import('@/pages/os/unforgettable/UTBizOwnerOutreach'));
 const UTCustomerAcquisition = lazy(() => import('@/pages/os/unforgettable/UTCustomerAcquisition'));
