@@ -1278,6 +1278,15 @@ export default function AppRoutes() {
           <Route path="clients" element={<DCClients />} />
         </Route>
 
+        {/* 🎙️ Voice Ops Dashboard */}
+        <Route path="/voice-ops" element={<VoiceOpsLayout />}>
+          <Route index element={<VODashboard />} />
+          <Route path="numbers" element={<VONumbers />} />
+          <Route path="agents" element={<VOAgents />} />
+          <Route path="secrets" element={<VOSecrets />} />
+          <Route path="outbound" element={<VOOutbound />} />
+        </Route>
+
         {/* 📡 Communication Systems - New Unified Module */}
         <Route path="/comm-systems" element={<CommSystemsDialerPage />} />
         <Route path="/comm-systems/dialer" element={<CommSystemsDialerPage />} />
