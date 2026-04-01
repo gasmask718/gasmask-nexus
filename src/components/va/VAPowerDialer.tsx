@@ -202,8 +202,11 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
 
     refetchStats();
 
-    // Auto-advance if dialing session is active
-    if (isDialing && !isPaused) {
+    // Auto-advance if dialing session is active (not custom calls)
+    if (isCustomCall) {
+      setIsCustomCall(false);
+      setCallStatus('idle');
+    } else if (isDialing && !isPaused) {
       setTimeout(() => moveToNext(), 1500);
     }
   };
