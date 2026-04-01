@@ -43,7 +43,7 @@ function VendorPricingTab() {
   const addMutation = useMutation({
     mutationFn: async () => {
       const markup = form.vendor_type === 'venue' ? 40 : 50;
-      const { error } = await supabase.from('ut_vendor_pricing').insert({
+      const { error } = await (supabase as any).from('ut_vendor_pricing').insert({
         vendor_type: form.vendor_type, vendor_name: form.vendor_name, service_name: form.service_name,
         base_cost: Number(form.base_cost), markup_percent: markup, unit: form.unit,
         city: form.city || null, state: form.state || null, notes: form.notes || null
