@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils';
 import {
   BarChart3, Target, Phone, ClipboardCheck, Store, Package, Bot, TrendingUp,
   PartyPopper, Users, CalendarDays, DollarSign, FileText, MapPin, Brain, Send, Zap, Star, Calculator,
-  Palette, Factory, FileCheck, Rocket, HelpCircle, PhoneCall, ShoppingBag
+  Palette, Factory, FileCheck, Rocket, HelpCircle, PhoneCall, ShoppingBag, Trophy, Megaphone,
+  ShoppingCart, Mail, Wallet, CreditCard, Sparkles, LayoutDashboard
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
