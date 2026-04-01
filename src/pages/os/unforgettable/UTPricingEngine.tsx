@@ -318,7 +318,7 @@ function QuoteGeneratorTab() {
 
   const { data: packages = [] } = useQuery({
     queryKey: ['ut_event_packages'],
-    queryFn: async () => { const { data } = await supabase.from('ut_event_packages').select('*').eq('is_active', true).order('package_name'); return data || []; }
+    queryFn: async () => { const { data } = await (supabase as any).from('ut_event_packages').select('*').eq('is_active', true).order('package_name'); return (data || []) as any[]; }
   });
 
   const { data: quotes = [], isLoading } = useQuery({
