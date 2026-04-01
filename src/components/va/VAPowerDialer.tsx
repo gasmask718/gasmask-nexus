@@ -367,8 +367,12 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="font-bold text-white text-lg">{currentLead.business_name || 'Unknown'}</h3>
-                <p className="text-sm text-slate-400 font-mono">{currentLead.phone}</p>
+                <h3 className="font-bold text-white text-lg">
+                  {isCustomCall ? (customName || 'Manual Call') : (currentLead?.business_name || 'Unknown')}
+                </h3>
+                <p className="text-sm text-slate-400 font-mono">
+                  {isCustomCall ? customNumber : currentLead?.phone}
+                </p>
               </div>
               <Badge className={
                 callStatus === 'dialing' ? 'bg-blue-500/20 text-blue-400' :
