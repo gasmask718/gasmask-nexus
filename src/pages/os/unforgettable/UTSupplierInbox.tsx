@@ -9,18 +9,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Inbox, Send, Filter, Mail, MessageSquare, Globe, Search, PaperclipIcon, Star, User } from 'lucide-react';
+import { Inbox, Send, Mail, MessageSquare, Globe, Search, PaperclipIcon, Star, User, Bot, AlertTriangle, Tag, Shield, Zap, DollarSign, Package } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+
+type AIAction = 'first_message' | 'counter_offer' | 'shipping_negotiation' | 'close_deal' | 'suggested_reply';
 
 export default function UTSupplierInbox() {
   const queryClient = useQueryClient();
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState('all');
-  const [filterRead, setFilterRead] = useState('all');
   const [search, setSearch] = useState('');
   const [replyText, setReplyText] = useState('');
   const [replyChannel, setReplyChannel] = useState('email');
+  const [showAIPanel, setShowAIPanel] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [filterUrgent, setFilterUrgent] = useState(false);
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ['ut-suppliers-inbox'],
@@ -49,23 +53,51 @@ export default function UTSupplierInbox() {
     },
   });
 
+  const { data: negotiations = [] } = useQuery({
+    queryKey: ['ut-negotiations-inbox'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ut_supplier_negotiations' as any).select('*');
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: rfqs = [] } = useQuery({
+    queryKey: ['ut-rfqs-inbox'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ut_rfq_requests' as any).select('*');
+      return (data || []) as any[];
+    },
+  });
+
+  const { data: rfqResponses = [] } = useQuery({
+    queryKey: ['ut-rfq-responses-inbox'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ut_rfq_supplier_responses' as any).select('*');
+      return (data || []) as any[];
+    },
+  });
+
   // Group conversations by supplier for sidebar
   const supplierThreads = suppliers.map((s: any) => {
     const msgs = allConversations.filter((c: any) => c.supplier_id === s.id);
     const unread = msgs.filter((c: any) => !c.read_status && c.direction === 'received').length;
     const lastMsg = msgs[0];
-    return { ...s, unread, lastMsg, msgCount: msgs.length };
+    const isUrgent = s.is_urgent || unread > 3;
+    return { ...s, unread, lastMsg, msgCount: msgs.length, isUrgent };
   }).filter((s: any) => s.msgCount > 0 || selectedSupplierId === s.id)
     .sort((a: any, b: any) => {
+      if (a.isUrgent !== b.isUrgent) return b.isUrgent ? 1 : -1;
       if (a.unread !== b.unread) return b.unread - a.unread;
       const aTime = a.lastMsg?.created_at || '';
       const bTime = b.lastMsg?.created_at || '';
       return bTime.localeCompare(aTime);
     });
 
-  const filteredThreads = supplierThreads.filter((s: any) =>
-    !search || s.name?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredThreads = supplierThreads.filter((s: any) => {
+    if (search && !s.name?.toLowerCase().includes(search.toLowerCase())) return false;
+    if (filterUrgent && !s.isUrgent) return false;
+    return true;
+  });
 
   const sendReply = useMutation({
     mutationFn: async () => {
@@ -94,6 +126,91 @@ export default function UTSupplierInbox() {
     queryClient.invalidateQueries({ queryKey: ['ut-supplier-conversations-all'] });
   };
 
+  const markUrgent = async (supplierId: string) => {
+    await supabase.from('ut_suppliers' as any).update({ is_urgent: true }).eq('id', supplierId);
+    queryClient.invalidateQueries({ queryKey: ['ut-suppliers-inbox'] });
+    toast.success('Marked as urgent');
+  };
+
+  const flagRisk = async (supplierId: string) => {
+    await supabase.from('ut_supplier_risk_profiles' as any).upsert({
+      supplier_id: supplierId,
+      risk_level: 'high',
+      risk_score: 80,
+      flagged_issues_count: 1,
+      last_updated: new Date().toISOString(),
+    }, { onConflict: 'supplier_id' } as any);
+    await supabase.from('ut_suppliers' as any).update({ risk_score: 80 }).eq('id', supplierId);
+    toast.warning('Supplier flagged as high risk');
+  };
+
+  const generateAIMessage = async (action: AIAction) => {
+    setAiGenerating(true);
+    try {
+      const supplier = suppliers.find((s: any) => s.id === selectedSupplierId);
+      const supplierNeg = negotiations.find((n: any) => n.supplier_id === selectedSupplierId);
+      const supplierRFQResponses = rfqResponses.filter((r: any) => r.supplier_id === selectedSupplierId);
+      const recentConvos = conversations.slice(-5).map((c: any) => `${c.direction}: ${c.message}`).join('\n');
+
+      const context = {
+        supplier_name: supplier?.name,
+        action,
+        negotiation: supplierNeg ? {
+          round: supplierNeg.negotiation_round,
+          current_price: supplierNeg.current_offer_price,
+          target_price: supplierNeg.target_price,
+          current_moq: supplierNeg.current_moq,
+          shipping_cost: supplierNeg.current_shipping_cost,
+          best_offer: supplierNeg.best_offer_price,
+        } : null,
+        rfq_responses: supplierRFQResponses.map((r: any) => ({
+          unit_price: r.unit_price,
+          moq: r.moq,
+          shipping_cost: r.shipping_cost,
+          production_days: r.production_days,
+        })),
+        recent_conversation: recentConvos,
+        competitor_prices: rfqResponses
+          .filter((r: any) => r.supplier_id !== selectedSupplierId)
+          .slice(0, 3)
+          .map((r: any) => ({ supplier: r.supplier_name, price: r.unit_price, moq: r.moq })),
+      };
+
+      const { data, error } = await supabase.functions.invoke('ut-ai-negotiation', {
+        body: { context },
+      });
+
+      if (error) throw error;
+      setReplyText(data?.message || 'AI message generation failed.');
+
+      // Update negotiation round
+      if (supplierNeg && (action === 'counter_offer' || action === 'close_deal')) {
+        await supabase.from('ut_supplier_negotiations' as any).update({
+          negotiation_round: (supplierNeg.negotiation_round || 0) + 1,
+          last_message: data?.message,
+          updated_at: new Date().toISOString(),
+        }).eq('id', supplierNeg.id);
+      }
+
+      toast.success(`AI ${action.replace('_', ' ')} generated`);
+    } catch (err) {
+      console.error(err);
+      // Fallback templates
+      const supplier = suppliers.find((s: any) => s.id === selectedSupplierId);
+      const templates: Record<AIAction, string> = {
+        first_message: `Hi ${supplier?.name || 'there'},\n\nWe're interested in sourcing products from your catalog. Could you share your latest pricing, MOQ requirements, and shipping options to the United States?\n\nWe're looking for competitive pricing on bulk orders with potential for long-term partnership.\n\nBest regards`,
+        counter_offer: `Thank you for your quote. We appreciate your responsiveness.\n\nAfter reviewing competitive offers, we'd like to propose the following:\n- Unit price: We need to be closer to our target\n- MOQ: Can you be more flexible?\n- Shipping: Can you offer better rates for bulk?\n\nWe're committed to a long-term relationship if we can align on pricing.\n\nLooking forward to your response.`,
+        shipping_negotiation: `Hi ${supplier?.name || 'there'},\n\nWe'd like to discuss shipping options:\n\n1. What are your rates for sea freight vs air freight?\n2. Can you offer FOB pricing?\n3. Do you work with any freight forwarders you'd recommend?\n4. What's the typical transit time?\n\nWe need to optimize our landed cost per unit.\n\nThank you.`,
+        close_deal: `Hi ${supplier?.name || 'there'},\n\nBased on our discussions, we're ready to proceed with the order.\n\nPlease confirm the following terms:\n- Final unit price\n- MOQ and total quantity\n- Payment terms\n- Production timeline\n- Shipping method and cost\n\nOnce confirmed, we'll process the order.\n\nBest regards`,
+        suggested_reply: `Thank you for your message. We'll review the details and get back to you shortly.`,
+      };
+      setReplyText(templates[action]);
+      toast.info('Using template (AI unavailable)');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const channelIcon = (ch: string) => {
     switch (ch) {
       case 'email': return <Mail className="h-3 w-3" />;
@@ -113,6 +230,7 @@ export default function UTSupplierInbox() {
   };
 
   const selectedSupplier = suppliers.find((s: any) => s.id === selectedSupplierId);
+  const selectedNeg = negotiations.find((n: any) => n.supplier_id === selectedSupplierId);
   const totalUnread = supplierThreads.reduce((acc: number, s: any) => acc + s.unread, 0);
 
   return (
@@ -122,22 +240,27 @@ export default function UTSupplierInbox() {
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <Inbox className="h-8 w-8" /> Supplier Inbox
           </h1>
-          <p className="text-muted-foreground">All supplier conversations in one place</p>
+          <p className="text-muted-foreground">AI-powered supplier conversations & negotiation</p>
         </div>
-        {totalUnread > 0 && (
-          <Badge variant="destructive" className="text-lg px-3 py-1">{totalUnread} unread</Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <Button variant={filterUrgent ? 'destructive' : 'outline'} size="sm" onClick={() => setFilterUrgent(!filterUrgent)}>
+            <AlertTriangle className="h-4 w-4 mr-1" /> Urgent Only
+          </Button>
+          {totalUnread > 0 && (
+            <Badge variant="destructive" className="text-lg px-3 py-1">{totalUnread} unread</Badge>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-12 gap-4 h-[calc(100vh-200px)]">
         {/* Sidebar - Supplier threads */}
-        <div className="col-span-4 border rounded-lg flex flex-col">
+        <div className="col-span-3 border rounded-lg flex flex-col">
           <div className="p-3 border-b space-y-2">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search suppliers..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {['all', 'email', 'whatsapp', 'alibaba'].map(ch => (
                 <Button key={ch} size="sm" variant={filterChannel === ch ? 'default' : 'outline'} onClick={() => setFilterChannel(ch)} className="text-xs capitalize">
                   {ch}
@@ -150,35 +273,30 @@ export default function UTSupplierInbox() {
               <div className="p-8 text-center text-muted-foreground">
                 <Inbox className="h-12 w-12 mx-auto mb-3 opacity-30" />
                 <p>No conversations yet</p>
-                <p className="text-xs mt-1">Messages will appear here when you communicate with suppliers</p>
               </div>
             ) : (
               filteredThreads.map((s: any) => (
                 <button
                   key={s.id}
-                  onClick={() => { setSelectedSupplierId(s.id); }}
+                  onClick={() => setSelectedSupplierId(s.id)}
                   className={cn(
                     "w-full p-3 text-left border-b hover:bg-accent/50 transition-colors",
-                    selectedSupplierId === s.id && "bg-accent"
+                    selectedSupplierId === s.id && "bg-accent",
+                    s.isUrgent && "border-l-2 border-l-destructive"
                   )}
                 >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <User className="h-5 w-5 text-primary" />
+                  <div className="flex items-start gap-2">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <User className="h-4 w-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium truncate">{s.name}</span>
-                        {s.unread > 0 && <Badge variant="destructive" className="text-xs">{s.unread}</Badge>}
+                        <span className="font-medium truncate text-sm">{s.name}</span>
+                        {s.unread > 0 && <Badge variant="destructive" className="text-[10px] h-5">{s.unread}</Badge>}
                       </div>
                       <div className="flex items-center gap-1 mt-0.5">
-                        {s.lastMsg && (
-                          <span className={cn("text-xs px-1.5 py-0.5 rounded flex items-center gap-1", channelColor(s.lastMsg.channel))}>
-                            {channelIcon(s.lastMsg.channel)}
-                            {s.lastMsg.channel}
-                          </span>
-                        )}
-                        {s.country && <span className="text-xs text-muted-foreground">📍 {s.country}</span>}
+                        {s.isUrgent && <Badge variant="destructive" className="text-[9px] h-4">🔥 URGENT</Badge>}
+                        {s.risk_score > 60 && <Badge className="bg-red-500/20 text-red-400 text-[9px] h-4">⚠️ Risk</Badge>}
                       </div>
                       {s.lastMsg && (
                         <p className="text-xs text-muted-foreground truncate mt-1">
@@ -186,11 +304,6 @@ export default function UTSupplierInbox() {
                         </p>
                       )}
                     </div>
-                    {s.lastMsg && (
-                      <span className="text-xs text-muted-foreground flex-shrink-0">
-                        {formatDistanceToNow(new Date(s.lastMsg.created_at), { addSuffix: false })}
-                      </span>
-                    )}
                   </div>
                 </button>
               ))
@@ -199,7 +312,7 @@ export default function UTSupplierInbox() {
         </div>
 
         {/* Main conversation area */}
-        <div className="col-span-8 border rounded-lg flex flex-col">
+        <div className={cn("border rounded-lg flex flex-col", showAIPanel ? "col-span-6" : "col-span-9")}>
           {!selectedSupplierId ? (
             <div className="flex-1 flex items-center justify-center text-muted-foreground">
               <div className="text-center">
@@ -209,18 +322,24 @@ export default function UTSupplierInbox() {
             </div>
           ) : (
             <>
-              <div className="p-4 border-b flex items-center justify-between">
+              <div className="p-3 border-b flex items-center justify-between">
                 <div>
-                  <h3 className="font-semibold text-lg">{selectedSupplier?.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {selectedSupplier?.country && <span>📍 {selectedSupplier.country}</span>}
-                    {selectedSupplier?.platform && <span>· {selectedSupplier.platform}</span>}
-                    {selectedSupplier?.contact_email && <span>· {selectedSupplier.contact_email}</span>}
+                  <h3 className="font-semibold">{selectedSupplier?.name}</h3>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    {selectedSupplier?.source_platform && <span>{selectedSupplier.source_platform}</span>}
+                    {selectedSupplier?.email && <span>· {selectedSupplier.email}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Badge variant="outline">{selectedSupplier?.status}</Badge>
-                  {selectedSupplier?.preferred && <Badge className="bg-yellow-500/20 text-yellow-400"><Star className="h-3 w-3 mr-1" />Preferred</Badge>}
+                <div className="flex gap-1">
+                  <Button size="sm" variant="outline" onClick={() => markUrgent(selectedSupplierId!)}>
+                    <AlertTriangle className="h-3 w-3 mr-1" /> Urgent
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => flagRisk(selectedSupplierId!)}>
+                    <Shield className="h-3 w-3 mr-1" /> Flag Risk
+                  </Button>
+                  <Button size="sm" variant={showAIPanel ? 'default' : 'outline'} onClick={() => setShowAIPanel(!showAIPanel)}>
+                    <Bot className="h-3 w-3 mr-1" /> AI Agent
+                  </Button>
                 </div>
               </div>
 
@@ -261,43 +380,164 @@ export default function UTSupplierInbox() {
                   ))}
                   {conversations.length === 0 && (
                     <div className="text-center py-12 text-muted-foreground">
-                      <p>No messages yet with this supplier</p>
-                      <p className="text-xs mt-1">Send the first message below</p>
+                      <p>No messages yet</p>
+                      <p className="text-xs mt-1">Send the first message or use AI to generate one</p>
                     </div>
                   )}
                 </div>
               </ScrollArea>
 
-              <div className="p-4 border-t">
-                <div className="flex gap-2 mb-2">
+              <div className="p-3 border-t space-y-2">
+                {/* Quick AI buttons */}
+                <div className="flex gap-1 flex-wrap">
+                  <Button size="sm" variant="ghost" className="text-xs" onClick={() => generateAIMessage('suggested_reply')} disabled={aiGenerating}>
+                    <Bot className="h-3 w-3 mr-1" /> AI Reply
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-xs" onClick={() => generateAIMessage('counter_offer')} disabled={aiGenerating}>
+                    <DollarSign className="h-3 w-3 mr-1" /> Counter Offer
+                  </Button>
+                  <Button size="sm" variant="ghost" className="text-xs" onClick={() => generateAIMessage('close_deal')} disabled={aiGenerating}>
+                    <Zap className="h-3 w-3 mr-1" /> Close Deal
+                  </Button>
+                </div>
+                <div className="flex gap-2">
                   <Select value={replyChannel} onValueChange={setReplyChannel}>
-                    <SelectTrigger className="w-36">
+                    <SelectTrigger className="w-28">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="email"><Mail className="inline h-3 w-3 mr-1" />Email</SelectItem>
-                      <SelectItem value="whatsapp"><MessageSquare className="inline h-3 w-3 mr-1" />WhatsApp</SelectItem>
-                      <SelectItem value="alibaba"><Globe className="inline h-3 w-3 mr-1" />Alibaba</SelectItem>
-                      <SelectItem value="manual"><MessageSquare className="inline h-3 w-3 mr-1" />Manual</SelectItem>
+                      <SelectItem value="email">Email</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="alibaba">Alibaba</SelectItem>
+                      <SelectItem value="manual">Manual</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="flex gap-2">
                   <Textarea
                     placeholder="Type your message..."
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
-                    className="flex-1 min-h-[60px]"
+                    className="flex-1 min-h-[50px] max-h-[120px]"
                     onKeyDown={e => { if (e.key === 'Enter' && e.metaKey) sendReply.mutate(); }}
                   />
                   <Button onClick={() => sendReply.mutate()} disabled={!replyText.trim()} className="self-end">
-                    <Send className="h-4 w-4 mr-1" /> Send
+                    <Send className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </>
           )}
         </div>
+
+        {/* AI Negotiation Panel */}
+        {showAIPanel && selectedSupplierId && (
+          <div className="col-span-3 border rounded-lg flex flex-col">
+            <div className="p-3 border-b">
+              <h3 className="font-semibold flex items-center gap-2 text-sm">
+                <Bot className="h-4 w-4" /> AI Negotiation Assistant
+              </h3>
+            </div>
+            <ScrollArea className="flex-1 p-3 space-y-3">
+              <div className="space-y-3">
+                {/* Negotiation status */}
+                {selectedNeg && (
+                  <Card>
+                    <CardContent className="p-3 space-y-2">
+                      <p className="text-xs font-semibold">Active Negotiation</p>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-muted-foreground">Round</p>
+                          <p className="font-bold">{selectedNeg.negotiation_round || 1}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Status</p>
+                          <Badge variant="outline" className="text-[10px]">{selectedNeg.status}</Badge>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Current Price</p>
+                          <p className="font-bold">${selectedNeg.current_offer_price || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Target</p>
+                          <p className="font-bold text-green-400">${selectedNeg.target_price || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Best Offer</p>
+                          <p className="font-bold">${selectedNeg.best_offer_price || '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Savings</p>
+                          <p className="font-bold text-green-400">{selectedNeg.price_reduction_pct ? `${selectedNeg.price_reduction_pct}%` : '—'}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Risk info */}
+                <Card>
+                  <CardContent className="p-3 space-y-1">
+                    <p className="text-xs font-semibold">Supplier Risk</p>
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-3 h-3 rounded-full",
+                        (selectedSupplier?.risk_score || 50) > 70 ? "bg-red-500" :
+                        (selectedSupplier?.risk_score || 50) > 40 ? "bg-yellow-500" : "bg-green-500"
+                      )} />
+                      <span className="text-sm font-bold">{selectedSupplier?.risk_score || 50}/100</span>
+                      <span className="text-xs text-muted-foreground">
+                        {(selectedSupplier?.risk_score || 50) > 70 ? 'High Risk' :
+                         (selectedSupplier?.risk_score || 50) > 40 ? 'Medium' : 'Low Risk'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* AI Action Buttons */}
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold">Generate Message</p>
+                  <Button size="sm" className="w-full justify-start text-xs" variant="outline"
+                    onClick={() => generateAIMessage('first_message')} disabled={aiGenerating}>
+                    <Send className="h-3 w-3 mr-2" /> Generate First Message
+                  </Button>
+                  <Button size="sm" className="w-full justify-start text-xs" variant="outline"
+                    onClick={() => generateAIMessage('counter_offer')} disabled={aiGenerating}>
+                    <DollarSign className="h-3 w-3 mr-2" /> Generate Counter Offer
+                  </Button>
+                  <Button size="sm" className="w-full justify-start text-xs" variant="outline"
+                    onClick={() => generateAIMessage('shipping_negotiation')} disabled={aiGenerating}>
+                    <Package className="h-3 w-3 mr-2" /> Negotiate Shipping
+                  </Button>
+                  <Button size="sm" className="w-full justify-start text-xs" variant="outline"
+                    onClick={() => generateAIMessage('close_deal')} disabled={aiGenerating}>
+                    <Zap className="h-3 w-3 mr-2" /> Generate Close Deal
+                  </Button>
+                </div>
+
+                {/* Competitor context */}
+                {rfqResponses.filter((r: any) => r.supplier_id !== selectedSupplierId).length > 0 && (
+                  <Card>
+                    <CardContent className="p-3 space-y-1">
+                      <p className="text-xs font-semibold">Competitor Quotes</p>
+                      {rfqResponses.filter((r: any) => r.supplier_id !== selectedSupplierId).slice(0, 3).map((r: any, i: number) => (
+                        <div key={i} className="flex justify-between text-xs">
+                          <span className="text-muted-foreground">{r.supplier_name}</span>
+                          <span className="font-mono">${r.unit_price}/unit</span>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {aiGenerating && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground p-3">
+                    <div className="animate-spin h-4 w-4 border-2 border-primary border-t-transparent rounded-full" />
+                    Generating AI message...
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
       </div>
     </div>
   );
