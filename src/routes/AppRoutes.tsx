@@ -1958,6 +1958,7 @@ export default function AppRoutes() {
           <Route path="settings" element={<CommSettingsPage />} />
           <Route path="phone-numbers" element={<PhoneNumbersSettingsPage />} />
           <Route path="business-numbers" element={<BusinessPhoneNumbersPage />} />
+          <Route path="provision-numbers" element={<PhoneProvisioningPage />} />
           <Route path="routing" element={<RoutingPage />} />
           <Route path="call-diagnostics" element={<CallSystemDiagnosticsPage />} />
           <Route path="dialer-health" element={<DialerHealthPage />} />
