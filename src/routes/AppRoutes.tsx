@@ -3063,6 +3063,9 @@ export default function AppRoutes() {
           <Route path="outreach-engine" element={<UTOutreachEngine />} />
           <Route path="automation-runs" element={<UTAutomationRuns />} />
           <Route path="ambassador-finder" element={<UTAmbassadorFinder />} />
+          <Route path="growth-engine" element={<UTGrowthEngine />} />
+          <Route path="biz-owner-outreach" element={<UTBizOwnerOutreach />} />
+          <Route path="customer-acquisition" element={<UTCustomerAcquisition />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />

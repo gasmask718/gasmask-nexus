@@ -59,6 +59,9 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
     items: [
       { path: '/os/unforgettable/outreach', label: 'Floor 2 — Outreach Command', icon: Phone },
       { path: '/os/unforgettable/communications', label: 'Communications', icon: Phone },
+      { path: '/os/unforgettable/growth-engine', label: 'Growth Engine', icon: Zap },
+      { path: '/os/unforgettable/biz-owner-outreach', label: 'Biz Owner Outreach', icon: Users },
+      { path: '/os/unforgettable/customer-acquisition', label: 'Customer Acquisition', icon: Target },
     ],
   },
   {
