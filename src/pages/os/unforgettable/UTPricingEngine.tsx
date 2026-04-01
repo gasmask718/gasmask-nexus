@@ -165,7 +165,7 @@ function PackageBuilderTab() {
 
   const { data: packages = [], isLoading: pkgLoading } = useQuery({
     queryKey: ['ut_event_packages'],
-    queryFn: async () => { const { data } = await supabase.from('ut_event_packages').select('*').eq('is_active', true).order('created_at', { ascending: false }); return data || []; }
+    queryFn: async () => { const { data } = await (supabase as any).from('ut_event_packages').select('*').eq('is_active', true).order('created_at', { ascending: false }); return (data || []) as any[]; }
   });
 
   const addItem = (vendor: any) => {
