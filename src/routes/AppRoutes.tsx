@@ -200,6 +200,10 @@ const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
 const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
+const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard'));
+const AdminCallReviewPage = lazy(() => import('@/pages/admin/AdminCallReview'));
+const AdminVAMonitorPage = lazy(() => import('@/pages/admin/AdminVAMonitor'));
+const AdminDNCManagerPage = lazy(() => import('@/pages/admin/AdminDNCManager'));
 const AmbassadorLogin = lazy(() => import('@/pages/ambassador/AmbassadorLogin'));
 const AmbassadorSetPassword = lazy(() => import('@/pages/ambassador/AmbassadorSetPassword'));
 const UTAmbassadorDashboard = lazy(() => import('@/pages/ut-ambassador/UTAmbassadorDashboard'));
@@ -1051,6 +1055,10 @@ export default function AppRoutes() {
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/admin/numbers" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminNumbersPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/leaderboard" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminLeaderboardPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/call-review" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminCallReviewPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/monitor" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminVAMonitorPage /></RequireRole></ProtectedRoute>} />
+      <Route path="/admin/dnc" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminDNCManagerPage /></RequireRole></ProtectedRoute>} />
 
       {/* ═══════════════════════════════════════════════════════════════════════════ */}
       {/* PROTECTED ROUTES (Authentication required)                                   */}
