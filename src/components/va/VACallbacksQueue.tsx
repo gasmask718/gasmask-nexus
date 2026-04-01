@@ -28,7 +28,7 @@ export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
     if (!user) return;
     const { data } = await (supabase as any)
       .from('va_call_logs')
-      .select('id, lead_id, callback_scheduled_at, va_notes, brandaro_qualified_leads(business_name, phone)')
+      .select('id, lead_id, callback_scheduled_at, va_notes, brandaro_qualified_leads(business_name, phone_number)')
       .eq('va_id', user.id)
       .eq('disposition', 'callback')
       .not('callback_scheduled_at', 'is', null)
@@ -38,7 +38,7 @@ export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
       setCallbacks(data.map((d: any) => ({
         ...d,
         lead_name: d.brandaro_qualified_leads?.business_name || 'Unknown',
-        lead_phone: d.brandaro_qualified_leads?.phone || '',
+        lead_phone: d.brandaro_qualified_leads?.phone_number || '',
       })));
     }
   };

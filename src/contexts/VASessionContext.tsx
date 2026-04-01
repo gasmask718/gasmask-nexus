@@ -74,20 +74,10 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const endSession = useCallback(async () => {
-    if (state.twilioNumberId) {
-      await (supabase as any)
-        .from('brandaro_phone_numbers')
-        .update({ in_use: false, assigned_va_id: null })
-        .eq('id', state.twilioNumberId);
-    }
+    const numberId = state.twilioNumberId;
+    const sessId = state.sessionId;
 
-    if (state.sessionId) {
-      await (supabase as any)
-        .from('va_sessions')
-        .update({ is_active: false, ended_at: new Date().toISOString() })
-        .eq('id', state.sessionId);
-    }
-
+    // Clear state immediately so UI updates fast
     setState({
       language: 'en',
       twilioNumberId: null,
@@ -95,21 +85,65 @@ export function VASessionProvider({ children }: { children: ReactNode }) {
       sessionId: null,
       isOnboarded: false,
     });
+
+    // Release number
+    if (numberId) {
+      await (supabase as any)
+        .from('brandaro_phone_numbers')
+        .update({ in_use: false, assigned_va_id: null })
+        .eq('id', numberId);
+    }
+
+    // End session record
+    if (sessId) {
+      await (supabase as any)
+        .from('va_sessions')
+        .update({ is_active: false, ended_at: new Date().toISOString() })
+        .eq('id', sessId);
+    }
   }, [state.twilioNumberId, state.sessionId]);
 
-  // Cleanup on unmount (page close / logout)
+  // Cleanup on unmount / page close — use fetch with keepalive (sendBeacon alternative that supports headers)
   useEffect(() => {
     const cleanup = () => {
       if (state.twilioNumberId) {
-        navigator.sendBeacon?.(
-          `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brandaro_phone_numbers?id=eq.${state.twilioNumberId}`,
-          JSON.stringify({ in_use: false, assigned_va_id: null })
-        );
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/brandaro_phone_numbers?id=eq.${state.twilioNumberId}`;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        try {
+          fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${anonKey}`,
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({ in_use: false, assigned_va_id: null }),
+            keepalive: true,
+          });
+        } catch (_) { /* best effort */ }
+      }
+      if (state.sessionId) {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/va_sessions?id=eq.${state.sessionId}`;
+        const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+        try {
+          fetch(url, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': anonKey,
+              'Authorization': `Bearer ${anonKey}`,
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({ is_active: false, ended_at: new Date().toISOString() }),
+            keepalive: true,
+          });
+        } catch (_) { /* best effort */ }
       }
     };
     window.addEventListener('beforeunload', cleanup);
     return () => window.removeEventListener('beforeunload', cleanup);
-  }, [state.twilioNumberId]);
+  }, [state.twilioNumberId, state.sessionId]);
 
   return (
     <VASessionContext.Provider value={{ ...state, t, setLanguage, startSession, endSession }}>

@@ -27,14 +27,14 @@ export function VALeaderboard({ dateFilter }: VALeaderboardProps) {
     const targetDate = dateFilter || new Date().toISOString().split('T')[0];
     const { data } = await (supabase as any)
       .from('va_leaderboard_stats')
-      .select('*, profiles!va_leaderboard_stats_va_id_fkey(full_name)')
+      .select('*, profiles!va_leaderboard_stats_va_id_fkey(name)')
       .eq('session_date', targetDate)
       .order('calls_closed', { ascending: false });
 
     if (data) {
       setEntries(data.map((d: any) => ({
         ...d,
-        va_name: d.profiles?.full_name || 'VA',
+        va_name: d.profiles?.name || 'VA',
       })));
     }
   };
