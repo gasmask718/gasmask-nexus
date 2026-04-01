@@ -3128,6 +3128,10 @@ export default function AppRoutes() {
             <Route path="supplier-command" element={<UTSupplierCommandDashboard />} />
             <Route path="negotiation-agent" element={<UTNegotiationAgent />} />
             <Route path="negotiation-dashboard" element={<UTNegotiationDashboard />} />
+            <Route path="supplier-inbox-v2" element={<UTSupplierInboxV2 />} />
+            <Route path="auto-outreach" element={<UTAutoOutreach />} />
+            <Route path="shipping-quotes" element={<UTShippingQuotes />} />
+            <Route path="auto-finder" element={<UTAutoFinder />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
