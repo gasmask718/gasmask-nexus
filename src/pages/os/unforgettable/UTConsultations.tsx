@@ -37,7 +37,7 @@ export default function UTConsultations() {
 
   const addMutation = useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase.from('ut_business_consultations').insert(values);
+      const { error } = await supabase.from('ut_business_consultations' as any).insert(values);
       if (error) throw error;
     },
     onSuccess: () => {
