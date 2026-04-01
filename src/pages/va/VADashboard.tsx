@@ -10,45 +10,77 @@ import { VAScripts } from '@/components/va/VAScripts';
 import { VARebuttals } from '@/components/va/VARebuttals';
 import { VAFAQs } from '@/components/va/VAFAQs';
 import { VALeadDiscovery } from '@/components/va/VALeadDiscovery';
+import { VAPowerDialer } from '@/components/va/VAPowerDialer';
+import { VADialerAssist } from '@/components/va/VADialerAssist';
+import { VALeaderboard } from '@/components/va/VALeaderboard';
+import { VACallbacksQueue } from '@/components/va/VACallbacksQueue';
+import { VASessionSummary } from '@/components/va/VASessionSummary';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft,
+  Search, ArrowLeft, Zap, Trophy, Clock,
 } from 'lucide-react';
 
-type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery';
+type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks';
 
 function VADashboardInner() {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useAuth();
+  const { user } = useAuth();
   const { t, twilioNumber, language, isOnboarded, endSession } = useVASession();
 
-  // Auto-set view based on route
   const initialView = location.pathname.includes('lead-discovery') ? 'discovery' : 'leads';
   const [view, setView] = useState<VAView>(initialView);
   const [callLead, setCallLead] = useState<any>(null);
   const [invoiceLead, setInvoiceLead] = useState<any>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
+  const [dialerLeads, setDialerLeads] = useState<any[]>([]);
+  const [showSessionSummary, setShowSessionSummary] = useState(false);
+
+  // Fetch leads for dialer
+  const { data: allLeads = [] } = useQuery({
+    queryKey: ['va-dialer-leads', user?.id],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('brandaro_leads_master')
+        .select('id, business_name, phone, email, status')
+        .not('phone', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(500);
+      return (data || []).filter((l: any) => l.phone);
+    },
+    enabled: !!user,
+  });
 
   const handleLogout = async () => {
-    try {
-      await endSession();
-    } catch (e) {
-      console.error('Failed to end session cleanly:', e);
-    }
+    try { await endSession(); } catch (e) { console.error('Failed to end session cleanly:', e); }
     await signOut();
     navigate('/va/auth');
+  };
+
+  const handleStartDialer = () => {
+    setDialerLeads(allLeads);
+    setView('dialer');
+  };
+
+  const handleEndDialerSession = () => {
+    setShowSessionSummary(true);
   };
 
   const navItems = [
     { key: 'leads' as VAView, label: t('va.nav.leads'), icon: Users },
     { key: 'discovery' as VAView, label: t('va.nav.discovery'), icon: Search },
+    { key: 'dialer' as VAView, label: 'Power Dialer', icon: Zap },
+    { key: 'leaderboard' as VAView, label: 'Leaderboard', icon: Trophy },
+    { key: 'callbacks' as VAView, label: 'Callbacks', icon: Clock },
     { key: 'call' as VAView, label: t('va.nav.activeCall'), icon: Phone },
     { key: 'scripts' as VAView, label: t('va.nav.scripts'), icon: BookOpen },
     { key: 'faqs' as VAView, label: t('va.nav.faqs'), icon: HelpCircle },
@@ -136,13 +168,45 @@ function VADashboardInner() {
           {/* Content */}
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
             {view === 'leads' && (
-              <VALeadsTable
-                onCall={lead => { setCallLead(lead); setView('call'); }}
-                onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
-                onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
-              />
+              <div className="space-y-4">
+                <div className="flex justify-end">
+                  <Button onClick={handleStartDialer} className="bg-cyan-600 hover:bg-cyan-700 gap-2">
+                    <Zap className="h-4 w-4" /> Start Power Dialer ({allLeads.length} leads)
+                  </Button>
+                </div>
+                <VALeadsTable
+                  onCall={lead => { setCallLead(lead); setView('call'); }}
+                  onCreateInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
+                  onSendInvoice={lead => { setInvoiceLead(lead); setInvoiceOpen(true); }}
+                />
+              </div>
             )}
             {view === 'discovery' && <VALeadDiscovery />}
+            {view === 'dialer' && (
+              <div className="flex gap-4 h-[calc(100vh-8rem)]">
+                {/* Left: Dialer 60% */}
+                <div className="w-[60%] overflow-y-auto pr-2">
+                  <VAPowerDialer leads={dialerLeads.length > 0 ? dialerLeads : allLeads} onEndSession={handleEndDialerSession} />
+                  <div className="mt-4">
+                    <VALeaderboard />
+                  </div>
+                </div>
+                {/* Right: Assist 40% */}
+                <div className="w-[40%] bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+                  <VADialerAssist />
+                </div>
+              </div>
+            )}
+            {view === 'leaderboard' && (
+              <div className="max-w-4xl">
+                <VALeaderboard />
+              </div>
+            )}
+            {view === 'callbacks' && (
+              <div className="max-w-2xl">
+                <VACallbacksQueue onDialLead={lead => { setCallLead(lead); setView('call'); }} />
+              </div>
+            )}
             {view === 'call' && (
               <VACallPanel
                 lead={callLead}
@@ -174,6 +238,16 @@ function VADashboardInner() {
         </div>
 
         <VAInvoiceModal open={invoiceOpen} onClose={() => setInvoiceOpen(false)} lead={invoiceLead} />
+
+        {showSessionSummary && (
+          <VASessionSummary
+            stats={{
+              callsDialed: 0, callsAnswered: 0, callsClosed: 0,
+              hotCount: 0, warmCount: 0, coldCount: 0, avgDurationSeconds: 0,
+            }}
+            onClose={() => { setShowSessionSummary(false); setView('leads'); }}
+          />
+        )}
       </div>
     </SidebarProvider>
   );
