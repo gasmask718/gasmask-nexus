@@ -326,8 +326,43 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
         )}
       </div>
 
+      {/* Custom Manual Dial */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <PhoneCall className="h-4 w-4 text-cyan-400" />
+            <span className="text-sm font-medium text-white">Manual Dial</span>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={customName}
+              onChange={e => setCustomName(e.target.value)}
+              placeholder="Name (optional)"
+              className="bg-slate-700 border-slate-600 text-white text-sm h-9 w-36"
+              disabled={callStatus !== 'idle' && callStatus !== 'ended'}
+            />
+            <Input
+              value={customNumber}
+              onChange={e => setCustomNumber(e.target.value)}
+              placeholder="+1 (555) 000-0000"
+              className="bg-slate-700 border-slate-600 text-white text-sm h-9 flex-1 font-mono"
+              disabled={callStatus !== 'idle' && callStatus !== 'ended'}
+              onKeyDown={e => { if (e.key === 'Enter') dialCustomNumber(); }}
+            />
+            <Button
+              onClick={dialCustomNumber}
+              disabled={!customNumber || (callStatus !== 'idle' && callStatus !== 'ended')}
+              className="bg-cyan-600 hover:bg-cyan-700 h-9 gap-1.5"
+              size="sm"
+            >
+              <Phone className="h-3.5 w-3.5" /> Call
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Current Lead Card */}
-      {currentLead && (
+      {(currentLead || isCustomCall) && (
         <Card className="bg-slate-800 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
