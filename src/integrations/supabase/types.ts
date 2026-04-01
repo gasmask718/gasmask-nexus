@@ -16413,6 +16413,7 @@ export type Database = {
           business_status: string | null
           call_attempts: number | null
           call_notes: string | null
+          callback_scheduled_at: string | null
           campaign_id: string | null
           category: string | null
           city: string | null
@@ -16429,6 +16430,7 @@ export type Database = {
           discovery_job_id: string | null
           email: string | null
           engagement_score: number | null
+          excitement_level: string | null
           first_name: string | null
           full_name: string | null
           google_maps_url: string | null
@@ -16465,6 +16467,7 @@ export type Database = {
           stripe_payment_link: string | null
           subtypes: string | null
           updated_at: string | null
+          va_notes: string | null
           website_status: string | null
         }
         Insert: {
@@ -16475,6 +16478,7 @@ export type Database = {
           business_status?: string | null
           call_attempts?: number | null
           call_notes?: string | null
+          callback_scheduled_at?: string | null
           campaign_id?: string | null
           category?: string | null
           city?: string | null
@@ -16491,6 +16495,7 @@ export type Database = {
           discovery_job_id?: string | null
           email?: string | null
           engagement_score?: number | null
+          excitement_level?: string | null
           first_name?: string | null
           full_name?: string | null
           google_maps_url?: string | null
@@ -16527,6 +16532,7 @@ export type Database = {
           stripe_payment_link?: string | null
           subtypes?: string | null
           updated_at?: string | null
+          va_notes?: string | null
           website_status?: string | null
         }
         Update: {
@@ -16537,6 +16543,7 @@ export type Database = {
           business_status?: string | null
           call_attempts?: number | null
           call_notes?: string | null
+          callback_scheduled_at?: string | null
           campaign_id?: string | null
           category?: string | null
           city?: string | null
@@ -16553,6 +16560,7 @@ export type Database = {
           discovery_job_id?: string | null
           email?: string | null
           engagement_score?: number | null
+          excitement_level?: string | null
           first_name?: string | null
           full_name?: string | null
           google_maps_url?: string | null
@@ -16589,6 +16597,7 @@ export type Database = {
           stripe_payment_link?: string | null
           subtypes?: string | null
           updated_at?: string | null
+          va_notes?: string | null
           website_status?: string | null
         }
         Relationships: [
@@ -33349,6 +33358,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_store_commission_performance"
             referencedColumns: ["store_id"]
+          },
+        ]
+      }
+      dnc_list: {
+        Row: {
+          added_at: string | null
+          added_by: string | null
+          id: string
+          phone_number: string
+          reason: string | null
+        }
+        Insert: {
+          added_at?: string | null
+          added_by?: string | null
+          id?: string
+          phone_number: string
+          reason?: string | null
+        }
+        Update: {
+          added_at?: string | null
+          added_by?: string | null
+          id?: string
+          phone_number?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dnc_list_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -81101,39 +81142,57 @@ export type Database = {
       va_call_logs: {
         Row: {
           ai_analysis: Json | null
+          call_sid: string | null
           call_status: string | null
+          callback_scheduled_at: string | null
           called_at: string | null
+          disposition: string | null
           duration_seconds: number | null
+          excitement_level: string | null
           id: string
           lead_id: string | null
           recording_url: string | null
           transcript: string | null
           twilio_number: string
           va_id: string
+          va_notes: string | null
+          voicemail_dropped: boolean | null
         }
         Insert: {
           ai_analysis?: Json | null
+          call_sid?: string | null
           call_status?: string | null
+          callback_scheduled_at?: string | null
           called_at?: string | null
+          disposition?: string | null
           duration_seconds?: number | null
+          excitement_level?: string | null
           id?: string
           lead_id?: string | null
           recording_url?: string | null
           transcript?: string | null
           twilio_number: string
           va_id: string
+          va_notes?: string | null
+          voicemail_dropped?: boolean | null
         }
         Update: {
           ai_analysis?: Json | null
+          call_sid?: string | null
           call_status?: string | null
+          callback_scheduled_at?: string | null
           called_at?: string | null
+          disposition?: string | null
           duration_seconds?: number | null
+          excitement_level?: string | null
           id?: string
           lead_id?: string | null
           recording_url?: string | null
           transcript?: string | null
           twilio_number?: string
           va_id?: string
+          va_notes?: string | null
+          voicemail_dropped?: boolean | null
         }
         Relationships: [
           {
@@ -81145,6 +81204,51 @@ export type Database = {
           },
           {
             foreignKeyName: "va_call_logs_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_daily_goals: {
+        Row: {
+          calls_target: number | null
+          closes_target: number | null
+          created_at: string | null
+          goal_date: string
+          id: string
+          set_by: string | null
+          va_id: string | null
+        }
+        Insert: {
+          calls_target?: number | null
+          closes_target?: number | null
+          created_at?: string | null
+          goal_date?: string
+          id?: string
+          set_by?: string | null
+          va_id?: string | null
+        }
+        Update: {
+          calls_target?: number | null
+          closes_target?: number | null
+          created_at?: string | null
+          goal_date?: string
+          id?: string
+          set_by?: string | null
+          va_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_daily_goals_set_by_fkey"
+            columns: ["set_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_daily_goals_va_id_fkey"
             columns: ["va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -81237,6 +81341,50 @@ export type Database = {
           },
           {
             foreignKeyName: "va_invoices_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_leaderboard_stats: {
+        Row: {
+          calls_answered: number | null
+          calls_closed: number | null
+          calls_dialed: number | null
+          created_at: string | null
+          id: string
+          session_date: string
+          total_talk_time_seconds: number | null
+          updated_at: string | null
+          va_id: string
+        }
+        Insert: {
+          calls_answered?: number | null
+          calls_closed?: number | null
+          calls_dialed?: number | null
+          created_at?: string | null
+          id?: string
+          session_date?: string
+          total_talk_time_seconds?: number | null
+          updated_at?: string | null
+          va_id: string
+        }
+        Update: {
+          calls_answered?: number | null
+          calls_closed?: number | null
+          calls_dialed?: number | null
+          created_at?: string | null
+          id?: string
+          session_date?: string
+          total_talk_time_seconds?: number | null
+          updated_at?: string | null
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_leaderboard_stats_va_id_fkey"
             columns: ["va_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -81525,6 +81673,48 @@ export type Database = {
             columns: ["va_id"]
             isOneToOne: false
             referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_sms_logs: {
+        Row: {
+          id: string
+          lead_id: string | null
+          message_body: string | null
+          sent_at: string | null
+          sent_to: string | null
+          va_id: string
+        }
+        Insert: {
+          id?: string
+          lead_id?: string | null
+          message_body?: string | null
+          sent_at?: string | null
+          sent_to?: string | null
+          va_id: string
+        }
+        Update: {
+          id?: string
+          lead_id?: string | null
+          message_body?: string | null
+          sent_at?: string | null
+          sent_to?: string | null
+          va_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_sms_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "brandaro_qualified_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_sms_logs_va_id_fkey"
+            columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -91506,6 +91696,10 @@ export type Database = {
         Returns: undefined
       }
       update_relationship_status: { Args: never; Returns: undefined }
+      upsert_leaderboard_stat: {
+        Args: { p_field: string; p_increment?: number; p_va_id: string }
+        Returns: undefined
+      }
       user_has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
