@@ -221,6 +221,7 @@ export default function PhoneProvisioningPage() {
   };
 
   const monthlyCost = country === "DO" ? 5.0 : numberType === "tollfree" ? 2.0 : 1.0;
+  const isTwilioConnected = Boolean(twilioStatus?.connected);
 
   return (
     <div className="p-6 space-y-6 max-w-5xl mx-auto">
@@ -248,15 +249,21 @@ export default function PhoneProvisioningPage() {
               🟢 Twilio Connected — {twilioStatus.accountName}
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-red-500 font-medium">
-              🔴 Twilio Not Connected — add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to secrets
+            <div className="space-y-2 text-red-500 font-medium">
+              <div>⚠️ Twilio credentials not found.</div>
+              <div>Please add these to project secrets:</div>
+              <div className="font-mono text-sm text-foreground">TWILIO_ACCOUNT_SID</div>
+              <div className="font-mono text-sm text-foreground">TWILIO_AUTH_TOKEN</div>
+              <div className="text-sm text-muted-foreground">
+                You can find them at console.twilio.com under Account Info on the dashboard.
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Existing Numbers */}
-      {existingNumbers.length > 0 && step === 0 && (
+      {isTwilioConnected && existingNumbers.length > 0 && step === 0 && (
         <Card>
           <CardHeader><CardTitle className="text-lg">Current Numbers</CardTitle></CardHeader>
           <CardContent>
@@ -297,7 +304,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 0 — Select Business */}
-      {step === 0 && (
+      {isTwilioConnected && step === 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Step 1 — Select Business</CardTitle>
@@ -319,7 +326,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 1 — Select Country */}
-      {step === 1 && (
+      {isTwilioConnected && step === 1 && (
         <Card>
           <CardHeader>
             <CardTitle>Step 2 — Select Country</CardTitle>
@@ -352,7 +359,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 2 — Number Type (US only) */}
-      {step === 2 && country === "US" && (
+      {isTwilioConnected && step === 2 && country === "US" && (
         <Card>
           <CardHeader>
             <CardTitle>Step 3 — Number Type</CardTitle>
@@ -384,7 +391,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 3 — State / Area Code */}
-      {step === 3 && (
+      {isTwilioConnected && step === 3 && (
         <Card>
           <CardHeader>
             <CardTitle>Step 4 — {country === "DO" ? "Dominican Republic" : numberType === "tollfree" ? "Toll-Free Prefix" : "Select State & Area Code"}</CardTitle>
@@ -485,7 +492,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 4 — Quantity (Brandaro only) */}
-      {step === 4 && business === "brandaro" && (
+      {isTwilioConnected && step === 4 && business === "brandaro" && (
         <Card>
           <CardHeader>
             <CardTitle>Step 5 — Quantity</CardTitle>
@@ -512,7 +519,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 5 — Search */}
-      {step === 5 && (
+      {isTwilioConnected && step === 5 && (
         <Card>
           <CardHeader>
             <CardTitle>Step 6 — Search Available Numbers</CardTitle>
@@ -559,7 +566,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 6 — Assign Agent */}
-      {step === 6 && (
+      {isTwilioConnected && step === 6 && (
         <Card>
           <CardHeader>
             <CardTitle>Step 7 — Assign Agent</CardTitle>
@@ -592,7 +599,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* STEP 7 — Confirm & Buy */}
-      {step === 7 && !purchaseComplete && (
+      {isTwilioConnected && step === 7 && !purchaseComplete && (
         <Card>
           <CardHeader><CardTitle>Step 8 — Confirm Purchase</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -625,7 +632,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* Purchase Complete */}
-      {purchaseComplete && (
+      {isTwilioConnected && purchaseComplete && (
         <Card className="border-green-500/50 bg-green-500/5">
           <CardContent className="py-6 text-center space-y-4">
             <div className="text-4xl">🎉</div>
@@ -638,7 +645,7 @@ export default function PhoneProvisioningPage() {
       )}
 
       {/* Bulk Setup Card */}
-      {step === 0 && (
+      {isTwilioConnected && step === 0 && (
         <Card className="border-primary/30">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">🚀 Dynasty Complete Setup</CardTitle>
