@@ -30664,6 +30664,45 @@ export type Database = {
           },
         ]
       }
+      dc_agents: {
+        Row: {
+          agent_id: string | null
+          agent_type: string | null
+          created_at: string | null
+          first_message: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          system_prompt: string | null
+          total_calls: number | null
+          voice_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_type?: string | null
+          created_at?: string | null
+          first_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          system_prompt?: string | null
+          total_calls?: number | null
+          voice_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          agent_type?: string | null
+          created_at?: string | null
+          first_message?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          system_prompt?: string | null
+          total_calls?: number | null
+          voice_id?: string | null
+        }
+        Relationships: []
+      }
       dc_business_pipelines: {
         Row: {
           billing_start_date: string | null
@@ -30712,6 +30751,123 @@ export type Database = {
           plan_tier?: string | null
           status?: string | null
           stripe_customer_id?: string | null
+        }
+        Relationships: []
+      }
+      dc_call_logs: {
+        Row: {
+          agent_id: string | null
+          agent_type: string | null
+          answered_by: string | null
+          call_sid: string | null
+          campaign_id: string | null
+          created_at: string | null
+          direction: string | null
+          duration_seconds: number | null
+          from_number: string | null
+          id: string
+          lead_id: string | null
+          lead_name: string | null
+          outcome: string | null
+          recording_url: string | null
+          status: string | null
+          to_number: string | null
+          transcript: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          agent_type?: string | null
+          answered_by?: string | null
+          call_sid?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          from_number?: string | null
+          id?: string
+          lead_id?: string | null
+          lead_name?: string | null
+          outcome?: string | null
+          recording_url?: string | null
+          status?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          agent_type?: string | null
+          answered_by?: string | null
+          call_sid?: string | null
+          campaign_id?: string | null
+          created_at?: string | null
+          direction?: string | null
+          duration_seconds?: number | null
+          from_number?: string | null
+          id?: string
+          lead_id?: string | null
+          lead_name?: string | null
+          outcome?: string | null
+          recording_url?: string | null
+          status?: string | null
+          to_number?: string | null
+          transcript?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      dc_campaigns: {
+        Row: {
+          active_days: Json | null
+          agent_type: string | null
+          appointments_set: number | null
+          calls_made: number | null
+          calls_per_hour: number | null
+          connected: number | null
+          created_at: string | null
+          end_time: string | null
+          id: string
+          max_attempts: number | null
+          name: string
+          start_time: string | null
+          status: string | null
+          total_leads: number | null
+          voicemails_skipped: number | null
+        }
+        Insert: {
+          active_days?: Json | null
+          agent_type?: string | null
+          appointments_set?: number | null
+          calls_made?: number | null
+          calls_per_hour?: number | null
+          connected?: number | null
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          max_attempts?: number | null
+          name: string
+          start_time?: string | null
+          status?: string | null
+          total_leads?: number | null
+          voicemails_skipped?: number | null
+        }
+        Update: {
+          active_days?: Json | null
+          agent_type?: string | null
+          appointments_set?: number | null
+          calls_made?: number | null
+          calls_per_hour?: number | null
+          connected?: number | null
+          created_at?: string | null
+          end_time?: string | null
+          id?: string
+          max_attempts?: number | null
+          name?: string
+          start_time?: string | null
+          status?: string | null
+          total_leads?: number | null
+          voicemails_skipped?: number | null
         }
         Relationships: []
       }
