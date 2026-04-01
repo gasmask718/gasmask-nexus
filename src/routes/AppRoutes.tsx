@@ -200,6 +200,7 @@ const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplica
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
+const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
 const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
 const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard'));
@@ -1056,6 +1057,7 @@ export default function AppRoutes() {
 
       {/* VA Portal — Protected routes */}
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
+      <Route path="/va/profile" element={<ProtectedRoute><VAProfilePage /></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/admin/numbers" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminNumbersPage /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/leaderboard" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminLeaderboardPage /></RequireRole></ProtectedRoute>} />

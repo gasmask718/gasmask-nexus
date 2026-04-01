@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle,
 } from 'lucide-react';
 
 type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks';
@@ -50,13 +50,19 @@ function VADashboardInner() {
     queryKey: ['va-dialer-leads', user?.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('brandaro_leads_master')
-        .select('id, business_name, phone, email, status')
-        .eq('assigned_va_id', user!.id)
-        .not('phone', 'is', null)
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, phone_number, email, lead_status')
+        .eq('assigned_va', user!.id)
+        .not('phone_number', 'is', null)
         .order('created_at', { ascending: false })
         .limit(500);
-      return (data || []).filter((l: any) => l.phone);
+      return (data || []).map((l: any) => ({
+        id: l.id,
+        business_name: l.business_name,
+        phone: l.phone_number,
+        email: l.email,
+        status: l.lead_status,
+      })).filter((l: any) => l.phone);
     },
     enabled: !!user,
   });
@@ -160,6 +166,9 @@ function VADashboardInner() {
               <Badge className="bg-slate-700 text-slate-300 text-xs">
                 {language === 'en' ? '🇺🇸 EN' : '🇪🇸 ES'}
               </Badge>
+              <Button size="sm" variant="ghost" className="text-cyan-400 hover:text-cyan-300 gap-1" onClick={() => navigate('/va/profile')}>
+                <UserCircle className="h-3 w-3" /> Profile
+              </Button>
               <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 gap-1" onClick={handleLogout}>
                 <LogOut className="h-3 w-3" /> {t('va.topbar.logout')}
               </Button>

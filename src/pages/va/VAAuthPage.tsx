@@ -43,7 +43,7 @@ export default function VAAuthPage() {
         if (data.user) {
           await supabase.from('profiles').upsert({
             id: data.user.id,
-            full_name: form.fullName,
+            name: form.fullName,
             role: 'va',
           } as any);
         }
