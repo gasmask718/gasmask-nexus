@@ -55,6 +55,9 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const [coachingData, setCoachingData] = useState<any>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [needsDisposition, setNeedsDisposition] = useState(false);
+  const [customNumber, setCustomNumber] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [isCustomCall, setIsCustomCall] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const notesTimerRef = useRef<NodeJS.Timeout | null>(null);
