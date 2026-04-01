@@ -222,6 +222,7 @@ const DYNASTY_NAVIGATION = {
         { path: '/communication/voice-matrix', label: 'Voice Matrix', icon: Radio },
         { path: '/communication/heatmap', label: 'Heatmap', icon: Flame },
         { path: '/communication/business-numbers', label: 'Caller IDs & Routing', icon: Phone, adminOnly: true },
+        { path: '/communication/provision-numbers', label: '📱 Buy Numbers', icon: ShoppingCart, adminOnly: true },
         { path: '/communication/dialer-integrity', label: 'Dialer Integrity', icon: Activity, adminOnly: true },
         { path: '/communication/settings', label: 'Settings', icon: Settings },
       ],
@@ -507,6 +508,17 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-connect/clients', label: '💼 Client Management', icon: Briefcase },
     ],
   },
+  voiceOps: {
+    id: 'voice-ops',
+    name: '🎙️ Voice Ops',
+    items: [
+      { path: '/voice-ops', label: '🎙️ Voice Ops Dashboard', icon: Headphones },
+      { path: '/voice-ops/numbers', label: '📞 Phone Numbers', icon: Phone },
+      { path: '/voice-ops/agents', label: '🤖 Agents', icon: Bot },
+      { path: '/voice-ops/secrets', label: '🔑 Secrets', icon: Key },
+      { path: '/voice-ops/outbound', label: '📤 Outbound', icon: Send },
+    ],
+  },
   surplusFundsOs: {
     id: 'surplus-funds-os',
     name: '💰 Surplus Funds OS',
@@ -605,7 +617,7 @@ const Layout = ({ children }: LayoutProps) => {
     'surplus-funds-os', 'real-estate-os', 'solar-os',
     'grabba-brands', 'dynasty-business', 'finance-acquisition', 'communication-systems',
     'marketplaces', 'logistics', 'crm-customer-service', 'ai-systems', 'systems-hr',
-    'brandaro-hub', 'dynasty-connect', 'global-dashboard', 'portals'
+    'brandaro-hub', 'dynasty-connect', 'voice-ops', 'global-dashboard', 'portals'
   ]);
   
   const currentPath = location.pathname;
@@ -830,6 +842,18 @@ const Layout = ({ children }: LayoutProps) => {
           DYNASTY_NAVIGATION.dynastyConnect.id,
           DYNASTY_NAVIGATION.dynastyConnect.name,
           DYNASTY_NAVIGATION.dynastyConnect.items
+        )}
+      </div>
+
+      {/* 🎙️ VOICE OPS — STANDALONE HUB */}
+      <div className="pt-2 border-t border-purple-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-purple-400/80 tracking-wider">
+          🎙️ Voice Ops
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.voiceOps.id,
+          DYNASTY_NAVIGATION.voiceOps.name,
+          DYNASTY_NAVIGATION.voiceOps.items
         )}
       </div>
 
