@@ -448,7 +448,7 @@ function QuoteGeneratorTab() {
 function ProfitAnalyzerTab() {
   const { data: quotes = [] } = useQuery({
     queryKey: ['ut_quotes'],
-    queryFn: async () => { const { data } = await supabase.from('ut_quotes').select('*').order('created_at', { ascending: false }); return data || []; }
+    queryFn: async () => { const { data } = await (supabase as any).from('ut_quotes').select('*').order('created_at', { ascending: false }); return (data || []) as any[]; }
   });
 
   const { data: packages = [] } = useQuery({
