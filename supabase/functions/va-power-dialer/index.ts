@@ -46,6 +46,7 @@ serve(async (req) => {
     }
 
     // ======================== DIAL ========================
+    // Creates call log + DNC check. Actual call is placed by the browser SDK.
     if (action === "dial") {
       if (!leadPhone || !twilioNumber) {
         return new Response(JSON.stringify({ error: "leadPhone and twilioNumber required for dial" }), {
@@ -98,60 +99,8 @@ serve(async (req) => {
         });
       } catch (_) { /* leaderboard optional */ }
 
-      // Initiate Twilio call
-      const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-
-      let callSid = null;
-
-      if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
-        const statusCallbackUrl = `${SUPABASE_URL}/functions/v1/va-dialer-status`;
-
-        // Call the VA's browser Twilio Device, TwiML will then bridge to the lead
-        const identity = `user_${vaId.replace(/-/g, "")}`;
-        const twimlUrl = `${SUPABASE_URL}/functions/v1/va-power-dialer?action=twiml&leadPhone=${encodeURIComponent(leadPhone)}&callLogId=${callLog?.id || ""}&callerId=${encodeURIComponent(twilioNumber)}`;
-
-        const twilioRes = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-              To: `client:${identity}`,
-              From: twilioNumber,
-              Url: twimlUrl,
-              Record: "true",
-              MachineDetection: "DetectMessageEnd",
-              MachineDetectionTimeout: "5",
-              StatusCallback: statusCallbackUrl,
-              StatusCallbackEvent: "initiated ringing answered completed",
-              StatusCallbackMethod: "POST",
-              Timeout: "30",
-            }),
-          }
-        );
-
-        const twilioData = await twilioRes.json();
-
-        if (!twilioRes.ok) {
-          console.error("Twilio error:", JSON.stringify(twilioData));
-        } else {
-          callSid = twilioData.sid;
-          if (callLog?.id) {
-            await supabaseAdmin.from("va_call_logs")
-              .update({ call_status: "ringing", call_sid: callSid })
-              .eq("id", callLog.id);
-          }
-        }
-      } else {
-        console.warn("Twilio credentials not configured — call logged but not placed");
-      }
-
       return new Response(JSON.stringify({
-        success: true, callLogId: callLog?.id, callSid,
+        success: true, callLogId: callLog?.id,
       }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -191,31 +140,6 @@ serve(async (req) => {
         await supabaseAdmin.from("brandaro_qualified_leads")
           .update({ callback_scheduled_at: callbackAt })
           .eq("id", leadId);
-      }
-
-      return new Response(JSON.stringify({ success: true }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // ======================== HANGUP ========================
-    if (action === "hangup") {
-      const { callSid: sidToHangup } = body;
-      const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
-      const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
-
-      if (sidToHangup && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
-        await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${sidToHangup}.json`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
-              "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({ Status: "completed" }),
-          }
-        );
       }
 
       return new Response(JSON.stringify({ success: true }), {
