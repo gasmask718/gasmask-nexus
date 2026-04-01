@@ -1,8 +1,14 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const getEnvValue = (...names: string[]) => {
+  for (const name of names) {
+    const value = Deno.env.get(name)?.trim();
+    if (value) return value;
+  }
+  return null;
 };
 
 Deno.serve(async (req) => {
@@ -10,19 +16,48 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID');
-  const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN');
+  const TWILIO_SID = getEnvValue('TWILIO_ACCOUNT_SID', 'TWILIO_SID', 'VITE_TWILIO_ACCOUNT_SID');
+  const TWILIO_TOKEN = getEnvValue('TWILIO_AUTH_TOKEN', 'TWILIO_TOKEN', 'VITE_TWILIO_AUTH_TOKEN');
+  const TWILIO_CONNECTOR_KEY = getEnvValue('TWILIO_API_KEY');
+  const LOVABLE_API_KEY = getEnvValue('LOVABLE_API_KEY');
   const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
   const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  const auth = 'Basic ' + btoa(TWILIO_SID + ':' + TWILIO_TOKEN);
   const twilioBase = 'https://api.twilio.com/2010-04-01';
+  const twilioGateway = 'https://connector-gateway.lovable.dev/twilio';
+  const hasConnectorAuth = Boolean(LOVABLE_API_KEY && TWILIO_CONNECTOR_KEY);
+  const hasDirectAuth = Boolean(TWILIO_SID && TWILIO_TOKEN);
 
-  if (!TWILIO_SID || !TWILIO_TOKEN) {
+  if (!hasConnectorAuth && !hasDirectAuth) {
     return new Response(JSON.stringify({
       error: 'TWILIO_NOT_CONFIGURED',
-      message: 'Add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to project secrets'
-    }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      message: 'Twilio credentials are not set in project secrets. Please add TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN.',
+      checkedSecretNames: {
+        sid: ['TWILIO_ACCOUNT_SID', 'TWILIO_SID', 'VITE_TWILIO_ACCOUNT_SID'],
+        token: ['TWILIO_AUTH_TOKEN', 'TWILIO_TOKEN', 'VITE_TWILIO_AUTH_TOKEN'],
+      },
+    }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
+
+  const callTwilio = (path: string, init: RequestInit = {}) => {
+    const headers = new Headers(init.headers);
+
+    if (hasConnectorAuth) {
+      headers.set('Authorization', `Bearer ${LOVABLE_API_KEY}`);
+      headers.set('X-Connection-Api-Key', TWILIO_CONNECTOR_KEY!);
+
+      return fetch(`${twilioGateway}${path}`, {
+        ...init,
+        headers,
+      });
+    }
+
+    headers.set('Authorization', 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`));
+
+    return fetch(`${twilioBase}/Accounts/${TWILIO_SID}${path}`, {
+      ...init,
+      headers,
+    });
+  };
 
   try {
     const body = await req.json();
@@ -41,34 +76,39 @@ Deno.serve(async (req) => {
 
     // STATUS CHECK
     if (action === 'status') {
-      const res = await fetch(`${twilioBase}/Accounts/${TWILIO_SID}.json`, {
-        headers: { Authorization: auth }
-      });
-      const data = await res.json();
+      const res = hasConnectorAuth
+        ? await callTwilio('/IncomingPhoneNumbers.json?PageSize=1')
+        : await fetch(`${twilioBase}/Accounts/${TWILIO_SID}.json`, {
+            headers: { Authorization: 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`) }
+          });
+      const data = await res.json().catch(() => ({}));
+
       return new Response(JSON.stringify({
         connected: res.ok,
-        accountName: data.friendly_name || 'Unknown',
-        accountSid: data.sid,
-        status: data.status
+        accountName: hasConnectorAuth ? 'Twilio Connector' : data.friendly_name || 'Twilio',
+        accountSid: hasConnectorAuth ? null : data.sid,
+        status: res.ok ? (data.status || 'connected') : 'not_connected',
+        authMode: hasConnectorAuth ? 'connector' : 'direct',
+        error: res.ok ? null : data,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // SEARCH NUMBERS
     if (action === 'search') {
-      let url = '';
+      let path = '';
 
       if (country === 'DO') {
         const drAreaCode = areaCode || '809';
-        url = `${twilioBase}/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/Local.json?AreaCode=${drAreaCode}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
+        path = `/AvailablePhoneNumbers/US/Local.json?AreaCode=${drAreaCode}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
       } else if (numberType === 'tollfree') {
-        url = `${twilioBase}/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/TollFree.json?VoiceEnabled=true&SmsEnabled=true&Limit=5`;
-        if (prefix) url += `&Contains=${prefix}*******`;
+        path = '/AvailablePhoneNumbers/US/TollFree.json?VoiceEnabled=true&SmsEnabled=true&Limit=5';
+        if (prefix) path += `&Contains=${prefix}*******`;
       } else {
-        url = `${twilioBase}/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/Local.json?AreaCode=${areaCode || '929'}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
+        path = `/AvailablePhoneNumbers/US/Local.json?AreaCode=${areaCode || '929'}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
       }
 
-      const res = await fetch(url, { headers: { Authorization: auth } });
-      const data = await res.json();
+      const res = await callTwilio(path);
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         return new Response(JSON.stringify({
@@ -120,17 +160,24 @@ Deno.serve(async (req) => {
         });
 
         const res = await fetch(
-          `${twilioBase}/Accounts/${TWILIO_SID}/IncomingPhoneNumbers.json`,
+          hasConnectorAuth ? `${twilioGateway}/IncomingPhoneNumbers.json` : `${twilioBase}/Accounts/${TWILIO_SID}/IncomingPhoneNumbers.json`,
           {
             method: 'POST',
             headers: {
-              Authorization: auth,
+              ...(hasConnectorAuth
+                ? {
+                    Authorization: `Bearer ${LOVABLE_API_KEY}`,
+                    'X-Connection-Api-Key': TWILIO_CONNECTOR_KEY!,
+                  }
+                : {
+                    Authorization: 'Basic ' + btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`),
+                  }),
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: form,
           }
         );
-        const purchased = await res.json();
+        const purchased = await res.json().catch(() => ({}));
 
         if (res.ok && SUPABASE_URL && SUPABASE_KEY) {
           const monthlyCost = country === 'DO' ? 5.00 : numberType === 'tollfree' ? 2.00 : 1.00;
