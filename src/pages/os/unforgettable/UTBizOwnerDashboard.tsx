@@ -14,7 +14,7 @@ export default function UTBizOwnerDashboard() {
     queryKey: ['ut-quiz-results'],
     queryFn: async () => {
       const { data } = await supabase.from('ut_quiz_results' as any).select('*').order('created_at', { ascending: false }).limit(10);
-      return data || [];
+      return (data || []) as any[];
     },
   });
 
