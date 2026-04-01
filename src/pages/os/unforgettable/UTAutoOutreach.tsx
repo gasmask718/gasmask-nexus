@@ -82,7 +82,7 @@ export default function UTAutoOutreach() {
 
       try {
         // Create thread first
-        const { data: thread } = await supabase.from('ut_supplier_threads' as any).insert({
+        const { data: thread } = await (supabase.from('ut_supplier_threads' as any) as any).insert({
           supplier_id: id,
           supplier_name: supplier.name,
           supplier_email: supplier.contact_email,
