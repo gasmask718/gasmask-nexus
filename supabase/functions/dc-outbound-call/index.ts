@@ -3,6 +3,38 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Smart local-presence routing for Brandaro
+const getLocalNumber = (toNumber: string, defaultFrom: string): string => {
+  const areaCode = toNumber.replace(/\D/g, '').substring(1, 4)
+
+  // DR numbers (809, 829, 849)
+  if (['809', '829', '849'].includes(areaCode)) {
+    return Deno.env.get('BRANDARO_DR_NUMBER') || defaultFrom
+  }
+  // Florida
+  if (['305', '754', '786', '407', '561', '321', '941', '727', '813', '904'].includes(areaCode)) {
+    return Deno.env.get('BRANDARO_FL_NUMBER') || defaultFrom
+  }
+  // Texas
+  if (['214', '713', '832', '512', '281', '972', '469', '817', '210', '361'].includes(areaCode)) {
+    return Deno.env.get('BRANDARO_TX_NUMBER') || defaultFrom
+  }
+  // California
+  if (['213', '310', '323', '415', '619', '818', '626', '949', '714', '562'].includes(areaCode)) {
+    return Deno.env.get('BRANDARO_CA_NUMBER') || defaultFrom
+  }
+  // New Jersey
+  if (['848', '201', '732', '908', '973', '551', '609'].includes(areaCode)) {
+    return Deno.env.get('BRANDARO_NJ_NUMBER') || defaultFrom
+  }
+  // Georgia
+  if (['404', '470', '678', '770', '706', '762'].includes(areaCode)) {
+    return Deno.env.get('BRANDARO_GA_NUMBER') || defaultFrom
+  }
+  // Default (NYC)
+  return defaultFrom
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -97,7 +129,12 @@ Deno.serve(async (req) => {
     const biz = business || 'gasmask'
     const businessAgents = agentRouting[biz] || agentRouting.gasmask
     const agentId = agent_id_override || businessAgents[agent_type] || businessAgents.default
-    const fromNumber = phoneMap[biz] || '+18484004179'
+    const defaultFrom = phoneMap[biz] || '+18484004179'
+
+    // Smart FROM number: Brandaro uses local presence routing
+    const fromNumber = biz === 'brandaro'
+      ? getLocalNumber(to_number, defaultFrom)
+      : defaultFrom
 
     const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
