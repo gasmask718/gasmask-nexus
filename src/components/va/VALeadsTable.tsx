@@ -16,7 +16,7 @@ interface Lead {
   email: string | null;
   status: string;
   created_at: string;
-  assigned_va_id: string | null;
+  assigned_va: string | null;
 }
 
 interface VALeadsTableProps {
