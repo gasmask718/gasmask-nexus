@@ -752,6 +752,7 @@ const UTGrowthEngine = lazy(() => import('@/pages/os/unforgettable/UTGrowthEngin
 const UTBizOwnerOutreach = lazy(() => import('@/pages/os/unforgettable/UTBizOwnerOutreach'));
 const UTCustomerAcquisition = lazy(() => import('@/pages/os/unforgettable/UTCustomerAcquisition'));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
+const UTGrowthSimulator = lazy(() => import('@/pages/os/unforgettable/UTGrowthSimulator'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
