@@ -394,6 +394,14 @@ const PlayBoxxxPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/P
 const BrightSunPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/BrightSunPipeline'));
 const GasMaskNewStoresPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/GasMaskNewStoresPipeline'));
 
+// Voice Ops Dashboard
+const VoiceOpsLayout = lazy(() => import('@/pages/voice-ops/VoiceOpsLayout'));
+const VODashboard = lazy(() => import('@/pages/voice-ops/VODashboard'));
+const VONumbers = lazy(() => import('@/pages/voice-ops/VONumbers'));
+const VOAgents = lazy(() => import('@/pages/voice-ops/VOAgents'));
+const VOSecrets = lazy(() => import('@/pages/voice-ops/VOSecrets'));
+const VOOutbound = lazy(() => import('@/pages/voice-ops/VOOutbound'));
+
 // Surplus Funds OS
 const SFLayout = lazy(() => import('@/pages/surplus-funds/SFLayout'));
 const SFCommandCenter = lazy(() => import('@/pages/surplus-funds/SFCommandCenter'));
