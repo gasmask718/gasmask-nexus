@@ -90,3 +90,4 @@ export { default as UTSupplierInboxV2 } from './UTSupplierInboxV2';
 export { default as UTAutoOutreach } from './UTAutoOutreach';
 export { default as UTShippingQuotes } from './UTShippingQuotes';
 export { default as UTAutoFinder } from './UTAutoFinder';
+export { default as UTCategoryDomination } from './UTCategoryDomination';

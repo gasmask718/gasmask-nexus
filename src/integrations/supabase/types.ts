@@ -75773,6 +75773,273 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_category_branding: {
+        Row: {
+          branded_count: number | null
+          branding_adoption_pct: number | null
+          category_id: string
+          id: string
+          kit_names: string[] | null
+          packaging_system: string | null
+          total_products: number | null
+          updated_at: string | null
+          white_label_count: number | null
+        }
+        Insert: {
+          branded_count?: number | null
+          branding_adoption_pct?: number | null
+          category_id: string
+          id?: string
+          kit_names?: string[] | null
+          packaging_system?: string | null
+          total_products?: number | null
+          updated_at?: string | null
+          white_label_count?: number | null
+        }
+        Update: {
+          branded_count?: number | null
+          branding_adoption_pct?: number | null
+          category_id?: string
+          id?: string
+          kit_names?: string[] | null
+          packaging_system?: string | null
+          total_products?: number | null
+          updated_at?: string | null
+          white_label_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_category_branding_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_category_expansion_queue: {
+        Row: {
+          ai_confidence: number | null
+          category_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          recommendation_type: string
+          resolved_at: string | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          category_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          recommendation_type: string
+          resolved_at?: string | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          category_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          recommendation_type?: string
+          resolved_at?: string | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_category_expansion_queue_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_category_performance: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          customer_count: number | null
+          customer_growth_pct: number | null
+          id: string
+          period_month: string
+          profit: number | null
+          reorder_rate: number | null
+          revenue: number | null
+          supplier_performance_avg: number | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          customer_count?: number | null
+          customer_growth_pct?: number | null
+          id?: string
+          period_month: string
+          profit?: number | null
+          reorder_rate?: number | null
+          revenue?: number | null
+          supplier_performance_avg?: number | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          customer_count?: number | null
+          customer_growth_pct?: number | null
+          id?: string
+          period_month?: string
+          profit?: number | null
+          reorder_rate?: number | null
+          revenue?: number | null
+          supplier_performance_avg?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_category_performance_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_category_pricing: {
+        Row: {
+          avg_selling_price: number | null
+          avg_supplier_cost: number | null
+          category_id: string
+          competitor_price_high: number | null
+          competitor_price_low: number | null
+          id: string
+          margin_pct: number | null
+          pricing_strategy: string | null
+          tier_bulk_price: number | null
+          tier_business_price: number | null
+          tier_kit_price: number | null
+          tier_retail_price: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_selling_price?: number | null
+          avg_supplier_cost?: number | null
+          category_id: string
+          competitor_price_high?: number | null
+          competitor_price_low?: number | null
+          id?: string
+          margin_pct?: number | null
+          pricing_strategy?: string | null
+          tier_bulk_price?: number | null
+          tier_business_price?: number | null
+          tier_kit_price?: number | null
+          tier_retail_price?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_selling_price?: number | null
+          avg_supplier_cost?: number | null
+          category_id?: string
+          competitor_price_high?: number | null
+          competitor_price_low?: number | null
+          id?: string
+          margin_pct?: number | null
+          pricing_strategy?: string | null
+          tier_bulk_price?: number | null
+          tier_business_price?: number | null
+          tier_kit_price?: number | null
+          tier_retail_price?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_category_pricing_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_category_suppliers: {
+        Row: {
+          avg_unit_cost: number | null
+          category_id: string
+          created_at: string | null
+          exclusivity_status: string | null
+          id: string
+          is_active: boolean | null
+          negotiated_terms: Json | null
+          performance_score: number | null
+          priority_status: string | null
+          supplier_id: string | null
+          supplier_name: string
+          tier: string | null
+          updated_at: string | null
+          volume_commitment_period: string | null
+          volume_commitment_units: number | null
+        }
+        Insert: {
+          avg_unit_cost?: number | null
+          category_id: string
+          created_at?: string | null
+          exclusivity_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          negotiated_terms?: Json | null
+          performance_score?: number | null
+          priority_status?: string | null
+          supplier_id?: string | null
+          supplier_name: string
+          tier?: string | null
+          updated_at?: string | null
+          volume_commitment_period?: string | null
+          volume_commitment_units?: number | null
+        }
+        Update: {
+          avg_unit_cost?: number | null
+          category_id?: string
+          created_at?: string | null
+          exclusivity_status?: string | null
+          id?: string
+          is_active?: boolean | null
+          negotiated_terms?: Json | null
+          performance_score?: number | null
+          priority_status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string
+          tier?: string | null
+          updated_at?: string | null
+          volume_commitment_period?: string | null
+          volume_commitment_units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_category_suppliers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_category_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_category_suppliers_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_catering_menus: {
         Row: {
           beverage_packages: Json | null
@@ -75893,6 +76160,54 @@ export type Database = {
           preferences?: Json | null
           state?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ut_domination_categories: {
+        Row: {
+          branding_potential: number | null
+          category_name: string
+          competition_score: number | null
+          created_at: string | null
+          demand_score: number | null
+          id: string
+          margin_score: number | null
+          notes: string | null
+          priority_level: string | null
+          repeat_frequency: number | null
+          status: string | null
+          total_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          branding_potential?: number | null
+          category_name: string
+          competition_score?: number | null
+          created_at?: string | null
+          demand_score?: number | null
+          id?: string
+          margin_score?: number | null
+          notes?: string | null
+          priority_level?: string | null
+          repeat_frequency?: number | null
+          status?: string | null
+          total_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          branding_potential?: number | null
+          category_name?: string
+          competition_score?: number | null
+          created_at?: string | null
+          demand_score?: number | null
+          id?: string
+          margin_score?: number | null
+          notes?: string | null
+          priority_level?: string | null
+          repeat_frequency?: number | null
+          status?: string | null
+          total_score?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
