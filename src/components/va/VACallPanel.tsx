@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import { useVASession } from '@/contexts/VASessionContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useVoiceDevice } from '@/contexts/VoiceDeviceProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Phone, PhoneOff, Mic, MicOff, Pause, Play, X, FileText, Send } from 'lucide-react';
+import { Phone, PhoneOff, Mic, MicOff, X, FileText, Send, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAScripts } from './VAScripts';
 import { VARebuttals } from './VARebuttals';
@@ -27,14 +28,26 @@ interface VACallPanelProps {
 export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) {
   const { t, twilioNumber, sessionId } = useVASession();
   const { user } = useAuth();
+  const voice = useVoiceDevice();
   const [callStatus, setCallStatus] = useState<'idle' | 'ringing' | 'connected' | 'ended'>('idle');
-  const [muted, setMuted] = useState(false);
-  const [onHold, setOnHold] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [invoiceCreated, setInvoiceCreated] = useState(false);
+  const [callLogId, setCallLogId] = useState<string | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const callLogIdRef = useRef<string | null>(null);
+
+  // Sync Twilio Device state → local state
+  useEffect(() => {
+    const vs = voice.callStatus;
+    if (vs === 'ringing' && callStatus === 'ringing') {
+      // stay ringing
+    } else if (vs === 'in-progress' && (callStatus === 'ringing')) {
+      setCallStatus('connected');
+    } else if ((vs === 'completed' || vs === 'cancelled' || vs === 'failed') && callStatus === 'connected') {
+      if (timerRef.current) clearInterval(timerRef.current);
+      setCallStatus('ended');
+    }
+  }, [voice.callStatus, callStatus]);
 
   useEffect(() => {
     if (callStatus === 'connected') {
@@ -52,21 +65,37 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
   const initiateCall = async () => {
     if (!lead || !twilioNumber) return;
     setCallStatus('ringing');
+    setSeconds(0);
 
     try {
-      const { data, error } = await supabase.functions.invoke('va-initiate-call', {
+      // Create call log on server
+      const { data, error } = await supabase.functions.invoke('va-power-dialer', {
         body: {
-          leadPhone: lead.phone,
-          fromNumber: twilioNumber,
-          leadId: lead.id,
           vaId: user?.id,
+          twilioNumber,
+          leadId: lead.id,
+          leadPhone: lead.phone,
+          leadName: lead.business_name,
+          action: 'dial',
         },
       });
 
       if (error) throw error;
-      callLogIdRef.current = data?.callLogId || null;
+      setCallLogId(data?.callLogId || null);
 
-      setTimeout(() => setCallStatus('connected'), 3000);
+      // Place the call from the browser using Twilio Voice SDK
+      const call = await voice.makeCall(lead.phone);
+
+      if (!call) {
+        // Fallback: if SDK not ready, use server-initiated call
+        if (data?.callSid) {
+          setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
+        } else {
+          toast.error('Could not place call — check microphone permissions');
+          setCallStatus('idle');
+        }
+      }
+      // If call succeeded, state updates happen via voice.callStatus sync
     } catch (err: any) {
       toast.error(t('va.call.callFailed') + ': ' + (err.message || 'Unknown error'));
       setCallStatus('idle');
@@ -77,14 +106,18 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
     if (timerRef.current) clearInterval(timerRef.current);
     setCallStatus('ended');
 
-    if (callLogIdRef.current) {
+    // Disconnect browser audio
+    voice.hangUp();
+
+    // Update call log
+    if (callLogId) {
       await (supabase as any)
         .from('va_call_logs')
         .update({
           call_status: 'completed',
           duration_seconds: seconds,
         })
-        .eq('id', callLogIdRef.current);
+        .eq('id', callLogId);
     }
 
     toast.success(t('va.call.ended'));
@@ -94,6 +127,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
     setInvoiceOpen(false);
     setInvoiceCreated(true);
   };
+
+  const effectiveMuted = voice.activeCall ? voice.isMuted : false;
 
   if (!lead) {
     return (
@@ -107,6 +142,21 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
 
   return (
     <div className="space-y-4">
+      {/* Voice Status */}
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
+        {voice.deviceState === 'registered' ? (
+          <>
+            <Wifi className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="text-xs text-emerald-400">Softphone Ready</span>
+          </>
+        ) : (
+          <>
+            <WifiOff className="h-3.5 w-3.5 text-amber-400" />
+            <span className="text-xs text-amber-400">Connecting to Twilio...</span>
+          </>
+        )}
+      </div>
+
       {/* Call Header */}
       <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
         <div className="flex items-center justify-between mb-3">
@@ -145,11 +195,8 @@ export function VACallPanel({ lead, onClose, onSendInvoice }: VACallPanelProps) 
           )}
           {callStatus === 'connected' && (
             <>
-              <Button size="lg" variant={muted ? 'destructive' : 'secondary'} onClick={() => setMuted(!muted)}>
-                {muted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-              </Button>
-              <Button size="lg" variant={onHold ? 'default' : 'secondary'} onClick={() => setOnHold(!onHold)}>
-                {onHold ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+              <Button size="lg" variant={effectiveMuted ? 'destructive' : 'secondary'} onClick={() => voice.toggleMute()}>
+                {effectiveMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
               </Button>
               <Button size="lg" variant="destructive" onClick={endCall} className="px-8 gap-2">
                 <PhoneOff className="h-5 w-5" /> {t('va.call.endCall')}

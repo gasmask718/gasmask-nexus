@@ -65,12 +65,14 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const currentLead = leads[currentIndex] || null;
   const nextLead = leads[currentIndex + 1] || null;
 
-  // Sync Twilio Device call state with our local state
+  // Sync Twilio Device call state → local state
   useEffect(() => {
-    if (voice.callStatus === 'in-progress' && callStatus === 'ringing') {
+    const vs = voice.callStatus;
+    if (vs === 'ringing' && (callStatus === 'dialing' || callStatus === 'ringing')) {
+      setCallStatus('ringing');
+    } else if (vs === 'in-progress' && (callStatus === 'dialing' || callStatus === 'ringing')) {
       setCallStatus('connected');
-    } else if (voice.callStatus === 'completed' && callStatus === 'connected') {
-      // Call ended from Twilio side
+    } else if ((vs === 'completed' || vs === 'cancelled' || vs === 'failed') && callStatus === 'connected') {
       if (timerRef.current) clearInterval(timerRef.current);
       setCallStatus('ended');
       setNeedsDisposition(true);
@@ -135,8 +137,12 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     return `${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
   };
 
-  const dialCurrent = useCallback(async () => {
-    if (!currentLead || !twilioNumber || !user) return;
+  /**
+   * Dial a phone number using Browser Twilio SDK (primary) with server-side logging.
+   * Flow: 1) Server: DNC check + create call log  2) Browser: voice.makeCall(phone) → TwiML App → PSTN
+   */
+  const dialNumber = useCallback(async (phone: string, leadId: string | null, leadName: string) => {
+    if (!twilioNumber || !user) return;
 
     setCallStatus('dialing');
     setSeconds(0);
@@ -148,13 +154,14 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     setCoachingData(null);
 
     try {
+      // Step 1: Server-side DNC check + call log creation
       const { data, error } = await supabase.functions.invoke('va-power-dialer', {
         body: {
           vaId: user.id,
           twilioNumber,
-          leadId: currentLead.id,
-          leadPhone: currentLead.phone,
-          leadName: currentLead.business_name,
+          leadId,
+          leadPhone: phone,
+          leadName,
           action: 'dial',
         },
       });
@@ -162,57 +169,66 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
       if (error) throw error;
 
       if (data?.skipped) {
-        toast.info(`${currentLead.business_name} skipped (DNC)`);
-        moveToNext();
-        return;
+        toast.info(`${leadName} skipped (DNC)`);
+        return 'skipped';
       }
 
       setCallLogId(data?.callLogId || null);
-      setCallSid(data?.callSid || null);
-      setCallStatus('ringing');
-      refetchStats();
 
-      // If Twilio Device is not connected, fall back to timer-based status
-      if (!voice.browserCallingConfigured) {
-        setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
+      // Step 2: Initiate the call from the browser using Twilio Voice SDK
+      // This calls our TwiML App which returns <Dial><Number>phone</Number></Dial>
+      const call = await voice.makeCall(phone);
+
+      if (call) {
+        setCallSid(call.parameters?.CallSid || null);
+        setCallStatus('ringing');
+        // Real call state updates happen via the voice.callStatus sync above
+      } else {
+        // Voice SDK not available — call was initiated server-side as fallback
+        if (data?.callSid) {
+          setCallSid(data.callSid);
+          setCallStatus('ringing');
+          // Use timer-based status for server-initiated calls
+          setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
+        } else {
+          toast.error('Could not place call — check microphone permissions');
+          setCallStatus('idle');
+          return 'failed';
+        }
       }
+
+      refetchStats();
+      return 'success';
     } catch (err: any) {
       toast.error('Call failed: ' + (err.message || 'Unknown error'));
       setCallStatus('idle');
+      return 'failed';
     }
-  }, [currentLead, twilioNumber, user, refetchStats, voice.browserCallingConfigured]);
+  }, [twilioNumber, user, voice, refetchStats]);
+
+  const dialCurrent = useCallback(async () => {
+    if (!currentLead) return;
+    const result = await dialNumber(currentLead.phone, currentLead.id, currentLead.business_name);
+    if (result === 'skipped') {
+      moveToNext();
+    }
+  }, [currentLead, dialNumber]);
 
   const endCall = async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setCallStatus('ended');
     setNeedsDisposition(true);
 
-    // Hang up via Twilio Device SDK
-    if (voice.activeCall) {
-      voice.hangUp();
-    }
+    // Hang up via Twilio Device SDK (disconnects the browser audio)
+    voice.hangUp();
 
-    // Also tell the server to end the call
-    if (callSid && user) {
-      try {
-        await supabase.functions.invoke('va-power-dialer', {
-          body: { vaId: user.id, action: 'hangup', callSid },
-        });
-      } catch (_) { /* best effort */ }
-    }
-
+    // Update call log with duration
     if (callLogId) {
       await (supabase as any).from('va_call_logs')
         .update({ call_status: 'completed', duration_seconds: seconds })
         .eq('id', callLogId);
     }
     refetchStats();
-  };
-
-  const toggleMute = () => {
-    if (voice.activeCall) {
-      voice.toggleMute();
-    }
   };
 
   const submitDisposition = async (disp: Disposition) => {
@@ -229,7 +245,7 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
           excitementLevel,
           notes,
           callbackAt: disp === 'callback' ? callbackDate : null,
-          leadId: currentLead?.id,
+          leadId: isCustomCall ? null : currentLead?.id,
         },
       });
     }
@@ -259,6 +275,10 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   };
 
   const startSession = () => {
+    // Request mic permission before starting
+    if (voice.micPermission !== 'granted') {
+      voice.requestMicPermission();
+    }
     setIsDialing(true);
     setIsPaused(false);
     setCurrentIndex(0);
@@ -272,51 +292,21 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   };
 
   const dialCustomNumber = useCallback(async () => {
-    if (!customNumber || !twilioNumber || !user) return;
+    if (!customNumber) return;
     const cleanNumber = customNumber.replace(/[^\d+]/g, '');
     if (cleanNumber.length < 10) {
       toast.error('Please enter a valid phone number');
       return;
     }
+    // Ensure E.164 format
+    const e164 = cleanNumber.startsWith('+') ? cleanNumber : `+1${cleanNumber}`;
 
     setIsCustomCall(true);
-    setCallStatus('dialing');
-    setSeconds(0);
-    setExcitementLevel(null);
-    setDisposition(null);
-    setNotes('');
-    setCallbackDate('');
-    setNeedsDisposition(false);
-    setCoachingData(null);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('va-power-dialer', {
-        body: {
-          vaId: user.id,
-          twilioNumber,
-          leadId: null,
-          leadPhone: cleanNumber,
-          leadName: customName || 'Manual Call',
-          action: 'dial',
-        },
-      });
-
-      if (error) throw error;
-
-      setCallLogId(data?.callLogId || null);
-      setCallSid(data?.callSid || null);
-      setCallStatus('ringing');
-      refetchStats();
-
-      if (!voice.browserCallingConfigured) {
-        setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
-      }
-    } catch (err: any) {
-      toast.error('Call failed: ' + (err.message || 'Unknown error'));
-      setCallStatus('idle');
+    const result = await dialNumber(e164, null, customName || 'Manual Call');
+    if (result === 'failed') {
       setIsCustomCall(false);
     }
-  }, [customNumber, customName, twilioNumber, user, refetchStats, voice.browserCallingConfigured]);
+  }, [customNumber, customName, dialNumber]);
 
   const handleSendSMS = async () => {
     if (!currentLead || !user) return;
@@ -326,24 +316,38 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const callsDialed = todayStats?.calls_dialed || 0;
   const callsTarget = goals?.calls_target || 100;
   const dialProgress = Math.min((callsDialed / callsTarget) * 100, 100);
-
-  // Determine effective mute state from Twilio Device
   const effectiveMuted = voice.activeCall ? voice.isMuted : false;
 
   return (
     <div className="space-y-4">
       {/* Voice Device Status */}
       <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700">
-        {voice.browserCallingConfigured ? (
+        {voice.deviceState === 'registered' ? (
           <>
             <Wifi className="h-3.5 w-3.5 text-emerald-400" />
-            <span className="text-xs text-emerald-400">Twilio Connected</span>
+            <span className="text-xs text-emerald-400">Softphone Ready</span>
+          </>
+        ) : voice.deviceState === 'not_configured' ? (
+          <>
+            <WifiOff className="h-3.5 w-3.5 text-amber-400" />
+            <span className="text-xs text-amber-400">Configuring Twilio...</span>
+          </>
+        ) : voice.deviceState === 'error' ? (
+          <>
+            <WifiOff className="h-3.5 w-3.5 text-red-400" />
+            <span className="text-xs text-red-400">Connection Error</span>
+            <Button size="sm" variant="ghost" className="text-xs h-6 px-2" onClick={() => voice.reinitialize()}>Retry</Button>
           </>
         ) : (
           <>
-            <WifiOff className="h-3.5 w-3.5 text-amber-400" />
-            <span className="text-xs text-amber-400">Softphone initializing...</span>
+            <Wifi className="h-3.5 w-3.5 text-slate-400 animate-pulse" />
+            <span className="text-xs text-slate-400">Connecting...</span>
           </>
+        )}
+        {voice.micPermission !== 'granted' && (
+          <Button size="sm" variant="ghost" className="text-xs h-6 px-2 text-amber-400" onClick={() => voice.requestMicPermission()}>
+            <Mic className="h-3 w-3 mr-1" /> Allow Mic
+          </Button>
         )}
       </div>
 
@@ -464,7 +468,7 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
               )}
               {callStatus === 'connected' && (
                 <>
-                  <Button size="lg" variant={effectiveMuted ? 'destructive' : 'secondary'} onClick={toggleMute}>
+                  <Button size="lg" variant={effectiveMuted ? 'destructive' : 'secondary'} onClick={() => voice.toggleMute()}>
                     {effectiveMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                   </Button>
                   <Button size="lg" variant="destructive" onClick={endCall} className="px-8 gap-2">
@@ -476,12 +480,13 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
                 <div className="flex gap-2">
                   <Button className="bg-purple-600 hover:bg-purple-700 gap-2" onClick={() => {
                     toast.success('Voicemail dropped!');
+                    voice.hangUp();
                     setCallStatus('ended');
                     setNeedsDisposition(true);
                   }}>
                     <Voicemail className="h-4 w-4" /> Drop Voicemail
                   </Button>
-                  <Button variant="secondary" onClick={() => moveToNext()} className="gap-2">
+                  <Button variant="secondary" onClick={() => { voice.hangUp(); moveToNext(); }} className="gap-2">
                     <SkipForward className="h-4 w-4" /> Skip
                   </Button>
                 </div>
