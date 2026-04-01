@@ -174,20 +174,28 @@ export default function UTRFQEngine() {
                       </TableHeader>
                       <TableBody>
                         {[
-                          { label: 'Unit Price', key: 'unit_price', fmt: (v: number) => `$${v}` },
-                          { label: 'MOQ', key: 'moq', fmt: (v: number) => `${v}` },
-                          { label: 'Branding/unit', key: 'branding_cost', fmt: (v: number) => `$${v}` },
-                          { label: 'Production Days', key: 'production_days', fmt: (v: number) => `${v} days` },
-                          { label: 'Shipping Method', key: 'shipping_method', fmt: (v: string) => v },
-                          { label: 'Shipping Cost', key: 'shipping_cost', fmt: (v: number) => `$${v}` },
-                          { label: 'Shipping Days', key: 'shipping_days', fmt: (v: number) => `${v} days` },
-                          { label: 'Total Landed', key: 'total_landed_cost', fmt: (v: number) => `$${v?.toLocaleString()}` },
-                          { label: 'Per Unit Landed', key: '_perUnit', fmt: (_: any, r: any) => `$${((r.total_landed_cost || 0) / (selectedRfq.target_quantity || 1)).toFixed(2)}` },
+                          { label: 'Unit Price', key: 'unit_price' },
+                          { label: 'MOQ', key: 'moq' },
+                          { label: 'Branding/unit', key: 'branding_cost' },
+                          { label: 'Production Days', key: 'production_days' },
+                          { label: 'Shipping Method', key: 'shipping_method' },
+                          { label: 'Shipping Cost', key: 'shipping_cost' },
+                          { label: 'Shipping Days', key: 'shipping_days' },
+                          { label: 'Total Landed', key: 'total_landed_cost' },
+                          { label: 'Per Unit Landed', key: '_perUnit' },
                         ].map(metric => (
                           <TableRow key={metric.label}>
                             <TableCell className="font-medium">{metric.label}</TableCell>
                             {responses.map((r: any) => {
-                              const val = metric.key === '_perUnit' ? metric.fmt(null, r) : metric.fmt(r[metric.key]);
+                              const fmtVal = (key: string, row: any) => {
+                                if (key === '_perUnit') return `$${((row.total_landed_cost || 0) / (selectedRfq.target_quantity || 1)).toFixed(2)}`;
+                                if (key === 'shipping_method') return row[key] || '';
+                                if (key === 'production_days' || key === 'shipping_days') return `${row[key]} days`;
+                                if (key === 'total_landed_cost') return `$${row[key]?.toLocaleString()}`;
+                                if (key === 'moq') return `${row[key]}`;
+                                return `$${row[key]}`;
+                              };
+                              const val = fmtVal(metric.key, r);
                               const isBest = metric.key === 'total_landed_cost' && r.id === bestResponse?.id;
                               return <TableCell key={r.id} className={isBest ? 'bg-green-500/10 font-bold' : ''}>{val}</TableCell>;
                             })}
