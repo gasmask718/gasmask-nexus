@@ -87,6 +87,7 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/business-packages', label: 'Packages', icon: Package },
       { path: '/os/unforgettable/products', label: 'Product Engine', icon: Package },
       { path: '/os/unforgettable/suppliers', label: 'Supplier Console', icon: Package },
+      { path: '/os/unforgettable/pricing-engine', label: 'Pricing Engine', icon: Calculator },
     ],
   },
   {

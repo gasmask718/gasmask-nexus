@@ -453,7 +453,7 @@ function ProfitAnalyzerTab() {
 
   const { data: packages = [] } = useQuery({
     queryKey: ['ut_event_packages'],
-    queryFn: async () => { const { data } = await supabase.from('ut_event_packages').select('*'); return data || []; }
+    queryFn: async () => { const { data } = await (supabase as any).from('ut_event_packages').select('*'); return (data || []) as any[]; }
   });
 
   const totalRevenue = quotes.reduce((s, q) => s + Number(q.total_customer_price || 0), 0);
