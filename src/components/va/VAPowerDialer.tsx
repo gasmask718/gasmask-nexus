@@ -235,6 +235,50 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     if (callStatus === 'idle') dialCurrent();
   };
 
+  const dialCustomNumber = useCallback(async () => {
+    if (!customNumber || !twilioNumber || !user) return;
+    const cleanNumber = customNumber.replace(/[^\d+]/g, '');
+    if (cleanNumber.length < 10) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    setIsCustomCall(true);
+    setCallStatus('dialing');
+    setSeconds(0);
+    setExcitementLevel(null);
+    setDisposition(null);
+    setNotes('');
+    setCallbackDate('');
+    setNeedsDisposition(false);
+    setCoachingData(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('va-power-dialer', {
+        body: {
+          vaId: user.id,
+          twilioNumber,
+          leadId: null,
+          leadPhone: cleanNumber,
+          leadName: customName || 'Manual Call',
+          action: 'dial',
+        },
+      });
+
+      if (error) throw error;
+
+      setCallLogId(data?.callLogId || null);
+      setCallSid(data?.callSid || null);
+      setCallStatus('ringing');
+      setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
+      refetchStats();
+    } catch (err: any) {
+      toast.error('Call failed: ' + (err.message || 'Unknown error'));
+      setCallStatus('idle');
+      setIsCustomCall(false);
+    }
+  }, [customNumber, customName, twilioNumber, user, refetchStats]);
+
   const handleSendSMS = async () => {
     if (!currentLead || !user) return;
     toast.success('Follow-up SMS sent!');
