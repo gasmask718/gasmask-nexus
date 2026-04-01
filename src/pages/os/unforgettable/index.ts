@@ -65,3 +65,16 @@ export { default as UTBizOwnerDashboard } from './UTBizOwnerDashboard';
 export { default as UTQuizResults } from './UTQuizResults';
 export { default as UTConsultations } from './UTConsultations';
 export { default as UTKitOrders } from './UTKitOrders';
+// Phase 3 pages
+export { default as UTDailySummary } from './UTDailySummary';
+export { default as UTEventCalendar } from './UTEventCalendar';
+export { default as UTVendorPayments } from './UTVendorPayments';
+export { default as UTAmbassadorLeaderboard } from './UTAmbassadorLeaderboard';
+export { default as UTCampaignPerformance } from './UTCampaignPerformance';
+export { default as UTShopDashboard } from './UTShopDashboard';
+export { default as UTProductOrganizer } from './UTProductOrganizer';
+export { default as UTEmailSubscribers } from './UTEmailSubscribers';
+export { default as UTRevenueDashboard } from './UTRevenueDashboard';
+export { default as UTPayoutManager } from './UTPayoutManager';
+export { default as UTAIBrain } from './UTAIBrain';
+export { default as UTPerformanceInsights } from './UTPerformanceInsights';

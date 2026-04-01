@@ -74536,6 +74536,30 @@ export type Database = {
           },
         ]
       }
+      ut_ai_conversations: {
+        Row: {
+          answer: string
+          created_at: string | null
+          data_context: Json | null
+          id: string
+          question: string
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          data_context?: Json | null
+          id?: string
+          question: string
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          data_context?: Json | null
+          id?: string
+          question?: string
+        }
+        Relationships: []
+      }
       ut_ai_extracted_data: {
         Row: {
           applied_to_id: string | null
@@ -79494,6 +79518,45 @@ export type Database = {
           },
         ]
       }
+      ut_revenue_snapshots: {
+        Row: {
+          ambassador_payouts: number | null
+          created_at: string | null
+          event_revenue: number | null
+          id: string
+          kit_revenue: number | null
+          net_profit: number | null
+          shop_revenue: number | null
+          snapshot_date: string
+          total_gross: number | null
+          vendor_payouts: number | null
+        }
+        Insert: {
+          ambassador_payouts?: number | null
+          created_at?: string | null
+          event_revenue?: number | null
+          id?: string
+          kit_revenue?: number | null
+          net_profit?: number | null
+          shop_revenue?: number | null
+          snapshot_date: string
+          total_gross?: number | null
+          vendor_payouts?: number | null
+        }
+        Update: {
+          ambassador_payouts?: number | null
+          created_at?: string | null
+          event_revenue?: number | null
+          id?: string
+          kit_revenue?: number | null
+          net_profit?: number | null
+          shop_revenue?: number | null
+          snapshot_date?: string
+          total_gross?: number | null
+          vendor_payouts?: number | null
+        }
+        Relationships: []
+      }
       ut_staff: {
         Row: {
           address_line_1: string | null
@@ -80122,6 +80185,45 @@ export type Database = {
           state?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ut_vendor_payments: {
+        Row: {
+          amount_owed: number
+          booking_id: string | null
+          created_at: string | null
+          event_date: string | null
+          id: string
+          notes: string | null
+          released_at: string | null
+          status: string | null
+          vendor_name: string
+          vendor_type: string | null
+        }
+        Insert: {
+          amount_owed: number
+          booking_id?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          id?: string
+          notes?: string | null
+          released_at?: string | null
+          status?: string | null
+          vendor_name: string
+          vendor_type?: string | null
+        }
+        Update: {
+          amount_owed?: number
+          booking_id?: string | null
+          created_at?: string | null
+          event_date?: string | null
+          id?: string
+          notes?: string | null
+          released_at?: string | null
+          status?: string | null
+          vendor_name?: string
+          vendor_type?: string | null
         }
         Relationships: []
       }
