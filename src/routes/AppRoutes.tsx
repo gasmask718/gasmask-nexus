@@ -375,6 +375,7 @@ const DCLayout = lazy(() => import('@/pages/dynasty-connect/DCLayout'));
 const DCCommandCenter = lazy(() => import('@/pages/dynasty-connect/DCCommandCenter'));
 const DCCampaigns = lazy(() => import('@/pages/dynasty-connect/DCCampaigns'));
 const DCCampaignBuilder = lazy(() => import('@/pages/dynasty-connect/DCCampaignBuilder'));
+const DCCampaignManager = lazy(() => import('@/pages/dynasty-connect/DCCampaignManager'));
 const DCAgents = lazy(() => import('@/pages/dynasty-connect/DCAgents'));
 const DCIntelligence = lazy(() => import('@/pages/dynasty-connect/DCIntelligence'));
 const DCPipelines = lazy(() => import('@/pages/dynasty-connect/DCPipelines'));
