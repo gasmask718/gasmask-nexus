@@ -1,164 +1,155 @@
 
 
-# Brandaro VA Power Dialer System — Build Plan
+# Brandaro VA Power Dialer — Patch Build Plan
 
-## Overview
-This is a massive upgrade to the existing VA Portal, transforming it from a manual click-to-call system into a fully automated power dialer with real-time leaderboard, AI coaching, and operational controls.
+## Summary
+14 additive features patching the existing power dialer. No rebuilds. Architectural change: Conference bridge replaces direct Dial for barge/whisper support.
 
-## What Exists Today
-- `VADashboard.tsx` — sidebar-driven single-page app with view switching
-- `VACallPanel.tsx` — manual call initiation via `va-initiate-call` edge function
-- `VALeadsTable.tsx` — leads list with call/invoice actions
-- `va_call_logs` table — basic call tracking (no excitement_level, disposition, voicemail columns)
-- `twilio-voice-token` edge function — generates Twilio Client SDK tokens
-- `VASessionContext` — tracks assigned Twilio number + language per session
-- Scripts, Rebuttals, FAQs components already exist with i18n
-
-## Database Migration
+## Database Migration (single migration)
 
 **New tables:**
-1. `va_leaderboard_stats` — daily per-VA aggregates (calls_dialed, answered, closed, talk_time), unique on (va_id, session_date)
-2. `dnc_list` — phone numbers flagged as Do Not Call, with `added_by` and `reason`
-3. `va_sms_logs` — post-call SMS follow-up tracking
-4. `va_daily_goals` — admin-set daily targets per VA (calls_target, closes_target)
+- `va_voicemail_templates` — language-specific audio URLs for voicemail drops
+- `va_dialer_settings` — queue priority, dial pace, no-answer timeout (singleton config)
+- `va_monitor_logs` — admin barge/whisper/listen session tracking
 
-**Alter existing tables:**
-- `va_call_logs` — add columns: `excitement_level`, `disposition`, `voicemail_dropped`, `call_sid`, `callback_scheduled_at`, `va_notes`
-- `brandaro_qualified_leads` — add columns: `va_notes`, `excitement_level`, `callback_scheduled_at`
+**Alter existing:**
+- `va_call_logs` ADD `trend_analysis JSONB`
+- `va_sessions` ADD `paused_by UUID`, `pause_reason TEXT`, `paused_at TIMESTAMPTZ`
 
-**RLS:** VA sees own records, admin sees all (matching existing pattern).
+**Seed:** Insert default `va_dialer_settings` row with default queue priority and 3s dial pace.
 
-## Edge Functions (3 new, 1 upgraded)
+**RLS:** VA sees own records, admin sees all — matching existing pattern on all new tables.
 
-### 1. `va-power-dialer` (NEW)
-Core power dialer orchestrator:
-- Accepts: `vaId`, `twilioNumber`, `leadIds[]`, `action` (start/pause/resume/next)
-- DNC check before each dial
-- Initiates Twilio call with AMD enabled (`MachineDetection: DetectMessageEnd`)
-- Sets `StatusCallback` to `va-dialer-status` for real-time updates
-- Uses Twilio `<Dial>` to bridge VA (via Client SDK) to outbound call
-- Returns call SID + lead info
+**Realtime:** Enable realtime on `va_call_logs` (for HOT lead alerts) and `va_sessions` (for pause signals).
 
-### 2. `va-dialer-status` (NEW)
-Twilio status callback webhook:
-- Receives call status updates (ringing, answered, completed, no-answer, busy)
-- Updates `va_call_logs` with duration, recording URL, call status
-- AMD result handling — if machine detected, flags for voicemail drop
-- Increments `va_leaderboard_stats` counters (dialed, answered)
-- Triggers `va-post-call-analysis` for completed calls with recordings
+## Edge Function Changes (3 modified, 1 new)
 
-### 3. `va-post-call-analysis` (NEW)
-Post-call AI coaching pipeline:
-- Fetches recording from Twilio
-- Sends to AssemblyAI for transcription with speaker diarization
-- Sends transcript to Lovable AI (Claude) with coaching prompt
-- Saves transcript + AI analysis JSON to `va_call_logs`
-- Returns coaching report
+### `va-power-dialer` (MODIFY — architectural change)
+- **Conference bridge**: Replace `<Dial><Number>` TwiML with `<Dial><Conference>` using a named conference per call (conference name = callLogId). This enables admin join for barge/whisper/listen.
+- **Queue priority**: On `action: 'dial'`, fetch `va_dialer_settings.queue_priority` and reorder the lead before dialing. (Client already sends leadId, but add a `sortLeads` action that returns sorted lead IDs based on priority config.)
+- **Timeout**: Already passes `Timeout: "20"` — confirmed working. Add auto-disposition to `no_answer` in `va-dialer-status` instead.
+- **Voicemail play**: Add `action: 'drop_voicemail'` that fetches active `va_voicemail_templates` for the session language and returns `<Play>` TwiML to the conference.
 
-### 4. `va-initiate-call` (UPGRADE)
-- Add DNC check before dialing
-- Add AMD parameter support
-- Add `call_sid` storage
-- Keep backward compatible for manual single-call use
+### `va-dialer-status` (MODIFY)
+- On `no-answer` status: auto-set disposition to `no_answer` in call log (no VA interaction needed).
+- On `in-progress` with `answeredBy === 'human'` + `excitement_level === 'hot'`: broadcast Realtime event on `admin-alerts` channel.
+
+### `va-post-call-analysis` (MODIFY)
+- After individual call analysis, fetch last 5 call analyses for the VA.
+- If 3+ exist, send to Lovable AI with trend coaching prompt.
+- Save trend analysis to `va_call_logs.trend_analysis`.
+
+### `va-admin-monitor` (NEW edge function)
+- `action: 'join_conference'` — generates Twilio TwiML for admin to join a named conference in listen/whisper/barge mode using Conference participant properties (`muted`, `coach`).
+- `action: 'pause_va'` — updates `va_sessions` with `paused_by`, `pause_reason`, `paused_at` and broadcasts on Realtime channel `dialer-control-{vaId}`.
+- `action: 'resume_va'` — clears pause fields and broadcasts resume.
+- `action: 'reassign_callback'` — updates callback lead's VA assignment and broadcasts notification.
+
+### `va-session-email` (NEW edge function)
+- Receives session stats, formats HTML email in Brandaro dark navy/teal theme.
+- Sends via Resend connector to VA email + all admin emails.
+- Includes: calls dialed/answered/closed, HOT/WARM/COLD breakdown, avg duration, top 3 AI coaching points, link to call review.
 
 ## Frontend Components
 
-### New Components (~10 files)
+### New Components (6 files)
 
-1. **`VAPowerDialer.tsx`** — Main power dialer UI (LEFT panel, 60% width)
-   - Session controls: Start/Pause/Resume/End Session
-   - Current lead card with name, phone, company, notes
-   - Call status indicator with live timer
-   - Mute, Hold, End Call buttons
-   - Excitement level buttons (HOT/WARM/COLD — large color-coded)
-   - Disposition selector (required before next dial)
-   - Lead notes textarea with auto-save
-   - Next lead preview
-   - "Drop Voicemail" button (visible when AMD detects machine)
-   - "Send Follow-Up SMS" button (post-call)
-   - Create Invoice button (opens modal)
-   - Daily goal progress bar at top
+1. **`VACallHistory.tsx`** — Collapsible panel showing previous call attempts for current lead (date, duration, disposition badge, excitement, VA name, notes). Used inside VAPowerDialer below the lead card.
 
-2. **`VADialerAssist.tsx`** — Right panel (40% width)
-   - Tabs: Script (with checkboxes), Rebuttals (searchable), FAQs
-   - Reuses existing VAScripts, VARebuttals, VAFAQs components
-   - AI Coaching modal (appears after call ends with analysis)
+2. **`VACallPlayer.tsx`** — Simple HTML5 `<audio>` wrapper with play/pause, seek, and playback speed. Used in "My Calls" view and admin call review.
 
-3. **`VALeaderboard.tsx`** — Collapsible leaderboard panel
-   - Ranked table with position, VA name, 6 metrics
-   - Gold/silver/bronze styling for top 3
-   - HOT/WARM/COLD breakdown per VA
-   - Real-time updates via Supabase Realtime subscription
-   - Visible on VA dashboard (current session)
+3. **`VAMyCalls.tsx`** — Table of VA's own completed calls with inline audio player, coaching report viewer, and AI score display. New sidebar nav item "My Calls".
 
-4. **`VACallbacksQueue.tsx`** — Callbacks tab
-   - Lists scheduled callbacks sorted by time
-   - Toast notification when callback is due
-   - One-click to dial callback lead
+4. **`AdminDialerSettings.tsx`** — Admin settings page at `/admin/settings` with:
+   - Voicemail template upload (per language EN/ES) using Supabase Storage
+   - Queue priority drag-to-reorder list
+   - Dial pace slider (0-30 seconds)
+   - No-answer timeout config
 
-5. **`VASessionSummary.tsx`** — End-of-session modal
-   - Total calls, answered, closed, excitement breakdown
-   - Average call duration, AI coaching highlights
+5. **`AdminHotLeadsPanel.tsx`** — Real-time "HOT Leads Today" section for AdminVAMonitor showing lead name, VA, time, phone. Uses Supabase Realtime subscription on `va_call_logs`.
 
-6. **`VACoachingReport.tsx`** — Post-call AI analysis display
-   - Score (1-10), summary, strengths, improvements
-   - Objections raised, missed opportunities, recommended rebuttals
+6. **`AdminMonitorPanel.tsx`** — Per-VA monitoring controls (Listen/Whisper/Barge buttons, Pause/Resume toggle, callback reassignment modal). Embedded in AdminVAMonitor VA cards.
 
-### New Admin Pages (3 files)
+### Modified Components (7 files)
 
-7. **`AdminLeaderboard.tsx`** — `/admin/leaderboard`
-   - Full leaderboard with date range filter
-   - All VAs, all metrics, exportable
+1. **`VAPowerDialer.tsx`**
+   - Add dial pace countdown ("Next call in 3... 2... 1..." with "Dial Now" skip button)
+   - Add queue order label at top
+   - Add collapsible `<VACallHistory>` below lead card
+   - Subscribe to `dialer-control-{vaId}` Realtime channel for admin pause/resume signals
+   - Show "Session paused by admin" banner when paused
+   - On HOT excitement click, broadcast to `admin-alerts` channel
+   - On no_answer from webhook, show "No Answer — Moving to next..." for 2 seconds then auto-advance
 
-8. **`AdminCallReview.tsx`** — `/admin/call-review`
-   - Browse all VA calls with filters (VA, date, excitement level)
-   - View transcript, listen to recording, see AI coaching
+2. **`VAOnboardingModal.tsx`**
+   - Check available numbers count before allowing session start
+   - If zero available: show warning, disable Start, poll every 30s
+   - Subscribe to Realtime on `brandaro_phone_numbers` for live availability updates
+   - Show "X of Y lines available" counter
 
-9. **`AdminVAMonitor.tsx`** — `/admin/monitor`
-   - Live cards per active VA: name, current lead, call status, duration
-   - Total active calls, calls today vs goal, HOT leads today
-   - Real-time via Supabase Realtime
+3. **`VALeaderboard.tsx`**
+   - Add time range toggle: [Today] [This Week] [This Month] [All Time]
+   - Aggregate `va_leaderboard_stats` with SUM for non-today ranges
+   - Add streak column (consecutive days hitting target)
 
-10. **`AdminDNCManager.tsx`** — `/admin/dnc`
-    - Add/remove numbers from DNC list
-    - Bulk import, search, export
+4. **`AdminLeaderboard.tsx`**
+   - Add same time range toggle + custom date range picker
+   - Default to "This Week"
 
-### Modified Components
+5. **`AdminVAMonitor.tsx`**
+   - Add Monitor/Pause/Resume buttons per VA card
+   - Add HOT Leads Today section with real-time updates
+   - Add HOT Leads counter badge in summary cards
+   - Embed `AdminMonitorPanel` per active VA
 
-- **`VADashboard.tsx`** — Add new views: `dialer`, `leaderboard`, `callbacks`. Add nav items. Main dialer view uses split-screen layout (60/40).
-- **`VALeadsTable.tsx`** — Add "Start Dialing Session" button that launches power dialer with selected/all leads.
+6. **`AdminCallReview.tsx`**
+   - Add "Reassign Callback" button for callback-disposition calls
+   - Show trend analysis section when available
+   - Add VA filter dropdown
 
-## Routes (4 new)
+7. **`VACoachingReport.tsx`**
+   - Add trend section at bottom (arrow indicator, improving/declining areas, trend message)
+
+8. **`VASessionSummary.tsx`**
+   - Add "Email Summary" button that invokes `va-session-email` edge function
+   - Auto-send to admins on session end
+
+9. **`VADashboard.tsx`**
+   - Add "My Calls" nav item and view routing to `VAMyCalls`
+
+## Routes (1 new)
 
 | Route | Component | Access |
 |---|---|---|
-| `/admin/leaderboard` | `AdminLeaderboard` | Admin only |
-| `/admin/call-review` | `AdminCallReview` | Admin only |
-| `/admin/monitor` | `AdminVAMonitor` | Admin only |
-| `/admin/dnc` | `AdminDNCManager` | Admin only |
+| `/admin/settings` | `AdminDialerSettings` | Admin only |
 
-The VA dialer, leaderboard, and callbacks are views within the existing VA dashboard (not separate routes).
+"My Calls" is a view within VADashboard (no new route).
+
+## Storage
+
+Create a `voicemail-templates` bucket in Supabase Storage for admin voicemail audio uploads. Public read access (Twilio needs to fetch the URL).
+
+## Connector Setup
+
+- **Resend** connector needed for session summary emails (section 14). Will use `standard_connectors--connect` during implementation.
 
 ## Implementation Order
 
-1. **Database migration** — all new tables + column additions
-2. **Edge functions** — `va-power-dialer`, `va-dialer-status`, `va-post-call-analysis`; upgrade `va-initiate-call`
-3. **Power Dialer UI** — `VAPowerDialer.tsx` + `VADialerAssist.tsx` (split-screen layout)
-4. **Leaderboard** — `VALeaderboard.tsx` + real-time subscription
-5. **Callbacks + Disposition** — `VACallbacksQueue.tsx` + disposition flow
-6. **AI Coaching** — `VACoachingReport.tsx` + post-call modal
-7. **Session Summary** — `VASessionSummary.tsx`
-8. **Admin pages** — Leaderboard, Call Review, Monitor, DNC
-9. **Dashboard integration** — wire all new views into `VADashboard.tsx`
-10. **Routes** — register 4 admin routes in `AppRoutes.tsx`
-
-## Technical Notes
-
-- Twilio Client SDK token generation already exists in `twilio-voice-token` edge function — reuse for browser-based audio
-- Power dialer uses Twilio's `<Dial><Client>` TwiML to bridge VA's browser connection to outbound calls
-- AMD requires Twilio account-level enablement — will show setup note in UI
-- AssemblyAI API key needed as a secret for transcription
-- AI coaching uses Lovable AI (supported model) — no external API key needed
-- Leaderboard uses `ALTER PUBLICATION supabase_realtime ADD TABLE va_leaderboard_stats` for live updates
-- All edge functions use the existing Twilio connector gateway pattern
+1. Database migration (3 new tables + 2 ALTER + seed + RLS + realtime)
+2. Storage bucket for voicemail audio
+3. Conference bridge refactor in `va-power-dialer` (architectural prerequisite for barge/whisper)
+4. `va-dialer-status` updates (no-answer auto-disposition, HOT alert broadcast)
+5. `va-admin-monitor` edge function (join conference, pause/resume, reassign)
+6. `va-post-call-analysis` trend coaching addition
+7. `AdminDialerSettings.tsx` — voicemail upload + queue priority + dial pace
+8. `VAPowerDialer.tsx` — dial pace countdown, queue label, call history, admin pause listener, HOT broadcast, no-answer auto-advance
+9. `VAOnboardingModal.tsx` — concurrency guard
+10. `VACallHistory.tsx` + `VACallPlayer.tsx` + `VAMyCalls.tsx`
+11. `AdminVAMonitor.tsx` — monitor panel, HOT leads, pause buttons
+12. `AdminCallReview.tsx` — reassign callbacks, trend display
+13. `VALeaderboard.tsx` + `AdminLeaderboard.tsx` — time range toggles + streaks
+14. `VACoachingReport.tsx` — trend section
+15. `VASessionSummary.tsx` + `va-session-email` — email delivery
+16. `VADashboard.tsx` — add My Calls view
+17. Routes — register `/admin/settings`
 
