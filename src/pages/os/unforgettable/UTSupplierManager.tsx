@@ -53,7 +53,7 @@ export default function UTSupplierManager() {
 
   const addMutation = useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase.from('ut_suppliers').insert(values);
+      const { error } = await supabase.from('ut_suppliers' as any).insert(values);
       if (error) throw error;
     },
     onSuccess: () => {
