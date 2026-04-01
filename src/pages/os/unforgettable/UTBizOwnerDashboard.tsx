@@ -22,7 +22,7 @@ export default function UTBizOwnerDashboard() {
     queryKey: ['ut-consultations-recent'],
     queryFn: async () => {
       const { data } = await supabase.from('ut_business_consultations' as any).select('*').order('created_at', { ascending: false }).limit(5);
-      return data || [];
+      return (data || []) as any[];
     },
   });
 
