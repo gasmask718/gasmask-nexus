@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { BarChart3, Send, Package, Trophy, AlertTriangle, Clock, CheckCircle, DollarSign, MessageSquare } from 'lucide-react';
+import { BarChart3, Send, Package, Trophy, AlertTriangle, Clock, CheckCircle, DollarSign, MessageSquare, Shield, TrendingUp, Zap } from 'lucide-react';
 
 export default function UTSupplierCommandDashboard() {
   const { data: suppliers = [] } = useQuery({
@@ -45,6 +45,14 @@ export default function UTSupplierCommandDashboard() {
     },
   });
 
+  const { data: negotiations = [] } = useQuery({
+    queryKey: ['ut-negotiations-cmd'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ut_supplier_negotiations' as any).select('*');
+      return (data || []) as any[];
+    },
+  });
+
   const { data: brandingRequests = [] } = useQuery({
     queryKey: ['ut-branding-cmd'],
     queryFn: async () => {
@@ -53,7 +61,7 @@ export default function UTSupplierCommandDashboard() {
     },
   });
 
-  const activeSuppliers = suppliers.filter((s: any) => s.status === 'active').length;
+  const activeSuppliers = suppliers.filter((s: any) => s.is_active).length;
   const preferredSuppliers = suppliers.filter((s: any) => s.preferred).length;
   const activeRFQs = rfqs.filter((r: any) => r.status !== 'draft').length;
   const pendingResponses = rfqResponses.filter((r: any) => r.status === 'pending').length;
@@ -61,11 +69,29 @@ export default function UTSupplierCommandDashboard() {
   const unreadMsgs = conversations.filter((c: any) => !c.read_status && c.direction === 'received').length;
   const pendingBranding = brandingRequests.filter((b: any) => b.sample_status === 'pending').length;
 
-  const overdueShipments = shipments.filter((s: any) => {
+  // New intelligence metrics
+  const avgRisk = suppliers.length > 0
+    ? Math.round(suppliers.reduce((acc: number, s: any) => acc + (s.risk_score || 50), 0) / suppliers.length)
+    : 0;
+
+  const totalSavings = negotiations.reduce((acc: number, n: any) => acc + (n.total_savings || 0), 0);
+  const avgSavingsPct = negotiations.length > 0
+    ? (negotiations.reduce((acc: number, n: any) => acc + (n.price_reduction_pct || 0), 0) / negotiations.length).toFixed(1)
+    : '0';
+
+  const avgResponseTime = suppliers.filter((s: any) => s.avg_response_time).length > 0
+    ? (suppliers.filter((s: any) => s.avg_response_time).reduce((acc: number, s: any) => acc + s.avg_response_time, 0) / suppliers.filter((s: any) => s.avg_response_time).length).toFixed(1)
+    : '—';
+
+  const delayedShipments = shipments.filter((s: any) => {
     if (s.status === 'delivered') return false;
     if (!s.estimated_arrival) return false;
     return new Date(s.estimated_arrival) < new Date();
   });
+
+  const highRiskSuppliers = suppliers.filter((s: any) => (s.risk_score || 50) > 70);
+
+  const overdueShipments = delayedShipments;
 
   const noResponseRFQs = rfqs.filter((r: any) => {
     if (r.status !== 'sent') return false;
@@ -73,33 +99,59 @@ export default function UTSupplierCommandDashboard() {
     return daysSinceSent > 2 && !rfqResponses.some((resp: any) => resp.rfq_id === r.id);
   });
 
+  const missingShippingQuotes = rfqs.filter((r: any) => r.status === 'sent');
+
   const stats = [
     { label: 'Total Suppliers', value: suppliers.length, icon: Package, color: 'text-blue-400' },
     { label: 'Active', value: activeSuppliers, icon: CheckCircle, color: 'text-green-400' },
     { label: 'Preferred', value: preferredSuppliers, icon: Trophy, color: 'text-yellow-400' },
-    { label: 'Active RFQs', value: activeRFQs, icon: Send, color: 'text-purple-400' },
-    { label: 'Pending Responses', value: pendingResponses, icon: Clock, color: 'text-orange-400' },
-    { label: 'In Transit', value: inTransit, icon: Package, color: 'text-blue-400' },
-    { label: 'Unread Messages', value: unreadMsgs, icon: MessageSquare, color: 'text-pink-400' },
-    { label: 'Pending Samples', value: pendingBranding, icon: Package, color: 'text-cyan-400' },
+    { label: 'Avg Risk Score', value: avgRisk, icon: Shield, color: avgRisk > 60 ? 'text-red-400' : 'text-green-400', suffix: '/100' },
+    { label: 'Negotiation Savings', value: `${avgSavingsPct}%`, icon: TrendingUp, color: 'text-green-400' },
+    { label: 'Avg Response Time', value: avgResponseTime, icon: Clock, color: 'text-orange-400', suffix: 'hrs' },
+    { label: 'Delayed Shipments', value: delayedShipments.length, icon: AlertTriangle, color: delayedShipments.length > 0 ? 'text-red-400' : 'text-green-400' },
+    { label: 'Unread Messages', value: unreadMsgs, icon: MessageSquare, color: unreadMsgs > 0 ? 'text-pink-400' : 'text-muted-foreground' },
   ];
 
   const topSuppliers = [...suppliers]
-    .map((s: any) => ({
-      ...s,
-      score: Math.round(((s.cost_score || 5) * 0.35 + (s.speed_score || 5) * 0.25 + (s.reliability_score || 5) * 0.2 + (s.supports_private_label ? 8 : 4) * 0.02) * 10),
-    }))
+    .map((s: any) => {
+      const riskPenalty = ((s.risk_score || 50) - 50) * 0.3;
+      return {
+        ...s,
+        score: Math.max(0, Math.round(((s.cost_score || 5) * 0.35 + (s.speed_score || 5) * 0.25 + (s.reliability_score || 5) * 0.2 + (s.supports_private_label ? 8 : 4) * 0.02) * 10 - riskPenalty)),
+      };
+    })
     .sort((a: any, b: any) => b.score - a.score)
     .slice(0, 5);
 
   const recentResponses = [...rfqResponses].sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 5);
 
+  const hasAlerts = overdueShipments.length > 0 || noResponseRFQs.length > 0 || unreadMsgs > 0 || highRiskSuppliers.length > 0;
+
   return (
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2"><BarChart3 className="h-8 w-8" /> Supplier Command Dashboard</h1>
-        <p className="text-muted-foreground">Real-time overview of your entire supply chain</p>
+        <p className="text-muted-foreground">Procurement intelligence at a glance</p>
       </div>
+
+      {/* Savings Banner */}
+      {totalSavings > 0 && (
+        <Card className="border-green-500/50 bg-green-500/5">
+          <CardContent className="py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <DollarSign className="h-8 w-8 text-green-400" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total Negotiation Savings</p>
+                <p className="text-3xl font-bold text-green-400">${totalSavings.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">Active Negotiations</p>
+              <p className="text-2xl font-bold">{negotiations.filter((n: any) => n.status !== 'finalized').length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -109,7 +161,7 @@ export default function UTSupplierCommandDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground">{st.label}</p>
-                  <p className="text-2xl font-bold">{st.value}</p>
+                  <p className="text-2xl font-bold">{st.value}{st.suffix ? <span className="text-sm text-muted-foreground ml-1">{st.suffix}</span> : null}</p>
                 </div>
                 <st.icon className={`h-8 w-8 ${st.color} opacity-50`} />
               </div>
@@ -119,7 +171,7 @@ export default function UTSupplierCommandDashboard() {
       </div>
 
       {/* Alerts */}
-      {(overdueShipments.length > 0 || noResponseRFQs.length > 0 || unreadMsgs > 0) && (
+      {hasAlerts && (
         <Card className="border-destructive/50">
           <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle className="h-5 w-5" /> Alerts Needing Attention</CardTitle></CardHeader>
           <CardContent className="space-y-2">
@@ -133,6 +185,12 @@ export default function UTSupplierCommandDashboard() {
               <div className="flex items-center gap-2 text-sm">
                 <Badge className="bg-yellow-500/20 text-yellow-400">🟡</Badge>
                 <span>{noResponseRFQs.length} RFQ(s) with no response &gt; 48hrs</span>
+              </div>
+            )}
+            {highRiskSuppliers.length > 0 && (
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="destructive">🔴</Badge>
+                <span>{highRiskSuppliers.length} high-risk supplier(s) detected</span>
               </div>
             )}
             {unreadMsgs > 0 && (
@@ -161,8 +219,13 @@ export default function UTSupplierCommandDashboard() {
                 <div key={s.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                   <span className="text-lg font-bold text-muted-foreground w-6">#{i + 1}</span>
                   <div className="flex-1">
-                    <p className="font-medium">{s.name}</p>
-                    <p className="text-xs text-muted-foreground">📍 {s.country} · {s.status}</p>
+                    <p className="font-medium flex items-center gap-2">
+                      {s.name}
+                      {(s.risk_score || 50) > 70 && <Badge className="bg-red-500/20 text-red-400 text-[9px]">⚠️</Badge>}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {s.successful_orders || 0} orders · {s.dispute_count || 0} disputes
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-primary">{s.score}</p>
@@ -185,7 +248,7 @@ export default function UTSupplierCommandDashboard() {
                   <div>
                     <p className="font-medium">{r.supplier_name}</p>
                     <p className="text-xs text-muted-foreground">
-                      ${r.unit_price}/unit · MOQ {r.moq} · {r.production_days}d production
+                      ${r.unit_price}/unit · MOQ {r.moq} · {r.production_days}d
                     </p>
                   </div>
                   <div className="text-right">
@@ -200,7 +263,7 @@ export default function UTSupplierCommandDashboard() {
         </Card>
       </div>
 
-      {/* Shipping Cost Trends */}
+      {/* Active Shipments */}
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><Package className="h-5 w-5" /> Active Shipments</CardTitle></CardHeader>
         <CardContent>
@@ -230,11 +293,9 @@ export default function UTSupplierCommandDashboard() {
                       </td>
                       <td className="p-2">{s.carrier || '—'}</td>
                       <td className="p-2">
-                        {s.estimated_arrival ? (
-                          <span className={isOverdue ? 'text-red-400 font-medium' : ''}>
-                            {isOverdue ? '⚠️ OVERDUE' : new Date(s.estimated_arrival).toLocaleDateString()}
-                          </span>
-                        ) : '—'}
+                        <span className={isOverdue ? 'text-red-400 font-medium' : ''}>
+                          {isOverdue ? '⚠️ OVERDUE' : s.estimated_arrival ? new Date(s.estimated_arrival).toLocaleDateString() : '—'}
+                        </span>
                       </td>
                       <td className="p-2 text-right font-mono">${s.total_cost?.toFixed(0) || '—'}</td>
                     </tr>

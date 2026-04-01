@@ -3,36 +3,32 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Trophy, DollarSign, Zap, Shield, Award, ThumbsUp, BarChart3 } from 'lucide-react';
-
-interface SupplierScore {
-  id: string;
-  name: string;
-  country: string;
-  cost_score: number;
-  speed_score: number;
-  reliability_score: number;
-  branding_capability: number;
-  communication: number;
-  overall: number;
-  status: string;
-  preferred: boolean;
-  product_categories: string[];
-}
+import { Trophy, DollarSign, Zap, Shield, Award, ThumbsUp, BarChart3, CheckCircle, AlertTriangle } from 'lucide-react';
 
 const calcOverall = (s: any): number => {
   const cost = (s.cost_score || 5) / 10;
   const speed = (s.speed_score || 5) / 10;
   const reliability = (s.reliability_score || 5) / 10;
   const branding = (s.supports_private_label ? 8 : 4) / 10;
-  return Math.round((cost * 0.35 + speed * 0.25 + reliability * 0.2 + branding * 0.2) * 100);
+  const base = (cost * 0.35 + speed * 0.25 + reliability * 0.2 + branding * 0.2) * 100;
+  // Risk penalty: reduce score by risk_score/2 percentage points
+  const riskPenalty = ((s.risk_score || 50) - 50) * 0.3;
+  return Math.max(0, Math.min(100, Math.round(base - riskPenalty)));
 };
 
 export default function UTSupplierDecisionEngine() {
+  const queryClient = useQueryClient();
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [showApproval, setShowApproval] = useState(false);
+  const [approvalSupplier, setApprovalSupplier] = useState<any>(null);
+  const [approvalNotes, setApprovalNotes] = useState('');
+  const [approvalChecks, setApprovalChecks] = useState({ risk: false, shipping: false, branding: false, sample: false });
 
   const { data: suppliers = [] } = useQuery({
     queryKey: ['ut-suppliers-decision'],
@@ -42,8 +38,8 @@ export default function UTSupplierDecisionEngine() {
         ...s,
         overall: calcOverall(s),
         branding_capability: s.supports_private_label ? 8 : 4,
-        communication: Math.round(((s.cost_score || 5) + (s.speed_score || 5)) / 2),
-      })) as SupplierScore[];
+        communication: s.communication_score || Math.round(((s.cost_score || 5) + (s.speed_score || 5)) / 2),
+      })) as any[];
     },
   });
 
@@ -63,6 +59,14 @@ export default function UTSupplierDecisionEngine() {
     },
   });
 
+  const { data: rfqs = [] } = useQuery({
+    queryKey: ['ut-rfqs-decision'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ut_rfq_requests' as any).select('*');
+      return (data || []) as any[];
+    },
+  });
+
   const allCategories = [...new Set(suppliers.flatMap((s: any) => s.product_categories || []))];
 
   const filtered = categoryFilter === 'all'
@@ -73,10 +77,63 @@ export default function UTSupplierDecisionEngine() {
   const recommended = sorted[0];
   const cheapest = [...filtered].sort((a: any, b: any) => (b.cost_score || 0) - (a.cost_score || 0))[0];
   const fastest = [...filtered].sort((a: any, b: any) => (b.speed_score || 0) - (a.speed_score || 0))[0];
+  const lowestRisk = [...filtered].sort((a: any, b: any) => (a.risk_score || 50) - (b.risk_score || 50))[0];
 
-  const approveSupplier = async (supplierId: string) => {
-    await supabase.from('ut_suppliers' as any).update({ preferred: true, status: 'active' }).eq('id', supplierId);
-    toast.success('Supplier approved and set as preferred!');
+  const openApproval = (supplier: any) => {
+    setApprovalSupplier(supplier);
+    setApprovalNotes('');
+    setApprovalChecks({ risk: false, shipping: false, branding: false, sample: false });
+    setShowApproval(true);
+  };
+
+  const submitApproval = async () => {
+    if (!approvalSupplier) return;
+    // Find linked RFQ
+    const linkedRFQ = rfqs[0]; // Use first available or could match by supplier
+
+    await supabase.from('ut_procurement_approvals' as any).insert({
+      rfq_id: linkedRFQ?.id || null,
+      supplier_id: approvalSupplier.id,
+      approved_by: 'admin',
+      approval_status: 'approved',
+      risk_checked: approvalChecks.risk,
+      shipping_reviewed: approvalChecks.shipping,
+      branding_reviewed: approvalChecks.branding,
+      sample_approved: approvalChecks.sample,
+      notes: approvalNotes,
+    });
+
+    await supabase.from('ut_suppliers' as any).update({
+      preferred: true,
+      is_active: true,
+      verification_status: 'verified',
+    }).eq('id', approvalSupplier.id);
+
+    // Auto-create order record
+    if (linkedRFQ) {
+      await supabase.from('ut_orders' as any).insert({
+        supplier_id: approvalSupplier.id,
+        rfq_id: linkedRFQ.id,
+        product_name: linkedRFQ.product_name,
+        quantity: linkedRFQ.target_quantity,
+        status: 'pending',
+        notes: `Auto-created from procurement approval`,
+      });
+
+      // Auto-create shipment entry
+      await supabase.from('ut_shipments' as any).insert({
+        supplier_id: approvalSupplier.id,
+        supplier_name: approvalSupplier.name,
+        product_name: linkedRFQ.product_name,
+        quantity: linkedRFQ.target_quantity,
+        status: 'in_transit',
+        notes: `Auto-created from approval`,
+      });
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['ut-suppliers-decision'] });
+    setShowApproval(false);
+    toast.success('Supplier approved! Order & shipment created.');
   };
 
   const scoreColor = (score: number) => {
@@ -84,6 +141,12 @@ export default function UTSupplierDecisionEngine() {
     if (score >= 60) return 'text-yellow-400';
     if (score >= 40) return 'text-orange-400';
     return 'text-red-400';
+  };
+
+  const riskBadge = (risk: number) => {
+    if (risk <= 30) return <Badge className="bg-green-500/20 text-green-400 text-[10px]">Low Risk</Badge>;
+    if (risk <= 60) return <Badge className="bg-yellow-500/20 text-yellow-400 text-[10px]">Medium</Badge>;
+    return <Badge className="bg-red-500/20 text-red-400 text-[10px]">High Risk</Badge>;
   };
 
   const scoreBar = (score: number, max: number = 10) => {
@@ -98,27 +161,29 @@ export default function UTSupplierDecisionEngine() {
     );
   };
 
+  const allChecked = Object.values(approvalChecks).every(Boolean);
+
   return (
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-3xl font-bold flex items-center gap-2"><Trophy className="h-8 w-8" /> Supplier Decision Engine</h1>
-        <p className="text-muted-foreground">Auto-ranked suppliers based on price, speed, reliability & branding capability</p>
+        <p className="text-muted-foreground">Auto-ranked with risk penalty — approve suppliers before ordering</p>
       </div>
 
-      {/* Top Picks */}
+      {/* Top Picks - 4 cards */}
       {sorted.length > 0 && (
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-4 gap-4">
           {recommended && (
             <Card className="border-yellow-500/50 bg-yellow-500/5">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2"><Trophy className="h-4 w-4 text-yellow-400" /> 🏆 Recommended</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-xl font-bold">{recommended.name}</p>
-                <p className="text-sm text-muted-foreground">📍 {recommended.country}</p>
-                <p className={`text-2xl font-bold mt-2 ${scoreColor(recommended.overall)}`}>{recommended.overall}/100</p>
-                <Button size="sm" className="mt-3 w-full" onClick={() => approveSupplier(recommended.id)}>
-                  <ThumbsUp className="h-4 w-4 mr-1" /> Approve & Proceed
+                <p className="text-lg font-bold">{recommended.name}</p>
+                <p className={`text-2xl font-bold mt-1 ${scoreColor(recommended.overall)}`}>{recommended.overall}/100</p>
+                {riskBadge(recommended.risk_score || 50)}
+                <Button size="sm" className="mt-2 w-full" onClick={() => openApproval(recommended)}>
+                  <ThumbsUp className="h-3 w-3 mr-1" /> Approve & Proceed
                 </Button>
               </CardContent>
             </Card>
@@ -129,9 +194,12 @@ export default function UTSupplierDecisionEngine() {
                 <CardTitle className="text-sm flex items-center gap-2"><DollarSign className="h-4 w-4 text-green-400" /> 💰 Cheapest</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-xl font-bold">{cheapest.name}</p>
-                <p className="text-sm text-muted-foreground">📍 {cheapest.country}</p>
-                <p className="text-lg mt-2">Cost Score: <span className="font-bold">{cheapest.cost_score || 5}/10</span></p>
+                <p className="text-lg font-bold">{cheapest.name}</p>
+                <p className="text-sm mt-1">Cost Score: <span className="font-bold">{cheapest.cost_score || 5}/10</span></p>
+                {riskBadge(cheapest.risk_score || 50)}
+                <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => openApproval(cheapest)}>
+                  <ThumbsUp className="h-3 w-3 mr-1" /> Approve
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -141,9 +209,27 @@ export default function UTSupplierDecisionEngine() {
                 <CardTitle className="text-sm flex items-center gap-2"><Zap className="h-4 w-4 text-blue-400" /> ⚡ Fastest</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-xl font-bold">{fastest.name}</p>
-                <p className="text-sm text-muted-foreground">📍 {fastest.country}</p>
-                <p className="text-lg mt-2">Speed Score: <span className="font-bold">{fastest.speed_score || 5}/10</span></p>
+                <p className="text-lg font-bold">{fastest.name}</p>
+                <p className="text-sm mt-1">Speed Score: <span className="font-bold">{fastest.speed_score || 5}/10</span></p>
+                {riskBadge(fastest.risk_score || 50)}
+                <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => openApproval(fastest)}>
+                  <ThumbsUp className="h-3 w-3 mr-1" /> Approve
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {lowestRisk && (
+            <Card className="border-emerald-500/50 bg-emerald-500/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><Shield className="h-4 w-4 text-emerald-400" /> 🛡️ Lowest Risk</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-lg font-bold">{lowestRisk.name}</p>
+                <p className="text-sm mt-1">Risk: <span className="font-bold">{lowestRisk.risk_score || 50}/100</span></p>
+                {riskBadge(lowestRisk.risk_score || 50)}
+                <Button size="sm" variant="outline" className="mt-2 w-full" onClick={() => openApproval(lowestRisk)}>
+                  <ThumbsUp className="h-3 w-3 mr-1" /> Approve
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -165,7 +251,7 @@ export default function UTSupplierDecisionEngine() {
       {/* Shipping Quote Comparison */}
       {shippingQuotes.length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" /> Shipping Quote Comparison</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" /> Shipping Comparison</CardTitle></CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -215,9 +301,10 @@ export default function UTSupplierDecisionEngine() {
                       <p className="font-semibold flex items-center gap-2">
                         {s.name}
                         {s.preferred && <Badge className="bg-yellow-500/20 text-yellow-400">⭐ Preferred</Badge>}
-                        <Badge variant="outline">{s.status}</Badge>
+                        {riskBadge(s.risk_score || 50)}
+                        <Badge variant="outline">{s.verification_status || 'unverified'}</Badge>
                       </p>
-                      <p className="text-sm text-muted-foreground">📍 {s.country} · {(s.product_categories || []).join(', ')}</p>
+                      <p className="text-sm text-muted-foreground">{(s.product_categories || []).join(', ')}</p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -225,7 +312,7 @@ export default function UTSupplierDecisionEngine() {
                     <p className="text-xs text-muted-foreground">/100 overall</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-5 gap-4">
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">💰 Price (35%)</p>
                     {scoreBar(s.cost_score || 5)}
@@ -246,20 +333,65 @@ export default function UTSupplierDecisionEngine() {
                     {scoreBar(s.branding_capability || 4)}
                     <p className="text-xs mt-1">{s.branding_capability || 4}/10</p>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">⚠️ Risk</p>
+                    {scoreBar(Math.max(0, 10 - (s.risk_score || 50) / 10))}
+                    <p className="text-xs mt-1">{s.risk_score || 50}/100</p>
+                  </div>
                 </div>
                 <div className="mt-3 flex gap-2">
-                  {!s.preferred && (
-                    <Button size="sm" onClick={() => approveSupplier(s.id)}>
-                      <ThumbsUp className="h-3 w-3 mr-1" /> Approve & Set Preferred
-                    </Button>
-                  )}
+                  <Button size="sm" onClick={() => openApproval(s)}>
+                    <ThumbsUp className="h-3 w-3 mr-1" /> Approve & Proceed
+                  </Button>
                 </div>
               </div>
             ))}
-            {sorted.length === 0 && <p className="text-center py-8 text-muted-foreground">No suppliers found. Add suppliers in the Supplier Manager.</p>}
+            {sorted.length === 0 && <p className="text-center py-8 text-muted-foreground">No suppliers found.</p>}
           </div>
         </CardContent>
       </Card>
+
+      {/* Approval Dialog */}
+      <Dialog open={showApproval} onOpenChange={setShowApproval}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-400" />
+              Final Approval Required
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm">Approving <strong>{approvalSupplier?.name}</strong> — this will create an order and shipment entry.</p>
+
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox checked={approvalChecks.risk} onCheckedChange={(v) => setApprovalChecks(p => ({ ...p, risk: !!v }))} />
+                <span className="text-sm">✅ Risk score reviewed ({approvalSupplier?.risk_score || 50}/100)</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox checked={approvalChecks.shipping} onCheckedChange={(v) => setApprovalChecks(p => ({ ...p, shipping: !!v }))} />
+                <span className="text-sm">✅ Shipping costs reviewed</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox checked={approvalChecks.branding} onCheckedChange={(v) => setApprovalChecks(p => ({ ...p, branding: !!v }))} />
+                <span className="text-sm">✅ Branding requirements reviewed</span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <Checkbox checked={approvalChecks.sample} onCheckedChange={(v) => setApprovalChecks(p => ({ ...p, sample: !!v }))} />
+                <span className="text-sm">✅ Sample approved (if applicable)</span>
+              </label>
+            </div>
+
+            <Textarea placeholder="Approval notes..." value={approvalNotes} onChange={e => setApprovalNotes(e.target.value)} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowApproval(false)}>Cancel</Button>
+            <Button onClick={submitApproval} disabled={!allChecked}>
+              <CheckCircle className="h-4 w-4 mr-1" /> Approve Supplier & Proceed
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

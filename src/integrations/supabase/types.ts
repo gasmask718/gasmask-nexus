@@ -79314,6 +79314,70 @@ export type Database = {
           },
         ]
       }
+      ut_procurement_approvals: {
+        Row: {
+          approval_status: string | null
+          approved_by: string | null
+          branding_reviewed: boolean | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          rfq_id: string
+          risk_checked: boolean | null
+          sample_approved: boolean | null
+          shipping_reviewed: boolean | null
+          supplier_id: string
+        }
+        Insert: {
+          approval_status?: string | null
+          approved_by?: string | null
+          branding_reviewed?: boolean | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          rfq_id: string
+          risk_checked?: boolean | null
+          sample_approved?: boolean | null
+          shipping_reviewed?: boolean | null
+          supplier_id: string
+        }
+        Update: {
+          approval_status?: string | null
+          approved_by?: string | null
+          branding_reviewed?: boolean | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          rfq_id?: string
+          risk_checked?: boolean | null
+          sample_approved?: boolean | null
+          shipping_reviewed?: boolean | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_procurement_approvals_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_procurement_approvals_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_procurement_approvals_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_product_categories: {
         Row: {
           id: string
@@ -79944,6 +80008,70 @@ export type Database = {
             columns: ["rfq_id"]
             isOneToOne: false
             referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_sample_reviews: {
+        Row: {
+          approved: boolean | null
+          branding_accuracy: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          packaging_score: number | null
+          photo_urls: string[] | null
+          quality_score: number | null
+          reviewed_by: string | null
+          rfq_id: string | null
+          supplier_id: string
+        }
+        Insert: {
+          approved?: boolean | null
+          branding_accuracy?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          packaging_score?: number | null
+          photo_urls?: string[] | null
+          quality_score?: number | null
+          reviewed_by?: string | null
+          rfq_id?: string | null
+          supplier_id: string
+        }
+        Update: {
+          approved?: boolean | null
+          branding_accuracy?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          packaging_score?: number | null
+          photo_urls?: string[] | null
+          quality_score?: number | null
+          reviewed_by?: string | null
+          rfq_id?: string | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_sample_reviews_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_sample_reviews_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_sample_reviews_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
             referencedColumns: ["id"]
           },
         ]
@@ -80851,6 +80979,66 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_supplier_risk_profiles: {
+        Row: {
+          communication_risk: number | null
+          created_at: string | null
+          delay_probability: number | null
+          flagged_issues_count: number | null
+          id: string
+          last_incident: string | null
+          last_updated: string | null
+          pricing_anomaly_detected: boolean | null
+          quality_risk: number | null
+          risk_level: string | null
+          risk_score: number | null
+          supplier_id: string
+        }
+        Insert: {
+          communication_risk?: number | null
+          created_at?: string | null
+          delay_probability?: number | null
+          flagged_issues_count?: number | null
+          id?: string
+          last_incident?: string | null
+          last_updated?: string | null
+          pricing_anomaly_detected?: boolean | null
+          quality_risk?: number | null
+          risk_level?: string | null
+          risk_score?: number | null
+          supplier_id: string
+        }
+        Update: {
+          communication_risk?: number | null
+          created_at?: string | null
+          delay_probability?: number | null
+          flagged_issues_count?: number | null
+          id?: string
+          last_incident?: string | null
+          last_updated?: string | null
+          pricing_anomaly_detected?: boolean | null
+          quality_risk?: number | null
+          risk_level?: string | null
+          risk_score?: number | null
+          supplier_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_supplier_risk_profiles_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_risk_profiles_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_supplier_threads: {
         Row: {
           created_at: string | null
@@ -80906,9 +81094,15 @@ export type Database = {
         Row: {
           api_enabled: boolean | null
           avg_lead_time_days: number | null
+          avg_response_time: number | null
+          avg_shipping_delay: number | null
+          branding_score: number | null
+          communication_score: number | null
           contact_name: string | null
           created_at: string | null
+          dispute_count: number | null
           email: string | null
+          failed_orders: number | null
           fulfillment_model: Database["public"]["Enums"]["ut_fulfillment_model"]
           id: string
           is_active: boolean | null
@@ -80921,19 +81115,28 @@ export type Database = {
           quality_rating: number | null
           reliability_score: number | null
           return_policy: string | null
+          risk_score: number | null
           shipping_speed_days: number | null
           shipping_zones: string[] | null
           source_platform: string | null
+          successful_orders: number | null
           supplier_type: string | null
           updated_at: string | null
+          verification_status: string | null
           website: string | null
         }
         Insert: {
           api_enabled?: boolean | null
           avg_lead_time_days?: number | null
+          avg_response_time?: number | null
+          avg_shipping_delay?: number | null
+          branding_score?: number | null
+          communication_score?: number | null
           contact_name?: string | null
           created_at?: string | null
+          dispute_count?: number | null
           email?: string | null
+          failed_orders?: number | null
           fulfillment_model?: Database["public"]["Enums"]["ut_fulfillment_model"]
           id?: string
           is_active?: boolean | null
@@ -80946,19 +81149,28 @@ export type Database = {
           quality_rating?: number | null
           reliability_score?: number | null
           return_policy?: string | null
+          risk_score?: number | null
           shipping_speed_days?: number | null
           shipping_zones?: string[] | null
           source_platform?: string | null
+          successful_orders?: number | null
           supplier_type?: string | null
           updated_at?: string | null
+          verification_status?: string | null
           website?: string | null
         }
         Update: {
           api_enabled?: boolean | null
           avg_lead_time_days?: number | null
+          avg_response_time?: number | null
+          avg_shipping_delay?: number | null
+          branding_score?: number | null
+          communication_score?: number | null
           contact_name?: string | null
           created_at?: string | null
+          dispute_count?: number | null
           email?: string | null
+          failed_orders?: number | null
           fulfillment_model?: Database["public"]["Enums"]["ut_fulfillment_model"]
           id?: string
           is_active?: boolean | null
@@ -80971,11 +81183,14 @@ export type Database = {
           quality_rating?: number | null
           reliability_score?: number | null
           return_policy?: string | null
+          risk_score?: number | null
           shipping_speed_days?: number | null
           shipping_zones?: string[] | null
           source_platform?: string | null
+          successful_orders?: number | null
           supplier_type?: string | null
           updated_at?: string | null
+          verification_status?: string | null
           website?: string | null
         }
         Relationships: []

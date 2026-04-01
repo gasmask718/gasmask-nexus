@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Package, Truck, ShieldCheck, CheckCircle, Copy, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Plus, Package, Truck, ShieldCheck, CheckCircle, Copy, ExternalLink, AlertTriangle, DollarSign, Calculator } from 'lucide-react';
 
 const CARRIERS = ['DHL', 'FedEx', 'UPS', 'Alibaba', 'Sea Freight', 'Air Freight', 'Local Delivery'];
 const STATUS_COLS = [
@@ -27,18 +27,41 @@ const CHECKLIST = [
   'Quality acceptable?',
 ];
 
+// Duty rates by category (Section 301 included for China)
+const DUTY_RATES: Record<string, number> = {
+  'Textiles': 0.20, 'Furniture': 0.07, 'Electronics': 0.05,
+  'Lighting': 0.10, 'Decorations': 0.12, 'Tableware': 0.08,
+  'General': 0.10,
+};
+
 export default function UTShippingTracker() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [showLandedCost, setShowLandedCost] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<any>(null);
   const [checklistState, setChecklistState] = useState<boolean[]>(CHECKLIST.map(() => false));
   const [newShipment, setNewShipment] = useState({ supplier_name: '', product_name: '', quantity: 0, tracking_number: '', carrier: '', shipping_method: '', ship_date: '', estimated_arrival: '', freight_forwarder: '', total_cost: 0, notes: '' });
+
+  // Landed cost calculator state
+  const [lcProductCost, setLcProductCost] = useState(0);
+  const [lcQuantity, setLcQuantity] = useState(100);
+  const [lcShippingCost, setLcShippingCost] = useState(0);
+  const [lcCategory, setLcCategory] = useState('General');
+  const [lcFromChina, setLcFromChina] = useState(true);
 
   const { data: shipments = [] } = useQuery({
     queryKey: ['ut-shipments'],
     queryFn: async () => {
       const { data } = await supabase.from('ut_shipments' as any).select('*').order('created_at', { ascending: false });
+      return (data || []) as any[];
+    }
+  });
+
+  const { data: shippingQuotes = [] } = useQuery({
+    queryKey: ['ut-shipping-quotes-tracker'],
+    queryFn: async () => {
+      const { data } = await supabase.from('ut_shipping_quotes' as any).select('*').order('cost', { ascending: true });
       return (data || []) as any[];
     }
   });
@@ -61,13 +84,24 @@ export default function UTShippingTracker() {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['ut-shipments'] }); toast.success('Status updated'); }
   });
 
+  // Landed Cost Calculations
+  const dutyRate = DUTY_RATES[lcCategory] || 0.10;
+  const section301 = lcFromChina ? 0.25 : 0;
+  const totalProductCost = lcProductCost * lcQuantity;
+  const dutyAmount = totalProductCost * dutyRate;
+  const tariffAmount = totalProductCost * section301;
+  const mpfRaw = totalProductCost * 0.003464;
+  const mpfAmount = Math.min(Math.max(mpfRaw, 31.67), 614.35);
+  const totalLandedCost = totalProductCost + lcShippingCost + dutyAmount + tariffAmount + mpfAmount;
+  const perUnitLanded = lcQuantity > 0 ? totalLandedCost / lcQuantity : 0;
+
   const getDaysInfo = (s: any) => {
     if (s.status === 'delivered') return { text: 'Delivered', color: 'text-green-400' };
     if (!s.estimated_arrival) return { text: 'No ETA', color: 'text-muted-foreground' };
     const diff = Math.ceil((new Date(s.estimated_arrival).getTime() - Date.now()) / 86400000);
-    if (diff > 0) return { text: `Arrives in ${diff} day${diff !== 1 ? 's' : ''}`, color: 'text-green-400' };
+    if (diff > 0) return { text: `${diff}d left`, color: 'text-green-400' };
     if (diff === 0) return { text: 'Due today', color: 'text-yellow-400' };
-    return { text: `⚠️ ${Math.abs(diff)} day${Math.abs(diff) !== 1 ? 's' : ''} overdue`, color: 'text-red-400' };
+    return { text: `⚠️ ${Math.abs(diff)}d overdue`, color: 'text-red-400' };
   };
 
   const getTrackingUrl = (carrier: string, tracking: string) => {
@@ -86,7 +120,6 @@ export default function UTShippingTracker() {
     setChecklistState(CHECKLIST.map(() => false));
   };
 
-  // Upcoming arrivals (next 14 days)
   const upcoming = shipments.filter((s: any) => {
     if (s.status === 'delivered') return false;
     if (!s.estimated_arrival) return false;
@@ -94,14 +127,24 @@ export default function UTShippingTracker() {
     return diff >= 0 && diff <= 14;
   }).sort((a: any, b: any) => new Date(a.estimated_arrival).getTime() - new Date(b.estimated_arrival).getTime());
 
+  // Group quotes by method for comparison
+  const airQuotes = shippingQuotes.filter((q: any) => q.method === 'air');
+  const seaQuotes = shippingQuotes.filter((q: any) => q.method === 'sea');
+  const expressQuotes = shippingQuotes.filter((q: any) => q.method === 'express');
+
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">📦 Shipping Tracker</h1>
-          <p className="text-muted-foreground">Track every inbound supplier shipment</p>
+          <p className="text-muted-foreground">Track shipments & calculate landed costs</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)}><Plus className="mr-2 h-4 w-4" />Add Shipment</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowLandedCost(true)}>
+            <Calculator className="mr-2 h-4 w-4" /> Landed Cost Calculator
+          </Button>
+          <Button onClick={() => setShowAddModal(true)}><Plus className="mr-2 h-4 w-4" />Add Shipment</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-4">
@@ -112,6 +155,56 @@ export default function UTShippingTracker() {
           </CardContent></Card>
         ))}
       </div>
+
+      {/* Shipping Method Comparison */}
+      {shippingQuotes.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> Shipping Method Comparison</CardTitle></CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="border-blue-500/30">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl mb-1">✈️</p>
+                  <p className="font-bold">Air Freight</p>
+                  {airQuotes.length > 0 ? (
+                    <>
+                      <p className="text-xl font-bold mt-2">${Math.min(...airQuotes.map((q: any) => q.cost || 0)).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">cheapest · {Math.min(...airQuotes.map((q: any) => q.days || 99))} days</p>
+                      <Badge className="mt-2 bg-blue-500/20 text-blue-400">⚖️ Balanced</Badge>
+                    </>
+                  ) : <p className="text-xs text-muted-foreground mt-2">No quotes</p>}
+                </CardContent>
+              </Card>
+              <Card className="border-green-500/30">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl mb-1">🚢</p>
+                  <p className="font-bold">Sea Freight</p>
+                  {seaQuotes.length > 0 ? (
+                    <>
+                      <p className="text-xl font-bold mt-2">${Math.min(...seaQuotes.map((q: any) => q.cost || 0)).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">cheapest · {Math.min(...seaQuotes.map((q: any) => q.days || 99))} days</p>
+                      <Badge className="mt-2 bg-green-500/20 text-green-400">💰 Best Value</Badge>
+                    </>
+                  ) : <p className="text-xs text-muted-foreground mt-2">No quotes</p>}
+                </CardContent>
+              </Card>
+              <Card className="border-orange-500/30">
+                <CardContent className="pt-4 text-center">
+                  <p className="text-2xl mb-1">⚡</p>
+                  <p className="font-bold">Express</p>
+                  {expressQuotes.length > 0 ? (
+                    <>
+                      <p className="text-xl font-bold mt-2">${Math.min(...expressQuotes.map((q: any) => q.cost || 0)).toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">cheapest · {Math.min(...expressQuotes.map((q: any) => q.days || 99))} days</p>
+                      <Badge className="mt-2 bg-orange-500/20 text-orange-400">⚡ Fastest</Badge>
+                    </>
+                  ) : <p className="text-xs text-muted-foreground mt-2">No quotes</p>}
+                </CardContent>
+              </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Kanban Board */}
       <div className="grid grid-cols-4 gap-4">
@@ -132,7 +225,9 @@ export default function UTShippingTracker() {
                       </div>
                     )}
                     <p className="text-xs">{s.carrier} • {s.quantity} units</p>
-                    {s.ship_date && <p className="text-xs text-muted-foreground">{s.ship_date} → {s.estimated_arrival}</p>}
+                    {s.total_cost && s.quantity && (
+                      <p className="text-xs text-muted-foreground">${(s.total_cost / s.quantity).toFixed(2)}/unit landed</p>
+                    )}
                     <p className={`text-xs font-medium ${days.color}`}>{days.text}</p>
                     <div className="flex gap-1 mt-2">
                       {s.tracking_number && <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => window.open(getTrackingUrl(s.carrier, s.tracking_number), '_blank')}><ExternalLink className="mr-1 h-3 w-3" />Track</Button>}
@@ -223,6 +318,77 @@ export default function UTShippingTracker() {
             <Button variant="destructive" onClick={() => handleChecklistComplete(false)}><AlertTriangle className="mr-2 h-4 w-4" />Issue Found 🚩</Button>
             <Button onClick={() => handleChecklistComplete(true)} disabled={!checklistState.every(Boolean)}><CheckCircle className="mr-2 h-4 w-4" />All Good ✅</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Landed Cost Calculator Modal */}
+      <Dialog open={showLandedCost} onOpenChange={setShowLandedCost}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><Calculator className="h-5 w-5" /> Landed Cost Calculator</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Unit Cost ($)</label>
+                <Input type="number" value={lcProductCost} onChange={e => setLcProductCost(Number(e.target.value))} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Quantity</label>
+                <Input type="number" value={lcQuantity} onChange={e => setLcQuantity(Number(e.target.value))} />
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Shipping Cost ($)</label>
+              <Input type="number" value={lcShippingCost} onChange={e => setLcShippingCost(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Product Category</label>
+              <Select value={lcCategory} onValueChange={setLcCategory}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.keys(DUTY_RATES).map(c => <SelectItem key={c} value={c}>{c} ({(DUTY_RATES[c] * 100).toFixed(0)}% duty)</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={lcFromChina} onChange={e => setLcFromChina(e.target.checked)} className="h-4 w-4" />
+              <span className="text-sm">Origin: China (adds 25% Section 301 tariff)</span>
+            </label>
+
+            {/* Results */}
+            <div className="border rounded-lg p-4 space-y-2 bg-muted/50">
+              <h4 className="font-semibold text-sm">Cost Breakdown</h4>
+              <div className="flex justify-between text-sm">
+                <span>Product Cost ({lcQuantity} × ${lcProductCost})</span>
+                <span className="font-mono">${totalProductCost.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Shipping</span>
+                <span className="font-mono">${lcShippingCost.toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Duty ({(dutyRate * 100).toFixed(0)}%)</span>
+                <span className="font-mono">${dutyAmount.toFixed(2)}</span>
+              </div>
+              {lcFromChina && (
+                <div className="flex justify-between text-sm text-red-400">
+                  <span>Section 301 Tariff (25%)</span>
+                  <span className="font-mono">${tariffAmount.toFixed(2)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span>MPF</span>
+                <span className="font-mono">${mpfAmount.toFixed(2)}</span>
+              </div>
+              <div className="border-t pt-2 flex justify-between font-bold">
+                <span>Total Landed Cost</span>
+                <span className="font-mono text-primary">${totalLandedCost.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg">
+                <span>Per Unit Landed</span>
+                <span className="font-mono text-primary">${perUnitLanded.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
