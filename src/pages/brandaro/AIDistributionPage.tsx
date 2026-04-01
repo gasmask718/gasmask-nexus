@@ -11,7 +11,7 @@ export default function AIDistributionPage() {
   const { toast } = useToast();
   const [autoEnabled, setAutoEnabled] = useState(false);
   const [distributing, setDistributing] = useState(false);
-  const [result, setResult] = useState<{ assigned: number; va_count: number } | null>(null);
+  const [result, setResult] = useState<{ assigned: number; va_count: number; error?: string } | null>(null);
 
   const runDistribution = async () => {
     setDistributing(true);
