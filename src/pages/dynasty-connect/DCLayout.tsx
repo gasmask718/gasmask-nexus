@@ -20,6 +20,7 @@ const dcNavSections = [
     items: [
       { path: '/dynasty-connect/campaigns', label: 'All Campaigns', icon: Target },
       { path: '/dynasty-connect/campaigns/builder', label: 'Campaign Builder', icon: Zap },
+      { path: '/dynasty-connect/campaigns/outbound', label: 'Outbound Dialer', icon: Phone },
     ],
   },
   {

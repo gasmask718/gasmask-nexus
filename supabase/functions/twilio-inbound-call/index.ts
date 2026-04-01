@@ -96,6 +96,73 @@ const handler = async (req: Request): Promise<Response> => {
     const normalizedTo = normalizePhone(to);
 
     // =====================================================
+    // STEP 0: Check if this is a Dynasty Connect AI number
+    // If so, route directly to ElevenLabs — skip all other routing
+    // =====================================================
+    const { data: dcNumber } = await supabase
+      .from("dc_phone_numbers")
+      .select("id, phone_number, is_ai_number")
+      .eq("is_ai_number", true)
+      .eq("status", "active")
+      .or(`phone_number.eq.${to},phone_number.eq.${normalizedTo},phone_number.ilike.%${normalizedTo.slice(-10)}%`)
+      .limit(1)
+      .maybeSingle();
+
+    if (dcNumber) {
+      console.log(`🤖 DC AI Number detected: ${to} — routing to ElevenLabs concierge`);
+      const ELEVENLABS_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+      const DC_INBOUND_AGENT_ID = Deno.env.get("DC_INBOUND_AGENT_ID");
+
+      // Log the inbound call to dc_call_logs
+      try {
+        await fetch(`${supabaseUrl}/rest/v1/dc_call_logs`, {
+          method: "POST",
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            call_sid: callSid,
+            from_number: from,
+            to_number: to,
+            direction: "inbound",
+            status: "answered",
+            agent_type: "inbound_concierge",
+            agent_id: DC_INBOUND_AGENT_ID || null,
+          }),
+        });
+      } catch (e) {
+        console.error("DC call log error:", e);
+      }
+
+      if (DC_INBOUND_AGENT_ID && ELEVENLABS_KEY) {
+        const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Connect>
+    <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${DC_INBOUND_AGENT_ID}">
+      <Parameter name="xi-api-key" value="${ELEVENLABS_KEY}"/>
+      <Parameter name="call_sid" value="${callSid}"/>
+      <Parameter name="caller_number" value="${from}"/>
+    </Stream>
+  </Connect>
+</Response>`;
+        return new Response(twiml, {
+          headers: { ...corsHeaders, "Content-Type": "text/xml" },
+        });
+      } else {
+        console.error("DC_INBOUND_AGENT_ID or ELEVENLABS_API_KEY not configured");
+        return generateTwiML(`
+          <Response>
+            <Say voice="alice">Thank you for calling Dynasty Connect. Our system is being configured. Please try again shortly.</Say>
+            <Hangup/>
+          </Response>
+        `);
+      }
+    }
+
+    // =====================================================
     // STEP 1: Resolve business by matching "To" number
     // =====================================================
     let businessId: string | null = null;
