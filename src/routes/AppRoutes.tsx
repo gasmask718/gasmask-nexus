@@ -10,6 +10,7 @@ import { RoleRouteGuard } from '@/components/security/RoleRouteGuard';
 import { RequireRole } from '@/components/security/RequireRole';
 import Layout from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts — kept static (used as wrappers, always needed)
 import PublicLayout from '@/layouts/PublicLayout';
