@@ -160,7 +160,7 @@ function PackageBuilderTab() {
 
   const { data: vendors = [] } = useQuery({
     queryKey: ['ut_vendor_pricing'],
-    queryFn: async () => { const { data } = await supabase.from('ut_vendor_pricing').select('*').eq('is_active', true).order('vendor_type'); return data || []; }
+    queryFn: async () => { const { data } = await (supabase as any).from('ut_vendor_pricing').select('*').eq('is_active', true).order('vendor_type'); return (data || []) as any[]; }
   });
 
   const { data: packages = [], isLoading: pkgLoading } = useQuery({
