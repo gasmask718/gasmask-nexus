@@ -141,6 +141,8 @@ const CompetitorTakeoverPage = lazy(() => import('@/pages/brandaro/CompetitorTak
 const CloserAIPage = lazy(() => import('@/pages/brandaro/CloserAIPage'));
 const VADashboardPage = lazy(() => import('@/pages/brandaro/VADashboardPage'));
 const VAManagerPage = lazy(() => import('@/pages/brandaro/VAManagerPage'));
+const VARosterPage = lazy(() => import('@/pages/brandaro/VARosterPage'));
+const AIDistributionPage = lazy(() => import('@/pages/brandaro/AIDistributionPage'));
 const BrandaroHubLayout = lazy(() => import('@/pages/brandaro/BrandaroHubLayout'));
 const BrandaroWarRoom = lazy(() => import('@/pages/brandaro/BrandaroWarRoom'));
 const FollowUpEnginePage = lazy(() => import('@/pages/brandaro/FollowUpEnginePage'));
@@ -3001,6 +3003,8 @@ export default function AppRoutes() {
           <Route path="va-manager" element={<VAManagerPage />} />
           <Route path="va-workspace" element={<VAWorkspacePage />} />
           <Route path="va-performance" element={<VAPerformancePage />} />
+          <Route path="va-roster" element={<VARosterPage />} />
+          <Route path="ai-distribution" element={<AIDistributionPage />} />
           <Route path="closer-ai" element={<CloserAIPage />} />
 
           {/* ── Pipeline ── */}
