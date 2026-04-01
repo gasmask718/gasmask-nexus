@@ -51,7 +51,7 @@ export default function UTBrandingPipeline() {
 
   const addMutation = useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase.from('ut_branding_requests').insert(values);
+      const { error } = await supabase.from('ut_branding_requests' as any).insert(values);
       if (error) throw error;
     },
     onSuccess: () => {
