@@ -97,21 +97,45 @@ const handler = async (req: Request): Promise<Response> => {
 
     // =====================================================
     // STEP 0: Check if this is a Dynasty Connect AI number
-    // If so, route directly to ElevenLabs — skip all other routing
+    // Route to the correct ElevenLabs agent based on which number was called
     // =====================================================
+    
+    // Multi-business agent map: phone number → ElevenLabs agent ID
+    const dcAgentMap: Record<string, string> = {};
+    const utPhone = Deno.env.get("UT_PHONE_NUMBER");
+    const rePhone = Deno.env.get("RE_PHONE_NUMBER");
+    const sfPhone = Deno.env.get("SF_PHONE_NUMBER");
+    const ttPhone = Deno.env.get("TT_PHONE_NUMBER");
+    const brandPhone = Deno.env.get("BRANDARO_PHONE_NUMBER");
+    const icleanPhone = Deno.env.get("ICLEAN_PHONE_NUMBER");
+    const gmPhone = Deno.env.get("GASMASK_PHONE_NUMBER") || "+18484004179";
+    
+    if (utPhone) dcAgentMap[utPhone] = Deno.env.get("UT_CONCIERGE_AGENT_ID") || "";
+    if (rePhone) dcAgentMap[rePhone] = Deno.env.get("RE_QUALIFIER_AGENT_ID") || "";
+    if (sfPhone) dcAgentMap[sfPhone] = Deno.env.get("SF_CLIENT_AGENT_ID") || "";
+    if (ttPhone) dcAgentMap[ttPhone] = Deno.env.get("TT_CONCIERGE_AGENT_ID") || "";
+    if (brandPhone) dcAgentMap[brandPhone] = Deno.env.get("BRANDARO_SALES_AGENT_ID") || "";
+    if (icleanPhone) dcAgentMap[icleanPhone] = Deno.env.get("ICLEAN_BOOKING_AGENT_ID") || "";
+    if (gmPhone) dcAgentMap[gmPhone] = Deno.env.get("DC_INBOUND_AGENT_ID") || "";
+
+    // Check if the called number matches any DC AI number
+    const matchedAgentId = dcAgentMap[to] || dcAgentMap[normalizedTo] || null;
+    
+    // Also check dc_phone_numbers table for legacy AI numbers
     const { data: dcNumber } = await supabase
       .from("dc_phone_numbers")
-      .select("id, phone_number, is_ai_number")
-      .eq("is_ai_number", true)
-      .eq("status", "active")
+      .select("id, phone_number, is_ai_number, assigned_agent_id")
       .or(`phone_number.eq.${to},phone_number.eq.${normalizedTo},phone_number.ilike.%${normalizedTo.slice(-10)}%`)
       .limit(1)
       .maybeSingle();
 
-    if (dcNumber) {
-      console.log(`🤖 DC AI Number detected: ${to} — routing to ElevenLabs concierge`);
+    const resolvedAgentId = matchedAgentId || dcNumber?.assigned_agent_id || null;
+
+    if (resolvedAgentId || (dcNumber && dcNumber.is_ai_number)) {
       const ELEVENLABS_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-      const DC_INBOUND_AGENT_ID = Deno.env.get("DC_INBOUND_AGENT_ID");
+      const agentId = resolvedAgentId || Deno.env.get("DC_INBOUND_AGENT_ID") || "";
+      
+      console.log(`🤖 DC AI Number detected: ${to} — routing to agent ${agentId}`);
 
       // Log the inbound call to dc_call_logs
       try {
@@ -129,19 +153,18 @@ const handler = async (req: Request): Promise<Response> => {
             to_number: to,
             direction: "inbound",
             status: "answered",
-            agent_type: "inbound_concierge",
-            agent_id: DC_INBOUND_AGENT_ID || null,
+            agent_id: agentId,
           }),
         });
       } catch (e) {
         console.error("DC call log error:", e);
       }
 
-      if (DC_INBOUND_AGENT_ID && ELEVENLABS_KEY) {
+      if (agentId && ELEVENLABS_KEY) {
         const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Connect>
-    <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${DC_INBOUND_AGENT_ID}">
+    <Stream url="wss://api.elevenlabs.io/v1/convai/conversation?agent_id=${agentId}">
       <Parameter name="xi-api-key" value="${ELEVENLABS_KEY}"/>
       <Parameter name="call_sid" value="${callSid}"/>
       <Parameter name="caller_number" value="${from}"/>
@@ -152,10 +175,10 @@ const handler = async (req: Request): Promise<Response> => {
           headers: { ...corsHeaders, "Content-Type": "text/xml" },
         });
       } else {
-        console.error("DC_INBOUND_AGENT_ID or ELEVENLABS_API_KEY not configured");
+        console.error("Agent ID or ELEVENLABS_API_KEY not configured");
         return generateTwiML(`
           <Response>
-            <Say voice="alice">Thank you for calling Dynasty Connect. Our system is being configured. Please try again shortly.</Say>
+            <Say voice="alice">Thank you for calling. Our system is being configured. Please try again shortly.</Say>
             <Hangup/>
           </Response>
         `);

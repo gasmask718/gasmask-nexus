@@ -30668,37 +30668,46 @@ export type Database = {
         Row: {
           agent_id: string | null
           agent_type: string | null
+          business: string | null
           created_at: string | null
           first_message: string | null
           id: string
           is_active: boolean | null
           name: string
+          phone_number: string | null
           system_prompt: string | null
           total_calls: number | null
+          total_minutes: number | null
           voice_id: string | null
         }
         Insert: {
           agent_id?: string | null
           agent_type?: string | null
+          business?: string | null
           created_at?: string | null
           first_message?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          phone_number?: string | null
           system_prompt?: string | null
           total_calls?: number | null
+          total_minutes?: number | null
           voice_id?: string | null
         }
         Update: {
           agent_id?: string | null
           agent_type?: string | null
+          business?: string | null
           created_at?: string | null
           first_message?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          phone_number?: string | null
           system_prompt?: string | null
           total_calls?: number | null
+          total_minutes?: number | null
           voice_id?: string | null
         }
         Relationships: []
@@ -30757,8 +30766,10 @@ export type Database = {
       dc_call_logs: {
         Row: {
           agent_id: string | null
+          agent_name: string | null
           agent_type: string | null
           answered_by: string | null
+          business: string | null
           call_sid: string | null
           campaign_id: string | null
           created_at: string | null
@@ -30777,8 +30788,10 @@ export type Database = {
         }
         Insert: {
           agent_id?: string | null
+          agent_name?: string | null
           agent_type?: string | null
           answered_by?: string | null
+          business?: string | null
           call_sid?: string | null
           campaign_id?: string | null
           created_at?: string | null
@@ -30797,8 +30810,10 @@ export type Database = {
         }
         Update: {
           agent_id?: string | null
+          agent_name?: string | null
           agent_type?: string | null
           answered_by?: string | null
+          business?: string | null
           call_sid?: string | null
           campaign_id?: string | null
           created_at?: string | null
@@ -30820,53 +30835,71 @@ export type Database = {
       dc_campaigns: {
         Row: {
           active_days: Json | null
+          agent_id: string | null
+          agent_name: string | null
           agent_type: string | null
           appointments_set: number | null
+          business: string | null
+          calls_connected: number | null
           calls_made: number | null
           calls_per_hour: number | null
           connected: number | null
           created_at: string | null
           end_time: string | null
+          from_phone_number: string | null
           id: string
           max_attempts: number | null
           name: string
           start_time: string | null
           status: string | null
           total_leads: number | null
+          updated_at: string | null
           voicemails_skipped: number | null
         }
         Insert: {
           active_days?: Json | null
+          agent_id?: string | null
+          agent_name?: string | null
           agent_type?: string | null
           appointments_set?: number | null
+          business?: string | null
+          calls_connected?: number | null
           calls_made?: number | null
           calls_per_hour?: number | null
           connected?: number | null
           created_at?: string | null
           end_time?: string | null
+          from_phone_number?: string | null
           id?: string
           max_attempts?: number | null
           name: string
           start_time?: string | null
           status?: string | null
           total_leads?: number | null
+          updated_at?: string | null
           voicemails_skipped?: number | null
         }
         Update: {
           active_days?: Json | null
+          agent_id?: string | null
+          agent_name?: string | null
           agent_type?: string | null
           appointments_set?: number | null
+          business?: string | null
+          calls_connected?: number | null
           calls_made?: number | null
           calls_per_hour?: number | null
           connected?: number | null
           created_at?: string | null
           end_time?: string | null
+          from_phone_number?: string | null
           id?: string
           max_attempts?: number | null
           name?: string
           start_time?: string | null
           status?: string | null
           total_leads?: number | null
+          updated_at?: string | null
           voicemails_skipped?: number | null
         }
         Relationships: []
@@ -30874,6 +30907,7 @@ export type Database = {
       dc_leads: {
         Row: {
           address: string | null
+          business: string | null
           business_id: string | null
           business_name: string
           call_count: number | null
@@ -30900,6 +30934,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          business?: string | null
           business_id?: string | null
           business_name: string
           call_count?: number | null
@@ -30926,6 +30961,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          business?: string | null
           business_id?: string | null
           business_name?: string
           call_count?: number | null
@@ -30954,39 +30990,57 @@ export type Database = {
       }
       dc_phone_numbers: {
         Row: {
+          assigned_agent_id: string | null
+          assigned_agent_name: string | null
+          business: string | null
           created_at: string | null
+          elevenlabs_phone_id: string | null
           friendly_name: string | null
           id: string
+          is_active: boolean | null
           is_ai_number: boolean | null
           monthly_cost: number | null
           phone_number: string
           purchased_at: string | null
           sid: string | null
           status: string | null
+          twilio_sid: string | null
           webhook_url: string | null
         }
         Insert: {
+          assigned_agent_id?: string | null
+          assigned_agent_name?: string | null
+          business?: string | null
           created_at?: string | null
+          elevenlabs_phone_id?: string | null
           friendly_name?: string | null
           id?: string
+          is_active?: boolean | null
           is_ai_number?: boolean | null
           monthly_cost?: number | null
           phone_number: string
           purchased_at?: string | null
           sid?: string | null
           status?: string | null
+          twilio_sid?: string | null
           webhook_url?: string | null
         }
         Update: {
+          assigned_agent_id?: string | null
+          assigned_agent_name?: string | null
+          business?: string | null
           created_at?: string | null
+          elevenlabs_phone_id?: string | null
           friendly_name?: string | null
           id?: string
+          is_active?: boolean | null
           is_ai_number?: boolean | null
           monthly_cost?: number | null
           phone_number?: string
           purchased_at?: string | null
           sid?: string | null
           status?: string | null
+          twilio_sid?: string | null
           webhook_url?: string | null
         }
         Relationships: []
