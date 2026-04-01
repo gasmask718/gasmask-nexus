@@ -75975,6 +75975,7 @@ export type Database = {
           lead_time_priority: string | null
           negotiated_discount_tiers: Json | null
           negotiated_terms: Json | null
+          partnership_start_date: string | null
           performance_score: number | null
           preferred_partner: boolean | null
           priority_production: boolean | null
@@ -75997,6 +75998,7 @@ export type Database = {
           lead_time_priority?: string | null
           negotiated_discount_tiers?: Json | null
           negotiated_terms?: Json | null
+          partnership_start_date?: string | null
           performance_score?: number | null
           preferred_partner?: boolean | null
           priority_production?: boolean | null
@@ -76019,6 +76021,7 @@ export type Database = {
           lead_time_priority?: string | null
           negotiated_discount_tiers?: Json | null
           negotiated_terms?: Json | null
+          partnership_start_date?: string | null
           performance_score?: number | null
           preferred_partner?: boolean | null
           priority_production?: boolean | null
@@ -76700,6 +76703,107 @@ export type Database = {
           venues_found?: number | null
         }
         Relationships: []
+      }
+      ut_gscs_approvals: {
+        Row: {
+          change_details: Json | null
+          change_summary: string
+          change_type: string
+          created_at: string | null
+          entity_id: string | null
+          entity_name: string
+          entity_type: string | null
+          id: string
+          requested_by: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string | null
+        }
+        Insert: {
+          change_details?: Json | null
+          change_summary: string
+          change_type: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_name: string
+          entity_type?: string | null
+          id?: string
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+        }
+        Update: {
+          change_details?: Json | null
+          change_summary?: string
+          change_type?: string
+          created_at?: string | null
+          entity_id?: string | null
+          entity_name?: string
+          entity_type?: string | null
+          id?: string
+          requested_by?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      ut_gscs_automation_rules: {
+        Row: {
+          action_type: string
+          category_id: string | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_triggered_at: string | null
+          notes: string | null
+          rule_name: string
+          threshold_value: number | null
+          trigger_count: number | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          action_type: string
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          notes?: string | null
+          rule_name: string
+          threshold_value?: number | null
+          trigger_count?: number | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          action_type?: string
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_triggered_at?: string | null
+          notes?: string | null
+          rule_name?: string
+          threshold_value?: number | null
+          trigger_count?: number | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_gscs_automation_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_kit_orders: {
         Row: {
@@ -81335,6 +81439,70 @@ export type Database = {
             columns: ["rfq_id"]
             isOneToOne: false
             referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_supplier_price_history: {
+        Row: {
+          category_id: string | null
+          id: string
+          negotiated_discount_pct: number | null
+          previous_cost: number | null
+          price_change_pct: number | null
+          product_name: string | null
+          recorded_at: string | null
+          savings_amount: number | null
+          supplier_id: string | null
+          supplier_name: string
+          unit_cost: number
+        }
+        Insert: {
+          category_id?: string | null
+          id?: string
+          negotiated_discount_pct?: number | null
+          previous_cost?: number | null
+          price_change_pct?: number | null
+          product_name?: string | null
+          recorded_at?: string | null
+          savings_amount?: number | null
+          supplier_id?: string | null
+          supplier_name: string
+          unit_cost: number
+        }
+        Update: {
+          category_id?: string | null
+          id?: string
+          negotiated_discount_pct?: number | null
+          previous_cost?: number | null
+          price_change_pct?: number | null
+          product_name?: string | null
+          recorded_at?: string | null
+          savings_amount?: number | null
+          supplier_id?: string | null
+          supplier_name?: string
+          unit_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_supplier_price_history_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_price_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_price_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
             referencedColumns: ["id"]
           },
         ]
