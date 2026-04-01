@@ -10,7 +10,34 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { vaId, twilioNumber, leadId, leadPhone, leadName, action } = await req.json();
+    const url = new URL(req.url);
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAdmin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+    // --- TwiML callback from Twilio (POST with form data) ---
+    const actionParam = url.searchParams.get("action");
+    if (actionParam === "twiml") {
+      const leadPhoneParam = url.searchParams.get("leadPhone") || "";
+      const callLogId = url.searchParams.get("callLogId") || "";
+      const callerIdParam = url.searchParams.get("callerId") || "";
+
+      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Dial callerId="${callerIdParam}" record="record-from-answer-dual" timeout="20"
+    action="${SUPABASE_URL}/functions/v1/va-dialer-status?callLogId=${callLogId}&event=dial-complete"
+    method="POST">
+    <Number>${leadPhoneParam}</Number>
+  </Dial>
+</Response>`;
+
+      return new Response(twiml, {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "text/xml" },
+      });
+    }
+
+    // --- JSON body actions (dial, disposition) ---
+    const body = await req.json();
+    const { vaId, twilioNumber, leadId, leadPhone, leadName, action, callLogId, disposition, excitementLevel, notes, callbackAt } = body;
 
     if (!vaId || !action) {
       return new Response(JSON.stringify({ error: "vaId and action required" }), {
@@ -18,13 +45,7 @@ serve(async (req) => {
       });
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-
+    // ======================== DIAL ========================
     if (action === "dial") {
       if (!leadPhone || !twilioNumber) {
         return new Response(JSON.stringify({ error: "leadPhone and twilioNumber required for dial" }), {
@@ -40,7 +61,6 @@ serve(async (req) => {
         .maybeSingle();
 
       if (dncMatch) {
-        // Log as DNC skip
         await supabaseAdmin.from("va_call_logs").insert({
           lead_id: leadId || null,
           va_id: vaId,
@@ -49,9 +69,11 @@ serve(async (req) => {
           disposition: "dnc",
         });
 
-        await supabaseAdmin.rpc("upsert_leaderboard_stat", {
-          p_va_id: vaId, p_field: "calls_dialed", p_increment: 1,
-        });
+        try {
+          await supabaseAdmin.rpc("upsert_leaderboard_stat", {
+            p_va_id: vaId, p_field: "calls_dialed", p_increment: 1,
+          });
+        } catch (_) { /* leaderboard optional */ }
 
         return new Response(JSON.stringify({ skipped: true, reason: "dnc" }), {
           status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -70,10 +92,11 @@ serve(async (req) => {
         .select("id")
         .single();
 
-      // Increment dialed counter
-      await supabaseAdmin.rpc("upsert_leaderboard_stat", {
-        p_va_id: vaId, p_field: "calls_dialed", p_increment: 1,
-      });
+      try {
+        await supabaseAdmin.rpc("upsert_leaderboard_stat", {
+          p_va_id: vaId, p_field: "calls_dialed", p_increment: 1,
+        });
+      } catch (_) { /* leaderboard optional */ }
 
       // Initiate Twilio call
       const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
@@ -84,8 +107,9 @@ serve(async (req) => {
       if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
         const statusCallbackUrl = `${SUPABASE_URL}/functions/v1/va-dialer-status`;
 
-        // TwiML: Connect to the VA's browser client, then dial the lead
-        const twimlUrl = `${SUPABASE_URL}/functions/v1/va-power-dialer?action=twiml&vaId=${encodeURIComponent(vaId)}&leadPhone=${encodeURIComponent(leadPhone)}&callLogId=${callLog?.id || ""}`;
+        // Call the VA's browser Twilio Device, TwiML will then bridge to the lead
+        const identity = `user_${vaId.replace(/-/g, "")}`;
+        const twimlUrl = `${SUPABASE_URL}/functions/v1/va-power-dialer?action=twiml&leadPhone=${encodeURIComponent(leadPhone)}&callLogId=${callLog?.id || ""}&callerId=${encodeURIComponent(twilioNumber)}`;
 
         const twilioRes = await fetch(
           `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls.json`,
@@ -96,7 +120,7 @@ serve(async (req) => {
               "Content-Type": "application/x-www-form-urlencoded",
             },
             body: new URLSearchParams({
-              To: `client:user_${vaId.replace(/-/g, "")}`,
+              To: `client:${identity}`,
               From: twilioNumber,
               Url: twimlUrl,
               Record: "true",
@@ -105,7 +129,7 @@ serve(async (req) => {
               StatusCallback: statusCallbackUrl,
               StatusCallbackEvent: "initiated ringing answered completed",
               StatusCallbackMethod: "POST",
-              Timeout: "20",
+              Timeout: "30",
             }),
           }
         );
@@ -113,7 +137,7 @@ serve(async (req) => {
         const twilioData = await twilioRes.json();
 
         if (!twilioRes.ok) {
-          console.error("Twilio error:", twilioData);
+          console.error("Twilio error:", JSON.stringify(twilioData));
         } else {
           callSid = twilioData.sid;
           if (callLog?.id) {
@@ -123,7 +147,7 @@ serve(async (req) => {
           }
         }
       } else {
-        console.warn("Twilio credentials not configured");
+        console.warn("Twilio credentials not configured — call logged but not placed");
       }
 
       return new Response(JSON.stringify({
@@ -133,36 +157,15 @@ serve(async (req) => {
       });
     }
 
-    if (action === "twiml") {
-      // Return TwiML to bridge VA to outbound call
-      const url = new URL(req.url);
-      const leadPhoneParam = url.searchParams.get("leadPhone") || "";
-      const callLogId = url.searchParams.get("callLogId") || "";
-
-      const twiml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Dial callerId="${twilioNumber || ""}" record="record-from-answer-dual" timeout="20"
-    action="${SUPABASE_URL}/functions/v1/va-dialer-status?callLogId=${callLogId}&event=dial-complete"
-    method="POST">
-    <Number>${leadPhoneParam}</Number>
-  </Dial>
-</Response>`;
-
-      return new Response(twiml, {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "text/xml" },
-      });
-    }
-
+    // ======================== DISPOSITION ========================
     if (action === "disposition") {
-      const { callLogId, disposition, excitementLevel, notes, callbackAt } = await req.json();
-
       if (!callLogId) {
         return new Response(JSON.stringify({ error: "callLogId required" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const updateData: any = {};
+      const updateData: Record<string, unknown> = {};
       if (disposition) updateData.disposition = disposition;
       if (excitementLevel) updateData.excitement_level = excitementLevel;
       if (notes) updateData.va_notes = notes;
@@ -171,12 +174,13 @@ serve(async (req) => {
       await supabaseAdmin.from("va_call_logs").update(updateData).eq("id", callLogId);
 
       if (disposition === "closed") {
-        await supabaseAdmin.rpc("upsert_leaderboard_stat", {
-          p_va_id: vaId, p_field: "calls_closed", p_increment: 1,
-        });
+        try {
+          await supabaseAdmin.rpc("upsert_leaderboard_stat", {
+            p_va_id: vaId, p_field: "calls_closed", p_increment: 1,
+          });
+        } catch (_) { /* optional */ }
       }
 
-      // Update lead excitement level if provided
       if (excitementLevel && leadId) {
         await supabaseAdmin.from("brandaro_qualified_leads")
           .update({ excitement_level: excitementLevel })
@@ -187,6 +191,31 @@ serve(async (req) => {
         await supabaseAdmin.from("brandaro_qualified_leads")
           .update({ callback_scheduled_at: callbackAt })
           .eq("id", leadId);
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ======================== HANGUP ========================
+    if (action === "hangup") {
+      const { callSid: sidToHangup } = body;
+      const TWILIO_ACCOUNT_SID = Deno.env.get("TWILIO_ACCOUNT_SID");
+      const TWILIO_AUTH_TOKEN = Deno.env.get("TWILIO_AUTH_TOKEN");
+
+      if (sidToHangup && TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+        await fetch(
+          `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Calls/${sidToHangup}.json`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Basic ${btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`)}`,
+              "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({ Status: "completed" }),
+          }
+        );
       }
 
       return new Response(JSON.stringify({ success: true }), {
