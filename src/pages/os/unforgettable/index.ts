@@ -86,3 +86,7 @@ export { default as UTSupplierDecisionEngine } from './UTSupplierDecisionEngine'
 export { default as UTSupplierCommandDashboard } from './UTSupplierCommandDashboard';
 export { default as UTNegotiationAgent } from './UTNegotiationAgent';
 export { default as UTNegotiationDashboard } from './UTNegotiationDashboard';
+export { default as UTSupplierInboxV2 } from './UTSupplierInboxV2';
+export { default as UTAutoOutreach } from './UTAutoOutreach';
+export { default as UTShippingQuotes } from './UTShippingQuotes';
+export { default as UTAutoFinder } from './UTAutoFinder';
