@@ -3,7 +3,8 @@ import { Outlet, useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   BarChart3, Target, Phone, ClipboardCheck, Store, Package, Bot, TrendingUp,
-  PartyPopper, Users, CalendarDays, DollarSign, FileText, MapPin, Brain, Send, Zap, Star, Calculator
+  PartyPopper, Users, CalendarDays, DollarSign, FileText, MapPin, Brain, Send, Zap, Star, Calculator,
+  Palette, Factory, FileCheck, Rocket, HelpCircle, PhoneCall, ShoppingBag
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
@@ -106,6 +107,18 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/analytics', label: 'Floor 7 — Analytics', icon: TrendingUp },
       { path: '/os/unforgettable/performance', label: 'Performance', icon: BarChart3 },
       { path: '/os/unforgettable/growth-simulator', label: 'Growth Simulator', icon: TrendingUp },
+    ],
+  },
+  {
+    title: '🎨 Brand & Supply',
+    items: [
+      { path: '/os/unforgettable/brand-kit', label: 'Brand Kit Manager', icon: Palette },
+      { path: '/os/unforgettable/supplier-manager', label: 'Supplier Manager', icon: Factory },
+      { path: '/os/unforgettable/branding-pipeline', label: 'Branding Pipeline', icon: FileCheck },
+      { path: '/os/unforgettable/biz-owner-dashboard', label: 'Biz Owner Dashboard', icon: Rocket },
+      { path: '/os/unforgettable/quiz-results', label: 'Quiz Results', icon: HelpCircle },
+      { path: '/os/unforgettable/consultations', label: 'Consultations', icon: PhoneCall },
+      { path: '/os/unforgettable/kit-orders', label: 'Kit Orders', icon: ShoppingBag },
     ],
   },
   {

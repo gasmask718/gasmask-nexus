@@ -75124,6 +75124,210 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_brand_kits: {
+        Row: {
+          accent_color_hex: string | null
+          active: boolean | null
+          brand_name: string | null
+          created_at: string | null
+          id: string
+          insert_template_url: string | null
+          logo_ai_url: string | null
+          logo_png_url: string | null
+          logo_svg_url: string | null
+          notes: string | null
+          packaging_template_url: string | null
+          pantone_primary: string | null
+          pantone_secondary: string | null
+          primary_color_hex: string | null
+          primary_font: string | null
+          qr_code_ambassador_url: string | null
+          qr_code_customer_url: string | null
+          qr_code_supplier_url: string | null
+          secondary_color_hex: string | null
+          secondary_font: string | null
+          sticker_template_url: string | null
+          thank_you_card_url: string | null
+          updated_at: string | null
+          version: string | null
+        }
+        Insert: {
+          accent_color_hex?: string | null
+          active?: boolean | null
+          brand_name?: string | null
+          created_at?: string | null
+          id?: string
+          insert_template_url?: string | null
+          logo_ai_url?: string | null
+          logo_png_url?: string | null
+          logo_svg_url?: string | null
+          notes?: string | null
+          packaging_template_url?: string | null
+          pantone_primary?: string | null
+          pantone_secondary?: string | null
+          primary_color_hex?: string | null
+          primary_font?: string | null
+          qr_code_ambassador_url?: string | null
+          qr_code_customer_url?: string | null
+          qr_code_supplier_url?: string | null
+          secondary_color_hex?: string | null
+          secondary_font?: string | null
+          sticker_template_url?: string | null
+          thank_you_card_url?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Update: {
+          accent_color_hex?: string | null
+          active?: boolean | null
+          brand_name?: string | null
+          created_at?: string | null
+          id?: string
+          insert_template_url?: string | null
+          logo_ai_url?: string | null
+          logo_png_url?: string | null
+          logo_svg_url?: string | null
+          notes?: string | null
+          packaging_template_url?: string | null
+          pantone_primary?: string | null
+          pantone_secondary?: string | null
+          primary_color_hex?: string | null
+          primary_font?: string | null
+          qr_code_ambassador_url?: string | null
+          qr_code_customer_url?: string | null
+          qr_code_supplier_url?: string | null
+          secondary_color_hex?: string | null
+          secondary_font?: string | null
+          sticker_template_url?: string | null
+          thank_you_card_url?: string | null
+          updated_at?: string | null
+          version?: string | null
+        }
+        Relationships: []
+      }
+      ut_branding_requests: {
+        Row: {
+          approved_mockup_url: string | null
+          branding_fee: number | null
+          created_at: string | null
+          id: string
+          insert_type: string | null
+          logo_placement: string | null
+          moq: number | null
+          notes: string | null
+          packaging_type: string | null
+          product_category: string | null
+          product_name: string
+          production_delay_days: number | null
+          rejection_notes: string | null
+          sample_required: boolean | null
+          sample_status: string | null
+          status: string | null
+          supplier_id: string | null
+          updated_at: string | null
+          white_label_requested: boolean | null
+        }
+        Insert: {
+          approved_mockup_url?: string | null
+          branding_fee?: number | null
+          created_at?: string | null
+          id?: string
+          insert_type?: string | null
+          logo_placement?: string | null
+          moq?: number | null
+          notes?: string | null
+          packaging_type?: string | null
+          product_category?: string | null
+          product_name: string
+          production_delay_days?: number | null
+          rejection_notes?: string | null
+          sample_required?: boolean | null
+          sample_status?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          white_label_requested?: boolean | null
+        }
+        Update: {
+          approved_mockup_url?: string | null
+          branding_fee?: number | null
+          created_at?: string | null
+          id?: string
+          insert_type?: string | null
+          logo_placement?: string | null
+          moq?: number | null
+          notes?: string | null
+          packaging_type?: string | null
+          product_category?: string | null
+          product_name?: string
+          production_delay_days?: number | null
+          rejection_notes?: string | null
+          sample_required?: boolean | null
+          sample_status?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          updated_at?: string | null
+          white_label_requested?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_branding_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_branding_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_business_consultations: {
+        Row: {
+          best_time: string | null
+          budget: string | null
+          created_at: string | null
+          email: string
+          id: string
+          kit_interest: string | null
+          location: string | null
+          name: string
+          notes: string | null
+          phone: string
+          status: string | null
+        }
+        Insert: {
+          best_time?: string | null
+          budget?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          kit_interest?: string | null
+          location?: string | null
+          name: string
+          notes?: string | null
+          phone: string
+          status?: string | null
+        }
+        Update: {
+          best_time?: string | null
+          budget?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          kit_interest?: string | null
+          location?: string | null
+          name?: string
+          notes?: string | null
+          phone?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       ut_business_packages: {
         Row: {
           active: boolean
@@ -75904,6 +76108,51 @@ export type Database = {
           sms_sent?: number | null
           staff_found?: number | null
           venues_found?: number | null
+        }
+        Relationships: []
+      }
+      ut_kit_orders: {
+        Row: {
+          branding_notes: string | null
+          branding_tier: string | null
+          created_at: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          kit_name: string
+          notes: string | null
+          status: string | null
+          total_paid: number | null
+          tracking_number: string | null
+        }
+        Insert: {
+          branding_notes?: string | null
+          branding_tier?: string | null
+          created_at?: string | null
+          customer_email: string
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          kit_name: string
+          notes?: string | null
+          status?: string | null
+          total_paid?: number | null
+          tracking_number?: string | null
+        }
+        Update: {
+          branding_notes?: string | null
+          branding_tier?: string | null
+          created_at?: string | null
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          kit_name?: string
+          notes?: string | null
+          status?: string | null
+          total_paid?: number | null
+          tracking_number?: string | null
         }
         Relationships: []
       }
@@ -78987,6 +79236,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ut_quiz_results: {
+        Row: {
+          budget_range: string | null
+          business_type: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          launch_timeline: string | null
+          needs_training: string | null
+          phone: string | null
+          recommended_kit: string | null
+          supply_preference: string | null
+          wants_branding: string | null
+        }
+        Insert: {
+          budget_range?: string | null
+          business_type?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          launch_timeline?: string | null
+          needs_training?: string | null
+          phone?: string | null
+          recommended_kit?: string | null
+          supply_preference?: string | null
+          wants_branding?: string | null
+        }
+        Update: {
+          budget_range?: string | null
+          business_type?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          launch_timeline?: string | null
+          needs_training?: string | null
+          phone?: string | null
+          recommended_kit?: string | null
+          supply_preference?: string | null
+          wants_branding?: string | null
+        }
+        Relationships: []
       }
       ut_quotes: {
         Row: {

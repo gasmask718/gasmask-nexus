@@ -753,6 +753,13 @@ const UTBizOwnerOutreach = lazy(() => import('@/pages/os/unforgettable/UTBizOwne
 const UTCustomerAcquisition = lazy(() => import('@/pages/os/unforgettable/UTCustomerAcquisition'));
 const UTPricingIntelligence = lazy(() => import('@/pages/os/unforgettable/PricingIntelligence'));
 const UTGrowthSimulator = lazy(() => import('@/pages/os/unforgettable/UTGrowthSimulator'));
+const UTBrandKitManager = lazy(() => import('@/pages/os/unforgettable/UTBrandKitManager'));
+const UTSupplierManager = lazy(() => import('@/pages/os/unforgettable/UTSupplierManager'));
+const UTBrandingPipeline = lazy(() => import('@/pages/os/unforgettable/UTBrandingPipeline'));
+const UTBizOwnerDashboard = lazy(() => import('@/pages/os/unforgettable/UTBizOwnerDashboard'));
+const UTQuizResults = lazy(() => import('@/pages/os/unforgettable/UTQuizResults'));
+const UTConsultations = lazy(() => import('@/pages/os/unforgettable/UTConsultations'));
+const UTKitOrders = lazy(() => import('@/pages/os/unforgettable/UTKitOrders'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
@@ -3069,7 +3076,14 @@ export default function AppRoutes() {
           <Route path="biz-owner-outreach" element={<UTBizOwnerOutreach />} />
           <Route path="customer-acquisition" element={<UTCustomerAcquisition />} />
           <Route path="pricing-engine" element={<UTPricingEngine />} />
-          <Route path="growth-simulator" element={<UTGrowthSimulator />} />
+           <Route path="growth-simulator" element={<UTGrowthSimulator />} />
+           <Route path="brand-kit" element={<UTBrandKitManager />} />
+           <Route path="supplier-manager" element={<UTSupplierManager />} />
+           <Route path="branding-pipeline" element={<UTBrandingPipeline />} />
+           <Route path="biz-owner-dashboard" element={<UTBizOwnerDashboard />} />
+           <Route path="quiz-results" element={<UTQuizResults />} />
+           <Route path="consultations" element={<UTConsultations />} />
+           <Route path="kit-orders" element={<UTKitOrders />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
