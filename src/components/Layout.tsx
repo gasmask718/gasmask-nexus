@@ -508,6 +508,17 @@ const DYNASTY_NAVIGATION = {
       { path: '/dynasty-connect/clients', label: '💼 Client Management', icon: Briefcase },
     ],
   },
+  voiceOps: {
+    id: 'voice-ops',
+    name: '🎙️ Voice Ops',
+    items: [
+      { path: '/voice-ops', label: '🎙️ Voice Ops Dashboard', icon: Headphones },
+      { path: '/voice-ops/numbers', label: '📞 Phone Numbers', icon: Phone },
+      { path: '/voice-ops/agents', label: '🤖 Agents', icon: Bot },
+      { path: '/voice-ops/secrets', label: '🔑 Secrets', icon: Key },
+      { path: '/voice-ops/outbound', label: '📤 Outbound', icon: Send },
+    ],
+  },
   surplusFundsOs: {
     id: 'surplus-funds-os',
     name: '💰 Surplus Funds OS',
