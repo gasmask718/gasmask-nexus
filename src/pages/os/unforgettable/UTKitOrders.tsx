@@ -37,7 +37,7 @@ export default function UTKitOrders() {
 
   const addMutation = useMutation({
     mutationFn: async (values: any) => {
-      const { error } = await supabase.from('ut_kit_orders').insert(values);
+      const { error } = await supabase.from('ut_kit_orders' as any).insert(values);
       if (error) throw error;
     },
     onSuccess: () => {
