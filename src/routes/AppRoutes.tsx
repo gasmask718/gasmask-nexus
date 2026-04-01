@@ -1246,6 +1246,7 @@ export default function AppRoutes() {
           <Route path="live" element={<DCLiveCalls />} />
           <Route path="campaigns" element={<DCCampaigns />} />
           <Route path="campaigns/builder" element={<DCCampaignBuilder />} />
+          <Route path="campaigns/outbound" element={<DCCampaignManager />} />
           <Route path="agents" element={<DCAgents />} />
           <Route path="agents/playbooks" element={<DCAgents />} />
           <Route path="intelligence" element={<DCIntelligence />} />
