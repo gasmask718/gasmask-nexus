@@ -75070,6 +75070,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_automation_schedule: {
+        Row: {
+          api_connected: boolean | null
+          api_required: string | null
+          audience_type: string
+          channel: string
+          created_at: string | null
+          cron_expression: string
+          id: string
+          is_active: boolean | null
+          job_name: string
+          last_run_at: string | null
+          last_run_count: number | null
+          last_run_status: string | null
+          run_time_est: string
+          total_outreach_sent: number | null
+          total_runs: number | null
+        }
+        Insert: {
+          api_connected?: boolean | null
+          api_required?: string | null
+          audience_type: string
+          channel: string
+          created_at?: string | null
+          cron_expression: string
+          id?: string
+          is_active?: boolean | null
+          job_name: string
+          last_run_at?: string | null
+          last_run_count?: number | null
+          last_run_status?: string | null
+          run_time_est: string
+          total_outreach_sent?: number | null
+          total_runs?: number | null
+        }
+        Update: {
+          api_connected?: boolean | null
+          api_required?: string | null
+          audience_type?: string
+          channel?: string
+          created_at?: string | null
+          cron_expression?: string
+          id?: string
+          is_active?: boolean | null
+          job_name?: string
+          last_run_at?: string | null
+          last_run_count?: number | null
+          last_run_status?: string | null
+          run_time_est?: string
+          total_outreach_sent?: number | null
+          total_runs?: number | null
+        }
+        Relationships: []
+      }
       ut_business_packages: {
         Row: {
           active: boolean
@@ -75186,6 +75240,72 @@ export type Database = {
           selected_items?: Json | null
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ut_campaigns: {
+        Row: {
+          audience_type: string
+          channel: string
+          created_at: string | null
+          daily_limit: number | null
+          email_subject: string | null
+          email_template: string | null
+          id: string
+          is_automated: boolean | null
+          last_run_at: string | null
+          message_template: string | null
+          name: string
+          next_run_at: string | null
+          sequence_days: number[] | null
+          status: string | null
+          target_cities: string[] | null
+          total_conversions: number | null
+          total_responses: number | null
+          total_sent: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          audience_type: string
+          channel: string
+          created_at?: string | null
+          daily_limit?: number | null
+          email_subject?: string | null
+          email_template?: string | null
+          id?: string
+          is_automated?: boolean | null
+          last_run_at?: string | null
+          message_template?: string | null
+          name: string
+          next_run_at?: string | null
+          sequence_days?: number[] | null
+          status?: string | null
+          target_cities?: string[] | null
+          total_conversions?: number | null
+          total_responses?: number | null
+          total_sent?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          audience_type?: string
+          channel?: string
+          created_at?: string | null
+          daily_limit?: number | null
+          email_subject?: string | null
+          email_template?: string | null
+          id?: string
+          is_automated?: boolean | null
+          last_run_at?: string | null
+          message_template?: string | null
+          name?: string
+          next_run_at?: string | null
+          sequence_days?: number[] | null
+          status?: string | null
+          target_cities?: string[] | null
+          total_conversions?: number | null
+          total_responses?: number | null
+          total_sent?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -75712,6 +75832,63 @@ export type Database = {
           },
         ]
       }
+      ut_growth_reports: {
+        Row: {
+          ambassadors_found: number | null
+          business_owners_found: number | null
+          calls_made: number | null
+          created_at: string | null
+          customers_found: number | null
+          dms_queued: number | null
+          emails_sent: number | null
+          id: string
+          new_bookings: number | null
+          new_signups: number | null
+          report_date: string
+          responses_received: number | null
+          revenue_generated: number | null
+          sms_sent: number | null
+          staff_found: number | null
+          venues_found: number | null
+        }
+        Insert: {
+          ambassadors_found?: number | null
+          business_owners_found?: number | null
+          calls_made?: number | null
+          created_at?: string | null
+          customers_found?: number | null
+          dms_queued?: number | null
+          emails_sent?: number | null
+          id?: string
+          new_bookings?: number | null
+          new_signups?: number | null
+          report_date: string
+          responses_received?: number | null
+          revenue_generated?: number | null
+          sms_sent?: number | null
+          staff_found?: number | null
+          venues_found?: number | null
+        }
+        Update: {
+          ambassadors_found?: number | null
+          business_owners_found?: number | null
+          calls_made?: number | null
+          created_at?: string | null
+          customers_found?: number | null
+          dms_queued?: number | null
+          emails_sent?: number | null
+          id?: string
+          new_bookings?: number | null
+          new_signups?: number | null
+          report_date?: string
+          responses_received?: number | null
+          revenue_generated?: number | null
+          sms_sent?: number | null
+          staff_found?: number | null
+          venues_found?: number | null
+        }
+        Relationships: []
+      }
       ut_lead_sources: {
         Row: {
           api_key_configured: boolean | null
@@ -76098,6 +76275,77 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "ut_generated_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_outreach_log: {
+        Row: {
+          campaign_id: string | null
+          channel: string
+          clicked_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          message_sent: string | null
+          opened_at: string | null
+          prospect_id: string | null
+          prospect_table: string | null
+          replied_at: string | null
+          sendgrid_id: string | null
+          status: string | null
+          subject_sent: string | null
+          to_email: string | null
+          to_instagram: string | null
+          to_number: string | null
+          twilio_sid: string | null
+        }
+        Insert: {
+          campaign_id?: string | null
+          channel: string
+          clicked_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_sent?: string | null
+          opened_at?: string | null
+          prospect_id?: string | null
+          prospect_table?: string | null
+          replied_at?: string | null
+          sendgrid_id?: string | null
+          status?: string | null
+          subject_sent?: string | null
+          to_email?: string | null
+          to_instagram?: string | null
+          to_number?: string | null
+          twilio_sid?: string | null
+        }
+        Update: {
+          campaign_id?: string | null
+          channel?: string
+          clicked_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_sent?: string | null
+          opened_at?: string | null
+          prospect_id?: string | null
+          prospect_table?: string | null
+          replied_at?: string | null
+          sendgrid_id?: string | null
+          status?: string | null
+          subject_sent?: string | null
+          to_email?: string | null
+          to_instagram?: string | null
+          to_number?: string | null
+          twilio_sid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_outreach_log_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "ut_campaigns"
             referencedColumns: ["id"]
           },
         ]
