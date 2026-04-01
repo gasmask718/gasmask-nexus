@@ -25,11 +25,11 @@ interface PhoneNumber {
   campaigns_using: number;
 }
 
-// Mock data
+// Seeded page state
 const mockPhoneNumbers: PhoneNumber[] = [
   {
-    id: '1',
-    phone_number: '+1 (555) 123-4567',
+    id: 'main-line',
+    phone_number: '+18484004179',
     type: 'both',
     provider: 'twilio',
     label: 'Main Line',
@@ -37,31 +37,7 @@ const mockPhoneNumbers: PhoneNumber[] = [
     is_active: true,
     max_calls_per_minute: 30,
     max_sms_per_minute: 60,
-    campaigns_using: 3,
-  },
-  {
-    id: '2',
-    phone_number: '+1 (555) 234-5678',
-    type: 'call',
-    provider: 'twilio',
-    label: 'Reactivation Dialer',
-    is_default: false,
-    is_active: true,
-    max_calls_per_minute: 50,
-    max_sms_per_minute: 0,
-    campaigns_using: 2,
-  },
-  {
-    id: '3',
-    phone_number: '+1 (555) 345-6789',
-    type: 'sms',
-    provider: 'signalwire',
-    label: 'Promo Texts',
-    is_default: false,
-    is_active: true,
-    max_calls_per_minute: 0,
-    max_sms_per_minute: 100,
-    campaigns_using: 1,
+    campaigns_using: 0,
   },
 ];
 
