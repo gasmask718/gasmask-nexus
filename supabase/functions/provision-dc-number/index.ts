@@ -25,26 +25,27 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
   const authHeader = `Basic ${btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)}`;
   const body = await req.json();
-  const { action, area_code, phone_number, friendly_name, number_type, toll_free_prefix } = body;
+  const { action, area_code, phone_number, friendly_name, number_type, toll_free_prefix, country } = body;
 
   try {
     // ACTION: search
     if (action === "search") {
       let searchUrl: string;
+      const isDR = country === "DR";
 
       if (number_type === "toll-free") {
-        // Toll-free search
         const prefix = toll_free_prefix || "800";
         searchUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/TollFree.json?VoiceEnabled=true&SmsEnabled=true&Limit=5&Contains=${prefix}`;
+      } else if (isDR) {
+        // DR numbers are NANP — search US/Local with DR area codes
+        const drCode = area_code || "809";
+        searchUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/Local.json?AreaCode=${drCode}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
       } else {
-        // Local search (default)
         const areaCode = area_code || "929";
         searchUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/Local.json?AreaCode=${areaCode}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
       }
 
-      const res = await fetch(searchUrl, {
-        headers: { Authorization: authHeader },
-      });
+      const res = await fetch(searchUrl, { headers: { Authorization: authHeader } });
       const data = await res.json();
 
       if (!res.ok) {
@@ -79,10 +80,7 @@ serve(async (req) => {
 
       const res = await fetch(purchaseUrl, {
         method: "POST",
-        headers: {
-          Authorization: authHeader,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
+        headers: { Authorization: authHeader, "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({
           PhoneNumber: phone_number,
           FriendlyName: friendly_name || "Dynasty Connect AI",
@@ -102,9 +100,9 @@ serve(async (req) => {
       }
 
       const isTollFree = number_type === "toll-free";
-      const monthlyCost = isTollFree ? 2.0 : 1.0;
+      const isDR = country === "DR";
+      const monthlyCost = isDR ? 4.0 : isTollFree ? 2.0 : 1.0;
 
-      // Save to dc_phone_numbers
       const { error: dbError } = await supabase.from("dc_phone_numbers").insert({
         phone_number: purchased.phone_number,
         sid: purchased.sid,
@@ -113,26 +111,24 @@ serve(async (req) => {
         status: "active",
         is_ai_number: true,
         monthly_cost: monthlyCost,
-        number_type: isTollFree ? "toll-free" : "local",
+        number_type: isDR ? "dr-local" : isTollFree ? "toll-free" : "local",
       });
 
-      if (dbError) {
-        console.error("DB insert error:", dbError);
-      }
+      if (dbError) console.error("DB insert error:", dbError);
 
       return new Response(JSON.stringify({
         success: true,
         phone_number: purchased.phone_number,
         sid: purchased.sid,
         friendly_name: purchased.friendly_name,
-        number_type: isTollFree ? "toll-free" : "local",
+        number_type: isDR ? "dr-local" : isTollFree ? "toll-free" : "local",
         monthly_cost: monthlyCost,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid action. Use 'search' or 'purchase'" }), {
+    return new Response(JSON.stringify({ error: "Invalid action" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
