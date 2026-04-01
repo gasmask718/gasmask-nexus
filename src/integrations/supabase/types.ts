@@ -79108,6 +79108,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_product_needs: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          outreach_sent: number | null
+          priority: string | null
+          product_name: string
+          quantity_needed: number | null
+          status: string | null
+          suppliers_found: number | null
+          target_unit_price: number | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          outreach_sent?: number | null
+          priority?: string | null
+          product_name: string
+          quantity_needed?: number | null
+          status?: string | null
+          suppliers_found?: number | null
+          target_unit_price?: number | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          outreach_sent?: number | null
+          priority?: string | null
+          product_name?: string
+          quantity_needed?: number | null
+          status?: string | null
+          suppliers_found?: number | null
+          target_unit_price?: number | null
+        }
+        Relationships: []
+      }
       ut_products: {
         Row: {
           auto_order_enabled: boolean | null
@@ -80328,6 +80370,57 @@ export type Database = {
           },
         ]
       }
+      ut_supplier_messages: {
+        Row: {
+          attachments: Json | null
+          body: string
+          channel: string
+          created_at: string | null
+          direction: string
+          id: string
+          is_read: boolean | null
+          rfq_id: string | null
+          subject: string | null
+          supplier_email: string | null
+          supplier_id: string | null
+          supplier_name: string
+          supplier_whatsapp: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          body: string
+          channel: string
+          created_at?: string | null
+          direction: string
+          id?: string
+          is_read?: boolean | null
+          rfq_id?: string | null
+          subject?: string | null
+          supplier_email?: string | null
+          supplier_id?: string | null
+          supplier_name: string
+          supplier_whatsapp?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          body?: string
+          channel?: string
+          created_at?: string | null
+          direction?: string
+          id?: string
+          is_read?: boolean | null
+          rfq_id?: string | null
+          subject?: string | null
+          supplier_email?: string | null
+          supplier_id?: string | null
+          supplier_name?: string
+          supplier_whatsapp?: string | null
+          thread_id?: string | null
+        }
+        Relationships: []
+      }
       ut_supplier_negotiations: {
         Row: {
           ai_strategy_mode: string | null
@@ -80431,6 +80524,147 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ut_supplier_quotes: {
+        Row: {
+          branding_cost: number | null
+          confirmed_at: string | null
+          created_at: string | null
+          deposit_amount: number | null
+          deposit_sent: boolean | null
+          id: string
+          notes: string | null
+          option_a_cost: number | null
+          option_a_days: number | null
+          option_a_landed: number | null
+          option_a_method: string | null
+          option_b_cost: number | null
+          option_b_days: number | null
+          option_b_landed: number | null
+          option_b_method: string | null
+          option_c_cost: number | null
+          option_c_days: number | null
+          option_c_landed: number | null
+          option_c_method: string | null
+          product_cost: number | null
+          product_name: string | null
+          quantity: number | null
+          rfq_response_id: string | null
+          selected_option: string | null
+          status: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+        }
+        Insert: {
+          branding_cost?: number | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          deposit_sent?: boolean | null
+          id?: string
+          notes?: string | null
+          option_a_cost?: number | null
+          option_a_days?: number | null
+          option_a_landed?: number | null
+          option_a_method?: string | null
+          option_b_cost?: number | null
+          option_b_days?: number | null
+          option_b_landed?: number | null
+          option_b_method?: string | null
+          option_c_cost?: number | null
+          option_c_days?: number | null
+          option_c_landed?: number | null
+          option_c_method?: string | null
+          product_cost?: number | null
+          product_name?: string | null
+          quantity?: number | null
+          rfq_response_id?: string | null
+          selected_option?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+        }
+        Update: {
+          branding_cost?: number | null
+          confirmed_at?: string | null
+          created_at?: string | null
+          deposit_amount?: number | null
+          deposit_sent?: boolean | null
+          id?: string
+          notes?: string | null
+          option_a_cost?: number | null
+          option_a_days?: number | null
+          option_a_landed?: number | null
+          option_a_method?: string | null
+          option_b_cost?: number | null
+          option_b_days?: number | null
+          option_b_landed?: number | null
+          option_b_method?: string | null
+          option_c_cost?: number | null
+          option_c_days?: number | null
+          option_c_landed?: number | null
+          option_c_method?: string | null
+          product_cost?: number | null
+          product_name?: string | null
+          quantity?: number | null
+          rfq_response_id?: string | null
+          selected_option?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+        }
+        Relationships: []
+      }
+      ut_supplier_threads: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          message_count: number | null
+          product_name: string | null
+          rfq_id: string | null
+          status: string | null
+          subject: string | null
+          supplier_email: string | null
+          supplier_id: string | null
+          supplier_name: string
+          supplier_whatsapp: string | null
+          unread_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          message_count?: number | null
+          product_name?: string | null
+          rfq_id?: string | null
+          status?: string | null
+          subject?: string | null
+          supplier_email?: string | null
+          supplier_id?: string | null
+          supplier_name: string
+          supplier_whatsapp?: string | null
+          unread_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          message_count?: number | null
+          product_name?: string | null
+          rfq_id?: string | null
+          status?: string | null
+          subject?: string | null
+          supplier_email?: string | null
+          supplier_id?: string | null
+          supplier_name?: string
+          supplier_whatsapp?: string | null
+          unread_count?: number | null
+        }
+        Relationships: []
       }
       ut_suppliers: {
         Row: {
