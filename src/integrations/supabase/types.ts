@@ -75972,9 +75972,14 @@ export type Database = {
           exclusivity_status: string | null
           id: string
           is_active: boolean | null
+          lead_time_priority: string | null
+          negotiated_discount_tiers: Json | null
           negotiated_terms: Json | null
           performance_score: number | null
+          preferred_partner: boolean | null
+          priority_production: boolean | null
           priority_status: string | null
+          redundancy_role: string | null
           supplier_id: string | null
           supplier_name: string
           tier: string | null
@@ -75989,9 +75994,14 @@ export type Database = {
           exclusivity_status?: string | null
           id?: string
           is_active?: boolean | null
+          lead_time_priority?: string | null
+          negotiated_discount_tiers?: Json | null
           negotiated_terms?: Json | null
           performance_score?: number | null
+          preferred_partner?: boolean | null
+          priority_production?: boolean | null
           priority_status?: string | null
+          redundancy_role?: string | null
           supplier_id?: string | null
           supplier_name: string
           tier?: string | null
@@ -76006,9 +76016,14 @@ export type Database = {
           exclusivity_status?: string | null
           id?: string
           is_active?: boolean | null
+          lead_time_priority?: string | null
+          negotiated_discount_tiers?: Json | null
           negotiated_terms?: Json | null
           performance_score?: number | null
+          preferred_partner?: boolean | null
+          priority_production?: boolean | null
           priority_status?: string | null
+          redundancy_role?: string | null
           supplier_id?: string | null
           supplier_name?: string
           tier?: string | null
@@ -80175,6 +80190,56 @@ export type Database = {
           },
         ]
       }
+      ut_reorder_rules: {
+        Row: {
+          auto_notify: boolean | null
+          category_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          reorder_qty: number | null
+          rule_type: string
+          trigger_days: number | null
+          trigger_threshold: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_notify?: boolean | null
+          category_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          reorder_qty?: number | null
+          rule_type: string
+          trigger_days?: number | null
+          trigger_threshold?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_notify?: boolean | null
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          reorder_qty?: number | null
+          rule_type?: string
+          trigger_days?: number | null
+          trigger_threshold?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_reorder_rules_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_revenue_snapshots: {
         Row: {
           ambassador_payouts: number | null
@@ -81049,6 +81114,76 @@ export type Database = {
           },
         ]
       }
+      ut_supplier_feedback: {
+        Row: {
+          branding_score: number | null
+          category_id: string | null
+          communication_score: number | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          order_ref: string | null
+          overall_score: number | null
+          quality_score: number | null
+          reviewed_by: string | null
+          speed_score: number | null
+          supplier_id: string | null
+          supplier_name: string
+        }
+        Insert: {
+          branding_score?: number | null
+          category_id?: string | null
+          communication_score?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_ref?: string | null
+          overall_score?: number | null
+          quality_score?: number | null
+          reviewed_by?: string | null
+          speed_score?: number | null
+          supplier_id?: string | null
+          supplier_name: string
+        }
+        Update: {
+          branding_score?: number | null
+          category_id?: string | null
+          communication_score?: number | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          order_ref?: string | null
+          overall_score?: number | null
+          quality_score?: number | null
+          reviewed_by?: string | null
+          speed_score?: number | null
+          supplier_id?: string | null
+          supplier_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_supplier_feedback_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_feedback_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_feedback_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_supplier_messages: {
         Row: {
           attachments: Json | null
@@ -81404,6 +81539,67 @@ export type Database = {
           unread_count?: number | null
         }
         Relationships: []
+      }
+      ut_supplier_volume_history: {
+        Row: {
+          avg_unit_cost: number | null
+          category_id: string | null
+          created_at: string | null
+          id: string
+          order_count: number | null
+          period_month: string
+          supplier_id: string | null
+          supplier_name: string
+          total_spend: number | null
+          total_units: number | null
+        }
+        Insert: {
+          avg_unit_cost?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          order_count?: number | null
+          period_month: string
+          supplier_id?: string | null
+          supplier_name: string
+          total_spend?: number | null
+          total_units?: number | null
+        }
+        Update: {
+          avg_unit_cost?: number | null
+          category_id?: string | null
+          created_at?: string | null
+          id?: string
+          order_count?: number | null
+          period_month?: string
+          supplier_id?: string | null
+          supplier_name?: string
+          total_spend?: number | null
+          total_units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_supplier_volume_history_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "ut_domination_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_volume_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_volume_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_suppliers: {
         Row: {
