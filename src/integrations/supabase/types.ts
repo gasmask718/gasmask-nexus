@@ -91171,6 +91171,7 @@ export type Database = {
         Args: { p_business_id: string }
         Returns: Json
       }
+      distribute_leads_to_vas: { Args: never; Returns: Json }
       enrich_store_contacts: { Args: never; Returns: Json }
       ensure_store_brand_relationships: {
         Args: { p_store_id: string }
@@ -91555,6 +91556,7 @@ export type Database = {
         Args: { _route_id: string; _user_id: string }
         Returns: boolean
       }
+      is_brandaro_admin: { Args: { _user_id: string }; Returns: boolean }
       is_business_admin: {
         Args: { _business_id: string; _user_id: string }
         Returns: boolean
