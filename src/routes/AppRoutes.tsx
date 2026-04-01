@@ -3114,9 +3114,12 @@ export default function AppRoutes() {
            <Route path="payout-manager" element={<UTPayoutManager />} />
            <Route path="ai-brain" element={<UTAIBrain />} />
            <Route path="performance-insights" element={<UTPerformanceInsights />} />
-           <Route path="rfq-engine" element={<UTRFQEngine />} />
-           <Route path="shipping-tracker" element={<UTShippingTracker />} />
-           <Route path="supplier-finder" element={<UTSupplierFinder />} />
+            <Route path="rfq-engine" element={<UTRFQEngine />} />
+            <Route path="shipping-tracker" element={<UTShippingTracker />} />
+            <Route path="supplier-finder" element={<UTSupplierFinder />} />
+            <Route path="supplier-inbox" element={<UTSupplierInbox />} />
+            <Route path="supplier-decision" element={<UTSupplierDecisionEngine />} />
+            <Route path="supplier-command" element={<UTSupplierCommandDashboard />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />

@@ -81,3 +81,6 @@ export { default as UTPerformanceInsights } from './UTPerformanceInsights';
 export { default as UTRFQEngine } from './UTRFQEngine';
 export { default as UTShippingTracker } from './UTShippingTracker';
 export { default as UTSupplierFinder } from './UTSupplierFinder';
+export { default as UTSupplierInbox } from './UTSupplierInbox';
+export { default as UTSupplierDecisionEngine } from './UTSupplierDecisionEngine';
+export { default as UTSupplierCommandDashboard } from './UTSupplierCommandDashboard';

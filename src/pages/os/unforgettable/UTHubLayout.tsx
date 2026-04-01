@@ -95,6 +95,9 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/rfq-engine', label: 'RFQ Engine', icon: Send },
       { path: '/os/unforgettable/supplier-finder', label: 'Supplier Finder', icon: Target },
       { path: '/os/unforgettable/shipping-tracker', label: 'Shipping Tracker', icon: Package },
+      { path: '/os/unforgettable/supplier-inbox', label: 'Supplier Inbox', icon: Store },
+      { path: '/os/unforgettable/supplier-decision', label: 'Decision Engine', icon: Trophy },
+      { path: '/os/unforgettable/supplier-command', label: 'Supplier Command', icon: BarChart3 },
     ],
   },
   {
