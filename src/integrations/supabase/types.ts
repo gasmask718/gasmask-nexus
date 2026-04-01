@@ -80328,6 +80328,110 @@ export type Database = {
           },
         ]
       }
+      ut_supplier_negotiations: {
+        Row: {
+          ai_strategy_mode: string | null
+          best_offer_branding: number | null
+          best_offer_moq: number | null
+          best_offer_price: number | null
+          best_offer_shipping: number | null
+          created_at: string | null
+          current_branding_cost: number | null
+          current_moq: number | null
+          current_offer_price: number | null
+          current_shipping_cost: number | null
+          id: string
+          last_message: string | null
+          last_supplier_response: string | null
+          max_rounds: number | null
+          moq_reduction_pct: number | null
+          negotiation_round: number | null
+          notes: string | null
+          original_moq: number | null
+          original_price: number | null
+          price_reduction_pct: number | null
+          rfq_id: string | null
+          shipping_savings: number | null
+          status: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          target_moq: number | null
+          target_price: number | null
+          total_savings: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_strategy_mode?: string | null
+          best_offer_branding?: number | null
+          best_offer_moq?: number | null
+          best_offer_price?: number | null
+          best_offer_shipping?: number | null
+          created_at?: string | null
+          current_branding_cost?: number | null
+          current_moq?: number | null
+          current_offer_price?: number | null
+          current_shipping_cost?: number | null
+          id?: string
+          last_message?: string | null
+          last_supplier_response?: string | null
+          max_rounds?: number | null
+          moq_reduction_pct?: number | null
+          negotiation_round?: number | null
+          notes?: string | null
+          original_moq?: number | null
+          original_price?: number | null
+          price_reduction_pct?: number | null
+          rfq_id?: string | null
+          shipping_savings?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          target_moq?: number | null
+          target_price?: number | null
+          total_savings?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_strategy_mode?: string | null
+          best_offer_branding?: number | null
+          best_offer_moq?: number | null
+          best_offer_price?: number | null
+          best_offer_shipping?: number | null
+          created_at?: string | null
+          current_branding_cost?: number | null
+          current_moq?: number | null
+          current_offer_price?: number | null
+          current_shipping_cost?: number | null
+          id?: string
+          last_message?: string | null
+          last_supplier_response?: string | null
+          max_rounds?: number | null
+          moq_reduction_pct?: number | null
+          negotiation_round?: number | null
+          notes?: string | null
+          original_moq?: number | null
+          original_price?: number | null
+          price_reduction_pct?: number | null
+          rfq_id?: string | null
+          shipping_savings?: number | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          target_moq?: number | null
+          target_price?: number | null
+          total_savings?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_supplier_negotiations_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_suppliers: {
         Row: {
           api_enabled: boolean | null

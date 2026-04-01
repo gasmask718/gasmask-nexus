@@ -84,3 +84,5 @@ export { default as UTSupplierFinder } from './UTSupplierFinder';
 export { default as UTSupplierInbox } from './UTSupplierInbox';
 export { default as UTSupplierDecisionEngine } from './UTSupplierDecisionEngine';
 export { default as UTSupplierCommandDashboard } from './UTSupplierCommandDashboard';
+export { default as UTNegotiationAgent } from './UTNegotiationAgent';
+export { default as UTNegotiationDashboard } from './UTNegotiationDashboard';
