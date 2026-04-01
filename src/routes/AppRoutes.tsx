@@ -793,6 +793,7 @@ const UTSupplierInboxV2 = lazy(() => import('@/pages/os/unforgettable/UTSupplier
 const UTAutoOutreach = lazy(() => import('@/pages/os/unforgettable/UTAutoOutreach'));
 const UTShippingQuotes = lazy(() => import('@/pages/os/unforgettable/UTShippingQuotes'));
 const UTAutoFinder = lazy(() => import('@/pages/os/unforgettable/UTAutoFinder'));
+const UTCategoryDomination = lazy(() => import('@/pages/os/unforgettable/UTCategoryDomination'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
