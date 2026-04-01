@@ -81153,6 +81153,7 @@ export type Database = {
           lead_id: string | null
           recording_url: string | null
           transcript: string | null
+          trend_analysis: Json | null
           twilio_number: string
           va_id: string
           va_notes: string | null
@@ -81171,6 +81172,7 @@ export type Database = {
           lead_id?: string | null
           recording_url?: string | null
           transcript?: string | null
+          trend_analysis?: Json | null
           twilio_number: string
           va_id: string
           va_notes?: string | null
@@ -81189,6 +81191,7 @@ export type Database = {
           lead_id?: string | null
           recording_url?: string | null
           transcript?: string | null
+          trend_analysis?: Json | null
           twilio_number?: string
           va_id?: string
           va_notes?: string | null
@@ -81250,6 +81253,41 @@ export type Database = {
           {
             foreignKeyName: "va_daily_goals_va_id_fkey"
             columns: ["va_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_dialer_settings: {
+        Row: {
+          dial_pace_seconds: number
+          id: string
+          no_answer_timeout_seconds: number
+          queue_priority: Json
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          dial_pace_seconds?: number
+          id?: string
+          no_answer_timeout_seconds?: number
+          queue_priority?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          dial_pace_seconds?: number
+          id?: string
+          no_answer_timeout_seconds?: number
+          queue_priority?: Json
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_dialer_settings_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -81440,6 +81478,48 @@ export type Database = {
         }
         Relationships: []
       }
+      va_monitor_logs: {
+        Row: {
+          admin_id: string
+          call_log_id: string | null
+          ended_at: string | null
+          id: string
+          mode: string | null
+          started_at: string | null
+        }
+        Insert: {
+          admin_id: string
+          call_log_id?: string | null
+          ended_at?: string | null
+          id?: string
+          mode?: string | null
+          started_at?: string | null
+        }
+        Update: {
+          admin_id?: string
+          call_log_id?: string | null
+          ended_at?: string | null
+          id?: string
+          mode?: string | null
+          started_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_monitor_logs_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "va_monitor_logs_call_log_id_fkey"
+            columns: ["call_log_id"]
+            isOneToOne: false
+            referencedRelation: "va_call_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       va_performance_metrics: {
         Row: {
           ai_evaluation_score: number | null
@@ -81603,6 +81683,9 @@ export type Database = {
           id: string
           is_active: boolean | null
           language: string
+          pause_reason: string | null
+          paused_at: string | null
+          paused_by: string | null
           started_at: string | null
           twilio_number_id: string
           va_id: string
@@ -81612,6 +81695,9 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           language?: string
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
           started_at?: string | null
           twilio_number_id: string
           va_id: string
@@ -81621,11 +81707,21 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           language?: string
+          pause_reason?: string | null
+          paused_at?: string | null
+          paused_by?: string | null
           started_at?: string | null
           twilio_number_id?: string
           va_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "va_sessions_paused_by_fkey"
+            columns: ["paused_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "va_sessions_twilio_number_id_fkey"
             columns: ["twilio_number_id"]
@@ -81777,6 +81873,44 @@ export type Database = {
             columns: ["va_id"]
             isOneToOne: false
             referencedRelation: "vas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      va_voicemail_templates: {
+        Row: {
+          audio_url: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          label: string | null
+          language: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          audio_url: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          language: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          audio_url?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          language?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "va_voicemail_templates_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
