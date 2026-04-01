@@ -3151,6 +3151,7 @@ export default function AppRoutes() {
             <Route path="auto-outreach" element={<UTAutoOutreach />} />
             <Route path="shipping-quotes" element={<UTShippingQuotes />} />
             <Route path="auto-finder" element={<UTAutoFinder />} />
+            <Route path="category-domination" element={<UTCategoryDomination />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
