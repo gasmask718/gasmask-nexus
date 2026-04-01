@@ -25,7 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   Users, Phone, BookOpen, HelpCircle, FileText, Settings, LogOut, Headset, PanelLeft,
-  Search, ArrowLeft, Zap, Trophy, Clock,
+  Search, ArrowLeft, Zap, Trophy, Clock, UserCircle,
 } from 'lucide-react';
 
 type VAView = 'leads' | 'call' | 'scripts' | 'faqs' | 'invoices' | 'settings' | 'discovery' | 'dialer' | 'leaderboard' | 'callbacks';
