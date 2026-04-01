@@ -3003,6 +3003,8 @@ export default function AppRoutes() {
           <Route path="va-manager" element={<VAManagerPage />} />
           <Route path="va-workspace" element={<VAWorkspacePage />} />
           <Route path="va-performance" element={<VAPerformancePage />} />
+          <Route path="va-roster" element={<VARosterPage />} />
+          <Route path="ai-distribution" element={<AIDistributionPage />} />
           <Route path="closer-ai" element={<CloserAIPage />} />
 
           {/* ── Pipeline ── */}

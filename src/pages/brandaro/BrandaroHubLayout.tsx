@@ -24,9 +24,11 @@ const hubNav = [
   { section: "Sales Floor", items: [
     { title: "Live Calls", path: "/brandaro/calling", icon: Phone },
     { title: "VA Dashboard", path: "/brandaro/va-dashboard", icon: Users },
+    { title: "VA Roster", path: "/brandaro/va-roster", icon: Users },
     { title: "VA Command", path: "/brandaro/va-command", icon: UserCog },
     { title: "VA Manager", path: "/brandaro/va-manager", icon: GraduationCap },
     { title: "VA Performance", path: "/brandaro/va-performance", icon: BarChart3 },
+    { title: "AI Distribution", path: "/brandaro/ai-distribution", icon: Brain },
     { title: "Closer AI", path: "/brandaro/closer-ai", icon: Flame },
   ]},
   { section: "Pipeline", items: [
