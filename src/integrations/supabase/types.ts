@@ -79730,6 +79730,50 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_shipping_quotes: {
+        Row: {
+          cost: number | null
+          created_at: string | null
+          days: number | null
+          forwarder_name: string | null
+          id: string
+          method: string
+          notes: string | null
+          rfq_id: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string | null
+          days?: number | null
+          forwarder_name?: string | null
+          id?: string
+          method: string
+          notes?: string | null
+          rfq_id?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string | null
+          days?: number | null
+          forwarder_name?: string | null
+          id?: string
+          method?: string
+          notes?: string | null
+          rfq_id?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_shipping_quotes_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_staff: {
         Row: {
           address_line_1: string | null
@@ -80225,6 +80269,64 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      ut_supplier_conversations: {
+        Row: {
+          attachment_url: string | null
+          channel: string
+          created_at: string | null
+          direction: string
+          id: string
+          message: string
+          read_status: boolean | null
+          rfq_id: string | null
+          supplier_id: string | null
+        }
+        Insert: {
+          attachment_url?: string | null
+          channel?: string
+          created_at?: string | null
+          direction?: string
+          id?: string
+          message: string
+          read_status?: boolean | null
+          rfq_id?: string | null
+          supplier_id?: string | null
+        }
+        Update: {
+          attachment_url?: string | null
+          channel?: string
+          created_at?: string | null
+          direction?: string
+          id?: string
+          message?: string
+          read_status?: boolean | null
+          rfq_id?: string | null
+          supplier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_supplier_conversations_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_conversations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "ut_suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ut_supplier_conversations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "v_ut_supplier_scorecard"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ut_suppliers: {
         Row: {
