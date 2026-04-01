@@ -775,6 +775,9 @@ const UTPerformanceInsights = lazy(() => import('@/pages/os/unforgettable/UTPerf
 const UTRFQEngine = lazy(() => import('@/pages/os/unforgettable/UTRFQEngine'));
 const UTShippingTracker = lazy(() => import('@/pages/os/unforgettable/UTShippingTracker'));
 const UTSupplierFinder = lazy(() => import('@/pages/os/unforgettable/UTSupplierFinder'));
+const UTSupplierInbox = lazy(() => import('@/pages/os/unforgettable/UTSupplierInbox'));
+const UTSupplierDecisionEngine = lazy(() => import('@/pages/os/unforgettable/UTSupplierDecisionEngine'));
+const UTSupplierCommandDashboard = lazy(() => import('@/pages/os/unforgettable/UTSupplierCommandDashboard'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
