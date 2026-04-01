@@ -98,6 +98,8 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/supplier-inbox', label: 'Supplier Inbox', icon: Store },
       { path: '/os/unforgettable/supplier-decision', label: 'Decision Engine', icon: Trophy },
       { path: '/os/unforgettable/supplier-command', label: 'Supplier Command', icon: BarChart3 },
+      { path: '/os/unforgettable/negotiation-agent', label: 'AI Negotiation Agent', icon: Bot },
+      { path: '/os/unforgettable/negotiation-dashboard', label: 'Negotiation Dashboard', icon: TrendingUp },
     ],
   },
   {

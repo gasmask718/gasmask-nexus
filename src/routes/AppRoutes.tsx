@@ -3122,6 +3122,8 @@ export default function AppRoutes() {
             <Route path="supplier-inbox" element={<UTSupplierInbox />} />
             <Route path="supplier-decision" element={<UTSupplierDecisionEngine />} />
             <Route path="supplier-command" element={<UTSupplierCommandDashboard />} />
+            <Route path="negotiation-agent" element={<UTNegotiationAgent />} />
+            <Route path="negotiation-dashboard" element={<UTNegotiationDashboard />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
