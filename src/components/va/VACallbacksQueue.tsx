@@ -38,7 +38,7 @@ export function VACallbacksQueue({ onDialLead }: VACallbacksQueueProps) {
       setCallbacks(data.map((d: any) => ({
         ...d,
         lead_name: d.brandaro_qualified_leads?.business_name || 'Unknown',
-        lead_phone: d.brandaro_qualified_leads?.phone || '',
+        lead_phone: d.brandaro_qualified_leads?.phone_number || '',
       })));
     }
   };

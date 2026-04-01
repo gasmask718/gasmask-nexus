@@ -34,7 +34,7 @@ export function VALeaderboard({ dateFilter }: VALeaderboardProps) {
     if (data) {
       setEntries(data.map((d: any) => ({
         ...d,
-        va_name: d.profiles?.full_name || 'VA',
+        va_name: d.profiles?.name || 'VA',
       })));
     }
   };
