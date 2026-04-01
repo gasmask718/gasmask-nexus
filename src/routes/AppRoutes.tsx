@@ -465,6 +465,7 @@ const VoiceMatrixPage = lazy(() => import('@/pages/communication/voicematrix/Voi
 const CommSettingsPage = lazy(() => import('@/pages/communication/settings/SettingsPage'));
 const PhoneNumbersSettingsPage = lazy(() => import('@/pages/communication/settings/PhoneNumbersPage'));
 const BusinessPhoneNumbersPage = lazy(() => import('@/pages/communication/BusinessPhoneNumbers'));
+const PhoneProvisioningPage = lazy(() => import('@/pages/communication/PhoneProvisioningPage'));
 const UserCallSettingsPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.UserCallSettingsPage })));
 const BusinessHoursPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.BusinessHoursPage })));
 const AfterHoursRoutingPage = lazy(() => import('@/pages/communication/call-settings').then(m => ({ default: m.AfterHoursRoutingPage })));
@@ -1957,6 +1958,7 @@ export default function AppRoutes() {
           <Route path="settings" element={<CommSettingsPage />} />
           <Route path="phone-numbers" element={<PhoneNumbersSettingsPage />} />
           <Route path="business-numbers" element={<BusinessPhoneNumbersPage />} />
+          <Route path="provision-numbers" element={<PhoneProvisioningPage />} />
           <Route path="routing" element={<RoutingPage />} />
           <Route path="call-diagnostics" element={<CallSystemDiagnosticsPage />} />
           <Route path="dialer-health" element={<DialerHealthPage />} />

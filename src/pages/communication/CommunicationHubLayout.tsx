@@ -10,7 +10,8 @@ import {
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus, Megaphone,
   Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail,
-  Clock, Moon, Rocket, Target, Bot, Hash, FileText, Eye, Gauge
+  Clock, Moon, Rocket, Target, Bot, Hash, FileText, Eye, Gauge,
+  ShoppingCart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
@@ -107,6 +108,7 @@ const FLOOR_5_CONTROL: FloorSection = {
     { path: "settings", label: "Settings", icon: Settings, highlight: true },
     { path: "phone-numbers", label: "Phone Numbers", icon: Hash },
     { path: "business-numbers", label: "Caller IDs & Routing", icon: PhoneForwarded },
+    { path: "provision-numbers", label: "Buy Numbers", icon: ShoppingCart },
     { path: "routing", label: "Routing", icon: Route },
     { path: "call-diagnostics", label: "Diagnostics", icon: Wrench },
     { path: "dialer-health", label: "Dialer Health", icon: BarChart3 },
