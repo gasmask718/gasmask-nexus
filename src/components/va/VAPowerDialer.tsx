@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, X, FileText,
   Send, Flame, Sun, Snowflake, SkipForward, Voicemail,
-  MessageSquare, Target,
+  MessageSquare, Target, PhoneCall,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAInvoiceModal } from './VAInvoiceModal';
