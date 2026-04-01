@@ -845,6 +845,18 @@ const Layout = ({ children }: LayoutProps) => {
         )}
       </div>
 
+      {/* 🎙️ VOICE OPS — STANDALONE HUB */}
+      <div className="pt-2 border-t border-purple-500/30">
+        <div className="px-3 py-1 text-[10px] font-semibold uppercase text-purple-400/80 tracking-wider">
+          🎙️ Voice Ops
+        </div>
+        {renderSection(
+          DYNASTY_NAVIGATION.voiceOps.id,
+          DYNASTY_NAVIGATION.voiceOps.name,
+          DYNASTY_NAVIGATION.voiceOps.items
+        )}
+      </div>
+
       {/* 💰 SURPLUS FUNDS OS — STANDALONE HUB */}
       <div className="pt-2 border-t border-amber-500/30">
         <div className="px-3 py-1 text-[10px] font-semibold uppercase text-amber-500/80 tracking-wider">
