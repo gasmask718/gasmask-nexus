@@ -10,7 +10,8 @@ import {
   Languages, Radio, Settings, ArrowLeft, ChevronLeft, ChevronRight,
   Search, Plus, PhoneCall, MessageCircle, PhoneOutgoing, MessageSquarePlus, Megaphone,
   Volume2, DollarSign, PhoneForwarded, Wrench, UserCog, Route, Voicemail,
-  Clock, Moon, Rocket, Target, Bot, Hash, FileText, Eye, Gauge
+  Clock, Moon, Rocket, Target, Bot, Hash, FileText, Eye, Gauge,
+  ShoppingCart
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SendMessageModal } from "@/components/communication/SendMessageModal";
