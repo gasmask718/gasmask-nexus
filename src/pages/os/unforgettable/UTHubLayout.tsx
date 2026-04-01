@@ -92,6 +92,9 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
       { path: '/os/unforgettable/brand-kit', label: 'Brand Kit Manager', icon: Palette },
       { path: '/os/unforgettable/supplier-manager', label: 'Supplier Manager', icon: Factory },
       { path: '/os/unforgettable/branding-pipeline', label: 'Branding Pipeline', icon: FileCheck },
+      { path: '/os/unforgettable/rfq-engine', label: 'RFQ Engine', icon: Send },
+      { path: '/os/unforgettable/supplier-finder', label: 'Supplier Finder', icon: Target },
+      { path: '/os/unforgettable/shipping-tracker', label: 'Shipping Tracker', icon: Package },
     ],
   },
   {

@@ -78,3 +78,6 @@ export { default as UTRevenueDashboard } from './UTRevenueDashboard';
 export { default as UTPayoutManager } from './UTPayoutManager';
 export { default as UTAIBrain } from './UTAIBrain';
 export { default as UTPerformanceInsights } from './UTPerformanceInsights';
+export { default as UTRFQEngine } from './UTRFQEngine';
+export { default as UTShippingTracker } from './UTShippingTracker';
+export { default as UTSupplierFinder } from './UTSupplierFinder';

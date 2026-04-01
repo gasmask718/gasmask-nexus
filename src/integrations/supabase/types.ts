@@ -79557,6 +79557,179 @@ export type Database = {
         }
         Relationships: []
       }
+      ut_rfq_requests: {
+        Row: {
+          created_at: string | null
+          destination_zip: string | null
+          id: string
+          logo_method: string | null
+          needs_branding: boolean | null
+          notes: string | null
+          packaging_required: boolean | null
+          product_category: string | null
+          product_name: string
+          sample_required: boolean | null
+          status: string | null
+          target_quantity: number | null
+          target_unit_price: number | null
+          urgency: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          destination_zip?: string | null
+          id?: string
+          logo_method?: string | null
+          needs_branding?: boolean | null
+          notes?: string | null
+          packaging_required?: boolean | null
+          product_category?: string | null
+          product_name: string
+          sample_required?: boolean | null
+          status?: string | null
+          target_quantity?: number | null
+          target_unit_price?: number | null
+          urgency?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          destination_zip?: string | null
+          id?: string
+          logo_method?: string | null
+          needs_branding?: boolean | null
+          notes?: string | null
+          packaging_required?: boolean | null
+          product_category?: string | null
+          product_name?: string
+          sample_required?: boolean | null
+          status?: string | null
+          target_quantity?: number | null
+          target_unit_price?: number | null
+          urgency?: string | null
+        }
+        Relationships: []
+      }
+      ut_rfq_supplier_responses: {
+        Row: {
+          branding_cost: number | null
+          created_at: string | null
+          id: string
+          moq: number | null
+          notes: string | null
+          production_days: number | null
+          rfq_id: string | null
+          shipping_cost: number | null
+          shipping_days: number | null
+          shipping_method: string | null
+          status: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_landed_cost: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          branding_cost?: number | null
+          created_at?: string | null
+          id?: string
+          moq?: number | null
+          notes?: string | null
+          production_days?: number | null
+          rfq_id?: string | null
+          shipping_cost?: number | null
+          shipping_days?: number | null
+          shipping_method?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_landed_cost?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          branding_cost?: number | null
+          created_at?: string | null
+          id?: string
+          moq?: number | null
+          notes?: string | null
+          production_days?: number | null
+          rfq_id?: string | null
+          shipping_cost?: number | null
+          shipping_days?: number | null
+          shipping_method?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_landed_cost?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_rfq_supplier_responses_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "ut_rfq_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ut_shipments: {
+        Row: {
+          actual_arrival: string | null
+          carrier: string | null
+          created_at: string | null
+          customs_status: string | null
+          estimated_arrival: string | null
+          freight_forwarder: string | null
+          id: string
+          notes: string | null
+          product_name: string | null
+          quantity: number | null
+          ship_date: string | null
+          shipping_method: string | null
+          status: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_cost: number | null
+          tracking_number: string | null
+        }
+        Insert: {
+          actual_arrival?: string | null
+          carrier?: string | null
+          created_at?: string | null
+          customs_status?: string | null
+          estimated_arrival?: string | null
+          freight_forwarder?: string | null
+          id?: string
+          notes?: string | null
+          product_name?: string | null
+          quantity?: number | null
+          ship_date?: string | null
+          shipping_method?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_cost?: number | null
+          tracking_number?: string | null
+        }
+        Update: {
+          actual_arrival?: string | null
+          carrier?: string | null
+          created_at?: string | null
+          customs_status?: string | null
+          estimated_arrival?: string | null
+          freight_forwarder?: string | null
+          id?: string
+          notes?: string | null
+          product_name?: string | null
+          quantity?: number | null
+          ship_date?: string | null
+          shipping_method?: string | null
+          status?: string | null
+          supplier_id?: string | null
+          supplier_name?: string | null
+          total_cost?: number | null
+          tracking_number?: string | null
+        }
+        Relationships: []
+      }
       ut_staff: {
         Row: {
           address_line_1: string | null
