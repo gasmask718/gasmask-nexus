@@ -50,13 +50,19 @@ function VADashboardInner() {
     queryKey: ['va-dialer-leads', user?.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('brandaro_leads_master')
-        .select('id, business_name, phone, email, status')
-        .eq('assigned_va_id', user!.id)
-        .not('phone', 'is', null)
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, phone_number, email, lead_status')
+        .eq('assigned_va', user!.id)
+        .not('phone_number', 'is', null)
         .order('created_at', { ascending: false })
         .limit(500);
-      return (data || []).filter((l: any) => l.phone);
+      return (data || []).map((l: any) => ({
+        id: l.id,
+        business_name: l.business_name,
+        phone: l.phone_number,
+        email: l.email,
+        status: l.lead_status,
+      })).filter((l: any) => l.phone);
     },
     enabled: !!user,
   });

@@ -43,12 +43,16 @@ export function VALeadsTable({ onCall, onCreateInvoice, onSendInvoice }: VALeads
     queryKey: ['va-leads', user?.id],
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from('brandaro_leads_master')
-        .select('id, business_name, phone, email, status, created_at, assigned_va_id')
-        .eq('assigned_va_id', user!.id)
+        .from('brandaro_qualified_leads')
+        .select('id, business_name, phone_number, email, lead_status, created_at, assigned_va')
+        .eq('assigned_va', user!.id)
         .order('created_at', { ascending: false })
         .limit(200);
-      return (data || []) as Lead[];
+      return (data || []).map((l: any) => ({
+        ...l,
+        phone: l.phone_number,
+        status: l.lead_status,
+      })) as Lead[];
     },
     enabled: !!user,
   });
