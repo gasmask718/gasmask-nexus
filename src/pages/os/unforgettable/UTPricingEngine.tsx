@@ -35,8 +35,8 @@ function VendorPricingTab() {
   const { data: vendors = [], isLoading } = useQuery({
     queryKey: ['ut_vendor_pricing'],
     queryFn: async () => {
-      const { data } = await supabase.from('ut_vendor_pricing').select('*').eq('is_active', true).order('vendor_type');
-      return data || [];
+      const { data } = await (supabase as any).from('ut_vendor_pricing').select('*').eq('is_active', true).order('vendor_type');
+      return (data || []) as any[];
     }
   });
 
