@@ -1057,6 +1057,7 @@ export default function AppRoutes() {
 
       {/* VA Portal — Protected routes */}
       <Route path="/va/dashboard" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
+      <Route path="/va/profile" element={<ProtectedRoute><VAProfilePage /></ProtectedRoute>} />
       <Route path="/va/lead-discovery" element={<ProtectedRoute><VADashboard /></ProtectedRoute>} />
       <Route path="/admin/numbers" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminNumbersPage /></RequireRole></ProtectedRoute>} />
       <Route path="/admin/leaderboard" element={<ProtectedRoute><RequireRole allowedRoles={['admin', 'owner']} fallbackPath="/va/dashboard"><AdminLeaderboardPage /></RequireRole></ProtectedRoute>} />
