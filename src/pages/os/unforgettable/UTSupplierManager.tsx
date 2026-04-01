@@ -236,7 +236,7 @@ export default function UTSupplierManager() {
                     <div className="flex gap-1">{Array.from({ length: 10 }, (_, i) => (
                       <button key={i} className={`w-6 h-6 rounded text-xs ${(selectedSupplier[field] || 0) > i ? 'bg-yellow-500 text-black' : 'bg-muted'}`}
                         onClick={() => {
-                          supabase.from('ut_suppliers').update({ [field]: i + 1 }).eq('id', selectedSupplier.id).then(() => {
+                          supabase.from('ut_suppliers' as any).update({ [field]: i + 1 }).eq('id', selectedSupplier.id).then(() => {
                             queryClient.invalidateQueries({ queryKey: ['ut-suppliers'] });
                             setSelectedSupplier({ ...selectedSupplier, [field]: i + 1 });
                           });
