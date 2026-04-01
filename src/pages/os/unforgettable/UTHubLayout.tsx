@@ -110,6 +110,18 @@ const utNavSections: { title: string; items: NavItem[] }[] = [
     ],
   },
   {
+    title: '🎨 Brand & Supply',
+    items: [
+      { path: '/os/unforgettable/brand-kit', label: 'Brand Kit Manager', icon: Palette },
+      { path: '/os/unforgettable/supplier-manager', label: 'Supplier Manager', icon: Factory },
+      { path: '/os/unforgettable/branding-pipeline', label: 'Branding Pipeline', icon: FileCheck },
+      { path: '/os/unforgettable/biz-owner-dashboard', label: 'Biz Owner Dashboard', icon: Rocket },
+      { path: '/os/unforgettable/quiz-results', label: 'Quiz Results', icon: HelpCircle },
+      { path: '/os/unforgettable/consultations', label: 'Consultations', icon: PhoneCall },
+      { path: '/os/unforgettable/kit-orders', label: 'Kit Orders', icon: ShoppingBag },
+    ],
+  },
+  {
     title: '🏢 Management',
     items: [
       { path: '/os/unforgettable/ambassadors', label: 'Ambassadors', icon: Users, hasBadge: true },

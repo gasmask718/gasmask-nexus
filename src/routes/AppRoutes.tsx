@@ -3076,7 +3076,14 @@ export default function AppRoutes() {
           <Route path="biz-owner-outreach" element={<UTBizOwnerOutreach />} />
           <Route path="customer-acquisition" element={<UTCustomerAcquisition />} />
           <Route path="pricing-engine" element={<UTPricingEngine />} />
-          <Route path="growth-simulator" element={<UTGrowthSimulator />} />
+           <Route path="growth-simulator" element={<UTGrowthSimulator />} />
+           <Route path="brand-kit" element={<UTBrandKitManager />} />
+           <Route path="supplier-manager" element={<UTSupplierManager />} />
+           <Route path="branding-pipeline" element={<UTBrandingPipeline />} />
+           <Route path="biz-owner-dashboard" element={<UTBizOwnerDashboard />} />
+           <Route path="quiz-results" element={<UTQuizResults />} />
+           <Route path="consultations" element={<UTConsultations />} />
+           <Route path="kit-orders" element={<UTKitOrders />} />
           <Route path="staff-management" element={<UTStaffManagement />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
