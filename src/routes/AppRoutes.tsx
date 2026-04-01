@@ -780,6 +780,10 @@ const UTSupplierDecisionEngine = lazy(() => import('@/pages/os/unforgettable/UTS
 const UTSupplierCommandDashboard = lazy(() => import('@/pages/os/unforgettable/UTSupplierCommandDashboard'));
 const UTNegotiationAgent = lazy(() => import('@/pages/os/unforgettable/UTNegotiationAgent'));
 const UTNegotiationDashboard = lazy(() => import('@/pages/os/unforgettable/UTNegotiationDashboard'));
+const UTSupplierInboxV2 = lazy(() => import('@/pages/os/unforgettable/UTSupplierInboxV2'));
+const UTAutoOutreach = lazy(() => import('@/pages/os/unforgettable/UTAutoOutreach'));
+const UTShippingQuotes = lazy(() => import('@/pages/os/unforgettable/UTShippingQuotes'));
+const UTAutoFinder = lazy(() => import('@/pages/os/unforgettable/UTAutoFinder'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
