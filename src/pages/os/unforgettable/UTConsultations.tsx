@@ -30,7 +30,7 @@ export default function UTConsultations() {
   const { data: consultations = [] } = useQuery({
     queryKey: ['ut-consultations'],
     queryFn: async () => {
-      const { data } = await supabase.from('ut_business_consultations').select('*').order('created_at', { ascending: false });
+      const { data } = await supabase.from('ut_business_consultations' as any).select('*').order('created_at', { ascending: false });
       return data || [];
     },
   });
