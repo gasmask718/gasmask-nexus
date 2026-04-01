@@ -91,3 +91,4 @@ export { default as UTAutoOutreach } from './UTAutoOutreach';
 export { default as UTShippingQuotes } from './UTShippingQuotes';
 export { default as UTAutoFinder } from './UTAutoFinder';
 export { default as UTCategoryDomination } from './UTCategoryDomination';
+export { default as UTGlobalSupplierControl } from './UTGlobalSupplierControl';
