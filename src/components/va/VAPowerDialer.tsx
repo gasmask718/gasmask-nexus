@@ -6,11 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Phone, PhoneOff, Mic, MicOff, Pause, Play, X, FileText,
   Send, Flame, Sun, Snowflake, SkipForward, Voicemail,
-  MessageSquare, Target,
+  MessageSquare, Target, PhoneCall,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { VAInvoiceModal } from './VAInvoiceModal';
@@ -54,6 +55,9 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
   const [coachingData, setCoachingData] = useState<any>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [needsDisposition, setNeedsDisposition] = useState(false);
+  const [customNumber, setCustomNumber] = useState('');
+  const [customName, setCustomName] = useState('');
+  const [isCustomCall, setIsCustomCall] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const notesTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -198,8 +202,11 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
 
     refetchStats();
 
-    // Auto-advance if dialing session is active
-    if (isDialing && !isPaused) {
+    // Auto-advance if dialing session is active (not custom calls)
+    if (isCustomCall) {
+      setIsCustomCall(false);
+      setCallStatus('idle');
+    } else if (isDialing && !isPaused) {
       setTimeout(() => moveToNext(), 1500);
     }
   };
@@ -230,6 +237,50 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
     setIsPaused(false);
     if (callStatus === 'idle') dialCurrent();
   };
+
+  const dialCustomNumber = useCallback(async () => {
+    if (!customNumber || !twilioNumber || !user) return;
+    const cleanNumber = customNumber.replace(/[^\d+]/g, '');
+    if (cleanNumber.length < 10) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    setIsCustomCall(true);
+    setCallStatus('dialing');
+    setSeconds(0);
+    setExcitementLevel(null);
+    setDisposition(null);
+    setNotes('');
+    setCallbackDate('');
+    setNeedsDisposition(false);
+    setCoachingData(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('va-power-dialer', {
+        body: {
+          vaId: user.id,
+          twilioNumber,
+          leadId: null,
+          leadPhone: cleanNumber,
+          leadName: customName || 'Manual Call',
+          action: 'dial',
+        },
+      });
+
+      if (error) throw error;
+
+      setCallLogId(data?.callLogId || null);
+      setCallSid(data?.callSid || null);
+      setCallStatus('ringing');
+      setTimeout(() => setCallStatus(prev => prev === 'ringing' ? 'connected' : prev), 4000);
+      refetchStats();
+    } catch (err: any) {
+      toast.error('Call failed: ' + (err.message || 'Unknown error'));
+      setCallStatus('idle');
+      setIsCustomCall(false);
+    }
+  }, [customNumber, customName, twilioNumber, user, refetchStats]);
 
   const handleSendSMS = async () => {
     if (!currentLead || !user) return;
@@ -278,14 +329,53 @@ export function VAPowerDialer({ leads, onEndSession }: VAPowerDialerProps) {
         )}
       </div>
 
+      {/* Custom Manual Dial */}
+      <Card className="bg-slate-800/50 border-slate-700">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-2">
+            <PhoneCall className="h-4 w-4 text-cyan-400" />
+            <span className="text-sm font-medium text-white">Manual Dial</span>
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={customName}
+              onChange={e => setCustomName(e.target.value)}
+              placeholder="Name (optional)"
+              className="bg-slate-700 border-slate-600 text-white text-sm h-9 w-36"
+              disabled={callStatus !== 'idle' && callStatus !== 'ended'}
+            />
+            <Input
+              value={customNumber}
+              onChange={e => setCustomNumber(e.target.value)}
+              placeholder="+1 (555) 000-0000"
+              className="bg-slate-700 border-slate-600 text-white text-sm h-9 flex-1 font-mono"
+              disabled={callStatus !== 'idle' && callStatus !== 'ended'}
+              onKeyDown={e => { if (e.key === 'Enter') dialCustomNumber(); }}
+            />
+            <Button
+              onClick={dialCustomNumber}
+              disabled={!customNumber || (callStatus !== 'idle' && callStatus !== 'ended')}
+              className="bg-cyan-600 hover:bg-cyan-700 h-9 gap-1.5"
+              size="sm"
+            >
+              <Phone className="h-3.5 w-3.5" /> Call
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Current Lead Card */}
-      {currentLead && (
+      {(currentLead || isCustomCall) && (
         <Card className="bg-slate-800 border-slate-700">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className="font-bold text-white text-lg">{currentLead.business_name || 'Unknown'}</h3>
-                <p className="text-sm text-slate-400 font-mono">{currentLead.phone}</p>
+                <h3 className="font-bold text-white text-lg">
+                  {isCustomCall ? (customName || 'Manual Call') : (currentLead?.business_name || 'Unknown')}
+                </h3>
+                <p className="text-sm text-slate-400 font-mono">
+                  {isCustomCall ? customNumber : currentLead?.phone}
+                </p>
               </div>
               <Badge className={
                 callStatus === 'dialing' ? 'bg-blue-500/20 text-blue-400' :

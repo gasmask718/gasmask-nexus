@@ -52,6 +52,7 @@ function VADashboardInner() {
       const { data } = await (supabase as any)
         .from('brandaro_leads_master')
         .select('id, business_name, phone, email, status')
+        .eq('assigned_va_id', user!.id)
         .not('phone', 'is', null)
         .order('created_at', { ascending: false })
         .limit(500);
