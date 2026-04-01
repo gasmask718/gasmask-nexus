@@ -44,7 +44,7 @@ export default function UTBrandingPipeline() {
   const { data: suppliers = [] } = useQuery({
     queryKey: ['ut-suppliers-list'],
     queryFn: async () => {
-      const { data } = await supabase.from('ut_suppliers').select('id, name');
+      const { data } = await supabase.from('ut_suppliers' as any).select('id, name');
       return data || [];
     },
   });
