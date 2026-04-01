@@ -34579,6 +34579,7 @@ export type Database = {
         Row: {
           agent_description: string | null
           agent_name: string
+          agent_status: string | null
           business_id: string | null
           created_at: string | null
           elevenlabs_agent_id: string | null
@@ -34586,17 +34587,25 @@ export type Database = {
           id: string
           is_active: boolean | null
           language: string | null
+          latency_optimization: number | null
+          llm_model: string | null
+          max_tokens: number | null
           script_label: string
           script_template_key: string
+          similarity_boost: number | null
           sort_order: number | null
+          stability: number | null
           system_prompt: string | null
+          temperature: number | null
           updated_at: string | null
           voice_id: string | null
+          voice_model: string | null
           voice_name: string | null
         }
         Insert: {
           agent_description?: string | null
           agent_name: string
+          agent_status?: string | null
           business_id?: string | null
           created_at?: string | null
           elevenlabs_agent_id?: string | null
@@ -34604,17 +34613,25 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           language?: string | null
+          latency_optimization?: number | null
+          llm_model?: string | null
+          max_tokens?: number | null
           script_label: string
           script_template_key: string
+          similarity_boost?: number | null
           sort_order?: number | null
+          stability?: number | null
           system_prompt?: string | null
+          temperature?: number | null
           updated_at?: string | null
           voice_id?: string | null
+          voice_model?: string | null
           voice_name?: string | null
         }
         Update: {
           agent_description?: string | null
           agent_name?: string
+          agent_status?: string | null
           business_id?: string | null
           created_at?: string | null
           elevenlabs_agent_id?: string | null
@@ -34622,12 +34639,19 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           language?: string | null
+          latency_optimization?: number | null
+          llm_model?: string | null
+          max_tokens?: number | null
           script_label?: string
           script_template_key?: string
+          similarity_boost?: number | null
           sort_order?: number | null
+          stability?: number | null
           system_prompt?: string | null
+          temperature?: number | null
           updated_at?: string | null
           voice_id?: string | null
+          voice_model?: string | null
           voice_name?: string | null
         }
         Relationships: [
@@ -83704,6 +83728,54 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_ops_number_assignments: {
+        Row: {
+          agent_id: string | null
+          assigned_at: string | null
+          brand: string
+          created_at: string | null
+          id: string
+          phone_number_id: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          assigned_at?: string | null
+          brand?: string
+          created_at?: string | null
+          id?: string
+          phone_number_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          assigned_at?: string | null
+          brand?: string
+          created_at?: string | null
+          id?: string
+          phone_number_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_ops_number_assignments_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "elevenlabs_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_ops_number_assignments_phone_number_id_fkey"
+            columns: ["phone_number_id"]
+            isOneToOne: true
+            referencedRelation: "business_phone_numbers"
             referencedColumns: ["id"]
           },
         ]
