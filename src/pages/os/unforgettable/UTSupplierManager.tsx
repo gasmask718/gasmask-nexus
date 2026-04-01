@@ -68,7 +68,7 @@ export default function UTSupplierManager() {
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const update: any = { status, updated_at: new Date().toISOString() };
       if (status === 'brand_kit_sent') update.brand_kit_sent_at = new Date().toISOString();
-      const { error } = await supabase.from('ut_suppliers').update(update).eq('id', id);
+      const { error } = await supabase.from('ut_suppliers' as any).update(update).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
