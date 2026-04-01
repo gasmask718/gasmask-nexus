@@ -1250,6 +1250,7 @@ export default function AppRoutes() {
           <Route path="pipelines/gasmask-new-stores" element={<GasMaskNewStoresPipeline />} />
           <Route path="infrastructure" element={<DCInfrastructure />} />
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
+          <Route path="infrastructure/phone-setup" element={<DCPhoneSetup />} />
           <Route path="clients" element={<DCClients />} />
         </Route>
 

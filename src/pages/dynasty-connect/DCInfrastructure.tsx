@@ -203,7 +203,8 @@ export default function DCInfrastructure() {
               icon={<Phone className="h-5 w-5" />}
               status="operational"
               details={[
-                { label: 'Inbound Number', value: '+18484004179' },
+                { label: 'GasMask Number', value: '+18484004179' },
+                { label: 'DC AI Number', value: 'See Phone Setup →' },
                 { label: 'Account SID', value: 'AC…xxxx (required)' },
                 { label: 'IVR Webhook', value: `${EDGE_BASE}/twilio-inbound-call` },
                 { label: 'Bridge Webhook', value: `${EDGE_BASE}/twilio-elevenlabs-bridge` },

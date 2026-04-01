@@ -53,6 +53,7 @@ const dcNavSections = [
     items: [
       { path: '/dynasty-connect/infrastructure', label: 'System Health', icon: Settings },
       { path: '/dynasty-connect/infrastructure/numbers', label: 'Phone Numbers', icon: Phone },
+      { path: '/dynasty-connect/infrastructure/phone-setup', label: 'Phone Setup', icon: Phone },
     ],
   },
   {
