@@ -760,6 +760,18 @@ const UTBizOwnerDashboard = lazy(() => import('@/pages/os/unforgettable/UTBizOwn
 const UTQuizResults = lazy(() => import('@/pages/os/unforgettable/UTQuizResults'));
 const UTConsultations = lazy(() => import('@/pages/os/unforgettable/UTConsultations'));
 const UTKitOrders = lazy(() => import('@/pages/os/unforgettable/UTKitOrders'));
+const UTDailySummary = lazy(() => import('@/pages/os/unforgettable/UTDailySummary'));
+const UTEventCalendar = lazy(() => import('@/pages/os/unforgettable/UTEventCalendar'));
+const UTVendorPayments = lazy(() => import('@/pages/os/unforgettable/UTVendorPayments'));
+const UTAmbassadorLeaderboard = lazy(() => import('@/pages/os/unforgettable/UTAmbassadorLeaderboard'));
+const UTCampaignPerformance = lazy(() => import('@/pages/os/unforgettable/UTCampaignPerformance'));
+const UTShopDashboard = lazy(() => import('@/pages/os/unforgettable/UTShopDashboard'));
+const UTProductOrganizer = lazy(() => import('@/pages/os/unforgettable/UTProductOrganizer'));
+const UTEmailSubscribers = lazy(() => import('@/pages/os/unforgettable/UTEmailSubscribers'));
+const UTRevenueDashboard = lazy(() => import('@/pages/os/unforgettable/UTRevenueDashboard'));
+const UTPayoutManager = lazy(() => import('@/pages/os/unforgettable/UTPayoutManager'));
+const UTAIBrain = lazy(() => import('@/pages/os/unforgettable/UTAIBrain'));
+const UTPerformanceInsights = lazy(() => import('@/pages/os/unforgettable/UTPerformanceInsights'));
 
 // Unforgettable CRM
 const UnforgettableEventHalls = lazy(() => import('@/pages/crm/unforgettable').then(m => ({ default: m.UnforgettableEventHalls })));
