@@ -200,6 +200,7 @@ const AmbassadorApplication = lazy(() => import('@/pages/apply/AmbassadorApplica
 // VA Portal
 const VAAuthPage = lazy(() => import('@/pages/va/VAAuthPage'));
 const VADashboard = lazy(() => import('@/pages/va/VADashboard'));
+const VAProfilePage = lazy(() => import('@/pages/va/VAProfilePage'));
 const AdminNumbersPage = lazy(() => import('@/pages/va/AdminNumbersPage'));
 const PayInvoicePage = lazy(() => import('@/pages/va/PayInvoicePage'));
 const AdminLeaderboardPage = lazy(() => import('@/pages/admin/AdminLeaderboard'));
