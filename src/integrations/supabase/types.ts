@@ -75444,15 +75444,21 @@ export type Database = {
           event_date: string | null
           event_type: string | null
           full_price: number | null
+          gross_profit: number | null
           guest_count: number | null
           id: string
+          margin_percent: number | null
           name: string
+          net_profit: number | null
+          package_id: string | null
           package_name: string | null
           phone: string
           preferences: string | null
+          quote_id: string | null
           status: string | null
           stripe_payment_intent_id: string | null
           updated_at: string | null
+          vendor_cost: number | null
         }
         Insert: {
           ai_plan?: Json | null
@@ -75465,15 +75471,21 @@ export type Database = {
           event_date?: string | null
           event_type?: string | null
           full_price?: number | null
+          gross_profit?: number | null
           guest_count?: number | null
           id?: string
+          margin_percent?: number | null
           name: string
+          net_profit?: number | null
+          package_id?: string | null
           package_name?: string | null
           phone: string
           preferences?: string | null
+          quote_id?: string | null
           status?: string | null
           stripe_payment_intent_id?: string | null
           updated_at?: string | null
+          vendor_cost?: number | null
         }
         Update: {
           ai_plan?: Json | null
@@ -75486,15 +75498,21 @@ export type Database = {
           event_date?: string | null
           event_type?: string | null
           full_price?: number | null
+          gross_profit?: number | null
           guest_count?: number | null
           id?: string
+          margin_percent?: number | null
           name?: string
+          net_profit?: number | null
+          package_id?: string | null
           package_name?: string | null
           phone?: string
           preferences?: string | null
+          quote_id?: string | null
           status?: string | null
           stripe_payment_intent_id?: string | null
           updated_at?: string | null
+          vendor_cost?: number | null
         }
         Relationships: []
       }
@@ -78970,6 +78988,119 @@ export type Database = {
           },
         ]
       }
+      ut_quotes: {
+        Row: {
+          accepted_at: string | null
+          ambassador_commission_amount: number | null
+          ambassador_commission_rate: number | null
+          ambassador_id: string | null
+          city: string | null
+          created_at: string | null
+          custom_items: Json | null
+          customer_email: string | null
+          customer_name: string | null
+          customer_phone: string | null
+          discount_amount: number | null
+          discount_percent: number | null
+          event_date: string | null
+          event_type: string | null
+          expires_at: string | null
+          guest_count: number | null
+          id: string
+          net_profit: number | null
+          notes: string | null
+          our_margin_percent: number | null
+          package_id: string | null
+          quote_number: string | null
+          referral_code: string | null
+          sent_at: string | null
+          state: string | null
+          status: string | null
+          subtotal: number | null
+          total_customer_price: number | null
+          total_our_profit: number | null
+          total_vendor_cost: number | null
+          updated_at: string | null
+          viewed_at: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          ambassador_commission_amount?: number | null
+          ambassador_commission_rate?: number | null
+          ambassador_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          custom_items?: Json | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          event_date?: string | null
+          event_type?: string | null
+          expires_at?: string | null
+          guest_count?: number | null
+          id?: string
+          net_profit?: number | null
+          notes?: string | null
+          our_margin_percent?: number | null
+          package_id?: string | null
+          quote_number?: string | null
+          referral_code?: string | null
+          sent_at?: string | null
+          state?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total_customer_price?: number | null
+          total_our_profit?: number | null
+          total_vendor_cost?: number | null
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          ambassador_commission_amount?: number | null
+          ambassador_commission_rate?: number | null
+          ambassador_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          custom_items?: Json | null
+          customer_email?: string | null
+          customer_name?: string | null
+          customer_phone?: string | null
+          discount_amount?: number | null
+          discount_percent?: number | null
+          event_date?: string | null
+          event_type?: string | null
+          expires_at?: string | null
+          guest_count?: number | null
+          id?: string
+          net_profit?: number | null
+          notes?: string | null
+          our_margin_percent?: number | null
+          package_id?: string | null
+          quote_number?: string | null
+          referral_code?: string | null
+          sent_at?: string | null
+          state?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total_customer_price?: number | null
+          total_our_profit?: number | null
+          total_vendor_cost?: number | null
+          updated_at?: string | null
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ut_quotes_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "ut_event_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ut_rental_inventory: {
         Row: {
           bundle_eligible: boolean | null
@@ -79700,6 +79831,69 @@ export type Database = {
           state?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ut_vendor_pricing: {
+        Row: {
+          base_cost: number
+          city: string | null
+          created_at: string | null
+          customer_price: number | null
+          id: string
+          is_active: boolean | null
+          markup_percent: number
+          max_hours: number | null
+          min_hours: number | null
+          notes: string | null
+          our_profit: number | null
+          service_name: string
+          state: string | null
+          unit: string | null
+          updated_at: string | null
+          vendor_id: string | null
+          vendor_name: string
+          vendor_type: string
+        }
+        Insert: {
+          base_cost: number
+          city?: string | null
+          created_at?: string | null
+          customer_price?: number | null
+          id?: string
+          is_active?: boolean | null
+          markup_percent: number
+          max_hours?: number | null
+          min_hours?: number | null
+          notes?: string | null
+          our_profit?: number | null
+          service_name: string
+          state?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+          vendor_name: string
+          vendor_type: string
+        }
+        Update: {
+          base_cost?: number
+          city?: string | null
+          created_at?: string | null
+          customer_price?: number | null
+          id?: string
+          is_active?: boolean | null
+          markup_percent?: number
+          max_hours?: number | null
+          min_hours?: number | null
+          notes?: string | null
+          our_profit?: number | null
+          service_name?: string
+          state?: string | null
+          unit?: string | null
+          updated_at?: string | null
+          vendor_id?: string | null
+          vendor_name?: string
+          vendor_type?: string
         }
         Relationships: []
       }
