@@ -323,7 +323,7 @@ function QuoteGeneratorTab() {
 
   const { data: quotes = [], isLoading } = useQuery({
     queryKey: ['ut_quotes'],
-    queryFn: async () => { const { data } = await supabase.from('ut_quotes').select('*').order('created_at', { ascending: false }).limit(50); return data || []; }
+    queryFn: async () => { const { data } = await (supabase as any).from('ut_quotes').select('*').order('created_at', { ascending: false }).limit(50); return (data || []) as any[]; }
   });
 
   const selectedPkg = packages.find(p => p.id === form.package_id);
