@@ -3096,7 +3096,18 @@ export default function AppRoutes() {
            <Route path="quiz-results" element={<UTQuizResults />} />
            <Route path="consultations" element={<UTConsultations />} />
            <Route path="kit-orders" element={<UTKitOrders />} />
-          <Route path="staff-management" element={<UTStaffManagement />} />
+           <Route path="daily-summary" element={<UTDailySummary />} />
+           <Route path="event-calendar" element={<UTEventCalendar />} />
+           <Route path="vendor-payments" element={<UTVendorPayments />} />
+           <Route path="ambassador-leaderboard" element={<UTAmbassadorLeaderboard />} />
+           <Route path="campaign-performance" element={<UTCampaignPerformance />} />
+           <Route path="shop-dashboard" element={<UTShopDashboard />} />
+           <Route path="product-organizer" element={<UTProductOrganizer />} />
+           <Route path="email-subscribers" element={<UTEmailSubscribers />} />
+           <Route path="revenue-dashboard" element={<UTRevenueDashboard />} />
+           <Route path="payout-manager" element={<UTPayoutManager />} />
+           <Route path="ai-brain" element={<UTAIBrain />} />
+           <Route path="performance-insights" element={<UTPerformanceInsights />} />
           <Route path="halls" element={<Navigate to="/os/unforgettable/venues" replace />} />
           <Route path="vendors" element={<Navigate to="/os/unforgettable/staff-management" replace />} />
           <Route path="rentals" element={<Navigate to="/os/unforgettable/venues" replace />} />
