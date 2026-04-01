@@ -377,6 +377,7 @@ const DCPipelines = lazy(() => import('@/pages/dynasty-connect/DCPipelines'));
 const DCInfrastructure = lazy(() => import('@/pages/dynasty-connect/DCInfrastructure'));
 const DCLiveCalls = lazy(() => import('@/pages/dynasty-connect/DCLiveCalls'));
 const DCClients = lazy(() => import('@/pages/dynasty-connect/DCClients'));
+const DCPhoneSetup = lazy(() => import('@/pages/dynasty-connect/DCPhoneSetup'));
 // Pipeline sub-pages
 const SurplusFundsPipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/SurplusFundsPipeline'));
 const DCRealEstatePipeline = lazy(() => import('@/pages/dynasty-connect/pipelines/RealEstatePipeline'));
@@ -1249,6 +1250,7 @@ export default function AppRoutes() {
           <Route path="pipelines/gasmask-new-stores" element={<GasMaskNewStoresPipeline />} />
           <Route path="infrastructure" element={<DCInfrastructure />} />
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
+          <Route path="infrastructure/phone-setup" element={<DCPhoneSetup />} />
           <Route path="clients" element={<DCClients />} />
         </Route>
 

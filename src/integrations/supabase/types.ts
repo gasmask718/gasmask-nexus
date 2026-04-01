@@ -30787,6 +30787,45 @@ export type Database = {
         }
         Relationships: []
       }
+      dc_phone_numbers: {
+        Row: {
+          created_at: string | null
+          friendly_name: string | null
+          id: string
+          is_ai_number: boolean | null
+          monthly_cost: number | null
+          phone_number: string
+          purchased_at: string | null
+          sid: string | null
+          status: string | null
+          webhook_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          friendly_name?: string | null
+          id?: string
+          is_ai_number?: boolean | null
+          monthly_cost?: number | null
+          phone_number: string
+          purchased_at?: string | null
+          sid?: string | null
+          status?: string | null
+          webhook_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          friendly_name?: string | null
+          id?: string
+          is_ai_number?: boolean | null
+          monthly_cost?: number | null
+          phone_number?: string
+          purchased_at?: string | null
+          sid?: string | null
+          status?: string | null
+          webhook_url?: string | null
+        }
+        Relationships: []
+      }
       deal_closings: {
         Row: {
           acquisition_id: string | null
