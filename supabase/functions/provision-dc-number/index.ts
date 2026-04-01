@@ -25,13 +25,22 @@ serve(async (req) => {
   const supabase = createClient(SUPABASE_URL!, SUPABASE_KEY!);
   const authHeader = `Basic ${btoa(`${TWILIO_SID}:${TWILIO_TOKEN}`)}`;
   const body = await req.json();
-  const { action, area_code, phone_number, friendly_name } = body;
+  const { action, area_code, phone_number, friendly_name, number_type, toll_free_prefix } = body;
 
   try {
-    // ACTION: search — find available numbers
+    // ACTION: search
     if (action === "search") {
-      const areaCode = area_code || "929";
-      const searchUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/Local.json?AreaCode=${areaCode}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
+      let searchUrl: string;
+
+      if (number_type === "toll-free") {
+        // Toll-free search
+        const prefix = toll_free_prefix || "800";
+        searchUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/TollFree.json?VoiceEnabled=true&SmsEnabled=true&Limit=5&Contains=${prefix}`;
+      } else {
+        // Local search (default)
+        const areaCode = area_code || "929";
+        searchUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/AvailablePhoneNumbers/US/Local.json?AreaCode=${areaCode}&VoiceEnabled=true&SmsEnabled=true&Limit=5`;
+      }
 
       const res = await fetch(searchUrl, {
         headers: { Authorization: authHeader },
@@ -47,8 +56,8 @@ serve(async (req) => {
       const numbers = (data.available_phone_numbers || []).map((n: any) => ({
         phone_number: n.phone_number,
         friendly_name: n.friendly_name,
-        locality: n.locality,
-        region: n.region,
+        locality: n.locality || "",
+        region: n.region || "",
         capabilities: n.capabilities,
       }));
 
@@ -57,7 +66,7 @@ serve(async (req) => {
       });
     }
 
-    // ACTION: purchase — buy the selected number
+    // ACTION: purchase
     if (action === "purchase") {
       if (!phone_number) {
         return new Response(JSON.stringify({ error: "phone_number is required" }), {
@@ -92,6 +101,9 @@ serve(async (req) => {
         });
       }
 
+      const isTollFree = number_type === "toll-free";
+      const monthlyCost = isTollFree ? 2.0 : 1.0;
+
       // Save to dc_phone_numbers
       const { error: dbError } = await supabase.from("dc_phone_numbers").insert({
         phone_number: purchased.phone_number,
@@ -100,7 +112,8 @@ serve(async (req) => {
         webhook_url: `${webhookBase}/twilio-inbound-call`,
         status: "active",
         is_ai_number: true,
-        monthly_cost: 1.0,
+        monthly_cost: monthlyCost,
+        number_type: isTollFree ? "toll-free" : "local",
       });
 
       if (dbError) {
@@ -112,6 +125,8 @@ serve(async (req) => {
         phone_number: purchased.phone_number,
         sid: purchased.sid,
         friendly_name: purchased.friendly_name,
+        number_type: isTollFree ? "toll-free" : "local",
+        monthly_cost: monthlyCost,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
