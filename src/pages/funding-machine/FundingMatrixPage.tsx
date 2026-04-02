@@ -19,7 +19,7 @@ interface FundingClient {
 }
 
 interface DfsScores {
-  overall_score: number | null;
+  total_score: number | null;
   personal_credit_tu: number | null;
   personal_credit_eq: number | null;
   personal_credit_ex: number | null;
