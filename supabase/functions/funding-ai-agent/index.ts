@@ -245,6 +245,22 @@ Keep it under 500 words. Be direct and actionable.`;
         break;
       }
 
+      case "simulate_score_impact": {
+        systemPrompt = `You are a FICO 8 and VantageScore 3 algorithm expert who has analyzed thousands of credit profiles. Estimate the score impact of proposed changes with precision.`;
+        userPrompt = `Current scores per bureau:
+- TransUnion: ${payload.current_scores?.tu ?? 'Unknown'}
+- Equifax: ${payload.current_scores?.eq ?? 'Unknown'}
+- Experian: ${payload.current_scores?.ex ?? 'Unknown'}
+
+Scenario type: ${payload.scenario_type}
+Scenario parameters: ${JSON.stringify(payload.scenario_parameters)}
+
+Estimate the projected score change per bureau as an integer, confidence as high medium or low, and reasoning under 75 words.
+
+Return ONLY JSON with keys projected_change_tu, projected_change_eq, projected_change_ex as integers, confidence as string, and reasoning as string.`;
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
@@ -317,6 +333,13 @@ Keep it under 500 words. Be direct and actionable.`;
       }
     } else if (action === "generate_morning_brief") {
       result = { brief: content };
+    } else if (action === "simulate_score_impact") {
+      try {
+        const cleaned = content.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        result = { simulation: JSON.parse(cleaned) };
+      } catch {
+        result = { simulation: null, raw: content };
+      }
     }
 
     return new Response(JSON.stringify(result), {

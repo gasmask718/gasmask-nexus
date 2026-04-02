@@ -12,6 +12,7 @@ import {
   ExternalLink, FileText, Send
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
+import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
 
 const DFS_DIMENSIONS = [
   { key: 'personal_credit_tu', label: 'Personal Credit (TU)', max: 10 },
@@ -231,6 +232,9 @@ export default function ClientProfilePage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Score Simulator */}
+          <ScoreSimulator clientId={clientId!} />
 
           {/* Infrastructure Checklist */}
           <Card className="border-amber-500/20">

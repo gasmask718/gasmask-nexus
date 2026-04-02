@@ -37420,18 +37420,25 @@ export type Database = {
           bureau: string
           client_id: string
           created_at: string
+          credit_limit: number | null
           creditor_name: string
+          current_balance: number | null
           current_status: string | null
           date_of_first_delinquency: string | null
+          date_opened: string | null
           deletion_priority: number | null
           estimated_score_impact: number | null
           id: string
+          inquiry_date: string | null
           is_resolved: boolean | null
           item_type: string
           notes: string | null
+          payment_history: string | null
           resolution_type: string | null
           resolved_at: string | null
+          scheduled_purge_date: string | null
           updated_at: string
+          utilization_pct: number | null
         }
         Insert: {
           account_number?: string | null
@@ -37439,18 +37446,25 @@ export type Database = {
           bureau: string
           client_id: string
           created_at?: string
+          credit_limit?: number | null
           creditor_name: string
+          current_balance?: number | null
           current_status?: string | null
           date_of_first_delinquency?: string | null
+          date_opened?: string | null
           deletion_priority?: number | null
           estimated_score_impact?: number | null
           id?: string
+          inquiry_date?: string | null
           is_resolved?: boolean | null
           item_type: string
           notes?: string | null
+          payment_history?: string | null
           resolution_type?: string | null
           resolved_at?: string | null
+          scheduled_purge_date?: string | null
           updated_at?: string
+          utilization_pct?: number | null
         }
         Update: {
           account_number?: string | null
@@ -37458,18 +37472,25 @@ export type Database = {
           bureau?: string
           client_id?: string
           created_at?: string
+          credit_limit?: number | null
           creditor_name?: string
+          current_balance?: number | null
           current_status?: string | null
           date_of_first_delinquency?: string | null
+          date_opened?: string | null
           deletion_priority?: number | null
           estimated_score_impact?: number | null
           id?: string
+          inquiry_date?: string | null
           is_resolved?: boolean | null
           item_type?: string
           notes?: string | null
+          payment_history?: string | null
           resolution_type?: string | null
           resolved_at?: string | null
+          scheduled_purge_date?: string | null
           updated_at?: string
+          utilization_pct?: number | null
         }
         Relationships: [
           {

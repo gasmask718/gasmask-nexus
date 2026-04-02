@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard, ExternalLink, Zap, Loader2, CheckCircle2 } from 'lucide-react';
+import HardInquiryTracker from '@/components/funding-machine/HardInquiryTracker';
 
 interface FundingClient {
   id: string;
@@ -207,6 +208,9 @@ export default function BureauIntelPage() {
             <Card><CardContent className="pt-6">{renderBureauColumn('Experian', dfs?.personal_credit_ex ?? null, inquiryCounts.ex, EX_CARDS, 'experian')}</CardContent></Card>
             <Card><CardContent className="pt-6">{renderBureauColumn('Credit Unions', Math.max(dfs?.personal_credit_tu ?? 0, dfs?.personal_credit_eq ?? 0, dfs?.personal_credit_ex ?? 0) || null, 0, CU_CARDS, 'credit_union')}</CardContent></Card>
           </div>
+
+          {/* Hard Inquiry Tracker */}
+          <HardInquiryTracker clientId={selectedClient} />
 
           {/* Card Stack Sequencer */}
           <Card className="border-amber-500/30">
