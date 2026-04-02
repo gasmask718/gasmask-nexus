@@ -301,10 +301,30 @@ export default function VelocityCalculatorPage() {
                           </div>
                         ))}
                         {row && (
-                          <div className="mt-2 pt-2 border-t text-xs text-muted-foreground space-y-1">
-                            <div>Actual ADB: {row.actual_avg_daily_balance ? fmt(row.actual_avg_daily_balance) : '—'}</div>
-                            <div>Actual Deposits: {row.actual_monthly_deposits ? fmt(row.actual_monthly_deposits) : '—'}</div>
-                            <div>Actual Txns: {row.actual_transaction_count ?? '—'}</div>
+                          <div className="mt-2 pt-2 border-t text-xs space-y-2">
+                            {[
+                              { label: 'Avg Daily Balance', target: row.target_avg_daily_balance, actual: row.actual_avg_daily_balance },
+                              { label: 'Monthly Deposits', target: row.target_monthly_deposits, actual: row.actual_monthly_deposits },
+                              { label: 'Transactions', target: row.target_transaction_count, actual: row.actual_transaction_count },
+                            ].map(metric => {
+                              const pct = metric.target && metric.actual ? Math.min((metric.actual / metric.target) * 100, 100) : 0;
+                              const color = pct >= 100 ? 'bg-emerald-500' : pct >= 80 ? 'bg-amber-500' : 'bg-red-500';
+                              return (
+                                <div key={metric.label}>
+                                  <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+                                    <span>{metric.label}</span>
+                                    <span>
+                                      <span className="text-foreground font-medium">{metric.actual != null ? (metric.label === 'Transactions' ? metric.actual : fmt(metric.actual)) : '—'}</span>
+                                      {' / '}
+                                      {metric.target != null ? (metric.label === 'Transactions' ? metric.target : fmt(metric.target)) : '—'}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
