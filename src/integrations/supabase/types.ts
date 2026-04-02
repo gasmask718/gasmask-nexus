@@ -37825,6 +37825,7 @@ export type Database = {
           id: string
           mail_type: string | null
           notes: string | null
+          postgrid_letter_id: string | null
           provider: string | null
           recipient_address: string | null
           recipient_name: string | null
@@ -37842,6 +37843,7 @@ export type Database = {
           id?: string
           mail_type?: string | null
           notes?: string | null
+          postgrid_letter_id?: string | null
           provider?: string | null
           recipient_address?: string | null
           recipient_name?: string | null
@@ -37859,6 +37861,7 @@ export type Database = {
           id?: string
           mail_type?: string | null
           notes?: string | null
+          postgrid_letter_id?: string | null
           provider?: string | null
           recipient_address?: string | null
           recipient_name?: string | null
