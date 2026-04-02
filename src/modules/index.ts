@@ -65,6 +65,7 @@ export {
   BettingModule,
   BikerModule,
   BrandaroModule,
+  FundingMachineModule,
 };
 
 // Generate routes for React Router
