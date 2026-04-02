@@ -1652,7 +1652,8 @@ export default function AppRoutes() {
         <Route path="/funding-machine/funding-matrix" element={<FundingMachineFundingMatrix />} />
         <Route path="/funding-machine/velocity" element={<FundingMachineVelocity />} />
         <Route path="/funding-machine/tradeline-vault" element={<FundingMachineTradelineVault />} />
-        <Route path="/funding-machine/tasks" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/tasks" element={<FundingMachineTaskCards />} />
+        <Route path="/funding-machine/morning-briefing" element={<FundingMachineMorningBriefing />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
