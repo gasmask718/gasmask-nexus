@@ -7,3 +7,5 @@ export { default as BureauIntelPage } from './BureauIntelPage';
 export { default as FundingMatrixPage } from './FundingMatrixPage';
 export { default as VelocityCalculatorPage } from './VelocityCalculatorPage';
 export { default as TradelineVaultPage } from './TradelineVaultPage';
+export { default as TaskCardsPage } from './TaskCardsPage';
+export { default as MorningBriefingPage } from './MorningBriefingPage';

@@ -198,6 +198,53 @@ Rank from highest impact to lowest. Be specific about expected point increases.`
         break;
       }
 
+      case "generate_task_cards": {
+        systemPrompt = `You are a funding pipeline specialist who creates precise, executable action plans. Every task you create must have exact step-by-step instructions that a non-expert can follow. Tasks must be specific, actionable, and tied to measurable funding outcomes.`;
+        userPrompt = `Generate task cards for this client's ${payload.module} module.
+
+Client: ${payload.client?.first_name} ${payload.client?.last_name}
+DFS Scores: ${JSON.stringify(payload.scores)}
+Module: ${payload.module}
+
+Generate 3-5 task cards as a JSON array. Each task object must have:
+- title (string, clear action title)
+- category (one of: online, branch_visit, mail, phone_call, document)
+- rationale (string, 2 sentences explaining why this matters and what funding it unlocks)
+- steps (array of strings, numbered step-by-step instructions)
+- resource_url (string or null, direct URL for online actions)
+- resource_address (string or null, for branch visits)
+- document_checklist (array of strings or null, documents needed)
+- time_estimate (number, minutes to complete)
+- deadline_days (number, days from now)
+- funding_impact (number 1-10, how much this impacts funding access)
+
+Return ONLY the JSON array, no markdown.`;
+        break;
+      }
+
+      case "generate_morning_brief": {
+        systemPrompt = `You are the Dynasty Funding Machine operations AI. You produce concise, actionable morning briefings that tell the operator exactly what needs to happen today in priority order. Be direct, specific, and focus on revenue-generating actions.`;
+        userPrompt = `Generate today's morning briefing.
+
+Active Clients: ${JSON.stringify(payload.clients)}
+Red Alerts: ${JSON.stringify(payload.red_alerts)}
+Amber Warnings: ${JSON.stringify(payload.amber_warnings)}
+Green Updates: ${JSON.stringify(payload.green_updates)}
+Vault: Revenue $${payload.vault?.revenue}, Slots ${payload.vault?.occupied}/${payload.vault?.total}, Pending Payouts $${payload.vault?.pending_payouts}
+Tasks Due Today: ${payload.tasks_due_today}
+Total Pipeline Value: $${payload.total_pipeline}
+
+Write a concise executive briefing with:
+1. TOP PRIORITY — What must happen in the next 2 hours
+2. CLIENT ACTIONS — Specific actions per client in priority order
+3. REVENUE OPPORTUNITIES — Where money is being left on the table
+4. RISK ITEMS — What could go wrong if not addressed today
+5. PIPELINE FORECAST — Where the pipeline will be in 7 days if today's actions are completed
+
+Keep it under 500 words. Be direct and actionable.`;
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
@@ -261,6 +308,15 @@ Rank from highest impact to lowest. Be specific about expected point increases.`
       result = { plan: content };
     } else if (action === "match_tradelines") {
       result = { matches: content };
+    } else if (action === "generate_task_cards") {
+      try {
+        const cleaned = content.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        result = { tasks: JSON.parse(cleaned) };
+      } catch {
+        result = { tasks: [], raw: content };
+      }
+    } else if (action === "generate_morning_brief") {
+      result = { brief: content };
     }
 
     return new Response(JSON.stringify(result), {
