@@ -257,6 +257,10 @@ Rank from highest impact to lowest. Be specific about expected point increases.`
       result = { strategy: content };
     } else if (action === "generate_funding_roadmap") {
       result = { roadmap: content };
+    } else if (action === "generate_velocity_plan") {
+      result = { plan: content };
+    } else if (action === "match_tradelines") {
+      result = { matches: content };
     }
 
     return new Response(JSON.stringify(result), {
