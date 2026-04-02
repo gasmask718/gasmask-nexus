@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { toast } from "sonner";
 import {
-  Upload, FileText, CheckCircle, AlertCircle, Loader2,
-  FolderOpen, Package, Plus, Trash2
+  Upload, CheckCircle, AlertCircle, Loader2,
+  FolderOpen, Package, Plus
 } from "lucide-react";
 
 interface DocumentVaultProps {
@@ -70,18 +70,18 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
         .from("funding_client_documents")
         .select("*")
         .eq("client_id", clientId)
-        .order("uploaded_at", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
       return data || [];
     },
   });
 
   const allRequiredDocs = Object.values(DOCUMENT_CATEGORIES).flatMap(cat => cat.docs.filter(d => d.required));
-  const uploadedTypes = new Set(documents.map((d: any) => d.document_type));
+  const uploadedTypes = new Set(documents.map((d) => d.document_type));
   const completedRequired = allRequiredDocs.filter(d => uploadedTypes.has(d.type)).length;
   const completionPct = allRequiredDocs.length > 0 ? Math.round((completedRequired / allRequiredDocs.length) * 100) : 0;
 
-  const getDocForType = (type: string) => documents.find((d: any) => d.document_type === type);
+  const getDocForType = (type: string) => documents.find((d) => d.document_type === type);
 
   const handleUpload = async (docType: string, displayName: string, file: File) => {
     setUploadingType(docType);
@@ -103,9 +103,8 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
       const { error: insertError } = await supabase.from("funding_client_documents").insert({
         client_id: clientId,
         document_type: docType,
-        display_name: displayName,
-        storage_path: storagePath,
-        file_size: file.size,
+        file_name: displayName,
+        file_path: storagePath,
       });
       if (insertError) throw insertError;
 
@@ -121,19 +120,12 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
   const createPackage = async () => {
     if (!packageName || selectedPackageDocs.length === 0) return;
     try {
-      const pkgData = {
-        name: packageName,
-        document_ids: selectedPackageDocs,
-        created_at: new Date().toISOString(),
-      };
-
-      // Store as a document entry of type lender_package
       const { error } = await supabase.from("funding_client_documents").insert({
         client_id: clientId,
         document_type: "lender_package",
-        display_name: packageName,
-        storage_path: "",
-        lender_packages: [pkgData],
+        file_name: packageName,
+        file_path: "",
+        notes: JSON.stringify({ document_ids: selectedPackageDocs, created_at: new Date().toISOString() }),
       });
       if (error) throw error;
 
@@ -147,7 +139,7 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
     }
   };
 
-  const lenderPackages = documents.filter((d: any) => d.document_type === "lender_package");
+  const lenderPackages = documents.filter((d) => d.document_type === "lender_package");
 
   return (
     <div className="space-y-6">
@@ -200,7 +192,7 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
                           <p className="text-sm font-medium">{doc.name}</p>
                           {uploaded && (
                             <p className="text-xs text-muted-foreground">
-                              Uploaded {new Date((uploaded as any).uploaded_at).toLocaleDateString()}
+                              Uploaded {new Date(uploaded.created_at).toLocaleDateString()}
                             </p>
                           )}
                         </div>
@@ -210,7 +202,7 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
                           {doc.required ? "Required" : "Optional"}
                         </Badge>
                         {!readOnly && (
-                          <label>
+                          <label className="cursor-pointer">
                             <input
                               type="file"
                               accept=".pdf,.jpg,.jpeg,.png"
@@ -222,7 +214,7 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
                               }}
                               disabled={isUploading}
                             />
-                            <Button variant="outline" size="sm" className="cursor-pointer" asChild disabled={isUploading}>
+                            <Button variant="outline" size="sm" asChild>
                               <span>
                                 {isUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
                                 {uploaded ? "Replace" : "Upload"}
@@ -260,13 +252,13 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
             <p className="text-sm text-muted-foreground text-center py-6">No lender packages created yet.</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {lenderPackages.map((pkg: any) => {
-                const pkgInfo = pkg.lender_packages?.[0] || {};
+              {lenderPackages.map((pkg) => {
+                const pkgInfo = pkg.notes ? JSON.parse(pkg.notes) : {};
                 const docIds = pkgInfo.document_ids || [];
                 return (
                   <Card key={pkg.id} className="border-border/30">
                     <CardContent className="p-4">
-                      <p className="font-medium">{pkg.display_name}</p>
+                      <p className="font-medium">{pkg.file_name}</p>
                       <p className="text-xs text-muted-foreground mt-1">{docIds.length} documents included</p>
                     </CardContent>
                   </Card>
@@ -292,7 +284,7 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
               <div>
                 <Label>Select Documents to Include</Label>
                 <div className="space-y-1 max-h-60 overflow-y-auto mt-2">
-                  {documents.filter((d: any) => d.document_type !== "lender_package").map((doc: any) => (
+                  {documents.filter((d) => d.document_type !== "lender_package").map((doc) => (
                     <label key={doc.id} className="flex items-center gap-2 p-2 rounded hover:bg-muted/20 cursor-pointer">
                       <input
                         type="checkbox"
@@ -302,7 +294,7 @@ export default function DocumentVault({ clientId, readOnly = false }: DocumentVa
                           else setSelectedPackageDocs(selectedPackageDocs.filter(id => id !== doc.id));
                         }}
                       />
-                      <span className="text-sm">{doc.display_name}</span>
+                      <span className="text-sm">{doc.file_name}</span>
                     </label>
                   ))}
                 </div>
