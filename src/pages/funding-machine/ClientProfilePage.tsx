@@ -325,6 +325,10 @@ export default function ClientProfilePage() {
         <TabsContent value="documents">
           <DocumentVault clientId={clientId!} />
         </TabsContent>
+
+        <TabsContent value="relationships">
+          <LenderRelationships clientId={clientId!} />
+        </TabsContent>
       </Tabs>
     </div>
   );
