@@ -16,6 +16,7 @@ import { WealthModule } from './wealth';
 import { BettingModule } from './betting';
 import { BikerModule } from './biker';
 import { BrandaroModule } from './brandaro';
+import { FundingMachineModule } from './fundingmachine';
 
 // All Dynasty OS Modules
 export const DYNASTY_MODULES: DynastyModule[] = [
