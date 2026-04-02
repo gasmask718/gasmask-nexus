@@ -5,3 +5,5 @@ export { default as CreditRepairPage } from './CreditRepairPage';
 export { default as BusinessBuilderPage } from './BusinessBuilderPage';
 export { default as BureauIntelPage } from './BureauIntelPage';
 export { default as FundingMatrixPage } from './FundingMatrixPage';
+export { default as VelocityCalculatorPage } from './VelocityCalculatorPage';
+export { default as TradelineVaultPage } from './TradelineVaultPage';
