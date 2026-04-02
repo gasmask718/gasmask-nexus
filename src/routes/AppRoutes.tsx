@@ -836,6 +836,7 @@ const FundingMachineTaskCards = lazy(() => import('@/pages/funding-machine/TaskC
 const FundingMachineMorningBriefing = lazy(() => import('@/pages/funding-machine/MorningBriefingPage'));
 const FundingMachineSettings = lazy(() => import('@/pages/funding-machine/FundingMachineSettingsPage'));
 const FundingClientPortal = lazy(() => import('@/pages/funding-machine/ClientPortalPage'));
+const FundingMachineApplications = lazy(() => import('@/pages/funding-machine/ApplicationsPage'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
