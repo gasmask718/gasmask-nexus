@@ -101,6 +101,58 @@ Be specific and actionable.`;
         break;
       }
 
+      case "optimize_card_stack": {
+        systemPrompt = `You are a master credit card stacking strategist. You understand bureau pull patterns, application velocity, and how to maximize total approved credit within a 14-day window.`;
+        userPrompt = `Optimize this credit card application stack for maximum approval and total credit.
+
+Client Scores:
+- TransUnion: ${payload.scores?.tu ?? 'Unknown'}
+- Equifax: ${payload.scores?.eq ?? 'Unknown'}
+- Experian: ${payload.scores?.ex ?? 'Unknown'}
+
+Selected Cards:
+${JSON.stringify(payload.cards, null, 2)}
+
+Provide:
+1. Optimal application sequence (numbered, with reasoning)
+2. Timing within the 14-day window (which day to apply for each)
+3. Expected approval amount per card
+4. Total projected available credit
+5. Any cards to remove from the stack and why
+6. Bureau distribution analysis
+
+Apply hardest approvals first. Distribute across bureaus. Cluster within the 14-day window to minimize inquiry impact.`;
+        break;
+      }
+
+      case "generate_funding_roadmap": {
+        systemPrompt = `You are a funding acquisition strategist who builds multi-phase capital access plans for businesses. You understand personal loans, business credit, SBA programs, and alternative financing.`;
+        userPrompt = `Generate a detailed funding roadmap for this client.
+
+Client: ${payload.client?.first_name} ${payload.client?.last_name}
+Monthly Revenue: $${payload.client?.monthly_revenue || 0}
+Time in Business: ${payload.client?.time_in_business_months || 0} months
+Funding Goal: ${payload.client?.funding_goal || 'General capital access'}
+Target Amount: $${payload.client?.target_funding_amount || 0}
+
+Credit Scores:
+- Overall DFS: ${payload.scores?.overall ?? 'N/A'}
+- TransUnion: ${payload.scores?.tu ?? 'N/A'}
+- Equifax: ${payload.scores?.eq ?? 'N/A'}
+- Experian: ${payload.scores?.ex ?? 'N/A'}
+
+Products Available Now (match 7+): ${JSON.stringify(payload.available_now)}
+Products Available at 90 Days (match 4-6): ${JSON.stringify(payload.available_90d)}
+
+Create a roadmap with three phases:
+1. NOW — What to apply for immediately, expected amounts, and sequencing
+2. 90 DAYS — What becomes available after banking velocity and credit improvement
+3. 12 MONTHS — Full stack available after complete optimization
+
+For each phase include specific products, expected amounts, timing, and what actions the client must complete to unlock the next phase. Be specific with dollar amounts and timelines.`;
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
@@ -142,7 +194,6 @@ Be specific and actionable.`;
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse response based on action
     let result: Record<string, unknown> = {};
     if (action === "analyze_credit_items") {
       try {
@@ -157,6 +208,10 @@ Be specific and actionable.`;
       result = { strategy: content };
     } else if (action === "vendor_instructions") {
       result = { instructions: content };
+    } else if (action === "optimize_card_stack") {
+      result = { strategy: content };
+    } else if (action === "generate_funding_roadmap") {
+      result = { roadmap: content };
     }
 
     return new Response(JSON.stringify(result), {
