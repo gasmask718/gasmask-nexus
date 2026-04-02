@@ -16,6 +16,7 @@ import { WealthModule } from './wealth';
 import { BettingModule } from './betting';
 import { BikerModule } from './biker';
 import { BrandaroModule } from './brandaro';
+import { FundingMachineModule } from './fundingmachine';
 
 // All Dynasty OS Modules
 export const DYNASTY_MODULES: DynastyModule[] = [
@@ -39,6 +40,9 @@ export const DYNASTY_MODULES: DynastyModule[] = [
 
   // Agency & Digital
   BrandaroModule,
+
+  // Floor 10 — Funding Machine
+  FundingMachineModule,
 ];
 
 // Initialize all modules on import
@@ -61,6 +65,7 @@ export {
   BettingModule,
   BikerModule,
   BrandaroModule,
+  FundingMachineModule,
 };
 
 // Generate routes for React Router

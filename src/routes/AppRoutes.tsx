@@ -822,6 +822,10 @@ const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/Special
 const FundingDashboard = lazy(() => import('@/pages/os/funding/FundingDashboard'));
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
+// Funding Machine (Floor 10)
+const FundingMachineDashboard = lazy(() => import('@/pages/funding-machine/FundingMachineDashboard'));
+const FundingMachineIntake = lazy(() => import('@/pages/funding-machine/ClientIntakePage'));
+const FundingMachineClientProfile = lazy(() => import('@/pages/funding-machine/ClientProfilePage'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
@@ -1630,6 +1634,17 @@ export default function AppRoutes() {
         <Route path="/os/funding" element={<FundingDashboard />} />
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
+        {/* Floor 10 — Dynasty Funding Machine */}
+        <Route path="/funding-machine" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/intake" element={<FundingMachineIntake />} />
+        <Route path="/funding-machine/client/:clientId" element={<FundingMachineClientProfile />} />
+        <Route path="/funding-machine/credit-repair" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/business-builder" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/bureau-intel" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/funding-matrix" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/velocity" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/tradeline-vault" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/tasks" element={<FundingMachineDashboard />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />

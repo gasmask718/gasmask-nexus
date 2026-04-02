@@ -1,69 +1,47 @@
+## Session 1 — Foundation Build
 
-## 🔍 Audit Results
-- `ut_supplier_negotiations` already exists with full schema (29 cols) — NO recreation needed
-- All 6 pages exist — will UPGRADE, not rebuild
-- 3 new tables needed, 1 table extension needed
+### Phase 1: Database Schema (Migration)
+Create the core tables needed for the first 3 modules:
 
-## Phase 1: Database Foundation (Migration)
-**Extend `ut_suppliers`** with: risk_score, verification_status, avg_response_time, avg_shipping_delay, dispute_count, successful_orders, failed_orders, communication_score, branding_score
+**Client & Intake Tables:**
+- `funding_clients` — master client record (personal info, business info, funding goal, target amount, revenue, time in business, DFS score, status)
+- `funding_client_documents` — uploaded credit reports and documents per client
+- `funding_dfs_scores` — DFS score history with all 12 dimension breakdowns
+- `funding_infrastructure_checklist` — onboarding steps tracker (address, LLC, EIN, DUNS, banking, 411, website) per client
+- `funding_mailbox_providers` — client mailbox provider credentials and monitoring config
 
-**Create `ut_supplier_risk_profiles`**: supplier_id, risk_score, risk_level, flagged_issues_count, delay_probability, quality_risk, communication_risk
+**Credit Repair Tables:**
+- `funding_credit_items` — negative items per bureau per client (creditor, type, balance, status, date)
+- `funding_dispute_rounds` — dispute round tracking with letter type, sent date, response deadline, status
+- `funding_mailing_log` — certified mail tracking (tracking number, delivery status, sent/received dates)
 
-**Create `ut_sample_reviews`**: supplier_id, quality_score, branding_accuracy, packaging_score, notes, approved
+**Business Credit Tables:**
+- `funding_tradeline_accounts` — vendor/store/bank tradeline tracking per client (tier, limit, balance, utilization, reporting bureau, Paydex contribution)
 
-**Create `ut_procurement_approvals`**: rfq_id, supplier_id, approved_by, approval_status, notes
+**Reference Data Tables:**
+- `funding_card_database` — card products with bureau pull tags, score tiers, limits, APR info
+- `funding_lender_database` — all lender products with requirements, amounts, speeds
+- `funding_task_cards` — structured task cards per client (action, category, steps, deadline, impact score, status)
 
-## Phase 2: Supplier Inbox Upgrade
-- AI suggested replies panel
-- Unread priority sorting
-- Mark as urgent / assign to team member
-- Conversation tagging
-- Generate Negotiation Reply / Counter Offer / Close Deal buttons
-- Connect to AI edge function for message generation
+All tables get RLS policies scoped to authenticated users. Reference tables (cards, lenders) are read-accessible to all authenticated users.
 
-## Phase 3: AI Negotiation Agent
-- Negotiation panel inside Inbox
-- Generate First Message / Counter Offer / Shipping Negotiation / Close Deal
-- Pulls RFQ data, compares offers, tracks savings
-- Uses existing `ut_supplier_negotiations` table
+### Phase 2: Module Registration
+- Create the Funding Machine module config at `src/modules/fundingmachine/index.ts`
+- Register as Floor 10 in Dynasty OS with sidebar items for each sub-module
+- Update `src/modules/index.ts` to include it
 
-## Phase 4: Supplier Risk AI
-- Risk score display (0-100, color coded)
-- Auto-analysis of pricing anomalies, slow replies, shipping delays
-- Flag/Pause/Block supplier actions
-- Writes to `ut_supplier_risk_profiles`
+### Phase 3: Client Intake UI
+- Build the client intake form (personal info, business info, funding goals)
+- Build the DFS score dashboard with 12-dimension visual breakdown
+- Build the infrastructure checklist tracker (7-step onboarding)
 
-## Phase 5: Decision Engine Upgrade
-- Add Recommended/Cheapest/Fastest/Lowest Risk rankings
-- Risk score penalty factor
-- "Approve Supplier & Proceed" button → writes to `ut_procurement_approvals`
-
-## Phase 6: Shipping Intelligence Upgrade
-- Air vs Sea vs Express comparison UI
-- Landed cost calculator with duty estimates
-- Per-unit landed cost breakdown
-
-## Phase 7: Order Handoff System
-- Auto-create order record when supplier approved
-- Link to RFQ, assign supplier, create shipment entry
-
-## Phase 8: Command Dashboard Upgrade
-- KPI cards: avg risk, negotiation savings %, response time, top suppliers, delayed shipments, unread conversations
-- Alert system: no response >48h, overdue shipments, high-risk supplier, missing quotes
-
-## Phase 9: Automation Rules (Edge Function)
-- Auto-resend if no response
-- Auto-block high-risk suppliers
-- Auto-alert on delays
-- Auto-preferred on good performance
-- Log savings on negotiation improvements
-
-## Phase 10: Approval Safety System
-- Pre-order checklist UI (supplier approved, risk checked, shipping reviewed, branding reviewed)
-- Final approval gate
-
-## Phase 11: Learning System
-- Post-order performance updates
-- Actual vs expected cost/shipping tracking
-- Quality outcome logging
-- Auto-adjust rankings and risk scores
+### What's NOT in Session 1:
+- Credit Repair Command Center UI (Session 2)
+- Business Credit Builder UI (Session 2)  
+- Card/Bureau Intelligence UI (Session 3)
+- Funding Product Matrix UI (Session 3)
+- Banking Velocity Calculator (Session 4)
+- Tradeline Vault (Session 4)
+- Claude API integrations (Session 5)
+- Mail monitoring integrations (Session 5)
+- Morning Briefing + Automation (Session 6)
