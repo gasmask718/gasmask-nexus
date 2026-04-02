@@ -40,6 +40,9 @@ export const DYNASTY_MODULES: DynastyModule[] = [
 
   // Agency & Digital
   BrandaroModule,
+
+  // Floor 10 — Funding Machine
+  FundingMachineModule,
 ];
 
 // Initialize all modules on import
