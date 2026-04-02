@@ -1,7 +1,7 @@
 import { DynastyModule, SidebarItem } from '../types';
 import {
   Landmark, Users, Shield, Building2, CreditCard,
-  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise
+  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings
 } from 'lucide-react';
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
@@ -14,6 +14,7 @@ import VelocityCalculatorPage from '@/pages/funding-machine/VelocityCalculatorPa
 import TradelineVaultPage from '@/pages/funding-machine/TradelineVaultPage';
 import TaskCardsPage from '@/pages/funding-machine/TaskCardsPage';
 import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
+import FundingMachineSettingsPage from '@/pages/funding-machine/FundingMachineSettingsPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
@@ -26,6 +27,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/velocity', label: 'Velocity Calculator', icon: TrendingUp },
   { path: '/funding-machine/tradeline-vault', label: 'Tradeline Vault', icon: FileText },
   { path: '/funding-machine/tasks', label: 'Task Cards', icon: ClipboardList },
+  { path: '/funding-machine/settings', label: 'Settings', icon: Settings },
 ];
 
 export const FundingMachineModule: DynastyModule = {
@@ -52,6 +54,7 @@ export const FundingMachineModule: DynastyModule = {
     { path: '/velocity', component: VelocityCalculatorPage, label: 'Velocity Calculator', icon: TrendingUp, requiresAuth: true },
     { path: '/tradeline-vault', component: TradelineVaultPage, label: 'Tradeline Vault', icon: FileText, requiresAuth: true },
     { path: '/tasks', component: TaskCardsPage, label: 'Task Cards', icon: ClipboardList, requiresAuth: true },
+    { path: '/settings', component: FundingMachineSettingsPage, label: 'Settings', icon: Settings, requiresAuth: true },
   ],
   Dashboard: FundingMachineDashboard,
   sidebarItems,

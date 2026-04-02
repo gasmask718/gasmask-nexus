@@ -834,6 +834,8 @@ const FundingMachineVelocity = lazy(() => import('@/pages/funding-machine/Veloci
 const FundingMachineTradelineVault = lazy(() => import('@/pages/funding-machine/TradelineVaultPage'));
 const FundingMachineTaskCards = lazy(() => import('@/pages/funding-machine/TaskCardsPage'));
 const FundingMachineMorningBriefing = lazy(() => import('@/pages/funding-machine/MorningBriefingPage'));
+const FundingMachineSettings = lazy(() => import('@/pages/funding-machine/FundingMachineSettingsPage'));
+const FundingClientPortal = lazy(() => import('@/pages/funding-machine/ClientPortalPage'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
@@ -1058,6 +1060,7 @@ export default function AppRoutes() {
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/portal/login" element={<PortalLogin />} />
+      <Route path="/portal" element={<FundingClientPortal />} />
       <Route path="/portal/register" element={<PortalRegister />} />
       <Route path="/portal/driver/login" element={<DriverLogin />} />
       <Route path="/portal/biker/login" element={<BikerLogin />} />
@@ -1654,6 +1657,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/tradeline-vault" element={<FundingMachineTradelineVault />} />
         <Route path="/funding-machine/tasks" element={<FundingMachineTaskCards />} />
         <Route path="/funding-machine/morning-briefing" element={<FundingMachineMorningBriefing />} />
+        <Route path="/funding-machine/settings" element={<FundingMachineSettings />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />

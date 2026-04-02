@@ -189,18 +189,40 @@ export default function CreditRepairPage() {
       }).select().single();
       if (roundErr) throw roundErr;
 
-      await supabase.from('funding_mailing_log').insert({
+      const { data: mailLog } = await supabase.from('funding_mailing_log').insert({
         client_id: clientId!,
         dispute_round_id: round.id,
         recipient_name: selectedItem.creditor_name,
         mail_type: 'certified',
         delivery_status: 'pending_dispatch',
         sent_date: new Date().toISOString(),
-      });
+      }).select().single();
+
+      // Attempt PostGrid dispatch
+      if (mailLog && client) {
+        const { data: pgResult } = await supabase.functions.invoke('funding-postgrid', {
+          body: {
+            letter_content: generatedLetter,
+            client_name: `${client.first_name} ${client.last_name}`,
+            client_address: client.address || '',
+            client_city: client.city || '',
+            client_state: client.state || '',
+            client_zip: client.zip_code || '',
+            bureau: selectedItem.bureau,
+            mailing_log_id: mailLog.id,
+          },
+        });
+        if (pgResult?.code === 'NO_API_KEY') {
+          toast.warning('Certified mail queued — add PostGrid API key in Settings to enable dispatch. Letter saved to mail log.');
+        } else if (pgResult?.success) {
+          toast.success(`Letter dispatched via PostGrid — ID: ${pgResult.letter_id}`);
+        } else if (pgResult?.error) {
+          toast.warning(`Mail logged but PostGrid dispatch failed: ${pgResult.message}`);
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ['funding-dispute-rounds', clientId] });
       queryClient.invalidateQueries({ queryKey: ['funding-mailing-log', clientId] });
-      toast.success('Letter queued for certified mail dispatch');
       setGeneratedLetter('');
       setSelectedItem(null);
     } catch (err: any) {
@@ -531,7 +553,11 @@ export default function CreditRepairPage() {
                         <td className="p-3 font-medium text-sm">{m.recipient_name || '—'}</td>
                         <td className="p-3"><Badge variant="outline" className="text-xs">{m.mail_type || 'certified'}</Badge></td>
                         <td className="p-3 text-sm text-muted-foreground">{m.sent_date ? new Date(m.sent_date).toLocaleDateString() : '—'}</td>
-                        <td className="p-3 text-sm font-mono text-xs">{m.tracking_number || 'Pending'}</td>
+                        <td className="p-3 text-sm font-mono text-xs">
+                          {m.tracking_number ? (
+                            <a href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${m.tracking_number}`} target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">{m.tracking_number}</a>
+                          ) : 'Pending'}
+                        </td>
                         <td className="p-3">
                           <Badge className={`text-xs ${
                             m.delivery_status === 'delivered' ? 'bg-emerald-500/20 text-emerald-400' :
