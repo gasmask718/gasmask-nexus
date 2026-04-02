@@ -10,6 +10,8 @@ import CreditRepairPage from '@/pages/funding-machine/CreditRepairPage';
 import BusinessBuilderPage from '@/pages/funding-machine/BusinessBuilderPage';
 import BureauIntelPage from '@/pages/funding-machine/BureauIntelPage';
 import FundingMatrixPage from '@/pages/funding-machine/FundingMatrixPage';
+import VelocityCalculatorPage from '@/pages/funding-machine/VelocityCalculatorPage';
+import TradelineVaultPage from '@/pages/funding-machine/TradelineVaultPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine', label: 'Dashboard', icon: LayoutDashboard },
