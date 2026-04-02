@@ -176,7 +176,7 @@ export default function FundingMatrixPage() {
             <CardHeader><CardTitle className="text-amber-400 flex items-center gap-2"><Target className="h-5 w-5" /> Funding Profile</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
-                <div><div className="text-xs text-muted-foreground">DFS Score</div><div className="text-2xl font-black text-amber-400">{dfs?.overall_score ?? '—'}</div></div>
+                <div><div className="text-xs text-muted-foreground">DFS Score</div><div className="text-2xl font-black text-amber-400">{dfs?.total_score ?? '—'}</div></div>
                 <div><div className="text-xs text-muted-foreground">TU</div><div className="text-xl font-bold">{dfs?.personal_credit_tu ?? '—'}</div></div>
                 <div><div className="text-xs text-muted-foreground">EQ</div><div className="text-xl font-bold">{dfs?.personal_credit_eq ?? '—'}</div></div>
                 <div><div className="text-xs text-muted-foreground">EX</div><div className="text-xl font-bold">{dfs?.personal_credit_ex ?? '—'}</div></div>
