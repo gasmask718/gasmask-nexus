@@ -233,6 +233,9 @@ export default function ClientProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Score Simulator */}
+          <ScoreSimulator clientId={clientId!} />
+
           {/* Infrastructure Checklist */}
           <Card className="border-amber-500/20">
             <CardHeader>
