@@ -352,6 +352,8 @@ Provide a numbered action plan with specific steps, estimated time for each step
       } catch {
         result = { simulation: null, raw: content };
       }
+    } else if (action === "generate_denial_remediation") {
+      result = { remediation: content };
     }
 
     return new Response(JSON.stringify(result), {
