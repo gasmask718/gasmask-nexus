@@ -6,7 +6,11 @@ import { cn } from "@/lib/utils";
 
 const Dialog = DialogPrimitive.Root;
 
-const DialogTrigger = DialogPrimitive.Trigger;
+const DialogTrigger = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Trigger> & { asChild?: boolean }
+>(({ ...props }, ref) => <DialogPrimitive.Trigger ref={ref} {...props} />);
+DialogTrigger.displayName = "DialogTrigger";
 
 const DialogPortal = DialogPrimitive.Portal;
 
@@ -14,7 +18,7 @@ const DialogClose = DialogPrimitive.Close;
 
 const DialogOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
@@ -29,7 +33,7 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & React.HTMLAttributes<HTMLDivElement>
 >(({ className, children, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
@@ -64,7 +68,7 @@ DialogFooter.displayName = "DialogFooter";
 
 const DialogTitle = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Title>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title> & React.HTMLAttributes<HTMLHeadingElement>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Title
     ref={ref}
@@ -76,7 +80,7 @@ DialogTitle.displayName = DialogPrimitive.Title.displayName;
 
 const DialogDescription = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Description>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description> & React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Description ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />
 ));
