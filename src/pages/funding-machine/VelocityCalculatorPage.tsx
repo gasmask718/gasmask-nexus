@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { TrendingUp, Loader2, ArrowRight, CheckCircle2, Building2 } from 'lucide-react';
+import { TrendingUp, Loader2, ArrowRight, CheckCircle2, Building2, Link2, RefreshCw, AlertTriangle } from 'lucide-react';
 
 interface FundingClient {
   id: string;
