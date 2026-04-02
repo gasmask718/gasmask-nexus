@@ -832,6 +832,8 @@ const FundingMachineBureauIntel = lazy(() => import('@/pages/funding-machine/Bur
 const FundingMachineFundingMatrix = lazy(() => import('@/pages/funding-machine/FundingMatrixPage'));
 const FundingMachineVelocity = lazy(() => import('@/pages/funding-machine/VelocityCalculatorPage'));
 const FundingMachineTradelineVault = lazy(() => import('@/pages/funding-machine/TradelineVaultPage'));
+const FundingMachineTaskCards = lazy(() => import('@/pages/funding-machine/TaskCardsPage'));
+const FundingMachineMorningBriefing = lazy(() => import('@/pages/funding-machine/MorningBriefingPage'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
