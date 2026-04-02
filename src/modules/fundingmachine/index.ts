@@ -27,6 +27,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/velocity', label: 'Velocity Calculator', icon: TrendingUp },
   { path: '/funding-machine/tradeline-vault', label: 'Tradeline Vault', icon: FileText },
   { path: '/funding-machine/tasks', label: 'Task Cards', icon: ClipboardList },
+  { path: '/funding-machine/settings', label: 'Settings', icon: Settings },
 ];
 
 export const FundingMachineModule: DynastyModule = {

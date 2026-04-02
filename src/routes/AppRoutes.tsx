@@ -1060,6 +1060,7 @@ export default function AppRoutes() {
       <Route path="/twl-landing" element={<TWLLanding />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/portal/login" element={<PortalLogin />} />
+      <Route path="/portal" element={<FundingClientPortal />} />
       <Route path="/portal/register" element={<PortalRegister />} />
       <Route path="/portal/driver/login" element={<DriverLogin />} />
       <Route path="/portal/biker/login" element={<BikerLogin />} />
