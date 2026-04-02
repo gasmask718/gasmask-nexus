@@ -828,6 +828,8 @@ const FundingMachineIntake = lazy(() => import('@/pages/funding-machine/ClientIn
 const FundingMachineClientProfile = lazy(() => import('@/pages/funding-machine/ClientProfilePage'));
 const FundingMachineCreditRepair = lazy(() => import('@/pages/funding-machine/CreditRepairPage'));
 const FundingMachineBusinessBuilder = lazy(() => import('@/pages/funding-machine/BusinessBuilderPage'));
+const FundingMachineBureauIntel = lazy(() => import('@/pages/funding-machine/BureauIntelPage'));
+const FundingMachineFundingMatrix = lazy(() => import('@/pages/funding-machine/FundingMatrixPage'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
@@ -1642,8 +1644,8 @@ export default function AppRoutes() {
         <Route path="/funding-machine/client/:clientId" element={<FundingMachineClientProfile />} />
         <Route path="/funding-machine/credit-repair" element={<FundingMachineCreditRepair />} />
         <Route path="/funding-machine/business-builder" element={<FundingMachineBusinessBuilder />} />
-        <Route path="/funding-machine/bureau-intel" element={<FundingMachineDashboard />} />
-        <Route path="/funding-machine/funding-matrix" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/bureau-intel" element={<FundingMachineBureauIntel />} />
+        <Route path="/funding-machine/funding-matrix" element={<FundingMachineFundingMatrix />} />
         <Route path="/funding-machine/velocity" element={<FundingMachineDashboard />} />
         <Route path="/funding-machine/tradeline-vault" element={<FundingMachineDashboard />} />
         <Route path="/funding-machine/tasks" element={<FundingMachineDashboard />} />
