@@ -98,7 +98,7 @@ export default function BureauIntelPage() {
     setOptimizedResult('');
 
     supabase.from('funding_dfs_scores').select('personal_credit_tu, personal_credit_eq, personal_credit_ex')
-      .eq('client_id', selectedClient).order('calculated_at', { ascending: false }).limit(1).maybeSingle()
+      .eq('client_id', selectedClient).order('scored_at', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setDfs(data));
 
     supabase.from('funding_credit_items').select('bureau').eq('client_id', selectedClient).eq('item_type', 'hard_inquiry')

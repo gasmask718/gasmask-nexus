@@ -3,3 +3,5 @@ export { default as ClientIntakePage } from './ClientIntakePage';
 export { default as ClientProfilePage } from './ClientProfilePage';
 export { default as CreditRepairPage } from './CreditRepairPage';
 export { default as BusinessBuilderPage } from './BusinessBuilderPage';
+export { default as BureauIntelPage } from './BureauIntelPage';
+export { default as FundingMatrixPage } from './FundingMatrixPage';

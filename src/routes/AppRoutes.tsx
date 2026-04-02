@@ -1644,8 +1644,8 @@ export default function AppRoutes() {
         <Route path="/funding-machine/client/:clientId" element={<FundingMachineClientProfile />} />
         <Route path="/funding-machine/credit-repair" element={<FundingMachineCreditRepair />} />
         <Route path="/funding-machine/business-builder" element={<FundingMachineBusinessBuilder />} />
-        <Route path="/funding-machine/bureau-intel" element={<FundingMachineDashboard />} />
-        <Route path="/funding-machine/funding-matrix" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/bureau-intel" element={<FundingMachineBureauIntel />} />
+        <Route path="/funding-machine/funding-matrix" element={<FundingMachineFundingMatrix />} />
         <Route path="/funding-machine/velocity" element={<FundingMachineDashboard />} />
         <Route path="/funding-machine/tradeline-vault" element={<FundingMachineDashboard />} />
         <Route path="/funding-machine/tasks" element={<FundingMachineDashboard />} />
