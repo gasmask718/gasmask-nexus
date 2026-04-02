@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { TrendingUp, Loader2, ArrowRight, CheckCircle2, Building2 } from 'lucide-react';
+import { TrendingUp, Loader2, ArrowRight, CheckCircle2, Building2, Link2, RefreshCw, AlertTriangle } from 'lucide-react';
 
 interface FundingClient {
   id: string;
@@ -110,6 +110,93 @@ const COMPOUNDING_CHAINS = [
   { steps: ['Navy Federal (member)', 'Navy Federal $50K Loan', 'SBA Express $500K'], label: 'CU → Loan → SBA' },
 ];
 
+function PlaidConnectionSection({ clientId }: { clientId: string }) {
+  const [connection, setConnection] = useState<any>(null);
+  const [connecting, setConnecting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [noCredentials, setNoCredentials] = useState(false);
+
+  useEffect(() => {
+    supabase.from('funding_plaid_connections').select('*').eq('client_id', clientId).eq('is_active', true).limit(1).single()
+      .then(({ data }) => { if (data) setConnection(data); });
+  }, [clientId]);
+
+  const connectBank = async () => {
+    setConnecting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('funding-plaid', {
+        body: { action: 'create_link_token', client_id: clientId },
+      });
+      if (error) throw error;
+      if (data?.error?.code === 'NO_PLAID_CREDENTIALS') {
+        setNoCredentials(true);
+        return;
+      }
+      // In production, load Plaid Link SDK here. For now show the link token was created.
+      toast.success('Plaid Link token created. Plaid Link SDK integration ready.');
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const syncTransactions = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('funding-plaid', {
+        body: { action: 'sync_transactions', client_id: clientId },
+      });
+      if (error) throw error;
+      toast.success(`Synced ${data.transactions_synced} transactions`);
+      // Reload connection
+      const { data: conn } = await supabase.from('funding_plaid_connections').select('*').eq('client_id', clientId).eq('is_active', true).limit(1).single();
+      if (conn) setConnection(conn);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <Card className="border-amber-500/20">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2"><Link2 className="h-4 w-4 text-amber-500" /> Banking Connection</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {noCredentials && (
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-sm text-amber-400 mb-3 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            Plaid integration requires API credentials — add PLAID_CLIENT_ID and PLAID_SECRET in your edge function secrets to enable automatic velocity tracking.
+          </div>
+        )}
+        {connection ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              <div>
+                <div className="font-semibold">{connection.institution_name}</div>
+                <div className="text-xs text-muted-foreground">
+                  Connected {new Date(connection.created_at).toLocaleDateString()}
+                  {connection.last_synced_at && <> • Last synced {new Date(connection.last_synced_at).toLocaleDateString()}</>}
+                </div>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={syncTransactions} disabled={syncing} className="border-amber-500/30 text-amber-400">
+              {syncing ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Syncing...</> : <><RefreshCw className="h-3 w-3 mr-1" /> Sync Now</>}
+            </Button>
+          </div>
+        ) : (
+          <Button onClick={connectBank} disabled={connecting} variant="outline" className="border-amber-500/30 text-amber-400">
+            {connecting ? <><Loader2 className="h-3 w-3 animate-spin mr-1" /> Connecting...</> : <><Link2 className="h-3 w-3 mr-1" /> Connect Bank Account</>}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function VelocityCalculatorPage() {
   const [clients, setClients] = useState<FundingClient[]>([]);
   const [selectedClient, setSelectedClient] = useState('');
@@ -208,6 +295,9 @@ export default function VelocityCalculatorPage() {
         <Card className="border-dashed"><CardContent className="py-16 text-center text-muted-foreground">Select a client to calculate velocity requirements</CardContent></Card>
       ) : (
         <>
+          {/* Plaid Banking Connection */}
+          <PlaidConnectionSection clientId={selectedClient} />
+
           {/* Section 1 — Institution Grid */}
           <div>
             <h2 className="text-lg font-bold mb-3">Select Institution</h2>
@@ -298,10 +388,30 @@ export default function VelocityCalculatorPage() {
                           </div>
                         ))}
                         {row && (
-                          <div className="mt-2 pt-2 border-t text-xs text-muted-foreground space-y-1">
-                            <div>Actual ADB: {row.actual_avg_daily_balance ? fmt(row.actual_avg_daily_balance) : '—'}</div>
-                            <div>Actual Deposits: {row.actual_monthly_deposits ? fmt(row.actual_monthly_deposits) : '—'}</div>
-                            <div>Actual Txns: {row.actual_transaction_count ?? '—'}</div>
+                          <div className="mt-2 pt-2 border-t text-xs space-y-2">
+                            {[
+                              { label: 'Avg Daily Balance', target: row.target_avg_daily_balance, actual: row.actual_avg_daily_balance },
+                              { label: 'Monthly Deposits', target: row.target_monthly_deposits, actual: row.actual_monthly_deposits },
+                              { label: 'Transactions', target: row.target_transaction_count, actual: row.actual_transaction_count },
+                            ].map(metric => {
+                              const pct = metric.target && metric.actual ? Math.min((metric.actual / metric.target) * 100, 100) : 0;
+                              const color = pct >= 100 ? 'bg-emerald-500' : pct >= 80 ? 'bg-amber-500' : 'bg-red-500';
+                              return (
+                                <div key={metric.label}>
+                                  <div className="flex justify-between text-[10px] text-muted-foreground mb-0.5">
+                                    <span>{metric.label}</span>
+                                    <span>
+                                      <span className="text-foreground font-medium">{metric.actual != null ? (metric.label === 'Transactions' ? metric.actual : fmt(metric.actual)) : '—'}</span>
+                                      {' / '}
+                                      {metric.target != null ? (metric.label === 'Transactions' ? metric.target : fmt(metric.target)) : '—'}
+                                    </span>
+                                  </div>
+                                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                    <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+                                  </div>
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>

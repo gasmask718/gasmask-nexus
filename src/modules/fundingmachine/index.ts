@@ -15,6 +15,7 @@ import TradelineVaultPage from '@/pages/funding-machine/TradelineVaultPage';
 import TaskCardsPage from '@/pages/funding-machine/TaskCardsPage';
 import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
 import FundingMachineSettingsPage from '@/pages/funding-machine/FundingMachineSettingsPage';
+import ApplicationsPage from '@/pages/funding-machine/ApplicationsPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
@@ -24,6 +25,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/business-builder', label: 'Business Builder', icon: Building2 },
   { path: '/funding-machine/bureau-intel', label: 'Bureau Intelligence', icon: CreditCard },
   { path: '/funding-machine/funding-matrix', label: 'Funding Matrix', icon: Landmark },
+  { path: '/funding-machine/applications', label: 'Applications', icon: ClipboardList },
   { path: '/funding-machine/velocity', label: 'Velocity Calculator', icon: TrendingUp },
   { path: '/funding-machine/tradeline-vault', label: 'Tradeline Vault', icon: FileText },
   { path: '/funding-machine/tasks', label: 'Task Cards', icon: ClipboardList },
@@ -51,6 +53,7 @@ export const FundingMachineModule: DynastyModule = {
     { path: '/business-builder', component: BusinessBuilderPage, label: 'Business Builder', icon: Building2, requiresAuth: true },
     { path: '/bureau-intel', component: BureauIntelPage, label: 'Bureau Intelligence', icon: CreditCard, requiresAuth: true },
     { path: '/funding-matrix', component: FundingMatrixPage, label: 'Funding Matrix', icon: Landmark, requiresAuth: true },
+    { path: '/applications', component: ApplicationsPage, label: 'Applications', icon: ClipboardList, requiresAuth: true },
     { path: '/velocity', component: VelocityCalculatorPage, label: 'Velocity Calculator', icon: TrendingUp, requiresAuth: true },
     { path: '/tradeline-vault', component: TradelineVaultPage, label: 'Tradeline Vault', icon: FileText, requiresAuth: true },
     { path: '/tasks', component: TaskCardsPage, label: 'Task Cards', icon: ClipboardList, requiresAuth: true },

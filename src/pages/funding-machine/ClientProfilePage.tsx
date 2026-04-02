@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
+import LenderRelationships from "@/components/funding-machine/LenderRelationships";
 
 const DFS_DIMENSIONS = [
   { key: 'personal_credit_tu', label: 'Personal Credit (TU)', max: 10 },
@@ -170,6 +171,9 @@ export default function ClientProfilePage() {
           <TabsTrigger value="documents">
             <FileText className="h-3 w-3 mr-1" /> Documents
           </TabsTrigger>
+          <TabsTrigger value="relationships">
+            <Building2 className="h-3 w-3 mr-1" /> Relationships
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
@@ -320,6 +324,10 @@ export default function ClientProfilePage() {
 
         <TabsContent value="documents">
           <DocumentVault clientId={clientId!} />
+        </TabsContent>
+
+        <TabsContent value="relationships">
+          <LenderRelationships clientId={clientId!} />
         </TabsContent>
       </Tabs>
     </div>

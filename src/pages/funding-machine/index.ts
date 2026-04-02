@@ -11,3 +11,4 @@ export { default as TaskCardsPage } from './TaskCardsPage';
 export { default as MorningBriefingPage } from './MorningBriefingPage';
 export { default as FundingMachineSettingsPage } from './FundingMachineSettingsPage';
 export { default as ClientPortalPage } from './ClientPortalPage';
+export { default as ApplicationsPage } from './ApplicationsPage';

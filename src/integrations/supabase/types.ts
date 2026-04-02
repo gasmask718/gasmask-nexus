@@ -37118,6 +37118,74 @@ export type Database = {
           },
         ]
       }
+      funding_applications: {
+        Row: {
+          application_date: string
+          approved_amount: number | null
+          apr: number | null
+          client_id: string
+          created_at: string
+          decision_date: string | null
+          denial_reason: string | null
+          id: string
+          lender_name: string
+          monthly_payment: number | null
+          notes: string | null
+          product_type: string
+          remediation_plan: string | null
+          requested_amount: number
+          status: string
+          term_months: number | null
+          updated_at: string
+        }
+        Insert: {
+          application_date?: string
+          approved_amount?: number | null
+          apr?: number | null
+          client_id: string
+          created_at?: string
+          decision_date?: string | null
+          denial_reason?: string | null
+          id?: string
+          lender_name: string
+          monthly_payment?: number | null
+          notes?: string | null
+          product_type: string
+          remediation_plan?: string | null
+          requested_amount?: number
+          status?: string
+          term_months?: number | null
+          updated_at?: string
+        }
+        Update: {
+          application_date?: string
+          approved_amount?: number | null
+          apr?: number | null
+          client_id?: string
+          created_at?: string
+          decision_date?: string | null
+          denial_reason?: string | null
+          id?: string
+          lender_name?: string
+          monthly_payment?: number | null
+          notes?: string | null
+          product_type?: string
+          remediation_plan?: string | null
+          requested_amount?: number
+          status?: string
+          term_months?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_applications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_banking_velocity: {
         Row: {
           actual_avg_daily_balance: number | null
@@ -37785,6 +37853,50 @@ export type Database = {
         }
         Relationships: []
       }
+      funding_lender_relationships: {
+        Row: {
+          balance_range: string | null
+          client_id: string
+          created_at: string
+          id: string
+          institution_name: string
+          notes: string | null
+          opened_date: string | null
+          relationship_strength: number | null
+          relationship_types: Json | null
+        }
+        Insert: {
+          balance_range?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          institution_name: string
+          notes?: string | null
+          opened_date?: string | null
+          relationship_strength?: number | null
+          relationship_types?: Json | null
+        }
+        Update: {
+          balance_range?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          institution_name?: string
+          notes?: string | null
+          opened_date?: string | null
+          relationship_strength?: number | null
+          relationship_types?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_lender_relationships_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       funding_machine_settings: {
         Row: {
           id: string
@@ -37966,6 +38078,91 @@ export type Database = {
           total_active_clients?: number | null
         }
         Relationships: []
+      }
+      funding_plaid_connections: {
+        Row: {
+          access_token: string
+          account_id: string | null
+          client_id: string
+          created_at: string
+          id: string
+          institution_name: string
+          is_active: boolean
+          item_id: string
+          last_synced_at: string | null
+        }
+        Insert: {
+          access_token: string
+          account_id?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          institution_name: string
+          is_active?: boolean
+          item_id: string
+          last_synced_at?: string | null
+        }
+        Update: {
+          access_token?: string
+          account_id?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          institution_name?: string
+          is_active?: boolean
+          item_id?: string
+          last_synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_plaid_connections_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_plaid_transactions: {
+        Row: {
+          amount: number
+          category: string | null
+          client_id: string
+          connection_id: string
+          created_at: string
+          id: string
+          merchant_name: string | null
+          transaction_date: string
+        }
+        Insert: {
+          amount: number
+          category?: string | null
+          client_id: string
+          connection_id: string
+          created_at?: string
+          id?: string
+          merchant_name?: string | null
+          transaction_date: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          client_id?: string
+          connection_id?: string
+          created_at?: string
+          id?: string
+          merchant_name?: string | null
+          transaction_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_plaid_transactions_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "funding_plaid_connections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       funding_task_cards: {
         Row: {

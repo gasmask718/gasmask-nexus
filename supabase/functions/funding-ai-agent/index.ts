@@ -261,6 +261,18 @@ Return ONLY JSON with keys projected_change_tu, projected_change_eq, projected_c
         break;
       }
 
+      case "generate_denial_remediation": {
+        systemPrompt = `You are a lending approval specialist who understands exactly why lenders deny applications and what specific steps resolve each denial reason.`;
+        userPrompt = `A client was denied for a ${payload.product_type} from ${payload.lender_name}.
+
+Denial reason: ${payload.denial_reason}
+
+Client scores: ${JSON.stringify(payload.scores)}
+
+Provide a numbered action plan with specific steps, estimated time for each step, and which step will have the most impact. Be specific and actionable.`;
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
@@ -340,6 +352,8 @@ Return ONLY JSON with keys projected_change_tu, projected_change_eq, projected_c
       } catch {
         result = { simulation: null, raw: content };
       }
+    } else if (action === "generate_denial_remediation") {
+      result = { remediation: content };
     }
 
     return new Response(JSON.stringify(result), {
