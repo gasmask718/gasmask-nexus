@@ -25,6 +25,7 @@ const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/business-builder', label: 'Business Builder', icon: Building2 },
   { path: '/funding-machine/bureau-intel', label: 'Bureau Intelligence', icon: CreditCard },
   { path: '/funding-machine/funding-matrix', label: 'Funding Matrix', icon: Landmark },
+  { path: '/funding-machine/applications', label: 'Applications', icon: ClipboardList },
   { path: '/funding-machine/velocity', label: 'Velocity Calculator', icon: TrendingUp },
   { path: '/funding-machine/tradeline-vault', label: 'Tradeline Vault', icon: FileText },
   { path: '/funding-machine/tasks', label: 'Task Cards', icon: ClipboardList },
