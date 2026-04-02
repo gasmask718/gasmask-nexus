@@ -553,7 +553,11 @@ export default function CreditRepairPage() {
                         <td className="p-3 font-medium text-sm">{m.recipient_name || '—'}</td>
                         <td className="p-3"><Badge variant="outline" className="text-xs">{m.mail_type || 'certified'}</Badge></td>
                         <td className="p-3 text-sm text-muted-foreground">{m.sent_date ? new Date(m.sent_date).toLocaleDateString() : '—'}</td>
-                        <td className="p-3 text-sm font-mono text-xs">{m.tracking_number || 'Pending'}</td>
+                        <td className="p-3 text-sm font-mono text-xs">
+                          {m.tracking_number ? (
+                            <a href={`https://tools.usps.com/go/TrackConfirmAction?tLabels=${m.tracking_number}`} target="_blank" rel="noopener noreferrer" className="text-amber-400 underline hover:text-amber-300">{m.tracking_number}</a>
+                          ) : 'Pending'}
+                        </td>
                         <td className="p-3">
                           <Badge className={`text-xs ${
                             m.delivery_status === 'delivered' ? 'bg-emerald-500/20 text-emerald-400' :
