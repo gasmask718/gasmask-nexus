@@ -134,7 +134,7 @@ export default function FundingMatrixPage() {
         body: {
           action: 'generate_funding_roadmap',
           client: { first_name: client.first_name, last_name: client.last_name, monthly_revenue: client.monthly_revenue, time_in_business_months: client.time_in_business_months, funding_goal: client.funding_goal, target_funding_amount: client.target_funding_amount },
-          scores: { overall: dfs.overall_score, tu: dfs.personal_credit_tu, eq: dfs.personal_credit_eq, ex: dfs.personal_credit_ex },
+          scores: { overall: dfs.total_score, tu: dfs.personal_credit_tu, eq: dfs.personal_credit_eq, ex: dfs.personal_credit_ex },
           available_now: scored.filter(l => l.matchScore >= 7).map(l => l.name),
           available_90d: scored.filter(l => l.matchScore >= 4 && l.matchScore < 7).map(l => l.name),
         },
