@@ -1,13 +1,7 @@
-import {
-  MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail,
-  BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings,
-  Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet,
-  Scale, Search, Briefcase, Building2, Calculator
-} from 'lucide-react';
+import { MapPin, Package, Users, TrendingUp, FileText, Phone, MessageCircle, Mail, BarChart3, Map, Radar, Brain, Target, DollarSign, Trophy, Gift, Home, Settings, Database, Crown, Truck, Bike, ClipboardCheck, CreditCard, FileSpreadsheet, Scale, Search, Briefcase, Building2, Calculator, Landmark } from 'lucide-react';
 
 export const navigationItems = [
   { to: '/', icon: MapPin, label: 'Dashboard', roles: ['admin', 'driver', 'biker', 'clerk'] },
-  
   // 🌍 Territory Intelligence (Floor 0)
   { to: '/territory', icon: Map, label: '🌍 Territory Control', roles: ['admin', 'ceo'] },
   { to: '/territory/gap-intelligence', icon: Radar, label: 'Gap Intelligence', roles: ['admin', 'ceo'] },
@@ -20,7 +14,6 @@ export const navigationItems = [
   { to: '/territory/ai-violations', icon: Database, label: '🛡️ AI Violations', roles: ['admin'] },
   { to: '/territory/ai-review-queue', icon: Database, label: '👁️ AI Review Queue', roles: ['admin'] },
   { to: '/territory/playbooks', icon: Database, label: '📖 Playbooks', roles: ['admin'] },
-
   // 📊 Exports (Floor 1–9)
   { to: '/grabba/export/command', icon: FileSpreadsheet, label: '🔥 Command Export', roles: ['admin'] },
   { to: '/grabba/export/floor1', icon: FileSpreadsheet, label: '🏢 CRM Export', roles: ['admin'] },
@@ -32,7 +25,6 @@ export const navigationItems = [
   { to: '/grabba/export/floor7', icon: FileSpreadsheet, label: '🏬 Wholesale Export', roles: ['admin'] },
   { to: '/grabba/export/floor8', icon: FileSpreadsheet, label: '🤝 Ambassadors Export', roles: ['admin'] },
   { to: '/grabba/export/floor9', icon: FileSpreadsheet, label: '🤖 AI Ops Export', roles: ['admin'] },
-
   // Floor 1+
   { to: '/system-operations/ai-ceo-control-room', icon: Crown, label: 'CEO Command Center', roles: ['ceo'], premium: true },
   { to: '/stores', icon: Package, label: 'Stores', roles: ['admin', 'driver'] },
@@ -65,7 +57,6 @@ export const navigationItems = [
   { to: '/sales', icon: Target, label: 'Sales Dashboard', roles: ['admin', 'csr'] },
   { to: '/sales/prospects', icon: Users, label: 'Prospects', roles: ['admin', 'csr'] },
   { to: '/sales/report', icon: BarChart3, label: 'Sales Report', roles: ['admin', 'csr'] },
-  
   // Delivery & Logistics
   { to: '/delivery', icon: Truck, label: 'Delivery Dashboard', roles: ['admin', 'dispatcher', 'ops_manager'] },
   { to: '/biker/home', icon: Bike, label: 'Biker OS', roles: ['admin', 'dispatcher', 'ops_manager', 'biker'] },
@@ -78,7 +69,6 @@ export const navigationItems = [
   { to: '/delivery/debt', icon: DollarSign, label: 'Debt Collection', roles: ['admin', 'finance'] },
   { to: '/delivery/driver-home', icon: Home, label: 'Driver Home', roles: ['driver', 'admin', 'employee'] },
   { to: '/delivery/my-route', icon: MapPin, label: 'My Route', roles: ['driver', 'admin', 'employee'] },
-  
   { to: '/me/home', icon: MapPin, label: 'Worker Home', roles: ['driver', 'biker', 'ambassador'] },
   { to: '/me/driver', icon: Home, label: 'Driver Dashboard', roles: ['driver', 'biker'] },
   { to: '/drivers/leaderboard', icon: Trophy, label: 'Leaderboard', roles: ['driver', 'biker', 'admin'] },
@@ -89,7 +79,6 @@ export const navigationItems = [
   { to: '/analytics', icon: TrendingUp, label: 'Analytics', roles: ['admin', 'accountant'] },
   { to: '/training', icon: Package, label: 'Training', roles: ['admin', 'csr', 'driver', 'biker', 'ambassador'] },
   { to: '/settings/automation', icon: Settings, label: 'Automation', roles: ['admin'] },
-
   // 💰 Surplus Funds OS
   { to: '/surplus-funds', icon: Scale, label: '💰 Surplus Funds OS', roles: ['admin', 'ceo'] },
   { to: '/surplus-funds/leads', icon: FileText, label: 'Floor 1 — Lead Intelligence', roles: ['admin', 'ceo'] },
@@ -99,7 +88,6 @@ export const navigationItems = [
   { to: '/surplus-funds/documents', icon: FileText, label: 'Floor 5 — Documents', roles: ['admin'] },
   { to: '/surplus-funds/automation', icon: Settings, label: 'Floor 6 — AI & Automation', roles: ['admin'] },
   { to: '/surplus-funds/analytics', icon: TrendingUp, label: 'Floor 7 — Analytics', roles: ['admin', 'ceo'] },
-
   // 🏠 Real Estate OS
   { to: '/real-estate', icon: Building2, label: '🏠 Real Estate OS', roles: ['admin', 'ceo', 'va'] },
   { to: '/real-estate/leads', icon: Target, label: 'Floor 1 — Lead Intelligence', roles: ['admin', 'ceo'] },
@@ -111,4 +99,17 @@ export const navigationItems = [
   { to: '/real-estate/automation', icon: Brain, label: 'Floor 7 — Automation Engine', roles: ['admin'] },
   { to: '/real-estate/markets', icon: Map, label: 'Floor 8 — Market Intelligence', roles: ['admin', 'ceo'] },
   { to: '/real-estate/analytics', icon: TrendingUp, label: 'Floor 9 — Analytics', roles: ['admin', 'ceo'] },
+  // 💳 Dynasty Funding Machine (Floor 10)
+  { to: '/funding-machine', icon: Landmark, label: '💳 Funding Machine', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/morning-briefing', icon: Landmark, label: 'Morning Briefing', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/intake', icon: Landmark, label: 'New Client', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/credit-repair', icon: Landmark, label: 'Credit Repair', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/business-builder', icon: Landmark, label: 'Business Builder', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/bureau-intel', icon: Landmark, label: 'Bureau Intelligence', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/funding-matrix', icon: Landmark, label: 'Funding Matrix', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/applications', icon: Landmark, label: 'Applications', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/velocity', icon: Landmark, label: 'Velocity Calculator', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/tradeline-vault', icon: Landmark, label: 'Tradeline Vault', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/tasks', icon: Landmark, label: 'Task Cards', roles: ['admin', 'ceo'] },
+  { to: '/funding-machine/settings', icon: Landmark, label: 'FM Settings', roles: ['admin'] },
 ];
