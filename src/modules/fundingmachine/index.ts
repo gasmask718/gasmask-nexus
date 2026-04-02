@@ -54,6 +54,7 @@ export const FundingMachineModule: DynastyModule = {
     { path: '/velocity', component: VelocityCalculatorPage, label: 'Velocity Calculator', icon: TrendingUp, requiresAuth: true },
     { path: '/tradeline-vault', component: TradelineVaultPage, label: 'Tradeline Vault', icon: FileText, requiresAuth: true },
     { path: '/tasks', component: TaskCardsPage, label: 'Task Cards', icon: ClipboardList, requiresAuth: true },
+    { path: '/settings', component: FundingMachineSettingsPage, label: 'Settings', icon: Settings, requiresAuth: true },
   ],
   Dashboard: FundingMachineDashboard,
   sidebarItems,
