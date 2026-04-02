@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import DocumentVault from "@/components/funding-machine/DocumentVault";
 import ScoreSimulator from "@/components/funding-machine/ScoreSimulator";
+import LenderRelationships from "@/components/funding-machine/LenderRelationships";
 
 const DFS_DIMENSIONS = [
   { key: 'personal_credit_tu', label: 'Personal Credit (TU)', max: 10 },
