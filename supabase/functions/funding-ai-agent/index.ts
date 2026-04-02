@@ -308,6 +308,15 @@ Keep it under 500 words. Be direct and actionable.`;
       result = { plan: content };
     } else if (action === "match_tradelines") {
       result = { matches: content };
+    } else if (action === "generate_task_cards") {
+      try {
+        const cleaned = content.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        result = { tasks: JSON.parse(cleaned) };
+      } catch {
+        result = { tasks: [], raw: content };
+      }
+    } else if (action === "generate_morning_brief") {
+      result = { brief: content };
     }
 
     return new Response(JSON.stringify(result), {
