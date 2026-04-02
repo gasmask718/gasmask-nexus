@@ -333,6 +333,13 @@ Return ONLY JSON with keys projected_change_tu, projected_change_eq, projected_c
       }
     } else if (action === "generate_morning_brief") {
       result = { brief: content };
+    } else if (action === "simulate_score_impact") {
+      try {
+        const cleaned = content.replace(/```json?\n?/g, "").replace(/```/g, "").trim();
+        result = { simulation: JSON.parse(cleaned) };
+      } catch {
+        result = { simulation: null, raw: content };
+      }
     }
 
     return new Response(JSON.stringify(result), {
