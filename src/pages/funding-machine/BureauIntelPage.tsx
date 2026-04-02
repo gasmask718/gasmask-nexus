@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CreditCard, ExternalLink, Zap, Loader2, CheckCircle2 } from 'lucide-react';
+import HardInquiryTracker from '@/components/funding-machine/HardInquiryTracker';
 
 interface FundingClient {
   id: string;
