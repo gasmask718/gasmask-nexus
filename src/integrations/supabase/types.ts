@@ -37333,6 +37333,8 @@ export type Database = {
           monthly_revenue: number | null
           notes: string | null
           phone: string | null
+          portal_invite_sent_at: string | null
+          portal_user_id: string | null
           projected_funding_ceiling: number | null
           ssn_last4: string | null
           state: string | null
@@ -37364,6 +37366,8 @@ export type Database = {
           monthly_revenue?: number | null
           notes?: string | null
           phone?: string | null
+          portal_invite_sent_at?: string | null
+          portal_user_id?: string | null
           projected_funding_ceiling?: number | null
           ssn_last4?: string | null
           state?: string | null
@@ -37395,6 +37399,8 @@ export type Database = {
           monthly_revenue?: number | null
           notes?: string | null
           phone?: string | null
+          portal_invite_sent_at?: string | null
+          portal_user_id?: string | null
           projected_funding_ceiling?: number | null
           ssn_last4?: string | null
           state?: string | null
@@ -37754,6 +37760,27 @@ export type Database = {
           product_type?: string | null
           requires_collateral?: boolean | null
           requires_tax_returns?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      funding_machine_settings: {
+        Row: {
+          id: string
+          setting_key: string
+          setting_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          setting_key: string
+          setting_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          setting_key?: string
+          setting_value?: string | null
           updated_at?: string
         }
         Relationships: []
