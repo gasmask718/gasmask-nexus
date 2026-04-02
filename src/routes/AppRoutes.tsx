@@ -822,6 +822,10 @@ const SpecialNeedsDashboard = lazy(() => import('@/pages/os/specialneeds/Special
 const FundingDashboard = lazy(() => import('@/pages/os/funding/FundingDashboard'));
 const GrantsDashboard = lazy(() => import('@/pages/os/grants/GrantsDashboard'));
 const WealthEngineDashboard = lazy(() => import('@/pages/os/wealth/WealthEngineDashboard'));
+// Funding Machine (Floor 10)
+const FundingMachineDashboard = lazy(() => import('@/pages/funding-machine/FundingMachineDashboard'));
+const FundingMachineIntake = lazy(() => import('@/pages/funding-machine/ClientIntakePage'));
+const FundingMachineClientProfile = lazy(() => import('@/pages/funding-machine/ClientProfilePage'));
 const BettingDashboard = lazy(() => import('@/pages/os/betting/BettingDashboard'));
 const LineIntake = lazy(() => import('@/pages/os/betting/LineIntake'));
 const SimulationPage = lazy(() => import('@/pages/os/betting/SimulationPage'));
