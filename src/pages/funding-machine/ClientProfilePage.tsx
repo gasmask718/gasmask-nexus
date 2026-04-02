@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   User, Building2, Target, Shield, CreditCard, TrendingUp,
   CheckCircle, Clock, AlertTriangle, ArrowLeft, RefreshCw,
-  ExternalLink
+  ExternalLink, FileText, Send
 } from "lucide-react";
+import DocumentVault from "@/components/funding-machine/DocumentVault";
 
 const DFS_DIMENSIONS = [
   { key: 'personal_credit_tu', label: 'Personal Credit (TU)', max: 10 },
