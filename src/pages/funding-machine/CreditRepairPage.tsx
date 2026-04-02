@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   Shield, Plus, Brain, ArrowLeft, Clock, AlertTriangle,
-  Mail, FileText, Send, RefreshCw, ChevronUp
+  Mail, FileText, Send, RefreshCw, ChevronUp, Upload
 } from "lucide-react";
+import CreditReportUploadModal from "@/components/funding-machine/CreditReportUploadModal";
 
 const LETTER_TYPES = [
   { value: 'fcra_609', label: 'FCRA §609 Dispute' },
