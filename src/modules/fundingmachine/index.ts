@@ -1,7 +1,7 @@
 import { DynastyModule, SidebarItem } from '../types';
 import {
   Landmark, Users, Shield, Building2, CreditCard,
-  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus
+  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise
 } from 'lucide-react';
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
@@ -12,8 +12,11 @@ import BureauIntelPage from '@/pages/funding-machine/BureauIntelPage';
 import FundingMatrixPage from '@/pages/funding-machine/FundingMatrixPage';
 import VelocityCalculatorPage from '@/pages/funding-machine/VelocityCalculatorPage';
 import TradelineVaultPage from '@/pages/funding-machine/TradelineVaultPage';
+import TaskCardsPage from '@/pages/funding-machine/TaskCardsPage';
+import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
 
 const sidebarItems: SidebarItem[] = [
+  { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
   { path: '/funding-machine', label: 'Dashboard', icon: LayoutDashboard },
   { path: '/funding-machine/intake', label: 'New Client', icon: Plus },
   { path: '/funding-machine/credit-repair', label: 'Credit Repair', icon: Shield },
@@ -39,16 +42,16 @@ export const FundingMachineModule: DynastyModule = {
   },
   routes: [
     { path: '', component: FundingMachineDashboard, label: 'Dashboard', icon: LayoutDashboard, requiresAuth: true },
+    { path: '/morning-briefing', component: MorningBriefingPage, label: 'Morning Briefing', icon: Sunrise, requiresAuth: true },
     { path: '/intake', component: ClientIntakePage, label: 'New Client', icon: Plus, requiresAuth: true },
     { path: '/client/:clientId', component: ClientProfilePage, label: 'Client Profile', icon: Users, requiresAuth: true },
-    // Placeholder routes for future session builds
     { path: '/credit-repair', component: CreditRepairPage, label: 'Credit Repair', icon: Shield, requiresAuth: true },
     { path: '/business-builder', component: BusinessBuilderPage, label: 'Business Builder', icon: Building2, requiresAuth: true },
     { path: '/bureau-intel', component: BureauIntelPage, label: 'Bureau Intelligence', icon: CreditCard, requiresAuth: true },
     { path: '/funding-matrix', component: FundingMatrixPage, label: 'Funding Matrix', icon: Landmark, requiresAuth: true },
     { path: '/velocity', component: VelocityCalculatorPage, label: 'Velocity Calculator', icon: TrendingUp, requiresAuth: true },
     { path: '/tradeline-vault', component: TradelineVaultPage, label: 'Tradeline Vault', icon: FileText, requiresAuth: true },
-    { path: '/tasks', component: FundingMachineDashboard, label: 'Task Cards', icon: ClipboardList, requiresAuth: true },
+    { path: '/tasks', component: TaskCardsPage, label: 'Task Cards', icon: ClipboardList, requiresAuth: true },
   ],
   Dashboard: FundingMachineDashboard,
   sidebarItems,
