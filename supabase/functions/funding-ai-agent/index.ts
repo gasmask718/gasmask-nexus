@@ -153,6 +153,51 @@ For each phase include specific products, expected amounts, timing, and what act
         break;
       }
 
+      case "generate_velocity_plan": {
+        systemPrompt = `You are a banking relationship strategist who understands how banks internally score business accounts for credit decisions. You know the exact deposit volumes, transaction counts, and balance requirements that trigger automated credit offers.`;
+        userPrompt = `Generate a detailed month-by-month banking velocity plan.
+
+Institution: ${payload.institution}
+Target Product: ${payload.product}
+Requirements: ADB ${payload.requirements?.adb}, Monthly Deposits ${payload.requirements?.deposits}, Transactions ${payload.requirements?.transactions}/mo, Account Age ${payload.requirements?.months} months
+
+Client: ${payload.client?.first_name} ${payload.client?.last_name}
+Monthly Revenue: $${payload.client?.monthly_revenue || 0}
+Time in Business: ${payload.client?.time_in_business_months || 0} months
+
+Create a 3-month plan with:
+1. Exact deposit schedule (amounts and dates per month)
+2. Transaction strategy (what types, how many, minimum amounts)
+3. Balance management (when to keep funds in vs move out)
+4. Specific actions each month (set up direct deposit, recurring transfers, etc.)
+5. What triggers to watch for (pre-approval offers, relationship manager outreach)
+6. When exactly to apply and what to say
+
+Be specific with dollar amounts and dates.`;
+        break;
+      }
+
+      case "match_tradelines": {
+        systemPrompt = `You are a credit optimization expert who understands how authorized user tradelines impact credit scores across different bureaus and FICO scoring models. You know which tradeline characteristics (age, limit, utilization, bureau reporting) produce the maximum score lift for specific credit profiles.`;
+        userPrompt = `Find the best tradeline matches for this client.
+
+Client: ${payload.client?.first_name} ${payload.client?.last_name}
+Scores: TU ${payload.scores?.tu ?? 'N/A'}, EQ ${payload.scores?.eq ?? 'N/A'}, EX ${payload.scores?.ex ?? 'N/A'}
+
+Available Tradelines:
+${JSON.stringify(payload.available_cards, null, 2)}
+
+For each recommended tradeline provide:
+1. Which tradeline and why it's the best match
+2. Expected score impact per bureau
+3. Why this specific age/limit/utilization combination helps this client
+4. Optimal timing (when to add AU relative to statement close)
+5. Any risks or considerations
+
+Rank from highest impact to lowest. Be specific about expected point increases.`;
+        break;
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Unknown action: ${action}` }), {
           status: 400,
