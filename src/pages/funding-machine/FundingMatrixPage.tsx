@@ -113,8 +113,8 @@ export default function FundingMatrixPage() {
     const c = clients.find(x => x.id === selectedClient);
     setClient(c || null);
 
-    supabase.from('funding_dfs_scores').select('overall_score, personal_credit_tu, personal_credit_eq, personal_credit_ex')
-      .eq('client_id', selectedClient).order('calculated_at', { ascending: false }).limit(1).maybeSingle()
+    supabase.from('funding_dfs_scores').select('total_score, personal_credit_tu, personal_credit_eq, personal_credit_ex')
+      .eq('client_id', selectedClient).order('scored_at', { ascending: false }).limit(1).maybeSingle()
       .then(({ data }) => setDfs(data));
   }, [selectedClient, clients]);
 
