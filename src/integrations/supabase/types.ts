@@ -37118,6 +37118,1084 @@ export type Database = {
           },
         ]
       }
+      funding_banking_velocity: {
+        Row: {
+          actual_avg_daily_balance: number | null
+          actual_monthly_deposits: number | null
+          actual_transaction_count: number | null
+          client_id: string
+          created_at: string
+          id: string
+          institution: string
+          is_on_track: boolean | null
+          month_number: number
+          notes: string | null
+          target_avg_daily_balance: number | null
+          target_monthly_deposits: number | null
+          target_product: string | null
+          target_transaction_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          actual_avg_daily_balance?: number | null
+          actual_monthly_deposits?: number | null
+          actual_transaction_count?: number | null
+          client_id: string
+          created_at?: string
+          id?: string
+          institution: string
+          is_on_track?: boolean | null
+          month_number?: number
+          notes?: string | null
+          target_avg_daily_balance?: number | null
+          target_monthly_deposits?: number | null
+          target_product?: string | null
+          target_transaction_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actual_avg_daily_balance?: number | null
+          actual_monthly_deposits?: number | null
+          actual_transaction_count?: number | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          institution?: string
+          is_on_track?: boolean | null
+          month_number?: number
+          notes?: string | null
+          target_avg_daily_balance?: number | null
+          target_monthly_deposits?: number | null
+          target_product?: string | null
+          target_transaction_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_banking_velocity_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_card_database: {
+        Row: {
+          annual_fee: number | null
+          approval_tier: number | null
+          card_name: string
+          card_network: string | null
+          category: string
+          created_at: string
+          has_prequalification: boolean | null
+          id: string
+          is_active: boolean | null
+          is_secured: boolean | null
+          issuer: string
+          min_score_tier1: number | null
+          min_score_tier2: number | null
+          min_score_tier3: number | null
+          min_score_tier4: number | null
+          notes: string | null
+          prequalification_url: string | null
+          primary_bureau: string | null
+          reports_to_business: boolean | null
+          reports_to_personal: boolean | null
+          secondary_bureau: string | null
+          typical_limit_high: number | null
+          typical_limit_low: number | null
+          updated_at: string
+          zero_apr_months: number | null
+        }
+        Insert: {
+          annual_fee?: number | null
+          approval_tier?: number | null
+          card_name: string
+          card_network?: string | null
+          category?: string
+          created_at?: string
+          has_prequalification?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_secured?: boolean | null
+          issuer: string
+          min_score_tier1?: number | null
+          min_score_tier2?: number | null
+          min_score_tier3?: number | null
+          min_score_tier4?: number | null
+          notes?: string | null
+          prequalification_url?: string | null
+          primary_bureau?: string | null
+          reports_to_business?: boolean | null
+          reports_to_personal?: boolean | null
+          secondary_bureau?: string | null
+          typical_limit_high?: number | null
+          typical_limit_low?: number | null
+          updated_at?: string
+          zero_apr_months?: number | null
+        }
+        Update: {
+          annual_fee?: number | null
+          approval_tier?: number | null
+          card_name?: string
+          card_network?: string | null
+          category?: string
+          created_at?: string
+          has_prequalification?: boolean | null
+          id?: string
+          is_active?: boolean | null
+          is_secured?: boolean | null
+          issuer?: string
+          min_score_tier1?: number | null
+          min_score_tier2?: number | null
+          min_score_tier3?: number | null
+          min_score_tier4?: number | null
+          notes?: string | null
+          prequalification_url?: string | null
+          primary_bureau?: string | null
+          reports_to_business?: boolean | null
+          reports_to_personal?: boolean | null
+          secondary_bureau?: string | null
+          typical_limit_high?: number | null
+          typical_limit_low?: number | null
+          updated_at?: string
+          zero_apr_months?: number | null
+        }
+        Relationships: []
+      }
+      funding_client_documents: {
+        Row: {
+          bureau: string | null
+          client_id: string
+          created_at: string
+          document_type: string
+          file_name: string
+          file_path: string | null
+          id: string
+          notes: string | null
+          storage_url: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          bureau?: string | null
+          client_id: string
+          created_at?: string
+          document_type: string
+          file_name: string
+          file_path?: string | null
+          id?: string
+          notes?: string | null
+          storage_url?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          bureau?: string | null
+          client_id?: string
+          created_at?: string
+          document_type?: string
+          file_name?: string
+          file_path?: string | null
+          id?: string
+          notes?: string | null
+          storage_url?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_client_documents_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_clients: {
+        Row: {
+          address: string | null
+          assigned_operator: string | null
+          business_name: string | null
+          business_state: string | null
+          business_type: string | null
+          city: string | null
+          created_at: string
+          current_dfs_score: number | null
+          current_funding_ceiling: number | null
+          date_of_birth: string | null
+          duns_number: string | null
+          ein: string | null
+          email: string | null
+          first_name: string
+          funding_goal: string | null
+          id: string
+          last_name: string
+          monthly_revenue: number | null
+          notes: string | null
+          phone: string | null
+          projected_funding_ceiling: number | null
+          ssn_last4: string | null
+          state: string | null
+          status: string
+          target_funding_amount: number | null
+          time_in_business_months: number | null
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          assigned_operator?: string | null
+          business_name?: string | null
+          business_state?: string | null
+          business_type?: string | null
+          city?: string | null
+          created_at?: string
+          current_dfs_score?: number | null
+          current_funding_ceiling?: number | null
+          date_of_birth?: string | null
+          duns_number?: string | null
+          ein?: string | null
+          email?: string | null
+          first_name: string
+          funding_goal?: string | null
+          id?: string
+          last_name: string
+          monthly_revenue?: number | null
+          notes?: string | null
+          phone?: string | null
+          projected_funding_ceiling?: number | null
+          ssn_last4?: string | null
+          state?: string | null
+          status?: string
+          target_funding_amount?: number | null
+          time_in_business_months?: number | null
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          assigned_operator?: string | null
+          business_name?: string | null
+          business_state?: string | null
+          business_type?: string | null
+          city?: string | null
+          created_at?: string
+          current_dfs_score?: number | null
+          current_funding_ceiling?: number | null
+          date_of_birth?: string | null
+          duns_number?: string | null
+          ein?: string | null
+          email?: string | null
+          first_name?: string
+          funding_goal?: string | null
+          id?: string
+          last_name?: string
+          monthly_revenue?: number | null
+          notes?: string | null
+          phone?: string | null
+          projected_funding_ceiling?: number | null
+          ssn_last4?: string | null
+          state?: string | null
+          status?: string
+          target_funding_amount?: number | null
+          time_in_business_months?: number | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: []
+      }
+      funding_credit_items: {
+        Row: {
+          account_number: string | null
+          balance: number | null
+          bureau: string
+          client_id: string
+          created_at: string
+          creditor_name: string
+          current_status: string | null
+          date_of_first_delinquency: string | null
+          deletion_priority: number | null
+          estimated_score_impact: number | null
+          id: string
+          is_resolved: boolean | null
+          item_type: string
+          notes: string | null
+          resolution_type: string | null
+          resolved_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          balance?: number | null
+          bureau: string
+          client_id: string
+          created_at?: string
+          creditor_name: string
+          current_status?: string | null
+          date_of_first_delinquency?: string | null
+          deletion_priority?: number | null
+          estimated_score_impact?: number | null
+          id?: string
+          is_resolved?: boolean | null
+          item_type: string
+          notes?: string | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          balance?: number | null
+          bureau?: string
+          client_id?: string
+          created_at?: string
+          creditor_name?: string
+          current_status?: string | null
+          date_of_first_delinquency?: string | null
+          deletion_priority?: number | null
+          estimated_score_impact?: number | null
+          id?: string
+          is_resolved?: boolean | null
+          item_type?: string
+          notes?: string | null
+          resolution_type?: string | null
+          resolved_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_credit_items_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_dfs_scores: {
+        Row: {
+          banking_history: number | null
+          business_credit_age: number | null
+          client_id: string
+          derogatory_count: number | null
+          ein_age: number | null
+          entity_quality: number | null
+          funding_ceiling: number | null
+          id: string
+          industry_risk: number | null
+          inquiry_velocity: number | null
+          notes: string | null
+          personal_credit_eq: number | null
+          personal_credit_ex: number | null
+          personal_credit_tu: number | null
+          projected_ceiling: number | null
+          public_records: number | null
+          revenue_docs: number | null
+          scored_at: string
+          total_score: number
+          tradeline_density: number | null
+          utilization_ratio: number | null
+        }
+        Insert: {
+          banking_history?: number | null
+          business_credit_age?: number | null
+          client_id: string
+          derogatory_count?: number | null
+          ein_age?: number | null
+          entity_quality?: number | null
+          funding_ceiling?: number | null
+          id?: string
+          industry_risk?: number | null
+          inquiry_velocity?: number | null
+          notes?: string | null
+          personal_credit_eq?: number | null
+          personal_credit_ex?: number | null
+          personal_credit_tu?: number | null
+          projected_ceiling?: number | null
+          public_records?: number | null
+          revenue_docs?: number | null
+          scored_at?: string
+          total_score?: number
+          tradeline_density?: number | null
+          utilization_ratio?: number | null
+        }
+        Update: {
+          banking_history?: number | null
+          business_credit_age?: number | null
+          client_id?: string
+          derogatory_count?: number | null
+          ein_age?: number | null
+          entity_quality?: number | null
+          funding_ceiling?: number | null
+          id?: string
+          industry_risk?: number | null
+          inquiry_velocity?: number | null
+          notes?: string | null
+          personal_credit_eq?: number | null
+          personal_credit_ex?: number | null
+          personal_credit_tu?: number | null
+          projected_ceiling?: number | null
+          public_records?: number | null
+          revenue_docs?: number | null
+          scored_at?: string
+          total_score?: number
+          tradeline_density?: number | null
+          utilization_ratio?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_dfs_scores_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_dispute_rounds: {
+        Row: {
+          bureau: string
+          client_id: string
+          created_at: string
+          credit_item_id: string
+          escalation_needed: boolean | null
+          id: string
+          letter_content: string | null
+          letter_type: string
+          mailing_id: string | null
+          notes: string | null
+          response_date: string | null
+          response_deadline: string | null
+          response_received: boolean | null
+          response_result: string | null
+          round_number: number
+          sent_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bureau: string
+          client_id: string
+          created_at?: string
+          credit_item_id: string
+          escalation_needed?: boolean | null
+          id?: string
+          letter_content?: string | null
+          letter_type: string
+          mailing_id?: string | null
+          notes?: string | null
+          response_date?: string | null
+          response_deadline?: string | null
+          response_received?: boolean | null
+          response_result?: string | null
+          round_number?: number
+          sent_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bureau?: string
+          client_id?: string
+          created_at?: string
+          credit_item_id?: string
+          escalation_needed?: boolean | null
+          id?: string
+          letter_content?: string | null
+          letter_type?: string
+          mailing_id?: string | null
+          notes?: string | null
+          response_date?: string | null
+          response_deadline?: string | null
+          response_received?: boolean | null
+          response_result?: string | null
+          round_number?: number
+          sent_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_dispute_rounds_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_dispute_rounds_credit_item_id_fkey"
+            columns: ["credit_item_id"]
+            isOneToOne: false
+            referencedRelation: "funding_credit_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_infrastructure_checklist: {
+        Row: {
+          client_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          provider: string | null
+          reference_number: string | null
+          status: string
+          step_key: string
+          step_label: string
+          step_order: number
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          reference_number?: string | null
+          status?: string
+          step_key: string
+          step_label: string
+          step_order?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          provider?: string | null
+          reference_number?: string | null
+          status?: string
+          step_key?: string
+          step_label?: string
+          step_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_infrastructure_checklist_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_lender_database: {
+        Row: {
+          accepts_bank_statements: boolean | null
+          category: string
+          created_at: string
+          direct_deposit: boolean | null
+          funding_speed: string | null
+          has_soft_pull_prequal: boolean | null
+          id: string
+          interest_rate_range: string | null
+          is_active: boolean | null
+          lender_name: string
+          max_amount: number | null
+          min_credit_score: number | null
+          min_revenue: number | null
+          min_time_in_business_months: number | null
+          notes: string | null
+          prequal_url: string | null
+          product_name: string
+          product_type: string | null
+          requires_collateral: boolean | null
+          requires_tax_returns: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          accepts_bank_statements?: boolean | null
+          category: string
+          created_at?: string
+          direct_deposit?: boolean | null
+          funding_speed?: string | null
+          has_soft_pull_prequal?: boolean | null
+          id?: string
+          interest_rate_range?: string | null
+          is_active?: boolean | null
+          lender_name: string
+          max_amount?: number | null
+          min_credit_score?: number | null
+          min_revenue?: number | null
+          min_time_in_business_months?: number | null
+          notes?: string | null
+          prequal_url?: string | null
+          product_name: string
+          product_type?: string | null
+          requires_collateral?: boolean | null
+          requires_tax_returns?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          accepts_bank_statements?: boolean | null
+          category?: string
+          created_at?: string
+          direct_deposit?: boolean | null
+          funding_speed?: string | null
+          has_soft_pull_prequal?: boolean | null
+          id?: string
+          interest_rate_range?: string | null
+          is_active?: boolean | null
+          lender_name?: string
+          max_amount?: number | null
+          min_credit_score?: number | null
+          min_revenue?: number | null
+          min_time_in_business_months?: number | null
+          notes?: string | null
+          prequal_url?: string | null
+          product_name?: string
+          product_type?: string | null
+          requires_collateral?: boolean | null
+          requires_tax_returns?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      funding_mailbox_config: {
+        Row: {
+          account_id: string | null
+          address: string | null
+          authorized_users: string[] | null
+          city: string | null
+          client_id: string
+          created_at: string
+          id: string
+          is_monitoring_active: boolean | null
+          notes: string | null
+          provider: string
+          state: string | null
+          updated_at: string
+          zip_code: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          address?: string | null
+          authorized_users?: string[] | null
+          city?: string | null
+          client_id: string
+          created_at?: string
+          id?: string
+          is_monitoring_active?: boolean | null
+          notes?: string | null
+          provider: string
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          address?: string | null
+          authorized_users?: string[] | null
+          city?: string | null
+          client_id?: string
+          created_at?: string
+          id?: string
+          is_monitoring_active?: boolean | null
+          notes?: string | null
+          provider?: string
+          state?: string | null
+          updated_at?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_mailbox_config_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_mailing_log: {
+        Row: {
+          client_id: string
+          cost: number | null
+          created_at: string
+          delivery_date: string | null
+          delivery_status: string | null
+          dispute_round_id: string | null
+          id: string
+          mail_type: string | null
+          notes: string | null
+          provider: string | null
+          recipient_address: string | null
+          recipient_name: string | null
+          return_receipt_received: boolean | null
+          sent_date: string | null
+          tracking_number: string | null
+        }
+        Insert: {
+          client_id: string
+          cost?: number | null
+          created_at?: string
+          delivery_date?: string | null
+          delivery_status?: string | null
+          dispute_round_id?: string | null
+          id?: string
+          mail_type?: string | null
+          notes?: string | null
+          provider?: string | null
+          recipient_address?: string | null
+          recipient_name?: string | null
+          return_receipt_received?: boolean | null
+          sent_date?: string | null
+          tracking_number?: string | null
+        }
+        Update: {
+          client_id?: string
+          cost?: number | null
+          created_at?: string
+          delivery_date?: string | null
+          delivery_status?: string | null
+          dispute_round_id?: string | null
+          id?: string
+          mail_type?: string | null
+          notes?: string | null
+          provider?: string | null
+          recipient_address?: string | null
+          recipient_name?: string | null
+          return_receipt_received?: boolean | null
+          sent_date?: string | null
+          tracking_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_mailing_log_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_mailing_log_dispute_round_id_fkey"
+            columns: ["dispute_round_id"]
+            isOneToOne: false
+            referencedRelation: "funding_dispute_rounds"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_morning_briefings: {
+        Row: {
+          alerts: Json | null
+          briefing_date: string
+          clients_summary: Json | null
+          created_at: string
+          generated_by: string | null
+          id: string
+          operator_actions: Json | null
+          total_active_clients: number | null
+        }
+        Insert: {
+          alerts?: Json | null
+          briefing_date?: string
+          clients_summary?: Json | null
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          operator_actions?: Json | null
+          total_active_clients?: number | null
+        }
+        Update: {
+          alerts?: Json | null
+          briefing_date?: string
+          clients_summary?: Json | null
+          created_at?: string
+          generated_by?: string | null
+          id?: string
+          operator_actions?: Json | null
+          total_active_clients?: number | null
+        }
+        Relationships: []
+      }
+      funding_task_cards: {
+        Row: {
+          category: string
+          client_id: string
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          deadline: string | null
+          delay_consequence: string | null
+          depends_on: string[] | null
+          document_checklist: string[] | null
+          funding_impact: number | null
+          id: string
+          module: string | null
+          notes: string | null
+          resource_address: string | null
+          resource_phone: string | null
+          resource_url: string | null
+          sort_order: number | null
+          status: string
+          steps: Json | null
+          strategic_rationale: string | null
+          time_estimate: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          client_id: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          deadline?: string | null
+          delay_consequence?: string | null
+          depends_on?: string[] | null
+          document_checklist?: string[] | null
+          funding_impact?: number | null
+          id?: string
+          module?: string | null
+          notes?: string | null
+          resource_address?: string | null
+          resource_phone?: string | null
+          resource_url?: string | null
+          sort_order?: number | null
+          status?: string
+          steps?: Json | null
+          strategic_rationale?: string | null
+          time_estimate?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          client_id?: string
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          deadline?: string | null
+          delay_consequence?: string | null
+          depends_on?: string[] | null
+          document_checklist?: string[] | null
+          funding_impact?: number | null
+          id?: string
+          module?: string | null
+          notes?: string | null
+          resource_address?: string | null
+          resource_phone?: string | null
+          resource_url?: string | null
+          sort_order?: number | null
+          status?: string
+          steps?: Json | null
+          strategic_rationale?: string | null
+          time_estimate?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_task_cards_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_tradeline_accounts: {
+        Row: {
+          account_opened_date: string | null
+          account_type: string | null
+          client_id: string
+          created_at: string
+          credit_limit: number | null
+          current_balance: number | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          optimal_pay_date: string | null
+          paydex_contribution: number | null
+          payment_due_date: string | null
+          payment_status: string | null
+          reporting_bureaus: string[] | null
+          tier: number
+          updated_at: string
+          utilization_pct: number | null
+          vendor_name: string
+        }
+        Insert: {
+          account_opened_date?: string | null
+          account_type?: string | null
+          client_id: string
+          created_at?: string
+          credit_limit?: number | null
+          current_balance?: number | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          optimal_pay_date?: string | null
+          paydex_contribution?: number | null
+          payment_due_date?: string | null
+          payment_status?: string | null
+          reporting_bureaus?: string[] | null
+          tier?: number
+          updated_at?: string
+          utilization_pct?: number | null
+          vendor_name: string
+        }
+        Update: {
+          account_opened_date?: string | null
+          account_type?: string | null
+          client_id?: string
+          created_at?: string
+          credit_limit?: number | null
+          current_balance?: number | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          optimal_pay_date?: string | null
+          paydex_contribution?: number | null
+          payment_due_date?: string | null
+          payment_status?: string | null
+          reporting_bureaus?: string[] | null
+          tier?: number
+          updated_at?: string
+          utilization_pct?: number | null
+          vendor_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_tradeline_accounts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funding_tradeline_vault_cards: {
+        Row: {
+          account_age_months: number | null
+          available_au_slots: number | null
+          cardholder_user_id: string
+          created_at: string
+          credit_limit: number | null
+          current_utilization: number | null
+          id: string
+          is_active: boolean | null
+          issuer: string
+          notes: string | null
+          price_per_slot: number | null
+          reporting_bureaus: string[] | null
+          reporting_date: number | null
+          statement_close_date: number | null
+          updated_at: string
+        }
+        Insert: {
+          account_age_months?: number | null
+          available_au_slots?: number | null
+          cardholder_user_id: string
+          created_at?: string
+          credit_limit?: number | null
+          current_utilization?: number | null
+          id?: string
+          is_active?: boolean | null
+          issuer: string
+          notes?: string | null
+          price_per_slot?: number | null
+          reporting_bureaus?: string[] | null
+          reporting_date?: number | null
+          statement_close_date?: number | null
+          updated_at?: string
+        }
+        Update: {
+          account_age_months?: number | null
+          available_au_slots?: number | null
+          cardholder_user_id?: string
+          created_at?: string
+          credit_limit?: number | null
+          current_utilization?: number | null
+          id?: string
+          is_active?: boolean | null
+          issuer?: string
+          notes?: string | null
+          price_per_slot?: number | null
+          reporting_bureaus?: string[] | null
+          reporting_date?: number | null
+          statement_close_date?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      funding_tradeline_vault_transactions: {
+        Row: {
+          actual_reporting_date: string | null
+          au_added_date: string | null
+          buyer_client_id: string | null
+          buyer_name: string | null
+          cardholder_payout: number | null
+          created_at: string
+          expected_reporting_date: string | null
+          id: string
+          notes: string | null
+          payout_date: string | null
+          payout_status: string | null
+          price: number | null
+          status: string
+          updated_at: string
+          vault_card_id: string
+        }
+        Insert: {
+          actual_reporting_date?: string | null
+          au_added_date?: string | null
+          buyer_client_id?: string | null
+          buyer_name?: string | null
+          cardholder_payout?: number | null
+          created_at?: string
+          expected_reporting_date?: string | null
+          id?: string
+          notes?: string | null
+          payout_date?: string | null
+          payout_status?: string | null
+          price?: number | null
+          status?: string
+          updated_at?: string
+          vault_card_id: string
+        }
+        Update: {
+          actual_reporting_date?: string | null
+          au_added_date?: string | null
+          buyer_client_id?: string | null
+          buyer_name?: string | null
+          cardholder_payout?: number | null
+          created_at?: string
+          expected_reporting_date?: string | null
+          id?: string
+          notes?: string | null
+          payout_date?: string | null
+          payout_status?: string | null
+          price?: number | null
+          status?: string
+          updated_at?: string
+          vault_card_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funding_tradeline_vault_transactions_buyer_client_id_fkey"
+            columns: ["buyer_client_id"]
+            isOneToOne: false
+            referencedRelation: "funding_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funding_tradeline_vault_transactions_vault_card_id_fkey"
+            columns: ["vault_card_id"]
+            isOneToOne: false
+            referencedRelation: "funding_tradeline_vault_cards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gasmask_route_runs: {
         Row: {
           actual_end_at: string | null
