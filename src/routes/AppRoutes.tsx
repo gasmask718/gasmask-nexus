@@ -1634,6 +1634,17 @@ export default function AppRoutes() {
         <Route path="/os/funding" element={<FundingDashboard />} />
         <Route path="/os/grants" element={<GrantsDashboard />} />
         <Route path="/os/wealth-engine" element={<WealthEngineDashboard />} />
+        {/* Floor 10 — Dynasty Funding Machine */}
+        <Route path="/funding-machine" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/intake" element={<FundingMachineIntake />} />
+        <Route path="/funding-machine/client/:clientId" element={<FundingMachineClientProfile />} />
+        <Route path="/funding-machine/credit-repair" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/business-builder" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/bureau-intel" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/funding-matrix" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/velocity" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/tradeline-vault" element={<FundingMachineDashboard />} />
+        <Route path="/funding-machine/tasks" element={<FundingMachineDashboard />} />
         <Route path="/os/sports-betting" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/analytics" element={<Navigate to="/os/sports-betting/dashboard" replace />} />
         <Route path="/os/sports-betting/dashboard" element={<BettingDashboard />} />
