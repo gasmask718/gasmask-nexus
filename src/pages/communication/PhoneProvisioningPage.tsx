@@ -1,14 +1,11 @@
-/**
- * Phone Number Provisioning Page
- * Buy Twilio numbers (Local + Toll-Free + International) directly from the OS
- */
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Phone, MapPin, Search, ShoppingCart, Check, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, MapPin, Phone, RefreshCw, Search, ShoppingCart } from "lucide-react";
 
 const BUSINESSES = [
   { key: "gasmask", label: "GasMask Approved" },
@@ -23,53 +20,18 @@ const BUSINESSES = [
 
 const STATE_AREA_CODES: Record<string, { label: string; emoji: string; codes: string[] }> = {
   "New York": { label: "New York", emoji: "🗽", codes: ["929", "718", "347", "646", "212"] },
-  "Texas": { label: "Texas", emoji: "⭐", codes: ["214", "713", "832", "512", "972", "469"] },
-  "Florida": { label: "Florida", emoji: "🌴", codes: ["305", "786", "754", "407", "561", "321"] },
-  "California": { label: "California", emoji: "🌅", codes: ["213", "310", "323", "415", "619", "818"] },
+  Texas: { label: "Texas", emoji: "⭐", codes: ["214", "713", "832", "512", "972", "469"] },
+  Florida: { label: "Florida", emoji: "🌴", codes: ["305", "786", "754", "407", "561", "321"] },
+  California: { label: "California", emoji: "🌅", codes: ["213", "310", "323", "415", "619", "818"] },
   "New Jersey": { label: "New Jersey", emoji: "🏙️", codes: ["848", "201", "732", "908", "973"] },
-  "Georgia": { label: "Georgia", emoji: "🍑", codes: ["404", "470", "678", "770"] },
-  "Illinois": { label: "Illinois", emoji: "🌃", codes: ["312", "773", "847"] },
-  "Pennsylvania": { label: "Pennsylvania", emoji: "🔔", codes: ["215", "267", "412"] },
-  "Arizona": { label: "Arizona", emoji: "🌵", codes: ["602", "480", "520"] },
-  "Nevada": { label: "Nevada", emoji: "🎰", codes: ["702", "725"] },
+  Georgia: { label: "Georgia", emoji: "🍑", codes: ["404", "470", "678", "770"] },
+  Illinois: { label: "Illinois", emoji: "🌃", codes: ["312", "773", "847"] },
+  Pennsylvania: { label: "Pennsylvania", emoji: "🔔", codes: ["215", "267", "412"] },
+  Arizona: { label: "Arizona", emoji: "🌵", codes: ["602", "480", "520"] },
+  Nevada: { label: "Nevada", emoji: "🎰", codes: ["702", "725"] },
 };
 
 const TOLL_FREE_PREFIXES = ["800", "888", "877", "866", "855", "844", "833"];
-
-const BUSINESS_AGENTS: Record<string, { id: string; name: string }[]> = {
-  gasmask: [{ id: "gasmask-main", name: "GasMask Main Agent" }],
-  unforgettable_times: [
-    { id: "ut-ambassador", name: "UT Ambassador Agent" },
-    { id: "ut-concierge", name: "UT Concierge Agent" },
-    { id: "ut-partner", name: "UT Partner Agent" },
-  ],
-  real_estate: [
-    { id: "re-qualifier", name: "RE Lead Qualifier" },
-    { id: "re-closer", name: "RE Closer Agent" },
-    { id: "re-specialist", name: "RE Specialist Agent" },
-  ],
-  surplus_funds: [
-    { id: "sf-client", name: "SF Client Outreach" },
-    { id: "sf-attorney", name: "SF Attorney Agent" },
-  ],
-  top_tier: [
-    { id: "tt-concierge", name: "TT Concierge Agent" },
-    { id: "tt-ambassador", name: "TT Ambassador Agent" },
-  ],
-  brandaro: [
-    { id: "brandaro-sales", name: "Brandaro Digital Sales Expert" },
-    { id: "brandaro-closer", name: "Brandaro Sales Closer" },
-    { id: "brandaro-rel", name: "Brandaro Relationship Specialist" },
-    { id: "brandaro-es-closer", name: "Brandaro Spanish Closer" },
-    { id: "brandaro-es-rel", name: "Brandaro Spanish Relationship" },
-  ],
-  iclean: [{ id: "iclean-booking", name: "iClean Booking Agent" }],
-  playboxxx: [
-    { id: "playboxxx-affiliate", name: "Playboxxx Affiliate Agent" },
-    { id: "playboxxx-manager", name: "Playboxxx Manager Agent" },
-    { id: "playboxxx-production", name: "Playboxxx Production Agent" },
-  ],
-};
 
 type SearchResult = {
   phoneNumber: string;
@@ -80,11 +42,35 @@ type SearchResult = {
   monthlyCost: number;
 };
 
+type ExistingNumber = {
+  id: string;
+  phone_number: string;
+  friendly_name: string | null;
+  business: string | null;
+  assigned_agent_id: string | null;
+  assigned_agent_name: string | null;
+  twilio_sid: string | null;
+  monthly_cost: number | null;
+  is_active: boolean | null;
+};
+
+const selectClassName = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
+
 export default function PhoneProvisioningPage() {
+  const queryClient = useQueryClient();
+
   const [step, setStep] = useState(0);
-  const [twilioStatus, setTwilioStatus] = useState<{ connected: boolean; accountName: string } | null>(null);
+  const [twilioStatus, setTwilioStatus] = useState<any>(null);
   const [statusLoading, setStatusLoading] = useState(true);
-  const [existingNumbers, setExistingNumbers] = useState<any[]>([]);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
+  const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
+
+  const [editingNumberId, setEditingNumberId] = useState<string | null>(null);
+  const [assignBusiness, setAssignBusiness] = useState("");
+  const [assignAgentId, setAssignAgentId] = useState("");
+  const [assignmentSaving, setAssignmentSaving] = useState(false);
+  const [importingNumberId, setImportingNumberId] = useState<string | null>(null);
 
   const [business, setBusiness] = useState("");
   const [country, setCountry] = useState<"US" | "DO">("US");
@@ -94,59 +80,180 @@ export default function PhoneProvisioningPage() {
   const [tollFreePrefix, setTollFreePrefix] = useState("");
   const [customAreaCode, setCustomAreaCode] = useState("");
   const [quantity, setQuantity] = useState(1);
-
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [selectedNumber, setSelectedNumber] = useState<SearchResult | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<{ id: string; name: string } | null>(null);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseProgress, setPurchaseProgress] = useState<string[]>([]);
   const [purchaseComplete, setPurchaseComplete] = useState(false);
 
-  useEffect(() => {
-    checkTwilioStatus();
-    loadExistingNumbers();
-  }, []);
+  const { data: existingNumbers = [], isLoading: numbersLoading, refetch: refetchNumbers } = useQuery({
+    queryKey: ["dc-phone-numbers"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("dc_phone_numbers")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data || []) as ExistingNumber[];
+    },
+  });
 
-  const checkTwilioStatus = async () => {
+  const { data: agents = [] } = useQuery({
+    queryKey: ["dc-agents"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from("dc_agents")
+        .select("agent_id, name, business")
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const filteredAssignAgents = useMemo(
+    () => agents.filter((agent: any) => !assignBusiness || agent.business === assignBusiness),
+    [agents, assignBusiness],
+  );
+
+  const filteredWizardAgents = useMemo(
+    () => agents.filter((agent: any) => !business || agent.business === business),
+    [agents, business],
+  );
+
+  const checkTwilioStatus = useCallback(async () => {
+    setStatusLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("provision-dc-number", {
         body: { action: "status" },
       });
       if (error) throw error;
-      setTwilioStatus({ connected: data.connected, accountName: data.accountName });
-    } catch {
-      setTwilioStatus({ connected: false, accountName: "Error" });
+      setTwilioStatus(data);
+    } catch (error: any) {
+      setTwilioStatus({ connected: false, error: error.message || "Status check failed" });
     } finally {
       setStatusLoading(false);
     }
+  }, []);
+
+  const syncNumbers = useCallback(async (silent = false) => {
+    setSyncing(true);
+    setSyncMessage("");
+    try {
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", {
+        body: { action: "sync" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const message = `✅ Synced ${data?.synced || 0} numbers from Twilio`;
+      setSyncMessage(message);
+      if (!silent) toast.success(message);
+      await refetchNumbers();
+      queryClient.invalidateQueries({ queryKey: ["dc-phone-numbers"] });
+    } catch (error: any) {
+      const message = error.message || "Sync failed";
+      setSyncMessage(message);
+      if (!silent) toast.error(message);
+    } finally {
+      setSyncing(false);
+    }
+  }, [queryClient, refetchNumbers]);
+
+  useEffect(() => {
+    checkTwilioStatus();
+  }, [checkTwilioStatus]);
+
+  useEffect(() => {
+    if (!statusLoading && twilioStatus?.connected && !numbersLoading && existingNumbers.length === 0 && !autoSyncAttempted) {
+      setAutoSyncAttempted(true);
+      syncNumbers(true);
+    }
+  }, [statusLoading, twilioStatus, numbersLoading, existingNumbers.length, autoSyncAttempted, syncNumbers]);
+
+  const formatPhone = (num: string) => {
+    const digits = (num || "").replace(/\D/g, "");
+    if (digits.length === 11 && digits[0] === "1") return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+    return num;
   };
 
-  const loadExistingNumbers = async () => {
-    const { data } = await supabase.from("dc_phone_numbers").select("*").order("created_at", { ascending: false });
-    if (data) setExistingNumbers(data);
+  const openAssign = (row: ExistingNumber) => {
+    setEditingNumberId(row.id);
+    setAssignBusiness(row.business === "unassigned" ? "" : row.business || "");
+    setAssignAgentId(row.assigned_agent_id || "");
+  };
+
+  const saveAssignment = async (row: ExistingNumber) => {
+    setAssignmentSaving(true);
+    try {
+      const agent = agents.find((item: any) => item.agent_id === assignAgentId);
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", {
+        body: {
+          action: "assign",
+          phoneNumberId: row.id,
+          business: assignBusiness,
+          agentId: assignAgentId || null,
+          agentName: agent?.name || null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Assignment saved");
+      setEditingNumberId(null);
+      await refetchNumbers();
+    } catch (error: any) {
+      toast.error(error.message || "Assignment failed");
+    } finally {
+      setAssignmentSaving(false);
+    }
+  };
+
+  const importToElevenLabs = async (row: ExistingNumber) => {
+    if (!row.assigned_agent_id || !row.twilio_sid) {
+      toast.error("Assign an agent first");
+      return;
+    }
+
+    setImportingNumberId(row.id);
+    try {
+      const businessName = BUSINESSES.find((item) => item.key === row.business)?.label || row.business || "Business";
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", {
+        body: {
+          action: "import_to_elevenlabs",
+          phoneNumberValue: row.phone_number,
+          twilioSid: row.twilio_sid,
+          business: row.business,
+          businessName,
+          agentId: row.assigned_agent_id,
+          agentName: row.assigned_agent_name,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Imported to ElevenLabs");
+    } catch (error: any) {
+      toast.error(error.message || "ElevenLabs import failed");
+    } finally {
+      setImportingNumberId(null);
+    }
   };
 
   const handleSearch = async () => {
     setSearching(true);
     setSearchResults([]);
     try {
-      const searchBody: any = { action: "search", country, numberType };
-      if (country === "DO") {
-        searchBody.areaCode = "809";
-      } else if (numberType === "tollfree") {
-        searchBody.prefix = tollFreePrefix;
-      } else {
-        searchBody.areaCode = areaCode || customAreaCode || "929";
-      }
+      const body: any = { action: "search", country, numberType };
+      if (country === "DO") body.areaCode = "809";
+      else if (numberType === "tollfree") body.prefix = tollFreePrefix;
+      else body.areaCode = areaCode || customAreaCode || "929";
 
-      const { data, error } = await supabase.functions.invoke("provision-dc-number", { body: searchBody });
+      const { data, error } = await supabase.functions.invoke("provision-dc-number", { body });
       if (error) throw error;
-      if (!data.success) throw new Error(data.error || "Search failed");
+      if (!data?.success) throw new Error(data?.error || "Search failed");
       setSearchResults(data.numbers || []);
-      if (data.numbers?.length === 0) toast.info("No numbers found. Try a different area code.");
-    } catch (err: any) {
-      toast.error("Search failed: " + (err.message || "Unknown error"));
+      if (!data.numbers?.length) toast.info("No numbers found. Try a different area code.");
+    } catch (error: any) {
+      toast.error(error.message || "Search failed");
     } finally {
       setSearching(false);
     }
@@ -158,38 +265,31 @@ export default function PhoneProvisioningPage() {
     setPurchaseProgress(["📞 Contacting Twilio..."]);
 
     try {
-      await new Promise((r) => setTimeout(r, 800));
-      setPurchaseProgress((p) => [...p, "✅ Number secured!"]);
-
+      const selectedAgent = agents.find((agent: any) => agent.agent_id === selectedAgentId);
       const { data, error } = await supabase.functions.invoke("provision-dc-number", {
         body: {
           action: "purchase",
           phoneNumber: selectedNumber.phoneNumber,
           business,
-          agentId: selectedAgent?.id,
-          agentName: selectedAgent?.name,
+          agentId: selectedAgentId || null,
+          agentName: selectedAgent?.name || null,
           country,
-          numberType: country === "DO" ? "dr_local" : numberType,
-          quantity: 1,
+          numberType,
+          quantity: country === "DO" ? 1 : quantity,
         },
       });
 
       if (error) throw error;
-      setPurchaseProgress((p) => [...p, "💾 Saving to database..."]);
-      await new Promise((r) => setTimeout(r, 500));
-
-      const result = data.results?.[0];
-      if (result?.success) {
-        setPurchaseProgress((p) => [...p, `✅ ${result.number} is LIVE!`]);
-        setPurchaseComplete(true);
-        loadExistingNumbers();
-        toast.success("Number purchased successfully!");
-      } else {
-        throw new Error(JSON.stringify(result?.error || "Purchase failed"));
-      }
-    } catch (err: any) {
-      setPurchaseProgress((p) => [...p, `❌ Error: ${err.message}`]);
-      toast.error("Purchase failed");
+      setPurchaseProgress((current) => [...current, "✅ Number secured!", "💾 Saving to database..."]);
+      const result = data?.results?.[0];
+      if (!result?.success) throw new Error(JSON.stringify(result?.error || "Purchase failed"));
+      setPurchaseProgress((current) => [...current, `✅ ${result.number} is LIVE!`]);
+      setPurchaseComplete(true);
+      await refetchNumbers();
+      toast.success("Number purchased successfully");
+    } catch (error: any) {
+      setPurchaseProgress((current) => [...current, `❌ ${error.message || "Purchase failed"}`]);
+      toast.error(error.message || "Purchase failed");
     } finally {
       setPurchasing(false);
     }
@@ -207,494 +307,279 @@ export default function PhoneProvisioningPage() {
     setQuantity(1);
     setSearchResults([]);
     setSelectedNumber(null);
-    setSelectedAgent(null);
+    setSelectedAgentId("");
     setPurchaseProgress([]);
     setPurchaseComplete(false);
   };
 
-  const formatPhone = (num: string) => {
-    const d = num.replace(/\D/g, "");
-    if (d.length === 11 && d[0] === "1") {
-      return `+1 (${d.slice(1, 4)}) ${d.slice(4, 7)}-${d.slice(7)}`;
-    }
-    return num;
-  };
-
-  const monthlyCost = country === "DO" ? 5.0 : numberType === "tollfree" ? 2.0 : 1.0;
-  const isTwilioConnected = Boolean(twilioStatus?.connected);
+  const monthlyCost = country === "DO" ? 5 : numberType === "tollfree" ? 2 : 1;
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-6 max-w-6xl mx-auto">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <Phone className="h-8 w-8 text-primary" /> Phone Number Provisioning
-          </h1>
-          <p className="text-muted-foreground mt-1">Search, purchase, and assign Twilio phone numbers</p>
+          <h1 className="text-3xl font-bold flex items-center gap-2"><Phone className="h-8 w-8 text-primary" /> Phone Number Provisioning</h1>
+          <p className="text-muted-foreground mt-1">Sync purchased numbers, assign them, and buy new ones.</p>
         </div>
-        {step > 0 && !purchaseComplete && (
-          <Button variant="outline" onClick={resetWizard}>
-            <ArrowLeft className="h-4 w-4 mr-2" /> Start Over
-          </Button>
-        )}
+        {step > 0 && !purchaseComplete ? (
+          <Button variant="outline" onClick={resetWizard}><ArrowLeft className="h-4 w-4 mr-2" />Start Over</Button>
+        ) : null}
       </div>
 
-      {/* Connection Status */}
       <Card>
-        <CardContent className="py-4">
+        <CardContent className="py-4 space-y-3">
           {statusLoading ? (
-            <div className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Checking Twilio connection...</div>
+            <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Checking Twilio connection...</div>
           ) : twilioStatus?.connected ? (
-            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-medium">
-              🟢 Twilio Connected — {twilioStatus.accountName}
-            </div>
+            <div className="text-sm font-medium text-green-600">🟢 Twilio Connected — {twilioStatus.accountName}</div>
           ) : (
-            <div className="space-y-2 text-red-500 font-medium">
-              <div>⚠️ Twilio credentials not found.</div>
-              <div>Please add these to project secrets:</div>
-              <div className="font-mono text-sm text-foreground">TWILIO_ACCOUNT_SID</div>
-              <div className="font-mono text-sm text-foreground">TWILIO_AUTH_TOKEN</div>
-              <div className="text-sm text-muted-foreground">
-                You can find them at console.twilio.com under Account Info on the dashboard.
-              </div>
+            <div className="space-y-2 text-sm">
+              <div className="font-medium text-destructive">⚠️ Twilio credentials not working</div>
+              <p className="text-muted-foreground">This page uses the same <code className="bg-muted px-1 rounded">TWILIO_ACCOUNT_SID</code> secret name as the working voice token function, plus <code className="bg-muted px-1 rounded">TWILIO_AUTH_TOKEN</code> for Twilio REST API calls.</p>
+              {twilioStatus?.error ? <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">{JSON.stringify(twilioStatus.error, null, 2)}</pre> : null}
+            </div>
+          )}
+
+          <Button size="lg" onClick={() => syncNumbers(false)} disabled={!twilioStatus?.connected || syncing}>
+            {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}🔄 Sync Numbers from Twilio
+          </Button>
+
+          {syncMessage ? <p className="text-sm text-muted-foreground">{syncMessage}</p> : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Purchased Numbers</CardTitle>
+          <CardDescription>All rows from dc_phone_numbers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {numbersLoading || (syncing && existingNumbers.length === 0) ? (
+            <div className="flex items-center gap-2 text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading numbers...</div>
+          ) : existingNumbers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No purchased numbers found yet.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-3 pr-4">Number</th>
+                    <th className="pb-3 pr-4">Label</th>
+                    <th className="pb-3 pr-4">Business</th>
+                    <th className="pb-3 pr-4">Agent</th>
+                    <th className="pb-3 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {existingNumbers.map((row) => (
+                    <>
+                      <tr key={row.id} className="border-b border-border/60 align-top">
+                        <td className="py-3 pr-4 font-mono">{formatPhone(row.phone_number)}</td>
+                        <td className="py-3 pr-4">{row.friendly_name || "—"}</td>
+                        <td className="py-3 pr-4">{BUSINESSES.find((item) => item.key === row.business)?.label || row.business || "Unassigned"}</td>
+                        <td className="py-3 pr-4">{row.assigned_agent_name || "Not assigned"}</td>
+                        <td className="py-3 pr-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Button variant="outline" size="sm" onClick={() => openAssign(row)}>Assign</Button>
+                            <Button variant="outline" size="sm" disabled={!row.assigned_agent_id || importingNumberId === row.id} onClick={() => importToElevenLabs(row)}>
+                              {importingNumberId === row.id ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}📲 Import to ElevenLabs
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                      {editingNumberId === row.id ? (
+                        <tr key={`${row.id}-editor`} className="border-b border-border/60 bg-muted/20">
+                          <td colSpan={5} className="py-4">
+                            <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] items-end">
+                              <div>
+                                <label className="text-xs text-muted-foreground">Business</label>
+                                <select className={selectClassName} value={assignBusiness} onChange={(e) => { setAssignBusiness(e.target.value); setAssignAgentId(""); }}>
+                                  <option value="">Select business</option>
+                                  {BUSINESSES.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-xs text-muted-foreground">Agent</label>
+                                <select className={selectClassName} value={assignAgentId} onChange={(e) => setAssignAgentId(e.target.value)}>
+                                  <option value="">Select agent</option>
+                                  {filteredAssignAgents.map((agent: any) => <option key={agent.agent_id} value={agent.agent_id}>{agent.name}</option>)}
+                                </select>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button size="sm" disabled={assignmentSaving || !assignBusiness} onClick={() => saveAssignment(row)}>
+                                  {assignmentSaving ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : null}Save
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => setEditingNumberId(null)}>Cancel</Button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                    </>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Existing Numbers */}
-      {isTwilioConnected && existingNumbers.length > 0 && step === 0 && (
-        <Card>
-          <CardHeader><CardTitle className="text-lg">Current Numbers</CardTitle></CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">Business</th>
-                    <th className="pb-2 font-medium">Number</th>
-                    <th className="pb-2 font-medium">Agent</th>
-                    <th className="pb-2 font-medium">Type</th>
-                    <th className="pb-2 font-medium">Cost</th>
-                    <th className="pb-2 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {existingNumbers.map((n) => (
-                    <tr key={n.id} className="border-b border-border/50">
-                      <td className="py-2">{n.business}</td>
-                      <td className="py-2 font-mono">{formatPhone(n.phone_number)}</td>
-                      <td className="py-2">{n.assigned_agent_name || "—"}</td>
-                      <td className="py-2">{n.number_type || "local"}</td>
-                      <td className="py-2">${n.monthly_cost || "1.00"}/mo</td>
-                      <td className="py-2">
-                        {n.is_active ? (
-                          <span className="text-green-600 dark:text-green-400">✅ Active</span>
-                        ) : (
-                          <span className="text-muted-foreground">Inactive</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 0 — Select Business */}
-      {isTwilioConnected && step === 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 1 — Select Business</CardTitle>
-            <CardDescription>Which business needs a phone number?</CardDescription>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {BUSINESSES.map((b) => (
-              <Button
-                key={b.key}
-                variant={business === b.key ? "default" : "outline"}
-                className="h-auto py-4 flex flex-col gap-1"
-                onClick={() => { setBusiness(b.key); setStep(1); }}
-              >
-                <span className="font-semibold text-sm">{b.label}</span>
-              </Button>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 1 — Select Country */}
-      {isTwilioConnected && step === 1 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 2 — Select Country</CardTitle>
-            <CardDescription>Where do you need a phone number?</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={() => { setCountry("US"); setStep(2); }}
-                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
-              >
-                <div className="text-4xl mb-2">🇺🇸</div>
-                <div className="text-lg font-bold">United States</div>
-                <div className="text-muted-foreground text-sm mt-1">Local & Toll-Free numbers</div>
-                <div className="text-primary font-semibold mt-2">From $1/month</div>
-              </button>
-              <button
-                onClick={() => { setCountry("DO"); setStep(3); setNumberType("local"); }}
-                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
-              >
-                <div className="text-4xl mb-2">🇩🇴</div>
-                <div className="text-lg font-bold">Dominican Republic</div>
-                <div className="text-muted-foreground text-sm mt-1">Local presence — 3-4x higher answer rate</div>
-                <div className="text-primary font-semibold mt-2">~$5/month</div>
-              </button>
-            </div>
-            <div className="mt-4 text-center text-sm text-muted-foreground">🌍 More countries coming soon</div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 2 — Number Type (US only) */}
-      {isTwilioConnected && step === 2 && country === "US" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 3 — Number Type</CardTitle>
-            <CardDescription>What kind of number do you need?</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={() => { setNumberType("local"); setStep(3); }}
-                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
-              >
-                <MapPin className="h-8 w-8 text-primary mb-2" />
-                <div className="text-lg font-bold">📍 Local Number</div>
-                <div className="text-muted-foreground text-sm mt-1">Best for outbound cold calling</div>
-                <div className="text-primary font-semibold mt-2">$1/month</div>
-              </button>
-              <button
-                onClick={() => { setNumberType("tollfree"); setStep(3); }}
-                className="p-6 rounded-lg border-2 border-border text-left transition-all hover:shadow-md hover:border-primary"
-              >
-                <Phone className="h-8 w-8 text-primary mb-2" />
-                <div className="text-lg font-bold">📞 Toll-Free</div>
-                <div className="text-muted-foreground text-sm mt-1">Best for inbound callbacks — builds trust</div>
-                <div className="text-primary font-semibold mt-2">$2/month</div>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 3 — State / Area Code */}
-      {isTwilioConnected && step === 3 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 4 — {country === "DO" ? "Dominican Republic" : numberType === "tollfree" ? "Toll-Free Prefix" : "Select State & Area Code"}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {country === "DO" ? (
-              <div className="space-y-4">
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <p className="font-medium">🇩🇴 Dominican Republic Numbers</p>
-                  <p className="text-sm text-muted-foreground mt-1">DR numbers use area codes 809, 829, 849. We'll find the best available number.</p>
-                </div>
-                <Button onClick={() => { setAreaCode("809"); setStep(business === "brandaro" ? 4 : 5); }}>
-                  Continue <ArrowRight className="h-4 w-4 ml-2" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Buy New Number</CardTitle>
+          <CardDescription>Existing wizard kept below the purchased numbers table</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {step === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {BUSINESSES.map((item) => (
+                <Button key={item.key} variant={business === item.key ? "default" : "outline"} className="h-auto py-4" onClick={() => { setBusiness(item.key); setStep(1); }}>
+                  {item.label}
                 </Button>
-              </div>
-            ) : numberType === "tollfree" ? (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">Select a toll-free prefix:</p>
-                <div className="flex flex-wrap gap-3">
-                  {TOLL_FREE_PREFIXES.map((p) => (
-                    <Button
-                      key={p}
-                      variant={tollFreePrefix === p ? "default" : "outline"}
-                      size="lg"
-                      className="text-lg font-mono"
-                      onClick={() => { setTollFreePrefix(p); setStep(business === "brandaro" ? 4 : 5); }}
-                    >
-                      {p}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">Select a state to see available area codes:</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                  {Object.entries(STATE_AREA_CODES).map(([state, info]) => (
-                    <Button
-                      key={state}
-                      variant={selectedState === state ? "default" : "outline"}
-                      className="h-auto py-3 flex flex-col gap-0.5"
-                      onClick={() => setSelectedState(state)}
-                    >
-                      <span className="text-lg">{info.emoji}</span>
-                      <span className="text-xs font-medium">{info.label}</span>
-                    </Button>
-                  ))}
-                  <Button
-                    variant={selectedState === "Other" ? "default" : "outline"}
-                    className="h-auto py-3 flex flex-col gap-0.5"
-                    onClick={() => setSelectedState("Other")}
-                  >
-                    <span className="text-lg">🤠</span>
-                    <span className="text-xs font-medium">Other</span>
-                  </Button>
-                </div>
+              ))}
+            </div>
+          ) : null}
 
-                {selectedState && selectedState !== "Other" && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">{STATE_AREA_CODES[selectedState]?.emoji} {selectedState} area codes:</p>
+          {step === 1 ? (
+            <div className="grid md:grid-cols-2 gap-4">
+              <button className="rounded-lg border border-border p-5 text-left" onClick={() => { setCountry("US"); setStep(2); }}>
+                <div className="text-3xl mb-2">🇺🇸</div>
+                <div className="font-semibold">United States</div>
+                <div className="text-sm text-muted-foreground">Local & toll-free</div>
+              </button>
+              <button className="rounded-lg border border-border p-5 text-left" onClick={() => { setCountry("DO"); setNumberType("local"); setStep(3); }}>
+                <div className="text-3xl mb-2">🇩🇴</div>
+                <div className="font-semibold">Dominican Republic</div>
+                <div className="text-sm text-muted-foreground">Local presence</div>
+              </button>
+            </div>
+          ) : null}
+
+          {step === 2 ? (
+            <div className="grid md:grid-cols-2 gap-4">
+              <button className="rounded-lg border border-border p-5 text-left" onClick={() => { setNumberType("local"); setStep(3); }}>
+                <MapPin className="h-6 w-6 mb-2" />
+                <div className="font-semibold">📍 Local Number</div>
+                <div className="text-sm text-muted-foreground">$1/month</div>
+              </button>
+              <button className="rounded-lg border border-border p-5 text-left" onClick={() => { setNumberType("tollfree"); setStep(3); }}>
+                <Phone className="h-6 w-6 mb-2" />
+                <div className="font-semibold">📞 Toll-Free Number</div>
+                <div className="text-sm text-muted-foreground">$2/month</div>
+              </button>
+            </div>
+          ) : null}
+
+          {step === 3 ? (
+            <div className="space-y-4">
+              {country === "DO" ? (
+                <div className="space-y-4">
+                  <div className="rounded-lg border border-border p-4 text-sm text-muted-foreground">DR numbers use area codes 809, 829, and 849. We’ll search the best available local number.</div>
+                  <Button onClick={() => { setAreaCode("809"); setStep(business === "brandaro" ? 4 : 5); }}>Continue <ArrowRight className="h-4 w-4 ml-2" /></Button>
+                </div>
+              ) : numberType === "tollfree" ? (
+                <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {TOLL_FREE_PREFIXES.map((prefix) => (
+                      <Button key={prefix} variant={tollFreePrefix === prefix ? "default" : "outline"} onClick={() => { setTollFreePrefix(prefix); setStep(business === "brandaro" ? 4 : 5); }}>{prefix}</Button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {Object.entries(STATE_AREA_CODES).map(([state, info]) => (
+                      <Button key={state} variant={selectedState === state ? "default" : "outline"} className="h-auto py-3" onClick={() => setSelectedState(state)}>
+                        {info.emoji} {info.label}
+                      </Button>
+                    ))}
+                    <Button variant={selectedState === "Other" ? "default" : "outline"} onClick={() => setSelectedState("Other")}>🤠 Other</Button>
+                  </div>
+
+                  {selectedState && selectedState !== "Other" ? (
                     <div className="flex flex-wrap gap-2">
                       {STATE_AREA_CODES[selectedState]?.codes.map((code) => (
-                        <Button
-                          key={code}
-                          variant={areaCode === code ? "default" : "outline"}
-                          size="lg"
-                          className="text-lg font-mono"
-                          onClick={() => { setAreaCode(code); setStep(business === "brandaro" ? 4 : 5); }}
-                        >
-                          {code}
-                        </Button>
+                        <Button key={code} variant={areaCode === code ? "default" : "outline"} onClick={() => { setAreaCode(code); setStep(business === "brandaro" ? 4 : 5); }}>{code}</Button>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : null}
 
-                {selectedState === "Other" && (
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      placeholder="Enter area code (e.g. 702)"
-                      value={customAreaCode}
-                      onChange={(e) => setCustomAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))}
-                      className="w-40 font-mono text-lg"
-                      maxLength={3}
-                    />
-                    <Button
-                      disabled={customAreaCode.length !== 3}
-                      onClick={() => { setAreaCode(customAreaCode); setStep(business === "brandaro" ? 4 : 5); }}
-                    >
-                      Use {customAreaCode} <ArrowRight className="h-4 w-4 ml-2" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 4 — Quantity (Brandaro only) */}
-      {isTwilioConnected && step === 4 && business === "brandaro" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 5 — Quantity</CardTitle>
-            <CardDescription>How many outbound numbers do you need?</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-3">
-              {[1, 2, 3, 4, 5].map((q) => (
-                <Button
-                  key={q}
-                  variant={quantity === q ? "default" : "outline"}
-                  size="lg"
-                  className="text-xl w-14 h-14"
-                  onClick={() => setQuantity(q)}
-                >
-                  {q}
-                </Button>
-              ))}
-            </div>
-            <p className="text-sm text-muted-foreground">💡 Recommended: 1 number per 4 VAs. For 20 VAs → select 5</p>
-            <Button onClick={() => setStep(5)}>Continue <ArrowRight className="h-4 w-4 ml-2" /></Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 5 — Search */}
-      {isTwilioConnected && step === 5 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 6 — Search Available Numbers</CardTitle>
-            <CardDescription>
-              {country === "DO" ? "Searching Dominican Republic" : numberType === "tollfree" ? `Searching toll-free ${tollFreePrefix}` : `Searching ${selectedState || "US"} — area code ${areaCode || customAreaCode}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button onClick={handleSearch} disabled={searching} size="lg">
-              {searching ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-              {searching ? "Searching..." : "🔍 Search Available Numbers"}
-            </Button>
-
-            {searchResults.length > 0 && (
-              <div className="grid gap-3">
-                {searchResults.map((num) => (
-                  <button
-                    key={num.phoneNumber}
-                    onClick={() => { setSelectedNumber(num); setStep(6); }}
-                    className={`p-4 rounded-lg border-2 text-left transition-all hover:shadow-md ${
-                      selectedNumber?.phoneNumber === num.phoneNumber ? "border-primary bg-primary/5" : "border-border"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-lg font-mono font-bold">📞 {formatPhone(num.phoneNumber)}</div>
-                        <div className="text-sm text-muted-foreground">{num.locality || num.region}{num.locality ? `, ${num.region}` : ""} • Voice + SMS</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-semibold text-primary">${num.monthlyCost.toFixed(2)}/mo</div>
-                        <div className="text-xs text-green-600 dark:text-green-400 mt-1">✓ Select</div>
-                      </div>
+                  {selectedState === "Other" ? (
+                    <div className="flex gap-2 items-center">
+                      <Input value={customAreaCode} onChange={(e) => setCustomAreaCode(e.target.value.replace(/\D/g, "").slice(0, 3))} placeholder="Enter area code" className="max-w-40" />
+                      <Button disabled={customAreaCode.length !== 3} onClick={() => { setAreaCode(customAreaCode); setStep(business === "brandaro" ? 4 : 5); }}>Use {customAreaCode}</Button>
                     </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {!searching && searchResults.length === 0 && (
-              <p className="text-muted-foreground text-sm">Click search to find available numbers.</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* STEP 6 — Assign Agent */}
-      {isTwilioConnected && step === 6 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Step 7 — Assign Agent</CardTitle>
-            <CardDescription>Which AI agent should answer calls on this number?</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-2">
-              {(BUSINESS_AGENTS[business] || []).map((agent) => (
-                <Button
-                  key={agent.id}
-                  variant={selectedAgent?.id === agent.id ? "default" : "outline"}
-                  className="justify-start h-auto py-3"
-                  onClick={() => { setSelectedAgent(agent); setStep(7); }}
-                >
-                  <Check className={`h-4 w-4 mr-2 ${selectedAgent?.id === agent.id ? "opacity-100" : "opacity-0"}`} />
-                  {agent.name}
-                </Button>
-              ))}
-              <Button
-                variant={selectedAgent?.id === "none" ? "default" : "outline"}
-                className="justify-start h-auto py-3"
-                onClick={() => { setSelectedAgent({ id: "none", name: "Unassigned" }); setStep(7); }}
-              >
-                <Check className={`h-4 w-4 mr-2 ${selectedAgent?.id === "none" ? "opacity-100" : "opacity-0"}`} />
-                Skip — Assign later
-              </Button>
+                  ) : null}
+                </div>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : null}
 
-      {/* STEP 7 — Confirm & Buy */}
-      {isTwilioConnected && step === 7 && !purchaseComplete && (
-        <Card>
-          <CardHeader><CardTitle>Step 8 — Confirm Purchase</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted/50 p-5 rounded-lg space-y-2">
-              <div className="flex justify-between"><span className="text-muted-foreground">Number:</span><span className="font-mono font-bold">{formatPhone(selectedNumber?.phoneNumber || "")}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Country:</span><span>{country === "DO" ? "🇩🇴 Dominican Republic" : "🇺🇸 United States"}{selectedState ? ` — ${selectedState}` : ""}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Type:</span><span>{country === "DO" ? "Local (DR)" : numberType === "tollfree" ? "Toll-Free" : "Local"}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Business:</span><span>{BUSINESSES.find((b) => b.key === business)?.label}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Agent:</span><span>{selectedAgent?.name}</span></div>
-              <hr className="border-border" />
-              <div className="flex justify-between text-lg font-bold"><span>Monthly Cost:</span><span className="text-primary">${monthlyCost.toFixed(2)}/mo</span></div>
-            </div>
-
-            {purchaseProgress.length > 0 && (
-              <div className="space-y-1 p-4 bg-muted/30 rounded-lg font-mono text-sm">
-                {purchaseProgress.map((msg, i) => (
-                  <div key={i}>{msg}</div>
-                ))}
-                {purchasing && <Loader2 className="h-4 w-4 animate-spin mt-2" />}
+          {step === 4 && business === "brandaro" ? (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5].map((value) => <Button key={value} variant={quantity === value ? "default" : "outline"} onClick={() => setQuantity(value)}>{value}</Button>)}
               </div>
-            )}
+              <p className="text-sm text-muted-foreground">Recommended: 1 number per 4 VAs</p>
+              <Button onClick={() => setStep(5)}>Continue <ArrowRight className="h-4 w-4 ml-2" /></Button>
+            </div>
+          ) : null}
 
-            {!purchasing && purchaseProgress.length === 0 && (
-              <Button onClick={handlePurchase} size="lg" className="w-full">
-                <ShoppingCart className="h-5 w-5 mr-2" /> Buy This Number — ${monthlyCost.toFixed(2)}/month
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Purchase Complete */}
-      {isTwilioConnected && purchaseComplete && (
-        <Card className="border-green-500/50 bg-green-500/5">
-          <CardContent className="py-6 text-center space-y-4">
-            <div className="text-4xl">🎉</div>
-            <h2 className="text-2xl font-bold text-green-600 dark:text-green-400">Number is LIVE!</h2>
-            <p className="font-mono text-lg">{formatPhone(selectedNumber?.phoneNumber || "")}</p>
-            <p className="text-muted-foreground">Assigned to {selectedAgent?.name} for {BUSINESSES.find((b) => b.key === business)?.label}</p>
-            <Button onClick={resetWizard} variant="outline">Buy Another Number</Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Bulk Setup Card */}
-      {isTwilioConnected && step === 0 && (
-        <Card className="border-primary/30">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">🚀 Dynasty Complete Setup</CardTitle>
-            <CardDescription>Recommended number package for all businesses — ~$25/month</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="pb-2 font-medium">Region</th>
-                    <th className="pb-2 font-medium">Qty</th>
-                    <th className="pb-2 font-medium">Type</th>
-                    <th className="pb-2 font-medium">Code</th>
-                    <th className="pb-2 font-medium">Cost</th>
-                  </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {[
-                    { region: "🗽 New York", qty: 5, type: "Local", code: "929", cost: "$5/mo" },
-                    { region: "🌴 Florida", qty: 2, type: "Local", code: "305", cost: "$2/mo" },
-                    { region: "⭐ Texas", qty: 2, type: "Local", code: "214", cost: "$2/mo" },
-                    { region: "🌅 California", qty: 2, type: "Local", code: "213", cost: "$2/mo" },
-                    { region: "🏙️ New Jersey", qty: 1, type: "Local", code: "848", cost: "$1/mo" },
-                    { region: "🍑 Georgia", qty: 1, type: "Local", code: "404", cost: "$1/mo" },
-                    { region: "🇩🇴 Dom Republic", qty: 2, type: "Local", code: "809", cost: "$10/mo" },
-                    { region: "📞 Inbound", qty: 1, type: "Toll-Free", code: "888", cost: "$2/mo" },
-                  ].map((r, i) => (
-                    <tr key={i} className="border-b border-border/50">
-                      <td className="py-2">{r.region}</td>
-                      <td className="py-2">{r.qty}</td>
-                      <td className="py-2">{r.type}</td>
-                      <td className="py-2 font-mono">{r.code}</td>
-                      <td className="py-2">{r.cost}</td>
-                    </tr>
+          {step === 5 ? (
+            <div className="space-y-4">
+              <Button onClick={handleSearch} disabled={searching}>{searching ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}Search Available Numbers</Button>
+              {searchResults.length ? (
+                <div className="grid gap-3">
+                  {searchResults.map((result) => (
+                    <button key={result.phoneNumber} onClick={() => { setSelectedNumber(result); setStep(6); }} className="rounded-lg border border-border p-4 text-left flex items-start justify-between">
+                      <div>
+                        <div className="font-mono font-semibold">📞 {formatPhone(result.phoneNumber)}</div>
+                        <div className="text-sm text-muted-foreground">{result.locality || result.region}{result.locality ? `, ${result.region}` : ""}</div>
+                      </div>
+                      <div className="font-medium">${result.monthlyCost.toFixed(2)}/mo</div>
+                    </button>
                   ))}
-                  <tr className="font-bold">
-                    <td className="py-2">Total</td>
-                    <td className="py-2">16</td>
-                    <td></td>
-                    <td></td>
-                    <td className="py-2 text-primary">~$25/mo</td>
-                  </tr>
-                </tbody>
-              </table>
+                </div>
+              ) : null}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          ) : null}
+
+          {step === 6 ? (
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Assign Agent</label>
+              <select className={selectClassName} value={selectedAgentId} onChange={(e) => setSelectedAgentId(e.target.value)}>
+                <option value="">Assign later</option>
+                {filteredWizardAgents.map((agent: any) => <option key={agent.agent_id} value={agent.agent_id}>{agent.name}</option>)}
+              </select>
+              <Button onClick={() => setStep(7)}>Continue <ArrowRight className="h-4 w-4 ml-2" /></Button>
+            </div>
+          ) : null}
+
+          {step === 7 ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-border p-5 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Number</span><span className="font-mono">{formatPhone(selectedNumber?.phoneNumber || "")}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Business</span><span>{BUSINESSES.find((item) => item.key === business)?.label}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Monthly</span><span>${monthlyCost.toFixed(2)}/mo</span></div>
+              </div>
+
+              {purchaseProgress.length ? (
+                <div className="rounded-lg border border-border p-4 font-mono text-sm space-y-1">
+                  {purchaseProgress.map((message, index) => <div key={`${message}-${index}`}>{message}</div>)}
+                </div>
+              ) : null}
+
+              {!purchaseComplete ? (
+                <Button onClick={handlePurchase} disabled={purchasing} className="w-full">
+                  {purchasing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShoppingCart className="h-4 w-4 mr-2" />}Buy This Number — ${monthlyCost.toFixed(2)}/month
+                </Button>
+              ) : null}
+
+              {purchaseComplete ? <Button variant="outline" onClick={resetWizard}>Buy Another Number</Button> : null}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
     </div>
   );
 }
