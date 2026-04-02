@@ -38077,6 +38077,8 @@ export type Database = {
         Row: {
           account_age_months: number | null
           available_au_slots: number | null
+          cardholder_contact: string | null
+          cardholder_name: string | null
           cardholder_user_id: string
           created_at: string
           credit_limit: number | null
@@ -38085,6 +38087,7 @@ export type Database = {
           is_active: boolean | null
           issuer: string
           notes: string | null
+          occupied_slots: number | null
           price_per_slot: number | null
           reporting_bureaus: string[] | null
           reporting_date: number | null
@@ -38094,6 +38097,8 @@ export type Database = {
         Insert: {
           account_age_months?: number | null
           available_au_slots?: number | null
+          cardholder_contact?: string | null
+          cardholder_name?: string | null
           cardholder_user_id: string
           created_at?: string
           credit_limit?: number | null
@@ -38102,6 +38107,7 @@ export type Database = {
           is_active?: boolean | null
           issuer: string
           notes?: string | null
+          occupied_slots?: number | null
           price_per_slot?: number | null
           reporting_bureaus?: string[] | null
           reporting_date?: number | null
@@ -38111,6 +38117,8 @@ export type Database = {
         Update: {
           account_age_months?: number | null
           available_au_slots?: number | null
+          cardholder_contact?: string | null
+          cardholder_name?: string | null
           cardholder_user_id?: string
           created_at?: string
           credit_limit?: number | null
@@ -38119,6 +38127,7 @@ export type Database = {
           is_active?: boolean | null
           issuer?: string
           notes?: string | null
+          occupied_slots?: number | null
           price_per_slot?: number | null
           reporting_bureaus?: string[] | null
           reporting_date?: number | null
