@@ -1,7 +1,7 @@
 import { DynastyModule, SidebarItem } from '../types';
 import {
   Landmark, Users, Shield, Building2, CreditCard,
-  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise
+  TrendingUp, FileText, ClipboardList, LayoutDashboard, Plus, Sunrise, Settings
 } from 'lucide-react';
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
@@ -14,6 +14,7 @@ import VelocityCalculatorPage from '@/pages/funding-machine/VelocityCalculatorPa
 import TradelineVaultPage from '@/pages/funding-machine/TradelineVaultPage';
 import TaskCardsPage from '@/pages/funding-machine/TaskCardsPage';
 import MorningBriefingPage from '@/pages/funding-machine/MorningBriefingPage';
+import FundingMachineSettingsPage from '@/pages/funding-machine/FundingMachineSettingsPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine/morning-briefing', label: 'Morning Briefing', icon: Sunrise },
