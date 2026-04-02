@@ -293,6 +293,9 @@ export default function CreditRepairPage() {
         {/* ═══ ITEMS TAB ═══ */}
         <TabsContent value="items" className="space-y-4">
           <div className="flex gap-2">
+            <Button onClick={() => setShowUploadModal(true)} className="bg-gradient-to-r from-amber-600 to-yellow-500 text-black">
+              <Upload className="h-4 w-4 mr-1" /> Upload & Parse Report
+            </Button>
             <Button onClick={() => setShowAddItem(!showAddItem)} variant="outline" className="border-red-500/30 text-red-400">
               <Plus className="h-4 w-4 mr-1" /> Add Item
             </Button>
@@ -302,6 +305,13 @@ export default function CreditRepairPage() {
               {isAnalyzing ? 'Analyzing...' : 'Analyze & Prioritize'}
             </Button>
           </div>
+
+          <CreditReportUploadModal
+            clientId={clientId!}
+            open={showUploadModal}
+            onClose={() => setShowUploadModal(false)}
+            onImportComplete={() => queryClient.invalidateQueries({ queryKey: ['funding-credit-items', clientId] })}
+          />
 
           {showAddItem && (
             <Card className="border-red-500/20">
