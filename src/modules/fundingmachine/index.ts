@@ -6,6 +6,8 @@ import {
 import FundingMachineDashboard from '@/pages/funding-machine/FundingMachineDashboard';
 import ClientIntakePage from '@/pages/funding-machine/ClientIntakePage';
 import ClientProfilePage from '@/pages/funding-machine/ClientProfilePage';
+import CreditRepairPage from '@/pages/funding-machine/CreditRepairPage';
+import BusinessBuilderPage from '@/pages/funding-machine/BusinessBuilderPage';
 
 const sidebarItems: SidebarItem[] = [
   { path: '/funding-machine', label: 'Dashboard', icon: LayoutDashboard },
