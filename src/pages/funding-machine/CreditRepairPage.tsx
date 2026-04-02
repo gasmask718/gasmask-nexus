@@ -38,6 +38,7 @@ export default function CreditRepairPage() {
   const queryClient = useQueryClient();
   const clientId = searchParams.get('client');
   const [showAddItem, setShowAddItem] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedLetterType, setSelectedLetterType] = useState('');
   const [generatedLetter, setGeneratedLetter] = useState('');
