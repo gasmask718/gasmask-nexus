@@ -1654,6 +1654,7 @@ export default function AppRoutes() {
         <Route path="/funding-machine/business-builder" element={<FundingMachineBusinessBuilder />} />
         <Route path="/funding-machine/bureau-intel" element={<FundingMachineBureauIntel />} />
         <Route path="/funding-machine/funding-matrix" element={<FundingMachineFundingMatrix />} />
+        <Route path="/funding-machine/applications" element={<FundingMachineApplications />} />
         <Route path="/funding-machine/velocity" element={<FundingMachineVelocity />} />
         <Route path="/funding-machine/tradeline-vault" element={<FundingMachineTradelineVault />} />
         <Route path="/funding-machine/tasks" element={<FundingMachineTaskCards />} />
