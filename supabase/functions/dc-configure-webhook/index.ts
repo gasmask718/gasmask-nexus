@@ -59,6 +59,14 @@ Deno.serve(async (req) => {
       }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    if (!lookupResp.ok || !lookupData.incoming_phone_numbers?.length) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: `Phone number ${phone_number} not found in your Twilio account. Make sure it's purchased and active.`,
+        details: lookupData
+      }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
     const numberSid = lookupData.incoming_phone_numbers[0].sid
     const webhookUrl = `${SUPABASE_URL}/functions/v1/dc-inbound-call`
 
