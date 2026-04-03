@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import {
   ShoppingBag, Car, Plane, Sparkles, ToggleLeft, ToggleRight,
   Edit, Trash2, Plus, Loader2, Upload, X, Image as ImageIcon,
-  Star, MapPin, Clock, Users, ArrowUpDown
+  Star, MapPin, Clock, Users, ArrowUpDown, Truck
 } from 'lucide-react';
 
 type FormMode = 'create' | 'edit';
