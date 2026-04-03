@@ -32,12 +32,14 @@ export default function DCPhoneNumbers() {
   const { data: credStatus } = useQuery({
     queryKey: ['dc-cred-status'],
     queryFn: async () => {
-      // Check credentials by making a lightweight call to the edge function
+      // Use a real number from our list to validate credentials
+      const { data: nums } = await (supabase as any).from('dc_phone_numbers').select('phone_number').limit(1);
+      const testNum = nums?.[0]?.phone_number || '+18484004179';
       const { data, error } = await supabase.functions.invoke('dc-configure-webhook', {
-        body: { phone_number: '__check__' }
+        body: { phone_number: testNum }
       });
-      // If credential_issue is in the response, we know which ones are bad
-      return { checked: true, error: error?.message || data?.error };
+      if (data?.credential_issue) return { checked: true, error: data.error, credentialIssue: true };
+      return { checked: true, error: error?.message && !data?.success ? (data?.error || error.message) : null };
     },
     staleTime: 60000,
   });
