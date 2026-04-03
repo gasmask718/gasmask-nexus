@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, CalendarCheck, Users, Map, TrendingUp, 
-  Star, Settings2, Brain, Bell, RefreshCw, Settings
+  Star, Settings2, Brain, Bell, RefreshCw, Settings, Crown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ const navItems = [
   { path: '/os/toptier/ambassadors', label: 'Ambassadors', icon: Star },
   { path: '/os/toptier/operations', label: 'Operations', icon: Settings2 },
   { path: '/os/toptier/ai', label: 'AI Brain', icon: Brain },
+  { path: '/os/toptier/penthouse', label: 'Penthouse Control', icon: Crown },
 ];
 
 function LiveClock() {

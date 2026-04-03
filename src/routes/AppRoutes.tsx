@@ -717,6 +717,16 @@ const TTItinerary = lazy(() => import('@/pages/os/toptier/TTItinerary'));
 const TTAmbassadors = lazy(() => import('@/pages/os/toptier/TTAmbassadors'));
 const TTOperations = lazy(() => import('@/pages/os/toptier/TTOperations'));
 const TTAIBrain = lazy(() => import('@/pages/os/toptier/TTAIBrain'));
+const PenthouseLayout = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseLayout'));
+const PenthouseDashboard = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDashboard'));
+const PenthousePartners = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePartners'));
+const PenthouseAffiliates = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAffiliates'));
+const PenthouseMarketplace = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseMarketplace'));
+const PenthouseFinance = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseFinance'));
+const PenthouseRoles = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseRoles'));
+const PenthouseSystem = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseSystem'));
+const PenthouseAnalytics = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAnalytics'));
+const PenthouseAudit = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAudit'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
@@ -1651,6 +1661,19 @@ export default function AppRoutes() {
           <Route path="operations" element={<TTOperations />} />
           <Route path="ai" element={<TTAIBrain />} />
           <Route path="settings" element={<TTPlaceholder />} />
+        </Route>
+
+        {/* Penthouse Control System */}
+        <Route path="/os/toptier/penthouse" element={<PenthouseLayout />}>
+          <Route index element={<PenthouseDashboard />} />
+          <Route path="partners" element={<PenthousePartners />} />
+          <Route path="affiliates" element={<PenthouseAffiliates />} />
+          <Route path="marketplace" element={<PenthouseMarketplace />} />
+          <Route path="finance" element={<PenthouseFinance />} />
+          <Route path="roles" element={<PenthouseRoles />} />
+          <Route path="system" element={<PenthouseSystem />} />
+          <Route path="analytics" element={<PenthouseAnalytics />} />
+          <Route path="audit" element={<PenthouseAudit />} />
         </Route>
         
         {/* Unforgettable Times CRM Routes */}
