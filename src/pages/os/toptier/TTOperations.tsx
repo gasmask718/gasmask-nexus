@@ -46,10 +46,11 @@ export default function TTOperations() {
   // All pending bookings for dispatch
   const { data: pendingBookings } = useQuery({
     queryKey: ['tt-pending-bookings'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_bookings').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('bookings', {
+      select: '*',
+      filters: { 'status': 'eq.pending' },
+      order: 'created_at.desc',
+    }),
   });
 
   // Active partners for dispatch
