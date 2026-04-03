@@ -1948,17 +1948,6 @@ export default function AppRoutes() {
           </RequireRole>
         } />
 
-// Penthouse Control System
-const PenthouseLayout = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseLayout'));
-const PenthouseDashboard = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseDashboard'));
-const PenthousePartners = lazy(() => import('@/pages/os/toptier/penthouse/PenthousePartners'));
-const PenthouseAffiliates = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAffiliates'));
-const PenthouseMarketplace = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseMarketplace'));
-const PenthouseFinance = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseFinance'));
-const PenthouseRoles = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseRoles'));
-const PenthouseSystem = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseSystem'));
-const PenthouseAnalytics = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAnalytics'));
-const PenthouseAudit = lazy(() => import('@/pages/os/toptier/penthouse/PenthouseAudit'));
 
         <Route path="/grabba/personal-finance" element={<Navigate to="/penthouse/accounting" replace />} />
         <Route path="/grabba/financial-dashboard" element={<Navigate to="/penthouse/accounting" replace />} />
