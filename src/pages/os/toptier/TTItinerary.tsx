@@ -75,7 +75,7 @@ export default function TTItinerary() {
   });
 
   // Group by client
-  const clientGroups = (bookings || []).reduce((acc, b) => {
+  const clientGroups = (bookings || []).reduce((acc: Record<string, any[]>, b: any) => {
     const key = b.client_name || 'Unknown';
     if (!acc[key]) acc[key] = [];
     acc[key].push(b);

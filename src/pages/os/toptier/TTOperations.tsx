@@ -91,9 +91,8 @@ export default function TTOperations() {
 
   const reassignMutation = useMutation({
     mutationFn: async ({ bookingId, partnerId }: { bookingId: string; partnerId: string }) => {
-      const partner = activePartners?.find(p => p.id === partnerId);
-      const { error } = await supabase.from('tt_bookings').update({ partner_id: partnerId, partner_name: partner?.name || '', status: 'confirmed' }).eq('id', bookingId);
-      if (error) throw error;
+      const partner = activePartners?.find((p: any) => p.id === partnerId);
+      await patchTopTierData('bookings', { 'id': `eq.${bookingId}` }, { partner_id: partnerId, partner_name: partner?.name || '', status: 'confirmed' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-stale-bookings'] });
