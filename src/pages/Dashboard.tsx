@@ -153,6 +153,9 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Connected Business Units */}
+      <TopTierEmpireCard />
+
       {/* Quick Actions */}
       <div className="grid gap-4 md:grid-cols-3">
         <CommunicationWidget />
