@@ -82,10 +82,11 @@ export default function TTPartners() {
   const { data: partnerEarnings } = useQuery({
     queryKey: ['tt-partner-earnings', selectedPartner?.id],
     enabled: !!selectedPartner,
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_partner_earnings').select('*').eq('partner_id', selectedPartner.id).order('created_at', { ascending: false });
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partner_earnings', {
+      select: '*',
+      filters: { 'partner_id': `eq.${selectedPartner.id}` },
+      order: 'created_at.desc',
+    }),
   });
 
   const updateStatus = useMutation({
