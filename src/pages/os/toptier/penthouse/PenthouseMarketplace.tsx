@@ -122,7 +122,34 @@ export default function PenthouseMarketplace() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ph-experiences'] });
       queryClient.invalidateQueries({ queryKey: ['ph-jets'] });
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
       toast.success('Status toggled');
+    },
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: async ({ id, currentActive }: { id: string; currentActive: boolean }) => {
+      const result = await patchTopTierData('tt_vehicles', { id: `eq.${id}` }, { is_active: !currentActive, updated_at: new Date().toISOString() });
+      const actorId = await getActorId();
+      await logPenthouseAction({ action: 'toggle_vehicle_active', target_type: 'tt_vehicles', target_id: id, actor_user_id: actorId, before: { is_active: currentActive }, after: { is_active: !currentActive } });
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
+      toast.success('Active status toggled');
+    },
+  });
+
+  const togglePopular = useMutation({
+    mutationFn: async ({ id, current }: { id: string; current: boolean }) => {
+      const result = await patchTopTierData('tt_vehicles', { id: `eq.${id}` }, { is_popular: !current, updated_at: new Date().toISOString() });
+      const actorId = await getActorId();
+      await logPenthouseAction({ action: 'toggle_vehicle_popular', target_type: 'tt_vehicles', target_id: id, actor_user_id: actorId, before: { is_popular: current }, after: { is_popular: !current } });
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ph-vehicles'] });
+      toast.success('Popular status toggled');
     },
   });
 
