@@ -1295,6 +1295,7 @@ export default function AppRoutes() {
           <Route path="infrastructure" element={<DCInfrastructure />} />
           <Route path="infrastructure/numbers" element={<DCInfrastructure />} />
           <Route path="infrastructure/phone-setup" element={<DCPhoneSetup />} />
+          <Route path="phone-numbers" element={<DCPhoneNumbers />} />
           <Route path="clients" element={<DCClients />} />
         </Route>
 
