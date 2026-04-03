@@ -1,45 +1,55 @@
-## Phase 1: TopTier Experience Hub Rebuild
 
-### Database Migration
-Create the missing TopTier-specific tables needed for Phase 1:
-- `tt_bookings` — client bookings with service_type, total_price, status, partner assignment
-- `tt_partners` — service partners with trust_score, status, response_rate
-- `tt_confirmation_requests` — partner confirmation tracking
-- `tt_booking_events` — timeline/audit log for booking status changes
-- `tt_partner_earnings` — partner payout tracking
-All with RLS policies for authenticated users.
+# Penthouse Control System — Build Plan
 
-### New Layout: TopTierHubLayout
-- Fixed left sidebar (240px) with dark luxury theme (#0A0A0A background, gold #C9A84C accents)
-- Dynasty OS logo, TopTier Hub navigation (9 items), live status indicator
-- Top header bar with breadcrumb, live clock, notifications, LIVE badge
-- Replaces current simple TopTierDashboard for `/os/toptier/*` routes
+## Data Layer (Existing Tables)
+All data comes from existing `tt_*` tables + `admin_audit_log`, `user_roles`, `role_permissions`, `system_settings`:
 
-### Page 1: Overview Dashboard (`/os/toptier`)
-- 4 KPI cards (Revenue Today, Active Bookings, Partners Active, Pending Issues) — live from Supabase
-- Live Booking Feed (Realtime subscription) + Revenue 7-day area chart
-- 3 status cards (Partner Response Rate, Top Service, Ambassador Activity)
-- Operations alerts section
+| Module | Tables |
+|--------|--------|
+| Dashboard | tt_bookings, tt_partners, tt_partner_earnings, tt_experiences |
+| Partners | tt_partners, tt_partner_earnings, tt_bookings |
+| Affiliates | affiliate_clicks, affiliate_conversions (no tt-specific affiliate table — will use these) |
+| Marketplace | tt_experiences, tt_bookings, tt_charter_requests, tt_private_jets |
+| Finance | tt_partner_earnings, tt_bookings |
+| Roles | user_roles, role_permissions, permissions_matrix |
+| System | system_settings |
+| Analytics | tt_bookings, tt_partners, tt_partner_earnings |
+| Audit | admin_audit_log |
 
-### Page 2: Bookings Manager (`/os/toptier/bookings`)
-- Filter row (date range, status, service type, search)
-- 5 metric cards from filtered data
-- Sortable paginated table with slide-over detail panel
-- Actions: Reassign, Complete, Refund, Add Note
+## New Tables Needed
+1. `tt_system_controls` — pause bookings, disable categories, emergency controls
+2. `tt_affiliates` — TopTier-specific affiliate/ambassador tracking
 
-### Page 3: Revenue Dashboard (`/os/toptier/revenue`)
-- Date range selector with 6 presets
-- 6 top metric cards
-- Revenue + Bookings charts (AreaChart + BarChart)
-- Revenue by category (PieChart) + Top services (horizontal bar)
-- Partner payout queue table
+## Routes (all under `/os/toptier/penthouse/`)
+- `/os/toptier/penthouse` — Dashboard
+- `/os/toptier/penthouse/partners` — Partner Management
+- `/os/toptier/penthouse/affiliates` — Affiliate Management
+- `/os/toptier/penthouse/marketplace` — Marketplace Control
+- `/os/toptier/penthouse/finance` — Finance Control
+- `/os/toptier/penthouse/roles` — Role & Permission Control
+- `/os/toptier/penthouse/system` — System Controls
+- `/os/toptier/penthouse/analytics` — Analytics & Intelligence
+- `/os/toptier/penthouse/audit` — Audit Logs
 
-### Routing Changes
-- Add nested routes under `/os/toptier/*` inside existing AppRoutes
-- Keep existing TopTier module sidebar items working
-- New pages are lazy-loaded
+## Implementation Order
+1. Create required new tables (tt_system_controls, tt_affiliates)
+2. Build Penthouse layout with sidebar navigation
+3. Build Dashboard page
+4. Build Partner Management page
+5. Build Affiliate Management page
+6. Build Marketplace Control page (CRUD for experiences, jets, charters)
+7. Build Finance Control page
+8. Build Role & Permission page
+9. Build System Controls page
+10. Build Analytics page
+11. Build Audit Logs page
+12. Wire routes into existing TopTier hub navigation
 
-### Design System
-- Add TopTier dark theme CSS variables to index.css scoped under `.toptier-hub`
-- All components use semantic tokens, no hardcoded colors
-- Gold accents, dark glass cards, no white backgrounds
+## Design
+- Dark penthouse: #0A0A0A background, #C9A84C gold accent
+- Same luxury design system as existing TopTier Hub
+- Admin-only access enforced via RoleGuard
+
+## Security
+- All pages require admin/super_admin role check
+- All mutations log to admin_audit_log

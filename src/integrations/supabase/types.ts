@@ -74724,6 +74724,99 @@ export type Database = {
           },
         ]
       }
+      tt_affiliate_commissions: {
+        Row: {
+          affiliate_id: string | null
+          amount: number
+          booking_id: string | null
+          created_at: string
+          id: string
+          paid_at: string | null
+          status: string | null
+        }
+        Insert: {
+          affiliate_id?: string | null
+          amount: number
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          affiliate_id?: string | null
+          amount?: number
+          booking_id?: string | null
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tt_affiliate_commissions_affiliate_id_fkey"
+            columns: ["affiliate_id"]
+            isOneToOne: false
+            referencedRelation: "tt_affiliates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tt_affiliate_commissions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "tt_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tt_affiliates: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          notes: string | null
+          pending_amount: number | null
+          phone: string | null
+          referral_code: string | null
+          status: string | null
+          tier: string | null
+          total_earned: number | null
+          total_referrals: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          pending_amount?: number | null
+          phone?: string | null
+          referral_code?: string | null
+          status?: string | null
+          tier?: string | null
+          total_earned?: number | null
+          total_referrals?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          pending_amount?: number | null
+          phone?: string | null
+          referral_code?: string | null
+          status?: string | null
+          tier?: string | null
+          total_earned?: number | null
+          total_referrals?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tt_booking_events: {
         Row: {
           actor: string | null
@@ -75404,6 +75497,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tt_system_controls: {
+        Row: {
+          category: string | null
+          changed_by: string | null
+          control_key: string
+          control_value: Json | null
+          created_at: string
+          description: string | null
+          enabled: boolean | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          changed_by?: string | null
+          control_key: string
+          control_value?: Json | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          changed_by?: string | null
+          control_key?: string
+          control_value?: Json | null
+          created_at?: string
+          description?: string | null
+          enabled?: boolean | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tts_events: {
         Row: {
