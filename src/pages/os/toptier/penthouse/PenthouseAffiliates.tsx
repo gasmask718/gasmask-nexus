@@ -207,10 +207,10 @@ export default function PenthouseAffiliates() {
 
                 <div className="flex gap-2 pt-4">
                   {selected.status !== 'active' && (
-                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => mutation.mutate({ id: selected.id, updates: { status: 'active' } })}>Approve</Button>
+                    <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: selected.id, updates: { status: 'active' }, currentStatus: selected.status })}>{mutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}Approve</Button>
                   )}
                   {selected.status !== 'rejected' && (
-                    <Button className="flex-1 bg-red-600 hover:bg-red-700" onClick={() => mutation.mutate({ id: selected.id, updates: { status: 'rejected' } })}>Reject</Button>
+                    <Button className="flex-1 bg-red-600 hover:bg-red-700" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: selected.id, updates: { status: 'rejected' }, currentStatus: selected.status })}>{mutation.isPending && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}Reject</Button>
                   )}
                 </div>
               </div>
