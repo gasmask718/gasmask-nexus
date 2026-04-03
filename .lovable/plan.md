@@ -11,6 +11,8 @@
 | Partner Mgmt | — | /os/toptier/penthouse/partners | tt_partners, tt_partner_earnings | toptier-assets/partners | R/W | verified |
 | Affiliate Mgmt | — | /os/toptier/penthouse/affiliates | tt_affiliates, tt_affiliate_commissions | toptier-assets/affiliates | R/W | verified |
 | Marketplace | /admin/marketplace-control (GasMask) | /os/toptier/penthouse/marketplace | tt_experiences, tt_private_jets, tt_charter_requests | toptier-assets/experiences, toptier-assets/jets | R/W | verified |
+| Drivers | — | /os/toptier/penthouse/drivers | tt_drivers | toptier-assets/drivers | R/W | verified |
+| Confirmations | — | /os/toptier/penthouse/confirmations | tt_confirmation_requests, tt_bookings, tt_partners | — | R/W | verified |
 | Finance | — | /os/toptier/penthouse/finance | tt_partner_earnings, tt_bookings, tt_partners | — | R/W | verified |
 | Roles | — | /os/toptier/penthouse/roles | user_roles, role_permissions, permissions_matrix | — | R | verified |
 | System | — | /os/toptier/penthouse/system | tt_system_controls | — | R/W | verified |
