@@ -7,31 +7,12 @@ const corsHeaders = {
 const getLocalNumber = (toNumber: string, defaultFrom: string): string => {
   const areaCode = toNumber.replace(/\D/g, '').substring(1, 4)
 
-  // DR numbers (809, 829, 849)
-  if (['809', '829', '849'].includes(areaCode)) {
-    return Deno.env.get('BRANDARO_DR_NUMBER') || defaultFrom
-  }
-  // Florida
-  if (['305', '754', '786', '407', '561', '321', '941', '727', '813', '904'].includes(areaCode)) {
-    return Deno.env.get('BRANDARO_FL_NUMBER') || defaultFrom
-  }
-  // Texas
-  if (['214', '713', '832', '512', '281', '972', '469', '817', '210', '361'].includes(areaCode)) {
-    return Deno.env.get('BRANDARO_TX_NUMBER') || defaultFrom
-  }
-  // California
-  if (['213', '310', '323', '415', '619', '818', '626', '949', '714', '562'].includes(areaCode)) {
-    return Deno.env.get('BRANDARO_CA_NUMBER') || defaultFrom
-  }
-  // New Jersey
-  if (['848', '201', '732', '908', '973', '551', '609'].includes(areaCode)) {
-    return Deno.env.get('BRANDARO_NJ_NUMBER') || defaultFrom
-  }
-  // Georgia
-  if (['404', '470', '678', '770', '706', '762'].includes(areaCode)) {
-    return Deno.env.get('BRANDARO_GA_NUMBER') || defaultFrom
-  }
-  // Default (NYC)
+  if (['809', '829', '849'].includes(areaCode)) return Deno.env.get('BRANDARO_DR_NUMBER') || defaultFrom
+  if (['305', '754', '786', '407', '561', '321', '941', '727', '813', '904'].includes(areaCode)) return Deno.env.get('BRANDARO_FL_NUMBER') || defaultFrom
+  if (['214', '713', '832', '512', '281', '972', '469', '817', '210', '361'].includes(areaCode)) return Deno.env.get('BRANDARO_TX_NUMBER') || defaultFrom
+  if (['213', '310', '323', '415', '619', '818', '626', '949', '714', '562'].includes(areaCode)) return Deno.env.get('BRANDARO_CA_NUMBER') || defaultFrom
+  if (['848', '201', '732', '908', '973', '551', '609'].includes(areaCode)) return Deno.env.get('BRANDARO_NJ_NUMBER') || defaultFrom
+  if (['404', '470', '678', '770', '706', '762'].includes(areaCode)) return Deno.env.get('BRANDARO_GA_NUMBER') || defaultFrom
   return defaultFrom
 }
 
@@ -58,11 +39,36 @@ Deno.serve(async (req) => {
       })
     }
 
-    const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID')!
-    const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN')!
-    const ELEVENLABS_KEY = Deno.env.get('ELEVENLABS_API_KEY')!
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-    const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    // ═══ Credential Validation ═══
+    const TWILIO_SID = Deno.env.get('TWILIO_ACCOUNT_SID') || ''
+    const TWILIO_TOKEN = Deno.env.get('TWILIO_AUTH_TOKEN') || ''
+    const ELEVENLABS_KEY = Deno.env.get('ELEVENLABS_API_KEY') || ''
+    const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
+    const SUPABASE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+
+    if (!TWILIO_SID.startsWith('AC') || TWILIO_SID.length < 34) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'TWILIO_ACCOUNT_SID appears invalid — verify it starts with AC and is copied exactly from your Twilio console.',
+        credential_issue: true
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    if (!TWILIO_TOKEN || TWILIO_TOKEN.length < 32) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'TWILIO_AUTH_TOKEN missing or invalid — copy it directly from your Twilio console dashboard.',
+        credential_issue: true
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    if (!ELEVENLABS_KEY) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: 'ELEVENLABS_API_KEY is not configured.',
+        credential_issue: true
+      }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
     // Agent routing map by business and type
     const agentRouting: Record<string, Record<string, string>> = {
@@ -114,7 +120,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Phone number by business
     const phoneMap: Record<string, string> = {
       unforgettable_times: Deno.env.get('UT_PHONE_NUMBER') || '+18484004179',
       real_estate: Deno.env.get('RE_PHONE_NUMBER') || '+18484004179',
@@ -131,7 +136,6 @@ Deno.serve(async (req) => {
     const agentId = agent_id_override || businessAgents[agent_type] || businessAgents.default
     const defaultFrom = phoneMap[biz] || '+18484004179'
 
-    // Smart FROM number: Brandaro uses local presence routing
     const fromNumber = biz === 'brandaro'
       ? getLocalNumber(to_number, defaultFrom)
       : defaultFrom
@@ -184,7 +188,6 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Log the call
     await fetch(`${SUPABASE_URL}/rest/v1/dc_call_logs`, {
       method: 'POST',
       headers: {
