@@ -103,7 +103,8 @@ export default function PenthouseSystem() {
                   </div>
                 ))}
               </CardContent>
-            </Card>
+              </Card>
+            );
           })}
         </div>
       )}
