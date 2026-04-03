@@ -72,17 +72,19 @@ export default function PenthouseSystem() {
         </div>
       ) : (
         <div className="space-y-6">
-          {Object.entries(groupedControls).map(([category, items]) => (
+          {Object.entries(groupedControls).map(([category, items]) => {
+            const controlItems = items as any[];
+            return (
             <Card key={category} className={`bg-[#111] ${categoryColor(category)}`}>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm text-white/70 flex items-center gap-2">
                   {categoryIcon(category)}
                   <span className="capitalize">{category}</span>
-                  <Badge variant="outline" className="text-[9px] border-white/10 text-white/40 ml-auto">{items.length} controls</Badge>
+                  <Badge variant="outline" className="text-[9px] border-white/10 text-white/40 ml-auto">{controlItems.length} controls</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {items.map((ctrl: any) => (
+                {controlItems.map((ctrl: any) => (
                   <div key={ctrl.id} className="flex items-center justify-between p-4 bg-white/[0.02] rounded-lg border border-white/5">
                     <div className="flex-1">
                       <p className="text-sm text-white/80 font-medium">{ctrl.description || ctrl.control_key}</p>
