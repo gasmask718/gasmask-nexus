@@ -707,6 +707,11 @@ const LiveTubesDetailPage = lazy(() => import('@/pages/os/inventory/dashboard').
 const BoxesSoldDetailPage = lazy(() => import('@/pages/os/inventory/dashboard').then(m => ({ default: m.BoxesSoldDetailPage })));
 const LowStockDetailPage = lazy(() => import('@/pages/os/inventory/dashboard').then(m => ({ default: m.LowStockDetailPage })));
 const TopTierDashboard = lazy(() => import('@/pages/os/toptier/TopTierDashboard'));
+const TopTierHubLayout = lazy(() => import('@/pages/os/toptier/TopTierHubLayout'));
+const TTOverview = lazy(() => import('@/pages/os/toptier/TTOverview'));
+const TTBookings = lazy(() => import('@/pages/os/toptier/TTBookings'));
+const TTRevenue = lazy(() => import('@/pages/os/toptier/TTRevenue'));
+const TTPlaceholder = lazy(() => import('@/pages/os/toptier/TTPlaceholder'));
 
 // Unforgettable
 const UnforgettableDashboard = lazy(() => import('@/pages/os/unforgettable').then(m => ({ default: m.UnforgettableDashboard })));
