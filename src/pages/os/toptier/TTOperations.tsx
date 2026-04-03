@@ -56,10 +56,10 @@ export default function TTOperations() {
   // Active partners for dispatch
   const { data: activePartners } = useQuery({
     queryKey: ['tt-active-partners-ops'],
-    queryFn: async () => {
-      const { data } = await supabase.from('tt_partners').select('id, name, service_category').eq('status', 'active');
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partners', {
+      select: 'id,name,service_category',
+      filters: { 'status': 'eq.active' },
+    }),
   });
 
   // System health: pending confirmations
