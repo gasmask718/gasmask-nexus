@@ -137,7 +137,7 @@ export default function PenthouseAffiliates() {
                       <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                         <Button size="sm" variant="ghost" className="h-7 text-xs text-white/40" onClick={() => setSelected(a)}><Eye className="h-3 w-3" /></Button>
                         {a.status === 'pending' && (
-                          <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" onClick={() => mutation.mutate({ id: a.id, updates: { status: 'active' } })}><Check className="h-3 w-3" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7 text-xs text-emerald-400" disabled={mutation.isPending} onClick={() => mutation.mutate({ id: a.id, updates: { status: 'active' }, currentStatus: a.status })}>{mutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}</Button>
                         )}
                       </div>
                     </TableCell>
