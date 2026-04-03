@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchTopTierData, patchTopTierData } from '@/lib/toptierApi';
+import { fetchTopTierData, patchTopTierData, logPenthouseAction } from '@/lib/toptierApi';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
-import { UserCheck, Users, DollarSign, Clock, Check, Ban, Eye, Copy } from 'lucide-react';
+import { UserCheck, Users, DollarSign, Clock, Check, Ban, Eye, Copy, Loader2 } from 'lucide-react';
 
 const TIERS = [
   { name: 'Bronze', min: 0, color: '#CD7F32' },
