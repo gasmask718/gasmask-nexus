@@ -62,11 +62,10 @@ export default function TTPartners() {
 
   const { data: partners, isLoading } = useQuery({
     queryKey: ['tt-partners'],
-    queryFn: async () => {
-      const { data, error } = await supabase.from('tt_partners').select('*').order('created_at', { ascending: false });
-      if (error) throw error;
-      return data || [];
-    },
+    queryFn: () => fetchTopTierData('partners', {
+      select: '*',
+      order: 'created_at.desc',
+    }),
   });
 
   const { data: partnerBookings } = useQuery({
