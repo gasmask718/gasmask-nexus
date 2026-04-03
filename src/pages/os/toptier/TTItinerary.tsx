@@ -64,8 +64,8 @@ export default function TTItinerary() {
 
   const reassignMutation = useMutation({
     mutationFn: async ({ bookingId, partnerId, partnerName }: { bookingId: string; partnerId: string; partnerName: string }) => {
-      const { error } = await supabase.from('tt_bookings').update({ partner_id: partnerId, partner_name: partnerName, status: 'confirmed' }).eq('id', bookingId);
-      if (error) throw error;
+      await patchTopTierData('bookings', { 'id': `eq.${bookingId}` }, { partner_id: partnerId, partner_name: partnerName, status: 'confirmed' });
+    },
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tt-itinerary-bookings'] });
