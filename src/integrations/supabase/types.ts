@@ -74771,6 +74771,9 @@ export type Database = {
       }
       tt_affiliates: {
         Row: {
+          avatar_url: string | null
+          category: string | null
+          commission_override: number | null
           created_at: string
           email: string | null
           id: string
@@ -74786,6 +74789,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
+          category?: string | null
+          commission_override?: number | null
           created_at?: string
           email?: string | null
           id?: string
@@ -74801,6 +74807,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
+          category?: string | null
+          commission_override?: number | null
           created_at?: string
           email?: string | null
           id?: string
@@ -75148,7 +75157,10 @@ export type Database = {
           current_guests: number | null
           description: string | null
           duration_hours: number | null
+          featured: boolean | null
+          gallery_images: Json | null
           id: string
+          image_url: string | null
           is_complimentary: boolean | null
           is_partner_provided: boolean | null
           is_simulation: boolean | null
@@ -75158,9 +75170,12 @@ export type Database = {
           partner_id: string | null
           partner_name: string | null
           price: number | null
+          pricing_notes: string | null
+          pricing_tier: string | null
           revenue_generated: number | null
           scheduled_date: string | null
           scheduled_time: string | null
+          sort_order: number | null
           special_requirements: string | null
           status: string
           title: string
@@ -75175,7 +75190,10 @@ export type Database = {
           current_guests?: number | null
           description?: string | null
           duration_hours?: number | null
+          featured?: boolean | null
+          gallery_images?: Json | null
           id?: string
+          image_url?: string | null
           is_complimentary?: boolean | null
           is_partner_provided?: boolean | null
           is_simulation?: boolean | null
@@ -75185,9 +75203,12 @@ export type Database = {
           partner_id?: string | null
           partner_name?: string | null
           price?: number | null
+          pricing_notes?: string | null
+          pricing_tier?: string | null
           revenue_generated?: number | null
           scheduled_date?: string | null
           scheduled_time?: string | null
+          sort_order?: number | null
           special_requirements?: string | null
           status?: string
           title: string
@@ -75202,7 +75223,10 @@ export type Database = {
           current_guests?: number | null
           description?: string | null
           duration_hours?: number | null
+          featured?: boolean | null
+          gallery_images?: Json | null
           id?: string
+          image_url?: string | null
           is_complimentary?: boolean | null
           is_partner_provided?: boolean | null
           is_simulation?: boolean | null
@@ -75212,9 +75236,12 @@ export type Database = {
           partner_id?: string | null
           partner_name?: string | null
           price?: number | null
+          pricing_notes?: string | null
+          pricing_tier?: string | null
           revenue_generated?: number | null
           scheduled_date?: string | null
           scheduled_time?: string | null
+          sort_order?: number | null
           special_requirements?: string | null
           status?: string
           title?: string
@@ -75348,8 +75375,11 @@ export type Database = {
       }
       tt_partners: {
         Row: {
+          address: string | null
           avatar_url: string | null
+          bio: string | null
           business_name: string | null
+          commission_rate: number | null
           created_at: string
           email: string | null
           id: string
@@ -75363,10 +75393,14 @@ export type Database = {
           total_earnings: number
           trust_score: number
           updated_at: string
+          website: string | null
         }
         Insert: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
           business_name?: string | null
+          commission_rate?: number | null
           created_at?: string
           email?: string | null
           id?: string
@@ -75380,10 +75414,14 @@ export type Database = {
           total_earnings?: number
           trust_score?: number
           updated_at?: string
+          website?: string | null
         }
         Update: {
+          address?: string | null
           avatar_url?: string | null
+          bio?: string | null
           business_name?: string | null
+          commission_rate?: number | null
           created_at?: string
           email?: string | null
           id?: string
@@ -75397,6 +75435,7 @@ export type Database = {
           total_earnings?: number
           trust_score?: number
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -75409,6 +75448,8 @@ export type Database = {
           created_by: string | null
           current_location: string | null
           daily_rate: number | null
+          featured: boolean | null
+          gallery_images: Json | null
           hourly_rate: number | null
           id: string
           is_partner_jet: boolean | null
@@ -75424,6 +75465,7 @@ export type Database = {
           passenger_capacity: number | null
           photo_url: string | null
           range_nautical_miles: number | null
+          sort_order: number | null
           status: string
           tail_number: string | null
           total_charters: number | null
@@ -75438,6 +75480,8 @@ export type Database = {
           created_by?: string | null
           current_location?: string | null
           daily_rate?: number | null
+          featured?: boolean | null
+          gallery_images?: Json | null
           hourly_rate?: number | null
           id?: string
           is_partner_jet?: boolean | null
@@ -75453,6 +75497,7 @@ export type Database = {
           passenger_capacity?: number | null
           photo_url?: string | null
           range_nautical_miles?: number | null
+          sort_order?: number | null
           status?: string
           tail_number?: string | null
           total_charters?: number | null
@@ -75467,6 +75512,8 @@ export type Database = {
           created_by?: string | null
           current_location?: string | null
           daily_rate?: number | null
+          featured?: boolean | null
+          gallery_images?: Json | null
           hourly_rate?: number | null
           id?: string
           is_partner_jet?: boolean | null
@@ -75482,6 +75529,7 @@ export type Database = {
           passenger_capacity?: number | null
           photo_url?: string | null
           range_nautical_miles?: number | null
+          sort_order?: number | null
           status?: string
           tail_number?: string | null
           total_charters?: number | null
