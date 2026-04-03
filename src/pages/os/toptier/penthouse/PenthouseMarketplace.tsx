@@ -272,6 +272,7 @@ export default function PenthouseMarketplace() {
         <TabsList className="bg-[#111] border border-white/5">
           <TabsTrigger value="experiences" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Experiences</TabsTrigger>
           <TabsTrigger value="jets" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Private Jets</TabsTrigger>
+          <TabsTrigger value="vehicles" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Vehicles</TabsTrigger>
           <TabsTrigger value="charters" className="data-[state=active]:bg-[#C9A84C]/10 data-[state=active]:text-[#C9A84C]">Charter Requests</TabsTrigger>
         </TabsList>
 
