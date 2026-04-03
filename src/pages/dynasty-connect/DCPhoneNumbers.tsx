@@ -117,33 +117,37 @@ export default function DCPhoneNumbers() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center gap-2 p-3 rounded-lg border border-border">
-              <CheckCircle className="h-4 w-4 text-green-500" />
+          {credStatus?.credentialIssue ? (
+            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
               <div>
-                <p className="text-xs text-muted-foreground">TWILIO_ACCOUNT_SID</p>
-                <p className="text-sm font-mono">Configured</p>
+                <p className="font-medium text-destructive">Twilio Credentials Invalid</p>
+                <p className="text-sm text-destructive/80 mt-1">{credStatus.error}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg border border-border">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">TWILIO_AUTH_TOKEN</p>
-                <p className="text-sm font-mono">Configured</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-border">
+                {credStatus?.error ? <XCircle className="h-4 w-4 text-destructive" /> : <CheckCircle className="h-4 w-4 text-green-500" />}
+                <div>
+                  <p className="text-xs text-muted-foreground">TWILIO_ACCOUNT_SID</p>
+                  <p className="text-sm font-mono">{credStatus?.error ? 'Issue detected' : 'Configured'}</p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2 p-3 rounded-lg border border-border">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <div>
-                <p className="text-xs text-muted-foreground">ELEVENLABS_API_KEY</p>
-                <p className="text-sm font-mono">Configured</p>
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-border">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <div>
+                  <p className="text-xs text-muted-foreground">TWILIO_AUTH_TOKEN</p>
+                  <p className="text-sm font-mono">Configured</p>
+                </div>
               </div>
-            </div>
-          </div>
-          {credStatus?.error && credStatus.error.includes('invalid') && (
-            <div className="mt-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-              <p className="text-sm text-destructive">{credStatus.error}</p>
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-border">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                <div>
+                  <p className="text-xs text-muted-foreground">ELEVENLABS_API_KEY</p>
+                  <p className="text-sm font-mono">Configured</p>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
