@@ -75582,6 +75582,84 @@ export type Database = {
         }
         Relationships: []
       }
+      tt_vehicles: {
+        Row: {
+          base_price: number | null
+          color: string | null
+          created_at: string
+          daily_rate: number | null
+          description: string | null
+          featured: boolean
+          gallery_images: Json | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          is_popular: boolean
+          location: string | null
+          make: string | null
+          model: string | null
+          name: string
+          notes: string | null
+          plate_number: string | null
+          seats: number | null
+          sort_order: number
+          status: string
+          type: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          base_price?: number | null
+          color?: string | null
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          featured?: boolean
+          gallery_images?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_popular?: boolean
+          location?: string | null
+          make?: string | null
+          model?: string | null
+          name: string
+          notes?: string | null
+          plate_number?: string | null
+          seats?: number | null
+          sort_order?: number
+          status?: string
+          type?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          base_price?: number | null
+          color?: string | null
+          created_at?: string
+          daily_rate?: number | null
+          description?: string | null
+          featured?: boolean
+          gallery_images?: Json | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          is_popular?: boolean
+          location?: string | null
+          make?: string | null
+          model?: string | null
+          name?: string
+          notes?: string | null
+          plate_number?: string | null
+          seats?: number | null
+          sort_order?: number
+          status?: string
+          type?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       tts_events: {
         Row: {
           ai_call_session_id: string | null
